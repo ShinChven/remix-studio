@@ -1,0 +1,5 @@
+{
+  "name": "Remix Studio",
+  "description": "A local-first batch AI image generation platform that combines prompt fragments to generate massive permutations of content.",
+  "requestFramePermissions": []
+}

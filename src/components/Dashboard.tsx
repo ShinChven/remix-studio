@@ -1,0 +1,93 @@
+import { useOutletContext, useNavigate } from 'react-router-dom';
+import { AppData } from '../types';
+import { Plus, Play, Folder, LayoutGrid, Clock, Layers } from 'lucide-react';
+
+export function Dashboard() {
+  const { data, addLibrary, addProject } = useOutletContext<{ data: AppData, addLibrary: (t: 'text'|'image') => void, addProject: () => void }>();
+  const navigate = useNavigate();
+
+  return (
+    <div className="h-full flex flex-col p-8 overflow-y-auto">
+      <div className="max-w-5xl w-full mx-auto space-y-8">
+        <header className="mb-8">
+          <h2 className="text-3xl font-bold text-white mb-2">Welcome to Remix Studio</h2>
+          <p className="text-neutral-400">Select a project or library from the sidebar, or create a new one to get started.</p>
+        </header>
+
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+              <Clock className="w-5 h-5 text-green-500" />
+              Recent Projects
+            </h3>
+            <button onClick={addProject} className="text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
+              <Plus className="w-4 h-4" /> New Project
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {data.projects.slice(0, 6).map(project => (
+              <button
+                key={project.id}
+                onClick={() => navigate(`/project/${project.id}`)}
+                className="bg-neutral-900 border border-neutral-800 hover:border-green-500/50 p-4 rounded-xl text-left transition-all group"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="p-2 bg-green-500/10 rounded-lg text-green-500 group-hover:scale-110 transition-transform">
+                    <Play className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs text-neutral-500 font-mono truncate max-w-[120px]">{project.id}</span>
+                </div>
+                <h4 className="font-medium text-white truncate">{project.name}</h4>
+                <p className="text-xs text-neutral-500 mt-1">{project.jobs?.length || 0} jobs • {new Date(project.createdAt).toLocaleDateString()}</p>
+              </button>
+            ))}
+            {data.projects.length === 0 && (
+              <div className="col-span-full p-8 border border-neutral-800 border-dashed rounded-xl text-center text-neutral-500">
+                No projects yet. Create one to start generating.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+              <LayoutGrid className="w-5 h-5 text-blue-500" />
+              Libraries
+            </h3>
+            <div className="flex gap-2">
+              <button onClick={() => addLibrary('text')} className="text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
+                <Plus className="w-4 h-4" /> Text
+              </button>
+              <button onClick={() => addLibrary('image')} className="text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
+                <Layers className="w-4 h-4" /> Image
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {data.libraries.slice(0, 8).map(lib => (
+              <button
+                key={lib.id}
+                onClick={() => navigate(`/library/${lib.id}`)}
+                className="bg-neutral-900 border border-neutral-800 hover:border-blue-500/50 p-4 rounded-xl text-left transition-all group"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500 group-hover:scale-110 transition-transform">
+                    <Folder className="w-5 h-5" />
+                  </div>
+                  <h4 className="font-medium text-white truncate flex-1">{lib.name}</h4>
+                </div>
+                <p className="text-xs text-neutral-500">{lib.items?.length || 0} items</p>
+              </button>
+            ))}
+            {data.libraries.length === 0 && (
+              <div className="col-span-full p-8 border border-neutral-800 border-dashed rounded-xl text-center text-neutral-500">
+                No libraries yet. Create one to store reusable prompts.
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
