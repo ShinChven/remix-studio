@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { Hono } from 'hono';
-import { serve } from '@hono/node-server';
+import { serve, getRequestListener } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
 import { createServer as createViteServer } from 'vite';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
@@ -114,40 +115,19 @@ async function startServer() {
   });
 
   // === Server setup ===
-  const honoHandler = serve({ fetch: app.fetch, port: PORT_NUM });
-
   if (process.env.NODE_ENV !== 'production') {
+    // Dev: Hono is the primary server, Vite is mounted as middleware
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
 
-    (honoHandler as http.Server).close();
+    const honoListener = getRequestListener(app.fetch);
 
     const server = http.createServer((req, res) => {
       const url = req.url || '';
       if (url.startsWith('/api/')) {
-        Promise.resolve(
-          app.fetch(
-            new Request(`http://localhost:${PORT_NUM}${url}`, {
-              method: req.method,
-              headers: req.headers as Record<string, string>,
-              body: ['GET', 'HEAD'].includes(req.method || '')
-                ? undefined
-                : (req as unknown as ReadableStream),
-              // @ts-expect-error Node.js stream as body
-              duplex: 'half',
-            })
-          )
-        ).then(async (response) => {
-          res.writeHead(response.status, Object.fromEntries(response.headers.entries()));
-          const body = await response.arrayBuffer();
-          res.end(Buffer.from(body));
-        }).catch((err) => {
-          console.error('Vite Proxy Header Error:', err);
-          res.writeHead(500);
-          res.end('Internal Server Error');
-        });
+        honoListener(req, res);
       } else {
         vite.middlewares(req, res);
       }
@@ -157,20 +137,21 @@ async function startServer() {
       console.log(`Server running on http://localhost:${PORT_NUM}`);
     });
   } else {
+    // Production: Hono serves everything
     const distPath = path.join(process.cwd(), 'dist');
 
-    // Production static serving via Hono
+    // Serve static assets with correct MIME types
+    app.use('*', serveStatic({ root: './dist' }));
+
+    // SPA fallback: return index.html for all non-file routes
     app.get('*', async (c) => {
-      const filePath = path.join(distPath, c.req.path);
-      if (c.req.path !== '/' && fs.existsSync(filePath)) {
-        const content = fs.readFileSync(filePath);
-        return new Response(content);
-      }
       const html = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
       return c.html(html);
     });
 
-    console.log(`Server running on http://localhost:${PORT_NUM}`);
+    serve({ fetch: app.fetch, port: PORT_NUM }, () => {
+      console.log(`Server running on http://localhost:${PORT_NUM}`);
+    });
   }
 }
 
