@@ -7,21 +7,21 @@ export function Dashboard() {
   const navigate = useNavigate();
 
   return (
-    <div className="h-full flex flex-col p-8 overflow-y-auto">
+    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full space-y-8">
-        <header className="mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">Welcome to Remix Studio</h2>
-          <p className="text-neutral-400">Select a project or library from the sidebar, or create a new one to get started.</p>
+        <header className="mb-6 md:mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Welcome to Remix Studio</h2>
+          <p className="text-sm md:text-base text-neutral-400">Select a project or library from the sidebar, or create a new one to get started.</p>
         </header>
 
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+            <h3 className="text-lg md:text-xl font-semibold text-white flex items-center gap-2">
               <Clock className="w-5 h-5 text-green-500" />
               Recent Projects
             </h3>
-            <button onClick={addProject} className="text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
-              <Plus className="w-4 h-4" /> New Project
+            <button onClick={addProject} className="text-xs md:text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
+              <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Project</span><span className="sm:hidden">New</span>
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -51,17 +51,17 @@ export function Dashboard() {
 
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+            <h3 className="text-lg md:text-xl font-semibold text-white flex items-center gap-2">
               <LayoutGrid className="w-5 h-5 text-blue-500" />
               Libraries
             </h3>
             <div className="flex gap-2">
-              <button onClick={addLibrary} className="text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
-                <Plus className="w-4 h-4" /> New Library
+              <button onClick={addLibrary} className="text-xs md:text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
+                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Library</span><span className="sm:hidden">New</span>
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {data.libraries.slice(0, 8).map(lib => (
               <button
                 key={lib.id}

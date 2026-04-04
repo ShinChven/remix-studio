@@ -7,11 +7,11 @@ export function Projects() {
   const navigate = useNavigate();
 
   return (
-    <div className="h-full flex flex-col p-8 overflow-y-auto">
+    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full space-y-8">
-        <header className="mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2 font-display">Projects</h2>
-          <p className="text-neutral-400">Manage and track your AI workflows and generation tasks.</p>
+        <header className="mb-6 md:mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Projects</h2>
+          <p className="text-sm md:text-base text-neutral-400">Manage and track your AI workflows and generation tasks.</p>
         </header>
 
         <section>
@@ -22,13 +22,13 @@ export function Projects() {
             </h3>
             <button 
               onClick={addProject} 
-              className="text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-green-600/30 font-medium"
+              className="text-xs md:text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-green-600/30 font-medium"
             >
-              <Plus className="w-4 h-4" /> New Project
+              <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Project</span><span className="sm:hidden">New</span>
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {data.projects.map(project => (
               <button
                 key={project.id}

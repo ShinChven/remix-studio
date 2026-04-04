@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate, Outlet, Link } from 'react-router-dom';
 import { AppData, Library, Project } from '../types';
 import { loadData, saveData } from '../api';
-import { Plus, Folder, Layers, Play, Search, ChevronDown, ChevronRight, LogOut, User as UserIcon, Shield, LayoutGrid, Loader2, PanelLeftClose, PanelLeftOpen, StickyNote } from 'lucide-react';
+import { Plus, Folder, Layers, Play, Search, ChevronDown, ChevronRight, LogOut, User as UserIcon, Shield, LayoutGrid, Loader2, PanelLeftClose, PanelLeftOpen, StickyNote, Menu, X } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from './ConfirmModal';
@@ -11,10 +11,22 @@ export function MainLayout() {
   const [data, setData] = useState<AppData>({ libraries: [], projects: [] });
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar-collapsed');
     return saved === 'true';
   });
+
+  useEffect(() => {
+    // Close mobile menu on window resize if it gets larger than mobile/tablet
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('sidebar-collapsed', String(isCollapsed));
@@ -62,13 +74,41 @@ export function MainLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-neutral-950 text-neutral-200 font-sans">
+    <div className="flex h-screen w-screen bg-neutral-950 text-neutral-200 font-sans overflow-hidden">
+      {/* Mobile Header */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-neutral-900 border-b border-neutral-800 px-4 flex items-center gap-2 z-[100]">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 text-neutral-400 hover:text-white transition-all active:scale-95"
+          aria-label="Toggle Menu"
+        >
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+        <Link to="/" className="flex items-center px-2" onClick={() => setIsMobileMenuOpen(false)}>
+          <h1 className="text-lg font-bold text-white whitespace-nowrap tracking-tight">Remix Studio</h1>
+        </Link>
+      </header>
+
+      {/* Backdrop for Mobile Sidebar */}
+      {isMobileMenuOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] transition-opacity duration-300"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className={`${isCollapsed ? 'w-20' : 'w-64'} bg-neutral-900 border-r border-neutral-800 flex flex-col transition-all duration-300 ease-in-out relative group`}>
+      <div className={`
+        fixed inset-y-0 left-0 z-[120] transition-all duration-300 ease-in-out lg:relative
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${isCollapsed ? 'lg:w-20' : 'lg:w-64'} w-72
+        bg-neutral-900 border-r border-neutral-800 flex flex-col group
+      `}>
         <div className="p-4 border-neutral-800 flex items-center justify-between">
           <Link 
             to="/"
-            className={`flex-1 transition-all duration-300 overflow-hidden ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-full opacity-100'}`}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`flex-1 transition-all duration-300 overflow-hidden ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}
           >
             <h1 className="text-xl font-bold text-white flex items-center gap-2 whitespace-nowrap">
               <Layers className="w-6 h-6 text-blue-500 flex-shrink-0" />
@@ -77,10 +117,16 @@ export function MainLayout() {
           </Link>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`p-2 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors ${isCollapsed ? 'w-full flex justify-center' : ''}`}
+            className={`hidden lg:flex p-2 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors ${isCollapsed ? 'w-full justify-center' : ''}`}
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+          </button>
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="lg:hidden p-2 text-neutral-400 hover:text-white"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -88,41 +134,44 @@ export function MainLayout() {
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           <Link
             to="/"
+            onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
               location.pathname === '/' 
                 ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' 
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
-            } ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+            } ${isCollapsed ? 'lg:justify-center' : 'gap-3'} gap-3`}
             title="Dashboard"
           >
             <LayoutGrid className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && <span className="font-medium text-sm">Dashboard</span>}
+            <span className={`font-medium text-sm transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}>Dashboard</span>
           </Link>
 
           <Link
             to="/projects"
+            onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
               location.pathname === '/projects' || location.pathname.startsWith('/project/')
                 ? 'bg-green-600/10 text-green-400 border border-green-600/20' 
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
-            } ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+            } ${isCollapsed ? 'lg:justify-center' : 'gap-3'} gap-3`}
             title="Projects"
           >
             <Play className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && <span className="font-medium text-sm">Projects</span>}
+            <span className={`font-medium text-sm transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}>Projects</span>
           </Link>
 
           <Link
             to="/libraries"
+            onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
               location.pathname === '/libraries' || location.pathname.startsWith('/library/')
                 ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' 
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
-            } ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+            } ${isCollapsed ? 'lg:justify-center' : 'gap-3'} gap-3`}
             title="Libraries"
           >
             <Folder className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && <span className="font-medium text-sm">Libraries</span>}
+            <span className={`font-medium text-sm transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}>Libraries</span>
           </Link>
 
         </div>
@@ -130,21 +179,19 @@ export function MainLayout() {
 
         {/* User Profile */}
         <div className="p-4 border-t border-neutral-800 bg-neutral-900/50 flex-shrink-0">
-          <div className={`flex items-center ${isCollapsed ? 'flex-col gap-4' : 'justify-between'}`}>
-            <div className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'justify-center' : ''}`}>
+          <div className={`flex items-center ${isCollapsed ? 'lg:flex-col lg:gap-4' : 'justify-between'}`}>
+            <div className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'lg:justify-center' : ''}`}>
               <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 text-neutral-400">
                 <UserIcon className="w-4 h-4" />
               </div>
-              {!isCollapsed && (
-                <div className="truncate">
-                  <p className="text-sm font-medium text-neutral-200 truncate">{user?.email}</p>
-                  <p className="text-xs text-neutral-500 capitalize">{user?.role}</p>
-                </div>
-              )}
+              <div className={`truncate transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}>
+                <p className="text-sm font-medium text-neutral-200 truncate">{user?.email}</p>
+                <p className="text-xs text-neutral-500 capitalize">{user?.role}</p>
+              </div>
             </div>
             <button
               onClick={() => setIsLogoutModalOpen(true)}
-              className={`p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ${isCollapsed ? 'w-full flex justify-center' : ''}`}
+              className={`p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ${isCollapsed ? 'lg:w-full lg:flex lg:justify-center' : ''}`}
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
@@ -153,25 +200,26 @@ export function MainLayout() {
           {user?.role === 'admin' && (
             <Link
               to="/admin/users"
-              className={`mt-3 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm rounded-lg transition-colors border border-neutral-700/50 ${isCollapsed ? 'p-2' : 'py-2 px-3 gap-2 w-full'}`}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`mt-3 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm rounded-lg transition-colors border border-neutral-700/50 ${isCollapsed ? 'lg:p-2' : 'py-2 px-3 gap-2 w-full'} p-2 gap-2`}
               title="User Management"
             >
               <Shield className="w-4 h-4 text-blue-400" />
-              {!isCollapsed && <span>User Management</span>}
+              <span className={`transition-all duration-300 ${isCollapsed ? 'lg:hidden' : 'inline'}`}>User Management</span>
             </Link>
           )}
         </div>
 
       </div>
 
-      <div className="flex-1 overflow-hidden bg-neutral-950 flex flex-col">
+      <div className="flex-1 overflow-hidden bg-neutral-950 flex flex-col mt-16 lg:mt-0 min-w-0 relative">
         {isSaving && (
           <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 py-1.5 flex items-center justify-center gap-2 text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em] animate-pulse">
             <Loader2 className="w-3 h-3 animate-spin" />
             Saving Changes
           </div>
         )}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden min-w-0">
           <Outlet context={{ data, handleSave, addLibrary, addProject }} />
         </div>
       </div>

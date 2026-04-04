@@ -64,8 +64,8 @@ export function LibraryForm() {
   };
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-8 bg-neutral-950">
-      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-950">
+      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 bg-blue-600/10 rounded-2xl">
             <Folder className="w-6 h-6 text-blue-500" />

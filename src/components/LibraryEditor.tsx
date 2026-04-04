@@ -87,15 +87,15 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   };
 
   return (
-    <div className="h-full flex flex-col px-10 py-12 w-full overflow-hidden animate-in fade-in duration-700">
-      <div className="flex items-center justify-between mb-12 flex-shrink-0">
+    <div className="h-full flex flex-col px-4 md:px-10 py-6 md:py-12 w-full overflow-hidden animate-in fade-in duration-700">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 md:mb-12 flex-shrink-0 gap-6">
         <div className="flex-1">
           <div className="flex items-center gap-3">
-             <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
-             <h2 className="text-4xl font-black text-white tracking-tight">{library.name}</h2>
+             <div className="w-1.5 h-6 md:h-8 bg-blue-600 rounded-full" />
+             <h2 className="text-2xl md:text-4xl font-black text-white tracking-tight">{library.name}</h2>
           </div>
           
-          <div className="flex items-center gap-4 mt-3">
+          <div className="flex items-center gap-4 mt-2 md:mt-3">
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 px-2.5 py-1 bg-neutral-900/50 border border-neutral-800 rounded-lg backdrop-blur-sm">
               {library.type || 'text'} Collection
             </div>
@@ -106,57 +106,59 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative mr-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 sm:flex-none">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Filter items..."
-              className="bg-neutral-900 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all w-48 lg:w-64"
+              className="bg-neutral-900 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all w-full sm:w-48 lg:w-64"
             />
           </div>
 
-          {library.type === 'image' ? (
-            <label className="flex items-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl cursor-pointer transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm">
-              <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />
-              <span className="text-xs font-bold uppercase tracking-widest">Upload</span>
-              <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} />
-            </label>
-          ) : (
-            <button
-              onClick={() => navigate(`/library/${library.id}/prompt/new`)}
-              className="flex items-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm"
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {library.type === 'image' ? (
+              <label className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl cursor-pointer transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm">
+                <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />
+                <span className="text-xs font-bold uppercase tracking-widest">Upload</span>
+                <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} />
+              </label>
+            ) : (
+              <button
+                onClick={() => navigate(`/library/${library.id}/prompt/new`)}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm"
+              >
+                <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
+                <span className="text-xs font-bold uppercase tracking-widest">Add Fragment</span>
+              </button>
+            )}
+
+            <button 
+              onClick={() => navigate(`/library/${library.id}/edit`)}
+              className="p-2.5 text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-800/50 hover:border-neutral-700 active:scale-95"
+              title="Edit Library Settings"
             >
-              <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-              <span className="text-xs font-bold uppercase tracking-widest">Add Fragment</span>
+              <Settings className="w-5 h-5" />
             </button>
-          )}
 
-          <button 
-            onClick={() => navigate(`/library/${library.id}/edit`)}
-            className="p-2.5 text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-800/50 hover:border-neutral-700 active:scale-95"
-            title="Edit Library Settings"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
-
-          <button 
-            onClick={() => setShowDeleteLibraryModal(true)}
-            className="p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-red-400/20 active:scale-95"
-            title="Delete Library"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+            <button 
+              onClick={() => setShowDeleteLibraryModal(true)}
+              className="p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-red-400/20 active:scale-95"
+              title="Delete Library"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-4 -mr-4 custom-scrollbar space-y-10 pb-20">
-        <div className={library.type === 'image' ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8" : "space-y-4"}>
+      <div className="flex-1 overflow-y-auto pr-2 md:pr-4 -mr-2 md:-mr-4 custom-scrollbar space-y-6 md:space-y-10 pb-20">
+        <div className={library.type === 'image' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8" : "space-y-4"}>
           {paginatedItems.map(({ item, originalIndex }) => (
             <div key={item.id} className="group relative">
-                <div className={`group/item bg-neutral-900/40 border border-neutral-800/60 rounded-3xl transition-all duration-300 hover:bg-neutral-800/40 hover:border-neutral-700/80 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${library.type === 'image' ? 'aspect-square flex flex-col p-2 overflow-hidden' : 'p-6 flex items-center justify-between gap-6'}`}>
+                <div className={`group/item bg-neutral-900/40 border border-neutral-800/60 rounded-3xl transition-all duration-300 hover:bg-neutral-800/40 hover:border-neutral-700/80 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${library.type === 'image' ? 'aspect-square flex flex-col p-2 overflow-hidden' : 'p-4 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-6'}`}>
                   {library.type === 'image' ? (
                     <div className="relative flex-1 rounded-2xl overflow-hidden">
                       <img src={item.content} alt={`${originalIndex}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
@@ -191,20 +193,20 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
                         <button 
                           onClick={() => navigate(`/library/${library.id}/prompt/${originalIndex}`)}
-                          className="p-3 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-2xl transition-all border border-transparent hover:border-neutral-700 active:scale-95 shadow-sm"
+                          className="p-2.5 md:p-3 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-2xl transition-all border border-transparent hover:border-neutral-700 active:scale-95 shadow-sm"
                           title="Refine in Full Editor"
                         >
-                          <Edit3 className="w-4.5 h-4.5" />
+                          <Edit3 className="w-4 h-4 md:w-4.5 md:h-4.5" />
                         </button>
                         <button 
                           onClick={() => handleRemoveItem(originalIndex)}
-                          className="p-3 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all border border-transparent hover:border-red-500/20 active:scale-95 shadow-sm"
+                          className="p-2.5 md:p-3 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all border border-transparent hover:border-red-500/20 active:scale-95 shadow-sm"
                           title="Delete Fragment"
                         >
-                          <Trash2 className="w-4.5 h-4.5" />
+                          <Trash2 className="w-4 h-4 md:w-4.5 md:h-4.5" />
                         </button>
                       </div>
                     </>

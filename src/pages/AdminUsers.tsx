@@ -57,8 +57,8 @@ export function AdminUsers() {
         </div>
       )}
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl">
-        <table className="w-full text-left border-collapse">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl overflow-x-auto">
+        <table className="w-full text-left border-collapse hidden md:table">
           <thead>
             <tr className="border-b border-zinc-800 bg-zinc-950/50">
               <th className="py-4 px-6 text-sm font-medium text-zinc-400">Email Address</th>
@@ -108,15 +108,59 @@ export function AdminUsers() {
                 </td>
               </tr>
             ))}
-            {users.length === 0 && (
-              <tr>
-                <td colSpan={4} className="py-8 text-center text-zinc-500">
-                  No users found
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
+
+        {/* Mobile View */}
+        <div className="md:hidden divide-y divide-zinc-800">
+          {users.map((user) => (
+            <div key={user.id} className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
+                    <UserIcon className="w-4 h-4 text-zinc-400" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-zinc-200 text-sm truncate max-w-[150px]">{user.email}</span>
+                    <span className="text-[10px] text-zinc-500 font-mono tracking-tighter truncate max-w-[150px]">{user.id}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                   {user.id === currentUser?.id && (
+                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20">
+                      You
+                    </span>
+                  )}
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                    user.role === 'admin' 
+                      ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
+                      : 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                  }`}>
+                    {user.role}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-xs text-zinc-500">Change Role</span>
+                <select
+                  value={user.role}
+                  onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
+                  disabled={user.id === currentUser?.id}
+                  className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {users.length === 0 && (
+          <div className="py-12 text-center text-zinc-500 text-sm">
+            No users found
+          </div>
+        )}
       </div>
     </div>
   );

@@ -237,9 +237,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     : combinations.map((c, i) => ({ id: `preview-${i}`, prompt: c.prompt, imageContext: c.imageContext, status: 'preview' as const }));
 
   return (
-    <div className="flex h-full bg-neutral-950">
+    <div className="flex flex-col lg:flex-row h-full bg-neutral-950 overflow-hidden lg:overflow-visible">
       {/* Left Pane: Workflow Builder */}
-      <div className="w-96 border-r border-neutral-800 bg-neutral-900/30 flex flex-col">
+      <div className="w-full lg:w-96 lg:h-full border-b lg:border-b-0 lg:border-r border-neutral-800 bg-neutral-900/30 flex flex-col flex-shrink-0">
         <div className="p-4 border-b border-neutral-800 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center justify-between gap-2 flex-1 group">
@@ -268,7 +268,11 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-neutral-950 border border-neutral-800 rounded">ID: {project.id}</span>
             </div>
             <div className="flex items-center gap-2 ml-2">
-              {!hasChanges && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" title="All changes saved" />}
+              {!hasChanges && (
+                <span title="All changes saved">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                </span>
+              )}
               <button onClick={() => setShowDeleteProjectModal(true)} className="text-neutral-500 hover:text-red-400 p-1" title="Delete Project">
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -288,7 +292,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar max-h-[40vh] lg:max-h-none">
           {(localProject.workflow || []).map((item, index) => (
             <div 
               key={item.id} 
@@ -386,11 +390,11 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       </div>
 
       {/* Right Pane: Jobs Grid */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-neutral-900/20 backdrop-blur-md shadow-sm">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+        <div className="p-4 md:p-6 border-b border-neutral-800 flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center bg-neutral-900/20 backdrop-blur-md shadow-sm">
           <div>
-            <h2 className="text-xl font-bold text-white tracking-tight">Project Status</h2>
-            <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500 mt-2">
+            <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">Project Status</h2>
+            <div className="flex items-center gap-3 md:gap-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500 mt-1 md:mt-2">
               <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> {completedTasks.length} Done</span>
               <span className="text-neutral-800">•</span>
               <span>{total} Total</span>
@@ -403,9 +407,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             </div>
           </div>
           
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
             <span className="text-[10px] font-black font-mono text-blue-500 tracking-[0.3em]">{progress}%</span>
-            <div className="w-64 h-1.5 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+            <div className="w-full sm:w-64 h-1.5 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
               <div 
                 className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
                 style={{ width: `${progress}%` }}
@@ -414,7 +418,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 md:space-y-12 custom-scrollbar">
           
           {/* Tasks Section */}
           <section>
@@ -454,15 +458,15 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             </div>
             
             {completedTasks.length === 0 ? (
-              <div className="bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-3xl p-20 text-center text-neutral-500 flex flex-col items-center gap-4 transition-colors hover:border-neutral-700 shadow-inner">
+              <div className="bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-3xl p-12 md:p-20 text-center text-neutral-500 flex flex-col items-center gap-4 transition-colors hover:border-neutral-700 shadow-inner">
                 <ImageIcon className="w-12 h-12 text-neutral-800" />
                 <div>
-                  <p className="text-lg font-bold text-neutral-400 tracking-tight">Your Gallery is empty</p>
-                  <p className="text-xs font-medium text-neutral-600 uppercase tracking-widest mt-1">Start workflow to generate</p>
+                  <p className="text-base md:text-lg font-bold text-neutral-400 tracking-tight">Your Gallery is empty</p>
+                  <p className="text-[10px] md:text-xs font-medium text-neutral-600 uppercase tracking-widest mt-1">Start workflow to generate</p>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                 {completedTasks.map(job => (
                   <div key={job.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group hover:border-blue-500/50 transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 active:scale-100">
                     <div className="aspect-square bg-neutral-950 relative flex items-center justify-center overflow-hidden">
