@@ -124,7 +124,7 @@ export function ProjectForm() {
               className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-green-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
             >
               <Play className="w-4 h-4 fill-current" />
-              {isSubmitting ? 'Saving...' : 'Start Project'}
+              {isNew ? 'Start Project' : 'Save Changes'}
             </button>
           </div>
         </form>

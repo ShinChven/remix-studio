@@ -99,9 +99,6 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 px-2.5 py-1 bg-neutral-900/50 border border-neutral-800 rounded-lg backdrop-blur-sm">
               {library.type || 'text'} Collection
             </div>
-            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 px-2.5 py-1 bg-neutral-900/50 border border-neutral-800 rounded-lg backdrop-blur-sm">
-              {library.type || 'text'} Collection
-            </div>
           </div>
         </div>
 

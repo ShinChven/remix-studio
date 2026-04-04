@@ -146,7 +146,7 @@ export function LibraryForm() {
               className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
-              {isSubmitting ? 'Saving...' : 'Save Library'}
+              {isNew ? 'Create Library' : 'Save Changes'}
             </button>
           </div>
         </form>

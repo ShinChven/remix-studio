@@ -10,7 +10,6 @@ import { ConfirmModal } from './ConfirmModal';
 export function MainLayout() {
   const [data, setData] = useState<AppData>({ libraries: [], projects: [] });
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar-collapsed');
@@ -56,12 +55,11 @@ export function MainLayout() {
   }, []);
 
   const handleSave = async (newData: AppData) => {
-    setIsSaving(true);
     setData(newData);
     try {
       await saveData(newData);
-    } finally {
-      setTimeout(() => setIsSaving(false), 800);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -213,12 +211,7 @@ export function MainLayout() {
       </div>
 
       <div className="flex-1 overflow-hidden bg-neutral-950 flex flex-col mt-16 lg:mt-0 min-w-0 relative">
-        {isSaving && (
-          <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 py-1.5 flex items-center justify-center gap-2 text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em] animate-pulse">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            Saving Changes
-          </div>
-        )}
+
         <div className="flex-1 overflow-hidden min-w-0">
           <Outlet context={{ data, handleSave, addLibrary, addProject }} />
         </div>

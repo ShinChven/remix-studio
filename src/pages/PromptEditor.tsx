@@ -153,8 +153,8 @@ export function PromptEditor() {
                className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl md:rounded-2xl font-bold uppercase tracking-widest text-[10px] md:text-xs transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-30 flex items-center justify-center gap-2 md:gap-3"
              >
                <Save className="w-3.5 md:w-4 h-3.5 md:h-4" />
-               <span className="hidden xs:inline">{isSubmitting ? 'Saving...' : 'Save'}</span>
-               <span className="xs:hidden">{isSubmitting ? '...' : 'Save'}</span>
+               <span className="hidden xs:inline">Save</span>
+               <span className="xs:hidden">Save</span>
              </button>
           </div>
         </div>
