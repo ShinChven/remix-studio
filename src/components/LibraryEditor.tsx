@@ -12,16 +12,8 @@ interface Props {
 
 export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const navigate = useNavigate();
-  const [newItem, setNewItem] = useState('');
   const [showDeleteLibraryModal, setShowDeleteLibraryModal] = useState(false);
   const [itemToRemoveIndex, setItemToRemoveIndex] = useState<number | null>(null);
-
-  const handleAddItem = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newItem.trim()) return;
-    onUpdate({ ...library, items: [...library.items, newItem.trim()] });
-    setNewItem('');
-  };
 
   const handleRemoveItem = (index: number) => {
     setItemToRemoveIndex(index);
@@ -85,9 +77,25 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
+          {library.type === 'image' ? (
+            <label className="flex items-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl cursor-pointer transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm">
+              <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />
+              <span className="text-xs font-bold uppercase tracking-widest">Upload</span>
+              <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} />
+            </label>
+          ) : (
+            <button
+              onClick={() => navigate(`/library/${library.id}/prompt/new`)}
+              className="flex items-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm"
+            >
+              <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
+              <span className="text-xs font-bold uppercase tracking-widest">Add Fragment</span>
+            </button>
+          )}
+
           <button 
             onClick={() => navigate(`/library/${library.id}/edit`)}
-            className="p-3 text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-2xl transition-all border border-neutral-800/50 hover:border-neutral-700 active:scale-95"
+            className="p-2.5 text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-800/50 hover:border-neutral-700 active:scale-95"
             title="Edit Library Settings"
           >
             <Settings className="w-5 h-5" />
@@ -95,7 +103,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
           <button 
             onClick={() => setShowDeleteLibraryModal(true)}
-            className="p-3 text-neutral-400 hover:text-red-500 hover:bg-red-400/10 rounded-2xl transition-all border border-neutral-800/50 hover:border-red-400/20 active:scale-95"
+            className="p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-red-400/20 active:scale-95"
             title="Delete Library"
           >
             <Trash2 className="w-5 h-5" />
@@ -168,46 +176,6 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           )}
         </div>
 
-        {/* Action Bar */}
-        <div className="sticky bottom-0 pt-12 pb-8 bg-gradient-to-t from-neutral-950 via-neutral-950/95 to-transparent flex-shrink-0">
-          {library.type === 'image' ? (
-            <label className="flex flex-col items-center justify-center w-full h-56 border-2 border-neutral-800 border-dashed rounded-[40px] cursor-pointer bg-neutral-900/20 hover:bg-neutral-900/40 hover:border-blue-500/40 transition-all duration-500 group shadow-[0_30px_100px_rgba(0,0,0,0.4)]">
-              <div className="flex flex-col items-center justify-center p-8">
-                <div className="p-6 rounded-3xl bg-neutral-900 border border-neutral-800 mb-6 group-hover:scale-110 transition-all group-hover:border-blue-500/30 group-hover:shadow-2xl group-hover:shadow-blue-500/10">
-                  <ImageIcon className="w-10 h-10 text-neutral-600 group-hover:text-blue-500 transition-colors" />
-                </div>
-                <p className="text-lg font-black text-neutral-500 group-hover:text-neutral-200 tracking-tight transition-colors">Expand Visual Library</p>
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-700 mt-3 group-hover:text-neutral-500 transition-colors">Click or Drag to Upload</p>
-              </div>
-              <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} />
-            </label>
-          ) : (
-            <form onSubmit={handleAddItem} className="bg-neutral-900/60 p-3.5 border border-neutral-800 rounded-[32px] flex gap-4 backdrop-blur-2xl shadow-[0_30px_100px_rgba(0,0,0,0.5)]">
-              <input
-                type="text"
-                value={newItem}
-                onChange={(e) => setNewItem(e.target.value)}
-                placeholder="Compose a new fragment and press Enter..."
-                className="flex-1 bg-neutral-950/50 border border-neutral-800 rounded-2xl px-6 py-4 text-base text-neutral-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/40 transition-all placeholder:text-neutral-700"
-              />
-              <button
-                type="submit"
-                disabled={!newItem.trim()}
-                className="px-8 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] disabled:opacity-20 disabled:grayscale transition-all shadow-xl shadow-blue-500/20 active:scale-95 group flex items-center gap-2"
-              >
-                Inject <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(`/library/${library.id}/prompt/new`)}
-                className="px-6 bg-neutral-800 hover:bg-neutral-750 text-neutral-400 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-neutral-700 hover:border-neutral-600 active:scale-95 group flex items-center gap-2"
-                title="Compose in Full Screen"
-              >
-                <Maximize2 className="w-4 h-4" /> Full Page
-              </button>
-            </form>
-          )}
-        </div>
       </div>
 
       <ConfirmModal

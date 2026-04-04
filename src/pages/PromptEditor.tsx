@@ -141,7 +141,7 @@ export function PromptEditor() {
                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold uppercase tracking-widest text-xs transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-30 flex items-center justify-center gap-3 ml-2"
              >
                <Save className="w-4 h-4" />
-               {isSubmitting ? 'Saving...' : 'Inject into Library'}
+               {isSubmitting ? 'Saving...' : 'Save'}
              </button>
           </div>
         </div>
