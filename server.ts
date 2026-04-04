@@ -17,6 +17,8 @@ import { createAuthRouter } from './server/routes/auth';
 import { createLibraryRouter } from './server/routes/libraries';
 import { createProjectRouter } from './server/routes/projects';
 import { createImageRouter } from './server/routes/images';
+import { createProviderRouter } from './server/routes/providers';
+import { ProviderRepository } from './server/db/provider-repository';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
@@ -46,6 +48,7 @@ async function startServer() {
   await repository.autoImportJson(DATA_DIR);
 
   const userRepository = new UserRepository(docClient);
+  const providerRepository = new ProviderRepository(docClient);
 
   // === Auto-provision default admin ===
   const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
@@ -98,6 +101,7 @@ async function startServer() {
   app.route('/', createLibraryRouter(repository));
   app.route('/', createProjectRouter(repository, storage));
   app.route('/', createImageRouter(storage));
+  app.route('/', createProviderRouter(providerRepository));
 
   // === Server setup ===
   const PORT_NUM = PORT;

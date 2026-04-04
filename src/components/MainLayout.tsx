@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Outlet, Link } from 'react-router-dom';
 import { Library, Project } from '../types';
 import { fetchLibraries, fetchProjects } from '../api';
-import { Folder, Layers, Play, LogOut, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X } from 'lucide-react';
+import { Folder, Layers, Play, LogOut, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from './ConfirmModal';
@@ -164,6 +164,20 @@ export function MainLayout() {
           >
             <Folder className="w-5 h-5 flex-shrink-0" />
             <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Libraries</span>
+          </Link>
+
+          <Link
+            to="/providers"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${
+              location.pathname === '/providers' || location.pathname.startsWith('/provider/')
+                ? 'bg-amber-600/10 text-amber-400 border-amber-600/20'
+                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
+            } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+            title="Providers"
+          >
+            <Key className="w-5 h-5 flex-shrink-0" />
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Providers</span>
           </Link>
         </div>
 

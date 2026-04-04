@@ -18,6 +18,8 @@ import { Projects } from './pages/Projects';
 import { LibraryForm } from './pages/LibraryForm.tsx';
 import { ProjectForm } from './pages/ProjectForm.tsx';
 import { PromptEditor } from './pages/PromptEditor.tsx';
+import { Providers } from './pages/Providers.tsx';
+import { ProviderForm } from './pages/ProviderForm.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -49,6 +51,9 @@ export default function App() {
               <Route path="library/:id" element={<LibraryRoute />} />
               <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
               <Route path="admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
+              <Route path="providers" element={<Providers />} />
+              <Route path="provider/new" element={<ProviderForm />} />
+              <Route path="provider/:id/edit" element={<ProviderForm />} />
             </Route>
           </Routes>
         </BrowserRouter>

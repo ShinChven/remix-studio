@@ -39,6 +39,17 @@ export interface Project {
   jobs: Job[];
 }
 
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub';
+
+export interface Provider {
+  id: string;
+  name: string;
+  type: ProviderType;
+  apiUrl?: string;
+  hasKey: boolean; // raw apiKey is never sent to the client
+  createdAt: number;
+}
+
 export type UserRole = 'admin' | 'user';
 
 export interface User {

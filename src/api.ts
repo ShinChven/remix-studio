@@ -1,4 +1,4 @@
-import { AppData, Library, LibraryItem, Project, User, UserRole } from './types';
+import { AppData, Library, LibraryItem, Project, Provider, ProviderType, User, UserRole } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const token = localStorage.getItem('token');
@@ -177,3 +177,48 @@ export async function updateUserRole(id: string, role: UserRole): Promise<void> 
   });
   if (!res.ok) throw new Error('Failed to update role');
 }
+
+// ========== Providers ==========
+
+export async function fetchProviders(): Promise<Provider[]> {
+  const res = await fetch('/api/providers', { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to list providers');
+  return res.json();
+}
+
+export async function createProvider(data: {
+  name: string;
+  type: ProviderType;
+  apiKey: string;
+  apiUrl?: string;
+}): Promise<string> {
+  const res = await fetch('/api/providers', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to create provider');
+  const result = await res.json();
+  return result.id;
+}
+
+export async function updateProvider(
+  id: string,
+  updates: { name?: string; type?: ProviderType; apiKey?: string; apiUrl?: string | null }
+): Promise<void> {
+  const res = await fetch(`/api/providers/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error('Failed to update provider');
+}
+
+export async function deleteProvider(id: string): Promise<void> {
+  const res = await fetch(`/api/providers/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to delete provider');
+}
+
