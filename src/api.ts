@@ -82,6 +82,15 @@ export async function updateLibraryItem(libraryId: string, itemId: string, updat
   if (!res.ok) throw new Error('Failed to update item');
 }
 
+export async function updateLibraryItemOrders(libraryId: string, updates: { id: string; order: number }[]): Promise<void> {
+  const res = await fetch(`/api/libraries/${libraryId}/items/reorder`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error('Failed to reorder items');
+}
+
 export async function deleteLibraryItem(libraryId: string, itemId: string): Promise<void> {
   const res = await fetch(`/api/libraries/${libraryId}/items/${itemId}`, {
     method: 'DELETE',

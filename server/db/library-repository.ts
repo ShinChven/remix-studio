@@ -56,7 +56,14 @@ export class LibraryRepository {
         id: r.sk.split('#ITEM#')[1],
         content: r.content,
         title: r.title,
-      }));
+        order: r.order,
+      }))
+      .sort((a, b) => {
+        if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+        if (a.order !== undefined) return -1;
+        if (b.order !== undefined) return 1;
+        return a.id.localeCompare(b.id);
+      });
 
     return { id: libraryId, name: metaRecord.name, type: metaRecord.type, items };
   }
@@ -129,11 +136,19 @@ export class LibraryRepository {
       })
     );
 
-    return (result.Items || []).map((r) => ({
-      id: r.sk.split('#ITEM#')[1],
-      content: r.content,
-      title: r.title,
-    }));
+    return (result.Items || [])
+      .map((r) => ({
+        id: r.sk.split('#ITEM#')[1],
+        content: r.content,
+        title: r.title,
+        order: r.order,
+      }))
+      .sort((a, b) => {
+        if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+        if (a.order !== undefined) return -1;
+        if (b.order !== undefined) return 1;
+        return a.id.localeCompare(b.id);
+      });
   }
 
   async createLibraryItem(userId: string, libraryId: string, item: LibraryItem): Promise<void> {
@@ -142,7 +157,8 @@ export class LibraryRepository {
       sk: `LIBRARY#${libraryId}#ITEM#${item.id}`,
       content: item.content,
     };
-    if (item.title) record.title = item.title;
+    if (item.title !== undefined) record.title = item.title;
+    if (item.order !== undefined) record.order = item.order;
     await this.client.send(new PutCommand({ TableName: TABLE_NAME, Item: record }));
   }
 
@@ -153,6 +169,7 @@ export class LibraryRepository {
 
     if (updates.content !== undefined) { expressions.push('#c = :c'); names['#c'] = 'content'; values[':c'] = updates.content; }
     if (updates.title !== undefined) { expressions.push('#t = :t'); names['#t'] = 'title'; values[':t'] = updates.title; }
+    if (updates.order !== undefined) { expressions.push('#o = :o'); names['#o'] = 'order'; values[':o'] = updates.order; }
     if (expressions.length === 0) return;
 
     await this.client.send(
@@ -172,6 +189,12 @@ export class LibraryRepository {
         TableName: TABLE_NAME,
         Key: { pk: `USER_DATA#${userId}`, sk: `LIBRARY#${libraryId}#ITEM#${itemId}` },
       })
+    );
+  }
+
+  async reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]): Promise<void> {
+    await Promise.all(
+      updates.map((update) => this.updateLibraryItem(userId, libraryId, update.id, { order: update.order }))
     );
   }
 }

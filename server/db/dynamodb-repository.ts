@@ -32,6 +32,7 @@ export class DynamoDBRepository implements IRepository {
   createLibraryItem(userId: string, libraryId: string, item: LibraryItem) { return this.libraries.createLibraryItem(userId, libraryId, item); }
   updateLibraryItem(userId: string, libraryId: string, itemId: string, updates: Partial<LibraryItem>) { return this.libraries.updateLibraryItem(userId, libraryId, itemId, updates); }
   deleteLibraryItem(userId: string, libraryId: string, itemId: string) { return this.libraries.deleteLibraryItem(userId, libraryId, itemId); }
+  reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]) { return this.libraries.reorderLibraryItems(userId, libraryId, updates); }
 
   // === Project CRUD ===
   getUserProjects(userId: string) { return this.projects.getUserProjects(userId); }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Library } from '../types';
 import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
-import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem } from '../api';
+import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders } from '../api';
 
 interface Props {
   library: Library;
@@ -18,6 +18,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [uploading, setUploading] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const ITEMS_PER_PAGE = 24;
 
   useEffect(() => {
@@ -59,6 +61,37 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnter = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    setDragOverIndex(index);
+  };
+
+  const handleDragEnd = async () => {
+    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+      const newItems = [...library.items];
+      const draggedItem = newItems[draggedIndex];
+      newItems.splice(draggedIndex, 1);
+      newItems.splice(dragOverIndex, 0, draggedItem);
+      
+      onUpdate({ ...library, items: newItems });
+      
+      const updates = newItems.map((item, idx) => ({ id: item.id, order: idx }));
+      try {
+        await updateLibraryItemOrders(library.id, updates);
+      } catch (err) {
+        console.error('Failed to save updated order', err);
+      }
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
@@ -75,7 +108,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         });
 
         const url = await saveImage(base64, library.id);
-        const newItem = { id: crypto.randomUUID(), content: url };
+        const newItem = { id: crypto.randomUUID(), content: url, order: newItems.length };
         await createLibraryItem(library.id, newItem);
         newItems.push(newItem);
       }
@@ -155,7 +188,16 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       <div className="flex-1 overflow-y-auto pr-2 md:pr-4 -mr-2 md:-mr-4 custom-scrollbar space-y-6 md:space-y-10 pb-20">
         <div className={library.type === 'image' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8" : "space-y-4"}>
           {paginatedItems.map(({ item, originalIndex }) => (
-            <div key={item.id} className="group relative">
+            <div 
+              key={item.id} 
+              className={`group relative ${draggedIndex === originalIndex ? 'opacity-50' : ''} ${dragOverIndex === originalIndex ? 'ring-2 ring-blue-500 rounded-3xl scale-105 z-10 transition-transform' : ''}`}
+              draggable={library.type === 'image' && !searchTerm}
+              onDragStart={(e) => handleDragStart(e, originalIndex)}
+              onDragEnter={(e) => handleDragEnter(e, originalIndex)}
+              onDragOver={(e) => e.preventDefault()}
+              onDragEnd={handleDragEnd}
+              onDrop={(e) => e.preventDefault()}
+            >
                 <div className={`group/item bg-neutral-900/40 border border-neutral-800/60 rounded-3xl transition-all duration-300 hover:bg-neutral-800/40 hover:border-neutral-700/80 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${library.type === 'image' ? 'aspect-square flex flex-col p-2 overflow-hidden' : 'p-4 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-6'}`}>
                   {library.type === 'image' ? (
                     <div className="relative flex-1 rounded-2xl overflow-hidden">

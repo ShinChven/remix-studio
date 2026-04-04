@@ -13,6 +13,7 @@ export interface IRepository {
   createLibraryItem(userId: string, libraryId: string, item: LibraryItem): Promise<void>;
   updateLibraryItem(userId: string, libraryId: string, itemId: string, updates: Partial<LibraryItem>): Promise<void>;
   deleteLibraryItem(userId: string, libraryId: string, itemId: string): Promise<void>;
+  reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]): Promise<void>;
 
   // === Project CRUD ===
   getUserProjects(userId: string): Promise<Project[]>;

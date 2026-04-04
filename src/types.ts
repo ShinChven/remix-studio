@@ -10,6 +10,7 @@ export interface LibraryItem {
   id: string;
   content: string;
   title?: string;
+  order?: number;
 }
 
 export type LibraryType = 'text' | 'image';

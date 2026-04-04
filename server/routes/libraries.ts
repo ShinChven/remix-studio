@@ -103,6 +103,23 @@ export function createLibraryRouter(repository: IRepository) {
     }
   });
 
+  router.put('/api/libraries/:libId/items/reorder', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const body = await c.req.json();
+      
+      if (!Array.isArray(body)) {
+        return c.json({ error: 'Expected an array of { id, order }' }, 400);
+      }
+      
+      await repository.reorderLibraryItems(user.userId, c.req.param('libId'), body);
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[PUT /api/libraries/:libId/items/reorder]', e);
+      return c.json({ error: 'Failed to reorder items' }, 500);
+    }
+  });
+
   router.put('/api/libraries/:libId/items/:itemId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

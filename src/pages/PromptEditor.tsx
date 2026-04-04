@@ -47,6 +47,7 @@ export function PromptEditor() {
           id: crypto.randomUUID(),
           content,
           title: title.trim() || undefined,
+          order: library.items.length,
         };
         await createLibraryItem(id, newItem);
       } else {
