@@ -12,6 +12,8 @@ interface QueuedJob {
   userId: string;
   projectId: string;
   job: Job;
+  aspectRatio?: string;
+  quality?: string;
 }
 
 /**
@@ -39,18 +41,18 @@ export class QueueManager {
     // Only pick up jobs that are currently 'pending' or 'failed' (to retry)
     const jobsToRun = project.jobs.filter(j => j.status === 'pending' || j.status === 'failed');
     for (const job of jobsToRun) {
-      this.enqueue(userId, project.id, job, project.providerId);
+      this.enqueue(userId, project.id, job, project.providerId, project.aspectRatio, project.quality);
     }
   }
 
-  private enqueue(userId: string, projectId: string, job: Job, providerId: string) {
+  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string) {
     if (!this.queues.has(providerId)) this.queues.set(providerId, []);
     
     // Avoid double-queuing if it's already there
     const exists = this.queues.get(providerId)!.some(q => q.job.id === job.id);
     if (exists) return;
 
-    this.queues.get(providerId)!.push({ userId, projectId, job });
+    this.queues.get(providerId)!.push({ userId, projectId, job, aspectRatio, quality });
     this.processNext(providerId);
   }
 
@@ -109,8 +111,8 @@ export class QueueManager {
       // 3. Generate
       const result = await generator.generate({
         prompt: job.prompt,
-        aspectRatio: '1:1', 
-        imageSize: '1K',
+        aspectRatio: queued.aspectRatio || '1:1', 
+        imageSize: queued.quality || '1K',
         refImageBase64: refImage
       });
 

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Project, Job, Library, WorkflowItem, WorkflowItemType, Provider } from '../types';
 import { saveImage, fetchProviders, generateImage } from '../api';
-import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings } from 'lucide-react';
+import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X } from 'lucide-react';
 import { generateWorkflowCombinations } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -23,6 +23,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   
   const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
   const [itemToRemoveId, setItemToRemoveId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<WorkflowItem | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(project.providerId || '');
   const [isFetchingProviders, setIsFetchingProviders] = useState(true);
@@ -32,7 +33,6 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
   useEffect(() => {
     setLocalProject(project);
-    setHasChanges(false);
   }, [project]); // Sync when parent refreshes
 
   useEffect(() => {
@@ -90,16 +90,18 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       type,
       value: type === 'library' && libraries.length > 0 ? libraries[0].id : ''
     };
-    setLocalProject({ ...localProject, workflow: [...(localProject.workflow || []), newItem] });
-    setHasChanges(true);
+    const updated = { ...localProject, workflow: [...(localProject.workflow || []), newItem] };
+    setLocalProject(updated);
+    onUpdate(updated);
   };
 
   const updateWorkflowItem = (id: string, value: string) => {
     const newWorkflow = localProject.workflow.map(item => 
       item.id === id ? { ...item, value } : item
     );
-    setLocalProject({ ...localProject, workflow: newWorkflow });
-    setHasChanges(true);
+    const updated = { ...localProject, workflow: newWorkflow };
+    setLocalProject(updated);
+    onUpdate(updated);
   };
 
   const removeWorkflowItem = (id: string) => {
@@ -108,8 +110,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
   const confirmRemoveWorkflowItem = () => {
     if (itemToRemoveId) {
-      setLocalProject({ ...localProject, workflow: localProject.workflow.filter(item => item.id !== itemToRemoveId) });
-      setHasChanges(true);
+      const updated = { ...localProject, workflow: localProject.workflow.filter(item => item.id !== itemToRemoveId) };
+      setLocalProject(updated);
+      onUpdate(updated);
       setItemToRemoveId(null);
     }
   };
@@ -136,8 +139,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     const [draggedItem] = newWorkflow.splice(draggedIndex, 1);
     newWorkflow.splice(dropIndex, 0, draggedItem);
     
-    setLocalProject({ ...localProject, workflow: newWorkflow });
-    setHasChanges(true);
+    const updated = { ...localProject, workflow: newWorkflow };
+    setLocalProject(updated);
+    onUpdate(updated);
     
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -238,15 +242,6 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                 <Settings className="w-4 h-4" />
               </button>
             </div>
-            {hasChanges && (
-              <button
-                onClick={handleSave}
-                className="flex-shrink-0 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg shadow-blue-500/20 transition-all animate-in fade-in zoom-in"
-                title="Save Changes"
-              >
-                <Save className="w-4 h-4" />
-              </button>
-            )}
           </div>
           
           <div className="flex items-center justify-between">
@@ -254,11 +249,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-neutral-950 border border-neutral-800 rounded">ID: {project.id}</span>
             </div>
             <div className="flex items-center gap-2 ml-2">
-              {!hasChanges && (
-                <span title="All changes saved">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                </span>
-              )}
+              <span title="All changes are auto-saved" className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold uppercase tracking-widest opacity-60">
+                <CheckCircle2 className="w-3 h-3" /> Auto-saved
+              </span>
               <button onClick={() => setShowDeleteProjectModal(true)} className="text-neutral-500 hover:text-red-400 p-1" title="Delete Project">
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -311,12 +304,17 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               </div>
 
               {item.type === 'text' && (
-                <textarea
-                  value={item.value}
-                  onChange={(e) => updateWorkflowItem(item.id, e.target.value)}
-                  placeholder="Enter prompt text..."
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-xs text-neutral-200 focus:outline-none focus:border-blue-500/50 resize-none h-24 transition-colors"
-                />
+                <div 
+                  onClick={() => setEditingItem(item)}
+                  className="group/text relative cursor-pointer"
+                >
+                  <div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-xs text-neutral-400 line-clamp-4 min-h-[96px] transition-all hover:border-blue-500/30 hover:bg-neutral-900/50">
+                    {item.value || <span className="opacity-30 italic">No text content...</span>}
+                    <div className="absolute top-2 right-2 p-1.5 bg-neutral-900/80 rounded-md border border-neutral-800 opacity-0 group-hover/text:opacity-100 transition-all hover:text-blue-400">
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
               )}
 
               {item.type === 'library' && (
@@ -361,37 +359,94 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             <span className="text-blue-400">{combinations.length}</span>
           </div>
 
-          <div className="mb-4 space-y-1.5">
-            <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-              AI Provider
-            </label>
-            <select
-              value={selectedProviderId}
-              onChange={(e) => {
-                setSelectedProviderId(e.target.value);
-                setLocalProject(prev => ({ ...prev, providerId: e.target.value }));
-                setHasChanges(true);
-              }}
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/40 transition-all font-medium appearance-none cursor-pointer hover:bg-neutral-900 shadow-inner"
-              disabled={isProcessing || isFetchingProviders}
-            >
-              {isFetchingProviders ? (
-                <option>Loading providers...</option>
-              ) : providers.length === 0 ? (
-                <option>No providers configured</option>
-              ) : (
-                providers.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.type})
-                  </option>
-                ))
-              )}
-            </select>
-            {providers.length === 0 && !isFetchingProviders && (
-              <p className="text-[8px] text-red-500/60 font-bold px-1 uppercase tracking-tight">
-                Configure a provider in Settings
-              </p>
-            )}
+          <div className="mb-4 space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                AI Provider
+              </label>
+              <select
+                value={selectedProviderId}
+                onChange={(e) => {
+                  setSelectedProviderId(e.target.value);
+                  const updated = { ...localProject, providerId: e.target.value };
+                  setLocalProject(updated);
+                  onUpdate(updated);
+                }}
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/40 transition-all font-medium appearance-none cursor-pointer hover:bg-neutral-900 shadow-inner"
+                disabled={isProcessing || isFetchingProviders}
+              >
+                {isFetchingProviders ? (
+                  <option>Loading providers...</option>
+                ) : providers.length === 0 ? (
+                  <option>No providers configured</option>
+                ) : (
+                  providers.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.type})
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            <div className="space-y-2.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                Aspect Ratio
+              </label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { label: '1:1', ratio: '1:1', icon: 'w-3 h-3' },
+                  { label: '4:3', ratio: '4:3', icon: 'w-4 h-3' },
+                  { label: '3:4', ratio: '3:4', icon: 'w-3 h-4' },
+                  { label: '16:9', ratio: '16:9', icon: 'w-5 h-3' },
+                  { label: '9:16', ratio: '9:16', icon: 'w-3 h-5' },
+                  { label: '2:3', ratio: '2:3', icon: 'w-3 h-4.5' },
+                  { label: '3:2', ratio: '3:2', icon: 'w-4.5 h-3' },
+                ].map((r) => (
+                  <button
+                    key={r.ratio}
+                    onClick={() => {
+                      const updated = { ...localProject, aspectRatio: r.ratio };
+                      setLocalProject(updated);
+                      onUpdate(updated);
+                    }}
+                    className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
+                      (localProject.aspectRatio || '1:1') === r.ratio
+                        ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
+                        : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
+                    }`}
+                  >
+                    <div className={`border-2 rounded-[2px] ${r.icon} ${(localProject.aspectRatio || '1:1') === r.ratio ? 'border-white' : 'border-neutral-700'}`} />
+                    <span className="text-[8px] font-bold">{r.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                Quality
+              </label>
+              <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                {['1K', '2K', '4K'].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => {
+                      const updated = { ...localProject, quality: q };
+                      setLocalProject(updated);
+                      onUpdate(updated);
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                      (localProject.quality || '1K') === q
+                        ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                        : 'text-neutral-600 hover:text-neutral-400'
+                    }`}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <button
             onClick={toggleProcessing}
@@ -543,16 +598,6 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         </div>
       </div>
       <ConfirmModal
-        isOpen={showDeleteProjectModal}
-        onClose={() => setShowDeleteProjectModal(false)}
-        onConfirm={onDelete}
-        title="Delete Project"
-        message={`Are you sure you want to delete "${localProject.name}"? This action cannot be undone.`}
-        confirmText="Delete Project"
-        type="danger"
-      />
-
-      <ConfirmModal
         isOpen={itemToRemoveId !== null}
         onClose={() => setItemToRemoveId(null)}
         onConfirm={confirmRemoveWorkflowItem}
@@ -561,6 +606,94 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         confirmText="Remove Item"
         type="danger"
       />
+
+      <PromptModal 
+        item={editingItem} 
+        onClose={() => setEditingItem(null)} 
+        onSave={(value) => {
+          if (editingItem) {
+            updateWorkflowItem(editingItem.id, value);
+          }
+          setEditingItem(null);
+        }}
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteProjectModal}
+        onClose={() => setShowDeleteProjectModal(false)}
+        onConfirm={onDelete}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${localProject.name}"? This action cannot be undone.`}
+        confirmText="Delete Project"
+        type="danger"
+      />
+    </div>
+  );
+}
+
+function PromptModal({ item, onClose, onSave }: { item: WorkflowItem | null; onClose: () => void; onSave: (val: string) => void }) {
+  const [value, setValue] = useState('');
+
+  useEffect(() => {
+    if (item) setValue(item.value);
+  }, [item]);
+
+  if (!item) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose} />
+      
+      <div className="relative w-full max-w-5xl h-[80vh] bg-neutral-900 border border-neutral-800 rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="p-6 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/20">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-blue-600/10 rounded-xl">
+              <Type className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white tracking-tight">Edit Prompt Fragment</h3>
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Workflow Text Block</p>
+            </div>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 p-6 md:p-8 flex flex-col">
+          <textarea
+            autoFocus
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Type your prompt here..."
+            className="flex-1 w-full bg-transparent border-none text-neutral-200 text-lg md:text-xl font-medium leading-relaxed focus:outline-none focus:ring-0 resize-none placeholder:text-neutral-800 custom-scrollbar"
+          />
+        </div>
+
+        <div className="p-6 border-t border-neutral-800 bg-neutral-950/40 flex items-center justify-between gap-4">
+          <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest pl-2">
+            Character count: {value.length}
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={onClose}
+              className="px-6 py-2.5 text-neutral-400 hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={() => onSave(value)}
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center gap-2"
+            >
+              <Save className="w-3.5 h-3.5" />
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

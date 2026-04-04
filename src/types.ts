@@ -38,6 +38,8 @@ export interface Project {
   workflow: WorkflowItem[];
   jobs: Job[];
   providerId?: string;
+  aspectRatio?: string;
+  quality?: string;
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub';

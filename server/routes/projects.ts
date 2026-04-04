@@ -85,11 +85,13 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
     try {
       const user = c.get('user') as JwtPayload;
       const body = await c.req.json();
-      const updates: { name?: string; workflow?: WorkflowItem[]; jobs?: Job[]; providerId?: string } = {};
+      const updates: { name?: string; workflow?: WorkflowItem[]; jobs?: Job[]; providerId?: string; aspectRatio?: string; quality?: string } = {};
       if (typeof body?.name === 'string') updates.name = body.name.trim();
       if (Array.isArray(body?.workflow)) updates.workflow = body.workflow;
       if (Array.isArray(body?.jobs)) updates.jobs = body.jobs;
       if (typeof body?.providerId === 'string') updates.providerId = body.providerId;
+      if (typeof body?.aspectRatio === 'string') updates.aspectRatio = body.aspectRatio;
+      if (typeof body?.quality === 'string') updates.quality = body.quality;
 
       await repository.updateProject(user.userId, c.req.param('id'), updates);
       return c.json({ success: true });

@@ -28,6 +28,9 @@ export class ProjectRepository {
       createdAt: item.createdAt,
       workflow: item.workflow || [],
       jobs: item.jobs || [],
+      providerId: item.providerId,
+      aspectRatio: item.aspectRatio,
+      quality: item.quality,
     }));
   }
 
@@ -51,6 +54,9 @@ export class ProjectRepository {
       createdAt: item.createdAt,
       workflow: item.workflow || [],
       jobs: item.jobs || [],
+      providerId: item.providerId,
+      aspectRatio: item.aspectRatio,
+      quality: item.quality,
     };
   }
 
@@ -65,6 +71,9 @@ export class ProjectRepository {
           createdAt: project.createdAt,
           workflow: project.workflow,
           jobs: project.jobs,
+          providerId: project.providerId,
+          aspectRatio: project.aspectRatio,
+          quality: project.quality,
         },
       })
     );
@@ -78,6 +87,9 @@ export class ProjectRepository {
     if (updates.name !== undefined) { expressions.push('#n = :n'); names['#n'] = 'name'; values[':n'] = updates.name; }
     if (updates.workflow !== undefined) { expressions.push('#w = :w'); names['#w'] = 'workflow'; values[':w'] = updates.workflow; }
     if (updates.jobs !== undefined) { expressions.push('#j = :j'); names['#j'] = 'jobs'; values[':j'] = updates.jobs; }
+    if (updates.providerId !== undefined) { expressions.push('#p = :p'); names['#p'] = 'providerId'; values[':p'] = updates.providerId; }
+    if (updates.aspectRatio !== undefined) { expressions.push('#ar = :ar'); names['#ar'] = 'aspectRatio'; values[':ar'] = updates.aspectRatio; }
+    if (updates.quality !== undefined) { expressions.push('#q = :q'); names['#q'] = 'quality'; values[':q'] = updates.quality; }
     if (expressions.length === 0) return;
 
     await this.client.send(
