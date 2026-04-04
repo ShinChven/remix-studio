@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Library } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders } from '../api';
 
@@ -20,11 +20,29 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [uploading, setUploading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const ITEMS_PER_PAGE = 24;
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxIndex(null);
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex(prev => (prev !== null && prev > 0 ? prev - 1 : prev));
+      } else if (e.key === 'ArrowRight') {
+        setLightboxIndex(prev => (prev !== null && prev < library.items.length - 1 ? prev + 1 : prev));
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxIndex, library.items.length]);
 
   const filteredItems = library.items
     .map((item, index) => ({ item, originalIndex: index }))
@@ -200,14 +218,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             >
                 <div className={`group/item bg-neutral-900/40 border border-neutral-800/60 rounded-3xl transition-all duration-300 hover:bg-neutral-800/40 hover:border-neutral-700/80 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${library.type === 'image' ? 'aspect-square flex flex-col p-2 overflow-hidden' : 'p-4 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-6'}`}>
                   {library.type === 'image' ? (
-                    <div className="relative flex-1 rounded-2xl overflow-hidden">
+                    <div className="relative flex-1 rounded-2xl overflow-hidden cursor-pointer" onClick={() => setLightboxIndex(originalIndex)}>
                       <img src={item.content} alt={`${originalIndex}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4">
                         <div className="flex justify-between items-center">
                           <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">IMG_{originalIndex + 1}</span>
                           <div className="flex items-center gap-2">
                              <button
-                               onClick={() => handleRemoveItem(originalIndex)}
+                               onClick={(e) => { e.stopPropagation(); handleRemoveItem(originalIndex); }}
                                className="p-2.5 bg-neutral-950/80 text-neutral-400 hover:text-red-500 rounded-xl backdrop-blur-md border border-white/5 hover:border-red-500/20 transition-all active:scale-90"
                              >
                                <Trash2 className="w-4 h-4" />
@@ -327,6 +345,44 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         confirmText="Remove Now"
         type="danger"
       />
+
+      {lightboxIndex !== null && library.items[lightboxIndex] && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setLightboxIndex(null)}>
+          <button 
+            onClick={() => setLightboxIndex(null)}
+            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          
+          <button 
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex(prev => prev! > 0 ? prev! - 1 : prev); }}
+            disabled={lightboxIndex === 0}
+            className="absolute left-4 md:left-10 p-4 bg-white/10 hover:bg-white/20 disabled:opacity-0 disabled:pointer-events-none text-white rounded-full transition-all"
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+          
+          <div className="relative w-full max-w-7xl h-[85vh] flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={library.items[lightboxIndex].content} 
+              alt={`img-${lightboxIndex}`}
+              className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl animate-in zoom-in-95 duration-500"
+            />
+            <div className="absolute bottom-[-3rem] text-white/50 font-black tracking-widest text-xs uppercase bg-black/50 px-4 py-2 rounded-full border border-white/10">
+              {lightboxIndex + 1} / {library.items.length}
+            </div>
+          </div>
+
+          <button 
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex(prev => prev! < library.items.length - 1 ? prev! + 1 : prev); }}
+            disabled={lightboxIndex === library.items.length - 1}
+            className="absolute right-4 md:right-10 p-4 bg-white/10 hover:bg-white/20 disabled:opacity-0 disabled:pointer-events-none text-white rounded-full transition-all"
+          >
+            <ChevronRight className="w-8 h-8" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
