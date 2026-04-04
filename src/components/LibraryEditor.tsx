@@ -50,7 +50,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       const search = searchTerm.toLowerCase();
       return (
         (item.title?.toLowerCase().includes(search) || false) ||
-        (item.content.toLowerCase().includes(search))
+        (item.content?.toLowerCase().includes(search) || false)
       );
     });
 
@@ -125,10 +125,11 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           reader.readAsDataURL(file);
         });
 
-        const url = await saveImage(base64, library.id);
-        const newItem = { id: crypto.randomUUID(), content: url, order: newItems.length };
+        const { key, url } = await saveImage(base64, library.id);
+        const newItem = { id: crypto.randomUUID(), content: key, order: newItems.length };
         await createLibraryItem(library.id, newItem);
-        newItems.push(newItem);
+        // Use signed URL for immediate display, DB stores the S3 key
+        newItems.push({ ...newItem, content: url });
       }
 
       onUpdate({ ...library, items: newItems });

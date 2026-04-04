@@ -7,10 +7,12 @@ import {
   ListObjectsV2Command,
   CopyObjectCommand,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { IStorage } from './storage';
 
 export class S3Storage implements IStorage {
   private client: S3Client;
+  private publicClient: S3Client;
   private bucket: string;
 
   constructor(opts: {
@@ -19,16 +21,24 @@ export class S3Storage implements IStorage {
     accessKeyId: string;
     secretAccessKey: string;
     bucket: string;
+    publicEndpoint?: string;
   }) {
     this.bucket = opts.bucket;
+    const credentials = {
+      accessKeyId: opts.accessKeyId,
+      secretAccessKey: opts.secretAccessKey,
+    };
     this.client = new S3Client({
       endpoint: opts.endpoint,
       region: opts.region,
-      credentials: {
-        accessKeyId: opts.accessKeyId,
-        secretAccessKey: opts.secretAccessKey,
-      },
+      credentials,
       forcePathStyle: true, // required for MinIO
+    });
+    this.publicClient = new S3Client({
+      endpoint: opts.publicEndpoint || opts.endpoint,
+      region: opts.region,
+      credentials,
+      forcePathStyle: true,
     });
   }
 
@@ -50,7 +60,7 @@ export class S3Storage implements IStorage {
         ContentType: contentType,
       })
     );
-    return `/api/images/${key}`;
+    return key;
   }
 
   async read(key: string): Promise<Buffer> {
@@ -76,6 +86,11 @@ export class S3Storage implements IStorage {
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.bucket, Key: key })
     );
+  }
+
+  async getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {
+    const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
+    return getSignedUrl(this.publicClient, command, { expiresIn });
   }
 
   async rename(oldPrefix: string, newPrefix: string): Promise<void> {

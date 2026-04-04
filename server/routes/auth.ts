@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { setCookie } from 'hono/cookie';
 import { authMiddleware, adminOnly, hashPassword, verifyPassword, signToken, JwtPayload } from '../auth/auth';
 import { UserRepository } from '../auth/user-repository';
 import { checkRateLimit } from '../utils/rate-limiter';
@@ -31,6 +32,16 @@ export function createAuthRouter(userRepository: UserRepository) {
       if (!isValid) return c.json({ error: 'Invalid credentials' }, 401);
 
       const token = signToken({ userId: user.sk, email: user.email, role: user.role });
+
+      // Set cookie for browser auth (e.g. <img> tags)
+      setCookie(c, 'token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Strict',
+        maxAge: 24 * 60 * 60, // 24 hours
+        path: '/',
+      });
+
       return c.json({ token, user: { id: user.sk, email: user.email, role: user.role } });
     } catch (e) {
       console.error('[POST /api/auth/login]', e);
@@ -41,6 +52,17 @@ export function createAuthRouter(userRepository: UserRepository) {
   router.get('/api/auth/me', authMiddleware, async (c) => {
     const payload = c.get('user') as JwtPayload;
     return c.json({ user: { id: payload.userId, email: payload.email, role: payload.role } });
+  });
+
+  router.post('/api/auth/logout', async (c) => {
+    setCookie(c, 'token', '', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict',
+      maxAge: 0,
+      path: '/',
+    });
+    return c.json({ success: true });
   });
 
   router.get('/api/admin/users', authMiddleware, adminOnly, async (c) => {

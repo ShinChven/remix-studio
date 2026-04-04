@@ -53,18 +53,6 @@ export function ProjectRoute() {
     if (idChanged) {
       try {
         await renameProjectFolder(project.id, updatedProject.id);
-        updatedProject = {
-          ...updatedProject,
-          jobs: updatedProject.jobs.map(job => {
-            if (job.imageUrl && job.imageUrl.includes(`/api/images/${project.id}/`)) {
-              return {
-                ...job,
-                imageUrl: job.imageUrl.replace(`/api/images/${project.id}/`, `/api/images/${updatedProject.id}/`)
-              };
-            }
-            return job;
-          })
-        };
       } catch (e) {
         console.error("Failed to rename project folder:", e);
         alert("Failed to rename project folder. Reverting ID change.");

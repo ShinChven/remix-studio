@@ -4,4 +4,5 @@ export interface IStorage {
   exists(key: string): Promise<boolean>;
   delete(key: string): Promise<void>;
   rename(oldPrefix: string, newPrefix: string): Promise<void>;
+  getPresignedUrl(key: string, expiresIn?: number): Promise<string>;
 }

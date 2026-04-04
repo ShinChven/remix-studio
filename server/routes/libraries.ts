@@ -1,10 +1,29 @@
 import { Hono } from 'hono';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
+import { S3Storage } from '../storage/s3-storage';
+import type { LibraryItem, Library } from '../../src/types';
 
 type Variables = { user: JwtPayload };
 
-export function createLibraryRouter(repository: IRepository) {
+/** Sign S3 keys in library item content fields */
+async function signLibraryImages(items: LibraryItem[], storage: S3Storage): Promise<LibraryItem[]> {
+  return Promise.all(
+    items.map(async (item) => {
+      if (item.content && !item.content.startsWith('http') && !item.content.startsWith('data:')) {
+        const signedUrl = await storage.getPresignedUrl(item.content);
+        return { ...item, content: signedUrl };
+      }
+      return item;
+    })
+  );
+}
+
+async function signLibrary(lib: Library, storage: S3Storage): Promise<Library> {
+  return { ...lib, items: await signLibraryImages(lib.items, storage) };
+}
+
+export function createLibraryRouter(repository: IRepository, storage: S3Storage) {
   const router = new Hono<{ Variables: Variables }>();
 
   // === Libraries ===
@@ -13,7 +32,8 @@ export function createLibraryRouter(repository: IRepository) {
     try {
       const user = c.get('user') as JwtPayload;
       const libraries = await repository.getUserLibraries(user.userId);
-      return c.json(libraries);
+      const signed = await Promise.all(libraries.map((lib) => signLibrary(lib, storage)));
+      return c.json(signed);
     } catch (e) {
       console.error('[GET /api/libraries]', e);
       return c.json({ error: 'Failed to list libraries' }, 500);
@@ -25,7 +45,7 @@ export function createLibraryRouter(repository: IRepository) {
       const user = c.get('user') as JwtPayload;
       const library = await repository.getLibrary(user.userId, c.req.param('id'));
       if (!library) return c.json({ error: 'Not found' }, 404);
-      return c.json(library);
+      return c.json(await signLibrary(library, storage));
     } catch (e) {
       console.error('[GET /api/libraries/:id]', e);
       return c.json({ error: 'Failed to get library' }, 500);
@@ -84,7 +104,7 @@ export function createLibraryRouter(repository: IRepository) {
     try {
       const user = c.get('user') as JwtPayload;
       const items = await repository.getLibraryItems(user.userId, c.req.param('libId'));
-      return c.json(items);
+      return c.json(await signLibraryImages(items, storage));
     } catch (e) {
       console.error('[GET /api/libraries/:libId/items]', e);
       return c.json({ error: 'Failed to list items' }, 500);

@@ -61,6 +61,7 @@ async function startServer() {
     accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
     secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
     bucket: process.env.MINIO_BUCKET || 'remix-studio',
+    publicEndpoint: process.env.S3_PUBLIC_ENDPOINT,
   });
   await storage.ensureBucket();
 
@@ -94,7 +95,7 @@ async function startServer() {
 
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
-  app.route('/', createLibraryRouter(repository));
+  app.route('/', createLibraryRouter(repository, storage));
   app.route('/', createProjectRouter(repository, storage, queueManager));
   app.route('/', createImageRouter(storage));
   app.route('/', createProviderRouter(providerRepository));

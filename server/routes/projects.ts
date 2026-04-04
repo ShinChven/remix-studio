@@ -3,9 +3,23 @@ import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
 import { QueueManager } from '../queue/queue-manager';
-import type { WorkflowItem, Job } from '../../src/types';
+import type { WorkflowItem, Job, Project } from '../../src/types';
 
 type Variables = { user: JwtPayload };
+
+/** Sign all S3 keys in a project's jobs with pre-signed URLs */
+async function signProjectImages(project: Project, storage: S3Storage): Promise<Project> {
+  const jobs = await Promise.all(
+    project.jobs.map(async (job) => {
+      if (job.imageUrl && !job.imageUrl.startsWith('http')) {
+        const signedUrl = await storage.getPresignedUrl(job.imageUrl);
+        return { ...job, imageUrl: signedUrl };
+      }
+      return job;
+    })
+  );
+  return { ...project, jobs };
+}
 
 export function createProjectRouter(repository: IRepository, storage: S3Storage, queueManager: QueueManager) {
   const router = new Hono<{ Variables: Variables }>();
@@ -23,7 +37,23 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
       const safeOldId = oldId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const safeNewId = newId.replace(/[^a-zA-Z0-9-_]/g, '_');
 
-      await storage.rename(`${user.userId}/${safeOldId}/`, `${user.userId}/${safeNewId}/`);
+      const oldPrefix = `${user.userId}/${safeOldId}/`;
+      const newPrefix = `${user.userId}/${safeNewId}/`;
+
+      await storage.rename(oldPrefix, newPrefix);
+
+      // Update S3 keys in DB job records
+      const project = await repository.getProject(user.userId, newId);
+      if (project) {
+        const updatedJobs = project.jobs.map((job) => {
+          if (job.imageUrl && job.imageUrl.startsWith(oldPrefix)) {
+            return { ...job, imageUrl: job.imageUrl.replace(oldPrefix, newPrefix) };
+          }
+          return job;
+        });
+        await repository.updateProject(user.userId, newId, { jobs: updatedJobs });
+      }
+
       return c.json({ success: true });
     } catch (e) {
       console.error('[POST /api/projects/rename]', e);
@@ -35,7 +65,8 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
     try {
       const user = c.get('user') as JwtPayload;
       const projects = await repository.getUserProjects(user.userId);
-      return c.json(projects);
+      const signed = await Promise.all(projects.map((p) => signProjectImages(p, storage)));
+      return c.json(signed);
     } catch (e) {
       console.error('[GET /api/projects]', e);
       return c.json({ error: 'Failed to list projects' }, 500);
@@ -47,7 +78,7 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
       const user = c.get('user') as JwtPayload;
       const project = await repository.getProject(user.userId, c.req.param('id'));
       if (!project) return c.json({ error: 'Not found' }, 404);
-      return c.json(project);
+      return c.json(await signProjectImages(project, storage));
     } catch (e) {
       console.error('[GET /api/projects/:id]', e);
       return c.json({ error: 'Failed to get project' }, 500);

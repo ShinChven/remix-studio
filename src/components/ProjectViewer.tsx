@@ -24,6 +24,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
   const [itemToRemoveId, setItemToRemoveId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<WorkflowItem | null>(null);
+  const [showLibrarySelector, setShowLibrarySelector] = useState(false);
+  const [previewingLibrary, setPreviewingLibrary] = useState<Library | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(project.providerId || '');
   const [isFetchingProviders, setIsFetchingProviders] = useState(true);
@@ -85,14 +87,30 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const addWorkflowItem = (type: WorkflowItemType) => {
+    if (type === 'library') {
+      setShowLibrarySelector(true);
+      return;
+    }
     const newItem: WorkflowItem = {
       id: crypto.randomUUID(),
       type,
-      value: type === 'library' && libraries.length > 0 ? libraries[0].id : ''
+      value: ''
     };
     const updated = { ...localProject, workflow: [...(localProject.workflow || []), newItem] };
     setLocalProject(updated);
     onUpdate(updated);
+  };
+
+  const handleLibrarySelect = (libraryId: string) => {
+    const newItem: WorkflowItem = {
+      id: crypto.randomUUID(),
+      type: 'library',
+      value: libraryId
+    };
+    const updated = { ...localProject, workflow: [...(localProject.workflow || []), newItem] };
+    setLocalProject(updated);
+    onUpdate(updated);
+    setShowLibrarySelector(false);
   };
 
   const updateWorkflowItem = (id: string, value: string) => {
@@ -318,16 +336,42 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               )}
 
               {item.type === 'library' && (
-                <select
-                  value={item.value}
-                  onChange={(e) => updateWorkflowItem(item.id, e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-xs text-neutral-200 focus:outline-none focus:border-emerald-500/50 transition-colors cursor-pointer"
+                <div 
+                  onClick={() => {
+                    const lib = libraries.find(l => l.id === item.value);
+                    if (lib) setPreviewingLibrary(lib);
+                  }}
+                  className="group/library relative cursor-pointer"
                 >
-                  <option value="" disabled>Select a library</option>
-                  {libraries.map(lib => (
-                    <option key={lib.id} value={lib.id}>{lib.name} ({lib.type || 'text'})</option>
-                  ))}
-                </select>
+                  <div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-xs flex items-center justify-between transition-all hover:border-emerald-500/30 hover:bg-neutral-900/50">
+                    <div className="flex items-center gap-3">
+                      {(() => {
+                        const lib = libraries.find(l => l.id === item.value);
+                        const firstImage = lib?.type === 'image' && lib.items[0]?.content;
+                        return firstImage ? (
+                          <div className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-800 flex-shrink-0">
+                            <img src={firstImage} alt="Thumbnail" className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="p-2 bg-emerald-500/10 rounded-lg flex-shrink-0">
+                            <LibraryIcon className="w-3.5 h-3.5 text-emerald-500" />
+                          </div>
+                        );
+                      })()}
+                      <div className="min-w-0">
+                        <div className="text-neutral-200 font-bold truncate">
+                          {libraries.find(l => l.id === item.value)?.name || 'Unknown Library'}
+                        </div>
+                        <div className="text-[10px] text-neutral-500 font-medium mt-0.5">
+                          {libraries.find(l => l.id === item.value)?.items.length || 0} items
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-1.5 bg-neutral-900/80 rounded-md border border-neutral-800 opacity-0 group-hover/library:opacity-100 transition-all hover:text-emerald-400">
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
               )}
 
               {item.type === 'image' && (
@@ -627,6 +671,156 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         confirmText="Delete Project"
         type="danger"
       />
+
+      <LibrarySelectionModal
+        isOpen={showLibrarySelector}
+        onClose={() => setShowLibrarySelector(false)}
+        onSelect={handleLibrarySelect}
+        libraries={libraries}
+      />
+
+      <LibraryPreviewModal
+        library={previewingLibrary}
+        onClose={() => setPreviewingLibrary(null)}
+      />
+    </div>
+  );
+}
+
+function LibrarySelectionModal({ isOpen, onClose, onSelect, libraries }: { isOpen: boolean; onClose: () => void; onSelect: (id: string) => void; libraries: Library[] }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose} />
+      
+      <div className="relative w-full max-w-4xl max-h-[80vh] bg-neutral-900 border border-neutral-800 rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="p-6 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/20">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-600/10 rounded-xl">
+              <LibraryIcon className="w-5 h-5 text-emerald-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white tracking-tight">Select Library</h3>
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Collections available for workflow</p>
+            </div>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+          {libraries.length === 0 ? (
+            <div className="py-20 text-center">
+              <LibraryIcon className="w-12 h-12 text-neutral-800 mx-auto mb-4" />
+              <p className="text-neutral-500 font-bold uppercase tracking-widest text-xs">No libraries created yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {libraries.map(lib => (
+                <button
+                  key={lib.id}
+                  onClick={() => onSelect(lib.id)}
+                  className="group flex items-start gap-4 p-5 bg-neutral-950/40 border border-neutral-800 rounded-2xl text-left transition-all hover:bg-neutral-800 hover:border-emerald-500/30 hover:scale-[1.02] active:scale-100"
+                >
+                  <div className="flex-shrink-0">
+                    {lib.type === 'image' && lib.items[0]?.content ? (
+                      <div className="w-12 h-12 rounded-xl overflow-hidden border border-neutral-800 shadow-md">
+                        <img src={lib.items[0].content} alt={lib.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-neutral-900 rounded-xl border border-neutral-800 group-hover:bg-neutral-950 group-hover:border-emerald-500/20 transition-all">
+                        <LibraryIcon className="w-6 h-6 text-emerald-500" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 pt-1 min-w-0">
+                    <div className="text-sm font-bold text-neutral-100 mb-1 group-hover:text-white transition-colors truncate">{lib.name}</div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-neutral-500 font-black uppercase tracking-widest px-2 py-0.5 bg-neutral-900 rounded border border-neutral-800 group-hover:border-neutral-700">{lib.type}</span>
+                      <span className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest">{lib.items.length} items</span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-neutral-800 bg-neutral-950/40 flex justify-end">
+          <button 
+            onClick={onClose}
+            className="px-6 py-2.5 text-neutral-400 hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LibraryPreviewModal({ library, onClose }: { library: Library | null; onClose: () => void }) {
+  if (!library) return null;
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-8">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose} />
+      
+      <div className="relative w-full max-w-5xl h-[80vh] bg-neutral-900 border border-neutral-800 rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="p-6 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/20">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-600/10 rounded-xl">
+              <LibraryIcon className="w-5 h-5 text-emerald-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white tracking-tight">{library.name}</h3>
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">{library.items.length} workflow items</p>
+            </div>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar bg-neutral-950/10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {library.items.map(item => (
+              <div key={item.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col shadow-sm">
+                {library.type === 'image' && (
+                  <div className="aspect-video bg-black relative border-b border-neutral-800">
+                    <img src={item.content} alt={item.content} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="p-4 flex-1">
+                  {item.title && (
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-2">{item.title}</div>
+                  )}
+                  <p className={`text-neutral-400 leading-relaxed ${library.type === 'text' ? 'text-sm' : 'text-[11px] line-clamp-4'}`}>
+                    {library.type === 'text' ? item.content : <span className="opacity-60 italic whitespace-nowrap overflow-hidden text-ellipsis block">{item.content}</span>}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-neutral-800 bg-neutral-950/40 flex justify-end">
+          <button 
+            onClick={onClose}
+            className="px-8 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-neutral-700"
+          >
+            Close Viewer
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -697,3 +891,4 @@ function PromptModal({ item, onClose, onSave }: { item: WorkflowItem | null; onC
     </div>
   );
 }
+

@@ -29,6 +29,8 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
+import { getCookie } from 'hono/cookie';
+
 export function signToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
 }
@@ -39,12 +41,19 @@ export function verifyToken(token: string): JwtPayload {
 
 export function authMiddleware(c: Context, next: Next): Response | Promise<Response | void> {
   const authHeader = c.req.header('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
+  let token: string | undefined;
+
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.slice(7);
+  } else {
+    token = getCookie(c, 'token');
+  }
+
+  if (!token) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
   try {
-    const token = authHeader.slice(7);
     const payload = verifyToken(token);
     c.set('user', payload);
     return next() as Promise<void>;

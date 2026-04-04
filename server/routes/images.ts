@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { authMiddleware, JwtPayload } from '../auth/auth';
-import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
 
 type Variables = { user: JwtPayload };
@@ -27,29 +26,12 @@ export function createImageRouter(storage: S3Storage) {
       const base64Data = base64.replace(/^data:image\/\w+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
 
-      const url = await storage.save(key, buffer, 'image/png');
-      return c.json({ url });
+      const s3Key = await storage.save(key, buffer, 'image/png');
+      const signedUrl = await storage.getPresignedUrl(s3Key);
+      return c.json({ key: s3Key, url: signedUrl });
     } catch (e) {
       console.error('[POST /api/images]', e);
       return c.json({ error: 'Failed to save image' }, 500);
-    }
-  });
-
-  router.get('/api/images/*', authMiddleware, async (c) => {
-    try {
-      const user = c.get('user') as JwtPayload;
-      const key = c.req.path.replace('/api/images/', '');
-
-      if (key.includes('..')) return c.json({ error: 'Invalid path' }, 400);
-      if (!key.startsWith(`${user.userId}/`)) return c.json({ error: 'Forbidden' }, 403);
-
-      const data = await storage.read(key);
-      return new Response(new Uint8Array(data), {
-        headers: { 'Content-Type': 'image/png' },
-      });
-    } catch (e) {
-      console.error('[GET /api/images/*]', e);
-      return c.notFound();
     }
   });
 
