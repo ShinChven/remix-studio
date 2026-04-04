@@ -62,7 +62,10 @@ export class UserRepository {
         ExpressionAttributeValues: { ':pk': 'USER' },
       })
     );
-    return (result.Items as UserRecord[]) || [];
+    return (result.Items || []).map((item) => {
+      const { passwordHash: _omit, ...safeUser } = item as UserRecord;
+      return safeUser as UserRecord;
+    });
   }
 
   async updateRole(userId: string, role: UserRole): Promise<void> {
