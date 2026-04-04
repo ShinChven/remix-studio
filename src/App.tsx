@@ -17,6 +17,7 @@ import { Libraries } from './pages/Libraries';
 import { Projects } from './pages/Projects';
 import { LibraryForm } from './pages/LibraryForm.tsx';
 import { ProjectForm } from './pages/ProjectForm.tsx';
+import { PromptEditor } from './pages/PromptEditor.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -43,9 +44,10 @@ export default function App() {
               <Route path="library/:id/edit" element={<LibraryForm />} />
               <Route path="projects" element={<Projects />} />
               <Route path="project/new" element={<ProjectForm />} />
+              <Route path="project/:id" element={<ProjectRoute />} />
               <Route path="project/:id/edit" element={<ProjectForm />} />
               <Route path="library/:id" element={<LibraryRoute />} />
-              <Route path="project/:id" element={<ProjectRoute />} />
+              <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
               <Route path="admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
             </Route>
           </Routes>

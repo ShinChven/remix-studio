@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Library } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, Save, CheckCircle2, Edit3, X, Check, Settings } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Image as ImageIcon, CheckCircle2, Edit3, Settings, ChevronRight, Maximize2 } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 
 interface Props {
@@ -12,26 +12,15 @@ interface Props {
 
 export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const navigate = useNavigate();
-  const [localLibrary, setLocalLibrary] = useState<Library>(library);
   const [newItem, setNewItem] = useState('');
-  const [hasChanges, setHasChanges] = useState(false);
-  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
-
   const [showDeleteLibraryModal, setShowDeleteLibraryModal] = useState(false);
   const [itemToRemoveIndex, setItemToRemoveIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    setLocalLibrary(library);
-    setHasChanges(false);
-    setEditingItemIndex(null);
-  }, [library.id]);
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.trim()) return;
-    setLocalLibrary({ ...localLibrary, items: [...localLibrary.items, newItem.trim()] });
+    onUpdate({ ...library, items: [...library.items, newItem.trim()] });
     setNewItem('');
-    setHasChanges(true);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -40,27 +29,24 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
   const confirmRemoveItem = () => {
     if (itemToRemoveIndex !== null) {
-      const newItems = [...localLibrary.items];
+      const newItems = [...library.items];
       newItems.splice(itemToRemoveIndex, 1);
-      setLocalLibrary({ ...localLibrary, items: newItems });
-      setHasChanges(true);
+      onUpdate({ ...library, items: newItems });
       setItemToRemoveIndex(null);
     }
   };
 
   const handleItemSave = (index: number, value: string) => {
-    const newItems = [...localLibrary.items];
+    const newItems = [...library.items];
     newItems[index] = value;
-    setLocalLibrary({ ...localLibrary, items: newItems });
-    setHasChanges(true);
-    setEditingItemIndex(null);
+    onUpdate({ ...library, items: newItems });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
 
-    const newItems = [...localLibrary.items];
+    const newItems = [...library.items];
     let loadedCount = 0;
 
     files.forEach((file: File) => {
@@ -71,205 +57,166 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         }
         loadedCount++;
         if (loadedCount === files.length) {
-          setLocalLibrary({ ...localLibrary, items: newItems });
-          setHasChanges(true);
+          onUpdate({ ...library, items: newItems });
         }
       };
       reader.readAsDataURL(file);
     });
   };
 
-  const handleSave = () => {
-    onUpdate(localLibrary);
-    setHasChanges(false);
-  };
-
   return (
-    <div className="h-full flex flex-col p-8 max-w-5xl mx-auto overflow-hidden">
-      <div className="flex items-center justify-between mb-8 flex-shrink-0">
+    <div className="h-full flex flex-col px-10 py-12 max-w-6xl mx-auto overflow-hidden animate-in fade-in duration-700">
+      <div className="flex items-center justify-between mb-12 flex-shrink-0">
         <div className="flex-1">
-          <div className="flex items-center gap-3 group">
-            <h2 className="text-3xl font-bold text-white tracking-tight">{library.name}</h2>
-            <button 
-              onClick={() => navigate(`/library/${library.id}/edit`)}
-              className="p-2 text-neutral-600 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-blue-400/10 rounded-lg"
-              title="Edit Library Information"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
+          <div className="flex items-center gap-3">
+             <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
+             <h2 className="text-4xl font-black text-white tracking-tight">{library.name}</h2>
           </div>
           
-          <div className="flex items-center gap-4 mt-1.5">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-2 py-0.5 bg-neutral-900 border border-neutral-800 rounded-md">
+          <div className="flex items-center gap-4 mt-3">
+            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 px-2.5 py-1 bg-neutral-900/50 border border-neutral-800 rounded-lg backdrop-blur-sm">
               {library.type || 'text'} Collection
             </div>
-            {hasChanges ? (
-              <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse outline outline-2 outline-amber-500/30" />
-                Unsaved Changes
-              </span>
-            ) : (
-              <span className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-widest flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Synced
-              </span>
-            )}
+            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              Synced
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleSave}
-            disabled={!hasChanges}
-            className={`px-5 py-2.5 rounded-xl text-sm font-bold tracking-tight transition-all flex items-center gap-2.5 shadow-xl ${
-              hasChanges 
-              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/30 active:scale-[0.98]' 
-              : 'bg-neutral-900 text-neutral-600 border border-neutral-800'
-            }`}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => navigate(`/library/${library.id}/edit`)}
+            className="p-3 text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-2xl transition-all border border-neutral-800/50 hover:border-neutral-700 active:scale-95"
+            title="Edit Library Settings"
           >
-            <Save className={`w-4 h-4 ${hasChanges ? 'animate-bounce-subtle' : ''}`} />
-            Save Fragments
+            <Settings className="w-5 h-5" />
           </button>
-          
+
           <button 
             onClick={() => setShowDeleteLibraryModal(true)}
-            className="p-2.5 text-neutral-600 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all border border-transparent hover:border-red-400/20"
-            title="Remove Library"
+            className="p-3 text-neutral-400 hover:text-red-500 hover:bg-red-400/10 rounded-2xl transition-all border border-neutral-800/50 hover:border-red-400/20 active:scale-95"
+            title="Delete Library"
           >
             <Trash2 className="w-5 h-5" />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8">
-        <div className={localLibrary.type === 'image' ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" : "space-y-3"}>
-          {localLibrary.items.map((item, index) => (
+      <div className="flex-1 overflow-y-auto pr-4 -mr-4 custom-scrollbar space-y-10">
+        <div className={library.type === 'image' ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8" : "space-y-4"}>
+          {library.items.map((item, index) => (
             <div key={index} className="group relative">
-              {editingItemIndex === index ? (
-                <div className="bg-neutral-900 border-2 border-blue-500/50 rounded-2xl p-4 shadow-2xl animate-in zoom-in-95 duration-200">
-                  {localLibrary.type === 'image' ? (
-                     <div className="space-y-3 text-center py-4">
-                       <p className="text-xs text-neutral-500 font-medium font-mono">Image reference only</p>
-                       <button onClick={() => setEditingItemIndex(null)} className="text-xs font-black text-blue-400 uppercase tracking-widest hover:text-blue-300">Close</button>
-                     </div>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      <textarea
-                        autoFocus
-                        defaultValue={item}
-                        onBlur={(e) => handleItemSave(index, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleItemSave(index, (e.target as HTMLTextAreaElement).value);
-                          }
-                          if (e.key === 'Escape') setEditingItemIndex(null);
-                        }}
-                        className="w-full bg-neutral-950 text-sm text-neutral-200 p-3 rounded-xl focus:outline-none border border-neutral-800 min-h-[100px] leading-relaxed"
-                      />
-                      <div className="flex justify-between items-center px-1">
-                        <span className="text-[10px] text-neutral-600 font-mono tracking-wider italic">Esc: cancel • Enter: commit</span>
-                        <div className="flex gap-2">
-                           <button onClick={() => setEditingItemIndex(null)} className="p-1.5 text-neutral-500 hover:text-emerald-500 transition-colors"><Check className="w-5 h-5" /></button>
+                <div className={`group/item bg-neutral-900/40 border border-neutral-800/60 rounded-3xl transition-all duration-300 hover:bg-neutral-800/40 hover:border-neutral-700/80 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${library.type === 'image' ? 'aspect-square flex flex-col p-2 overflow-hidden' : 'p-6 flex items-center justify-between gap-6'}`}>
+                  {library.type === 'image' ? (
+                    <div className="relative flex-1 rounded-2xl overflow-hidden">
+                      <img src={item} alt={`${index}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">IMG_{index + 1}</span>
+                          <div className="flex items-center gap-2">
+                             <button 
+                               onClick={() => handleRemoveItem(index)} 
+                               className="p-2.5 bg-neutral-950/80 text-neutral-400 hover:text-red-500 rounded-xl backdrop-blur-md border border-white/5 hover:border-red-500/20 transition-all active:scale-90"
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className={`bg-neutral-900/50 border border-neutral-800/80 rounded-2xl transition-all hover:bg-neutral-900 hover:border-neutral-700 hover:shadow-lg ${localLibrary.type === 'image' ? 'aspect-square flex flex-col' : 'p-4 flex items-center justify-between gap-4'}`}>
-                  {localLibrary.type === 'image' ? (
-                    <>
-                      <div className="flex-1 overflow-hidden rounded-t-2xl relative">
-                        <img src={item} alt={`${index}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                           <button onClick={() => handleRemoveItem(index)} className="p-2 bg-red-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                      <div className="p-3 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                        <span>IMG_{index + 1}</span>
-                      </div>
-                    </>
                   ) : (
                     <>
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="text-neutral-700 p-1 flex-shrink-0">
+                      <div className="flex items-start gap-5 flex-1">
+                        <div className="text-neutral-700 p-1 flex-shrink-0 mt-1">
                           <GripVertical className="w-4 h-4" />
                         </div>
-                        <p className="text-sm text-neutral-300 leading-relaxed max-w-2xl">{item}</p>
+                        <p className="text-neutral-300 leading-relaxed text-sm font-medium tracking-wide">{item}</p>
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <button 
-                          onClick={() => setEditingItemIndex(index)}
-                          className="p-2 text-neutral-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
+                          onClick={() => navigate(`/library/${library.id}/prompt/${index}`)}
+                          className="p-3 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-2xl transition-all border border-transparent hover:border-neutral-700 active:scale-95 shadow-sm"
+                          title="Refine in Full Editor"
                         >
-                          <Edit3 className="w-4 h-4" />
+                          <Edit3 className="w-4.5 h-4.5" />
                         </button>
                         <button 
                           onClick={() => handleRemoveItem(index)}
-                          className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+                          className="p-3 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all border border-transparent hover:border-red-500/20 active:scale-95 shadow-sm"
+                          title="Delete Fragment"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4.5 h-4.5" />
                         </button>
                       </div>
                     </>
                   )}
                 </div>
-              )}
             </div>
           ))}
 
-          {localLibrary.items.length === 0 && (
-            <div className="col-span-full py-20 text-center text-neutral-600 border-2 border-dashed border-neutral-800/50 rounded-3xl bg-neutral-900/20 flex flex-col items-center gap-4 translate-y-4 animate-in fade-in slide-in-from-bottom-2">
-              <Plus className="w-12 h-12 text-neutral-800" />
-              <div>
-                <p className="text-lg font-bold text-neutral-500 tracking-tight">Empty Collection</p>
-                <p className="text-xs font-medium text-neutral-700 uppercase tracking-widest mt-1">Add fragments below to populate</p>
+          {library.items.length === 0 && (
+            <div className="col-span-full py-24 text-center border-2 border-dashed border-neutral-800/50 rounded-[40px] bg-neutral-900/10 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95">
+              <div className="p-8 rounded-[32px] bg-neutral-900 border border-neutral-800 shadow-2xl">
+                <Plus className="w-16 h-16 text-neutral-800" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-2xl font-black text-neutral-500 tracking-tight italic">Ghost Town</p>
+                <p className="text-[10px] font-black text-neutral-700 uppercase tracking-[0.3em]">Add content below to initialize library</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Action Bar */}
-        <div className="sticky bottom-0 pt-8 mt-auto pb-4 bg-gradient-to-t from-neutral-950 via-neutral-950/90 to-transparent flex-shrink-0">
-          {localLibrary.type === 'image' ? (
-            <label className="flex flex-col items-center justify-center w-full h-44 border-2 border-neutral-800 border-dashed rounded-3xl cursor-pointer bg-neutral-900/10 hover:bg-neutral-900/40 hover:border-blue-500/40 transition-all group shadow-2xl">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <div className="p-4 rounded-full bg-neutral-900 border border-neutral-800 mb-4 group-hover:scale-110 transition-all group-hover:border-blue-500/50">
-                  <ImageIcon className="w-7 h-7 text-neutral-600 group-hover:text-blue-500" />
+        <div className="sticky bottom-0 pt-12 pb-8 bg-gradient-to-t from-neutral-950 via-neutral-950/95 to-transparent flex-shrink-0">
+          {library.type === 'image' ? (
+            <label className="flex flex-col items-center justify-center w-full h-56 border-2 border-neutral-800 border-dashed rounded-[40px] cursor-pointer bg-neutral-900/20 hover:bg-neutral-900/40 hover:border-blue-500/40 transition-all duration-500 group shadow-[0_30px_100px_rgba(0,0,0,0.4)]">
+              <div className="flex flex-col items-center justify-center p-8">
+                <div className="p-6 rounded-3xl bg-neutral-900 border border-neutral-800 mb-6 group-hover:scale-110 transition-all group-hover:border-blue-500/30 group-hover:shadow-2xl group-hover:shadow-blue-500/10">
+                  <ImageIcon className="w-10 h-10 text-neutral-600 group-hover:text-blue-500 transition-colors" />
                 </div>
-                <p className="text-sm font-bold text-neutral-500 group-hover:text-neutral-200 tracking-tight">Drop images to expand library</p>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-700 mt-2">JPG • PNG • WEBP</p>
+                <p className="text-lg font-black text-neutral-500 group-hover:text-neutral-200 tracking-tight transition-colors">Expand Visual Library</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-700 mt-3 group-hover:text-neutral-500 transition-colors">Click or Drag to Upload</p>
               </div>
               <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} />
             </label>
           ) : (
-            <form onSubmit={handleAddItem} className="bg-neutral-900/50 p-4 border border-neutral-800 rounded-2xl flex gap-4 backdrop-blur-md shadow-2xl">
+            <form onSubmit={handleAddItem} className="bg-neutral-900/60 p-3.5 border border-neutral-800 rounded-[32px] flex gap-4 backdrop-blur-2xl shadow-[0_30px_100px_rgba(0,0,0,0.5)]">
               <input
                 type="text"
                 value={newItem}
                 onChange={(e) => setNewItem(e.target.value)}
-                placeholder="Type a new prompt fragment and strike Enter..."
-                className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                placeholder="Compose a new fragment and press Enter..."
+                className="flex-1 bg-neutral-950/50 border border-neutral-800 rounded-2xl px-6 py-4 text-base text-neutral-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/40 transition-all placeholder:text-neutral-700"
               />
               <button
                 type="submit"
                 disabled={!newItem.trim()}
-                className="px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-30 disabled:grayscale transition-all shadow-xl shadow-blue-500/20 active:scale-[0.98]"
+                className="px-8 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] disabled:opacity-20 disabled:grayscale transition-all shadow-xl shadow-blue-500/20 active:scale-95 group flex items-center gap-2"
               >
-                Insert
+                Inject <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(`/library/${library.id}/prompt/new`)}
+                className="px-6 bg-neutral-800 hover:bg-neutral-750 text-neutral-400 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-neutral-700 hover:border-neutral-600 active:scale-95 group flex items-center gap-2"
+                title="Compose in Full Screen"
+              >
+                <Maximize2 className="w-4 h-4" /> Full Page
               </button>
             </form>
           )}
         </div>
       </div>
+
       <ConfirmModal
         isOpen={showDeleteLibraryModal}
         onClose={() => setShowDeleteLibraryModal(false)}
         onConfirm={onDelete}
-        title="Delete Library"
-        message={`Are you sure you want to delete the library "${localLibrary.name}"? This action cannot be undone.`}
-        confirmText="Delete Library"
+        title="Destroy Library"
+        message={`This will permanently delete the collection "${library.name}" and all its fragments. This action is irreversible.`}
+        confirmText="Destroy Collection"
         type="danger"
       />
 
@@ -277,9 +224,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         isOpen={itemToRemoveIndex !== null}
         onClose={() => setItemToRemoveIndex(null)}
         onConfirm={confirmRemoveItem}
-        title="Remove Item"
-        message="Are you sure you want to remove this item from the library?"
-        confirmText="Remove Item"
+        title="Expunge Fragment"
+        message="Are you sure you want to remove this fragment from the collection?"
+        confirmText="Remove Now"
         type="danger"
       />
     </div>

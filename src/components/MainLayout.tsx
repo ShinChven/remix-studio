@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, Outlet, Link } from 'react-router-dom';
 import { AppData, Library, Project } from '../types';
 import { loadData, saveData } from '../api';
-import { Plus, Folder, Layers, Play, Search, ChevronDown, ChevronRight, LogOut, User as UserIcon, Shield, LayoutGrid, Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Plus, Folder, Layers, Play, Search, ChevronDown, ChevronRight, LogOut, User as UserIcon, Shield, LayoutGrid, Loader2, PanelLeftClose, PanelLeftOpen, StickyNote } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from './ConfirmModal';
@@ -119,6 +119,7 @@ export function MainLayout() {
             <Play className="w-5 h-5 flex-shrink-0" />
             {!isCollapsed && <span className="font-medium text-sm">Projects</span>}
           </Link>
+
         </div>
 
 
