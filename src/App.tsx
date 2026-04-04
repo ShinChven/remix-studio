@@ -18,6 +18,7 @@ import { Projects } from './pages/Projects';
 import { LibraryForm } from './pages/LibraryForm.tsx';
 import { ProjectForm } from './pages/ProjectForm.tsx';
 import { PromptEditor } from './pages/PromptEditor.tsx';
+import { LibraryCleanup } from './pages/LibraryCleanup.tsx';
 import { Providers } from './pages/Providers.tsx';
 import { ProviderForm } from './pages/ProviderForm.tsx';
 
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="project/:id" element={<ProjectRoute />} />
               <Route path="project/:id/edit" element={<ProjectForm />} />
               <Route path="library/:id" element={<LibraryRoute />} />
+              <Route path="library/:id/cleanup" element={<LibraryCleanup />} />
               <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
               <Route path="admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
               <Route path="providers" element={<Providers />} />

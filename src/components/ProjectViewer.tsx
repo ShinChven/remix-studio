@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Project, Job, Library, WorkflowItem, WorkflowItemType, Provider } from '../types';
-import { saveImage, fetchProviders, generateImage } from '../api';
+import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow } from '../api';
 import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X } from 'lucide-react';
 import { generateWorkflowCombinations } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
@@ -48,7 +48,6 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       interval = setInterval(async () => {
         try {
           // Fetch the latest project state from the server
-          const { fetchProject: apiFetchProject } = await import('../api');
           const updated = await apiFetchProject(localProject.id);
           
           // Check if anything actually changed to avoid unnecessary re-renders
@@ -196,7 +195,6 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
     
     // Save to server
-    const { updateProject: apiUpdateProject, runProjectWorkflow: apiRunWorkflow } = await import('../api');
     await apiUpdateProject(updatedProject.id, {
       jobs: updatedProject.jobs,
       workflow: updatedProject.workflow,
@@ -224,10 +222,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       const pendingJobs = localProject.jobs.filter(j => j.status === 'pending');
       if (pendingJobs.length > 0) {
         // Just trigger the run if there are already pending jobs
-        (async () => {
-            const { runProjectWorkflow: apiRunWorkflow } = await import('../api');
-            await apiRunWorkflow(localProject.id);
-        })();
+        apiRunWorkflow(localProject.id);
       } else {
         generateAndStart();
       }

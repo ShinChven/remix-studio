@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Library } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
-import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders } from '../api';
+import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences } from '../api';
 
 interface Props {
   library: Library;
@@ -14,6 +14,9 @@ interface Props {
 export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const navigate = useNavigate();
   const [showDeleteLibraryModal, setShowDeleteLibraryModal] = useState(false);
+  const [showReferencesModal, setShowReferencesModal] = useState(false);
+  const [referencingProjects, setReferencingProjects] = useState<{ id: string; name: string }[]>([]);
+  const [checkingReferences, setCheckingReferences] = useState(false);
   const [itemToRemoveIndex, setItemToRemoveIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -59,6 +62,24 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  const handleDeleteLibrary = async () => {
+    setCheckingReferences(true);
+    try {
+      const refs = await fetchLibraryReferences(library.id);
+      if (refs.length > 0) {
+        setReferencingProjects(refs);
+        setShowReferencesModal(true);
+      } else {
+        setShowDeleteLibraryModal(true);
+      }
+    } catch (e) {
+      console.error('Failed to check references:', e);
+      setShowDeleteLibraryModal(true);
+    } finally {
+      setCheckingReferences(false);
+    }
+  };
 
   const handleRemoveItem = (index: number) => {
     setItemToRemoveIndex(index);
@@ -194,11 +215,12 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             </button>
 
             <button
-              onClick={() => setShowDeleteLibraryModal(true)}
-              className="p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-red-400/20 active:scale-95"
+              onClick={handleDeleteLibrary}
+              disabled={checkingReferences}
+              className="p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-red-400/20 active:scale-95 disabled:opacity-50"
               title="Delete Library"
             >
-              <Trash2 className="w-5 h-5" />
+              {checkingReferences ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -336,6 +358,58 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         confirmText="Destroy Collection"
         type="danger"
       />
+
+      {/* References warning modal */}
+      {showReferencesModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
+          onClick={() => setShowReferencesModal(false)}
+        >
+          <div
+            className="bg-neutral-900 border border-neutral-800/50 rounded-[32px] shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-8">
+              <div className="flex items-start gap-6">
+                <div className="p-4 rounded-3xl flex-shrink-0 bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                  <AlertCircle className="w-8 h-8" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-2xl font-black text-white tracking-tight">Library In Use</h3>
+                  <p className="mt-3 text-base text-neutral-400 font-medium leading-relaxed">
+                    "{library.name}" is referenced by {referencingProjects.length} project{referencingProjects.length > 1 ? 's' : ''}. You need to remove these references before deleting.
+                  </p>
+                  <div className="mt-4 space-y-2 max-h-40 overflow-y-auto">
+                    {referencingProjects.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2 text-sm text-neutral-300 bg-neutral-800/50 px-3 py-2 rounded-lg">
+                        <Play className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                        <span className="truncate">{p.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="px-8 py-6 bg-neutral-950/40 flex items-center justify-end gap-4 border-t border-neutral-800/50">
+              <button
+                onClick={() => setShowReferencesModal(false)}
+                className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowReferencesModal(false);
+                  navigate(`/library/${library.id}/cleanup`);
+                }}
+                className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-500 text-white shadow-2xl shadow-amber-500/20 transition-all active:scale-[0.98]"
+              >
+                Resolve References
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmModal
         isOpen={itemToRemoveIndex !== null}

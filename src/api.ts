@@ -56,6 +56,21 @@ export async function deleteLibrary(id: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete library');
 }
 
+export async function fetchLibraryReferences(libraryId: string): Promise<{ id: string; name: string }[]> {
+  const res = await fetch(`/api/libraries/${libraryId}/references`, { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to check library references');
+  return res.json();
+}
+
+export async function removeLibraryReferences(libraryId: string, projectIds?: string[]): Promise<void> {
+  const res = await fetch(`/api/libraries/${libraryId}/remove-references`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ projectIds }),
+  });
+  if (!res.ok) throw new Error('Failed to remove library references');
+}
+
 // ========== Library Item CRUD ==========
 
 export async function fetchLibraryItems(libraryId: string): Promise<LibraryItem[]> {

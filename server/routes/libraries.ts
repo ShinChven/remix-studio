@@ -87,6 +87,50 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage)
     }
   });
 
+  // Check which projects reference this library
+  router.get('/api/libraries/:id/references', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const libraryId = c.req.param('id');
+      const projects = await repository.getUserProjects(user.userId);
+      const referencingProjects = projects.filter((p) =>
+        p.workflow.some((item) => item.type === 'library' && item.value === libraryId)
+      );
+      return c.json(referencingProjects.map((p) => ({ id: p.id, name: p.name })));
+    } catch (e) {
+      console.error('[GET /api/libraries/:id/references]', e);
+      return c.json({ error: 'Failed to check references' }, 500);
+    }
+  });
+
+  // Remove library references from specified projects (or all)
+  router.post('/api/libraries/:id/remove-references', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const libraryId = c.req.param('id');
+      const body = await c.req.json();
+      const projectIds: string[] | undefined = body?.projectIds; // undefined = all
+
+      const projects = await repository.getUserProjects(user.userId);
+      const targets = projectIds
+        ? projects.filter((p) => projectIds.includes(p.id))
+        : projects;
+
+      for (const project of targets) {
+        const filtered = project.workflow.filter(
+          (item) => !(item.type === 'library' && item.value === libraryId)
+        );
+        if (filtered.length !== project.workflow.length) {
+          await repository.updateProject(user.userId, project.id, { workflow: filtered });
+        }
+      }
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[POST /api/libraries/:id/remove-references]', e);
+      return c.json({ error: 'Failed to remove references' }, 500);
+    }
+  });
+
   router.delete('/api/libraries/:id', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
