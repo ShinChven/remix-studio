@@ -3,7 +3,7 @@ import { AppData } from '../types';
 import { Plus, Play, Folder, LayoutGrid, Clock, Layers } from 'lucide-react';
 
 export function Dashboard() {
-  const { data, addLibrary, addProject } = useOutletContext<{ data: AppData, addLibrary: (t: 'text'|'image') => void, addProject: () => void }>();
+  const { data, addLibrary, addProject } = useOutletContext<{ data: AppData, addLibrary: () => void, addProject: () => void }>();
   const navigate = useNavigate();
 
   return (
@@ -56,11 +56,8 @@ export function Dashboard() {
               Libraries
             </h3>
             <div className="flex gap-2">
-              <button onClick={() => addLibrary('text')} className="text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
-                <Plus className="w-4 h-4" /> Text
-              </button>
-              <button onClick={() => addLibrary('image')} className="text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
-                <Layers className="w-4 h-4" /> Image
+              <button onClick={addLibrary} className="text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
+                <Plus className="w-4 h-4" /> New Library
               </button>
             </div>
           </div>

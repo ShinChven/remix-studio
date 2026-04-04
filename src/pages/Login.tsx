@@ -73,14 +73,6 @@ export function Login() {
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
           </button>
         </form>
-        <div className="mt-8 pt-6 border-t border-zinc-800/50 flex items-center justify-center">
-          <p className="text-center text-zinc-500 text-sm">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-zinc-300 hover:text-white font-medium transition-colors">
-              Register Here
-            </Link>
-          </p>
-        </div>
       </div>
     </div>
   );

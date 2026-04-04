@@ -12,8 +12,11 @@ import { LibraryRoute } from './components/LibraryRoute';
 import { ProjectRoute } from './components/ProjectRoute';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { AdminUsers } from './pages/AdminUsers';
+import { Libraries } from './pages/Libraries';
+import { Projects } from './pages/Projects';
+import { LibraryForm } from './pages/LibraryForm.tsx';
+import { ProjectForm } from './pages/ProjectForm.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -32,10 +35,15 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             
             <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
+              <Route path="libraries" element={<Libraries />} />
+              <Route path="library/new" element={<LibraryForm />} />
+              <Route path="library/:id/edit" element={<LibraryForm />} />
+              <Route path="projects" element={<Projects />} />
+              <Route path="project/new" element={<ProjectForm />} />
+              <Route path="project/:id/edit" element={<ProjectForm />} />
               <Route path="library/:id" element={<LibraryRoute />} />
               <Route path="project/:id" element={<ProjectRoute />} />
               <Route path="admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />

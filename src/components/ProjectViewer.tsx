@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Project, Job, Library, WorkflowItem, WorkflowItemType } from '../types';
 import { saveImage } from '../api';
 import { GoogleGenAI } from '@google/genai';
-import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp } from 'lucide-react';
+import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings } from 'lucide-react';
 import { generateWorkflowCombinations } from '../lib/remixEngine';
+import { ConfirmModal } from './ConfirmModal';
 
 interface Props {
   project: Project;
@@ -13,21 +15,37 @@ interface Props {
 }
 
 export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props) {
+  const navigate = useNavigate();
+  const [localProject, setLocalProject] = useState<Project>(project);
+  const [hasChanges, setHasChanges] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
+  const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
+  const [itemToRemoveId, setItemToRemoveId] = useState<string | null>(null);
+  
   const isProcessingRef = useRef(false);
-  const projectRef = useRef(project);
+  const projectRef = useRef(localProject);
 
   useEffect(() => {
-    projectRef.current = project;
-  }, [project]);
+    setLocalProject(project);
+    setHasChanges(false);
+  }, [project.id]);
 
-  // Keep ref in sync with state for the async loop
+  useEffect(() => {
+    projectRef.current = localProject;
+  }, [localProject]);
+
   useEffect(() => {
     isProcessingRef.current = isProcessing;
   }, [isProcessing]);
+
+  const handleSave = () => {
+    onUpdate(localProject);
+    setHasChanges(false);
+  };
 
   const updateJob = (jobId: string, updates: Partial<Job>) => {
     const currentProject = projectRef.current;
@@ -35,8 +53,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       ...currentProject,
       jobs: currentProject.jobs.map(j => j.id === jobId ? { ...j, ...updates } : j)
     };
-    projectRef.current = updatedProject; // Optimistically update the ref
-    onUpdate(updatedProject);
+    setLocalProject(updatedProject);
+    onUpdate(updatedProject); 
   };
 
   const addWorkflowItem = (type: WorkflowItemType) => {
@@ -45,18 +63,28 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       type,
       value: type === 'library' && libraries.length > 0 ? libraries[0].id : ''
     };
-    onUpdate({ ...project, workflow: [...(project.workflow || []), newItem] });
+    setLocalProject({ ...localProject, workflow: [...(localProject.workflow || []), newItem] });
+    setHasChanges(true);
   };
 
   const updateWorkflowItem = (id: string, value: string) => {
-    const newWorkflow = project.workflow.map(item => 
+    const newWorkflow = localProject.workflow.map(item => 
       item.id === id ? { ...item, value } : item
     );
-    onUpdate({ ...project, workflow: newWorkflow });
+    setLocalProject({ ...localProject, workflow: newWorkflow });
+    setHasChanges(true);
   };
 
   const removeWorkflowItem = (id: string) => {
-    onUpdate({ ...project, workflow: project.workflow.filter(item => item.id !== id) });
+    setItemToRemoveId(id);
+  };
+
+  const confirmRemoveWorkflowItem = () => {
+    if (itemToRemoveId) {
+      setLocalProject({ ...localProject, workflow: localProject.workflow.filter(item => item.id !== itemToRemoveId) });
+      setHasChanges(true);
+      setItemToRemoveId(null);
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -66,10 +94,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (dragOverIndex !== index) {
-      setDragOverIndex(index);
-    }
+    if (dragOverIndex !== index) setDragOverIndex(index);
   };
 
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
@@ -80,11 +105,12 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       return;
     }
 
-    const newWorkflow = [...(project.workflow || [])];
+    const newWorkflow = [...(localProject.workflow || [])];
     const [draggedItem] = newWorkflow.splice(draggedIndex, 1);
     newWorkflow.splice(dropIndex, 0, draggedItem);
     
-    onUpdate({ ...project, workflow: newWorkflow });
+    setLocalProject({ ...localProject, workflow: newWorkflow });
+    setHasChanges(true);
     
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -107,7 +133,11 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const generateAndStart = () => {
-    const combinations = generateWorkflowCombinations(project.workflow || [], libraries);
+    if (hasChanges) {
+      handleSave();
+    }
+    
+    const combinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
     if (combinations.length === 0) return;
 
     const newJobs: Job[] = combinations.map(combo => ({
@@ -117,9 +147,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       status: 'pending'
     }));
 
-    const updatedProject = { ...project, jobs: [...project.jobs, ...newJobs] };
+    const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
+    setLocalProject(updatedProject);
     onUpdate(updatedProject);
-    projectRef.current = updatedProject;
     
     setIsProcessing(true);
     processQueue();
@@ -139,15 +169,11 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         const ai = new GoogleGenAI({ apiKey });
         
         const parts: any[] = [{ text: job.prompt }];
-        
         if (job.imageContext) {
           const match = job.imageContext.match(/^data:(image\/\w+);base64,(.*)$/);
           if (match) {
             parts.push({
-              inlineData: {
-                mimeType: match[1],
-                data: match[2]
-              }
+              inlineData: { mimeType: match[1], data: match[2] }
             });
           }
         }
@@ -157,10 +183,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           contents: { parts },
           config: {
             // @ts-ignore
-            imageConfig: {
-              aspectRatio: "1:1",
-              imageSize: "1K"
-            }
+            imageConfig: { aspectRatio: "1:1", imageSize: "1K" }
           }
         });
 
@@ -173,7 +196,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         }
 
         if (base64Image) {
-          const url = await saveImage(base64Image, project.id);
+          const url = await saveImage(base64Image, localProject.id);
           updateJob(job.id, { status: 'completed', imageUrl: url });
         } else {
           throw new Error("No image generated by the model");
@@ -183,7 +206,6 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         updateJob(job.id, { status: 'failed', error: error.message || 'Unknown error' });
       }
       
-      // Small delay between requests to avoid hitting rate limits too hard
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
@@ -194,7 +216,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     if (isProcessing) {
       setIsProcessing(false);
     } else {
-      const pendingJobs = project.jobs.filter(j => j.status === 'pending');
+      const pendingJobs = localProject.jobs.filter(j => j.status === 'pending');
       if (pendingJobs.length > 0) {
         setIsProcessing(true);
         processQueue();
@@ -204,76 +226,70 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     }
   };
 
-  const activeTasks = project.jobs.filter(j => j.status === 'pending' || j.status === 'processing');
-  const completedTasks = project.jobs.filter(j => j.status === 'completed');
-  const failedTasks = project.jobs.filter(j => j.status === 'failed');
-  const total = project.jobs.length;
+  const activeTasks = localProject.jobs.filter(j => j.status === 'pending' || j.status === 'processing');
+  const completedTasks = localProject.jobs.filter(j => j.status === 'completed');
+  const failedTasks = localProject.jobs.filter(j => j.status === 'failed');
+  const total = localProject.jobs.length;
   const progress = total === 0 ? 0 : Math.round((completedTasks.length + failedTasks.length) / total * 100);
-
-  const combinations = generateWorkflowCombinations(project.workflow || [], libraries);
-
+  const combinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
   const displayTasks = activeTasks.length > 0 
     ? activeTasks 
     : combinations.map((c, i) => ({ id: `preview-${i}`, prompt: c.prompt, imageContext: c.imageContext, status: 'preview' as const }));
-
-  const [localId, setLocalId] = useState(project.id);
-
-  useEffect(() => {
-    setLocalId(project.id);
-  }, [project.id]);
-
-  const handleIdCommit = () => {
-    const newId = localId.trim().replace(/[^a-zA-Z0-9-_]/g, '_');
-    if (newId && newId !== project.id) {
-      onUpdate({ ...project, id: newId });
-    } else {
-      setLocalId(project.id); // Revert if empty
-    }
-  };
 
   return (
     <div className="flex h-full bg-neutral-950">
       {/* Left Pane: Workflow Builder */}
       <div className="w-96 border-r border-neutral-800 bg-neutral-900/30 flex flex-col">
-        <div className="p-4 border-b border-neutral-800 flex flex-col gap-2">
-          <input
-            type="text"
-            value={project.name}
-            onChange={(e) => onUpdate({ ...project, name: e.target.value })}
-            placeholder="Project Name"
-            className="bg-transparent text-xl font-bold text-white focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-1 w-full"
-          />
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-500 font-mono">Project ID:</span>
-            <input
-              type="text"
-              value={localId}
-              onChange={(e) => setLocalId(e.target.value)}
-              onBlur={handleIdCommit}
-              onKeyDown={(e) => e.key === 'Enter' && handleIdCommit()}
-              placeholder="project-id"
-              className="bg-neutral-950 text-xs font-mono text-neutral-400 border border-neutral-800 focus:border-blue-500 focus:outline-none rounded px-2 py-1 flex-1"
-            />
-            <button onClick={onDelete} className="text-neutral-500 hover:text-red-400 p-1" title="Delete Project">
-              <Trash2 className="w-4 h-4" />
-            </button>
+        <div className="p-4 border-b border-neutral-800 flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 flex-1 group">
+              <h2 className="text-xl font-bold text-white truncate tracking-tight">{localProject.name}</h2>
+              <button 
+                onClick={() => navigate(`/project/${project.id}/edit`)}
+                className="p-1.5 text-neutral-600 hover:text-green-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-green-400/10 rounded-lg"
+                title="Edit Project Information"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
+            {hasChanges && (
+              <button
+                onClick={handleSave}
+                className="flex-shrink-0 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg shadow-blue-500/20 transition-all animate-in fade-in zoom-in"
+                title="Save Changes"
+              >
+                <Save className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-neutral-950 border border-neutral-800 rounded">ID: {project.id}</span>
+            </div>
+            <div className="flex items-center gap-2 ml-2">
+              {!hasChanges && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" title="All changes saved" />}
+              <button onClick={() => setShowDeleteProjectModal(true)} className="text-neutral-500 hover:text-red-400 p-1" title="Delete Project">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="p-4 border-b border-neutral-800 flex gap-2">
-          <button onClick={() => addWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1 bg-neutral-800 hover:bg-neutral-700 text-xs py-2 rounded text-neutral-300">
+        <div className="p-3 border-b border-neutral-800 flex gap-2 bg-neutral-900/50">
+          <button onClick={() => addWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
             <Type className="w-3 h-3" /> Text
           </button>
-          <button onClick={() => addWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1 bg-neutral-800 hover:bg-neutral-700 text-xs py-2 rounded text-neutral-300">
-            <LibraryIcon className="w-3 h-3" /> Library
+          <button onClick={() => addWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
+            <LibraryIcon className="w-3 h-3" /> Lib
           </button>
-          <button onClick={() => addWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1 bg-neutral-800 hover:bg-neutral-700 text-xs py-2 rounded text-neutral-300">
-            <ImageIcon className="w-3 h-3" /> Image
+          <button onClick={() => addWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
+            <ImageIcon className="w-3 h-3" /> Img
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {(project.workflow || []).map((item, index) => (
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          {(localProject.workflow || []).map((item, index) => (
             <div 
               key={item.id} 
               draggable
@@ -281,29 +297,27 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               onDragOver={(e) => handleDragOver(e, index)}
               onDrop={(e) => handleDrop(e, index)}
               onDragEnd={handleDragEnd}
-              className={`bg-neutral-800/50 border rounded-lg p-3 group transition-all ${
+              className={`bg-neutral-900/50 border rounded-xl p-3 group transition-all ${
                 draggedIndex === index ? 'opacity-50 border-blue-500' : 
                 dragOverIndex === index ? 'border-blue-400 border-dashed bg-neutral-800' : 
-                'border-neutral-700'
+                'border-neutral-800 hover:border-neutral-700 shadow-sm'
               }`}
             >
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="cursor-grab active:cursor-grabbing text-neutral-500 hover:text-white">
+                  <div className="cursor-grab active:cursor-grabbing text-neutral-600 hover:text-neutral-400 transition-colors">
                     <GripVertical className="w-4 h-4" />
                   </div>
-                  <span className="text-xs font-semibold text-neutral-400 uppercase flex items-center gap-1">
-                    {item.type === 'text' && <Type className="w-3 h-3" />}
-                    {item.type === 'library' && <LibraryIcon className="w-3 h-3" />}
-                    {item.type === 'image' && <ImageIcon className="w-3 h-3" />}
+                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+                    {item.type === 'text' && <Type className="w-3 h-3 text-blue-500" />}
+                    {item.type === 'library' && <LibraryIcon className="w-3 h-3 text-emerald-500" />}
+                    {item.type === 'image' && <ImageIcon className="w-3 h-3 text-amber-500" />}
                     {item.type}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => removeWorkflowItem(item.id)} className="text-neutral-500 hover:text-red-400 ml-1">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                <button onClick={() => removeWorkflowItem(item.id)} className="text-neutral-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
 
               {item.type === 'text' && (
@@ -311,7 +325,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                   value={item.value}
                   onChange={(e) => updateWorkflowItem(item.id, e.target.value)}
                   placeholder="Enter prompt text..."
-                  className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white focus:outline-none focus:border-blue-500 resize-none h-20"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-xs text-neutral-200 focus:outline-none focus:border-blue-500/50 resize-none h-24 transition-colors"
                 />
               )}
 
@@ -319,100 +333,114 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                 <select
                   value={item.value}
                   onChange={(e) => updateWorkflowItem(item.id, e.target.value)}
-                  className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-xs text-neutral-200 focus:outline-none focus:border-emerald-500/50 transition-colors cursor-pointer"
                 >
                   <option value="" disabled>Select a library</option>
                   {libraries.map(lib => (
-                    <option key={lib.id} value={lib.id}>{lib.name} ({lib.type || 'text'}, {lib.items.length} items)</option>
+                    <option key={lib.id} value={lib.id}>{lib.name} ({lib.type || 'text'})</option>
                   ))}
                 </select>
               )}
 
               {item.type === 'image' && (
-                <div className="space-y-2">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e, item.id)}
-                    className="w-full text-sm text-neutral-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30"
-                  />
+                <div className="space-y-3">
+                  <label className="block w-full text-center py-4 border border-dashed border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-amber-500/50 transition-all group">
+                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">Choose Image</span>
+                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, item.id)} className="hidden" />
+                  </label>
                   {item.value && (
-                    <img src={item.value} alt="Reference" className="w-full h-32 object-cover rounded border border-neutral-700" />
+                    <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-800 mt-2">
+                       <img src={item.value} alt="Reference" className="w-full h-full object-cover" />
+                    </div>
                   )}
                 </div>
               )}
             </div>
           ))}
           
-          {(project.workflow || []).length === 0 && (
-            <div className="text-center text-neutral-500 text-sm py-8">
-              Add items above to build your prompt workflow.
+          {(localProject.workflow || []).length === 0 && (
+            <div className="text-center text-neutral-600 text-[10px] font-bold uppercase tracking-widest py-12 border border-dashed border-neutral-800 rounded-2xl bg-neutral-900/20">
+              Build your workflow
             </div>
           )}
         </div>
 
-        <div className="p-4 border-t border-neutral-800 bg-neutral-900">
-          <div className="flex justify-between text-sm mb-3">
-            <span className="text-neutral-400">Tasks:</span>
-            <span className="text-white font-mono">{combinations.length}</span>
+        <div className="p-4 border-t border-neutral-800 bg-neutral-900 shadow-2xl">
+          <div className="flex justify-between text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-neutral-500">
+            <span>Combinations:</span>
+            <span className="text-blue-400">{combinations.length}</span>
           </div>
           <button
             onClick={toggleProcessing}
             disabled={combinations.length === 0 && !isProcessing && activeTasks.length === 0}
-            className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+            className={`w-full py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-all ${
               isProcessing 
-                ? 'bg-red-600 hover:bg-red-700 text-white' 
-                : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed'
+                ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-[0.98]'
             }`}
           >
-            {isProcessing ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-            {isProcessing ? 'Stop Processing' : 'Start'}
+            {isProcessing ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+            {isProcessing ? 'Halt Process' : 'Run Workflow'}
           </button>
         </div>
       </div>
 
       {/* Right Pane: Jobs Grid */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-neutral-900/50">
+        <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-neutral-900/20 backdrop-blur-md shadow-sm">
           <div>
-            <h2 className="text-lg font-semibold text-white">Project Status</h2>
-            <div className="flex items-center gap-4 text-sm text-neutral-400 mt-1">
-              <span>{completedTasks.length} / {total} completed</span>
-              {failedTasks.length > 0 && <span className="text-red-400">{failedTasks.length} failed</span>}
+            <h2 className="text-xl font-bold text-white tracking-tight">Project Status</h2>
+            <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500 mt-2">
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> {completedTasks.length} Done</span>
+              <span className="text-neutral-800">•</span>
+              <span>{total} Total</span>
+              {failedTasks.length > 0 && (
+                <>
+                  <span className="text-neutral-800">•</span>
+                  <span className="text-red-400 flex items-center gap-1.5"><AlertCircle className="w-3 h-3" /> {failedTasks.length} Failed</span>
+                </>
+              )}
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            {total > 0 && (
-              <div className="w-48 h-2 bg-neutral-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-500 transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            )}
+          <div className="flex flex-col items-end gap-2">
+            <span className="text-[10px] font-black font-mono text-blue-500 tracking-[0.3em]">{progress}%</span>
+            <div className="w-64 h-1.5 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
           
           {/* Tasks Section */}
           <section>
-            <h3 className="text-lg font-semibold text-white mb-4">Tasks</h3>
-            <div className="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden">
-              <div className="max-h-60 overflow-y-auto p-2 space-y-2">
+            <div className="flex items-center gap-3 mb-6">
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neutral-400">Queue Management</h3>
+              <div className="h-px flex-1 bg-neutral-800/50" />
+            </div>
+            <div className="bg-neutral-900/30 border border-neutral-800 rounded-2xl overflow-hidden backdrop-blur-sm">
+              <div className="max-h-72 overflow-y-auto p-3 space-y-2 custom-scrollbar">
                 {displayTasks.map(task => (
-                  <div key={task.id} className="bg-neutral-950 p-3 rounded border border-neutral-800 flex justify-between items-center">
-                    <span className="text-sm text-neutral-300 line-clamp-1" title={task.prompt}>{task.prompt}</span>
-                    <div className="ml-4 flex-shrink-0">
-                      {task.status === 'processing' && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
-                      {task.status === 'pending' && <span className="text-xs text-neutral-500 font-medium px-2 py-1 bg-neutral-800 rounded">Pending</span>}
-                      {task.status === 'preview' && <span className="text-xs text-neutral-500 font-medium px-2 py-1 bg-neutral-800 rounded">Preview</span>}
+                  <div key={task.id} className="bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/50 flex justify-between items-center hover:border-neutral-700 transition-colors">
+                    <span className="text-xs text-neutral-400 font-medium line-clamp-1 flex-1 pr-6" title={task.prompt}>{task.prompt}</span>
+                    <div className="flex-shrink-0">
+                      {task.status === 'processing' && (
+                        <div className="flex items-center gap-2 text-blue-400 text-[10px] font-bold uppercase tracking-widest">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Running
+                        </div>
+                      )}
+                      {task.status === 'pending' && <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest px-2.5 py-1.5 bg-neutral-900 rounded-lg border border-neutral-800 shadow-sm">Queued</span>}
+                      {task.status === 'preview' && <span className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest px-2.5 py-1.5 bg-neutral-900 rounded-lg border border-neutral-800 border-dashed">Plan</span>}
                     </div>
                   </div>
                 ))}
                 {displayTasks.length === 0 && (
-                  <div className="p-4 text-center text-neutral-500 text-sm">No tasks available. Build your workflow on the left.</div>
+                  <div className="py-12 text-center text-neutral-600 text-xs font-bold uppercase tracking-widest">No active tasks in queue</div>
                 )}
               </div>
             </div>
@@ -420,28 +448,33 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
           {/* Album Section */}
           <section>
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-baseline gap-2">
-              Album 
-              <span className="text-sm font-normal text-neutral-500">Cumulative Generated Results</span>
-            </h3>
+            <div className="flex items-center gap-3 mb-8">
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neutral-400">Generation Album</h3>
+              <div className="h-px flex-1 bg-neutral-800/50" />
+            </div>
             
             {completedTasks.length === 0 ? (
-              <div className="bg-neutral-900/50 border border-neutral-800 border-dashed rounded-lg p-8 text-center text-neutral-500">
-                <ImageIcon className="w-8 h-8 mx-auto mb-3 opacity-50" />
-                <p>No images in album yet. Start tasks to generate results.</p>
+              <div className="bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-3xl p-20 text-center text-neutral-500 flex flex-col items-center gap-4 transition-colors hover:border-neutral-700 shadow-inner">
+                <ImageIcon className="w-12 h-12 text-neutral-800" />
+                <div>
+                  <p className="text-lg font-bold text-neutral-400 tracking-tight">Your Gallery is empty</p>
+                  <p className="text-xs font-medium text-neutral-600 uppercase tracking-widest mt-1">Start workflow to generate</p>
+                </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {completedTasks.map(job => (
-                  <div key={job.id} className="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden flex flex-col group">
-                    <div className="aspect-square bg-neutral-950 relative flex items-center justify-center">
-                      <img src={job.imageUrl} alt={job.prompt} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <CheckCircle2 className="w-5 h-5 text-green-500 drop-shadow-md" />
+                  <div key={job.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group hover:border-blue-500/50 transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 active:scale-100">
+                    <div className="aspect-square bg-neutral-950 relative flex items-center justify-center overflow-hidden">
+                      <img src={job.imageUrl} alt={job.prompt} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 shadow-lg" referrerPolicy="no-referrer" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                        <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                       </div>
                     </div>
-                    <div className="p-3 text-xs text-neutral-400 line-clamp-2 flex-1 border-t border-neutral-800" title={job.prompt}>
-                      {job.prompt}
+                    <div className="p-4 bg-neutral-900/80 backdrop-blur-sm">
+                      <p className="text-[10px] leading-relaxed text-neutral-400 line-clamp-3 font-medium" title={job.prompt}>
+                        {job.prompt}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -451,24 +484,30 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
           {/* Errors Section */}
           {failedTasks.length > 0 && (
-            <section>
+            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <button 
                 onClick={() => setShowErrors(!showErrors)} 
-                className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors font-medium mb-4"
+                className="flex items-center gap-3 text-red-400 hover:text-red-300 transition-all font-black uppercase tracking-[0.2em] text-xs mb-6 group"
               >
-                {showErrors ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                Errors ({failedTasks.length})
+                <div className={`p-1.5 rounded-lg border transition-all ${showErrors ? 'bg-red-500 text-white border-red-500' : 'bg-red-500/10 border-red-500/20 group-hover:bg-red-500/20'}`}>
+                  {showErrors ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </div>
+                Logs ({failedTasks.length})
               </button>
               
               {showErrors && (
-                <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 gap-3">
                   {failedTasks.map(job => (
-                    <div key={job.id} className="bg-red-950/20 border border-red-900/30 p-4 rounded-lg flex flex-col gap-2">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm text-neutral-300 mb-1">{job.prompt}</p>
-                          <p className="text-xs text-red-400 font-mono bg-red-950/50 p-2 rounded">{job.error}</p>
+                    <div key={job.id} className="bg-red-950/10 border border-red-900/20 p-5 rounded-2xl flex flex-col gap-4 backdrop-blur-sm shadow-xl">
+                      <div className="flex items-start gap-4">
+                        <div className="p-2 bg-red-500/10 rounded-xl">
+                          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-neutral-300 mb-3 leading-relaxed">{job.prompt}</p>
+                          <div className="p-4 bg-red-950/20 border border-red-900/30 rounded-xl">
+                            <code className="text-[10px] text-red-400 font-mono break-all leading-tight">{job.error}</code>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -480,6 +519,25 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
         </div>
       </div>
+      <ConfirmModal
+        isOpen={showDeleteProjectModal}
+        onClose={() => setShowDeleteProjectModal(false)}
+        onConfirm={onDelete}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${localProject.name}"? This action cannot be undone.`}
+        confirmText="Delete Project"
+        type="danger"
+      />
+
+      <ConfirmModal
+        isOpen={itemToRemoveId !== null}
+        onClose={() => setItemToRemoveId(null)}
+        onConfirm={confirmRemoveWorkflowItem}
+        title="Remove Workflow Item"
+        message="Are you sure you want to remove this item from your workflow?"
+        confirmText="Remove Item"
+        type="danger"
+      />
     </div>
   );
 }

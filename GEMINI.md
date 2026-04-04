@@ -1,0 +1,3 @@
+- all delete actions should have confirmation.
+- the app listens to port 3000.
+- ban browser usage.

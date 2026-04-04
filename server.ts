@@ -79,31 +79,6 @@ async function startServer() {
   const PORT = 3000;
 
   // Auth API
-  app.post('/api/auth/register', async (c) => {
-    try {
-      const { email, password } = await c.req.json();
-      if (!email || !password) return c.json({ error: 'Missing email or password' }, 400);
-
-      const hasUsers = await userRepository.hasAnyUsers();
-      const role = hasUsers ? 'user' : 'admin';
-      const passwordHash = await hashPassword(password);
-      
-      const userId = crypto.randomUUID();
-      await userRepository.createUser({
-        pk: 'USER',
-        sk: userId,
-        email,
-        passwordHash,
-        role,
-        createdAt: Date.now(),
-      });
-
-      const token = signToken({ userId, email, role });
-      return c.json({ token, user: { id: userId, email, role } });
-    } catch (e: any) {
-      return c.json({ error: e.message || 'Failed to register' }, 400);
-    }
-  });
 
   app.post('/api/auth/login', async (c) => {
     try {

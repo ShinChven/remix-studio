@@ -2,16 +2,24 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, Outlet, Link } from 'react-router-dom';
 import { AppData, Library, Project } from '../types';
 import { loadData, saveData } from '../api';
-import { Plus, Folder, Layers, Play, Search, ChevronDown, ChevronRight, LogOut, User as UserIcon, Shield } from 'lucide-react';
+import { Plus, Folder, Layers, Play, Search, ChevronDown, ChevronRight, LogOut, User as UserIcon, Shield, LayoutGrid, Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from './ConfirmModal';
 
 export function MainLayout() {
   const [data, setData] = useState<AppData>({ libraries: [], projects: [] });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLibsOpen, setIsLibsOpen] = useState(true);
-  const [isProjsOpen, setIsProjsOpen] = useState(true);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebar-collapsed');
+    return saved === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', String(isCollapsed));
+  }, [isCollapsed]);
+
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -31,171 +39,106 @@ export function MainLayout() {
   }, []);
 
   const handleSave = async (newData: AppData) => {
+    setIsSaving(true);
     setData(newData);
-    await saveData(newData);
+    try {
+      await saveData(newData);
+    } finally {
+      setTimeout(() => setIsSaving(false), 800);
+    }
   };
 
-  const addLibrary = (type: 'text' | 'image') => {
-    const newLib: Library = {
-      id: crypto.randomUUID(),
-      name: `New ${type === 'image' ? 'Image ' : ''}Library ${data.libraries.length + 1}`,
-      type,
-      items: []
-    };
-    handleSave({ ...data, libraries: [...data.libraries, newLib] });
-    navigate(`/library/${newLib.id}`);
+  const addLibrary = () => {
+    navigate('/library/new');
   };
 
   const addProject = () => {
-    const newProject: Project = {
-      id: `project-${data.projects.length + 1}`,
-      name: `New Project ${data.projects.length + 1}`,
-      createdAt: Date.now(),
-      workflow: [],
-      jobs: []
-    };
-    handleSave({ ...data, projects: [newProject, ...data.projects] });
-    navigate(`/project/${newProject.id}`);
+    navigate('/project/new');
   };
-
-  const filteredLibraries = useMemo(() => 
-    data.libraries.filter(l => l.name.toLowerCase().includes(searchQuery.toLowerCase())),
-  [data.libraries, searchQuery]);
-
-  const filteredProjects = useMemo(() => 
-    data.projects.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.id.toLowerCase().includes(searchQuery.toLowerCase())),
-  [data.projects, searchQuery]);
 
   return (
     <div className="flex h-screen bg-neutral-950 text-neutral-200 font-sans">
       {/* Sidebar */}
-      <div className="w-64 bg-neutral-900 border-r border-neutral-800 flex flex-col">
-        <div className="p-4 border-b border-neutral-800">
+      <div className={`${isCollapsed ? 'w-20' : 'w-64'} bg-neutral-900 border-r border-neutral-800 flex flex-col transition-all duration-300 ease-in-out relative group`}>
+        <div className="p-4 border-neutral-800 flex items-center justify-between">
           <Link 
             to="/"
-            className="w-full text-left hover:opacity-80 transition-opacity block"
+            className={`flex-1 transition-all duration-300 overflow-hidden ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-full opacity-100'}`}
           >
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <Layers className="w-6 h-6 text-blue-500" />
+            <h1 className="text-xl font-bold text-white flex items-center gap-2 whitespace-nowrap">
+              <Layers className="w-6 h-6 text-blue-500 flex-shrink-0" />
               Remix Studio
             </h1>
           </Link>
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`p-2 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors ${isCollapsed ? 'w-full flex justify-center' : ''}`}
+            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+          </button>
         </div>
+
         
-        <div className="p-3 border-b border-neutral-800">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-md pl-9 pr-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
-            />
-          </div>
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <Link
+            to="/"
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
+              location.pathname === '/' 
+                ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' 
+                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
+            } ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+            title="Dashboard"
+          >
+            <LayoutGrid className="w-5 h-5 flex-shrink-0" />
+            {!isCollapsed && <span className="font-medium text-sm">Dashboard</span>}
+          </Link>
+
+          <Link
+            to="/libraries"
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
+              location.pathname === '/libraries' || location.pathname.startsWith('/library/')
+                ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' 
+                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
+            } ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+            title="Libraries"
+          >
+            <Folder className="w-5 h-5 flex-shrink-0" />
+            {!isCollapsed && <span className="font-medium text-sm">Libraries</span>}
+          </Link>
+
+          <Link
+            to="/projects"
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
+              location.pathname === '/projects' || location.pathname.startsWith('/project/')
+                ? 'bg-green-600/10 text-green-400 border border-green-600/20' 
+                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
+            } ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+            title="Projects"
+          >
+            <Play className="w-5 h-5 flex-shrink-0" />
+            {!isCollapsed && <span className="font-medium text-sm">Projects</span>}
+          </Link>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-6">
-          {/* Libraries Section */}
-          <div>
-            <div className="flex items-center justify-between mb-1 px-1">
-              <button 
-                onClick={() => setIsLibsOpen(!isLibsOpen)}
-                className="flex items-center gap-1 text-xs font-semibold text-neutral-500 uppercase tracking-wider hover:text-neutral-300"
-              >
-                {isLibsOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                Libraries ({filteredLibraries.length})
-              </button>
-              <div className="flex gap-1">
-                <button onClick={() => addLibrary('text')} className="text-neutral-400 hover:text-white p-1" title="Add Text Library">
-                  <Plus className="w-4 h-4" />
-                </button>
-                <button onClick={() => addLibrary('image')} className="text-neutral-400 hover:text-white p-1" title="Add Image Library">
-                  <Layers className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            {isLibsOpen && (
-              <ul className="space-y-0.5 mt-1">
-                {filteredLibraries.map(lib => (
-                  <li key={lib.id}>
-                    <Link
-                      to={`/library/${lib.id}`}
-                      className={`w-full text-left px-2 py-1.5 rounded-md flex items-center gap-2 text-sm transition-colors ${
-                        location.pathname === `/library/${lib.id}`
-                          ? 'bg-blue-600/20 text-blue-400' 
-                          : 'hover:bg-neutral-800 text-neutral-300'
-                      }`}
-                    >
-                      <Folder className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{lib.name}</span>
-                    </Link>
-                  </li>
-                ))}
-                {filteredLibraries.length === 0 && (
-                  <li className="px-2 py-1.5 text-xs text-neutral-600 italic">No libraries found</li>
-                )}
-              </ul>
-            )}
-          </div>
-
-          {/* Projects Section */}
-          <div>
-            <div className="flex items-center justify-between mb-1 px-1">
-              <button 
-                onClick={() => setIsProjsOpen(!isProjsOpen)}
-                className="flex items-center gap-1 text-xs font-semibold text-neutral-500 uppercase tracking-wider hover:text-neutral-300"
-              >
-                {isProjsOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                Projects ({filteredProjects.length})
-              </button>
-              <button 
-                onClick={addProject} 
-                className="text-neutral-400 hover:text-white p-1"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            {isProjsOpen && (
-              <ul className="space-y-0.5 mt-1">
-                {filteredProjects.map(project => (
-                  <li key={project.id}>
-                    <Link
-                      to={`/project/${project.id}`}
-                      className={`w-full text-left px-2 py-1.5 rounded-md flex items-center gap-2 text-sm transition-colors ${
-                        location.pathname === `/project/${project.id}`
-                          ? 'bg-green-600/20 text-green-400' 
-                          : 'hover:bg-neutral-800 text-neutral-300'
-                      }`}
-                    >
-                      <Play className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{project.name}</span>
-                    </Link>
-                  </li>
-                ))}
-                {filteredProjects.length === 0 && (
-                  <li className="px-2 py-1.5 text-xs text-neutral-600 italic">No projects found</li>
-                )}
-              </ul>
-            )}
-          </div>
-        </div>
 
         {/* User Profile */}
         <div className="p-4 border-t border-neutral-800 bg-neutral-900/50 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 overflow-hidden">
+          <div className={`flex items-center ${isCollapsed ? 'flex-col gap-4' : 'justify-between'}`}>
+            <div className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'justify-center' : ''}`}>
               <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 text-neutral-400">
                 <UserIcon className="w-4 h-4" />
               </div>
-              <div className="truncate">
-                <p className="text-sm font-medium text-neutral-200 truncate">{user?.email}</p>
-                <p className="text-xs text-neutral-500 capitalize">{user?.role}</p>
-              </div>
+              {!isCollapsed && (
+                <div className="truncate">
+                  <p className="text-sm font-medium text-neutral-200 truncate">{user?.email}</p>
+                  <p className="text-xs text-neutral-500 capitalize">{user?.role}</p>
+                </div>
+              )}
             </div>
             <button
               onClick={() => setIsLogoutModalOpen(true)}
-              className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+              className={`p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ${isCollapsed ? 'w-full flex justify-center' : ''}`}
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
@@ -204,17 +147,27 @@ export function MainLayout() {
           {user?.role === 'admin' && (
             <Link
               to="/admin/users"
-              className="mt-3 flex items-center justify-center gap-2 w-full py-2 px-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm rounded-lg transition-colors border border-neutral-700/50"
+              className={`mt-3 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm rounded-lg transition-colors border border-neutral-700/50 ${isCollapsed ? 'p-2' : 'py-2 px-3 gap-2 w-full'}`}
+              title="User Management"
             >
               <Shield className="w-4 h-4 text-blue-400" />
-              User Management
+              {!isCollapsed && <span>User Management</span>}
             </Link>
           )}
         </div>
+
       </div>
 
-      <div className="flex-1 overflow-hidden bg-neutral-950">
-        <Outlet context={{ data, handleSave, addLibrary, addProject }} />
+      <div className="flex-1 overflow-hidden bg-neutral-950 flex flex-col">
+        {isSaving && (
+          <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 py-1.5 flex items-center justify-center gap-2 text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em] animate-pulse">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Saving Changes
+          </div>
+        )}
+        <div className="flex-1 overflow-hidden">
+          <Outlet context={{ data, handleSave, addLibrary, addProject }} />
+        </div>
       </div>
 
       <ConfirmModal
