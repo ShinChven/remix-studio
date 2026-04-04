@@ -212,7 +212,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     const newJobs: Job[] = selectedCombinations.map(combo => ({
       id: crypto.randomUUID(),
       prompt: combo.prompt,
-      imageContext: combo.imageContext,
+      imageContexts: combo.imageContexts,
       status: 'pending'
     }));
 
@@ -261,7 +261,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const failedTasks = localProject.jobs.filter(j => j.status === 'failed');
   const total = localProject.jobs.length;
   const progress = total === 0 ? 0 : Math.round((completedTasks.length + failedTasks.length) / total * 100);
-  const combinationsPreview = combinations.map((c, i) => ({ id: `preview-${i}`, prompt: c.prompt, imageContext: c.imageContext, status: 'preview' as const }));
+  const combinationsPreview = combinations.map((c, i) => ({ id: `preview-${i}`, prompt: c.prompt, imageContexts: c.imageContexts, status: 'preview' as const }));
   const displayTasks = activeTasks.length > 0 
     ? activeTasks 
     : combinationsPreview.slice(0, queueCount);

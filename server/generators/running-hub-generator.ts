@@ -63,16 +63,18 @@ export class RunningHubGenerator extends ImageGenerator {
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
-    const { prompt, aspectRatio = '2:3', imageSize = '1K', refImageBase64 } = req;
+    const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64 } = req;
 
     // --- Step 1: optional image upload ---
     const imageUrls: string[] = [];
-    if (refImageBase64) {
-      const up = await this.uploadImage(refImageBase64);
-      if (up.ok === false) {
-        return { ok: false, error: up.error };
+    if (refImagesBase64 && refImagesBase64.length > 0) {
+      for (const base64 of refImagesBase64) {
+        const up = await this.uploadImage(base64);
+        if (up.ok === false) {
+          return { ok: false, error: up.error };
+        }
+        imageUrls.push(up.url);
       }
-      imageUrls.push(up.url);
     }
 
     // --- Step 2: submit task ---

@@ -16,11 +16,13 @@ export class VertexAIGenerator extends ImageGenerator {
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
-    const { prompt, aspectRatio = '2:3', imageSize = '1K', refImageBase64 } = req;
+    const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64 } = req;
 
     const parts: object[] = [{ text: prompt }];
-    if (refImageBase64) {
-      parts.push({ inline_data: { mime_type: 'image/png', data: refImageBase64 } });
+    if (refImagesBase64 && refImagesBase64.length > 0) {
+      for (const base64 of refImagesBase64) {
+        parts.push({ inline_data: { mime_type: 'image/png', data: base64 } });
+      }
     }
 
     const payload = {

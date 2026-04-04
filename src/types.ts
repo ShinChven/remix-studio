@@ -25,7 +25,7 @@ export interface Library {
 export interface Job {
   id: string;
   prompt: string;
-  imageContext?: string;
+  imageContexts?: string[];
   status: 'pending' | 'processing' | 'completed' | 'failed';
   imageUrl?: string;
   error?: string;

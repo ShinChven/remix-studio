@@ -104,8 +104,8 @@ export class QueueManager {
 
       const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
       
-      const refImage = job.imageContext 
-        ? job.imageContext.replace(/^data:image\/\w+;base64,/, '') 
+      const refImages = job.imageContexts 
+        ? job.imageContexts.map(b64 => b64.replace(/^data:image\/\w+;base64,/, ''))
         : undefined;
 
       // 3. Generate
@@ -113,7 +113,7 @@ export class QueueManager {
         prompt: job.prompt,
         aspectRatio: queued.aspectRatio || '1:1', 
         imageSize: queued.quality || '1K',
-        refImageBase64: refImage
+        refImagesBase64: refImages
       });
 
       if (result.ok === false) throw new Error(result.error);

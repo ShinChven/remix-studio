@@ -50,7 +50,7 @@ export function createGenerateRouter(providerRepo: ProviderRepository) {
       if (!apiKey) return c.json({ error: 'Provider has no API key stored' }, 400);
 
       const generator = buildGenerator(record.type as ProviderType, apiKey, record.apiUrl);
-      const result = await generator.generate({ prompt, aspectRatio, imageSize, refImageBase64: refImage });
+      const result = await generator.generate({ prompt, aspectRatio, imageSize, refImagesBase64: refImage ? [refImage] : undefined });
 
       if (result.ok === false) {
         return c.json({ error: result.error }, 502);
