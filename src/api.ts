@@ -222,3 +222,24 @@ export async function deleteProvider(id: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete provider');
 }
 
+// ========== AI Generation ==========
+
+export async function generateImage(params: {
+  providerId: string;
+  prompt: string;
+  aspectRatio?: string;
+  imageSize?: string;
+  refImage?: string;
+}): Promise<{ image: string }> {
+  const res = await fetch('/api/generate', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.error || 'Failed to generate image');
+  }
+  return res.json();
+}
+
