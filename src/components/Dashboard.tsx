@@ -1,9 +1,16 @@
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { AppData } from '../types';
-import { Plus, Play, Folder, LayoutGrid, Clock, Layers } from 'lucide-react';
+import { Library, Project } from '../types';
+import { Plus, Play, Folder, LayoutGrid, Clock } from 'lucide-react';
+
+interface ContextType {
+  libraries: Library[];
+  projects: Project[];
+  addLibrary: () => void;
+  addProject: () => void;
+}
 
 export function Dashboard() {
-  const { data, addLibrary, addProject } = useOutletContext<{ data: AppData, addLibrary: () => void, addProject: () => void }>();
+  const { libraries, projects, addLibrary, addProject } = useOutletContext<ContextType>();
   const navigate = useNavigate();
 
   return (
@@ -25,7 +32,7 @@ export function Dashboard() {
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.projects.slice(0, 6).map(project => (
+            {projects.slice(0, 6).map(project => (
               <button
                 key={project.id}
                 onClick={() => navigate(`/project/${project.id}`)}
@@ -41,7 +48,7 @@ export function Dashboard() {
                 <p className="text-xs text-neutral-500 mt-1">{project.jobs?.length || 0} jobs • {new Date(project.createdAt).toLocaleDateString()}</p>
               </button>
             ))}
-            {data.projects.length === 0 && (
+            {projects.length === 0 && (
               <div className="col-span-full p-8 border border-neutral-800 border-dashed rounded-xl text-center text-neutral-500">
                 No projects yet. Create one to start generating.
               </div>
@@ -62,7 +69,7 @@ export function Dashboard() {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {data.libraries.slice(0, 8).map(lib => (
+            {libraries.slice(0, 8).map(lib => (
               <button
                 key={lib.id}
                 onClick={() => navigate(`/library/${lib.id}`)}
@@ -77,7 +84,7 @@ export function Dashboard() {
                 <p className="text-xs text-neutral-500">{lib.items?.length || 0} items</p>
               </button>
             ))}
-            {data.libraries.length === 0 && (
+            {libraries.length === 0 && (
               <div className="col-span-full p-8 border border-neutral-800 border-dashed rounded-xl text-center text-neutral-500">
                 No libraries yet. Create one to store reusable prompts.
               </div>

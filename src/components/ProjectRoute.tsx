@@ -1,14 +1,47 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
-import { AppData, Project } from '../types';
+import { Project, Library } from '../types';
+import { fetchProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject, renameProjectFolder } from '../api';
 import { ProjectViewer } from './ProjectViewer';
-import { renameProjectFolder } from '../api';
+import { Loader2 } from 'lucide-react';
+
+interface ContextType {
+  libraries: Library[];
+  refreshProjects: () => Promise<void>;
+}
 
 export function ProjectRoute() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data, handleSave } = useOutletContext<{ data: AppData, handleSave: (d: AppData) => void }>();
+  const { libraries, refreshProjects } = useOutletContext<ContextType>();
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const project = data.projects.find(p => p.id === id);
+  const loadProject = async () => {
+    if (!id) return;
+    try {
+      const proj = await fetchProject(id);
+      setProject(proj);
+    } catch (e) {
+      console.error(e);
+      setProject(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    loadProject();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-neutral-500 animate-spin" />
+      </div>
+    );
+  }
 
   if (!project) {
     return <div className="p-8 text-neutral-500">Project not found.</div>;
@@ -16,15 +49,11 @@ export function ProjectRoute() {
 
   const onUpdate = async (updatedProject: Project) => {
     const idChanged = updatedProject.id !== project.id;
-    
-    let finalProject = updatedProject;
 
     if (idChanged) {
       try {
         await renameProjectFolder(project.id, updatedProject.id);
-        
-        // Update image URLs to point to the new folder
-        finalProject = {
+        updatedProject = {
           ...updatedProject,
           jobs: updatedProject.jobs.map(job => {
             if (job.imageUrl && job.imageUrl.includes(`/api/images/${project.id}/`)) {
@@ -38,30 +67,37 @@ export function ProjectRoute() {
         };
       } catch (e) {
         console.error("Failed to rename project folder:", e);
-        // If rename fails, we might want to revert the ID change, but for now just proceed
-        // or we could show an error. Let's revert the ID change.
         alert("Failed to rename project folder. Reverting ID change.");
-        finalProject = { ...updatedProject, id: project.id };
+        updatedProject = { ...updatedProject, id: project.id };
       }
     }
-    
-    handleSave({
-      ...data,
-      projects: data.projects.map(p => p.id === project.id ? finalProject : p)
-    });
 
-    if (idChanged && finalProject.id === updatedProject.id) {
-      navigate(`/project/${finalProject.id}`, { replace: true });
+    try {
+      await apiUpdateProject(project.id, {
+        name: updatedProject.name,
+        workflow: updatedProject.workflow,
+        jobs: updatedProject.jobs,
+      });
+      setProject(updatedProject);
+    } catch (e) {
+      console.error('Failed to update project:', e);
+    }
+
+    if (idChanged && updatedProject.id !== project.id) {
+      navigate(`/project/${updatedProject.id}`, { replace: true });
     }
   };
 
-  const onDelete = () => {
-    handleSave({
-      ...data,
-      projects: data.projects.filter(p => p.id !== project.id)
-    });
-    navigate('/');
+  const onDelete = async () => {
+    if (!id) return;
+    try {
+      await apiDeleteProject(id);
+      await refreshProjects();
+      navigate('/');
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  return <ProjectViewer project={project} libraries={data.libraries} onUpdate={onUpdate} onDelete={onDelete} />;
+  return <ProjectViewer project={project} libraries={libraries} onUpdate={onUpdate} onDelete={onDelete} />;
 }

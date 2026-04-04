@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Library } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, CheckCircle2, Edit3, Settings, ChevronRight, Maximize2, Search, ChevronLeft, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
+import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem } from '../api';
 
 interface Props {
   library: Library;
@@ -16,6 +17,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [itemToRemoveIndex, setItemToRemoveIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [uploading, setUploading] = useState(false);
   const ITEMS_PER_PAGE = 24;
 
   useEffect(() => {
@@ -42,48 +44,48 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     setItemToRemoveIndex(index);
   };
 
-  const confirmRemoveItem = () => {
+  const confirmRemoveItem = async () => {
     if (itemToRemoveIndex !== null) {
-      const newItems = [...library.items];
-      newItems.splice(itemToRemoveIndex, 1);
-      onUpdate({ ...library, items: newItems });
+      const item = library.items[itemToRemoveIndex];
+      try {
+        await apiDeleteLibraryItem(library.id, item.id);
+        const newItems = [...library.items];
+        newItems.splice(itemToRemoveIndex, 1);
+        onUpdate({ ...library, items: newItems });
+      } catch (e) {
+        console.error('Failed to delete item:', e);
+      }
       setItemToRemoveIndex(null);
     }
   };
 
-  const handleItemSave = (index: number, content: string, title?: string) => {
-    const newItems = [...library.items];
-    newItems[index] = { 
-      ...newItems[index], 
-      content,
-      title: title !== undefined ? title : newItems[index].title
-    };
-    onUpdate({ ...library, items: newItems });
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
 
-    const newItems = [...library.items];
-    let loadedCount = 0;
+    setUploading(true);
+    try {
+      const newItems = [...library.items];
 
-    files.forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          newItems.push({ 
-            id: crypto.randomUUID(), 
-            content: e.target.result as string 
-          });
-        }
-        loadedCount++;
-        if (loadedCount === files.length) {
-          onUpdate({ ...library, items: newItems });
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+      for (const file of files) {
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target?.result as string);
+          reader.readAsDataURL(file);
+        });
+
+        const url = await saveImage(base64, library.id);
+        const newItem = { id: crypto.randomUUID(), content: url };
+        await createLibraryItem(library.id, newItem);
+        newItems.push(newItem);
+      }
+
+      onUpdate({ ...library, items: newItems });
+    } catch (err) {
+      console.error('Failed to upload images:', err);
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -94,7 +96,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
              <div className="w-1.5 h-6 md:h-8 bg-blue-600 rounded-full" />
              <h2 className="text-2xl md:text-4xl font-black text-white tracking-tight">{library.name}</h2>
           </div>
-          
+
           <div className="flex items-center gap-4 mt-2 md:mt-3">
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 px-2.5 py-1 bg-neutral-900/50 border border-neutral-800 rounded-lg backdrop-blur-sm">
               {library.type || 'text'} Collection
@@ -116,10 +118,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {library.type === 'image' ? (
-              <label className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl cursor-pointer transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm">
-                <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />
-                <span className="text-xs font-bold uppercase tracking-widest">Upload</span>
-                <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} />
+              <label className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />}
+                <span className="text-xs font-bold uppercase tracking-widest">{uploading ? 'Uploading...' : 'Upload'}</span>
+                <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} disabled={uploading} />
               </label>
             ) : (
               <button
@@ -131,7 +133,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               </button>
             )}
 
-            <button 
+            <button
               onClick={() => navigate(`/library/${library.id}/edit`)}
               className="p-2.5 text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-800/50 hover:border-neutral-700 active:scale-95"
               title="Edit Library Settings"
@@ -139,7 +141,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               <Settings className="w-5 h-5" />
             </button>
 
-            <button 
+            <button
               onClick={() => setShowDeleteLibraryModal(true)}
               className="p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-red-400/20 active:scale-95"
               title="Delete Library"
@@ -162,8 +164,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                         <div className="flex justify-between items-center">
                           <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">IMG_{originalIndex + 1}</span>
                           <div className="flex items-center gap-2">
-                             <button 
-                               onClick={() => handleRemoveItem(originalIndex)} 
+                             <button
+                               onClick={() => handleRemoveItem(originalIndex)}
                                className="p-2.5 bg-neutral-950/80 text-neutral-400 hover:text-red-500 rounded-xl backdrop-blur-md border border-white/5 hover:border-red-500/20 transition-all active:scale-90"
                              >
                                <Trash2 className="w-4 h-4" />
@@ -190,14 +192,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
-                        <button 
+                        <button
                           onClick={() => navigate(`/library/${library.id}/prompt/${originalIndex}`)}
                           className="p-2.5 md:p-3 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-2xl transition-all border border-transparent hover:border-neutral-700 active:scale-95 shadow-sm"
                           title="Refine in Full Editor"
                         >
                           <Edit3 className="w-4 h-4 md:w-4.5 md:h-4.5" />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleRemoveItem(originalIndex)}
                           className="p-2.5 md:p-3 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all border border-transparent hover:border-red-500/20 active:scale-95 shadow-sm"
                           title="Delete Fragment"
@@ -244,8 +246,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   key={i}
                   onClick={() => setCurrentPage(i + 1)}
                   className={`w-10 h-10 rounded-xl text-xs font-black transition-all active:scale-95 ${
-                    currentPage === i + 1 
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
+                    currentPage === i + 1
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                       : 'bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-white hover:border-neutral-700'
                   }`}
                 >

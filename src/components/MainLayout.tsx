@@ -1,14 +1,15 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Outlet, Link } from 'react-router-dom';
-import { AppData, Library, Project } from '../types';
-import { loadData, saveData } from '../api';
-import { Plus, Folder, Layers, Play, Search, ChevronDown, ChevronRight, LogOut, User as UserIcon, Shield, LayoutGrid, Loader2, PanelLeftClose, PanelLeftOpen, StickyNote, Menu, X } from 'lucide-react';
+import { Library, Project } from '../types';
+import { fetchLibraries, fetchProjects } from '../api';
+import { Folder, Layers, Play, LogOut, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from './ConfirmModal';
 
 export function MainLayout() {
-  const [data, setData] = useState<AppData>({ libraries: [], projects: [] });
+  const [libraries, setLibraries] = useState<Library[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -17,7 +18,6 @@ export function MainLayout() {
   });
 
   useEffect(() => {
-    // Close mobile menu on window resize if it gets larger than mobile/tablet
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
         setIsMobileMenuOpen(false);
@@ -31,37 +31,32 @@ export function MainLayout() {
     localStorage.setItem('sidebar-collapsed', String(isCollapsed));
   }, [isCollapsed]);
 
-  
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  useEffect(() => {
-    loadData().then(fetchedData => {
-      setData({
-        libraries: (fetchedData.libraries || []).map(lib => ({
-          ...lib,
-          type: lib.type || 'text',
-          items: (lib.items || []).map((item: any) => 
-            typeof item === 'string' 
-              ? { id: crypto.randomUUID(), content: item } 
-              : item
-          )
-        })),
-        // @ts-ignore - handle legacy data
-        projects: fetchedData.projects || fetchedData.batches || []
-      });
-    }).catch(console.error);
-  }, []);
-
-  const handleSave = async (newData: AppData) => {
-    setData(newData);
+  const refreshLibraries = async () => {
     try {
-      await saveData(newData);
+      const libs = await fetchLibraries();
+      setLibraries(libs);
     } catch (e) {
       console.error(e);
     }
   };
+
+  const refreshProjects = async () => {
+    try {
+      const projs = await fetchProjects();
+      setProjects(projs);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    refreshLibraries();
+    refreshProjects();
+  }, []);
 
   const addLibrary = () => {
     navigate('/library/new');
@@ -89,7 +84,7 @@ export function MainLayout() {
 
       {/* Backdrop for Mobile Sidebar */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] transition-opacity duration-300"
           onClick={() => setIsMobileMenuOpen(false)}
         />
@@ -103,7 +98,7 @@ export function MainLayout() {
         bg-neutral-900 border-r border-neutral-800 flex flex-col group
       `}>
         <div className="p-4 border-neutral-800 flex items-center justify-between">
-          <Link 
+          <Link
             to="/"
             onClick={() => setIsMobileMenuOpen(false)}
             className={`flex-1 transition-all duration-300 overflow-hidden ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}
@@ -128,14 +123,13 @@ export function MainLayout() {
           </button>
         </div>
 
-        
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           <Link
             to="/"
             onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
-              location.pathname === '/' 
-                ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' 
+              location.pathname === '/'
+                ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
             } ${isCollapsed ? 'lg:justify-center' : 'gap-3'} gap-3`}
             title="Dashboard"
@@ -149,7 +143,7 @@ export function MainLayout() {
             onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
               location.pathname === '/projects' || location.pathname.startsWith('/project/')
-                ? 'bg-green-600/10 text-green-400 border border-green-600/20' 
+                ? 'bg-green-600/10 text-green-400 border border-green-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
             } ${isCollapsed ? 'lg:justify-center' : 'gap-3'} gap-3`}
             title="Projects"
@@ -163,7 +157,7 @@ export function MainLayout() {
             onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
               location.pathname === '/libraries' || location.pathname.startsWith('/library/')
-                ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' 
+                ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
             } ${isCollapsed ? 'lg:justify-center' : 'gap-3'} gap-3`}
             title="Libraries"
@@ -171,9 +165,7 @@ export function MainLayout() {
             <Folder className="w-5 h-5 flex-shrink-0" />
             <span className={`font-medium text-sm transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}>Libraries</span>
           </Link>
-
         </div>
-
 
         {/* User Profile */}
         <div className="p-4 border-t border-neutral-800 bg-neutral-900/50 flex-shrink-0">
@@ -207,13 +199,11 @@ export function MainLayout() {
             </Link>
           )}
         </div>
-
       </div>
 
       <div className="flex-1 overflow-hidden bg-neutral-950 flex flex-col mt-16 lg:mt-0 min-w-0 relative">
-
         <div className="flex-1 overflow-hidden min-w-0">
-          <Outlet context={{ data, handleSave, addLibrary, addProject }} />
+          <Outlet context={{ libraries, projects, refreshLibraries, refreshProjects, addLibrary, addProject }} />
         </div>
       </div>
 

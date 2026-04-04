@@ -1,28 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
-import { AppData, Project } from '../types';
-import { Save, Layers, Terminal, Play } from 'lucide-react';
+import { Project } from '../types';
+import { Layers, Terminal, Play } from 'lucide-react';
+import { createProject, updateProject, fetchProject } from '../api';
 
 interface ContextType {
-  data: AppData;
-  handleSave: (newData: AppData) => Promise<void>;
+  projects: Project[];
+  refreshProjects: () => Promise<void>;
 }
 
 export function ProjectForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data, handleSave } = useOutletContext<ContextType>();
-  
+  const { projects, refreshProjects } = useOutletContext<ContextType>();
+
   const isNew = !id;
-  const existingProject = id ? data.projects.find(p => p.id === id) : null;
-  
+  const existingProject = id ? projects.find(p => p.id === id) : null;
+
   const [name, setName] = useState(existingProject?.name || '');
   const [projectId, setProjectId] = useState(existingProject?.id || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (id && !existingProject) {
-      navigate('/projects');
+      fetchProject(id).then(proj => {
+        setName(proj.name);
+        setProjectId(proj.id);
+      }).catch(() => navigate('/projects'));
     }
   }, [id, existingProject, navigate]);
 
@@ -32,30 +36,23 @@ export function ProjectForm() {
 
     setIsSubmitting(true);
     try {
-      let newData: AppData;
       let targetId: string;
 
       if (isNew) {
         targetId = projectId.trim().replace(/[^a-zA-Z0-9-_]/g, '_') || `project-${Date.now()}`;
-        const newProject: Project = {
+        await createProject({
           id: targetId,
           name: name.trim(),
           createdAt: Date.now(),
           workflow: [],
-          jobs: []
-        };
-        newData = { ...data, projects: [newProject, ...data.projects] };
+          jobs: [],
+        });
       } else {
         targetId = id!;
-        newData = {
-          ...data,
-          projects: data.projects.map(p => 
-            p.id === id ? { ...p, name: name.trim() } : p
-          )
-        };
+        await updateProject(targetId, { name: name.trim() });
       }
 
-      await handleSave(newData);
+      await refreshProjects();
       navigate(`/project/${targetId}`);
     } catch (error) {
       console.error('Failed to save project:', error);

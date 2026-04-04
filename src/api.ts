@@ -1,4 +1,4 @@
-import { AppData, User, UserRole } from './types';
+import { AppData, Library, LibraryItem, Project, User, UserRole } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const token = localStorage.getItem('token');
@@ -8,20 +8,129 @@ function getHeaders(isJson = true): HeadersInit {
   return headers;
 }
 
+// ========== Legacy bulk load (used for initial data fetch) ==========
+
 export async function loadData(): Promise<AppData> {
   const res = await fetch('/api/data', { headers: getHeaders(false) });
   if (!res.ok) throw new Error('Failed to load data');
   return res.json();
 }
 
-export async function saveData(data: AppData): Promise<void> {
-  const res = await fetch('/api/data', {
+// ========== Library CRUD ==========
+
+export async function fetchLibraries(): Promise<Library[]> {
+  const res = await fetch('/api/libraries', { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to list libraries');
+  return res.json();
+}
+
+export async function fetchLibrary(id: string): Promise<Library> {
+  const res = await fetch(`/api/libraries/${id}`, { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to get library');
+  return res.json();
+}
+
+export async function createLibrary(library: { id: string; name: string; type: string }): Promise<void> {
+  const res = await fetch('/api/libraries', {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify(data),
+    body: JSON.stringify(library),
   });
-  if (!res.ok) throw new Error('Failed to save data');
+  if (!res.ok) throw new Error('Failed to create library');
 }
+
+export async function updateLibrary(id: string, updates: { name?: string; type?: string }): Promise<void> {
+  const res = await fetch(`/api/libraries/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error('Failed to update library');
+}
+
+export async function deleteLibrary(id: string): Promise<void> {
+  const res = await fetch(`/api/libraries/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to delete library');
+}
+
+// ========== Library Item CRUD ==========
+
+export async function fetchLibraryItems(libraryId: string): Promise<LibraryItem[]> {
+  const res = await fetch(`/api/libraries/${libraryId}/items`, { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to list items');
+  return res.json();
+}
+
+export async function createLibraryItem(libraryId: string, item: LibraryItem): Promise<void> {
+  const res = await fetch(`/api/libraries/${libraryId}/items`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(item),
+  });
+  if (!res.ok) throw new Error('Failed to create item');
+}
+
+export async function updateLibraryItem(libraryId: string, itemId: string, updates: Partial<LibraryItem>): Promise<void> {
+  const res = await fetch(`/api/libraries/${libraryId}/items/${itemId}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error('Failed to update item');
+}
+
+export async function deleteLibraryItem(libraryId: string, itemId: string): Promise<void> {
+  const res = await fetch(`/api/libraries/${libraryId}/items/${itemId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to delete item');
+}
+
+// ========== Project CRUD ==========
+
+export async function fetchProjects(): Promise<Project[]> {
+  const res = await fetch('/api/projects', { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to list projects');
+  return res.json();
+}
+
+export async function fetchProject(id: string): Promise<Project> {
+  const res = await fetch(`/api/projects/${id}`, { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to get project');
+  return res.json();
+}
+
+export async function createProject(project: Project): Promise<void> {
+  const res = await fetch('/api/projects', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(project),
+  });
+  if (!res.ok) throw new Error('Failed to create project');
+}
+
+export async function updateProject(id: string, updates: Partial<Project>): Promise<void> {
+  const res = await fetch(`/api/projects/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error('Failed to update project');
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  const res = await fetch(`/api/projects/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to delete project');
+}
+
+// ========== Image Storage ==========
 
 export async function saveImage(base64: string, projectId: string): Promise<string> {
   const res = await fetch('/api/images', {
@@ -42,6 +151,8 @@ export async function renameProjectFolder(oldId: string, newId: string): Promise
   });
   if (!res.ok) throw new Error('Failed to rename project folder');
 }
+
+// ========== Admin ==========
 
 export async function getUsers(): Promise<User[]> {
   const res = await fetch('/api/admin/users', { headers: getHeaders(false) });

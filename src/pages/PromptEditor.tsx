@@ -1,24 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
-import { AppData, Library } from '../types';
-import { Save, ChevronLeft, StickyNote, Maximize2, Minimize2, Split, Eye, Edit3, Trash2, Calendar, FileText } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Library } from '../types';
+import { Save, ChevronLeft, StickyNote, Maximize2, Minimize2, Split, Eye, Edit3, Calendar, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-
-interface ContextType {
-  data: AppData;
-  handleSave: (newData: AppData) => Promise<void>;
-}
+import { fetchLibrary, createLibraryItem, updateLibraryItem } from '../api';
 
 export function PromptEditor() {
   const { id, index } = useParams<{ id: string, index: string }>();
   const navigate = useNavigate();
-  const { data, handleSave } = useOutletContext<ContextType>();
-  
-  const library = data.libraries.find(l => l.id === id);
+
   const isNew = index === 'new';
   const itemIndex = isNew ? -1 : parseInt(index || '0');
-  
+
+  const [library, setLibrary] = useState<Library | null>(null);
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,51 +21,42 @@ export function PromptEditor() {
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
-    if (!library) {
-      navigate('/libraries');
-      return;
-    }
-    if (!isNew) {
-      const item = library.items[itemIndex];
-      if (item === undefined) {
-        navigate(`/library/${id}`);
-      } else {
-        setContent(item.content || '');
-        setTitle(item.title || '');
+    if (!id) return;
+    fetchLibrary(id).then(lib => {
+      setLibrary(lib);
+      if (!isNew) {
+        const item = lib.items[itemIndex];
+        if (item === undefined) {
+          navigate(`/library/${id}`);
+        } else {
+          setContent(item.content || '');
+          setTitle(item.title || '');
+        }
       }
-    }
-  }, [id, index, library, isNew, itemIndex, navigate]);
+    }).catch(() => navigate('/libraries'));
+  }, [id, index]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!library) return;
+    if (!library || !id) return;
 
     setIsSubmitting(true);
     try {
-      const newItems = [...library.items];
-      const newItem = {
-        id: isNew ? crypto.randomUUID() : (library.items[itemIndex]?.id || crypto.randomUUID()),
-        content,
-        title: title.trim() || undefined
-      };
-
       if (isNew) {
-        newItems.push(newItem);
+        const newItem = {
+          id: crypto.randomUUID(),
+          content,
+          title: title.trim() || undefined,
+        };
+        await createLibraryItem(id, newItem);
       } else {
-        newItems[itemIndex] = newItem;
+        const existingItem = library.items[itemIndex];
+        await updateLibraryItem(id, existingItem.id, {
+          content,
+          title: title.trim() || undefined,
+        });
       }
 
-      const updatedLibrary: Library = {
-        ...library,
-        items: newItems
-      };
-
-      const newData: AppData = {
-        ...data,
-        libraries: data.libraries.map(l => l.id === id ? updatedLibrary : l)
-      };
-
-      await handleSave(newData);
       navigate(`/library/${id}`);
     } catch (error) {
       console.error('Failed to save library prompt:', error);
@@ -84,7 +70,7 @@ export function PromptEditor() {
   return (
     <div className={`h-full flex flex-col bg-neutral-950 transition-all ${isFullScreen ? 'fixed inset-0 z-[60] p-4 md:p-6' : 'p-4 md:p-8'}`}>
       <div className="w-full flex flex-col h-full gap-6 animate-in fade-in duration-500">
-        
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-neutral-900 border border-neutral-800 rounded-2xl md:rounded-3xl p-4 md:pl-6 shadow-2xl backdrop-blur-xl">
           <div className="flex items-center gap-3 md:gap-4 flex-1">
@@ -116,21 +102,21 @@ export function PromptEditor() {
 
           <div className="flex items-center gap-2 md:gap-3 justify-between md:justify-end">
              <div className="flex items-center bg-neutral-950 p-1 rounded-xl md:rounded-2xl border border-neutral-800 mr-1 md:mr-2">
-                <button 
+                <button
                   onClick={() => setViewMode('edit')}
                   className={`p-1.5 md:p-2 rounded-lg md:rounded-xl transition-all ${viewMode === 'edit' ? 'bg-neutral-800 text-blue-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                   title="Editor Only"
                 >
                   <Edit3 className="w-4 md:w-4.5 h-4 md:h-4.5" />
                 </button>
-                <button 
+                <button
                   onClick={() => setViewMode('split')}
                   className={`p-1.5 md:p-2 rounded-lg md:rounded-xl transition-all ${viewMode === 'split' ? 'bg-neutral-800 text-blue-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                   title="Split View"
                 >
                   <Split className="w-4 md:w-4.5 h-4 md:h-4.5" />
                 </button>
-                <button 
+                <button
                   onClick={() => setViewMode('preview')}
                   className={`p-1.5 md:p-2 rounded-lg md:rounded-xl transition-all ${viewMode === 'preview' ? 'bg-neutral-800 text-blue-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
                   title="Preview Only"
@@ -139,7 +125,7 @@ export function PromptEditor() {
                 </button>
              </div>
 
-             <button 
+             <button
                onClick={() => setIsFullScreen(!isFullScreen)}
                className="p-2 md:p-3 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-xl md:rounded-2xl transition-all border border-neutral-800/50"
                title="Toggle Fullscreen"
@@ -162,7 +148,7 @@ export function PromptEditor() {
         {/* Editor Content */}
         <div className="flex-1 min-h-0 bg-neutral-900 border border-neutral-800 rounded-3xl md:rounded-[40px] overflow-hidden flex shadow-2xl flex-col">
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-            
+
             {(viewMode === 'edit' || viewMode === 'split') && (
               <div className={`flex-1 flex flex-col h-full ${viewMode === 'split' ? 'border-r border-neutral-800' : ''}`}>
                 <div className="px-6 py-3 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/20">
@@ -202,9 +188,9 @@ export function PromptEditor() {
                 </div>
               </div>
             )}
-            
+
           </div>
-          
+
           <div className="bg-neutral-950/50 border-t border-neutral-800 px-4 md:px-6 py-2 md:py-3 flex flex-wrap items-center justify-between gap-y-2 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-neutral-600">
              <div className="flex items-center gap-4 md:gap-6">
                <span>Words: {content.trim() === '' ? 0 : content.trim().split(/\s+/).length}</span>

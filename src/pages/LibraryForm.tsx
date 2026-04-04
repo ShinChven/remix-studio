@@ -1,28 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
-import { AppData, Library } from '../types';
+import { Library } from '../types';
 import { Save, Folder, Type, Image as ImageIcon } from 'lucide-react';
+import { createLibrary, updateLibrary, fetchLibrary } from '../api';
 
 interface ContextType {
-  data: AppData;
-  handleSave: (newData: AppData) => Promise<void>;
+  libraries: Library[];
+  refreshLibraries: () => Promise<void>;
 }
 
 export function LibraryForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data, handleSave } = useOutletContext<ContextType>();
-  
+  const { libraries, refreshLibraries } = useOutletContext<ContextType>();
+
   const isNew = !id;
-  const existingLibrary = id ? data.libraries.find(l => l.id === id) : null;
-  
+  const existingLibrary = id ? libraries.find(l => l.id === id) : null;
+
   const [name, setName] = useState(existingLibrary?.name || '');
   const [type, setType] = useState<'text' | 'image'>(existingLibrary?.type || 'text');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (id && !existingLibrary) {
-      navigate('/libraries');
+      // Try to fetch it directly in case libraries list hasn't loaded yet
+      fetchLibrary(id).then(lib => {
+        setName(lib.name);
+        setType(lib.type);
+      }).catch(() => navigate('/libraries'));
     }
   }, [id, existingLibrary, navigate]);
 
@@ -32,29 +37,17 @@ export function LibraryForm() {
 
     setIsSubmitting(true);
     try {
-      let newData: AppData;
       let targetId: string;
 
       if (isNew) {
         targetId = crypto.randomUUID();
-        const newLib: Library = {
-          id: targetId,
-          name: name.trim(),
-          type,
-          items: []
-        };
-        newData = { ...data, libraries: [...data.libraries, newLib] };
+        await createLibrary({ id: targetId, name: name.trim(), type });
       } else {
         targetId = id!;
-        newData = {
-          ...data,
-          libraries: data.libraries.map(l => 
-            l.id === id ? { ...l, name: name.trim(), type } : l
-          )
-        };
+        await updateLibrary(targetId, { name: name.trim(), type });
       }
 
-      await handleSave(newData);
+      await refreshLibraries();
       navigate(`/library/${targetId}`);
     } catch (error) {
       console.error('Failed to save library:', error);
@@ -100,8 +93,8 @@ export function LibraryForm() {
                   type="button"
                   onClick={() => setType('text')}
                   className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
-                    type === 'text' 
-                      ? 'bg-blue-600/10 border-blue-500/50 text-blue-400' 
+                    type === 'text'
+                      ? 'bg-blue-600/10 border-blue-500/50 text-blue-400'
                       : 'bg-neutral-950 border-neutral-800 text-neutral-600 hover:border-neutral-700'
                   }`}
                 >
@@ -112,8 +105,8 @@ export function LibraryForm() {
                   type="button"
                   onClick={() => setType('image')}
                   className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
-                    type === 'image' 
-                      ? 'bg-emerald-600/10 border-emerald-500/50 text-emerald-400' 
+                    type === 'image'
+                      ? 'bg-emerald-600/10 border-emerald-500/50 text-emerald-400'
                       : 'bg-neutral-950 border-neutral-800 text-neutral-600 hover:border-neutral-700'
                   }`}
                 >

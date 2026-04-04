@@ -1,9 +1,14 @@
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { AppData } from '../types';
+import { Project } from '../types';
 import { Plus, Play, Clock, LayoutGrid } from 'lucide-react';
 
+interface ContextType {
+  projects: Project[];
+  addProject: () => void;
+}
+
 export function Projects() {
-  const { data, addProject } = useOutletContext<{ data: AppData, addProject: () => void }>();
+  const { projects, addProject } = useOutletContext<ContextType>();
   const navigate = useNavigate();
 
   return (
@@ -20,16 +25,16 @@ export function Projects() {
               <Clock className="w-5 h-5 text-green-500" />
               All Projects
             </h3>
-            <button 
-              onClick={addProject} 
+            <button
+              onClick={addProject}
               className="text-xs md:text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-green-600/30 font-medium"
             >
               <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Project</span><span className="sm:hidden">New</span>
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {data.projects.map(project => (
+            {projects.map(project => (
               <button
                 key={project.id}
                 onClick={() => navigate(`/project/${project.id}`)}
@@ -43,9 +48,9 @@ export function Projects() {
                     {project.id}
                   </span>
                 </div>
-                
+
                 <h4 className="text-lg font-semibold text-white truncate mb-2">{project.name}</h4>
-                
+
                 <div className="flex items-center gap-4 text-sm text-neutral-500 mb-4">
                   <div className="flex items-center gap-1.5">
                     <LayoutGrid className="w-4 h-4" />
@@ -56,17 +61,16 @@ export function Projects() {
                     <span>{new Date(project.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
-                
+
                 <div className="pt-4 border-t border-neutral-800/50 flex items-center justify-end text-xs text-green-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                   Open Project →
                 </div>
-                
-                {/* Subtle gradient overlay on hover */}
+
                 <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-green-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               </button>
             ))}
-            
-            {data.projects.length === 0 && (
+
+            {projects.length === 0 && (
               <div className="col-span-full py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">
                 <Play className="w-12 h-12 text-neutral-700" />
                 <div>

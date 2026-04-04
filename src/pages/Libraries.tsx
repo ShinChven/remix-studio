@@ -1,9 +1,14 @@
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { AppData } from '../types';
+import { Library } from '../types';
 import { Plus, Folder, LayoutGrid, Layers, ChevronRight } from 'lucide-react';
 
+interface ContextType {
+  libraries: Library[];
+  addLibrary: () => void;
+}
+
 export function Libraries() {
-  const { data, addLibrary } = useOutletContext<{ data: AppData, addLibrary: () => void }>();
+  const { libraries, addLibrary } = useOutletContext<ContextType>();
   const navigate = useNavigate();
 
   return (
@@ -21,17 +26,17 @@ export function Libraries() {
               All Libraries
             </h3>
             <div className="flex gap-2">
-              <button 
-                onClick={addLibrary} 
+              <button
+                onClick={addLibrary}
                 className="text-xs md:text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-blue-600/30 font-medium"
               >
                 <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Library</span><span className="sm:hidden">New</span>
               </button>
             </div>
           </div>
-          
+
           <div className="space-y-3">
-            {data.libraries.map(lib => (
+            {libraries.map(lib => (
               <button
                 key={lib.id}
                 onClick={() => navigate(`/library/${lib.id}`)}
@@ -50,15 +55,15 @@ export function Libraries() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
                   <span className="hidden sm:inline text-sm font-medium text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">Open Editor →</span>
                   <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-blue-500 transition-colors" />
                 </div>
               </button>
             ))}
-            
-            {data.libraries.length === 0 && (
+
+            {libraries.length === 0 && (
               <div className="col-span-full py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">
                 <Folder className="w-12 h-12 text-neutral-700" />
                 <div>

@@ -43,7 +43,7 @@ async function startServer() {
   // Auto-provision default admin user if configured
   const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
   const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
-  
+
   if (defaultAdminEmail && defaultAdminPassword) {
     const existingAdmin = await userRepository.findByEmail(defaultAdminEmail);
     if (!existingAdmin) {
@@ -78,7 +78,7 @@ async function startServer() {
   const app = new Hono<{ Variables: Variables }>();
   const PORT = 3000;
 
-  // Auth API
+  // ========== Auth API ==========
 
   app.post('/api/auth/login', async (c) => {
     try {
@@ -101,7 +101,8 @@ async function startServer() {
     return c.json({ user: { id: payload.userId, email: payload.email, role: payload.role } });
   });
 
-  // Admin Routes
+  // ========== Admin Routes ==========
+
   app.get('/api/admin/users', authMiddleware, adminOnly, async (c) => {
     const users = await userRepository.listUsers();
     return c.json(users.map(u => ({ id: u.sk, email: u.email, role: u.role, createdAt: u.createdAt })));
@@ -118,7 +119,8 @@ async function startServer() {
     }
   });
 
-  // API Routes
+  // ========== Legacy bulk data (kept for backward compat during migration) ==========
+
   app.get('/api/data', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
@@ -129,16 +131,161 @@ async function startServer() {
     }
   });
 
-  app.post('/api/data', authMiddleware, async (c) => {
+  // ========== Library CRUD ==========
+
+  app.get('/api/libraries', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      const body = await c.req.json();
-      await repository.saveUserData(user.userId, body);
-      return c.json({ success: true });
+      const libraries = await repository.getUserLibraries(user.userId);
+      return c.json(libraries);
     } catch (e) {
-      return c.json({ error: 'Failed to save data' }, 500);
+      return c.json({ error: 'Failed to list libraries' }, 500);
     }
   });
+
+  app.get('/api/libraries/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const library = await repository.getLibrary(user.userId, c.req.param('id'));
+      if (!library) return c.json({ error: 'Not found' }, 404);
+      return c.json(library);
+    } catch (e) {
+      return c.json({ error: 'Failed to get library' }, 500);
+    }
+  });
+
+  app.post('/api/libraries', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const { id, name, type } = await c.req.json();
+      await repository.createLibrary(user.userId, { id, name, type });
+      return c.json({ success: true }, 201);
+    } catch (e) {
+      return c.json({ error: 'Failed to create library' }, 500);
+    }
+  });
+
+  app.put('/api/libraries/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const updates = await c.req.json();
+      await repository.updateLibrary(user.userId, c.req.param('id'), updates);
+      return c.json({ success: true });
+    } catch (e) {
+      return c.json({ error: 'Failed to update library' }, 500);
+    }
+  });
+
+  app.delete('/api/libraries/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      await repository.deleteLibrary(user.userId, c.req.param('id'));
+      return c.json({ success: true });
+    } catch (e) {
+      return c.json({ error: 'Failed to delete library' }, 500);
+    }
+  });
+
+  // ========== Library Item CRUD ==========
+
+  app.get('/api/libraries/:libId/items', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const items = await repository.getLibraryItems(user.userId, c.req.param('libId'));
+      return c.json(items);
+    } catch (e) {
+      return c.json({ error: 'Failed to list items' }, 500);
+    }
+  });
+
+  app.post('/api/libraries/:libId/items', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const item = await c.req.json();
+      await repository.createLibraryItem(user.userId, c.req.param('libId'), item);
+      return c.json({ success: true }, 201);
+    } catch (e) {
+      return c.json({ error: 'Failed to create item' }, 500);
+    }
+  });
+
+  app.put('/api/libraries/:libId/items/:itemId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const updates = await c.req.json();
+      await repository.updateLibraryItem(user.userId, c.req.param('libId'), c.req.param('itemId'), updates);
+      return c.json({ success: true });
+    } catch (e) {
+      return c.json({ error: 'Failed to update item' }, 500);
+    }
+  });
+
+  app.delete('/api/libraries/:libId/items/:itemId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      await repository.deleteLibraryItem(user.userId, c.req.param('libId'), c.req.param('itemId'));
+      return c.json({ success: true });
+    } catch (e) {
+      return c.json({ error: 'Failed to delete item' }, 500);
+    }
+  });
+
+  // ========== Project CRUD ==========
+
+  app.get('/api/projects', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projects = await repository.getUserProjects(user.userId);
+      return c.json(projects);
+    } catch (e) {
+      return c.json({ error: 'Failed to list projects' }, 500);
+    }
+  });
+
+  app.get('/api/projects/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const project = await repository.getProject(user.userId, c.req.param('id'));
+      if (!project) return c.json({ error: 'Not found' }, 404);
+      return c.json(project);
+    } catch (e) {
+      return c.json({ error: 'Failed to get project' }, 500);
+    }
+  });
+
+  app.post('/api/projects', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const project = await c.req.json();
+      await repository.createProject(user.userId, project);
+      return c.json({ success: true }, 201);
+    } catch (e) {
+      return c.json({ error: 'Failed to create project' }, 500);
+    }
+  });
+
+  app.put('/api/projects/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const updates = await c.req.json();
+      await repository.updateProject(user.userId, c.req.param('id'), updates);
+      return c.json({ success: true });
+    } catch (e) {
+      return c.json({ error: 'Failed to update project' }, 500);
+    }
+  });
+
+  app.delete('/api/projects/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      await repository.deleteProject(user.userId, c.req.param('id'));
+      return c.json({ success: true });
+    } catch (e) {
+      return c.json({ error: 'Failed to delete project' }, 500);
+    }
+  });
+
+  // ========== Image Storage ==========
 
   app.post('/api/images', authMiddleware, async (c) => {
     try {
@@ -188,23 +335,21 @@ async function startServer() {
     }
   });
 
-  // Get Hono's fetch handler for use in Node HTTP server
+  // ========== Server Setup ==========
+
   const honoHandler = serve({ fetch: app.fetch, port: PORT });
 
   if (process.env.NODE_ENV !== 'production') {
-    // Development: compose Hono + Vite on a single HTTP server
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
 
-    // Close the default server that @hono/node-server created
     (honoHandler as http.Server).close();
 
     const server = http.createServer((req, res) => {
       const url = req.url || '';
       if (url.startsWith('/api/')) {
-        // Route to Hono
         Promise.resolve(
           app.fetch(
             new Request(`http://localhost:${PORT}${url}`, {
@@ -226,7 +371,6 @@ async function startServer() {
           res.end('Internal Server Error');
         });
       } else {
-        // Route to Vite
         vite.middlewares(req, res);
       }
     });
@@ -235,7 +379,6 @@ async function startServer() {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   } else {
-    // Production: Hono serves static files
     const distPath = path.join(process.cwd(), 'dist');
 
     app.get('*', async (c) => {
@@ -244,7 +387,6 @@ async function startServer() {
         const content = fs.readFileSync(filePath);
         return new Response(content);
       }
-      // SPA fallback
       const html = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
       return c.html(html);
     });
