@@ -18,6 +18,7 @@ import { createLibraryRouter } from './server/routes/libraries';
 import { createProjectRouter } from './server/routes/projects';
 import { createImageRouter } from './server/routes/images';
 import { createProviderRouter } from './server/routes/providers';
+import { createGenerateRouter } from './server/routes/generate';
 import { ProviderRepository } from './server/db/provider-repository';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -102,6 +103,7 @@ async function startServer() {
   app.route('/', createProjectRouter(repository, storage));
   app.route('/', createImageRouter(storage));
   app.route('/', createProviderRouter(providerRepository));
+  app.route('/', createGenerateRouter(providerRepository));
 
   // === Server setup ===
   const PORT_NUM = PORT;
