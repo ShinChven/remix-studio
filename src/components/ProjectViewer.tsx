@@ -29,6 +29,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(project.providerId || '');
   const [isFetchingProviders, setIsFetchingProviders] = useState(true);
+  const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(true);
+  const [queueCount, setQueueCount] = useState<number>(0);
+  const [hasManuallySetQueueCount, setHasManuallySetQueueCount] = useState(false);
   
   const projectRef = useRef(localProject);
   const isProcessing = localProject.jobs.some(j => j.status === 'pending' || j.status === 'processing');
@@ -79,6 +82,14 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       }
     })();
   }, []);
+
+  const combinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
+
+  useEffect(() => {
+    if (!hasManuallySetQueueCount || queueCount > combinations.length) {
+      setQueueCount(combinations.length);
+    }
+  }, [combinations.length]);
 
   const handleSave = async () => {
     onUpdate(localProject);
@@ -182,10 +193,13 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
   const generateAndStart = async () => {
     // 1. Sync any local pending workflow changes to the server
-    const combinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
-    if (combinations.length === 0) return;
+    const currentCombinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
+    if (currentCombinations.length === 0) return;
 
-    const newJobs: Job[] = combinations.map(combo => ({
+    // Use only the requested number of combinations
+    const selectedCombinations = currentCombinations.slice(0, queueCount);
+
+    const newJobs: Job[] = selectedCombinations.map(combo => ({
       id: crypto.randomUUID(),
       prompt: combo.prompt,
       imageContext: combo.imageContext,
@@ -234,10 +248,10 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const failedTasks = localProject.jobs.filter(j => j.status === 'failed');
   const total = localProject.jobs.length;
   const progress = total === 0 ? 0 : Math.round((completedTasks.length + failedTasks.length) / total * 100);
-  const combinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
+  const combinationsPreview = combinations.map((c, i) => ({ id: `preview-${i}`, prompt: c.prompt, imageContext: c.imageContext, status: 'preview' as const }));
   const displayTasks = activeTasks.length > 0 
     ? activeTasks 
-    : combinations.map((c, i) => ({ id: `preview-${i}`, prompt: c.prompt, imageContext: c.imageContext, status: 'preview' as const }));
+    : combinationsPreview.slice(0, queueCount);
 
   return (
     <div className="flex flex-col lg:flex-row h-full bg-neutral-950 overflow-hidden lg:overflow-visible">
@@ -393,97 +407,145 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         </div>
 
         <div className="p-4 border-t border-neutral-800 bg-neutral-900 shadow-2xl">
-          <div className="flex justify-between text-[10px] font-bold uppercase tracking-[0.2em] mb-2 text-neutral-500">
-            <span>Combinations:</span>
-            <span className="text-blue-400">{combinations.length}</span>
-          </div>
-
-          <div className="mb-4 space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                AI Provider
-              </label>
-              <select
-                value={selectedProviderId}
-                onChange={(e) => {
-                  setSelectedProviderId(e.target.value);
-                  const updated = { ...localProject, providerId: e.target.value };
-                  setLocalProject(updated);
-                  onUpdate(updated);
-                }}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/40 transition-all font-medium appearance-none cursor-pointer hover:bg-neutral-900 shadow-inner"
-                disabled={isProcessing || isFetchingProviders}
-              >
-                {isFetchingProviders ? (
-                  <option>Loading providers...</option>
-                ) : providers.length === 0 ? (
-                  <option>No providers configured</option>
-                ) : (
-                  providers.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.type})
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            <div className="space-y-2.5">
-              <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                Aspect Ratio
-              </label>
-              <div className="grid grid-cols-4 gap-1.5">
-                {[
-                  { label: '1:1', ratio: '1:1', icon: 'w-3 h-3' },
-                  { label: '4:3', ratio: '4:3', icon: 'w-4 h-3' },
-                  { label: '3:4', ratio: '3:4', icon: 'w-3 h-4' },
-                  { label: '16:9', ratio: '16:9', icon: 'w-5 h-3' },
-                  { label: '9:16', ratio: '9:16', icon: 'w-3 h-5' },
-                  { label: '2:3', ratio: '2:3', icon: 'w-3 h-4.5' },
-                  { label: '3:2', ratio: '3:2', icon: 'w-4.5 h-3' },
-                ].map((r) => (
-                  <button
-                    key={r.ratio}
-                    onClick={() => {
-                      const updated = { ...localProject, aspectRatio: r.ratio };
-                      setLocalProject(updated);
-                      onUpdate(updated);
-                    }}
-                    className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
-                      (localProject.aspectRatio || '1:1') === r.ratio
-                        ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
-                        : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
-                    }`}
-                  >
-                    <div className={`border-2 rounded-[2px] ${r.icon} ${(localProject.aspectRatio || '1:1') === r.ratio ? 'border-white' : 'border-neutral-700'}`} />
-                    <span className="text-[8px] font-bold">{r.label}</span>
-                  </button>
-                ))}
+          <button 
+            onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
+            className="w-full p-3 bg-neutral-950/50 border border-neutral-800 rounded-xl mb-3 hover:bg-neutral-900/50 transition-all group flex flex-col gap-2.5"
+          >
+            {/* Row 1: Provider Name + Chevron */}
+            <div className="w-full flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[9px] font-black uppercase tracking-widest text-neutral-600">Provider:</span>
+                <span className="text-[10px] font-bold text-neutral-300 truncate capitalize">
+                  {providers.find(p => p.id === selectedProviderId)?.name || 'None'}
+                </span>
+              </div>
+              <div className={`p-1 rounded-md bg-neutral-800/50 group-hover:bg-neutral-800 transition-all ${isSettingsCollapsed ? 'rotate-180' : ''}`}>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
               </div>
             </div>
 
-            <div className="space-y-2.5">
-              <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                Quality
-              </label>
-              <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
-                {['1K', '2K', '4K'].map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => {
-                      const updated = { ...localProject, quality: q };
-                      setLocalProject(updated);
-                      onUpdate(updated);
-                    }}
-                    className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
-                      (localProject.quality || '1K') === q
-                        ? 'bg-neutral-800 text-blue-400 shadow-sm'
-                        : 'text-neutral-600 hover:text-neutral-400'
-                    }`}
-                  >
-                    {q}
-                  </button>
-                ))}
+            {/* Row 2: Options + Input */}
+            <div className="w-full flex items-center justify-between pt-2 border-t border-neutral-800/50">
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  {localProject.aspectRatio || '1:1'}
+                </span>
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  {localProject.quality || '1K'}
+                </span>
+              </div>
+
+              <div 
+                onClick={(e) => e.stopPropagation()} 
+                className="flex items-center gap-2 bg-neutral-900 px-2 py-1 rounded-md border border-neutral-800"
+              >
+                <input
+                  type="number"
+                  min="1"
+                  max={combinations.length}
+                  value={queueCount}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val)) {
+                      setQueueCount(Math.min(val, combinations.length));
+                      setHasManuallySetQueueCount(true);
+                    }
+                  }}
+                  className="w-10 bg-transparent text-[10px] text-blue-400 font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
+                />
+                <span className="text-[9px] text-neutral-500 font-black">/ {combinations.length}</span>
+              </div>
+            </div>
+          </button>
+
+          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSettingsCollapsed ? 'max-h-0 opacity-0 mb-0' : 'max-h-[500px] opacity-100 mb-4'}`}>
+            <div className="space-y-4 pt-2">
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  AI Provider
+                </label>
+                <select
+                  value={selectedProviderId}
+                  onChange={(e) => {
+                    setSelectedProviderId(e.target.value);
+                    const updated = { ...localProject, providerId: e.target.value };
+                    setLocalProject(updated);
+                    onUpdate(updated);
+                  }}
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/40 transition-all font-medium appearance-none cursor-pointer hover:bg-neutral-900 shadow-inner"
+                  disabled={isProcessing || isFetchingProviders}
+                >
+                  {isFetchingProviders ? (
+                    <option>Loading providers...</option>
+                  ) : providers.length === 0 ? (
+                    <option>No providers configured</option>
+                  ) : (
+                    providers.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.type})
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Aspect Ratio
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { label: '1:1', ratio: '1:1', icon: 'w-3 h-3' },
+                    { label: '4:3', ratio: '4:3', icon: 'w-4 h-3' },
+                    { label: '3:4', ratio: '3:4', icon: 'w-3 h-4' },
+                    { label: '16:9', ratio: '16:9', icon: 'w-5 h-3' },
+                    { label: '9:16', ratio: '9:16', icon: 'w-3 h-5' },
+                    { label: '2:3', ratio: '2:3', icon: 'w-3 h-4.5' },
+                    { label: '3:2', ratio: '3:2', icon: 'w-4.5 h-3' },
+                  ].map((r) => (
+                    <button
+                      key={r.ratio}
+                      onClick={() => {
+                        const updated = { ...localProject, aspectRatio: r.ratio };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
+                        (localProject.aspectRatio || '1:1') === r.ratio
+                          ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
+                          : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className={`border-2 rounded-[2px] ${r.icon} ${(localProject.aspectRatio || '1:1') === r.ratio ? 'border-white' : 'border-neutral-700'}`} />
+                      <span className="text-[8px] font-bold">{r.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Quality
+                </label>
+                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                  {['1K', '2K', '4K'].map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => {
+                        const updated = { ...localProject, quality: q };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                        (localProject.quality || '1K') === q
+                          ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                          : 'text-neutral-600 hover:text-neutral-400'
+                      }`}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -496,8 +558,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                 : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-[0.98]'
             }`}
           >
-            {isProcessing ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-            {isProcessing ? 'Halt Process' : 'Run Workflow'}
+            {isProcessing ? <Square className="w-4 h-4 fill-current" /> : <Plus className="w-4 h-4" />}
+            {isProcessing ? 'Halt Process' : 'Add to Queue'}
           </button>
         </div>
       </div>
