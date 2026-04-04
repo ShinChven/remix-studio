@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Library } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, CheckCircle2, Edit3, Settings, ChevronRight, Maximize2 } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Image as ImageIcon, CheckCircle2, Edit3, Settings, ChevronRight, Maximize2, Search, ChevronLeft, ArrowRight, ArrowLeft } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 
 interface Props {
@@ -14,6 +14,29 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const navigate = useNavigate();
   const [showDeleteLibraryModal, setShowDeleteLibraryModal] = useState(false);
   const [itemToRemoveIndex, setItemToRemoveIndex] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 24;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const filteredItems = library.items
+    .map((item, index) => ({ item, originalIndex: index }))
+    .filter(({ item }) => {
+      const search = searchTerm.toLowerCase();
+      return (
+        (item.title?.toLowerCase().includes(search) || false) ||
+        (item.content.toLowerCase().includes(search))
+      );
+    });
+
+  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleRemoveItem = (index: number) => {
     setItemToRemoveIndex(index);
@@ -28,9 +51,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     }
   };
 
-  const handleItemSave = (index: number, value: string) => {
+  const handleItemSave = (index: number, content: string, title?: string) => {
     const newItems = [...library.items];
-    newItems[index] = value;
+    newItems[index] = { 
+      ...newItems[index], 
+      content,
+      title: title !== undefined ? title : newItems[index].title
+    };
     onUpdate({ ...library, items: newItems });
   };
 
@@ -45,7 +72,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
-          newItems.push(e.target.result as string);
+          newItems.push({ 
+            id: crypto.randomUUID(), 
+            content: e.target.result as string 
+          });
         }
         loadedCount++;
         if (loadedCount === files.length) {
@@ -77,6 +107,17 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="relative mr-2">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Filter items..."
+              className="bg-neutral-900 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all w-48 lg:w-64"
+            />
+          </div>
+
           {library.type === 'image' ? (
             <label className="flex items-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl cursor-pointer transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm">
               <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />
@@ -111,20 +152,20 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-4 -mr-4 custom-scrollbar space-y-10">
+      <div className="flex-1 overflow-y-auto pr-4 -mr-4 custom-scrollbar space-y-10 pb-20">
         <div className={library.type === 'image' ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8" : "space-y-4"}>
-          {library.items.map((item, index) => (
-            <div key={index} className="group relative">
+          {paginatedItems.map(({ item, originalIndex }) => (
+            <div key={item.id} className="group relative">
                 <div className={`group/item bg-neutral-900/40 border border-neutral-800/60 rounded-3xl transition-all duration-300 hover:bg-neutral-800/40 hover:border-neutral-700/80 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${library.type === 'image' ? 'aspect-square flex flex-col p-2 overflow-hidden' : 'p-6 flex items-center justify-between gap-6'}`}>
                   {library.type === 'image' ? (
                     <div className="relative flex-1 rounded-2xl overflow-hidden">
-                      <img src={item} alt={`${index}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
+                      <img src={item.content} alt={`${originalIndex}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4">
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">IMG_{index + 1}</span>
+                          <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">IMG_{originalIndex + 1}</span>
                           <div className="flex items-center gap-2">
                              <button 
-                               onClick={() => handleRemoveItem(index)} 
+                               onClick={() => handleRemoveItem(originalIndex)} 
                                className="p-2.5 bg-neutral-950/80 text-neutral-400 hover:text-red-500 rounded-xl backdrop-blur-md border border-white/5 hover:border-red-500/20 transition-all active:scale-90"
                              >
                                <Trash2 className="w-4 h-4" />
@@ -135,22 +176,31 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                     </div>
                   ) : (
                     <>
-                      <div className="flex items-start gap-5 flex-1">
-                        <div className="text-neutral-700 p-1 flex-shrink-0 mt-1">
-                          <GripVertical className="w-4 h-4" />
+                      <div className="flex items-start gap-4 flex-1 min-w-0">
+                        <div className="text-neutral-700 p-1 flex-shrink-0 mt-0.5">
+                          <GripVertical className="w-3.5 h-3.5" />
                         </div>
-                        <p className="text-neutral-300 leading-relaxed text-sm font-medium tracking-wide">{item}</p>
+                        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                          {item.title && (
+                            <h4 className="text-blue-400 text-xs font-black uppercase tracking-widest truncate">
+                              {item.title}
+                            </h4>
+                          )}
+                          <p className={`text-neutral-300 leading-relaxed text-sm font-medium tracking-wide ${item.title ? 'line-clamp-2' : 'line-clamp-3'}`}>
+                            {item.content}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <button 
-                          onClick={() => navigate(`/library/${library.id}/prompt/${index}`)}
+                          onClick={() => navigate(`/library/${library.id}/prompt/${originalIndex}`)}
                           className="p-3 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-2xl transition-all border border-transparent hover:border-neutral-700 active:scale-95 shadow-sm"
                           title="Refine in Full Editor"
                         >
                           <Edit3 className="w-4.5 h-4.5" />
                         </button>
                         <button 
-                          onClick={() => handleRemoveItem(index)}
+                          onClick={() => handleRemoveItem(originalIndex)}
                           className="p-3 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all border border-transparent hover:border-red-500/20 active:scale-95 shadow-sm"
                           title="Delete Fragment"
                         >
@@ -163,19 +213,57 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             </div>
           ))}
 
-          {library.items.length === 0 && (
+          {filteredItems.length === 0 && (
             <div className="col-span-full py-24 text-center border-2 border-dashed border-neutral-800/50 rounded-[40px] bg-neutral-900/10 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95">
               <div className="p-8 rounded-[32px] bg-neutral-900 border border-neutral-800 shadow-2xl">
-                <Plus className="w-16 h-16 text-neutral-800" />
+                {searchTerm ? <Search className="w-16 h-16 text-neutral-800" /> : <Plus className="w-16 h-16 text-neutral-800" />}
               </div>
               <div className="space-y-2">
-                <p className="text-2xl font-black text-neutral-500 tracking-tight italic">Ghost Town</p>
-                <p className="text-[10px] font-black text-neutral-700 uppercase tracking-[0.3em]">Add content below to initialize library</p>
+                <p className="text-2xl font-black text-neutral-500 tracking-tight italic">
+                  {searchTerm ? 'No results found' : 'Ghost Town'}
+                </p>
+                <p className="text-[10px] font-black text-neutral-700 uppercase tracking-[0.3em]">
+                  {searchTerm ? 'Try a different search term' : 'Add content below to initialize library'}
+                </p>
               </div>
             </div>
           )}
         </div>
 
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-6 pt-12">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="p-3 bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-white hover:border-neutral-700 rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-3">
+              {[...Array(totalPages)].map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`w-10 h-10 rounded-xl text-xs font-black transition-all active:scale-95 ${
+                    currentPage === i + 1 
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
+                      : 'bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-white hover:border-neutral-700'
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="p-3 bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-white hover:border-neutral-700 rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+            >
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        )}
       </div>
 
       <ConfirmModal

@@ -20,6 +20,7 @@ export function PromptEditor() {
   const itemIndex = isNew ? -1 : parseInt(index || '0');
   
   const [content, setContent] = useState('');
+  const [title, setTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('split');
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -30,11 +31,12 @@ export function PromptEditor() {
       return;
     }
     if (!isNew) {
-      const existingContent = library.items[itemIndex];
-      if (existingContent === undefined) {
+      const item = library.items[itemIndex];
+      if (item === undefined) {
         navigate(`/library/${id}`);
       } else {
-        setContent(existingContent);
+        setContent(item.content || '');
+        setTitle(item.title || '');
       }
     }
   }, [id, index, library, isNew, itemIndex, navigate]);
@@ -46,10 +48,16 @@ export function PromptEditor() {
     setIsSubmitting(true);
     try {
       const newItems = [...library.items];
+      const newItem = {
+        id: isNew ? crypto.randomUUID() : (library.items[itemIndex]?.id || crypto.randomUUID()),
+        content,
+        title: title.trim() || undefined
+      };
+
       if (isNew) {
-        newItems.push(content);
+        newItems.push(newItem);
       } else {
-        newItems[itemIndex] = content;
+        newItems[itemIndex] = newItem;
       }
 
       const updatedLibrary: Library = {
@@ -91,12 +99,16 @@ export function PromptEditor() {
               <StickyNote className="w-5 h-5 text-blue-500" />
             </div>
             <div className="flex flex-col flex-1">
-              <h2 className="text-xl font-bold text-white tracking-tight truncate">
-                {isNew ? 'New Fragment' : `Refining Fragment #${itemIndex + 1}`}
-              </h2>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={isNew ? "Give your fragment a title (optional)..." : "Fragment Title"}
+                className="bg-transparent border-none text-xl font-bold text-white tracking-tight focus:outline-none focus:ring-0 p-0 placeholder:text-neutral-700 w-full"
+              />
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[9px] font-black uppercase tracking-widest text-neutral-600">
-                  Target Library: {library.name}
+                  Target Library: {library.name} {isNew ? '' : `• Fragment #${itemIndex + 1}`}
                 </span>
               </div>
             </div>

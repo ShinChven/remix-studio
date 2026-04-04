@@ -6,13 +6,19 @@ export interface WorkflowItem {
   value: string; // text content, library ID, or base64 image data URL
 }
 
+export interface LibraryItem {
+  id: string;
+  content: string;
+  title?: string;
+}
+
 export type LibraryType = 'text' | 'image';
 
 export interface Library {
   id: string;
   name: string;
   type: LibraryType;
-  items: string[];
+  items: LibraryItem[];
 }
 
 export interface Job {

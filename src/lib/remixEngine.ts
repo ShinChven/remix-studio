@@ -10,10 +10,11 @@ export function generateWorkflowCombinations(workflow: WorkflowItem[], libraries
     } else if (item.type === 'library') {
       const lib = libraries.find(l => l.id === item.value);
       if (lib && lib.items.length > 0) {
+        const contents = lib.items.map(i => i.content).filter(c => c.trim() !== '');
         if (lib.type === 'image') {
-          imageLayers.push(lib.items.filter(i => i.trim() !== ''));
+          imageLayers.push(contents);
         } else {
-          textLayers.push(lib.items.filter(i => i.trim() !== ''));
+          textLayers.push(contents);
         }
       }
     } else if (item.type === 'image') {

@@ -30,7 +30,12 @@ export function MainLayout() {
       setData({
         libraries: (fetchedData.libraries || []).map(lib => ({
           ...lib,
-          type: lib.type || 'text'
+          type: lib.type || 'text',
+          items: (lib.items || []).map((item: any) => 
+            typeof item === 'string' 
+              ? { id: crypto.randomUUID(), content: item } 
+              : item
+          )
         })),
         // @ts-ignore - handle legacy data
         projects: fetchedData.projects || fetchedData.batches || []
