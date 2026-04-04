@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, Outlet, Link } from 'react-router-dom';
 import { AppData, Library, Project } from '../types';
 import { loadData, saveData } from '../api';
-import { Plus, Folder, Layers, Play, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Folder, Layers, Play, Search, ChevronDown, ChevronRight, LogOut, User as UserIcon, Shield } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export function MainLayout() {
   const [data, setData] = useState<AppData>({ libraries: [], projects: [] });
@@ -12,6 +13,7 @@ export function MainLayout() {
   
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     loadData().then(fetchedData => {
@@ -175,6 +177,37 @@ export function MainLayout() {
               </ul>
             )}
           </div>
+        </div>
+
+        {/* User Profile */}
+        <div className="p-4 border-t border-neutral-800 bg-neutral-900/50 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 text-neutral-400">
+                <UserIcon className="w-4 h-4" />
+              </div>
+              <div className="truncate">
+                <p className="text-sm font-medium text-neutral-200 truncate">{user?.username}</p>
+                <p className="text-xs text-neutral-500 capitalize">{user?.role}</p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+          {user?.role === 'admin' && (
+            <Link
+              to="/admin/users"
+              className="mt-3 flex items-center justify-center gap-2 w-full py-2 px-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm rounded-lg transition-colors border border-neutral-700/50"
+            >
+              <Shield className="w-4 h-4 text-blue-400" />
+              User Management
+            </Link>
+          )}
         </div>
       </div>
 

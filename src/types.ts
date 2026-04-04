@@ -32,6 +32,15 @@ export interface Project {
   jobs: Job[];
 }
 
+export type UserRole = 'admin' | 'user';
+
+export interface User {
+  id: string;
+  username: string;
+  role: UserRole;
+  createdAt: number;
+}
+
 export interface AppData {
   libraries: Library[];
   projects: Project[];

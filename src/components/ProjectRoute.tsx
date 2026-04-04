@@ -27,10 +27,10 @@ export function ProjectRoute() {
         finalProject = {
           ...updatedProject,
           jobs: updatedProject.jobs.map(job => {
-            if (job.imageUrl && job.imageUrl.includes(`/images/${project.id}/`)) {
+            if (job.imageUrl && job.imageUrl.includes(`/api/images/${project.id}/`)) {
               return {
                 ...job,
-                imageUrl: job.imageUrl.replace(`/images/${project.id}/`, `/images/${updatedProject.id}/`)
+                imageUrl: job.imageUrl.replace(`/api/images/${project.id}/`, `/api/images/${updatedProject.id}/`)
               };
             }
             return job;

@@ -1,127 +1,281 @@
-import express from 'express';
+import 'dotenv/config';
+import { Hono } from 'hono';
+import { serve } from '@hono/node-server';
 import { createServer as createViteServer } from 'vite';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import fs from 'fs';
 import path from 'path';
+import http from 'http';
+import { DynamoDBRepository } from './server/db/dynamodb-repository';
+import { ensureTable } from './server/db/init-table';
+import { S3Storage } from './server/storage/s3-storage';
+import crypto from 'crypto';
+import { UserRepository } from './server/auth/user-repository';
+import { authMiddleware, adminOnly, hashPassword, verifyPassword, signToken, JwtPayload } from './server/auth/auth';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
-const IMAGES_DIR = path.join(DATA_DIR, 'images');
-const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 // Ensure directories exist
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
-if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR);
-if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, JSON.stringify({ libraries: [], projects: [] }));
+
+const DYNAMODB_ENDPOINT = process.env.DYNAMODB_ENDPOINT || 'http://localhost:18000';
 
 async function startServer() {
-  const app = express();
+  // Initialize DynamoDB
+  const dynamoClient = new DynamoDBClient({
+    endpoint: DYNAMODB_ENDPOINT,
+    region: process.env.AWS_REGION || 'us-east-1',
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'local',
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'local',
+    },
+  });
+  const docClient = DynamoDBDocumentClient.from(dynamoClient);
+
+  await ensureTable(dynamoClient);
+
+  const repository = new DynamoDBRepository(docClient);
+  await repository.autoImportJson(DATA_DIR);
+
+  const userRepository = new UserRepository(docClient);
+
+  // Auto-provision default admin user if configured
+  const defaultAdminUsername = process.env.DEFAULT_ADMIN_USERNAME;
+  const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+  
+  if (defaultAdminUsername && defaultAdminPassword) {
+    const existingAdmin = await userRepository.findByUsername(defaultAdminUsername);
+    if (!existingAdmin) {
+      const passwordHash = await hashPassword(defaultAdminPassword);
+      const userId = crypto.randomUUID();
+      await userRepository.createUser({
+        pk: 'USER',
+        sk: userId,
+        username: defaultAdminUsername,
+        passwordHash,
+        role: 'admin',
+        createdAt: Date.now(),
+      });
+      console.log(`Auto-provisioned default admin user: ${defaultAdminUsername}`);
+    }
+  }
+
+  // Initialize S3 storage
+  const storage = new S3Storage({
+    endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:19000',
+    region: process.env.AWS_REGION || 'us-east-1',
+    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+    secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
+    bucket: process.env.MINIO_BUCKET || 'remix-studio',
+  });
+  await storage.ensureBucket();
+
+  type Variables = {
+    user: JwtPayload;
+  };
+  // Hono app
+  const app = new Hono<{ Variables: Variables }>();
   const PORT = 3000;
 
-  app.use(express.json({ limit: '50mb' }));
+  // Auth API
+  app.post('/api/auth/register', async (c) => {
+    try {
+      const { username, password } = await c.req.json();
+      if (!username || !password) return c.json({ error: 'Missing username or password' }, 400);
+
+      const hasUsers = await userRepository.hasAnyUsers();
+      const role = hasUsers ? 'user' : 'admin';
+      const passwordHash = await hashPassword(password);
+      
+      const userId = crypto.randomUUID();
+      await userRepository.createUser({
+        pk: 'USER',
+        sk: userId,
+        username,
+        passwordHash,
+        role,
+        createdAt: Date.now(),
+      });
+
+      const token = signToken({ userId, username, role });
+      return c.json({ token, user: { id: userId, username, role } });
+    } catch (e: any) {
+      return c.json({ error: e.message || 'Failed to register' }, 400);
+    }
+  });
+
+  app.post('/api/auth/login', async (c) => {
+    try {
+      const { username, password } = await c.req.json();
+      const user = await userRepository.findByUsername(username);
+      if (!user) return c.json({ error: 'Invalid credentials' }, 401);
+
+      const isValid = await verifyPassword(password, user.passwordHash);
+      if (!isValid) return c.json({ error: 'Invalid credentials' }, 401);
+
+      const token = signToken({ userId: user.sk, username: user.username, role: user.role });
+      return c.json({ token, user: { id: user.sk, username: user.username, role: user.role } });
+    } catch (e) {
+      return c.json({ error: 'Login failed' }, 500);
+    }
+  });
+
+  app.get('/api/auth/me', authMiddleware, async (c) => {
+    const payload = c.get('user') as JwtPayload;
+    return c.json({ user: { id: payload.userId, username: payload.username, role: payload.role } });
+  });
+
+  // Admin Routes
+  app.get('/api/admin/users', authMiddleware, adminOnly, async (c) => {
+    const users = await userRepository.listUsers();
+    return c.json(users.map(u => ({ id: u.sk, username: u.username, role: u.role, createdAt: u.createdAt })));
+  });
+
+  app.put('/api/admin/users/:id/role', authMiddleware, adminOnly, async (c) => {
+    try {
+      const userId = c.req.param('id');
+      const { role } = await c.req.json();
+      await userRepository.updateRole(userId, role);
+      return c.json({ success: true });
+    } catch (e) {
+      return c.json({ error: 'Failed to update role' }, 500);
+    }
+  });
 
   // API Routes
-  app.get('/api/data', (req, res) => {
+  app.get('/api/data', authMiddleware, async (c) => {
     try {
-      const data = fs.readFileSync(DB_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      
-      // Migrate old 'batches' to 'projects'
-      if (parsed.batches && !parsed.projects) {
-        parsed.projects = parsed.batches;
-        delete parsed.batches;
-        fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2));
-      }
-      
-      res.json(parsed);
+      const user = c.get('user') as JwtPayload;
+      const data = await repository.getUserData(user.userId);
+      return c.json(data);
     } catch (e) {
-      res.status(500).json({ error: 'Failed to read data' });
+      return c.json({ error: 'Failed to read data' }, 500);
     }
   });
 
-  app.post('/api/data', (req, res) => {
+  app.post('/api/data', authMiddleware, async (c) => {
     try {
-      fs.writeFileSync(DB_FILE, JSON.stringify(req.body, null, 2));
-      res.json({ success: true });
+      const user = c.get('user') as JwtPayload;
+      const body = await c.req.json();
+      await repository.saveUserData(user.userId, body);
+      return c.json({ success: true });
     } catch (e) {
-      res.status(500).json({ error: 'Failed to save data' });
+      return c.json({ error: 'Failed to save data' }, 500);
     }
   });
 
-  app.post('/api/images', (req, res) => {
+  app.post('/api/images', authMiddleware, async (c) => {
     try {
-      const { base64, projectId } = req.body;
-      if (!base64) return res.status(400).json({ error: 'No image data' });
+      const user = c.get('user') as JwtPayload;
+      const { base64, projectId } = await c.req.json();
+      if (!base64) return c.json({ error: 'No image data' }, 400);
 
       const safeProjectId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
-      const projectDir = path.join(IMAGES_DIR, safeProjectId);
-      
-      if (!fs.existsSync(projectDir)) {
-        fs.mkdirSync(projectDir, { recursive: true });
-      }
-
       const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}.png`;
-      const filepath = path.join(projectDir, filename);
-      
-      const base64Data = base64.replace(/^data:image\/\w+;base64,/, "");
-      fs.writeFileSync(filepath, base64Data, 'base64');
+      const key = `${user.userId}/${safeProjectId}/${filename}`;
 
-      res.json({ url: `/images/${safeProjectId}/${filename}` });
+      const base64Data = base64.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      const url = await storage.save(key, buffer, 'image/png');
+      return c.json({ url });
     } catch (e) {
-      res.status(500).json({ error: 'Failed to save image' });
+      return c.json({ error: 'Failed to save image' }, 500);
     }
   });
 
-  app.post('/api/projects/rename', (req, res) => {
+  app.get('/api/images/*', async (c) => {
     try {
-      const { oldId, newId } = req.body;
-      if (!oldId || !newId) return res.status(400).json({ error: 'Missing IDs' });
+      const key = c.req.path.replace('/api/images/', '');
+      const data = await storage.read(key);
+      return new Response(new Uint8Array(data), {
+        headers: { 'Content-Type': 'image/png' },
+      });
+    } catch (e) {
+      return c.notFound();
+    }
+  });
+
+  app.post('/api/projects/rename', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const { oldId, newId } = await c.req.json();
+      if (!oldId || !newId) return c.json({ error: 'Missing IDs' }, 400);
 
       const safeOldId = oldId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const safeNewId = newId.replace(/[^a-zA-Z0-9-_]/g, '_');
-      
-      const oldDir = path.join(IMAGES_DIR, safeOldId);
-      const newDir = path.join(IMAGES_DIR, safeNewId);
 
-      if (fs.existsSync(oldDir)) {
-        if (!fs.existsSync(newDir)) {
-          fs.renameSync(oldDir, newDir);
-        } else {
-          // If the new directory already exists, we might need to move files over
-          // For simplicity, just rename if it doesn't exist, otherwise return error or merge
-          // Let's just merge files
-          const files = fs.readdirSync(oldDir);
-          for (const file of files) {
-            fs.renameSync(path.join(oldDir, file), path.join(newDir, file));
-          }
-          fs.rmdirSync(oldDir);
-        }
-      }
-
-      res.json({ success: true });
+      await storage.rename(`${user.userId}/${safeOldId}/`, `${user.userId}/${safeNewId}/`);
+      return c.json({ success: true });
     } catch (e) {
-      res.status(500).json({ error: 'Failed to rename project folder' });
+      return c.json({ error: 'Failed to rename project folder' }, 500);
     }
   });
 
-  app.use('/images', express.static(IMAGES_DIR));
+  // Get Hono's fetch handler for use in Node HTTP server
+  const honoHandler = serve({ fetch: app.fetch, port: PORT });
 
-  // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
+    // Development: compose Hono + Vite on a single HTTP server
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
 
-  app.listen(PORT, '0.0.0.0', () => {
+    // Close the default server that @hono/node-server created
+    (honoHandler as http.Server).close();
+
+    const server = http.createServer((req, res) => {
+      const url = req.url || '';
+      if (url.startsWith('/api/')) {
+        // Route to Hono
+        Promise.resolve(
+          app.fetch(
+            new Request(`http://localhost:${PORT}${url}`, {
+              method: req.method,
+              headers: req.headers as Record<string, string>,
+              body: ['GET', 'HEAD'].includes(req.method || '')
+                ? undefined
+                : (req as unknown as ReadableStream),
+              // @ts-expect-error Node.js stream as body
+              duplex: 'half',
+            })
+          )
+        ).then(async (response) => {
+          res.writeHead(response.status, Object.fromEntries(response.headers.entries()));
+          const body = await response.arrayBuffer();
+          res.end(Buffer.from(body));
+        }).catch(() => {
+          res.writeHead(500);
+          res.end('Internal Server Error');
+        });
+      } else {
+        // Route to Vite
+        vite.middlewares(req, res);
+      }
+    });
+
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  } else {
+    // Production: Hono serves static files
+    const distPath = path.join(process.cwd(), 'dist');
+
+    app.get('*', async (c) => {
+      const filePath = path.join(distPath, c.req.path);
+      if (c.req.path !== '/' && fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath);
+        return new Response(content);
+      }
+      // SPA fallback
+      const html = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
+      return c.html(html);
+    });
+
     console.log(`Server running on http://localhost:${PORT}`);
-  });
+  }
 }
 
 startServer();
