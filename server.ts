@@ -41,23 +41,23 @@ async function startServer() {
   const userRepository = new UserRepository(docClient);
 
   // Auto-provision default admin user if configured
-  const defaultAdminUsername = process.env.DEFAULT_ADMIN_USERNAME;
+  const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
   const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
   
-  if (defaultAdminUsername && defaultAdminPassword) {
-    const existingAdmin = await userRepository.findByUsername(defaultAdminUsername);
+  if (defaultAdminEmail && defaultAdminPassword) {
+    const existingAdmin = await userRepository.findByEmail(defaultAdminEmail);
     if (!existingAdmin) {
       const passwordHash = await hashPassword(defaultAdminPassword);
       const userId = crypto.randomUUID();
       await userRepository.createUser({
         pk: 'USER',
         sk: userId,
-        username: defaultAdminUsername,
+        email: defaultAdminEmail,
         passwordHash,
         role: 'admin',
         createdAt: Date.now(),
       });
-      console.log(`Auto-provisioned default admin user: ${defaultAdminUsername}`);
+      console.log(`Auto-provisioned default admin user: ${defaultAdminEmail}`);
     }
   }
 
@@ -81,8 +81,8 @@ async function startServer() {
   // Auth API
   app.post('/api/auth/register', async (c) => {
     try {
-      const { username, password } = await c.req.json();
-      if (!username || !password) return c.json({ error: 'Missing username or password' }, 400);
+      const { email, password } = await c.req.json();
+      if (!email || !password) return c.json({ error: 'Missing email or password' }, 400);
 
       const hasUsers = await userRepository.hasAnyUsers();
       const role = hasUsers ? 'user' : 'admin';
@@ -92,14 +92,14 @@ async function startServer() {
       await userRepository.createUser({
         pk: 'USER',
         sk: userId,
-        username,
+        email,
         passwordHash,
         role,
         createdAt: Date.now(),
       });
 
-      const token = signToken({ userId, username, role });
-      return c.json({ token, user: { id: userId, username, role } });
+      const token = signToken({ userId, email, role });
+      return c.json({ token, user: { id: userId, email, role } });
     } catch (e: any) {
       return c.json({ error: e.message || 'Failed to register' }, 400);
     }
@@ -107,15 +107,15 @@ async function startServer() {
 
   app.post('/api/auth/login', async (c) => {
     try {
-      const { username, password } = await c.req.json();
-      const user = await userRepository.findByUsername(username);
+      const { email, password } = await c.req.json();
+      const user = await userRepository.findByEmail(email);
       if (!user) return c.json({ error: 'Invalid credentials' }, 401);
 
       const isValid = await verifyPassword(password, user.passwordHash);
       if (!isValid) return c.json({ error: 'Invalid credentials' }, 401);
 
-      const token = signToken({ userId: user.sk, username: user.username, role: user.role });
-      return c.json({ token, user: { id: user.sk, username: user.username, role: user.role } });
+      const token = signToken({ userId: user.sk, email: user.email, role: user.role });
+      return c.json({ token, user: { id: user.sk, email: user.email, role: user.role } });
     } catch (e) {
       return c.json({ error: 'Login failed' }, 500);
     }
@@ -123,13 +123,13 @@ async function startServer() {
 
   app.get('/api/auth/me', authMiddleware, async (c) => {
     const payload = c.get('user') as JwtPayload;
-    return c.json({ user: { id: payload.userId, username: payload.username, role: payload.role } });
+    return c.json({ user: { id: payload.userId, email: payload.email, role: payload.role } });
   });
 
   // Admin Routes
   app.get('/api/admin/users', authMiddleware, adminOnly, async (c) => {
     const users = await userRepository.listUsers();
-    return c.json(users.map(u => ({ id: u.sk, username: u.username, role: u.role, createdAt: u.createdAt })));
+    return c.json(users.map(u => ({ id: u.sk, email: u.email, role: u.role, createdAt: u.createdAt })));
   });
 
   app.put('/api/admin/users/:id/role', authMiddleware, adminOnly, async (c) => {

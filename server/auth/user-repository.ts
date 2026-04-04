@@ -15,10 +15,10 @@ export class UserRepository {
   constructor(private client: DynamoDBDocumentClient) {}
 
   async createUser(user: UserRecord): Promise<void> {
-    // Check username uniqueness
-    const existing = await this.findByUsername(user.username);
+    // Check email uniqueness
+    const existing = await this.findByEmail(user.email);
     if (existing) {
-      throw new Error('Username already exists');
+      throw new Error('Email already exists');
     }
 
     await this.client.send(
@@ -39,15 +39,15 @@ export class UserRepository {
     return (result.Item as UserRecord) || null;
   }
 
-  async findByUsername(username: string): Promise<UserRecord | null> {
-    // Scan with filter since username is not a key
+  async findByEmail(email: string): Promise<UserRecord | null> {
+    // Scan with filter since email is not a key
     const result = await this.client.send(
       new ScanCommand({
         TableName: TABLE_NAME,
-        FilterExpression: 'pk = :pk AND username = :username',
+        FilterExpression: 'pk = :pk AND email = :email',
         ExpressionAttributeValues: {
           ':pk': 'USER',
-          ':username': username,
+          ':email': email,
         },
       })
     );

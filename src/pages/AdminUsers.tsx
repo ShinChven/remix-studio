@@ -61,7 +61,7 @@ export function AdminUsers() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-zinc-800 bg-zinc-950/50">
-              <th className="py-4 px-6 text-sm font-medium text-zinc-400">Username</th>
+              <th className="py-4 px-6 text-sm font-medium text-zinc-400">Email Address</th>
               <th className="py-4 px-6 text-sm font-medium text-zinc-400">ID</th>
               <th className="py-4 px-6 text-sm font-medium text-zinc-400">Role</th>
               <th className="py-4 px-6 text-sm font-medium text-zinc-400 text-right">Actions</th>
@@ -76,7 +76,7 @@ export function AdminUsers() {
                       <UserIcon className="w-4 h-4 text-zinc-400" />
                     </div>
                     <span className="font-medium text-zinc-200">
-                      {user.username}
+                      {user.email}
                       {user.id === currentUser?.id && (
                         <span className="ml-2 text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20">
                           You

@@ -4,12 +4,14 @@ import { AppData, Library, Project } from '../types';
 import { loadData, saveData } from '../api';
 import { Plus, Folder, Layers, Play, Search, ChevronDown, ChevronRight, LogOut, User as UserIcon, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { ConfirmModal } from './ConfirmModal';
 
 export function MainLayout() {
   const [data, setData] = useState<AppData>({ libraries: [], projects: [] });
   const [searchQuery, setSearchQuery] = useState('');
   const [isLibsOpen, setIsLibsOpen] = useState(true);
   const [isProjsOpen, setIsProjsOpen] = useState(true);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -187,12 +189,12 @@ export function MainLayout() {
                 <UserIcon className="w-4 h-4" />
               </div>
               <div className="truncate">
-                <p className="text-sm font-medium text-neutral-200 truncate">{user?.username}</p>
+                <p className="text-sm font-medium text-neutral-200 truncate">{user?.email}</p>
                 <p className="text-xs text-neutral-500 capitalize">{user?.role}</p>
               </div>
             </div>
             <button
-              onClick={logout}
+              onClick={() => setIsLogoutModalOpen(true)}
               className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
               title="Logout"
             >
@@ -211,10 +213,19 @@ export function MainLayout() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 overflow-hidden bg-neutral-950">
         <Outlet context={{ data, handleSave, addLibrary, addProject }} />
       </div>
+
+      <ConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={logout}
+        title="Log Out"
+        message="Are you sure you want to log out? Any unsaved changes might be lost."
+        confirmText="Log Out"
+        type="danger"
+      />
     </div>
   );
 }

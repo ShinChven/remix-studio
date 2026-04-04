@@ -8,14 +8,14 @@ const SALT_ROUNDS = 10;
 
 export interface JwtPayload {
   userId: string;
-  username: string;
+  email: string;
   role: UserRole;
 }
 
 export interface UserRecord {
   pk: string;       // 'USER'
   sk: string;       // userId
-  username: string;
+  email: string;
   passwordHash: string;
   role: UserRole;
   createdAt: number;
