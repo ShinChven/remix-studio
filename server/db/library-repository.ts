@@ -12,7 +12,7 @@ const TABLE_NAME = 'remix-studio';
 const BATCH_LIMIT = 25;
 
 export class LibraryRepository {
-  constructor(private client: DynamoDBDocumentClient) {}
+  constructor(private client: DynamoDBDocumentClient) { }
 
   async getUserLibraries(userId: string): Promise<Library[]> {
     const pk = `USER_DATA#${userId}`;
@@ -24,14 +24,53 @@ export class LibraryRepository {
       })
     );
 
-    return (result.Items || [])
-      .filter((item) => !item.sk.includes('#ITEM#'))
-      .map((item) => ({
-        id: item.sk.replace('LIBRARY#', ''),
-        name: item.name,
-        type: item.type,
-        items: [],
-      }));
+    const records = result.Items || [];
+    const libraries: Record<string, Library> = {};
+
+    // First pass, extract library metadata
+    for (const record of records) {
+      if (!record.sk.includes('#ITEM#')) {
+        const id = record.sk.replace('LIBRARY#', '');
+        libraries[id] = {
+          id,
+          name: record.name,
+          type: record.type,
+          items: [],
+        };
+      }
+    }
+
+    // Second pass, append items
+    for (const record of records) {
+      if (record.sk.includes('#ITEM#')) {
+        const parts = record.sk.split('#'); // ['LIBRARY', '<libId>', 'ITEM', '<itemId>']
+        if (parts.length >= 4) {
+          const libId = parts[1];
+          const itemId = parts[3];
+          if (libraries[libId]) {
+            libraries[libId].items.push({
+              id: itemId,
+              content: record.content,
+              title: record.title,
+              order: record.order,
+            });
+          }
+        }
+      }
+    }
+
+    // Convert to array and sort items
+    const libsArray = Object.values(libraries);
+    for (const lib of libsArray) {
+      lib.items.sort((a, b) => {
+        if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+        if (a.order !== undefined) return -1;
+        if (b.order !== undefined) return 1;
+        return a.id.localeCompare(b.id);
+      });
+    }
+
+    return libsArray;
   }
 
   async getLibrary(userId: string, libraryId: string): Promise<Library | null> {
