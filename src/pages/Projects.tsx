@@ -8,7 +8,7 @@ export function Projects() {
 
   return (
     <div className="h-full flex flex-col p-8 overflow-y-auto">
-      <div className="max-w-5xl w-full mx-auto space-y-8">
+      <div className="w-full space-y-8">
         <header className="mb-8">
           <h2 className="text-3xl font-bold text-white mb-2 font-display">Projects</h2>
           <p className="text-neutral-400">Manage and track your AI workflows and generation tasks.</p>

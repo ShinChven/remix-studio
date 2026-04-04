@@ -100,19 +100,6 @@ export function MainLayout() {
           </Link>
 
           <Link
-            to="/libraries"
-            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
-              location.pathname === '/libraries' || location.pathname.startsWith('/library/')
-                ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' 
-                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
-            } ${isCollapsed ? 'justify-center' : 'gap-3'}`}
-            title="Libraries"
-          >
-            <Folder className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && <span className="font-medium text-sm">Libraries</span>}
-          </Link>
-
-          <Link
             to="/projects"
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
               location.pathname === '/projects' || location.pathname.startsWith('/project/')
@@ -123,6 +110,19 @@ export function MainLayout() {
           >
             <Play className="w-5 h-5 flex-shrink-0" />
             {!isCollapsed && <span className="font-medium text-sm">Projects</span>}
+          </Link>
+
+          <Link
+            to="/libraries"
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
+              location.pathname === '/libraries' || location.pathname.startsWith('/library/')
+                ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' 
+                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
+            } ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+            title="Libraries"
+          >
+            <Folder className="w-5 h-5 flex-shrink-0" />
+            {!isCollapsed && <span className="font-medium text-sm">Libraries</span>}
           </Link>
 
         </div>

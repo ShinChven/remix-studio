@@ -83,7 +83,7 @@ export function PromptEditor() {
 
   return (
     <div className={`h-full flex flex-col bg-neutral-950 transition-all ${isFullScreen ? 'fixed inset-0 z-50 p-6' : 'p-8'}`}>
-      <div className="max-w-7xl mx-auto w-full flex flex-col h-full gap-6 animate-in fade-in duration-500">
+      <div className="w-full flex flex-col h-full gap-6 animate-in fade-in duration-500">
         
         {/* Header */}
         <div className="flex items-center justify-between gap-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-4 pl-6 shadow-2xl backdrop-blur-xl">

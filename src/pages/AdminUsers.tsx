@@ -44,7 +44,7 @@ export function AdminUsers() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="w-full p-6 space-y-6">
       <div className="flex items-center gap-3 mb-8">
         <Shield className="w-8 h-8 text-blue-500" />
         <h1 className="text-2xl font-bold text-zinc-100">User Management</h1>

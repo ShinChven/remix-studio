@@ -87,7 +87,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   };
 
   return (
-    <div className="h-full flex flex-col px-10 py-12 max-w-6xl mx-auto overflow-hidden animate-in fade-in duration-700">
+    <div className="h-full flex flex-col px-10 py-12 w-full overflow-hidden animate-in fade-in duration-700">
       <div className="flex items-center justify-between mb-12 flex-shrink-0">
         <div className="flex-1">
           <div className="flex items-center gap-3">
