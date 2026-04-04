@@ -40,6 +40,7 @@ export interface Project {
   providerId?: string;
   aspectRatio?: string;
   quality?: string;
+  shuffle?: boolean;
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub';

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Project, Job, Library, WorkflowItem, WorkflowItemType, Provider } from '../types';
 import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow } from '../api';
-import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X } from 'lucide-react';
+import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X, Shuffle } from 'lucide-react';
 import { generateWorkflowCombinations } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -222,7 +222,10 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     await apiUpdateProject(updatedProject.id, {
       jobs: updatedProject.jobs,
       workflow: updatedProject.workflow,
-      providerId: selectedProviderId
+      providerId: selectedProviderId,
+      aspectRatio: localProject.aspectRatio,
+      quality: localProject.quality,
+      shuffle: localProject.shuffle,
     });
 
     setLocalProject(updatedProject);
@@ -443,6 +446,11 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                 <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
                   {localProject.quality || '1K'}
                 </span>
+                {localProject.shuffle && (
+                  <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/30 uppercase tracking-widest flex items-center gap-1">
+                    <Shuffle className="w-2.5 h-2.5" /> Shuffle
+                  </span>
+                )}
               </div>
 
               <div 
@@ -556,6 +564,39 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Workflow Options
+                </label>
+                <button
+                  onClick={() => {
+                    const updated = { ...localProject, shuffle: !localProject.shuffle };
+                    setLocalProject(updated);
+                    onUpdate(updated);
+                  }}
+                  className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
+                    localProject.shuffle
+                      ? 'bg-blue-600/10 border-blue-500/50 text-blue-400 shadow-lg shadow-blue-500/10'
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-500 hover:border-neutral-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${localProject.shuffle ? 'bg-blue-500 text-white' : 'bg-neutral-900 text-neutral-600'}`}>
+                      <Shuffle className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="text-left">
+                      <div className={`text-[10px] font-bold uppercase tracking-wider ${localProject.shuffle ? 'text-blue-400' : 'text-neutral-400'}`}>
+                        Shuffle Workflow
+                      </div>
+                      <div className="text-[9px] opacity-60 font-medium">Randomize combinations order</div>
+                    </div>
+                  </div>
+                  <div className={`w-8 h-4 rounded-full relative transition-all duration-300 ${localProject.shuffle ? 'bg-blue-500' : 'bg-neutral-800'}`}>
+                    <div className={`absolute top-1 w-2 h-2 rounded-full bg-white transition-all duration-300 ${localProject.shuffle ? 'left-5' : 'left-1'}`} />
+                  </div>
+                </button>
               </div>
             </div>
           </div>

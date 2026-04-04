@@ -65,6 +65,9 @@ export function ProjectRoute() {
         name: updatedProject.name,
         workflow: updatedProject.workflow,
         jobs: updatedProject.jobs,
+        aspectRatio: updatedProject.aspectRatio,
+        quality: updatedProject.quality,
+        shuffle: updatedProject.shuffle,
       });
       setProject(updatedProject);
     } catch (e) {

@@ -46,6 +46,7 @@ export function ProjectForm() {
           createdAt: Date.now(),
           workflow: [],
           jobs: [],
+          shuffle: false,
         });
       } else {
         targetId = id!;
