@@ -32,13 +32,14 @@ export function createProviderRouter(repo: ProviderRepository) {
       const type = body?.type as ProviderType;
       const apiKey = typeof body?.apiKey === 'string' ? body.apiKey.trim() : '';
       const apiUrl = typeof body?.apiUrl === 'string' ? body.apiUrl.trim() || undefined : undefined;
+      const concurrency = typeof body?.concurrency === 'number' ? body.concurrency : 1;
 
       if (!name) return c.json({ error: 'name is required' }, 400);
       if (!VALID_TYPES.includes(type)) return c.json({ error: `type must be one of: ${VALID_TYPES.join(', ')}` }, 400);
       if (!apiKey) return c.json({ error: 'apiKey is required' }, 400);
 
       const id = crypto.randomUUID();
-      await repo.createProvider(user.userId, { id, name, type, apiKey, apiUrl });
+      await repo.createProvider(user.userId, { id, name, type, apiKey, apiUrl, concurrency });
       return c.json({ id }, 201);
     } catch (e) {
       console.error('[POST /api/providers]', e);
@@ -58,6 +59,7 @@ export function createProviderRouter(repo: ProviderRepository) {
         type?: ProviderType;
         apiKey?: string;
         apiUrl?: string | null;
+        concurrency?: number;
       } = {};
 
       if (typeof body?.name === 'string') updates.name = body.name.trim();
@@ -73,6 +75,10 @@ export function createProviderRouter(repo: ProviderRepository) {
         updates.apiUrl = null;
       } else if (typeof body?.apiUrl === 'string') {
         updates.apiUrl = body.apiUrl.trim() || null;
+      }
+
+      if (typeof body?.concurrency === 'number') {
+        updates.concurrency = body.concurrency;
       }
 
       await repo.updateProvider(user.userId, providerId, updates);

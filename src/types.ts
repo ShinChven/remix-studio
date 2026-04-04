@@ -47,6 +47,7 @@ export interface Provider {
   name: string;
   type: ProviderType;
   apiUrl?: string;
+  concurrency: number;
   hasKey: boolean; // raw apiKey is never sent to the client
   createdAt: number;
 }

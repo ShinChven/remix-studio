@@ -27,6 +27,7 @@ export function ProviderForm() {
   const [type, setType] = useState<ProviderType>('GoogleAI');
   const [apiKey, setApiKey] = useState('');
   const [apiUrl, setApiUrl] = useState('');
+  const [concurrency, setConcurrency] = useState(1);
   const [showKey, setShowKey] = useState(false);
   const [hasExistingKey, setHasExistingKey] = useState(false);
   const [isLoading, setIsLoading] = useState(isEditing);
@@ -43,6 +44,7 @@ export function ProviderForm() {
         setName(p.name);
         setType(p.type);
         setApiUrl(p.apiUrl || '');
+        setConcurrency(p.concurrency || 1);
         setHasExistingKey(p.hasKey);
       } catch {
         navigate('/providers');
@@ -67,10 +69,11 @@ export function ProviderForm() {
           type,
           ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
           apiUrl: urlValue ?? null,
+          concurrency,
         });
         navigate('/providers');
       } else {
-        await createProvider({ name: name.trim(), type, apiKey: apiKey.trim(), apiUrl: urlValue });
+        await createProvider({ name: name.trim(), type, apiKey: apiKey.trim(), apiUrl: urlValue, concurrency });
         navigate('/providers');
       }
     } catch (e: any) {
@@ -91,8 +94,8 @@ export function ProviderForm() {
   const colors = TYPE_COLORS[type];
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-950">
-      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="min-h-full flex flex-col items-center py-12 md:py-16 px-4 md:px-8 bg-neutral-950">
+      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-5 md:p-8 shadow-2xl">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 bg-amber-600/10 rounded-2xl">
             <Key className="w-6 h-6 text-amber-500" />
@@ -187,24 +190,44 @@ export function ProviderForm() {
             />
           </div>
 
+          {/* Concurrency */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
+              Parallel Tasks <span className="normal-case font-normal tracking-normal">— concurrency limit</span>
+            </label>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={concurrency}
+                onChange={e => setConcurrency(parseInt(e.target.value) || 1)}
+                className="w-full sm:w-24 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all"
+              />
+              <span className="text-[9px] sm:text-[10px] text-neutral-600 font-bold uppercase tracking-wider leading-tight">
+                Max simultaneous API requests
+              </span>
+            </div>
+          </div>
+
           {error && (
             <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
               {error}
             </p>
           )}
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               type="button"
               onClick={() => navigate('/providers')}
-              className="flex-1 px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
+              className="w-full sm:flex-1 px-4 py-3.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !name.trim()}
-              className="flex-1 px-4 py-3 bg-amber-500 hover:bg-amber-400 text-black rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-amber-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
+              className="w-full sm:flex-1 px-4 py-3.5 bg-amber-500 hover:bg-amber-400 text-black rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-amber-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
               {isSubmitting ? 'Saving…' : isEditing ? 'Save Changes' : 'Create Provider'}

@@ -216,7 +216,7 @@ export function MainLayout() {
       </div>
 
       <div className="flex-1 overflow-hidden bg-neutral-950 flex flex-col mt-16 lg:mt-0 min-w-0 relative">
-        <div className="flex-1 overflow-hidden min-w-0">
+        <div className="flex-1 overflow-y-auto min-w-0 custom-scrollbar">
           <Outlet context={{ libraries, projects, refreshLibraries, refreshProjects, addLibrary, addProject }} />
         </div>
       </div>

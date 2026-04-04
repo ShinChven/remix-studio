@@ -21,6 +21,7 @@ interface ProviderRecord {
   type: ProviderType;
   apiKeyEncrypted?: string;
   apiUrl?: string;
+  concurrency?: number;
   createdAt: number;
 }
 
@@ -30,6 +31,7 @@ function toPublic(record: ProviderRecord): Provider {
     name: record.name,
     type: record.type,
     apiUrl: record.apiUrl,
+    concurrency: record.concurrency ?? 1,
     hasKey: !!record.apiKeyEncrypted,
     createdAt: record.createdAt,
   };
@@ -64,7 +66,7 @@ export class ProviderRepository {
 
   async createProvider(
     userId: string,
-    data: { id: string; name: string; type: ProviderType; apiKey: string; apiUrl?: string }
+    data: { id: string; name: string; type: ProviderType; apiKey: string; apiUrl?: string; concurrency?: number }
   ): Promise<void> {
     const item: ProviderRecord = {
       pk: PK,
@@ -75,6 +77,7 @@ export class ProviderRepository {
       type: data.type,
       apiKeyEncrypted: encrypt(data.apiKey),
       ...(data.apiUrl ? { apiUrl: data.apiUrl } : {}),
+      ...(data.concurrency !== undefined ? { concurrency: data.concurrency } : {}),
       createdAt: Date.now(),
     };
     await this.client.send(new PutCommand({ TableName: TABLE_NAME, Item: item }));
@@ -83,7 +86,7 @@ export class ProviderRepository {
   async updateProvider(
     userId: string,
     providerId: string,
-    updates: { name?: string; type?: ProviderType; apiKey?: string; apiUrl?: string | null }
+    updates: { name?: string; type?: ProviderType; apiKey?: string; apiUrl?: string | null; concurrency?: number }
   ): Promise<void> {
     const existing = await this.getProvider(userId, providerId);
     if (!existing) throw new Error('Provider not found');
@@ -100,6 +103,7 @@ export class ProviderRepository {
         : updates.apiUrl !== undefined
         ? { apiUrl: updates.apiUrl }
         : {}),
+      ...(updates.concurrency !== undefined ? { concurrency: updates.concurrency } : {}),
     };
 
     await this.client.send(new PutCommand({ TableName: TABLE_NAME, Item: merged }));

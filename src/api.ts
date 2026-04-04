@@ -191,6 +191,7 @@ export async function createProvider(data: {
   type: ProviderType;
   apiKey: string;
   apiUrl?: string;
+  concurrency?: number;
 }): Promise<string> {
   const res = await fetch('/api/providers', {
     method: 'POST',
@@ -204,7 +205,7 @@ export async function createProvider(data: {
 
 export async function updateProvider(
   id: string,
-  updates: { name?: string; type?: ProviderType; apiKey?: string; apiUrl?: string | null }
+  updates: { name?: string; type?: ProviderType; apiKey?: string; apiUrl?: string | null; concurrency?: number }
 ): Promise<void> {
   const res = await fetch(`/api/providers/${id}`, {
     method: 'PUT',

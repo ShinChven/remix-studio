@@ -174,46 +174,59 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const processQueue = async () => {
-    const pendingJobs = projectRef.current.jobs.filter(j => j.status === 'pending' || j.status === 'failed');
+    const pendingJobs = [...projectRef.current.jobs.filter(j => j.status === 'pending' || j.status === 'failed')];
     
-    if (!selectedProviderId) {
+    const provider = providers.find(p => p.id === selectedProviderId);
+    if (!provider) {
       console.error("No provider selected");
       setIsProcessing(false);
       return;
     }
 
-    for (const job of pendingJobs) {
-      if (!isProcessingRef.current) break;
-      
-      try {
-        updateJob(job.id, { status: 'processing', error: undefined });
-        
-        const refImage = job.imageContext 
-          ? job.imageContext.replace(/^data:image\/\w+;base64,/, '') 
-          : undefined;
-
-        const result = await generateImage({
-          providerId: selectedProviderId,
-          prompt: job.prompt,
-          aspectRatio: "1:1",
-          imageSize: "1K",
-          refImage
-        });
-
-        if (result.image) {
-          const url = await saveImage(result.image, localProject.id);
-          updateJob(job.id, { status: 'completed', imageUrl: url });
-        } else {
-          throw new Error("No image data returned from server");
-        }
-      } catch (error: any) {
-        console.error("Job failed:", error);
-        updateJob(job.id, { status: 'failed', error: error.message || 'Unknown error' });
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    const concurrency = provider.concurrency || 1;
+    let jobIndex = 0;
     
+    const worker = async () => {
+      while (jobIndex < pendingJobs.length && isProcessingRef.current) {
+        const job = pendingJobs[jobIndex++];
+        if (!job) break;
+
+        try {
+          updateJob(job.id, { status: 'processing', error: undefined });
+          
+          const refImage = job.imageContext 
+            ? job.imageContext.replace(/^data:image\/\w+;base64,/, '') 
+            : undefined;
+
+          const result = await generateImage({
+            providerId: provider.id,
+            prompt: job.prompt,
+            aspectRatio: "1:1",
+            imageSize: "1K",
+            refImage
+          });
+
+          if (result.image) {
+            const url = await saveImage(result.image, localProject.id);
+            updateJob(job.id, { status: 'completed', imageUrl: url });
+          } else {
+            throw new Error("No image data returned from server");
+          }
+        } catch (error: any) {
+          console.error("Job failed:", error);
+          updateJob(job.id, { status: 'failed', error: error.message || 'Unknown error' });
+        }
+        
+        if (isProcessingRef.current) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+    };
+
+    const workersCount = Math.min(concurrency, pendingJobs.length);
+    const workers = Array.from({ length: workersCount }, worker);
+    
+    await Promise.all(workers);
     setIsProcessing(false);
   };
 
