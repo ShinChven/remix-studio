@@ -131,11 +131,11 @@ export function MainLayout() {
               location.pathname === '/'
                 ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
-            } ${isCollapsed ? 'lg:justify-center' : 'gap-3'} gap-3`}
+            } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Dashboard"
           >
             <LayoutGrid className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}>Dashboard</span>
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Dashboard</span>
           </Link>
 
           <Link
@@ -145,11 +145,11 @@ export function MainLayout() {
               location.pathname === '/projects' || location.pathname.startsWith('/project/')
                 ? 'bg-green-600/10 text-green-400 border border-green-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
-            } ${isCollapsed ? 'lg:justify-center' : 'gap-3'} gap-3`}
+            } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Projects"
           >
             <Play className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}>Projects</span>
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Projects</span>
           </Link>
 
           <Link
@@ -159,22 +159,22 @@ export function MainLayout() {
               location.pathname === '/libraries' || location.pathname.startsWith('/library/')
                 ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
-            } ${isCollapsed ? 'lg:justify-center' : 'gap-3'} gap-3`}
+            } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Libraries"
           >
             <Folder className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}>Libraries</span>
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Libraries</span>
           </Link>
         </div>
 
         {/* User Profile */}
         <div className="p-4 border-t border-neutral-800 bg-neutral-900/50 flex-shrink-0">
           <div className={`flex items-center ${isCollapsed ? 'lg:flex-col lg:gap-4' : 'justify-between'}`}>
-            <div className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'lg:justify-center' : ''}`}>
+            <div className={`flex items-center overflow-hidden gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}>
               <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 text-neutral-400">
                 <UserIcon className="w-4 h-4" />
               </div>
-              <div className={`truncate transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}>
+              <div className={`transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>
                 <p className="text-sm font-medium text-neutral-200 truncate">{user?.email}</p>
                 <p className="text-xs text-neutral-500 capitalize">{user?.role}</p>
               </div>
@@ -191,11 +191,11 @@ export function MainLayout() {
             <Link
               to="/admin/users"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`mt-3 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm rounded-lg transition-colors border border-neutral-700/50 ${isCollapsed ? 'lg:p-2' : 'py-2 px-3 gap-2 w-full'} p-2 gap-2`}
+              className={`mt-3 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm rounded-lg transition-colors border border-neutral-700/50 p-2 gap-2 ${isCollapsed ? 'lg:gap-0' : 'w-full'}`}
               title="User Management"
             >
-              <Shield className="w-4 h-4 text-blue-400" />
-              <span className={`transition-all duration-300 ${isCollapsed ? 'lg:hidden' : 'inline'}`}>User Management</span>
+              <Shield className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline'}`}>User Management</span>
             </Link>
           )}
         </div>
