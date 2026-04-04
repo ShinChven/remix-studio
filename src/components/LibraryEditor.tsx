@@ -305,10 +305,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 <button
                   key={i}
                   onClick={() => setCurrentPage(i + 1)}
-                  className={`w-10 h-10 rounded-xl text-xs font-black transition-all active:scale-95 ${
+                  className={`w-10 h-10 rounded-xl text-xs font-black transition-all active:scale-95 border ${
                     currentPage === i + 1
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                      : 'bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-white hover:border-neutral-700'
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 border-transparent'
+                      : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-white hover:border-neutral-700'
                   }`}
                 >
                   {i + 1}

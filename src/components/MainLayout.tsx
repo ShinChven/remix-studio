@@ -127,10 +127,10 @@ export function MainLayout() {
           <Link
             to="/"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${
               location.pathname === '/'
-                ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20'
-                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
+                ? 'bg-blue-600/10 text-blue-400 border-blue-600/20'
+                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
             } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Dashboard"
           >
@@ -141,10 +141,10 @@ export function MainLayout() {
           <Link
             to="/projects"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${
               location.pathname === '/projects' || location.pathname.startsWith('/project/')
-                ? 'bg-green-600/10 text-green-400 border border-green-600/20'
-                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
+                ? 'bg-green-600/10 text-green-400 border-green-600/20'
+                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
             } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Projects"
           >
@@ -155,10 +155,10 @@ export function MainLayout() {
           <Link
             to="/libraries"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all ${
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${
               location.pathname === '/libraries' || location.pathname.startsWith('/library/')
-                ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20'
-                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200'
+                ? 'bg-blue-600/10 text-blue-400 border-blue-600/20'
+                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
             } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Libraries"
           >
