@@ -17,7 +17,6 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const navigate = useNavigate();
   const [localProject, setLocalProject] = useState<Project>(project);
   const [hasChanges, setHasChanges] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -28,21 +27,40 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [selectedProviderId, setSelectedProviderId] = useState<string>(project.providerId || '');
   const [isFetchingProviders, setIsFetchingProviders] = useState(true);
   
-  const isProcessingRef = useRef(false);
   const projectRef = useRef(localProject);
+  const isProcessing = localProject.jobs.some(j => j.status === 'pending' || j.status === 'processing');
 
   useEffect(() => {
     setLocalProject(project);
     setHasChanges(false);
-  }, [project.id]);
+  }, [project]); // Sync when parent refreshes
 
   useEffect(() => {
     projectRef.current = localProject;
   }, [localProject]);
 
+  // Polling for status updates when jobs are active
   useEffect(() => {
-    isProcessingRef.current = isProcessing;
-  }, [isProcessing]);
+    let interval: any;
+    if (isProcessing) {
+      interval = setInterval(async () => {
+        try {
+          // Fetch the latest project state from the server
+          const { fetchProject: apiFetchProject } = await import('../api');
+          const updated = await apiFetchProject(localProject.id);
+          
+          // Check if anything actually changed to avoid unnecessary re-renders
+          const hasUpdates = JSON.stringify(updated.jobs) !== JSON.stringify(localProject.jobs);
+          if (hasUpdates) {
+            setLocalProject(updated);
+          }
+        } catch (e) {
+          console.error('Polling for project updates failed:', e);
+        }
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [isProcessing, localProject.id, localProject.jobs]);
 
   useEffect(() => {
     (async () => {
@@ -50,7 +68,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         const p = await fetchProviders();
         setProviders(p);
         if (!selectedProviderId && p.length > 0) {
-          setSelectedProviderId(p[0].id);
+          const defaultProv = p.find(prov => prov.id === project.providerId) || p[0];
+          setSelectedProviderId(defaultProv.id);
         }
       } catch (e) {
         console.error('Failed to fetch providers:', e);
@@ -60,19 +79,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     })();
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     onUpdate(localProject);
     setHasChanges(false);
-  };
-
-  const updateJob = (jobId: string, updates: Partial<Job>) => {
-    const currentProject = projectRef.current;
-    const updatedProject = {
-      ...currentProject,
-      jobs: currentProject.jobs.map(j => j.id === jobId ? { ...j, ...updates } : j)
-    };
-    setLocalProject(updatedProject);
-    onUpdate(updatedProject); 
   };
 
   const addWorkflowItem = (type: WorkflowItemType) => {
@@ -150,11 +159,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     }
   };
 
-  const generateAndStart = () => {
-    if (hasChanges) {
-      handleSave();
-    }
-    
+  const generateAndStart = async () => {
+    // 1. Sync any local pending workflow changes to the server
     const combinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
     if (combinations.length === 0) return;
 
@@ -166,78 +172,40 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     }));
 
     const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
+    
+    // Save to server
+    const { updateProject: apiUpdateProject, runProjectWorkflow: apiRunWorkflow } = await import('../api');
+    await apiUpdateProject(updatedProject.id, {
+      jobs: updatedProject.jobs,
+      workflow: updatedProject.workflow,
+      providerId: selectedProviderId
+    });
+
     setLocalProject(updatedProject);
-    onUpdate(updatedProject);
-    
-    setIsProcessing(true);
-    processQueue();
-  };
+    setHasChanges(false);
 
-  const processQueue = async () => {
-    const pendingJobs = [...projectRef.current.jobs.filter(j => j.status === 'pending' || j.status === 'failed')];
-    
-    const provider = providers.find(p => p.id === selectedProviderId);
-    if (!provider) {
-      console.error("No provider selected");
-      setIsProcessing(false);
-      return;
+    // 2. Trigger server-side runner
+    try {
+      await apiRunWorkflow(updatedProject.id);
+    } catch (e) {
+      console.error("Failed to start workflow:", e);
     }
-
-    const concurrency = provider.concurrency || 1;
-    let jobIndex = 0;
-    
-    const worker = async () => {
-      while (jobIndex < pendingJobs.length && isProcessingRef.current) {
-        const job = pendingJobs[jobIndex++];
-        if (!job) break;
-
-        try {
-          updateJob(job.id, { status: 'processing', error: undefined });
-          
-          const refImage = job.imageContext 
-            ? job.imageContext.replace(/^data:image\/\w+;base64,/, '') 
-            : undefined;
-
-          const result = await generateImage({
-            providerId: provider.id,
-            prompt: job.prompt,
-            aspectRatio: "1:1",
-            imageSize: "1K",
-            refImage
-          });
-
-          if (result.image) {
-            const url = await saveImage(result.image, localProject.id);
-            updateJob(job.id, { status: 'completed', imageUrl: url });
-          } else {
-            throw new Error("No image data returned from server");
-          }
-        } catch (error: any) {
-          console.error("Job failed:", error);
-          updateJob(job.id, { status: 'failed', error: error.message || 'Unknown error' });
-        }
-        
-        if (isProcessingRef.current) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      }
-    };
-
-    const workersCount = Math.min(concurrency, pendingJobs.length);
-    const workers = Array.from({ length: workersCount }, worker);
-    
-    await Promise.all(workers);
-    setIsProcessing(false);
   };
 
   const toggleProcessing = () => {
     if (isProcessing) {
-      setIsProcessing(false);
+        // In the new server-side architecture, we don't have a "halt" yet, 
+        // but we could implement it. For now, it just doesn't do anything 
+        // to stop the server-side queue.
+        console.log("Server-side process is running. Halting is not yet implemented.");
     } else {
       const pendingJobs = localProject.jobs.filter(j => j.status === 'pending');
       if (pendingJobs.length > 0) {
-        setIsProcessing(true);
-        processQueue();
+        // Just trigger the run if there are already pending jobs
+        (async () => {
+            const { runProjectWorkflow: apiRunWorkflow } = await import('../api');
+            await apiRunWorkflow(localProject.id);
+        })();
       } else {
         generateAndStart();
       }

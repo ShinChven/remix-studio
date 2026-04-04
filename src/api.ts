@@ -244,3 +244,11 @@ export async function generateImage(params: {
   return res.json();
 }
 
+export async function runProjectWorkflow(projectId: string): Promise<void> {
+  const res = await fetch(`/api/projects/${projectId}/run`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to run project workflow');
+}
+

@@ -12,7 +12,7 @@ import { DynamoDBRepository } from './server/db/dynamodb-repository';
 import { ensureTable } from './server/db/init-table';
 import { S3Storage } from './server/storage/s3-storage';
 import { UserRepository } from './server/auth/user-repository';
-import { hashPassword, JwtPayload } from './server/auth/auth';
+import { hashPassword, JwtPayload, authMiddleware } from './server/auth/auth';
 import { createAuthRouter } from './server/routes/auth';
 import { createLibraryRouter } from './server/routes/libraries';
 import { createProjectRouter } from './server/routes/projects';
@@ -20,6 +20,8 @@ import { createImageRouter } from './server/routes/images';
 import { createProviderRouter } from './server/routes/providers';
 import { createGenerateRouter } from './server/routes/generate';
 import { ProviderRepository } from './server/db/provider-repository';
+import { ProjectRepository } from './server/db/project-repository';
+import { QueueManager } from './server/queue/queue-manager';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
@@ -50,6 +52,21 @@ async function startServer() {
 
   const userRepository = new UserRepository(docClient);
   const providerRepository = new ProviderRepository(docClient);
+  const projectRepository = new ProjectRepository(docClient);
+
+  // === Queue Manager / S3 ===
+  const storage = new S3Storage({
+    endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:19000',
+    region: process.env.AWS_REGION || 'us-east-1',
+    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+    secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
+    bucket: process.env.MINIO_BUCKET || 'remix-studio',
+  });
+  await storage.ensureBucket();
+
+  const queueManager = new QueueManager(docClient, providerRepository, projectRepository, storage);
+  // Important: Recover tasks before starting the server to resume background work
+  await queueManager.recoverTasks();
 
   // === Auto-provision default admin ===
   const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
@@ -70,23 +87,21 @@ async function startServer() {
     }
   }
 
-  // === S3 / MinIO ===
-  const storage = new S3Storage({
-    endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:19000',
-    region: process.env.AWS_REGION || 'us-east-1',
-    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-    secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
-    bucket: process.env.MINIO_BUCKET || 'remix-studio',
-  });
-  await storage.ensureBucket();
-
   // === Hono app ===
   type Variables = { user: JwtPayload };
   const app = new Hono<{ Variables: Variables }>();
-  const PORT = 3000;
+  const PORT_NUM = 3000;
 
-  // Legacy bulk data endpoint
-  app.get('/api/data', async (c) => {
+  // Mount routers
+  app.route('/', createAuthRouter(userRepository));
+  app.route('/', createLibraryRouter(repository));
+  app.route('/', createProjectRouter(repository, storage, queueManager));
+  app.route('/', createImageRouter(storage));
+  app.route('/', createProviderRouter(providerRepository));
+  app.route('/', createGenerateRouter(providerRepository));
+
+  // Shared legacy path (can be refactored eventually)
+  app.get('/api/data', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
       const data = await repository.getUserData(user.userId);
@@ -97,16 +112,7 @@ async function startServer() {
     }
   });
 
-  // Mount routers
-  app.route('/', createAuthRouter(userRepository));
-  app.route('/', createLibraryRouter(repository));
-  app.route('/', createProjectRouter(repository, storage));
-  app.route('/', createImageRouter(storage));
-  app.route('/', createProviderRouter(providerRepository));
-  app.route('/', createGenerateRouter(providerRepository));
-
   // === Server setup ===
-  const PORT_NUM = PORT;
   const honoHandler = serve({ fetch: app.fetch, port: PORT_NUM });
 
   if (process.env.NODE_ENV !== 'production') {
@@ -136,7 +142,8 @@ async function startServer() {
           res.writeHead(response.status, Object.fromEntries(response.headers.entries()));
           const body = await response.arrayBuffer();
           res.end(Buffer.from(body));
-        }).catch(() => {
+        }).catch((err) => {
+          console.error('Vite Proxy Header Error:', err);
           res.writeHead(500);
           res.end('Internal Server Error');
         });
@@ -151,6 +158,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
 
+    // Production static serving via Hono
     app.get('*', async (c) => {
       const filePath = path.join(distPath, c.req.path);
       if (c.req.path !== '/' && fs.existsSync(filePath)) {
