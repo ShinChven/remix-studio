@@ -2,11 +2,12 @@ import { Hono } from 'hono';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
+import { QueueManager } from '../queue/queue-manager';
 import type { WorkflowItem, Job } from '../../src/types';
 
 type Variables = { user: JwtPayload };
 
-export function createProjectRouter(repository: IRepository, storage: S3Storage) {
+export function createProjectRouter(repository: IRepository, storage: S3Storage, queueManager: QueueManager) {
   const router = new Hono<{ Variables: Variables }>();
 
   // NOTE: /rename must be registered before /:id to avoid route shadowing
@@ -69,6 +70,7 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage)
         createdAt: typeof body.createdAt === 'number' ? body.createdAt : Date.now(),
         workflow: Array.isArray(body.workflow) ? body.workflow : [],
         jobs: Array.isArray(body.jobs) ? body.jobs : [],
+        providerId: typeof body.providerId === 'string' ? body.providerId : undefined,
       };
 
       await repository.createProject(user.userId, project);
@@ -83,10 +85,11 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage)
     try {
       const user = c.get('user') as JwtPayload;
       const body = await c.req.json();
-      const updates: { name?: string; workflow?: WorkflowItem[]; jobs?: Job[] } = {};
+      const updates: { name?: string; workflow?: WorkflowItem[]; jobs?: Job[]; providerId?: string } = {};
       if (typeof body?.name === 'string') updates.name = body.name.trim();
       if (Array.isArray(body?.workflow)) updates.workflow = body.workflow;
       if (Array.isArray(body?.jobs)) updates.jobs = body.jobs;
+      if (typeof body?.providerId === 'string') updates.providerId = body.providerId;
 
       await repository.updateProject(user.userId, c.req.param('id'), updates);
       return c.json({ success: true });
@@ -104,6 +107,26 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage)
     } catch (e) {
       console.error('[DELETE /api/projects/:id]', e);
       return c.json({ error: 'Failed to delete project' }, 500);
+    }
+  });
+
+  /**
+   * POST /api/projects/:id/run
+   *
+   * Kick off the server-side generation queue for all 'pending' jobs in the project.
+   */
+  router.post('/api/projects/:id/run', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+
+      // We explicitly don't await the queue processing
+      queueManager.enqueueProject(user.userId, projectId);
+
+      return c.json({ success: true }, 202);
+    } catch (e) {
+      console.error('[POST /api/projects/:id/run]', e);
+      return c.json({ error: 'Failed to enqueue project tasks' }, 500);
     }
   });
 
