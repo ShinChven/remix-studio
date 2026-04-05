@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Project, Job, Library, LibraryItem, WorkflowItem, WorkflowItemType, Provider, ModelConfig } from '../types';
 import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow } from '../api';
@@ -43,6 +44,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
   const [lightboxData, setLightboxData] = useState<{images: string[], index: number} | null>(null);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
+  const [mobileView, setMobileView] = useState<'workflow' | 'jobs'>('workflow');
   
   const projectRef = useRef(localProject);
   const isProcessing = localProject.jobs.some(j => j.status === 'pending' || j.status === 'processing');
@@ -435,19 +437,43 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           onUpdate(updated);
         }}
       />
+
+      {/* Mobile Top Nav Portal */}
+      {document.getElementById('mobile-header-actions') && createPortal(
+        <button 
+          onClick={() => setMobileView(mobileView === 'workflow' ? 'jobs' : 'workflow')}
+          className="lg:hidden px-3 py-1.5 bg-blue-600/10 text-blue-500 rounded-xl hover:bg-blue-600/20 transition-all flex items-center gap-1.5 border border-blue-500/10 active:scale-95"
+        >
+          {mobileView === 'workflow' ? (
+            <>
+              <List className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-black uppercase tracking-widest leading-none">Jobs</span>
+            </>
+          ) : (
+            <>
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-black uppercase tracking-widest leading-none">Back</span>
+            </>
+          )}
+        </button>,
+        document.getElementById('mobile-header-actions')!
+      )}
+
       {/* Left Pane: Workflow Builder */}
-      <div className="w-full lg:w-96 lg:h-full border-b lg:border-b-0 lg:border-r border-neutral-800 bg-neutral-900/30 flex flex-col flex-shrink-0">
+      <div className={`w-full lg:w-96 lg:h-full border-b lg:border-b-0 lg:border-r border-neutral-800 bg-neutral-900/30 flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
         <div className="p-4 border-b border-neutral-800 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center justify-between gap-2 flex-1 group">
               <h2 className="text-xl font-bold text-white truncate tracking-tight">{localProject.name}</h2>
-              <button 
-                onClick={() => navigate(`/project/${project.id}/edit`)}
-                className="p-1.5 text-neutral-600 hover:text-green-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-green-400/10 rounded-lg"
-                title="Edit Project Information"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={() => navigate(`/project/${project.id}/edit`)}
+                  className="p-1.5 text-neutral-600 hover:text-green-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-green-400/10 rounded-lg"
+                  title="Edit Project Information"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
           
@@ -479,7 +505,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar max-h-[40vh] lg:max-h-none">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar lg:max-h-none">
           {(localProject.workflow || []).map((item, index) => (
             <div 
               key={item.id} 
@@ -803,39 +829,41 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       </div>
 
       {/* Right Pane: Jobs Grid */}
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        <div className="p-3 border-b border-neutral-800 bg-neutral-900/20 backdrop-blur-md shadow-sm flex justify-center">
-          <div className="flex bg-neutral-950 border border-neutral-800 rounded-xl p-1 w-full max-w-lg">
-            <button 
-              onClick={() => setActiveTab('draft')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
-                activeTab === 'draft' 
-                  ? 'bg-neutral-800/80 text-white shadow-sm border border-neutral-700/50' 
-                  : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'
-              }`}
-            >
-              <Plus className="w-3.5 h-3.5" /> Draft ({draftJobs.length})
-            </button>
-            <button 
-              onClick={() => setActiveTab('queue')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
-                activeTab === 'queue' 
-                  ? 'bg-neutral-800/80 text-white shadow-sm border border-neutral-700/50' 
-                  : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'
-              }`}
-            >
-              <List className="w-3.5 h-3.5" /> Queue ({queueJobs.length})
-            </button>
-            <button 
-              onClick={() => setActiveTab('album')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
-                activeTab === 'album' 
-                  ? 'bg-neutral-800/80 text-white shadow-sm border border-neutral-700/50' 
-                  : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'
-              }`}
-            >
-              <Grid className="w-3.5 h-3.5" /> Album ({completedJobs.length})
-            </button>
+      <div className={`flex-1 flex-col overflow-hidden min-h-0 ${mobileView === 'jobs' ? 'flex h-full' : 'hidden lg:flex'}`}>
+        <div className="p-3 border-b border-neutral-800 bg-neutral-900/20 backdrop-blur-md shadow-sm flex flex-col gap-3">
+          <div className="flex items-center justify-center gap-4">
+              <div className="flex bg-neutral-950 border border-neutral-800 rounded-xl p-1 flex-1 max-w-lg">
+                <button 
+                  onClick={() => setActiveTab('draft')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
+                    activeTab === 'draft' 
+                      ? 'bg-neutral-800/80 text-white shadow-sm border border-neutral-700/50' 
+                      : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'
+                  }`}
+                >
+                  <Plus className="w-3.5 h-3.5" /> Draft ({draftJobs.length})
+                </button>
+                <button 
+                  onClick={() => setActiveTab('queue')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
+                    activeTab === 'queue' 
+                      ? 'bg-neutral-800/80 text-white shadow-sm border border-neutral-700/50' 
+                      : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'
+                  }`}
+                >
+                  <List className="w-3.5 h-3.5" /> Queue ({queueJobs.length})
+                </button>
+                <button 
+                  onClick={() => setActiveTab('album')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
+                    activeTab === 'album' 
+                      ? 'bg-neutral-800/80 text-white shadow-sm border border-neutral-700/50' 
+                      : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'
+                  }`}
+                >
+                  <Grid className="w-3.5 h-3.5" /> Album ({completedJobs.length})
+                </button>
+              </div>
           </div>
         </div>
 

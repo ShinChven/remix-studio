@@ -80,6 +80,7 @@ export function MainLayout() {
         <Link to="/" className="flex items-center px-2" onClick={() => setIsMobileMenuOpen(false)}>
           <h1 className="text-lg font-bold text-white whitespace-nowrap tracking-tight">Remix Studio</h1>
         </Link>
+        <div id="mobile-header-actions" className="ml-auto flex items-center px-2"></div>
       </header>
 
       {/* Backdrop for Mobile Sidebar */}
