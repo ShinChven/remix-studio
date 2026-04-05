@@ -196,7 +196,7 @@ export function ProviderForm() {
                 <input
                   type="number"
                   min="1"
-                  max="50"
+                  max="1000"
                   value={concurrency}
                   onChange={e => setConcurrency(parseInt(e.target.value) || 1)}
                   className="w-24 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all"
