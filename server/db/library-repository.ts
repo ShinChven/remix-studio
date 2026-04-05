@@ -53,6 +53,8 @@ export class LibraryRepository {
               content: record.content,
               title: record.title,
               order: record.order,
+              thumbnailUrl: record.thumbnailUrl,
+              optimizedUrl: record.optimizedUrl,
             });
           }
         }
@@ -96,6 +98,8 @@ export class LibraryRepository {
         content: r.content,
         title: r.title,
         order: r.order,
+        thumbnailUrl: r.thumbnailUrl,
+        optimizedUrl: r.optimizedUrl,
       }))
       .sort((a, b) => {
         if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
@@ -181,6 +185,8 @@ export class LibraryRepository {
         content: r.content,
         title: r.title,
         order: r.order,
+        thumbnailUrl: r.thumbnailUrl,
+        optimizedUrl: r.optimizedUrl,
       }))
       .sort((a, b) => {
         if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
@@ -198,6 +204,8 @@ export class LibraryRepository {
     };
     if (item.title !== undefined) record.title = item.title;
     if (item.order !== undefined) record.order = item.order;
+    if (item.thumbnailUrl !== undefined) record.thumbnailUrl = item.thumbnailUrl;
+    if (item.optimizedUrl !== undefined) record.optimizedUrl = item.optimizedUrl;
     await this.client.send(new PutCommand({ TableName: TABLE_NAME, Item: record }));
   }
 
@@ -209,6 +217,8 @@ export class LibraryRepository {
     if (updates.content !== undefined) { expressions.push('#c = :c'); names['#c'] = 'content'; values[':c'] = updates.content; }
     if (updates.title !== undefined) { expressions.push('#t = :t'); names['#t'] = 'title'; values[':t'] = updates.title; }
     if (updates.order !== undefined) { expressions.push('#o = :o'); names['#o'] = 'order'; values[':o'] = updates.order; }
+    if (updates.thumbnailUrl !== undefined) { expressions.push('#th = :th'); names['#th'] = 'thumbnailUrl'; values[':th'] = updates.thumbnailUrl; }
+    if (updates.optimizedUrl !== undefined) { expressions.push('#op = :op'); names['#op'] = 'optimizedUrl'; values[':op'] = updates.optimizedUrl; }
     if (expressions.length === 0) return;
 
     await this.client.send(

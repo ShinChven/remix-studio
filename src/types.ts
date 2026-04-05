@@ -5,6 +5,8 @@ export interface WorkflowItem {
   type: WorkflowItemType;
   value: string; // text content, library ID, or base64 image data URL
   order?: number;
+  thumbnailUrl?: string;
+  optimizedUrl?: string;
 }
 
 export interface LibraryItem {
@@ -12,6 +14,8 @@ export interface LibraryItem {
   content: string;
   title?: string;
   order?: number;
+  thumbnailUrl?: string;
+  optimizedUrl?: string;
 }
 
 export type LibraryType = 'text' | 'image';
@@ -80,6 +84,8 @@ export interface Job {
   imageContexts?: string[];
   status: 'draft' | 'pending' | 'processing' | 'completed' | 'failed';
   imageUrl?: string;
+  thumbnailUrl?: string;
+  optimizedUrl?: string;
   error?: string;
   createdAt?: number;
   providerId?: string;
@@ -94,6 +100,8 @@ export interface AlbumItem {
   jobId: string;
   prompt: string;
   imageUrl: string; // S3 key (presigned on read)
+  thumbnailUrl?: string; // S3 key
+  optimizedUrl?: string; // S3 key
   providerId?: string;
   modelConfigId?: string;
   aspectRatio?: string;

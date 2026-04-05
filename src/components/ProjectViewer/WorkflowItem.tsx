@@ -139,7 +139,12 @@ export function WorkflowItem({
           </label>
           {item.value && !uploadingItemIds.has(item.id) && (
             <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-800 mt-2">
-               <img src={imageDisplayUrl(item.value)} alt="Reference" className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => onLightbox([imageDisplayUrl(item.value)], 0)} />
+               <img 
+                 src={imageDisplayUrl(item.thumbnailUrl || item.value)} 
+                 alt="Reference" 
+                 className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
+                 onClick={() => onLightbox([imageDisplayUrl(item.optimizedUrl || item.value)], 0)} 
+               />
             </div>
           )}
         </div>

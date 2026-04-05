@@ -76,6 +76,8 @@ export class ProjectRepository {
       status: item.status,
       imageContexts: item.imageContexts,
       imageUrl: item.imageUrl,
+      thumbnailUrl: item.thumbnailUrl,
+      optimizedUrl: item.optimizedUrl,
       error: item.error,
       createdAt: item.createdAt,
       providerId: item.providerId,
@@ -91,6 +93,8 @@ export class ProjectRepository {
       type: item.type,
       value: item.value,
       order: item.order,
+      thumbnailUrl: item.thumbnailUrl,
+      optimizedUrl: item.optimizedUrl,
     }));
     workflow.sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -99,6 +103,8 @@ export class ProjectRepository {
       jobId: item.jobId,
       prompt: item.prompt,
       imageUrl: item.imageUrl,
+      thumbnailUrl: item.thumbnailUrl,
+      optimizedUrl: item.optimizedUrl,
       providerId: item.providerId,
       modelConfigId: item.modelConfigId,
       aspectRatio: item.aspectRatio,
@@ -296,6 +302,8 @@ export class ProjectRepository {
       jobId: item.jobId,
       prompt: item.prompt,
       imageUrl: item.imageUrl,
+      thumbnailUrl: item.thumbnailUrl,
+      optimizedUrl: item.optimizedUrl,
       providerId: item.providerId,
       modelConfigId: item.modelConfigId,
       aspectRatio: item.aspectRatio,
@@ -344,6 +352,8 @@ export class ProjectRepository {
       jobId: item.jobId,
       prompt: item.prompt,
       imageUrl: item.imageUrl,
+      thumbnailUrl: item.thumbnailUrl,
+      optimizedUrl: item.optimizedUrl,
       providerId: item.providerId,
       modelConfigId: item.modelConfigId,
       aspectRatio: item.aspectRatio,
@@ -381,7 +391,7 @@ export class ProjectRepository {
     }));
   }
 
-  async deleteTrashPermanently(userId: string, itemId: string): Promise<string | null> {
+  async deleteTrashPermanently(userId: string, itemId: string): Promise<string[]> {
     const pk = `USER_DATA#${userId}`;
     const sk = `TRASH#${itemId}`;
     
@@ -392,28 +402,31 @@ export class ProjectRepository {
     }));
     
     const item = result.Items?.[0];
-    if (!item) return null;
+    if (!item) return [];
 
-    const s3Key = item.imageUrl;
+    const keys: string[] = [];
+    if (item.imageUrl) keys.push(item.imageUrl);
+    if (item.thumbnailUrl) keys.push(item.thumbnailUrl);
+    if (item.optimizedUrl) keys.push(item.optimizedUrl);
 
     await this.client.send(new DeleteCommand({
       TableName: TABLE_NAME,
       Key: { pk, sk }
     }));
 
-    return s3Key;
+    return keys;
   }
 
   async emptyTrash(userId: string): Promise<string[]> {
     const items = await this.getTrashItems(userId);
-    const keys: string[] = [];
+    const allKeys: string[] = [];
     
     for (const item of items) {
-      const key = await this.deleteTrashPermanently(userId, item.id);
-      if (key) keys.push(key);
+      const keys = await this.deleteTrashPermanently(userId, item.id);
+      allKeys.push(...keys);
     }
     
-    return keys;
+    return allKeys;
   }
 
   async deleteProject(userId: string, projectId: string): Promise<void> {

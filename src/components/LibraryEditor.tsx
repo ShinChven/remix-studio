@@ -146,11 +146,22 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           reader.readAsDataURL(file);
         });
 
-        const { key, url } = await saveImage(base64, library.id);
-        const newItem = { id: crypto.randomUUID(), content: key, order: newItems.length };
+        const { key, url, thumbnailUrl, optimizedUrl } = await saveImage(base64, library.id);
+        const newItem = { 
+          id: crypto.randomUUID(), 
+          content: key, 
+          order: newItems.length,
+          thumbnailUrl: thumbnailUrl ? key.replace(/(\.[^.]+)$/, '.thumb.jpg') : undefined,
+          optimizedUrl: optimizedUrl ? key.replace(/(\.[^.]+)$/, '.opt.jpg') : undefined
+        };
         await createLibraryItem(library.id, newItem);
-        // Use signed URL for immediate display, DB stores the S3 key
-        newItems.push({ ...newItem, content: url });
+        // Use signed URLs for immediate display, DB stores the S3 keys
+        newItems.push({ 
+          ...newItem, 
+          content: url,
+          thumbnailUrl: thumbnailUrl,
+          optimizedUrl: optimizedUrl
+        });
       }
 
       onUpdate({ ...library, items: newItems });
@@ -242,7 +253,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 <div className={`group/item bg-neutral-900/40 border border-neutral-800/60 rounded-3xl transition-all duration-300 hover:bg-neutral-800/40 hover:border-neutral-700/80 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${library.type === 'image' ? 'aspect-square flex flex-col p-2 overflow-hidden' : 'p-4 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-6'}`}>
                   {library.type === 'image' ? (
                     <div className="relative flex-1 rounded-2xl overflow-hidden cursor-pointer" onClick={() => setLightboxIndex(originalIndex)}>
-                      <img src={item.content} alt={`${originalIndex}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
+                      <img src={item.thumbnailUrl || item.content} alt={`${originalIndex}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4">
                         <div className="flex justify-between items-center">
                           <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">IMG_{originalIndex + 1}</span>
@@ -440,7 +451,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           
           <div className="relative w-full max-w-7xl h-[85vh] flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
             <img 
-              src={library.items[lightboxIndex].content} 
+              src={library.items[lightboxIndex].optimizedUrl || library.items[lightboxIndex].content} 
               alt={`img-${lightboxIndex}`}
               className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl animate-in zoom-in-95 duration-500"
             />

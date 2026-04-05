@@ -4,6 +4,7 @@ import { ProjectRepository } from '../db/project-repository';
 import { S3Storage } from '../storage/s3-storage';
 import { buildGenerator } from '../generators/build-generator';
 import { Job, Project, ProviderType, AlbumItem } from '../../src/types';
+import { generateThumbnail, generateOptimized } from '../utils/image-utils';
 import crypto from 'crypto';
 import sharp from 'sharp';
 
@@ -176,15 +177,26 @@ export class QueueManager {
         ext = 'png';
       }
 
-      const filename = `${userId}/${projectId}/${crypto.randomUUID()}.${ext}`;
-      const s3Url = await this.storage.save(filename, finalBytes, mimeType);
+      const filename = `${userId}/${projectId}/${crypto.randomUUID()}`;
+      const s3Url = await this.storage.save(`${filename}.${ext}`, finalBytes, mimeType);
+
+      // Generate and save thumbnail/optimized versions
+      const thumbBuffer = await generateThumbnail(finalBytes);
+      const thumbKey = `${filename}.thumb.jpg`;
+      await this.storage.save(thumbKey, thumbBuffer, 'image/jpeg');
+
+      const optBuffer = await generateOptimized(finalBytes);
+      const optKey = `${filename}.opt.jpg`;
+      await this.storage.save(optKey, optBuffer, 'image/jpeg');
 
       // 5. Create album item
       const albumItem: AlbumItem = {
         id: crypto.randomUUID(),
         jobId: job.id,
         prompt: job.prompt,
-        imageUrl: s3Url,
+        imageUrl: `${filename}.${ext}`,
+        thumbnailUrl: thumbKey,
+        optimizedUrl: optKey,
         providerId: job.providerId || queued.job.providerId,
         modelConfigId: queued.modelConfigId || job.modelConfigId,
         aspectRatio: queued.aspectRatio || job.aspectRatio,
@@ -198,7 +210,9 @@ export class QueueManager {
       // 6. Mark job as completed in DB
       await this.updateJobStatus(userId, projectId, job.id, {
         status: 'completed',
-        imageUrl: s3Url,
+        imageUrl: `${filename}.${ext}`,
+        thumbnailUrl: thumbKey,
+        optimizedUrl: optKey,
         error: undefined
       });
 

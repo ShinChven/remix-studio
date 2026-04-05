@@ -11,11 +11,16 @@ async function signLibraryImages(items: LibraryItem[], storage: S3Storage, libra
   if (libraryType !== 'image') return items;
   return Promise.all(
     items.map(async (item) => {
-      if (item.content && !item.content.startsWith('http') && !item.content.startsWith('data:')) {
-        const signedUrl = await storage.getPresignedUrl(item.content);
-        return { ...item, content: signedUrl };
-      }
-      return item;
+      const content = (item.content && !item.content.startsWith('http') && !item.content.startsWith('data:'))
+        ? await storage.getPresignedUrl(item.content)
+        : item.content;
+      const thumbnailUrl = (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http'))
+        ? await storage.getPresignedUrl(item.thumbnailUrl)
+        : item.thumbnailUrl;
+      const optimizedUrl = (item.optimizedUrl && !item.optimizedUrl.startsWith('http'))
+        ? await storage.getPresignedUrl(item.optimizedUrl)
+        : item.optimizedUrl;
+      return { ...item, content, thumbnailUrl, optimizedUrl };
     })
   );
 }

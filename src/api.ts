@@ -156,7 +156,14 @@ export async function deleteProject(id: string): Promise<void> {
 
 // ========== Image Storage ==========
 
-export async function saveImage(base64: string, projectId: string): Promise<{ key: string; url: string }> {
+export async function saveImage(base64: string, projectId: string): Promise<{ 
+  key: string; 
+  url: string;
+  thumbnailKey: string;
+  thumbnailUrl: string;
+  optimizedKey: string;
+  optimizedUrl: string;
+}> {
   const res = await fetch('/api/images', {
     method: 'POST',
     headers: getHeaders(),
@@ -164,7 +171,14 @@ export async function saveImage(base64: string, projectId: string): Promise<{ ke
   });
   if (!res.ok) throw new Error('Failed to save image');
   const data = await res.json();
-  return { key: data.key, url: data.url };
+  return { 
+    key: data.key, 
+    url: data.url, 
+    thumbnailKey: data.thumbnailKey,
+    thumbnailUrl: data.thumbnailUrl,
+    optimizedKey: data.optimizedKey,
+    optimizedUrl: data.optimizedUrl
+  };
 }
 
 /**

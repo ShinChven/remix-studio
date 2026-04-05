@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2 } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink } from 'lucide-react';
 import { AlbumItem } from '../../types';
 import { imageDisplayUrl } from '../../api';
 
@@ -103,7 +103,7 @@ export function AlbumTab({
                     </div>
 
                     {/* Individual Delete Button */}
-                    <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-all flex flex-col gap-2">
                       <button 
                         onClick={(e) => { 
                           e.stopPropagation(); 
@@ -111,19 +111,31 @@ export function AlbumTab({
                           setShowDeleteAlbumModal(true);
                         }}
                         className="w-6 h-6 rounded-lg bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-lg"
+                        title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
+                      
+                      <a 
+                        href={imageDisplayUrl(item.imageUrl)} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-6 h-6 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all shadow-lg"
+                        title="Open Original"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
                     </div>
 
                     <img 
-                      src={imageDisplayUrl(item.imageUrl)} 
+                      src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)} 
                       alt={item.prompt} 
                       className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 shadow-lg cursor-pointer ${isSelected ? 'opacity-40' : ''}`} 
                       referrerPolicy="no-referrer"
                       onClick={() => {
                         const validItems = albumItems.filter(a => a.imageUrl);
-                        const imgUrls = validItems.map(a => imageDisplayUrl(a.imageUrl));
+                        const imgUrls = validItems.map(a => imageDisplayUrl(a.optimizedUrl || a.imageUrl));
                         const idx = validItems.findIndex(a => a.id === item.id);
                         setLightboxData({ images: imgUrls, index: idx >= 0 ? idx : 0 });
                       }}

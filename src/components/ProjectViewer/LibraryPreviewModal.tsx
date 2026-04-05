@@ -73,9 +73,10 @@ export function LibraryPreviewModal({ library, onClose }: LibraryPreviewModalPro
                 <div key={item.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col shadow-sm">
                   {library.type === 'image' && (
                     <div className="aspect-video bg-black relative border-b border-neutral-800">
-                      <img src={item.content} alt={item.content} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => {
-                        const imageItems = library.items.filter(i => i.content).map(i => i.content);
-                        const idx = imageItems.indexOf(item.content);
+                      <img src={item.thumbnailUrl || item.content} alt={item.content} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => {
+                        const imageItems = library.items.filter(i => i.content).map(i => i.optimizedUrl || i.content);
+                        const currentOptimized = item.optimizedUrl || item.content;
+                        const idx = imageItems.indexOf(currentOptimized);
                         setPreviewLightbox({ images: imageItems, index: idx >= 0 ? idx : 0 });
                       }} />
                     </div>

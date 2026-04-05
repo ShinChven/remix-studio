@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { S3Storage } from '../storage/s3-storage';
+import { generateThumbnail, generateOptimized } from '../utils/image-utils';
 
 type Variables = { user: JwtPayload };
 
@@ -30,9 +31,31 @@ export function createImageRouter(storage: S3Storage) {
       const base64Data = base64.replace(/^data:image\/[\w+.-]+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
 
+      // 1. Save original
       const s3Key = await storage.save(key, buffer, mimeType);
+
+      // 2. Generate and save thumbnail
+      const thumbBuffer = await generateThumbnail(buffer);
+      const thumbKey = key.replace(new RegExp(`\\.${ext}$`), `.thumb.${ext}`);
+      await storage.save(thumbKey, thumbBuffer, 'image/jpeg');
+
+      // 3. Generate and save optimized version (2K)
+      const optBuffer = await generateOptimized(buffer);
+      const optKey = key.replace(new RegExp(`\\.${ext}$`), `.opt.${ext}`);
+      await storage.save(optKey, optBuffer, 'image/jpeg');
+
       const signedUrl = await storage.getPresignedUrl(s3Key);
-      return c.json({ key: s3Key, url: signedUrl });
+      const thumbUrl = await storage.getPresignedUrl(thumbKey);
+      const optUrl = await storage.getPresignedUrl(optKey);
+
+      return c.json({ 
+        key: s3Key, 
+        url: signedUrl,
+        thumbnailKey: thumbKey,
+        thumbnailUrl: thumbUrl,
+        optimizedKey: optKey,
+        optimizedUrl: optUrl
+      });
     } catch (e) {
       console.error('[POST /api/images]', e);
       return c.json({ error: 'Failed to save image' }, 500);

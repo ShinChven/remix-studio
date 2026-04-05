@@ -64,9 +64,9 @@ export function LibrarySelectionModal({
                     }`}
                   >
                     <div className="flex-shrink-0">
-                      {lib.type === 'image' && lib.items[0]?.content ? (
+                      {lib.type === 'image' && lib.items[0] ? (
                         <div className={`w-12 h-12 rounded-xl overflow-hidden border shadow-md ${isSelected ? 'border-neutral-800 grayscale' : 'border-neutral-800'}`}>
-                          <img src={lib.items[0].content} alt={lib.name} className="w-full h-full object-cover" />
+                          <img src={lib.items[0].thumbnailUrl || lib.items[0].content} alt={lib.name} className="w-full h-full object-cover" />
                         </div>
                       ) : (
                         <div className={`p-3 bg-neutral-900 rounded-xl border transition-all ${isSelected ? 'border-neutral-800' : 'border-neutral-800 group-hover:bg-neutral-950 group-hover:border-emerald-500/20'}`}>

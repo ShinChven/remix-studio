@@ -20,16 +20,31 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
   const jobs = await Promise.all(
     project.jobs.map(async (job) => {
       const imageUrl = job.imageUrl ? await presignIfKey(job.imageUrl, storage) : job.imageUrl;
-      return { ...job, imageUrl };
+      const thumbnailUrl = job.thumbnailUrl ? await presignIfKey(job.thumbnailUrl, storage) : job.thumbnailUrl;
+      const optimizedUrl = job.optimizedUrl ? await presignIfKey(job.optimizedUrl, storage) : job.optimizedUrl;
+      return { ...job, imageUrl, thumbnailUrl, optimizedUrl };
     })
   );
   const album = await Promise.all(
     (project.album || []).map(async (item) => {
       const imageUrl = await presignIfKey(item.imageUrl, storage);
-      return { ...item, imageUrl };
+      const thumbnailUrl = item.thumbnailUrl ? await presignIfKey(item.thumbnailUrl, storage) : item.thumbnailUrl;
+      const optimizedUrl = item.optimizedUrl ? await presignIfKey(item.optimizedUrl, storage) : item.optimizedUrl;
+      return { ...item, imageUrl, thumbnailUrl, optimizedUrl };
     })
   );
-  return { ...project, jobs, album };
+  const workflow = await Promise.all(
+    (project.workflow || []).map(async (item) => {
+      if (item.type === 'image') {
+        const value = await presignIfKey(item.value, storage);
+        const thumbnailUrl = item.thumbnailUrl ? await presignIfKey(item.thumbnailUrl, storage) : item.thumbnailUrl;
+        const optimizedUrl = item.optimizedUrl ? await presignIfKey(item.optimizedUrl, storage) : item.optimizedUrl;
+        return { ...item, value, thumbnailUrl, optimizedUrl };
+      }
+      return item;
+    })
+  );
+  return { ...project, jobs, album, workflow };
 }
 
 export function createProjectRouter(repository: IRepository, storage: S3Storage, queueManager: QueueManager) {

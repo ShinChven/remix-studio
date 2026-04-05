@@ -3,6 +3,7 @@ import { TrashItem } from '../types';
 import { fetchTrash, restoreTrashItem, restoreTrashBatch, deleteTrashPermanently, deleteTrashBatch, emptyTrash, imageDisplayUrl } from '../api';
 import { Trash2, RotateCcw, CheckSquare, Square, CheckCircle2, Layers, AlertTriangle, Loader2, Calendar, Folder, HardDrive } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
+import { ImageLightbox } from './ProjectViewer/ImageLightbox';
 
 export function TrashView() {
   const [items, setItems] = useState<TrashItem[]>([]);
@@ -11,6 +12,7 @@ export function TrashView() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
   const [showDeleteSelectedConfirm, setShowDeleteSelectedConfirm] = useState(false);
+  const [lightboxData, setLightboxData] = useState<{images: string[], index: number} | null>(null);
 
   const loadTrash = async () => {
     try {
@@ -96,7 +98,7 @@ export function TrashView() {
   const formatSize = (bytes?: number) => {
     if (!bytes) return '0 KB';
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
   const totalSize = items.reduce((acc, item) => acc + (item.size || 0), 0);
@@ -189,10 +191,16 @@ export function TrashView() {
                 {/* Image Section */}
                 <div className="aspect-square relative overflow-hidden bg-neutral-950">
                   <img
-                    src={imageDisplayUrl(item.imageUrl)}
+                    src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)}
                     alt={item.prompt}
-                    className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${isSelected ? 'opacity-40' : ''}`}
+                    className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer ${isSelected ? 'opacity-40' : ''}`}
                     referrerPolicy="no-referrer"
+                    onClick={() => {
+                        const validItems = items.filter(i => i.imageUrl);
+                        const imgUrls = validItems.map(i => imageDisplayUrl(i.optimizedUrl || i.imageUrl));
+                        const idx = validItems.findIndex(i => i.id === item.id);
+                        setLightboxData({ images: imgUrls, index: idx >= 0 ? idx : 0 });
+                    }}
                   />
                   
                   {/* Selection Overlay */}
@@ -280,6 +288,14 @@ export function TrashView() {
         confirmText={isDeleting ? "Deleting..." : "Delete Permanently"}
         type="danger"
       />
+      
+      {lightboxData && (
+        <ImageLightbox 
+          images={lightboxData.images} 
+          startIndex={lightboxData.index} 
+          onClose={() => setLightboxData(null)} 
+        />
+      )}
     </div>
   );
 }

@@ -15,8 +15,10 @@ export function createTrashRouter(repository: IRepository, storage: S3Storage) {
       
       // Presign URLs for viewing in the trash
       const signed = await Promise.all(items.map(async (item) => {
-        const imageUrl = await storage.getPresignedUrl(item.imageUrl);
-        return { ...item, imageUrl };
+        const imageUrl = item.imageUrl ? await storage.getPresignedUrl(item.imageUrl) : item.imageUrl;
+        const thumbnailUrl = item.thumbnailUrl ? await storage.getPresignedUrl(item.thumbnailUrl) : item.thumbnailUrl;
+        const optimizedUrl = item.optimizedUrl ? await storage.getPresignedUrl(item.optimizedUrl) : item.optimizedUrl;
+        return { ...item, imageUrl, thumbnailUrl, optimizedUrl };
       }));
       
       return c.json(signed);
@@ -81,12 +83,12 @@ export function createTrashRouter(repository: IRepository, storage: S3Storage) {
       if (!Array.isArray(ids)) return c.json({ error: 'Invalid IDs' }, 400);
 
       for (const id of ids) {
-        const s3Key = await repository.deleteTrashPermanently(user.userId, id);
-        if (s3Key) {
+        const s3Keys = await repository.deleteTrashPermanently(user.userId, id);
+        for (const key of s3Keys) {
           try {
-            await storage.delete(s3Key);
+            await storage.delete(key);
           } catch (s3Err) {
-            console.error(`[Trash] Failed to delete S3 key ${s3Key}:`, s3Err);
+            console.error(`[Trash] Failed to delete S3 key ${key}:`, s3Err);
           }
         }
       }
@@ -101,9 +103,13 @@ export function createTrashRouter(repository: IRepository, storage: S3Storage) {
   router.delete('/api/trash/:id', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      const s3Key = await repository.deleteTrashPermanently(user.userId, c.req.param('id'));
-      if (s3Key) {
-        await storage.delete(s3Key);
+      const s3Keys = await repository.deleteTrashPermanently(user.userId, c.req.param('id'));
+      for (const key of s3Keys) {
+        try {
+          await storage.delete(key);
+        } catch (s3Err) {
+          console.error(`[Trash] Failed to delete S3 key ${key}:`, s3Err);
+        }
       }
       return c.json({ success: true });
     } catch (e) {
