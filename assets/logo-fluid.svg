@@ -1,0 +1,27 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="256" height="256" rx="48" fill="#0F172A"/>
+  <defs>
+    <filter id="fluidBlur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="25" />
+    </filter>
+    <linearGradient id="gradPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+    <linearGradient id="gradBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#2DD4BF" />
+    </linearGradient>
+  </defs>
+  <g filter="url(#fluidBlur)" opacity="0.8">
+    <circle cx="100" cy="100" r="60" fill="url(#gradPurple)">
+      <animate attributeName="cx" values="100;110;100" dur="5s" repeatCount="indefinite" />
+    </circle>
+    <circle cx="156" cy="156" r="65" fill="url(#gradBlue)">
+      <animate attributeName="cx" values="156;146;156" dur="5s" repeatCount="indefinite" />
+    </circle>
+  </g>
+  <circle cx="128" cy="128" r="8" fill="white">
+    <animate attributeName="r" values="6;10;6" dur="3s" repeatCount="indefinite" />
+  </circle>
+</svg>

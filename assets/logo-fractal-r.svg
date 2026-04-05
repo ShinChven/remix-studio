@@ -1,0 +1,20 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="256" height="256" rx="48" fill="#0F172A"/>
+  <defs>
+    <linearGradient id="gradR" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F472B6" />
+      <stop offset="100%" stop-color="#FB923C" />
+    </linearGradient>
+  </defs>
+  <!-- 裂变方块 (左侧) -->
+  <rect x="70" y="80" width="20" height="20" fill="#F472B6" opacity="0.6" />
+  <rect x="70" y="110" width="20" height="65" fill="#F472B6" />
+  <rect x="100" y="80" width="15" height="15" fill="#FB923C" opacity="0.4" />
+  
+  <!-- 字母 R 主体 (右侧) -->
+  <path d="M90 80H150C170 80 185 95 185 115C185 135 170 150 150 150H90V80Z" fill="url(#gradR)" />
+  <path d="M140 150L185 175" stroke="url(#gradR)" stroke-width="20" stroke-linecap="round" />
+  
+  <!-- 艺术线条 -->
+  <path d="M190 70Q210 110 190 150" stroke="white" stroke-width="2" stroke-dasharray="4 4" opacity="0.5" />
+</svg>

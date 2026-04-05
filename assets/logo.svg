@@ -1,0 +1,51 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="256" height="256" rx="48" fill="#0F172A"/>
+  
+  <!-- 渐变定义 -->
+  <defs>
+    <linearGradient id="prismGradient" x1="128" y1="60" x2="128" y2="190" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#334155"/>
+      <stop offset="1" stop-color="#1E293B"/>
+    </linearGradient>
+    
+    <linearGradient id="beamGradient" x1="40" y1="128" x2="100" y2="128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity="0"/>
+      <stop offset="1" stop-color="white"/>
+    </linearGradient>
+    
+    <!-- 彩色碎片渐变 -->
+    <linearGradient id="color1" x1="140" y1="120" x2="220" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#0891B2" stop-opacity="0.6"/>
+    </linearGradient>
+    <linearGradient id="color2" x1="140" y1="130" x2="230" y2="110" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A855F7"/>
+      <stop offset="1" stop-color="#7E22CE" stop-opacity="0.6"/>
+    </linearGradient>
+    <linearGradient id="color3" x1="140" y1="140" x2="220" y2="170" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EC4899"/>
+      <stop offset="1" stop-color="#BE185D" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 输入光束 -->
+  <path d="M40 128H105" stroke="url(#beamGradient)" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- 彩色输出碎片 (Remix Layers) -->
+  <path d="M128 128L210 70L220 95L128 128Z" fill="url(#color1)" style="mix-blend-mode: screen"/>
+  <path d="M128 128L230 110L230 146L128 128Z" fill="url(#color2)" style="mix-blend-mode: screen"/>
+  <path d="M128 128L210 186L195 195L128 128Z" fill="url(#color3)" style="mix-blend-mode: screen"/>
+
+  <!-- 核心棱镜 (三角形) -->
+  <path d="M128 60L185 175H71L128 60Z" fill="url(#prismGradient)" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+  
+  <!-- 棱镜内部高光 -->
+  <path d="M128 60L160 125L128 128V60Z" fill="white" fill-opacity="0.05"/>
+  <path d="M105 128L128 128L128 135L105 128Z" fill="white" fill-opacity="0.8"/>
+
+  <!-- 中心发光点 -->
+  <circle cx="128" cy="128" r="4" fill="white">
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" />
+  </circle>
+</svg>

@@ -224,9 +224,10 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage)
     try {
       const user = c.get('user') as JwtPayload;
       const body = await c.req.json();
-      const updates: { content?: string; title?: string } = {};
+      const updates: { content?: string; title?: string; tags?: string[] } = {};
       if (typeof body?.content === 'string') updates.content = body.content;
       if (typeof body?.title === 'string') updates.title = body.title;
+      if (Array.isArray(body?.tags)) updates.tags = body.tags;
 
       await repository.updateLibraryItem(user.userId, c.req.param('libId'), c.req.param('itemId'), updates);
       return c.json({ success: true });

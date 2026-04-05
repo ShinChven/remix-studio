@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Library } from '../types';
-import { Save, ChevronLeft, StickyNote, Maximize2, Minimize2, Split, Eye, Edit3, Calendar, FileText } from 'lucide-react';
+import { Save, ChevronLeft, StickyNote, Maximize2, Minimize2, Split, Eye, Edit3, Calendar, FileText, Tag as TagIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { fetchLibrary, createLibraryItem, updateLibraryItem } from '../api';
+import { TagModal } from '../components/TagModal';
 
 export function PromptEditor() {
   const { id, index } = useParams<{ id: string, index: string }>();
@@ -19,6 +20,8 @@ export function PromptEditor() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('split');
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [showTagModal, setShowTagModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -31,6 +34,7 @@ export function PromptEditor() {
         } else {
           setContent(item.content || '');
           setTitle(item.title || '');
+          setTags(item.tags || []);
         }
       }
     }).catch(() => navigate('/libraries'));
@@ -47,6 +51,7 @@ export function PromptEditor() {
           id: crypto.randomUUID(),
           content,
           title: title.trim() || undefined,
+          tags,
           order: library.items.length,
         };
         await createLibraryItem(id, newItem);
@@ -55,6 +60,7 @@ export function PromptEditor() {
         await updateLibraryItem(id, existingItem.id, {
           content,
           title: title.trim() || undefined,
+          tags,
         });
       }
 
@@ -97,6 +103,14 @@ export function PromptEditor() {
                 <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-neutral-600 truncate">
                   {library.name} {isNew ? '' : `• #${itemIndex + 1}`}
                 </span>
+                <div className="w-px h-3 bg-neutral-800 hidden sm:block"></div>
+                <button 
+                  onClick={() => setShowTagModal(true)}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded transition-all text-[9px] font-bold tracking-widest uppercase truncate border border-transparent hover:border-neutral-800 text-neutral-500 hover:text-blue-400 group/tagbtn"
+                >
+                  <TagIcon className="w-3 h-3 transition-transform group-hover/tagbtn:scale-110" />
+                  {tags.length > 0 ? `${tags.length} Tags` : 'Add Tags'}
+                </button>
               </div>
             </div>
           </div>
@@ -225,6 +239,13 @@ export function PromptEditor() {
         .prose a:hover { text-decoration: underline; }
         .prose hr { border: 0; border-top: 1px solid #262626; margin: 2rem 0; }
       `}</style>
+      
+      <TagModal 
+        isOpen={showTagModal} 
+        onClose={() => setShowTagModal(false)}
+        onSave={(newTags) => setTags(newTags)}
+        initialTags={tags}
+      />
     </div>
   );
 }

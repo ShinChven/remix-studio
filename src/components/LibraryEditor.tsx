@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Library } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play, UploadCloud } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
-import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences } from '../api';
+import { TagModal } from './TagModal';
+import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem } from '../api';
 
 interface Props {
   library: Library;
@@ -24,7 +25,101 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
+  const [showBatchTagModal, setShowBatchTagModal] = useState(false);
+  const [showDeleteSelectedModal, setShowDeleteSelectedModal] = useState(false);
+  const [tagModalItemId, setTagModalItemId] = useState<string | null>(null);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
+  const [showTagFilterDropdown, setShowTagFilterDropdown] = useState(false);
+
   const ITEMS_PER_PAGE = 24;
+
+  const toggleItemExpand = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setExpandedItemId(prev => prev === id ? null : id);
+  };
+
+  const toggleItemSelection = (id: string, index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    setSelectedItemIds(prev => {
+      const next = new Set(prev);
+      
+      if (e.shiftKey && lastSelectedIndex !== null) {
+        const start = Math.min(lastSelectedIndex, index);
+        const end = Math.max(lastSelectedIndex, index);
+        const rangeIds = filteredItems.slice(start, end + 1).map(f => f.item.id);
+        
+        // If the start item is being selected, select the range. Otherwise, deselect.
+        const shouldSelect = !prev.has(id);
+        rangeIds.forEach(rangeId => {
+          if (shouldSelect) next.add(rangeId);
+          else next.delete(rangeId);
+        });
+      } else {
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+      }
+      
+      return next;
+    });
+    
+    setLastSelectedIndex(index);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItemIds.size === filteredItems.length && filteredItems.length > 0) {
+      setSelectedItemIds(new Set());
+    } else {
+      setSelectedItemIds(new Set(filteredItems.map(f => f.item.id)));
+    }
+  };
+
+  const deleteSelectedItems = async () => {
+    const idsToDelete = Array.from(selectedItemIds);
+    try {
+      for (const id of idsToDelete) {
+        await apiDeleteLibraryItem(library.id, id);
+      }
+      const newItems = library.items.filter(i => !selectedItemIds.has(i.id));
+      onUpdate({ ...library, items: newItems });
+      setSelectedItemIds(new Set());
+      setLastSelectedIndex(null);
+    } catch (e) {
+      console.error('Failed to delete items:', e);
+    }
+    setShowDeleteSelectedModal(false);
+  };
+
+  const handleBatchTagSave = async (tagsToAdd: string[]) => {
+     if (tagsToAdd.length === 0) return;
+     const newItems = [...library.items];
+     for (const id of selectedItemIds) {
+       const index = newItems.findIndex(i => i.id === id);
+       if (index !== -1) {
+         const currentTags = newItems[index].tags || [];
+         const updatedTags = Array.from(new Set([...currentTags, ...tagsToAdd]));
+         newItems[index] = { ...newItems[index], tags: updatedTags };
+         updateLibraryItem(library.id, id, { tags: updatedTags }).catch(console.error);
+       }
+     }
+     onUpdate({ ...library, items: newItems });
+     setSelectedItemIds(new Set());
+     setLastSelectedIndex(null);
+  };
+
+  const handleSingleTagSave = async (tags: string[]) => {
+    if (!tagModalItemId) return;
+    const newItems = [...library.items];
+    const index = newItems.findIndex(i => i.id === tagModalItemId);
+    if (index !== -1) {
+      newItems[index] = { ...newItems[index], tags };
+      updateLibraryItem(library.id, tagModalItemId, { tags }).catch(console.error);
+    }
+    onUpdate({ ...library, items: newItems });
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -43,18 +138,42 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       }
     };
     
-    window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lightboxIndex, library.items.length]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!showTagFilterDropdown) return;
+    const handleClick = () => setShowTagFilterDropdown(false);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [showTagFilterDropdown]);
+
+  const availableTags = React.useMemo(() => {
+    const tagSet = new Set<string>();
+    library.items.forEach(i => {
+      if (i.tags) i.tags.forEach(t => tagSet.add(t));
+    });
+    return Array.from(tagSet).sort();
+  }, [library.items]);
+
+  const toggleFilterTag = (tag: string) => {
+    setSelectedFilterTags(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
 
   const filteredItems = library.items
     .map((item, index) => ({ item, originalIndex: index }))
     .filter(({ item }) => {
       const search = searchTerm.toLowerCase();
-      return (
-        (item.title?.toLowerCase().includes(search) || false) ||
-        (item.content?.toLowerCase().includes(search) || false)
-      );
+      const matchesSearch = (item.title?.toLowerCase().includes(search) || false) ||
+                           (item.content?.toLowerCase().includes(search) || false);
+      
+      const matchesTags = selectedFilterTags.length === 0 || 
+                         (item.tags && selectedFilterTags.some(t => item.tags?.includes(t)));
+      
+      return matchesSearch && matchesTags;
     });
 
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
@@ -246,14 +365,124 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             </button>
           </div>
         </div>
+
+        {availableTags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-4 px-1">
+          </div>
+        )}
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 md:pr-4 -mr-2 md:-mr-4 custom-scrollbar space-y-6 md:space-y-10 pb-20">
-        <div className={library.type === 'image' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8" : "space-y-4"}>
-          {paginatedItems.map(({ item, originalIndex }) => (
+      <div className="flex-1 overflow-y-auto pr-2 md:pr-4 -mr-2 md:-mr-4 custom-scrollbar space-y-4 md:space-y-6 pb-20">
+        {/* Batch Action Toolbar (Mirrors item style) */}
+        {filteredItems.length > -1 && (
+          <div className={`
+            flex items-center justify-between p-3.5 rounded-xl border transition-all duration-300
+            ${selectedItemIds.size > 0 
+              ? 'bg-blue-500/10 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]' 
+              : 'bg-neutral-900/40 border-neutral-800/60'}
+          `}>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div 
+                  onClick={toggleSelectAll}
+                  className="p-1 hover:bg-white/5 rounded transition-colors cursor-pointer"
+                >
+                  {selectedItemIds.size === filteredItems.length && filteredItems.length > 0 ? (
+                    <CheckSquare className="w-4.5 h-4.5 text-blue-500" />
+                  ) : selectedItemIds.size > 0 ? (
+                    <div className="w-4.5 h-4.5 flex items-center justify-center">
+                      <div className="w-2.5 h-0.5 bg-blue-500 rounded-full" />
+                    </div>
+                  ) : (
+                    <Square className="w-4.5 h-4.5 text-neutral-600" />
+                  )}
+                </div>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${selectedItemIds.size > 0 ? 'text-blue-400' : 'text-neutral-500'}`}>
+                  {selectedItemIds.size > 0 ? `${selectedItemIds.size} Selected` : 'Select All'}
+                </span>
+              </div>
+
+              {/* Tag Filter Dropdown */}
+              <div className="relative" onClick={e => e.stopPropagation()}>
+                <button
+                  onClick={() => setShowTagFilterDropdown(!showTagFilterDropdown)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border ${
+                    selectedFilterTags.length > 0
+                      ? 'bg-blue-600/10 border-blue-500/40 text-blue-400'
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-500 hover:border-neutral-700 hover:text-neutral-300'
+                  }`}
+                >
+                  <TagIcon className="w-3.5 h-3.5" />
+                  {selectedFilterTags.length === 0 ? 'Filter by Tag' : 
+                   selectedFilterTags.length === 1 ? selectedFilterTags[0] : 
+                   `${selectedFilterTags.length} Tags Selected`}
+                  <ChevronDown className={`w-3 h-3 transition-transform ${showTagFilterDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showTagFilterDropdown && (
+                  <div className="absolute top-full left-0 mt-2 w-56 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
+                    <button
+                      onClick={() => setSelectedFilterTags([])}
+                      className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors mb-1 ${
+                        selectedFilterTags.length === 0 ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                      }`}
+                    >
+                      All Fragments
+                    </button>
+                    <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                      {availableTags.map(tag => (
+                        <button
+                          key={tag}
+                          onClick={() => toggleFilterTag(tag)}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-between group ${
+                            selectedFilterTags.includes(tag) ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                          }`}
+                        >
+                          {tag}
+                          {selectedFilterTags.includes(tag) && <CheckSquare className="w-3 h-3" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {selectedItemIds.size > 0 && (
+              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
+                <button 
+                  onClick={() => setShowBatchTagModal(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded-lg transition-all font-bold text-[10px] uppercase tracking-[0.15em] border border-blue-500/30"
+                >
+                  <TagIcon className="w-3.5 h-3.5" /> Batch Tag
+                </button>
+                <button 
+                  onClick={() => setShowDeleteSelectedModal(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-lg transition-all font-bold text-[10px] uppercase tracking-[0.15em] border border-red-500/30"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </button>
+                <div className="w-px h-4 bg-neutral-800/60 mx-1"></div>
+                <button 
+                  onClick={() => setSelectedItemIds(new Set())}
+                  className="p-1 text-neutral-500 hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className={library.type === 'image' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8" : "space-y-2.5"}>
+          {paginatedItems.map(({ item, originalIndex }) => {
+            const isExpanded = expandedItemId === item.id;
+            const isSelected = selectedItemIds.has(item.id);
+            
+            return (
             <div 
               key={item.id} 
-              className={`group relative ${draggedIndex === originalIndex ? 'opacity-50' : ''} ${dragOverIndex === originalIndex ? 'ring-2 ring-blue-500 rounded-3xl scale-105 z-10 transition-transform' : ''}`}
+              className={`group relative flex flex-col transition-all duration-300 ${draggedIndex === originalIndex ? 'opacity-50' : ''} ${dragOverIndex === originalIndex ? 'ring-2 ring-blue-500 rounded-xl scale-105 z-10' : ''}`}
               draggable={library.type === 'image' && !searchTerm}
               onDragStart={(e) => handleDragStart(e, originalIndex)}
               onDragEnter={(e) => handleDragEnter(e, originalIndex)}
@@ -261,14 +490,32 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               onDragEnd={handleDragEnd}
               onDrop={(e) => e.preventDefault()}
             >
-                <div className={`group/item bg-neutral-900/40 border border-neutral-800/60 rounded-3xl transition-all duration-300 hover:bg-neutral-800/40 hover:border-neutral-700/80 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${library.type === 'image' ? 'aspect-square flex flex-col p-2 overflow-hidden' : 'p-4 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-6'}`}>
+                <div className={`
+                  group/item flex flex-col transition-all duration-300 border overflow-hidden
+                  ${isSelected 
+                    ? 'border-blue-500 bg-blue-500/5 shadow-[0_0_20px_rgba(59,130,246,0.1)] z-10' 
+                    : 'bg-neutral-900/40 border-neutral-800/60 hover:bg-neutral-800/40 hover:border-neutral-700/80'}
+                  ${library.type === 'image' 
+                    ? 'rounded-2xl aspect-square p-2' 
+                    : 'rounded-xl cursor-pointer'}
+                `}>
                   {library.type === 'image' ? (
-                    <div className="relative flex-1 rounded-2xl overflow-hidden cursor-pointer" onClick={() => setLightboxIndex(originalIndex)}>
+                    <div className={`relative flex-1 rounded-xl overflow-hidden cursor-pointer transition-all ${isSelected ? 'ring-4 ring-blue-500/50 scale-95' : ''}`} onClick={(e) => { 
+                      if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, originalIndex, e); 
+                      else setLightboxIndex(originalIndex); 
+                    }}>
                       <img src={item.thumbnailUrl || item.content} alt={`${originalIndex}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4">
                         <div className="flex justify-between items-center">
                           <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">IMG_{originalIndex + 1}</span>
                           <div className="flex items-center gap-2">
+                             <button
+                               onClick={(e) => { e.stopPropagation(); setTagModalItemId(item.id); }}
+                               className="p-2.5 bg-neutral-950/80 text-neutral-400 hover:text-blue-400 rounded-xl backdrop-blur-md border border-white/5 hover:border-blue-400/20 transition-all active:scale-90"
+                               title="Edit Tags"
+                             >
+                               <TagIcon className="w-4 h-4" />
+                             </button>
                              <button
                                onClick={(e) => { e.stopPropagation(); handleRemoveItem(originalIndex); }}
                                className="p-2.5 bg-neutral-950/80 text-neutral-400 hover:text-red-500 rounded-xl backdrop-blur-md border border-white/5 hover:border-red-500/20 transition-all active:scale-90"
@@ -281,42 +528,100 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                     </div>
                   ) : (
                     <>
-                      <div className="flex items-start gap-4 flex-1 min-w-0">
-                        <div className="text-neutral-700 p-1 flex-shrink-0 mt-0.5">
-                          <GripVertical className="w-3.5 h-3.5" />
+                      <div 
+                        className={`p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 ${isExpanded ? 'border-b border-neutral-800/50 bg-neutral-800/20' : ''}`}
+                        onClick={(e) => { 
+                          if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, originalIndex, e); 
+                          else toggleItemExpand(item.id, e);
+                        }}
+                      >
+                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                          <div 
+                            onClick={(e) => toggleItemSelection(item.id, originalIndex, e)}
+                            className="p-1 hover:bg-white/5 rounded transition-colors cursor-pointer"
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="w-4.5 h-4.5 text-blue-500" />
+                            ) : (
+                              <Square className="w-4.5 h-4.5 text-neutral-600" />
+                            )}
+                          </div>
+                          <div className="p-1 cursor-pointer" onClick={(e) => toggleItemExpand(item.id, e)}>
+                            <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                          </div>
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {item.title && (
+                              <h4 className="text-blue-400 text-[10px] font-black uppercase tracking-widest truncate shrink-0 px-1.5 py-0.5 bg-blue-400/5 border border-blue-400/10 rounded">
+                                {item.title}
+                              </h4>
+                            )}
+                            <span className={`text-xs font-medium truncate pr-6 ${isExpanded ? 'text-white' : 'text-neutral-400'}`}>
+                              {item.content}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                          {item.title && (
-                            <h4 className="text-blue-400 text-xs font-black uppercase tracking-widest truncate">
-                              {item.title}
-                            </h4>
+                        <div className="flex items-center gap-1.5 flex-shrink-0 w-full sm:w-auto justify-end">
+                          {(item.tags && item.tags.length > 0) && (
+                            <div className="hidden lg:flex items-center gap-1.5 mr-2">
+                              {item.tags.slice(0, 2).map(t => (
+                                <span key={t} className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[9px] font-bold tracking-wider truncate max-w-[70px] uppercase">{t}</span>
+                              ))}
+                              {item.tags.length > 2 && (
+                                <span className="px-1.5 py-0.5 bg-neutral-800 text-neutral-500 rounded text-[9px] font-bold tracking-wider">+{item.tags.length - 2}</span>
+                              )}
+                            </div>
                           )}
-                          <p className={`text-neutral-300 leading-relaxed text-sm font-medium tracking-wide ${item.title ? 'line-clamp-2' : 'line-clamp-3'}`}>
-                            {item.content}
-                          </p>
+                          <div className="flex items-center gap-1 opacity-60 group-hover/item:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setTagModalItemId(item.id); }}
+                              className="p-1.5 text-neutral-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all border border-transparent hover:border-blue-400/20 active:scale-95"
+                              title="Edit Tags"
+                            >
+                              <TagIcon className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); navigate(`/library/${library.id}/prompt/${originalIndex}`); }}
+                              className="p-1.5 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-lg transition-all border border-transparent hover:border-neutral-700 active:scale-95"
+                              title="Refine in Full Editor"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleRemoveItem(originalIndex); }}
+                              className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all border border-transparent hover:border-red-500/20 active:scale-95"
+                              title="Delete Fragment"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
-                        <button
-                          onClick={() => navigate(`/library/${library.id}/prompt/${originalIndex}`)}
-                          className="p-2.5 md:p-3 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-2xl transition-all border border-transparent hover:border-neutral-700 active:scale-95 shadow-sm"
-                          title="Refine in Full Editor"
-                        >
-                          <Edit3 className="w-4 h-4 md:w-4.5 md:h-4.5" />
-                        </button>
-                        <button
-                          onClick={() => handleRemoveItem(originalIndex)}
-                          className="p-2.5 md:p-3 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all border border-transparent hover:border-red-500/20 active:scale-95 shadow-sm"
-                          title="Delete Fragment"
-                        >
-                          <Trash2 className="w-4 h-4 md:w-4.5 md:h-4.5" />
-                        </button>
-                      </div>
+                      {isExpanded && (
+                        <div className="p-4 sm:p-5 space-y-4 animate-in slide-in-from-top-1 duration-200 border-t border-neutral-800/50 bg-neutral-900/30">
+                          <div className="space-y-2">
+                             <div className="flex items-center justify-between">
+                               <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">Full Source</label>
+                               <span className="text-[8px] font-bold text-neutral-700 uppercase tracking-tighter">Markdown Enabled</span>
+                             </div>
+                             <div className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/50 select-all whitespace-pre-wrap font-mono">
+                               {item.content}
+                             </div>
+                          </div>
+                          {(item.tags && item.tags.length > 0) && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {item.tags.map(t => (
+                                <span key={t} className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md text-[9px] font-bold tracking-wider uppercase">{t}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
-            </div>
-          ))}
+              </div>
+            );
+          })}
 
           {filteredItems.length === 0 && (
             <div className="col-span-full py-24 text-center border-2 border-dashed border-neutral-800/50 rounded-[40px] bg-neutral-900/10 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95">
@@ -480,6 +785,33 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           </button>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={showDeleteSelectedModal}
+        onClose={() => setShowDeleteSelectedModal(false)}
+        onConfirm={deleteSelectedItems}
+        title="Destroy Selected Fragments"
+        message={`Are you sure you want to delete ${selectedItemIds.size} fragment(s)?`}
+        confirmText="Destroy Selected"
+        type="danger"
+      />
+
+      <TagModal 
+        isOpen={showBatchTagModal}
+        onClose={() => setShowBatchTagModal(false)}
+        onSave={handleBatchTagSave}
+        title="Batch Tag Selected Items"
+        description={`Add tags to ${selectedItemIds.size} selected item(s).`}
+        saveButtonText="Add Tags"
+      />
+
+      <TagModal
+        isOpen={tagModalItemId !== null}
+        onClose={() => setTagModalItemId(null)}
+        onSave={handleSingleTagSave}
+        initialTags={tagModalItemId ? (library.items.find(i => i.id === tagModalItemId)?.tags || []) : []}
+        title="Edit Item Tags"
+      />
     </div>
   );
 }

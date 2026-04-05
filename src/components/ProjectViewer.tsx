@@ -180,6 +180,12 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     onUpdate(updated);
   };
 
+  const updateWorkflowItemTags = (id: string, selectedTags: string[]) => {
+    const updated = { ...localProject, workflow: localProject.workflow.map(item => item.id === id ? { ...item, selectedTags } : item) };
+    setLocalProject(updated);
+    onUpdate(updated);
+  };
+
   const confirmRemoveWorkflowItem = () => {
     if (itemToRemoveId) {
       const updated = { ...localProject, workflow: localProject.workflow.filter(item => item.id !== itemToRemoveId) };
@@ -501,6 +507,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               onRemove={setItemToRemoveId} onEdit={setEditingItem} onPreviewLibrary={setPreviewingLibrary}
               onImageUpload={handleImageUpload} uploadingItemIds={uploadingItemIds} libraries={libraries}
               onLightbox={(images, index) => setLightboxData({ images, index })}
+              onUpdateTags={updateWorkflowItemTags}
             />
           ))}
           {(localProject.workflow || []).length === 0 && (

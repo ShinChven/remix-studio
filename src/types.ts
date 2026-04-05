@@ -8,6 +8,7 @@ export interface WorkflowItem {
   thumbnailUrl?: string;
   optimizedUrl?: string;
   size?: number;
+  selectedTags?: string[];
 }
 
 export interface LibraryItem {
@@ -18,6 +19,7 @@ export interface LibraryItem {
   thumbnailUrl?: string;
   optimizedUrl?: string;
   size?: number;
+  tags?: string[];
 }
 
 export type LibraryType = 'text' | 'image';

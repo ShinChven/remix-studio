@@ -52,6 +52,7 @@ export class LibraryRepository {
               id: itemId,
               content: record.content,
               title: record.title,
+              tags: record.tags || [],
               order: record.order,
               thumbnailUrl: record.thumbnailUrl,
               optimizedUrl: record.optimizedUrl,
@@ -98,6 +99,7 @@ export class LibraryRepository {
         id: r.sk.split('#ITEM#')[1],
         content: r.content,
         title: r.title,
+        tags: r.tags || [],
         order: r.order,
         thumbnailUrl: r.thumbnailUrl,
         optimizedUrl: r.optimizedUrl,
@@ -186,6 +188,7 @@ export class LibraryRepository {
         id: r.sk.split('#ITEM#')[1],
         content: r.content,
         title: r.title,
+        tags: r.tags || [],
         order: r.order,
         thumbnailUrl: r.thumbnailUrl,
         optimizedUrl: r.optimizedUrl,
@@ -210,6 +213,7 @@ export class LibraryRepository {
     if (item.thumbnailUrl !== undefined) record.thumbnailUrl = item.thumbnailUrl;
     if (item.optimizedUrl !== undefined) record.optimizedUrl = item.optimizedUrl;
     if (item.size !== undefined) record.size = item.size;
+    if (item.tags !== undefined) record.tags = item.tags;
     await this.client.send(new PutCommand({ TableName: TABLE_NAME, Item: record }));
   }
 
@@ -227,6 +231,7 @@ export class LibraryRepository {
         if (item.thumbnailUrl !== undefined) record.thumbnailUrl = item.thumbnailUrl;
         if (item.optimizedUrl !== undefined) record.optimizedUrl = item.optimizedUrl;
         if (item.size !== undefined) record.size = item.size;
+        if (item.tags !== undefined) record.tags = item.tags;
         return {
           PutRequest: {
             Item: record,
@@ -254,6 +259,7 @@ export class LibraryRepository {
     if (updates.order !== undefined) { expressions.push('#o = :o'); names['#o'] = 'order'; values[':o'] = updates.order; }
     if (updates.thumbnailUrl !== undefined) { expressions.push('#th = :th'); names['#th'] = 'thumbnailUrl'; values[':th'] = updates.thumbnailUrl; }
     if (updates.optimizedUrl !== undefined) { expressions.push('#op = :op'); names['#op'] = 'optimizedUrl'; values[':op'] = updates.optimizedUrl; }
+    if (updates.tags !== undefined) { expressions.push('#tags = :tags'); names['#tags'] = 'tags'; values[':tags'] = updates.tags; }
     if (expressions.length === 0) return;
 
     await this.client.send(

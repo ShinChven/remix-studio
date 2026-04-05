@@ -1,0 +1,22 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="256" height="256" rx="48" fill="#0F172A"/>
+  <defs>
+    <linearGradient id="gradGlitch" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE" />
+      <stop offset="100%" stop-color="#F472B6" />
+    </linearGradient>
+  </defs>
+  <!-- 基础火花 -->
+  <g transform="translate(128, 128)">
+    <!-- 错位层 (Glitch) -->
+    <path d="M0 -70 L10 0 L0 70 L-10 0 Z" fill="#22D3EE" opacity="0.5" transform="translate(-4, 0)" />
+    <path d="M0 -70 L10 0 L0 70 L-10 0 Z" fill="#F472B6" opacity="0.5" transform="translate(4, 0)" />
+    <!-- 主体 -->
+    <path d="M0 -80 L12 0 L0 80 L-12 0 Z" fill="url(#gradGlitch)" />
+    <path d="M-80 0 L0 -12 L80 0 L0 12 Z" fill="url(#gradGlitch)" />
+    
+    <!-- 装饰碎点 -->
+    <circle cx="50" cy="-50" r="3" fill="#22D3EE" />
+    <circle cx="-40" cy="60" r="2" fill="#F472B6" />
+  </g>
+</svg>

@@ -18,6 +18,7 @@ interface WorkflowItemProps {
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>, id: string) => void;
   uploadingItemIds: Set<string>;
   onLightbox: (images: string[], index: number) => void;
+  onUpdateTags: (id: string, tags: string[]) => void;
   libraries: Library[];
 }
 
@@ -36,10 +37,26 @@ export function WorkflowItem({
   onImageUpload,
   uploadingItemIds,
   onLightbox,
+  onUpdateTags,
   libraries
 }: WorkflowItemProps) {
   const isLibrary = item.type === 'library';
   const library = isLibrary ? libraries.find(l => l.id === item.value) : null;
+  const availableTags = React.useMemo(() => {
+    if (!library) return [];
+    const tagSet = new Set<string>();
+    library.items.forEach(i => {
+      if (i.tags) i.tags.forEach(t => tagSet.add(t));
+    });
+    return Array.from(tagSet).sort();
+  }, [library]);
+
+  const toggleTag = (e: React.MouseEvent, tag: string) => {
+    e.stopPropagation();
+    const current = item.selectedTags || [];
+    const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag];
+    onUpdateTags(item.id, next);
+  };
 
   return (
     <div 
@@ -119,6 +136,26 @@ export function WorkflowItem({
               <Maximize2 className="w-3.5 h-3.5" />
             </div>
           </div>
+          {availableTags.length > 0 && (
+            <div className="mt-2.5 flex flex-wrap gap-1.5" onClick={e => e.stopPropagation()}>
+              {availableTags.map(tag => {
+                const isSelected = (item.selectedTags || []).includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    onClick={(e) => toggleTag(e, tag)}
+                    className={`px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wider transition-all border ${
+                      isSelected 
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                        : 'bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700 hover:text-neutral-300'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

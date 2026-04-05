@@ -11,7 +11,11 @@ export function generateWorkflowCombinations(workflow: WorkflowItem[], libraries
     } else if (item.type === 'library') {
       const lib = libraries.find(l => l.id === item.value);
       if (lib && lib.items.length > 0) {
-        const contents = lib.items.map(i => i.content).filter(c => c.trim() !== '');
+        let validItems = lib.items;
+        if (item.selectedTags && item.selectedTags.length > 0) {
+          validItems = lib.items.filter(i => i.tags && i.tags.some(tag => item.selectedTags!.includes(tag)));
+        }
+        const contents = validItems.map(i => i.content).filter(c => c.trim() !== '');
         if (contents.length > 0) {
           allChoices.push(contents.map(c => ({ type: lib.type, value: c })));
         }
@@ -72,7 +76,11 @@ function generateRandomCombination(workflow: WorkflowItem[], libraries: Library[
     } else if (item.type === 'library') {
       const lib = libraries.find(l => l.id === item.value);
       if (lib && lib.items.length > 0) {
-        const contents = lib.items.map(i => i.content).filter(c => c.trim() !== '');
+        let validItems = lib.items;
+        if (item.selectedTags && item.selectedTags.length > 0) {
+          validItems = lib.items.filter(i => i.tags && i.tags.some(tag => item.selectedTags!.includes(tag)));
+        }
+        const contents = validItems.map(i => i.content).filter(c => c.trim() !== '');
         if (contents.length > 0) {
           const randomItem = contents[Math.floor(Math.random() * contents.length)];
           const itemType = lib.type || 'text'; // Fallback
