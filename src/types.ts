@@ -99,6 +99,7 @@ export interface Job {
   quality?: string;
   format?: 'png' | 'jpeg' | 'webp';
   taskId?: string; // For long-running remote tasks (e.g. RunningHub)
+  filename?: string; // Custom filename for S3 storage (ProjectPrefix_Tags_Title_shortuuid)
 }
 
 export interface AlbumItem {
@@ -136,6 +137,7 @@ export interface Project {
   format?: 'png' | 'jpeg' | 'webp';
   shuffle?: boolean;
   modelConfigId?: string;
+  prefix?: string; // Project prefix for file naming
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub';

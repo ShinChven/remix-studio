@@ -274,26 +274,36 @@ export class QueueManager {
       let mimeType: string;
       let ext: string;
 
+      // Create sharp instance and add metadata
+      let sharpInstance = sharp(imageBytes).withMetadata({
+        exif: {
+          IFD0: {
+            UserComment: job.prompt
+          }
+        }
+      });
+
       if (targetFormat === 'jpeg' || targetFormat === 'jpg') {
-        finalBytes = await sharp(imageBytes).jpeg({ quality: 100, chromaSubsampling: '4:4:4' }).toBuffer();
+        finalBytes = await sharpInstance.jpeg({ quality: 100, chromaSubsampling: '4:4:4' }).toBuffer();
         mimeType = 'image/jpeg';
         ext = 'jpg';
       } else if (targetFormat === 'webp') {
-        finalBytes = await sharp(imageBytes).webp({ quality: 100, lossless: true }).toBuffer();
+        finalBytes = await sharpInstance.webp({ quality: 100, lossless: true }).toBuffer();
         mimeType = 'image/webp';
         ext = 'webp';
       } else {
         // Always explicitly convert to PNG via sharp, so the output bytes truly are PNG
         // regardless of what format the AI provider returned.
-        finalBytes = await sharp(imageBytes).png().toBuffer();
+        finalBytes = await sharpInstance.png().toBuffer();
         mimeType = 'image/png';
         ext = 'png';
       }
 
-      const filename = `${userId}/${projectId}/${crypto.randomUUID()}`;
+      const idPart = job.filename || crypto.randomUUID();
+      const filename = `${userId}/${projectId}/${idPart}`;
       const s3Url = await this.storage.save(`${filename}.${ext}`, finalBytes, mimeType);
 
-      // Generate and save thumbnail/optimized versions
+      // Generate and save thumbnail/optimized versions (metadata is usually stripped for these)
       const thumbBuffer = await generateThumbnail(finalBytes);
       const thumbKey = `${filename}.thumb.jpg`;
       await this.storage.save(thumbKey, thumbBuffer, 'image/jpeg');

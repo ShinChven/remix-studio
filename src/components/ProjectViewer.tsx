@@ -269,17 +269,30 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     }
     const selectedCombinations = generateJobs(localProject.workflow || [], libraries, queueCount, !!localProject.shuffle);
     if (selectedCombinations.length === 0) return;
-    const newJobs: Job[] = selectedCombinations.map(combo => ({
-      id: crypto.randomUUID(),
-      prompt: combo.prompt,
-      imageContexts: combo.imageContexts,
-      status: 'draft',
-      providerId: selectedProviderId,
-      modelConfigId: selectedModelId,
-      aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1:1'),
-      quality: localProject.quality || (selectedModel?.options.qualities[0] || '1K'),
-      format: localProject.format || 'png',
-    }));
+    const newJobs: Job[] = selectedCombinations.map(combo => {
+      const shortuuid = crypto.randomUUID().slice(0, 8);
+      const parts = [
+        localProject.prefix,
+        combo.tags.join('_'),
+        combo.titles.join('_'),
+        shortuuid
+      ].filter(Boolean);
+      // Sanitize filename: remove invalid characters and truncate to 200 chars
+      const filename = parts.join('_').replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 200);
+      
+      return {
+        id: crypto.randomUUID(),
+        prompt: combo.prompt,
+        imageContexts: combo.imageContexts,
+        status: 'draft',
+        providerId: selectedProviderId,
+        modelConfigId: selectedModelId,
+        aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1:1'),
+        quality: localProject.quality || (selectedModel?.options.qualities[0] || '1K'),
+        format: localProject.format || 'png',
+        filename: filename
+      };
+    });
     const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
     await apiUpdateProject(updatedProject.id, {
       jobs: updatedProject.jobs, workflow: updatedProject.workflow, providerId: selectedProviderId,

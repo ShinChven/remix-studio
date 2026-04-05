@@ -41,6 +41,7 @@ export class ProjectRepository {
         format: item.format,
         shuffle: item.shuffle,
         modelConfigId: item.modelConfigId,
+        prefix: item.prefix,
       }));
     } catch (e) {
       console.error('[ProjectRepository.getUserProjects] ERROR:', e);
@@ -86,6 +87,7 @@ export class ProjectRepository {
       quality: item.quality,
       format: item.format,
       taskId: item.taskId,
+      filename: item.filename,
     }));
     jobs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 
@@ -129,6 +131,7 @@ export class ProjectRepository {
       format: projectItem.format,
       shuffle: projectItem.shuffle,
       modelConfigId: projectItem.modelConfigId,
+      prefix: projectItem.prefix,
     };
   }
 
@@ -168,6 +171,7 @@ export class ProjectRepository {
     if (updates.format !== undefined) { expressions.push('#f = :f'); names['#f'] = 'format'; values[':f'] = updates.format; }
     if (updates.shuffle !== undefined) { expressions.push('#sh = :sh'); names['#sh'] = 'shuffle'; values[':sh'] = updates.shuffle; }
     if (updates.modelConfigId !== undefined) { expressions.push('#mc = :mc'); names['#mc'] = 'modelConfigId'; values[':mc'] = updates.modelConfigId; }
+    if (updates.prefix !== undefined) { expressions.push('#pref = :pref'); names['#pref'] = 'prefix'; values[':pref'] = updates.prefix; }
 
     const removeExprs: string[] = [];
     if (updates.jobs !== undefined) {
@@ -226,6 +230,7 @@ export class ProjectRepository {
       quality: item.quality,
       format: item.format,
       taskId: item.taskId,
+      filename: item.filename,
     };
   }
 

@@ -19,6 +19,7 @@ export function ProjectForm() {
 
   const [name, setName] = useState(existingProject?.name || '');
   const [projectId, setProjectId] = useState(existingProject?.id || '');
+  const [prefix, setPrefix] = useState(existingProject?.prefix || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export function ProjectForm() {
       fetchProject(id).then(proj => {
         setName(proj.name);
         setProjectId(proj.id);
+        setPrefix(proj.prefix || '');
       }).catch(() => navigate('/projects'));
     }
   }, [id, existingProject, navigate]);
@@ -48,10 +50,11 @@ export function ProjectForm() {
           jobs: [],
           album: [],
           shuffle: false,
+          prefix: prefix.trim(),
         });
       } else {
         targetId = id!;
-        await updateProject(targetId, { name: name.trim() });
+        await updateProject(targetId, { name: name.trim(), prefix: prefix.trim() });
       }
 
       await refreshProjects();
@@ -90,6 +93,18 @@ export function ProjectForm() {
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-700"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Project Prefix</label>
+            <input
+              type="text"
+              value={prefix}
+              onChange={(e) => setPrefix(e.target.value)}
+              placeholder="e.g. PJ01"
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-700"
+            />
+            <p className="text-[10px] text-neutral-600 ml-1 font-medium tracking-wide">Used for image filename generation</p>
           </div>
 
           {isNew && (
