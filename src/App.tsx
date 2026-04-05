@@ -23,6 +23,7 @@ import { LibraryImportExport } from './pages/LibraryImportExport.tsx';
 import { Providers } from './pages/Providers.tsx';
 import { ProviderForm } from './pages/ProviderForm.tsx';
 import { TrashView } from './components/TrashView.tsx';
+import { ProjectOrphans } from './pages/ProjectOrphans.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -51,6 +52,7 @@ export default function App() {
               <Route path="project/new" element={<ProjectForm />} />
               <Route path="project/:id" element={<ProjectRoute />} />
               <Route path="project/:id/edit" element={<ProjectForm />} />
+              <Route path="project/:id/orphans" element={<ProjectOrphans />} />
               <Route path="library/:id" element={<LibraryRoute />} />
               <Route path="library/:id/import-export" element={<LibraryImportExport />} />
               <Route path="library/:id/cleanup" element={<LibraryCleanup />} />

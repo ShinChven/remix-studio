@@ -227,6 +227,107 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
   });
 
   /**
+   * GET /api/projects/:id/orphans
+   *
+   * Find S3 files in the project folder that are not referenced by workflow, jobs, or album.
+   */
+  router.get('/api/projects/:id/orphans', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Project not found' }, 404);
+
+      const safeProjectId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const projectPrefix = `${user.userId}/${safeProjectId}/`;
+      
+      // 1. List all files in S3 for this project
+      const allS3Keys = await storage.listObjects(projectPrefix);
+      
+      // 2. Collect all referenced keys from DynamoDB
+      const referencedKeys = new Set<string>();
+
+      // From Workflow
+      project.workflow.forEach(item => {
+        if (item.type === 'image' && item.value && !item.value.startsWith('http') && !item.value.startsWith('data:')) {
+          referencedKeys.add(item.value);
+          if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.add(item.thumbnailUrl);
+          if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.add(item.optimizedUrl);
+        }
+      });
+
+      // From Jobs
+      project.jobs.forEach(job => {
+        if (job.imageUrl && !job.imageUrl.startsWith('http')) referencedKeys.add(job.imageUrl);
+        if (job.thumbnailUrl && !job.thumbnailUrl.startsWith('http')) referencedKeys.add(job.thumbnailUrl);
+        if (job.optimizedUrl && !job.optimizedUrl.startsWith('http')) referencedKeys.add(job.optimizedUrl);
+      });
+
+      // From Album
+      project.album.forEach(item => {
+        if (item.imageUrl && !item.imageUrl.startsWith('http')) referencedKeys.add(item.imageUrl);
+        if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.add(item.thumbnailUrl);
+        if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.add(item.optimizedUrl);
+      });
+
+      // From Trash items belonging to this project
+      const trashItems = await repository.getTrashItems(user.userId);
+      trashItems.forEach(item => {
+        if (item.projectId === projectId) {
+          if (item.imageUrl && !item.imageUrl.startsWith('http')) referencedKeys.add(item.imageUrl);
+          if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.add(item.thumbnailUrl);
+          if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.add(item.optimizedUrl);
+        }
+      });
+
+      // 3. Find orphans
+      const orphans = allS3Keys.filter(key => !referencedKeys.has(key));
+      
+      // 4. Return orphans with pre-signed URLs and metadata
+      const result = await Promise.all(orphans.map(async (key) => ({
+        key,
+        url: await storage.getPresignedUrl(key),
+        size: await storage.getSize(key)
+      })));
+
+      return c.json(result);
+    } catch (e) {
+      console.error('[GET /api/projects/:id/orphans]', e);
+      return c.json({ error: 'Failed to find orphan files' }, 500);
+    }
+  });
+
+  /**
+   * DELETE /api/projects/:id/orphans/batch
+   *
+   * Permanently delete selected orphan files from S3.
+   */
+  router.delete('/api/projects/:id/orphans/batch', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const { keys } = await c.req.json();
+      if (!Array.isArray(keys)) return c.json({ error: 'Expected an array of keys' }, 400);
+
+      const safeProjectId = c.req.param('id').replace(/[^a-zA-Z0-9-_]/g, '_');
+      const projectPrefix = `${user.userId}/${safeProjectId}/`;
+
+      for (const key of keys) {
+        // Security check: ensure the key belongs to this project's folder
+        if (key.startsWith(projectPrefix)) {
+          await storage.delete(key);
+        } else {
+          console.warn(`[Security] Attempt to delete S3 key outside project folder: ${key}`);
+        }
+      }
+
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/projects/:id/orphans/batch]', e);
+      return c.json({ error: 'Failed to delete orphan files' }, 500);
+    }
+  });
+
+  /**
    * POST /api/projects/:id/run
    *
    * Kick off the server-side generation queue for all 'pending' jobs in the project.

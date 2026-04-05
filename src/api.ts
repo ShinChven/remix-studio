@@ -163,6 +163,27 @@ export async function deleteProject(id: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete project');
 }
 
+export interface OrphanFile {
+  key: string;
+  url: string;
+  size?: number;
+}
+
+export async function fetchProjectOrphans(projectId: string): Promise<OrphanFile[]> {
+  const res = await fetch(`/api/projects/${projectId}/orphans`, { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to fetch orphan files');
+  return res.json();
+}
+
+export async function deleteProjectOrphansBatch(projectId: string, keys: string[]): Promise<void> {
+  const res = await fetch(`/api/projects/${projectId}/orphans/batch`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+    body: JSON.stringify({ keys }),
+  });
+  if (!res.ok) throw new Error('Failed to delete orphan files');
+}
+
 // ========== Image Storage ==========
 
 export async function saveImage(base64: string, projectId: string): Promise<{ 
