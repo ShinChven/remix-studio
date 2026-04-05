@@ -347,5 +347,17 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
     }
   });
 
+  router.post('/api/poll', authMiddleware, async (c) => {
+    try {
+      // Trigger a manual poll of all detached tasks across all users
+      // This is safe to call multiple times as generators handle their own status
+      await queueManager.pollDetachedTasks();
+      return c.json({ success: true, message: 'Poll completed' });
+    } catch (e) {
+      console.error('[POST /api/poll]', e);
+      return c.json({ error: 'Failed to trigger poll' }, 500);
+    }
+  });
+
   return router;
 }

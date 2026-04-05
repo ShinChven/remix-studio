@@ -98,6 +98,7 @@ export interface Job {
   aspectRatio?: string;
   quality?: string;
   format?: 'png' | 'jpeg' | 'webp';
+  taskId?: string; // For long-running remote tasks (e.g. RunningHub)
 }
 
 export interface AlbumItem {

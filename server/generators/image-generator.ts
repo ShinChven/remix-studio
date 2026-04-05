@@ -9,9 +9,21 @@ export interface GenerateRequest {
 }
 
 export type GenerateResult =
-  | { ok: true;  imageBytes: Buffer }
+  | { 
+      ok: true;  
+      imageBytes?: Buffer; 
+      status?: 'processing' | 'completed'; 
+      taskId?: string; 
+    }
   | { ok: false; error: string };
+
+export interface CheckStatusResult {
+  status: 'processing' | 'completed' | 'failed';
+  error?: string;
+  imageBytes?: Buffer;
+}
 
 export abstract class ImageGenerator {
   abstract generate(req: GenerateRequest): Promise<GenerateResult>;
+  checkStatus?(taskId: string): Promise<CheckStatusResult>;
 }

@@ -85,6 +85,7 @@ export class ProjectRepository {
       aspectRatio: item.aspectRatio,
       quality: item.quality,
       format: item.format,
+      taskId: item.taskId,
     }));
     jobs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 
@@ -194,10 +195,88 @@ export class ProjectRepository {
     );
   }
 
+  async getJob(userId: string, projectId: string, jobId: string): Promise<Job | null> {
+    const pk = `USER_DATA#${userId}`;
+    const sk = `PROJECT#${projectId}#JOB#${jobId}`;
+
+    const result = await this.client.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'pk = :pk AND sk = :sk',
+        ExpressionAttributeValues: { ':pk': pk, ':sk': sk },
+      })
+    );
+
+    const item = result.Items?.[0];
+    if (!item) return null;
+
+    return {
+      id: jobId,
+      prompt: item.prompt,
+      status: item.status,
+      imageContexts: item.imageContexts,
+      imageUrl: item.imageUrl,
+      thumbnailUrl: item.thumbnailUrl,
+      optimizedUrl: item.optimizedUrl,
+      error: item.error,
+      createdAt: item.createdAt,
+      providerId: item.providerId,
+      modelConfigId: item.modelConfigId,
+      aspectRatio: item.aspectRatio,
+      quality: item.quality,
+      format: item.format,
+      taskId: item.taskId,
+    };
+  }
+
+  async updateJob(userId: string, projectId: string, jobId: string, updates: Partial<Job>): Promise<void> {
+    const pk = `USER_DATA#${userId}`;
+    const sk = `PROJECT#${projectId}#JOB#${jobId}`;
+
+    const setExprs: string[] = [];
+    const removeExprs: string[] = [];
+    const names: Record<string, string> = {};
+    const values: Record<string, unknown> = {};
+    let idx = 0;
+
+    for (const [key, value] of Object.entries(updates)) {
+      const nameKey = `#n${idx}`;
+      names[nameKey] = key;
+      if (value === undefined) {
+        // REMOVE the attribute from DynamoDB
+        removeExprs.push(nameKey);
+      } else {
+        const valKey = `:v${idx}`;
+        setExprs.push(`${nameKey} = ${valKey}`);
+        values[valKey] = value;
+      }
+      idx++;
+    }
+
+    if (setExprs.length === 0 && removeExprs.length === 0) return;
+
+    let updateExpression = '';
+    if (setExprs.length > 0) updateExpression += `SET ${setExprs.join(', ')}`;
+    if (removeExprs.length > 0) updateExpression += ` REMOVE ${removeExprs.join(', ')}`;
+
+    await this.client.send(
+      new UpdateCommand({
+        TableName: TABLE_NAME,
+        Key: { pk, sk },
+        UpdateExpression: updateExpression.trim(),
+        ExpressionAttributeNames: names,
+        ...(Object.keys(values).length > 0 ? { ExpressionAttributeValues: values } : {}),
+      })
+    );
+  }
+
   private async saveJobs(userId: string, projectId: string, jobs: Job[]): Promise<void> {
     const pk = `USER_DATA#${userId}`;
-    const prefix = `PROJECT#${projectId}#JOB#`;
-    await this.cleanupItems(pk, prefix);
+    // const prefix = `PROJECT#${projectId}#JOB#`;
+    // await this.cleanupItems(pk, prefix); 
+    // ^ DANGEROUS: Deleting all jobs before saving the project list leads to data loss 
+    // when multiple jobs update the project status simultaneously.
+    // Moving to an incremental update model (PutCommand only).
 
     const CHUNK_SIZE = 25;
     for (let i = 0; i < jobs.length; i += CHUNK_SIZE) {

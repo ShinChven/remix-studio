@@ -27,13 +27,87 @@ interface QueuedJob {
 export class QueueManager {
   private activeJobs: Map<string, number> = new Map(); // providerId -> active count
   private queues: Map<string, QueuedJob[]> = new Map(); // providerId -> pending jobs
+  private activeJobIds: Set<string> = new Set(); // global dedup: tracks jobIds from enqueue through executeJob completion
+  private intervalId?: NodeJS.Timeout;
 
   constructor(
     private client: DynamoDBDocumentClient,
     private providerRepo: ProviderRepository,
     private projectRepo: ProjectRepository,
     private storage: S3Storage
-  ) {}
+  ) {
+    this.intervalId = setInterval(() => {
+      this.pollDetachedTasks().catch((e) => {
+        console.error('[QueueManager] Detached Poller Error:', e);
+      });
+    }, 30_000); // 30s
+  }
+
+  public async pollDetachedTasks() {
+    let lastKey: any;
+    do {
+      const result = await this.client.send(new ScanCommand({
+        TableName: TABLE_NAME,
+        FilterExpression: 'begins_with(pk, :prefix) AND begins_with(sk, :projPrefix)',
+        ExpressionAttributeValues: {
+          ':prefix': 'USER_DATA#',
+          ':projPrefix': 'PROJECT#'
+        },
+        ExclusiveStartKey: lastKey
+      }));
+
+      for (const item of (result.Items || [])) {
+        const userId = item.pk.replace('USER_DATA#', '');
+        const sk = item.sk as string;
+
+        // If it's a individual Job item (Sort Key contains #JOB#)
+        if (sk.includes('#JOB#')) {
+          const job = item as unknown as Job;
+          const [projPrefix, jobId] = sk.split('#JOB#');
+          const projectId = projPrefix.replace('PROJECT#', '');
+
+          if ((job.status === 'processing' || job.status === 'failed') && job.taskId) {
+            console.log(`[QueueManager] Detached Poll (Healing): Checking Job ${jobId} in Project ${projectId} - Last status: ${job.status}`);
+            await this.checkJobStatus(userId, projectId, job);
+          }
+        }
+      }
+      lastKey = result.LastEvaluatedKey;
+    } while (lastKey);
+  }
+
+  private async checkJobStatus(userId: string, projectId: string, job: Job) {
+    try {
+      const providerRecord = await this.providerRepo.getProvider(userId, job.providerId!);
+      if (!providerRecord) return;
+
+      const apiKey = await this.providerRepo.getDecryptedApiKey(userId, providerRecord.providerId);
+      if (!apiKey) return;
+
+      const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+      if (!generator.checkStatus) {
+        console.warn(`[QueueManager] Generator for ${providerRecord.type} does not support checkStatus. Skipping Job ${job.id}`);
+        return; 
+      }
+
+      console.log(`[QueueManager] Checking RunningHub status for Job ${job.id} (TaskId: ${job.taskId})`);
+      const res = await generator.checkStatus(job.taskId!);
+      console.log(`[QueueManager] Job ${job.id} Status: ${res.status}`);
+
+      if (res.status === 'completed' && res.imageBytes) {
+        console.log(`[QueueManager] Job ${job.id} detached poll completed successfully.`);
+        const queued: QueuedJob = { userId, projectId, job, format: job.format, quality: job.quality, aspectRatio: job.aspectRatio, modelConfigId: job.modelConfigId };
+        await this.processCompletedImage(res.imageBytes, queued);
+      } else if (res.status === 'failed') {
+        const errorMsg = res.error || 'Task failed on remote server.';
+        console.log(`[QueueManager] Job ${job.id} detached poll failed (final): ${errorMsg}`);
+        // RunningHub definitively says FAILED — clear taskId to stop polling
+        await this.updateJobStatus(userId, projectId, job.id, { status: 'failed', error: errorMsg, taskId: undefined });
+      }
+    } catch (e: any) {
+      console.error(`[QueueManager] checkStatus for ${job.id} failed:`, e);
+    }
+  }
 
   /**
    * Scan for pending jobs in a project and add them to the correct provider's queue.
@@ -42,8 +116,17 @@ export class QueueManager {
     const project = await this.projectRepo.getProject(userId, projectId);
     if (!project || !project.providerId) return;
 
-    // Only pick up jobs that are currently 'pending' or 'failed' (to retry)
-    const jobsToRun = project.jobs.filter(j => j.status === 'pending' || j.status === 'failed');
+    console.log(`[QueueManager] Enqueuing project ${projectId}. Total jobs: ${project.jobs.length}`);
+
+    // ONLY pick up 'pending' jobs. Never auto-retry 'failed' jobs — retry must be explicit.
+    // Jobs with a taskId are owned by the detached poller.
+    const jobsToRun = project.jobs.filter(j => j.status === 'pending');
+
+    const skipped = project.jobs.length - jobsToRun.length;
+    if (skipped > 0) {
+      console.log(`[QueueManager] Project ${projectId}: Picking up ${jobsToRun.length} pending jobs. Skipping ${skipped} jobs (not pending).`);
+    }
+
     for (const job of jobsToRun) {
       this.enqueue(
         userId, 
@@ -59,46 +142,42 @@ export class QueueManager {
   }
 
   private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, format?: string, modelConfigId?: string) {
-    if (!this.queues.has(providerId)) this.queues.set(providerId, []);
-    
-    // Avoid double-queuing if it's already there
-    const exists = this.queues.get(providerId)!.some(q => q.job.id === job.id);
-    if (exists) return;
+    // Global dedup: covers both in-queue and currently-executing jobs
+    if (this.activeJobIds.has(job.id)) return;
 
+    if (!this.queues.has(providerId)) this.queues.set(providerId, []);
+    this.activeJobIds.add(job.id);
     this.queues.get(providerId)!.push({ userId, projectId, job, aspectRatio, quality, format, modelConfigId });
     this.processNext(providerId);
   }
 
   private async processNext(providerId: string) {
     const queue = this.queues.get(providerId) || [];
-
     if (queue.length === 0) return;
 
-    // Peek at the first job to get userId for provider lookup
-    const peek = queue[0];
-    const provider = await this.providerRepo.getProvider(peek.userId, providerId);
+    const provider = await this.providerRepo.getProvider(queue[0]?.userId, providerId);
     if (!provider) {
-      console.warn(`[QueueManager] Provider not found: ${providerId} for user ${peek.userId}`);
-      queue.shift();
+      const dropped = queue.shift();
+      console.warn(`[QueueManager] Provider not found: ${providerId} for user ${dropped?.userId}`);
       this.processNext(providerId);
       return;
     }
 
-    // Re-read active AFTER the await — reading before would capture a stale value
-    // since another processNext() could run during the await and already increment it.
-    const active = this.activeJobs.get(providerId) || 0;
     const limit = provider.concurrency || 1;
-    if (active >= limit) return;
 
-    // Dequeue and start
-    const nextJob = queue.shift()!;
-    this.activeJobs.set(providerId, active + 1);
+    // Drain as many jobs as concurrency allows in one pass
+    while (queue.length > 0 && (this.activeJobs.get(providerId) || 0) < limit) {
+      // Shift IMMEDIATELY (synchronous) to lock the item — no await between read and shift
+      const nextJob = queue.shift()!;
+      this.activeJobs.set(providerId, (this.activeJobs.get(providerId) || 0) + 1);
 
-    // Run in background (do not await)
-    this.executeJob(nextJob, provider).finally(() => {
-      this.activeJobs.set(providerId, Math.max(0, (this.activeJobs.get(providerId) || 1) - 1));
-      this.processNext(providerId);
-    });
+      // Run in background (do not await)
+      this.executeJob(nextJob, provider).finally(() => {
+        this.activeJobIds.delete(nextJob.job.id);
+        this.activeJobs.set(providerId, Math.max(0, (this.activeJobs.get(providerId) || 1) - 1));
+        this.processNext(providerId);
+      });
+    }
   }
 
   private async executeJob(queued: QueuedJob, providerRecord: any) {
@@ -155,6 +234,40 @@ export class QueueManager {
 
       if (result.ok === false) throw new Error(result.error);
 
+      if (result.status === 'processing' && result.taskId) {
+        console.log(`[QueueManager] Job ${job.id} shifted to detached polling. TaskId: ${result.taskId}`);
+        await this.updateJobStatus(userId, projectId, job.id, { 
+          status: 'processing', 
+          taskId: result.taskId, 
+          error: undefined 
+        });
+        return; // Detached!
+      }
+
+      await this.processCompletedImage(result.imageBytes!, queued);
+    } catch (e: any) {
+      console.error(`[QueueManager] Job ${job.id} failed:`, e.message);
+      // If the job already has a taskId persisted, RunningHub may still be working on it.
+      // Leave it as 'processing' so the poller can pick it up — don't override with 'failed'.
+      const currentJob = await this.projectRepo.getJob(userId, projectId, job.id);
+      if (currentJob?.taskId) {
+        console.log(`[QueueManager] Job ${job.id} has taskId ${currentJob.taskId}, keeping as processing for poller.`);
+        await this.updateJobStatus(userId, projectId, job.id, {
+          status: 'processing',
+          error: e.message || 'Local error, awaiting remote result'
+        });
+      } else {
+        await this.updateJobStatus(userId, projectId, job.id, {
+          status: 'failed',
+          error: e.message || 'Unknown generation error'
+        });
+      }
+    }
+  }
+
+  private async processCompletedImage(imageBytes: Buffer, queued: QueuedJob) {
+    const { userId, projectId, job } = queued;
+    try {
       // 4. Save to storage
       const targetFormat = queued.format || job.format || 'png';
       let finalBytes: Buffer;
@@ -162,17 +275,17 @@ export class QueueManager {
       let ext: string;
 
       if (targetFormat === 'jpeg' || targetFormat === 'jpg') {
-        finalBytes = await sharp(result.imageBytes).jpeg({ quality: 100, chromaSubsampling: '4:4:4' }).toBuffer();
+        finalBytes = await sharp(imageBytes).jpeg({ quality: 100, chromaSubsampling: '4:4:4' }).toBuffer();
         mimeType = 'image/jpeg';
         ext = 'jpg';
       } else if (targetFormat === 'webp') {
-        finalBytes = await sharp(result.imageBytes).webp({ quality: 100, lossless: true }).toBuffer();
+        finalBytes = await sharp(imageBytes).webp({ quality: 100, lossless: true }).toBuffer();
         mimeType = 'image/webp';
         ext = 'webp';
       } else {
         // Always explicitly convert to PNG via sharp, so the output bytes truly are PNG
         // regardless of what format the AI provider returned.
-        finalBytes = await sharp(result.imageBytes).png().toBuffer();
+        finalBytes = await sharp(imageBytes).png().toBuffer();
         mimeType = 'image/png';
         ext = 'png';
       }
@@ -213,25 +326,23 @@ export class QueueManager {
         imageUrl: `${filename}.${ext}`,
         thumbnailUrl: thumbKey,
         optimizedUrl: optKey,
-        error: undefined
+        error: undefined,
+        taskId: undefined
       });
 
     } catch (e: any) {
-      console.error(`[QueueManager] Job ${job.id} failed:`, e.message);
-      await this.updateJobStatus(userId, projectId, job.id, { 
-        status: 'failed', 
-        error: e.message || 'Unknown generation error' 
+      console.error(`[QueueManager] Job ${job.id} failed during image processing:`, e.message);
+      // Keep taskId and status as 'processing' — the remote task succeeded,
+      // only local processing (download/S3/thumbnail) failed. The poller will retry.
+      await this.updateJobStatus(userId, projectId, job.id, {
+        status: 'processing',
+        error: e.message || 'Image processing error, will retry'
       });
     }
   }
 
   private async updateJobStatus(userId: string, projectId: string, jobId: string, updates: Partial<Job>) {
-    // Note: We refetch to avoid stale-state overwrites if multiple tasks in the same project finish nearly simultaneously.
-    const project = await this.projectRepo.getProject(userId, projectId);
-    if (!project) return;
-
-    const newJobs = project.jobs.map(j => j.id === jobId ? { ...j, ...updates } : j);
-    await this.projectRepo.updateProject(userId, projectId, { jobs: newJobs });
+    await this.projectRepo.updateJob(userId, projectId, jobId, updates);
   }
 
   /**
@@ -243,6 +354,10 @@ export class QueueManager {
     let lastKey: any;
     let count = 0;
     
+    let pendingCount = 0;
+    let pollingCount = 0;
+    const projectSet = new Set<string>();
+
     do {
       const result = await this.client.send(new ScanCommand({
         TableName: TABLE_NAME,
@@ -256,26 +371,44 @@ export class QueueManager {
 
       for (const item of (result.Items || [])) {
         const userId = item.pk.replace('USER_DATA#', '');
-        const projectId = item.sk.replace('PROJECT#', '');
-        const jobs = (item.jobs || []) as Job[];
+        const sk = item.sk as string;
 
-        const hasWork = jobs.some(j => j.status === 'pending' || j.status === 'processing');
-        if (hasWork) {
-          // If it was 'processing', we reset it to 'pending' as the memory state was lost on restart
-          const newJobs = jobs.map(j => j.status === 'processing' ? { ...j, status: 'pending' } as Job : j);
-          
-          if (jobs.some(j => j.status === 'processing')) {
-            await this.projectRepo.updateProject(userId, projectId, { jobs: newJobs });
+        if (sk.includes('#JOB#')) {
+          const job = item as unknown as Job;
+          const [projPrefix, jobId] = sk.split('#JOB#');
+          const projectId = projPrefix.replace('PROJECT#', '');
+
+          if (job.status === 'processing' || job.status === 'pending') {
+            if (job.status === 'processing' && job.taskId) {
+              pollingCount++;
+            } else if (job.status === 'processing' && !job.taskId) {
+              await this.updateJobStatus(userId, projectId, jobId, { status: 'pending' });
+              console.log(`[QueueManager] Resetting interrupted job ${jobId} to pending.`);
+              projectSet.add(`${userId}|${projectId}`);
+              pendingCount++;
+            } else if (job.status === 'pending') {
+              projectSet.add(`${userId}|${projectId}`);
+              pendingCount++;
+            }
           }
-
-          console.log(`[QueueManager] Recovered project ${projectId} for user ${userId}`);
-          await this.enqueueProject(userId, projectId);
-          count++;
         }
       }
       lastKey = result.LastEvaluatedKey;
     } while (lastKey);
+
+    // Enqueue projects once
+    for (const entry of projectSet) {
+      const [uId, pId] = entry.split('|');
+      console.log(`[QueueManager] Re-enqueuing project ${pId} for user ${uId}`);
+      await this.enqueueProject(uId, pId);
+    }
     
-    console.log(`[QueueManager] Task recovery complete. Recovered items from ${count} projects.`);
+    console.log(`[QueueManager] Task recovery complete. Pending: ${pendingCount}, Polling: ${pollingCount}, Projects Affected: ${projectSet.size}`);
+    
+    // Initial poll immediately after scan
+    if (pollingCount > 0) {
+      console.log(`[QueueManager] Starting initial poll for ${pollingCount} detached jobs...`);
+      await this.pollDetachedTasks();
+    }
   }
 }
