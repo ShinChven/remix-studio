@@ -188,6 +188,32 @@ export class ProjectRepository {
       updateExpression += ` REMOVE ${removeExprs.join(', ')}`;
     }
 
+    if (updates.jobs !== undefined) {
+      // Find items in DB that are NO LONGER in updates.jobs and delete them
+      const prefix = `PROJECT#${projectId}#JOB#`;
+      const result = await this.client.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
+          ExpressionAttributeNames: { '#sk': 'sk' },
+          ExpressionAttributeValues: { ':pk': pk, ':prefix': prefix },
+        })
+      );
+
+      const dbJobIds = new Set((result.Items || []).map(item => item.sk.split('#JOB#')[1]));
+      const newJobIds = new Set(updates.jobs.map(j => j.id));
+
+      for (const id of dbJobIds) {
+        if (!newJobIds.has(id)) {
+          const sk = `PROJECT#${projectId}#JOB#${id}`;
+          await this.client.send(new DeleteCommand({
+            TableName: TABLE_NAME,
+            Key: { pk, sk }
+          }));
+        }
+      }
+    }
+
     await this.client.send(
       new UpdateCommand({
         TableName: TABLE_NAME,
