@@ -86,6 +86,7 @@ export interface Job {
   modelConfigId?: string;
   aspectRatio?: string;
   quality?: string;
+  format?: 'png' | 'jpeg' | 'webp';
 }
 
 export interface AlbumItem {
@@ -97,6 +98,7 @@ export interface AlbumItem {
   modelConfigId?: string;
   aspectRatio?: string;
   quality?: string;
+  format?: 'png' | 'jpeg' | 'webp';
   size?: number; // Size in bytes
   createdAt: number;
 }
@@ -117,6 +119,7 @@ export interface Project {
   providerId?: string;
   aspectRatio?: string;
   quality?: string;
+  format?: 'png' | 'jpeg' | 'webp';
   shuffle?: boolean;
 }
 

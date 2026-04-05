@@ -264,8 +264,10 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       
       try {
         const base64 = await base64Promise;
-        const { key } = await saveImage(base64, localProject.id);
-        updateWorkflowItem(id, key);
+        // Store the presigned MinIO URL directly (not the S3 key) so the image
+        // can be loaded without going through the /api/images/view auth proxy.
+        const { url } = await saveImage(base64, localProject.id);
+        updateWorkflowItem(id, url);
       } catch (err) {
         console.error('Failed to upload image:', err);
         setWorkflowError("Failed to upload image. Please try again.");
@@ -307,6 +309,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       modelConfigId: selectedModelId,
       aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1:1'),
       quality: localProject.quality || (selectedModel?.options.qualities[0] || '1K'),
+      format: localProject.format || 'png',
     }));
 
     const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
@@ -317,6 +320,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       providerId: selectedProviderId,
       aspectRatio: localProject.aspectRatio,
       quality: localProject.quality,
+      format: localProject.format || 'png',
       shuffle: localProject.shuffle,
     });
 
@@ -775,6 +779,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                 <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
                   {localProject.quality || '1K'}
                 </span>
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  {localProject.format || 'png'}
+                </span>
                 {localProject.shuffle && (
                   <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/30 uppercase tracking-widest flex items-center gap-1">
                     <Shuffle className="w-2.5 h-2.5" /> Shuffle
@@ -887,6 +894,31 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                       }`}
                     >
                       {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Format
+                </label>
+                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                  {['png', 'jpeg', 'webp'].map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => {
+                        const updated = { ...localProject, format: f as any };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                        (localProject.format || 'png') === f
+                          ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                          : 'text-neutral-600 hover:text-neutral-400'
+                      }`}
+                    >
+                      {f}
                     </button>
                   ))}
                 </div>
@@ -1104,6 +1136,16 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                   {task.quality}
                                 </span>
                               )}
+                              {task.format && (
+                                <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                                  {task.format}
+                                </span>
+                              )}
+                              {task.format && (
+                                <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                                  {task.format}
+                                </span>
+                              )}
                               <span className="text-[9px] font-bold text-amber-500/70 uppercase tracking-widest px-2.5 py-1.5 bg-amber-500/5 rounded-lg border border-amber-500/20">Draft</span>
                               <div className="flex items-center gap-1">
                                 <button 
@@ -1269,9 +1311,14 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                     {task.aspectRatio}
                                   </span>
                                 )}
-                                {task.quality && (
+                                 {task.quality && (
                                   <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
                                     {task.quality}
+                                  </span>
+                                )}
+                                {task.format && (
+                                  <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                                    {task.format}
                                   </span>
                                 )}
                                 {task.status === 'processing' && (
@@ -1497,6 +1544,11 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                               {item.quality && (
                                 <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
                                   {item.quality}
+                                </span>
+                              )}
+                              {item.format && (
+                                <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                                  {item.format}
                                 </span>
                               )}
                             </div>

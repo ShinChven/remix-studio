@@ -35,27 +35,5 @@ export function createImageRouter(storage: S3Storage) {
     }
   });
 
-  /**
-   * GET /api/images/view?key=...
-   * Serves an image from S3 by key. Stable URL that never expires.
-   */
-  router.get('/api/images/view', authMiddleware, async (c) => {
-    try {
-      const key = c.req.query('key');
-      if (!key) return c.json({ error: 'key is required' }, 400);
-
-      const buffer = await storage.read(key);
-      return new Response(new Uint8Array(buffer), {
-        headers: {
-          'Content-Type': 'image/png',
-          'Cache-Control': 'private, max-age=3600',
-        },
-      });
-    } catch (e) {
-      console.error('[GET /api/images/view]', e);
-      return c.json({ error: 'Image not found' }, 404);
-    }
-  });
-
   return router;
 }

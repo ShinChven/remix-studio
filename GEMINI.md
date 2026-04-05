@@ -1,3 +1,4 @@
+- Read what's in ./docs folder for specific job.
 - all delete actions should have confirmation.
 - the app listens to port 3000.
 - ban browser usage.

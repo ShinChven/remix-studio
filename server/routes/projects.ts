@@ -20,7 +20,6 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
   const jobs = await Promise.all(
     project.jobs.map(async (job) => {
       const imageUrl = job.imageUrl ? await presignIfKey(job.imageUrl, storage) : job.imageUrl;
-      // imageContexts are S3 keys — NOT presigned here; frontend uses /api/images/view for display
       return { ...job, imageUrl };
     })
   );

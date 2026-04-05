@@ -5,6 +5,7 @@ import { S3Storage } from '../storage/s3-storage';
 import { buildGenerator } from '../generators/build-generator';
 import { Job, Project, ProviderType, AlbumItem } from '../../src/types';
 import crypto from 'crypto';
+import sharp from 'sharp';
 
 const TABLE_NAME = 'remix-studio';
 
@@ -14,6 +15,7 @@ interface QueuedJob {
   job: Job;
   aspectRatio?: string;
   quality?: string;
+  format?: string;
   modelConfigId?: string;
 }
 
@@ -49,19 +51,20 @@ export class QueueManager {
         job.providerId || project.providerId!, 
         job.aspectRatio || project.aspectRatio, 
         job.quality || project.quality,
+        job.format || project.format,
         job.modelConfigId
       );
     }
   }
 
-  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, modelConfigId?: string) {
+  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, format?: string, modelConfigId?: string) {
     if (!this.queues.has(providerId)) this.queues.set(providerId, []);
     
     // Avoid double-queuing if it's already there
     const exists = this.queues.get(providerId)!.some(q => q.job.id === job.id);
     if (exists) return;
 
-    this.queues.get(providerId)!.push({ userId, projectId, job, aspectRatio, quality, modelConfigId });
+    this.queues.get(providerId)!.push({ userId, projectId, job, aspectRatio, quality, format, modelConfigId });
     this.processNext(providerId);
   }
 
@@ -150,8 +153,23 @@ export class QueueManager {
       if (result.ok === false) throw new Error(result.error);
 
       // 4. Save to storage
-      const filename = `${userId}/${projectId}/${crypto.randomUUID()}.png`;
-      const s3Url = await this.storage.save(filename, result.imageBytes, 'image/png');
+      const targetFormat = queued.format || job.format || 'png';
+      let finalBytes = result.imageBytes;
+      let mimeType = 'image/png';
+      let ext = 'png';
+
+      if (targetFormat === 'jpeg' || targetFormat === 'jpg') {
+        finalBytes = await sharp(result.imageBytes).jpeg({ quality: 100, chromaSubsampling: '4:4:4' }).toBuffer();
+        mimeType = 'image/jpeg';
+        ext = 'jpg';
+      } else if (targetFormat === 'webp') {
+        finalBytes = await sharp(result.imageBytes).webp({ quality: 100, lossless: true }).toBuffer();
+        mimeType = 'image/webp';
+        ext = 'webp';
+      }
+
+      const filename = `${userId}/${projectId}/${crypto.randomUUID()}.${ext}`;
+      const s3Url = await this.storage.save(filename, finalBytes, mimeType);
 
       // 5. Create album item
       const albumItem: AlbumItem = {
@@ -163,7 +181,8 @@ export class QueueManager {
         modelConfigId: queued.modelConfigId || job.modelConfigId,
         aspectRatio: queued.aspectRatio || job.aspectRatio,
         quality: queued.quality || job.quality,
-        size: result.imageBytes.length,
+        format: targetFormat as any,
+        size: finalBytes.length,
         createdAt: Date.now(),
       };
       await this.projectRepo.addAlbumItem(userId, projectId, albumItem);

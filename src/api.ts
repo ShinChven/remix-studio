@@ -167,10 +167,21 @@ export async function saveImage(base64: string, projectId: string): Promise<{ ke
   return { key: data.key, url: data.url };
 }
 
-/** Build a stable display URL for an S3 key. Returns the value as-is if it's already a URL or data URI. */
+/**
+ * Returns an image URL safe for use in <img> tags.
+ * All image URLs from the API are already presigned MinIO URLs (starting with 'http').
+ * This function is a passthrough — it throws if a bare S3 key is passed, because
+ * that means someone forgot to presign it server-side.
+ *
+ * DO NOT add fallback proxy logic here. The /api/images/view endpoint has been deleted.
+ * All signing must happen server-side before data reaches the client.
+ */
 export function imageDisplayUrl(value: string): string {
-  if (!value || value.startsWith('http') || value.startsWith('data:')) return value;
-  return `/api/images/view?key=${encodeURIComponent(value)}`;
+  if (!value) return value;
+  if (value.startsWith('http') || value.startsWith('data:')) return value;
+  // If we get here, a bare S3 key escaped the server without being presigned.
+  console.error('[imageDisplayUrl] Received a bare S3 key — must be presigned server-side:', value);
+  return value; // return as-is so the UI doesn't crash, but log the bug
 }
 
 export async function renameProjectFolder(oldId: string, newId: string): Promise<void> {
