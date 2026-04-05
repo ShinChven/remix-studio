@@ -45,7 +45,7 @@ export function Dashboard() {
                   <span className="text-xs text-neutral-500 font-mono truncate max-w-[120px]">{project.id}</span>
                 </div>
                 <h4 className="font-medium text-white truncate">{project.name}</h4>
-                <p className="text-xs text-neutral-500 mt-1">{project.jobs?.length || 0} jobs • {new Date(project.createdAt).toLocaleDateString()}</p>
+                <p className="text-xs text-neutral-500 mt-1">{(project.jobCount ?? project.jobs?.length) || 0} jobs • {(project.albumCount ?? project.album?.length) || 0} images • {new Date(project.createdAt).toLocaleDateString()}</p>
               </button>
             ))}
             {projects.length === 0 && (

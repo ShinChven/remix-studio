@@ -28,20 +28,42 @@ export class ProjectRepository {
         })
       );
 
-      return (result.Items || []).map((item) => ({
-        id: item.sk.replace('PROJECT#', ''),
-        name: item.name,
-        createdAt: item.createdAt,
-        workflow: [],
-        jobs: [],
-        album: [],
-        providerId: item.providerId,
-        aspectRatio: item.aspectRatio,
-        quality: item.quality,
-        format: item.format,
-        shuffle: item.shuffle,
-        modelConfigId: item.modelConfigId,
-        prefix: item.prefix,
+      return await Promise.all((result.Items || []).map(async (item) => {
+        const id = item.sk.replace('PROJECT#', '');
+        
+        // Fetch counts for jobs and album items
+        const [jobRes, albumRes] = await Promise.all([
+          this.client.send(new QueryCommand({
+            TableName: TABLE_NAME,
+            KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+            ExpressionAttributeValues: { ':pk': pk, ':prefix': `PROJECT#${id}#JOB#` },
+            Select: 'COUNT'
+          })),
+          this.client.send(new QueryCommand({
+            TableName: TABLE_NAME,
+            KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+            ExpressionAttributeValues: { ':pk': pk, ':prefix': `PROJECT#${id}#ALBUM#` },
+            Select: 'COUNT'
+          }))
+        ]);
+
+        return {
+          id,
+          name: item.name,
+          createdAt: item.createdAt,
+          workflow: [],
+          jobs: [],
+          album: [],
+          jobCount: jobRes.Count || 0,
+          albumCount: albumRes.Count || 0,
+          providerId: item.providerId,
+          aspectRatio: item.aspectRatio,
+          quality: item.quality,
+          format: item.format,
+          shuffle: item.shuffle,
+          modelConfigId: item.modelConfigId,
+          prefix: item.prefix,
+        };
       }));
     } catch (e) {
       console.error('[ProjectRepository.getUserProjects] ERROR:', e);

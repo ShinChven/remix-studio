@@ -131,6 +131,8 @@ export interface Project {
   workflow: WorkflowItem[];
   jobs: Job[];
   album: AlbumItem[];
+  jobCount?: number;
+  albumCount?: number;
   providerId?: string;
   aspectRatio?: string;
   quality?: string;

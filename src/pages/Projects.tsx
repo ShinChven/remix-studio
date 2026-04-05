@@ -1,6 +1,6 @@
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Project } from '../types';
-import { Plus, Play, Clock, LayoutGrid } from 'lucide-react';
+import { Plus, Play, Clock, LayoutGrid, ImageIcon } from 'lucide-react';
 
 interface ContextType {
   projects: Project[];
@@ -51,10 +51,14 @@ export function Projects() {
 
                 <h4 className="text-lg font-semibold text-white truncate mb-2">{project.name}</h4>
 
-                <div className="flex items-center gap-4 text-sm text-neutral-500 mb-4">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-500 mb-4">
                   <div className="flex items-center gap-1.5">
                     <LayoutGrid className="w-4 h-4" />
-                    <span>{project.jobs?.length || 0} jobs</span>
+                    <span>{(project.jobCount ?? project.jobs?.length) || 0} jobs</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4" />
+                    <span>{(project.albumCount ?? project.album?.length) || 0} images</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock className="w-4 h-4" />
