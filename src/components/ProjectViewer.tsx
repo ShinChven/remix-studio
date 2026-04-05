@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Project, Job, Library, LibraryItem, WorkflowItem, WorkflowItemType, Provider, ModelConfig } from '../types';
 import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl } from '../api';
 import { Play, Square, CheckSquare, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X, Shuffle, List, Grid, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -16,6 +16,12 @@ interface Props {
 
 export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props) {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as 'draft' | 'queue' | 'album') || 'draft';
+  const setActiveTab = (tab: 'draft' | 'queue' | 'album') => {
+    setSearchParams({ tab }, { replace: true });
+  };
+
   const [localProject, setLocalProject] = useState<Project>(project);
   const [hasChanges, setHasChanges] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -37,7 +43,6 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(true);
   const [queueCount, setQueueCount] = useState<number>(0);
   const [hasManuallySetQueueCount, setHasManuallySetQueueCount] = useState(false);
-  const [activeTab, setActiveTab] = useState<'draft' | 'queue' | 'album'>('draft');
   const [workflowError, setWorkflowError] = useState<string | null>(null);
   const [uploadingItemIds, setUploadingItemIds] = useState<Set<string>>(new Set());
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
