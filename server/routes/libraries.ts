@@ -188,6 +188,21 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage)
     }
   });
 
+  router.post('/api/libraries/:libId/items/batch', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const items = await c.req.json();
+      if (!Array.isArray(items)) {
+        return c.json({ error: 'Expected an array of items' }, 400);
+      }
+      await repository.createLibraryItemsBatch(user.userId, c.req.param('libId'), items);
+      return c.json({ success: true }, 201);
+    } catch (e) {
+      console.error('[POST /api/libraries/:libId/items/batch]', e);
+      return c.json({ error: 'Failed to create items batch' }, 500);
+    }
+  });
+
   router.put('/api/libraries/:libId/items/reorder', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

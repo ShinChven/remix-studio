@@ -88,6 +88,15 @@ export async function createLibraryItem(libraryId: string, item: LibraryItem): P
   if (!res.ok) throw new Error('Failed to create item');
 }
 
+export async function createLibraryItemsBatch(libraryId: string, items: LibraryItem[]): Promise<void> {
+  const res = await fetch(`/api/libraries/${libraryId}/items/batch`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(items),
+  });
+  if (!res.ok) throw new Error('Failed to create items batch');
+}
+
 export async function updateLibraryItem(libraryId: string, itemId: string, updates: Partial<LibraryItem>): Promise<void> {
   const res = await fetch(`/api/libraries/${libraryId}/items/${itemId}`, {
     method: 'PUT',

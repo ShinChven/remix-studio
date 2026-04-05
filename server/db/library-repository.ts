@@ -213,6 +213,37 @@ export class LibraryRepository {
     await this.client.send(new PutCommand({ TableName: TABLE_NAME, Item: record }));
   }
 
+  async createLibraryItemsBatch(userId: string, libraryId: string, items: LibraryItem[]): Promise<void> {
+    for (let i = 0; i < items.length; i += BATCH_LIMIT) {
+      const batchItems = items.slice(i, i + BATCH_LIMIT);
+      const putRequests = batchItems.map((item) => {
+        const record: Record<string, unknown> = {
+          pk: `USER_DATA#${userId}`,
+          sk: `LIBRARY#${libraryId}#ITEM#${item.id}`,
+          content: item.content,
+        };
+        if (item.title !== undefined) record.title = item.title;
+        if (item.order !== undefined) record.order = item.order;
+        if (item.thumbnailUrl !== undefined) record.thumbnailUrl = item.thumbnailUrl;
+        if (item.optimizedUrl !== undefined) record.optimizedUrl = item.optimizedUrl;
+        if (item.size !== undefined) record.size = item.size;
+        return {
+          PutRequest: {
+            Item: record,
+          },
+        };
+      });
+
+      await this.client.send(
+        new BatchWriteCommand({
+          RequestItems: {
+            [TABLE_NAME]: putRequests,
+          },
+        })
+      );
+    }
+  }
+
   async updateLibraryItem(userId: string, libraryId: string, itemId: string, updates: Partial<LibraryItem>): Promise<void> {
     const expressions: string[] = [];
     const names: Record<string, string> = {};

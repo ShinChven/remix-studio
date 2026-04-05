@@ -19,9 +19,10 @@ import { LibraryForm } from './pages/LibraryForm.tsx';
 import { ProjectForm } from './pages/ProjectForm.tsx';
 import { PromptEditor } from './pages/PromptEditor.tsx';
 import { LibraryCleanup } from './pages/LibraryCleanup.tsx';
+import { LibraryImportExport } from './pages/LibraryImportExport.tsx';
 import { Providers } from './pages/Providers.tsx';
 import { ProviderForm } from './pages/ProviderForm.tsx';
-import { TrashView } from './components/TrashView';
+import { TrashView } from './components/TrashView.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -51,6 +52,7 @@ export default function App() {
               <Route path="project/:id" element={<ProjectRoute />} />
               <Route path="project/:id/edit" element={<ProjectForm />} />
               <Route path="library/:id" element={<LibraryRoute />} />
+              <Route path="library/:id/import-export" element={<LibraryImportExport />} />
               <Route path="library/:id/cleanup" element={<LibraryCleanup />} />
               <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
               <Route path="admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />

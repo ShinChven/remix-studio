@@ -11,6 +11,7 @@ export interface IRepository {
   // === Library Item CRUD ===
   getLibraryItems(userId: string, libraryId: string): Promise<LibraryItem[]>;
   createLibraryItem(userId: string, libraryId: string, item: LibraryItem): Promise<void>;
+  createLibraryItemsBatch(userId: string, libraryId: string, items: LibraryItem[]): Promise<void>;
   updateLibraryItem(userId: string, libraryId: string, itemId: string, updates: Partial<LibraryItem>): Promise<void>;
   deleteLibraryItem(userId: string, libraryId: string, itemId: string): Promise<void>;
   reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]): Promise<void>;
@@ -30,7 +31,7 @@ export interface IRepository {
   getTrashItems(userId: string): Promise<TrashItem[]>;
   moveToTrash(userId: string, projectId: string, itemId: string): Promise<void>;
   restoreTrashItem(userId: string, itemId: string): Promise<void>;
-  deleteTrashPermanently(userId: string, itemId: string): Promise<string | null>; // Returns S3 key
+  deleteTrashPermanently(userId: string, itemId: string): Promise<string[]>; // Returns S3 keys (original, thumb, opt)
   emptyTrash(userId: string): Promise<string[]>; // Returns S3 keys
 
   // === Legacy (for migration/import) ===

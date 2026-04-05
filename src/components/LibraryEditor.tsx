@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Library } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play, UploadCloud } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences } from '../api';
 
@@ -225,6 +225,16 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             >
               <Settings className="w-5 h-5" />
             </button>
+ 
+            {library.type === 'text' && (
+              <button
+                onClick={() => navigate(`/library/${library.id}/import-export`)}
+                className="p-2.5 text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
+                title="Import / Export"
+              >
+                <UploadCloud className="w-5 h-5" />
+              </button>
+            )}
 
             <button
               onClick={handleDeleteLibrary}
