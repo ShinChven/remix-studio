@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Project, Job, Library, WorkflowItem, WorkflowItemType, Provider } from '../types';
 import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow } from '../api';
-import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X, Shuffle, List, Grid } from 'lucide-react';
+import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X, Shuffle, List, Grid, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateWorkflowCombinations } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -23,6 +23,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   
   const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
   const [itemToRemoveId, setItemToRemoveId] = useState<string | null>(null);
+  const [jobToDeleteId, setJobToDeleteId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<WorkflowItem | null>(null);
   const [showLibrarySelector, setShowLibrarySelector] = useState(false);
   const [previewingLibrary, setPreviewingLibrary] = useState<Library | null>(null);
@@ -36,6 +37,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [workflowError, setWorkflowError] = useState<string | null>(null);
   const [uploadingItemIds, setUploadingItemIds] = useState<Set<string>>(new Set());
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
+  const [lightboxData, setLightboxData] = useState<{images: string[], index: number} | null>(null);
   
   const projectRef = useRef(localProject);
   const isProcessing = localProject.jobs.some(j => j.status === 'pending' || j.status === 'processing');
@@ -462,7 +464,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                   </label>
                   {item.value && !uploadingItemIds.has(item.id) && (
                     <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-800 mt-2">
-                       <img src={item.value} alt="Reference" className="w-full h-full object-cover" />
+                       <img src={item.value} alt="Reference" className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLightboxData({ images: [item.value], index: 0 })} />
                     </div>
                   )}
                 </div>
@@ -759,7 +761,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-[9px] font-bold text-amber-500/70 uppercase tracking-widest px-2.5 py-1.5 bg-amber-500/5 rounded-lg border border-amber-500/20">Draft</span>
-                              <div className="flex items-center gap-1 opacity-0 group-hover/task:opacity-100 transition-opacity">
+                              <div className="flex items-center gap-1">
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); runJob(task.id); }}
                                   className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors border border-transparent hover:border-blue-500/20"
@@ -768,7 +770,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                   <Play className="w-3.5 h-3.5 fill-current" />
                                 </button>
                                 <button 
-                                  onClick={(e) => { e.stopPropagation(); deleteJob(task.id); }}
+                                  onClick={(e) => { e.stopPropagation(); setJobToDeleteId(task.id); }}
                                   className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                   title="Delete Job"
                                 >
@@ -794,10 +796,14 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                           <img 
                                             src={ctx} 
                                             alt={`Context ${idx + 1}`} 
-                                            className="w-full h-full object-cover" 
+                                            className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
                                             loading="lazy"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setLightboxData({ images: task.imageContexts || [], index: idx });
+                                            }}
                                           />
-                                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/ctx:opacity-100 transition-opacity flex items-end p-1.5">
+                                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/ctx:opacity-100 transition-opacity flex items-end p-1.5 pointer-events-none">
                                             <span className="text-[8px] font-black text-white/70 uppercase tracking-widest truncate">C_{idx + 1}</span>
                                           </div>
                                         </div>
@@ -856,7 +862,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                               {task.status === 'pending' && <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest px-3 py-1.5 bg-neutral-900 rounded-lg border border-neutral-800 shadow-sm">Queued</span>}
                               {task.status === 'failed' && <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-3 py-1.5 bg-red-500/10 rounded-lg border border-red-500/20">Failed</span>}
                               
-                              <div className="flex items-center gap-1 opacity-0 group-hover/task:opacity-100 transition-opacity">
+                              <div className="flex items-center gap-1">
                                 {(task.status === 'failed' || task.status === 'pending') && (
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); runJob(task.id); }}
@@ -867,7 +873,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                   </button>
                                 )}
                                 <button 
-                                  onClick={(e) => { e.stopPropagation(); deleteJob(task.id); }}
+                                  onClick={(e) => { e.stopPropagation(); setJobToDeleteId(task.id); }}
                                   className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                   title="Delete Job"
                                 >
@@ -893,10 +899,14 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                           <img 
                                             src={ctx} 
                                             alt={`Context ${idx + 1}`} 
-                                            className="w-full h-full object-cover" 
+                                            className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
                                             loading="lazy"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setLightboxData({ images: task.imageContexts || [], index: idx });
+                                            }}
                                           />
-                                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/ctx:opacity-100 transition-opacity flex items-end p-1.5">
+                                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/ctx:opacity-100 transition-opacity flex items-end p-1.5 pointer-events-none">
                                             <span className="text-[8px] font-black text-white/70 uppercase tracking-widest truncate">C_{idx + 1}</span>
                                           </div>
                                         </div>
@@ -946,7 +956,13 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                   {completedJobs.map(job => (
                     <div key={job.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group hover:border-blue-500/50 transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 active:scale-100">
                       <div className="aspect-square bg-neutral-950 relative flex items-center justify-center overflow-hidden">
-                        <img src={job.imageUrl} alt={job.prompt} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 shadow-lg" referrerPolicy="no-referrer" />
+                        <img src={job.imageUrl} alt={job.prompt} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 shadow-lg cursor-pointer" referrerPolicy="no-referrer" onClick={(e) => {
+                            e.stopPropagation();
+                            const validJobs = completedJobs.filter(j => j.imageUrl);
+                            const imgUrls = validJobs.map(j => j.imageUrl as string);
+                            const idx = imgUrls.indexOf(job.imageUrl as string);
+                            setLightboxData({ images: imgUrls, index: idx >= 0 ? idx : 0 });
+                          }} />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
                           <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                         </div>
@@ -997,6 +1013,21 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         type="danger"
       />
 
+      <ConfirmModal
+        isOpen={jobToDeleteId !== null}
+        onClose={() => setJobToDeleteId(null)}
+        onConfirm={() => {
+          if (jobToDeleteId) {
+            deleteJob(jobToDeleteId);
+            setJobToDeleteId(null);
+          }
+        }}
+        title="Delete Job"
+        message="Are you sure you want to delete this job? This action cannot be undone."
+        confirmText="Delete Job"
+        type="danger"
+      />
+
       <LibrarySelectionModal
         isOpen={showLibrarySelector}
         onClose={() => setShowLibrarySelector(false)}
@@ -1011,6 +1042,14 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         library={previewingLibrary}
         onClose={() => setPreviewingLibrary(null)}
       />
+
+      {lightboxData && (
+        <ImageLightbox 
+          images={lightboxData.images}
+          startIndex={lightboxData.index}
+          onClose={() => setLightboxData(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1124,6 +1163,8 @@ function LibrarySelectionModal({ isOpen, onClose, onSelect, libraries, selectedL
 }
 
 function LibraryPreviewModal({ library, onClose }: { library: Library | null; onClose: () => void }) {
+  const [previewLightbox, setPreviewLightbox] = useState<{images: string[], index: number} | null>(null);
+  
   if (!library) return null;
 
   return (
@@ -1155,7 +1196,11 @@ function LibraryPreviewModal({ library, onClose }: { library: Library | null; on
               <div key={item.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col shadow-sm">
                 {library.type === 'image' && (
                   <div className="aspect-video bg-black relative border-b border-neutral-800">
-                    <img src={item.content} alt={item.content} className="w-full h-full object-cover" />
+                    <img src={item.content} alt={item.content} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => {
+                      const imageItems = library.items.filter(i => i.content).map(i => i.content);
+                      const idx = imageItems.indexOf(item.content);
+                      setPreviewLightbox({ images: imageItems, index: idx >= 0 ? idx : 0 });
+                    }} />
                   </div>
                 )}
                 <div className="p-4 flex-1">
@@ -1180,6 +1225,13 @@ function LibraryPreviewModal({ library, onClose }: { library: Library | null; on
           </button>
         </div>
       </div>
+      {previewLightbox && (
+        <ImageLightbox 
+          images={previewLightbox.images}
+          startIndex={previewLightbox.index}
+          onClose={() => setPreviewLightbox(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1251,3 +1303,61 @@ function PromptModal({ item, onClose, onSave }: { item: WorkflowItem | null; onC
   );
 }
 
+export function ImageLightbox({ images, startIndex, onClose }: { images: string[], startIndex: number, onClose: () => void }) {
+  const [currentIndex, setCurrentIndex] = React.useState(startIndex);
+  
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') setCurrentIndex(prev => prev > 0 ? prev - 1 : images.length - 1);
+      if (e.key === 'ArrowRight') setCurrentIndex(prev => prev < images.length - 1 ? prev + 1 : 0);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [images.length, onClose]);
+
+  if (!images || images.length === 0) return null;
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex(prev => prev > 0 ? prev - 1 : images.length - 1);
+  };
+  
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex(prev => prev < images.length - 1 ? prev + 1 : 0);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
+      <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full">
+        <X className="w-6 h-6" />
+      </button>
+      
+      {images.length > 1 && (
+        <button onClick={handlePrev} className="absolute left-2 md:left-8 p-3 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full">
+          <ChevronLeft className="w-8 h-8" />
+        </button>
+      )}
+      
+      <img 
+        src={images[currentIndex]} 
+        alt={`Preview ${currentIndex + 1}`} 
+        className="max-w-[90vw] max-h-[90vh] object-contain select-none"
+        onClick={(e) => e.stopPropagation()} 
+      />
+      
+      {images.length > 1 && (
+        <button onClick={handleNext} className="absolute right-2 md:right-8 p-3 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full">
+          <ChevronRight className="w-8 h-8" />
+        </button>
+      )}
+      
+      {images.length > 1 && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-black/50 rounded-full text-white/80 text-xs font-bold tracking-widest backdrop-blur-sm">
+          {currentIndex + 1} / {images.length}
+        </div>
+      )}
+    </div>
+  );
+}
