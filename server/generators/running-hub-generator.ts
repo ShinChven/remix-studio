@@ -61,8 +61,6 @@ export class RunningHubGenerator extends ImageGenerator {
   async generate(req: GenerateRequest): Promise<GenerateResult> {
     const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
 
-    const actualSubmitUrl = reqApiUrl || (modelId ? `https://www.runninghub.ai/openapi/v2/${modelId}/image-to-image` : this.submitUrl);
-
     // --- Step 1: optional image upload ---
     const imageUrls: string[] = [];
     if (refImagesBase64 && refImagesBase64.length > 0) {
@@ -75,13 +73,34 @@ export class RunningHubGenerator extends ImageGenerator {
       }
     }
 
+    const isTextToImage = imageUrls.length === 0;
+    const endpointType = isTextToImage ? 'text-to-image' : 'image-to-image';
+
+    let actualSubmitUrl = reqApiUrl;
+    if (!actualSubmitUrl) {
+      if (modelId) {
+        actualSubmitUrl = `https://www.runninghub.ai/openapi/v2/${modelId}/${endpointType}`;
+      } else {
+        // Fallback to this.submitUrl but swap the type if needed
+        actualSubmitUrl = this.submitUrl;
+        if (isTextToImage && actualSubmitUrl.endsWith('/image-to-image')) {
+          actualSubmitUrl = actualSubmitUrl.replace('/image-to-image', '/text-to-image');
+        } else if (!isTextToImage && actualSubmitUrl.endsWith('/text-to-image')) {
+          actualSubmitUrl = actualSubmitUrl.replace('/text-to-image', '/image-to-image');
+        }
+      }
+    }
+
     // --- Step 2: submit task ---
-    const payload = {
-      imageUrls,
+    const payload: any = {
       prompt,
       aspectRatio,
       resolution: imageSize.toLowerCase(), // API expects "1k", not "1K"
     };
+
+    if (!isTextToImage) {
+      payload.imageUrls = imageUrls;
+    }
 
     let taskId: string;
     try {
@@ -99,6 +118,12 @@ export class RunningHubGenerator extends ImageGenerator {
       }
 
       const submitResult: any = await res.json();
+      
+      // Check for API-level error
+      if (submitResult.errorCode && submitResult.errorCode !== '0' && submitResult.errorCode !== '') {
+        return { ok: false, error: `Submit API error ${submitResult.errorCode}: ${submitResult.errorMessage}` };
+      }
+
       taskId = submitResult.taskId;
       if (!taskId) {
         return { ok: false, error: `No taskId in submit response: ${JSON.stringify(submitResult)}` };
@@ -126,6 +151,12 @@ export class RunningHubGenerator extends ImageGenerator {
       }
 
       const result: any = await queryRes.json();
+
+      // Check for API-level error in query
+      if (result.errorCode && result.errorCode !== '0' && result.errorCode !== '') {
+        return { status: 'failed', error: `Query API error ${result.errorCode}: ${result.errorMessage}` };
+      }
+
       const status: string = result.status;
       
       if (status !== 'SUCCESS' && status !== 'RUNNING' && status !== 'QUEUED' && status !== 'FAILED') {
