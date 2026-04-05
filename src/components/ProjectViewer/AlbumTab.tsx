@@ -1,9 +1,11 @@
-import React from 'react';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, Download, Loader2 } from 'lucide-react';
 import { AlbumItem } from '../../types';
-import { imageDisplayUrl } from '../../api';
+import { imageDisplayUrl, startAlbumExport, fetchExportStatus, ExportStatus } from '../../api';
 
 interface AlbumTabProps {
+  projectId: string;
+  projectName: string;
   albumItems: AlbumItem[];
   selectedAlbumIds: Set<string>;
   toggleSelectAllAlbum: () => void;
@@ -16,6 +18,8 @@ interface AlbumTabProps {
 }
 
 export function AlbumTab({
+  projectId,
+  projectName,
   albumItems,
   selectedAlbumIds,
   toggleSelectAllAlbum,
@@ -26,6 +30,40 @@ export function AlbumTab({
   getModelName,
   setLightboxData
 }: AlbumTabProps) {
+  const [exportTask, setExportTask] = useState<ExportStatus | null>(null);
+
+  useEffect(() => {
+    let interval: any;
+    if (exportTask && (exportTask.status === 'pending' || exportTask.status === 'processing')) {
+      interval = setInterval(async () => {
+        try {
+          const status = await fetchExportStatus(projectId, exportTask.id);
+          setExportTask(status);
+        } catch (err) {
+          console.error('Failed to fetch export status:', err);
+        }
+      }, 2000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [exportTask?.id, exportTask?.status, projectId]);
+
+  const handleExport = async (isAll: boolean) => {
+    try {
+      const itemIds = isAll ? undefined : Array.from(selectedAlbumIds);
+      const { taskId } = await startAlbumExport(projectId, itemIds);
+      setExportTask({ 
+        id: taskId, 
+        status: 'pending', 
+        current: 0, 
+        total: isAll ? albumItems.length : selectedAlbumIds.size 
+      });
+    } catch (err: any) {
+      alert(`Export failed: ${err.message}`);
+    }
+  };
+
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-6">
@@ -61,6 +99,13 @@ export function AlbumTab({
                     {selectedAlbumIds.size} Selected
                   </span>
                   <button
+                    onClick={() => handleExport(false)}
+                    disabled={exportTask?.status === 'processing' || exportTask?.status === 'pending'}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
+                  >
+                    <Download className="w-3 h-3" /> Export Selected
+                  </button>
+                  <button
                     onClick={() => {
                       const itemsToDelete = albumItems.filter(item => selectedAlbumIds.has(item.id));
                       setAlbumItemsToDelete(itemsToDelete);
@@ -72,7 +117,64 @@ export function AlbumTab({
                   </button>
                 </div>
               )}
+
+              {selectedAlbumIds.size === 0 && (
+                <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
+                  <button
+                    onClick={() => handleExport(true)}
+                    disabled={exportTask?.status === 'processing' || exportTask?.status === 'pending'}
+                    className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
+                  >
+                    <Download className="w-4 h-4" /> Export All
+                  </button>
+                </div>
+              )}
             </div>
+
+            {exportTask && (
+              <div className="flex items-center gap-4 px-4 py-2 bg-blue-500/5 border border-blue-500/20 rounded-xl animate-in fade-in slide-in-from-right-4">
+                {exportTask.status === 'completed' ? (
+                  <>
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-500 uppercase tracking-widest">
+                      <CheckCircle2 className="w-4 h-4" /> Ready
+                    </div>
+                    <a
+                      href={exportTask.downloadUrl}
+                      download={`${projectName}_Album.zip`}
+                      className="px-3 py-1 bg-emerald-500 text-black text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-400 transition-all"
+                      onClick={() => setTimeout(() => setExportTask(null), 5000)}
+                    >
+                      Download ZIP
+                    </a>
+                  </>
+                ) : exportTask.status === 'failed' ? (
+                  <div className="flex items-center gap-4">
+                    <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Export Failed</span>
+                    <button 
+                      onClick={() => setExportTask(null)}
+                      className="text-[9px] text-neutral-500 hover:text-white uppercase font-bold"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                      <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">
+                        {exportTask.status === 'pending' ? 'Starting...' : `Preparing... ${exportTask.current}/${exportTask.total}`}
+                      </span>
+                    </div>
+                    <div className="w-32 h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 transition-all duration-500" 
+                        style={{ width: `${(exportTask.current / exportTask.total) * 100}%` }}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
 

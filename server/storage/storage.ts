@@ -7,4 +7,5 @@ export interface IStorage {
   getSize(key: string): Promise<number | undefined>;
   rename(oldPrefix: string, newPrefix: string): Promise<void>;
   getPresignedUrl(key: string, expiresIn?: number): Promise<string>;
+  getReadStream(key: string): Promise<any>;
 }

@@ -398,3 +398,28 @@ export async function emptyTrash(): Promise<void> {
   if (!res.ok) throw new Error('Failed to empty trash');
 }
 
+export async function startAlbumExport(projectId: string, itemIds?: string[]): Promise<{ taskId: string }> {
+  const res = await fetch(`/api/projects/${projectId}/export`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ itemIds }),
+  });
+  if (!res.ok) throw new Error('Failed to start export');
+  return res.json();
+}
+
+export interface ExportStatus {
+  id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  current: number;
+  total: number;
+  downloadUrl?: string;
+  error?: string;
+}
+
+export async function fetchExportStatus(projectId: string, taskId: string): Promise<ExportStatus> {
+  const res = await fetch(`/api/projects/${projectId}/export/${taskId}`, { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to get export status');
+  return res.json();
+}
+

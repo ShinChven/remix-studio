@@ -42,6 +42,14 @@ export class S3Storage implements IStorage {
     });
   }
 
+  getClient(): S3Client {
+    return this.client;
+  }
+
+  getBucketName(): string {
+    return this.bucket;
+  }
+
   async ensureBucket(): Promise<void> {
     const { CreateBucketCommand, HeadBucketCommand } = await import('@aws-sdk/client-s3');
     try {
@@ -135,5 +143,12 @@ export class S3Storage implements IStorage {
         new DeleteObjectCommand({ Bucket: this.bucket, Key: obj.Key! })
       );
     }
+  }
+
+  async getReadStream(key: string): Promise<any> {
+    const result = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key })
+    );
+    return result.Body;
   }
 }

@@ -3,6 +3,7 @@ import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
 import { QueueManager } from '../queue/queue-manager';
+import { ExportManager } from '../queue/export-manager';
 import type { WorkflowItem, Job, Project } from '../../src/types';
 
 type Variables = { user: JwtPayload };
@@ -74,7 +75,7 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
   return { ...project, jobs, album, workflow };
 }
 
-export function createProjectRouter(repository: IRepository, storage: S3Storage, queueManager: QueueManager) {
+export function createProjectRouter(repository: IRepository, storage: S3Storage, queueManager: QueueManager, exportManager: ExportManager) {
   const router = new Hono<{ Variables: Variables }>();
 
   // NOTE: /rename must be registered before /:id to avoid route shadowing
@@ -358,6 +359,42 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
     } catch (e) {
       console.error('[POST /api/poll]', e);
       return c.json({ error: 'Failed to trigger poll' }, 500);
+    }
+  });
+
+  router.post('/api/projects/:id/export', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const body = await c.req.json();
+      const itemIds = body.itemIds as string[];
+
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Project not found' }, 404);
+
+      const itemsToExport = itemIds 
+        ? (project.album || []).filter(item => itemIds.includes(item.id))
+        : (project.album || []);
+
+      if (itemsToExport.length === 0) return c.json({ error: 'No items to export' }, 400);
+
+      const taskId = await exportManager.startExport(user.userId, projectId, project.name, itemsToExport);
+      return c.json({ taskId });
+    } catch (e) {
+      console.error('[POST /api/projects/:id/export]', e);
+      return c.json({ error: 'Failed to start export' }, 500);
+    }
+  });
+
+  router.get('/api/projects/:id/export/:taskId', authMiddleware, async (c) => {
+    try {
+      const taskId = c.req.param('taskId');
+      const task = exportManager.getTask(taskId);
+      if (!task) return c.json({ error: 'Task not found' }, 404);
+      return c.json(task);
+    } catch (e) {
+      console.error('[GET /api/projects/:id/export/:taskId]', e);
+      return c.json({ error: 'Failed to get export status' }, 500);
     }
   });
 

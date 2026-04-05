@@ -647,6 +647,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           )}
           {activeTab === 'album' && (
             <AlbumTab
+              projectId={localProject.id}
+              projectName={localProject.name}
               albumItems={albumItems} selectedAlbumIds={selectedAlbumIds} toggleSelectAllAlbum={toggleSelectAllAlbum}
               toggleAlbumSelection={toggleAlbumSelection} setAlbumItemsToDelete={setAlbumItemsToDelete}
               setShowDeleteAlbumModal={setShowDeleteAlbumModal} getProviderName={getProviderName} getModelName={getModelName}

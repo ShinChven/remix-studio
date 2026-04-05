@@ -24,6 +24,7 @@ import { createTrashRouter } from './server/routes/trash';
 import { ProviderRepository } from './server/db/provider-repository';
 import { ProjectRepository } from './server/db/project-repository';
 import { QueueManager } from './server/queue/queue-manager';
+import { ExportManager } from './server/queue/export-manager';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
@@ -67,9 +68,21 @@ async function startServer() {
   });
   await storage.ensureBucket();
 
+  const exportStorage = new S3Storage({
+    endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:19000',
+    region: process.env.AWS_REGION || 'us-east-1',
+    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+    secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
+    bucket: process.env.MINIO_EXPORT_BUCKET || `${process.env.MINIO_BUCKET || 'remix-studio'}-exports`,
+    publicEndpoint: process.env.S3_PUBLIC_ENDPOINT,
+  });
+  await exportStorage.ensureBucket();
+
   const queueManager = new QueueManager(docClient, providerRepository, projectRepository, storage);
   // Important: Recover tasks before starting the server to resume background work
   await queueManager.recoverTasks();
+
+  const exportManager = new ExportManager(storage, exportStorage);
 
   // === Auto-provision default admin ===
   const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
@@ -98,7 +111,7 @@ async function startServer() {
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
   app.route('/', createLibraryRouter(repository, storage));
-  app.route('/', createProjectRouter(repository, storage, queueManager));
+  app.route('/', createProjectRouter(repository, storage, queueManager, exportManager));
   app.route('/', createImageRouter(storage));
   app.route('/', createProviderRouter(providerRepository));
   app.route('/', createGenerateRouter(providerRepository));
