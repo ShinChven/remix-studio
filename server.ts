@@ -133,6 +133,10 @@ async function startServer() {
       }
     });
 
+    // Increase the max body size to handle large image uploads (default is ~1MB)
+    server.maxRequestsPerSocket = 0;
+    (server as any).timeout = 120000; // 2 minute timeout for uploads
+
     server.listen(PORT_NUM, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${PORT_NUM}`);
     });

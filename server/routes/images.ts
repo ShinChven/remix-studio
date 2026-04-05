@@ -1,15 +1,16 @@
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { S3Storage } from '../storage/s3-storage';
 
 type Variables = { user: JwtPayload };
 
-const IMAGE_SIZE_LIMIT_BYTES = 10 * 1024 * 1024; // 10 MB base64 payload limit
+const IMAGE_SIZE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
 
 export function createImageRouter(storage: S3Storage) {
   const router = new Hono<{ Variables: Variables }>();
 
-  router.post('/api/images', authMiddleware, async (c) => {
+  router.post('/api/images', authMiddleware, bodyLimit({ maxSize: IMAGE_SIZE_LIMIT_BYTES, onError: (c) => c.json({ error: 'Image too large (max 50MB)' }, 413) }), async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
       const body = await c.req.json();
@@ -17,7 +18,6 @@ export function createImageRouter(storage: S3Storage) {
 
       if (!base64 || typeof base64 !== 'string') return c.json({ error: 'No image data' }, 400);
       if (!projectId || typeof projectId !== 'string') return c.json({ error: 'projectId is required' }, 400);
-      if (base64.length > IMAGE_SIZE_LIMIT_BYTES) return c.json({ error: 'Image too large (max 10 MB)' }, 413);
 
       const safeProjectId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}.png`;

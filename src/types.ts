@@ -26,7 +26,7 @@ export interface Job {
   id: string;
   prompt: string;
   imageContexts?: string[];
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'draft' | 'pending' | 'processing' | 'completed' | 'failed';
   imageUrl?: string;
   error?: string;
 }

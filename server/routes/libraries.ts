@@ -7,7 +7,8 @@ import type { LibraryItem, Library } from '../../src/types';
 type Variables = { user: JwtPayload };
 
 /** Sign S3 keys in library item content fields */
-async function signLibraryImages(items: LibraryItem[], storage: S3Storage): Promise<LibraryItem[]> {
+async function signLibraryImages(items: LibraryItem[], storage: S3Storage, libraryType: string): Promise<LibraryItem[]> {
+  if (libraryType !== 'image') return items;
   return Promise.all(
     items.map(async (item) => {
       if (item.content && !item.content.startsWith('http') && !item.content.startsWith('data:')) {
@@ -20,7 +21,7 @@ async function signLibraryImages(items: LibraryItem[], storage: S3Storage): Prom
 }
 
 async function signLibrary(lib: Library, storage: S3Storage): Promise<Library> {
-  return { ...lib, items: await signLibraryImages(lib.items, storage) };
+  return { ...lib, items: await signLibraryImages(lib.items, storage, lib.type) };
 }
 
 export function createLibraryRouter(repository: IRepository, storage: S3Storage) {
@@ -147,8 +148,13 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage)
   router.get('/api/libraries/:libId/items', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      const items = await repository.getLibraryItems(user.userId, c.req.param('libId'));
-      return c.json(await signLibraryImages(items, storage));
+      const libId = c.req.param('libId');
+      const [items, library] = await Promise.all([
+        repository.getLibraryItems(user.userId, libId),
+        repository.getLibrary(user.userId, libId),
+      ]);
+      if (!library) return c.json({ error: 'Not found' }, 404);
+      return c.json(await signLibraryImages(items, storage, library.type));
     } catch (e) {
       console.error('[GET /api/libraries/:libId/items]', e);
       return c.json({ error: 'Failed to list items' }, 500);
