@@ -53,11 +53,11 @@ export function AlbumTab({
     try {
       const itemIds = isAll ? undefined : Array.from(selectedAlbumIds);
       const { taskId } = await startAlbumExport(projectId, itemIds);
-      setExportTask({ 
-        id: taskId, 
-        status: 'pending', 
-        current: 0, 
-        total: isAll ? albumItems.length : selectedAlbumIds.size 
+      setExportTask({
+        id: taskId,
+        status: 'pending',
+        current: 0,
+        total: isAll ? albumItems.length : selectedAlbumIds.size
       });
     } catch (err: any) {
       alert(`Export failed: ${err.message}`);
@@ -150,7 +150,7 @@ export function AlbumTab({
                 ) : exportTask.status === 'failed' ? (
                   <div className="flex items-center gap-4">
                     <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Export Failed</span>
-                    <button 
+                    <button
                       onClick={() => setExportTask(null)}
                       className="text-[9px] text-neutral-500 hover:text-white uppercase font-bold"
                     >
@@ -166,8 +166,8 @@ export function AlbumTab({
                       </span>
                     </div>
                     <div className="w-32 h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 transition-all duration-500" 
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-500"
                         style={{ width: `${(exportTask.current / exportTask.total) * 100}%` }}
                       />
                     </div>
@@ -187,35 +187,36 @@ export function AlbumTab({
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-            {albumItems.map(item => {
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
+            {albumItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
+              const aspectRatioStr = item.aspectRatio?.replace(':', '/') || '1/1';
               return (
-                <div key={item.id} className={`bg-neutral-900/50 border rounded-2xl overflow-hidden flex flex-col group transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 active:scale-100 ${isSelected ? 'border-blue-500 ring-1 ring-blue-500/50 bg-blue-500/5 shadow-lg shadow-blue-500/5' : 'border-neutral-800 hover:border-blue-500/30'}`}>
-                  <div className="aspect-square bg-neutral-950 relative flex items-center justify-center overflow-hidden">
+                <div key={item.id} className={`bg-neutral-900/50 border rounded-2xl overflow-hidden flex flex-col group transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 active:scale-100 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/50 bg-blue-500/5 shadow-lg shadow-blue-500/20' : 'border-neutral-800 hover:border-blue-500/40'}`}>
+                  <div className="bg-neutral-950 relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: aspectRatioStr }}>
                     {/* Selection Overlay */}
-                    <div className={`absolute top-3 left-3 z-10 transition-all ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    <div className={`absolute top-4 left-4 z-20 transition-all ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
-                        className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20 hover:border-white/40'}`}
+                        className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20 hover:border-white/40'}`}
                       >
                         {isSelected && <CheckSquare className="w-4 h-4 text-white" />}
                         {!isSelected && <Square className="w-4 h-4 text-white/40" />}
                       </button>
                     </div>
 
-                    {/* Individual Delete Button */}
-                    <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-all flex flex-col gap-2">
+                    {/* Actions Overlay */}
+                    <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-all flex flex-col gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setAlbumItemsToDelete([item]);
                           setShowDeleteAlbumModal(true);
                         }}
-                        className="w-6 h-6 rounded-lg bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-lg"
+                        className="w-7 h-7 rounded-xl bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-lg"
                         title="Delete"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
 
                       <a
@@ -223,10 +224,10 @@ export function AlbumTab({
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="w-6 h-6 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all shadow-lg"
+                        className="w-7 h-7 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all shadow-lg"
                         title="Open Original"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <ExternalLink className="w-4 h-4" />
                       </a>
                     </div>
 
@@ -242,40 +243,52 @@ export function AlbumTab({
                         setLightboxData({ images: imgUrls, index: idx >= 0 ? idx : 0 });
                       }}
                     />
+
+                    {/* Sequential Identifier Overlay */}
+                    <div className="absolute bottom-4 right-4 z-10 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-mono text-white/80 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      #{(index + 1).toString().padStart(2, '0')}
+                    </div>
+
+                    {/* Aspect Ratio Pill */}
+                    {item.aspectRatio && (
+                      <div className="absolute bottom-4 left-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-75 pointer-events-none">
+                        <span className="px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-bold text-white/60 border border-white/5 uppercase tracking-widest leading-none">
+                          {item.aspectRatio}
+                        </span>
+                      </div>
+                    )}
+
                     {isSelected && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <CheckCircle2 className="w-12 h-12 text-blue-500 animate-in zoom-in duration-300" />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-blue-500/10 backdrop-blur-[2px]">
+                        <CheckCircle2 className="w-14 h-14 text-blue-500 animate-in zoom-in duration-300" />
                       </div>
                     )}
                   </div>
-                  <div className="p-4 bg-neutral-900/80 backdrop-blur-sm relative">
-                    <p className="text-[10px] leading-relaxed text-neutral-400 line-clamp-3 font-medium mb-3" title={item.prompt}>
+                  <div className="p-5 bg-neutral-900/60 backdrop-blur-sm relative border-t border-neutral-800/50 flex-1 flex flex-col justify-between">
+                    <p className="text-[11px] leading-relaxed text-neutral-400 line-clamp-3 font-medium mb-4 group-hover:text-neutral-200 transition-colors" title={item.prompt}>
                       {item.prompt}
                     </p>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <div className="flex items-center gap-1 mr-1">
-                        <span className="text-[7px] font-black text-neutral-500 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1.5 p-1 bg-neutral-950/50 rounded-lg border border-neutral-800/50">
+                        <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-neutral-900 rounded border border-neutral-800">
                           {getProviderName(item.providerId)}
                         </span>
-                        <span className="text-[7px] font-black text-blue-500/60 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
+                        <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest px-1.5 py-0.5 bg-neutral-900 rounded border border-neutral-800">
                           {getModelName(item.providerId, item.modelConfigId)}
                         </span>
                       </div>
-                      {item.aspectRatio && (
-                        <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                          {item.aspectRatio}
-                        </span>
-                      )}
-                      {item.quality && (
-                        <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                          {item.quality}
-                        </span>
-                      )}
-                      {item.format && (
-                        <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                          {item.format}
-                        </span>
-                      )}
+                      <div className="flex gap-1.5 h-6">
+                        {item.quality && (
+                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 bg-neutral-950/30 rounded-md border border-neutral-800 uppercase tracking-widest">
+                            {item.quality}
+                          </span>
+                        )}
+                        {item.format && (
+                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 bg-neutral-950/30 rounded-md border border-neutral-800 uppercase tracking-widest">
+                            {item.format}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
