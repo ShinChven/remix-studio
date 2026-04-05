@@ -47,7 +47,7 @@ export function generateWorkflowCombinations(workflow: WorkflowItem[], libraries
     }
     
     results.push({
-      prompt: texts.join(', '),
+      prompt: texts.join('\n\n'),
       imageContexts: images.length > 0 ? images : undefined
     });
   }
@@ -92,7 +92,7 @@ function generateRandomCombination(workflow: WorkflowItem[], libraries: Library[
   }
 
   return {
-    prompt: texts.join(', '),
+    prompt: texts.join('\n\n'),
     imageContexts: images.length > 0 ? images : undefined
   };
 }
