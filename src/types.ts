@@ -31,6 +31,9 @@ export interface Job {
   imageUrl?: string;
   error?: string;
   createdAt?: number;
+  providerId?: string;
+  aspectRatio?: string;
+  quality?: string;
 }
 
 export interface Project {

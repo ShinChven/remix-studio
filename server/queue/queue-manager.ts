@@ -41,7 +41,14 @@ export class QueueManager {
     // Only pick up jobs that are currently 'pending' or 'failed' (to retry)
     const jobsToRun = project.jobs.filter(j => j.status === 'pending' || j.status === 'failed');
     for (const job of jobsToRun) {
-      this.enqueue(userId, project.id, job, project.providerId, project.aspectRatio, project.quality);
+      this.enqueue(
+        userId, 
+        project.id, 
+        job, 
+        job.providerId || project.providerId!, 
+        job.aspectRatio || project.aspectRatio, 
+        job.quality || project.quality
+      );
     }
   }
 

@@ -249,7 +249,10 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       id: crypto.randomUUID(),
       prompt: combo.prompt,
       imageContexts: combo.imageContexts,
-      status: 'draft'
+      status: 'draft',
+      providerId: selectedProviderId,
+      aspectRatio: localProject.aspectRatio || '1:1',
+      quality: localProject.quality || '1K',
     }));
 
     const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
@@ -872,6 +875,16 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                  </span>
                               </div>
                             <div className="flex items-center gap-2">
+                              {task.aspectRatio && (
+                                <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                                  {task.aspectRatio}
+                                </span>
+                              )}
+                              {task.quality && (
+                                <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                                  {task.quality}
+                                </span>
+                              )}
                               <span className="text-[9px] font-bold text-amber-500/70 uppercase tracking-widest px-2.5 py-1.5 bg-amber-500/5 rounded-lg border border-amber-500/20">Draft</span>
                               <div className="flex items-center gap-1">
                                 <button 
@@ -964,15 +977,25 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                  {task.prompt}
                                </span>
                             </div>
-                            <div className="flex-shrink-0 ml-4 flex items-center gap-3">
-                              {task.status === 'processing' && (
-                                <div className="flex items-center gap-2 text-blue-400 text-[10px] font-bold uppercase tracking-widest bg-blue-500/5 px-3 py-1.5 rounded-lg border border-blue-500/10">
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  Running
-                                </div>
-                              )}
-                              {task.status === 'pending' && <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest px-3 py-1.5 bg-neutral-900 rounded-lg border border-neutral-800 shadow-sm">Queued</span>}
-                              {task.status === 'failed' && <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-3 py-1.5 bg-red-500/10 rounded-lg border border-red-500/20">Failed</span>}
+                              <div className="flex-shrink-0 ml-4 flex items-center gap-3">
+                                {task.aspectRatio && (
+                                  <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                                    {task.aspectRatio}
+                                  </span>
+                                )}
+                                {task.quality && (
+                                  <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                                    {task.quality}
+                                  </span>
+                                )}
+                                {task.status === 'processing' && (
+                                  <div className="flex items-center gap-2 text-blue-400 text-[10px] font-bold uppercase tracking-widest bg-blue-500/5 px-3 py-1.5 rounded-lg border border-blue-500/10">
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    Running
+                                  </div>
+                                )}
+                                {task.status === 'pending' && <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest px-3 py-1.5 bg-neutral-900 rounded-lg border border-neutral-800 shadow-sm">Queued</span>}
+                                {task.status === 'failed' && <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-3 py-1.5 bg-red-500/10 rounded-lg border border-red-500/20">Failed</span>}
                               
                               <div className="flex items-center gap-1">
                                 {(task.status === 'failed' || task.status === 'pending') && (
@@ -1080,9 +1103,21 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                         </div>
                       </div>
                       <div className="p-4 bg-neutral-900/80 backdrop-blur-sm">
-                        <p className="text-[10px] leading-relaxed text-neutral-400 line-clamp-3 font-medium" title={job.prompt}>
+                        <p className="text-[10px] leading-relaxed text-neutral-400 line-clamp-3 font-medium mb-3" title={job.prompt}>
                           {job.prompt}
                         </p>
+                        <div className="flex items-center gap-2">
+                          {job.aspectRatio && (
+                            <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                              {job.aspectRatio}
+                            </span>
+                          )}
+                          {job.quality && (
+                            <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                              {job.quality}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
