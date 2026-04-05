@@ -50,7 +50,7 @@ export function PromptEditor() {
         const newItem = {
           id: crypto.randomUUID(),
           content,
-          title: title.trim() || undefined,
+          title: title.trim(),
           tags,
           order: library.items.length,
         };
@@ -59,7 +59,7 @@ export function PromptEditor() {
         const existingItem = library.items[itemIndex];
         await updateLibraryItem(id, existingItem.id, {
           content,
-          title: title.trim() || undefined,
+          title: title.trim(),
           tags,
         });
       }
