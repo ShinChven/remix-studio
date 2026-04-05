@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Project, Job, Library, LibraryItem, WorkflowItem, WorkflowItemType, Provider } from '../types';
 import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow } from '../api';
-import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X, Shuffle, List, Grid, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Square, CheckSquare, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X, Shuffle, List, Grid, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -24,6 +24,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
   const [itemToRemoveId, setItemToRemoveId] = useState<string | null>(null);
   const [jobToDeleteId, setJobToDeleteId] = useState<string | null>(null);
+  const [showDeleteSelectedModal, setShowDeleteSelectedModal] = useState(false);
+  const [showDeleteAllDraftsModal, setShowDeleteAllDraftsModal] = useState(false);
   const [editingItem, setEditingItem] = useState<WorkflowItem | null>(null);
   const [showLibrarySelector, setShowLibrarySelector] = useState(false);
   const [previewingLibrary, setPreviewingLibrary] = useState<Library | null>(null);
@@ -37,6 +39,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [workflowError, setWorkflowError] = useState<string | null>(null);
   const [uploadingItemIds, setUploadingItemIds] = useState<Set<string>>(new Set());
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
+  const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
   const [lightboxData, setLightboxData] = useState<{images: string[], index: number} | null>(null);
   
   const projectRef = useRef(localProject);
@@ -298,11 +301,65 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     }
   };
 
+  const runSelectedDrafts = async () => {
+    if (selectedDraftIds.size === 0) return;
+    const updatedJobs = localProject.jobs.map(j =>
+      selectedDraftIds.has(j.id) ? { ...j, status: 'pending' as const } : j
+    );
+    const updatedProject = { ...localProject, jobs: updatedJobs };
+    setLocalProject(updatedProject);
+    setSelectedDraftIds(new Set());
+    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+    try {
+      await apiRunWorkflow(localProject.id);
+    } catch (e) {
+      console.error("Failed to run selected drafts:", e);
+    }
+  };
+
   const deleteJob = async (jobId: string) => {
     const updatedJobs = localProject.jobs.filter(j => j.id !== jobId);
     const updatedProject = { ...localProject, jobs: updatedJobs };
     setLocalProject(updatedProject);
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+  };
+
+  const deleteSelectedDrafts = async () => {
+    if (selectedDraftIds.size === 0) return;
+    const updatedJobs = localProject.jobs.filter(j => !selectedDraftIds.has(j.id));
+    const updatedProject = { ...localProject, jobs: updatedJobs };
+    setLocalProject(updatedProject);
+    setSelectedDraftIds(new Set());
+    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+  };
+
+  const deleteAllDrafts = async () => {
+    const updatedJobs = localProject.jobs.filter(j => j.status !== 'draft');
+    const updatedProject = { ...localProject, jobs: updatedJobs };
+    setLocalProject(updatedProject);
+    setSelectedDraftIds(new Set());
+    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+  };
+
+  const toggleDraftSelection = (jobId: string) => {
+    setSelectedDraftIds(prev => {
+      const next = new Set(prev);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+      } else {
+        next.add(jobId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAllDrafts = () => {
+    const draftIds = localProject.jobs.filter(j => j.status === 'draft').map(j => j.id);
+    if (selectedDraftIds.size === draftIds.length) {
+      setSelectedDraftIds(new Set());
+    } else {
+      setSelectedDraftIds(new Set(draftIds));
+    }
   };
 
   const draftJobs = localProject.jobs.filter(j => j.status === 'draft');
@@ -679,7 +736,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             ) : (
               <>
                 <Plus className="w-4 h-4" />
-                Add to Queue
+                Add to Draft
               </>
             )}
           </button>
@@ -730,13 +787,56 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex flex-col gap-4">
                 {draftJobs.length > 0 && (
-                  <div className="flex justify-end">
-                    <button 
-                      onClick={runAllDrafts}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" /> Start All Now
-                    </button>
+                  <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 p-3 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={toggleSelectAllDrafts}
+                        className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
+                      >
+                        {selectedDraftIds.size === draftJobs.length ? (
+                          <CheckSquare className="w-4 h-4 text-blue-500" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
+                        Select All
+                      </button>
+                      
+                      {selectedDraftIds.size > 0 && (
+                        <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
+                          <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
+                            {selectedDraftIds.size} Selected
+                          </span>
+                          <button 
+                            onClick={() => setShowDeleteSelectedModal(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete Selected
+                          </button>
+                          <button 
+                            onClick={runSelectedDrafts}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
+                          >
+                            <Play className="w-3 h-3 fill-current" /> Start Selected
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setShowDeleteAllDraftsModal(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-neutral-500 hover:text-red-400 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
+                        title="Delete All Drafts"
+                      >
+                        <Trash2 className="w-3 h-3" /> Delete All
+                      </button>
+                      <button 
+                        onClick={runAllDrafts}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" /> Start All Now
+                      </button>
+                    </div>
                   </div>
                 )}
                 <div className="bg-neutral-900/30 border border-neutral-800 rounded-2xl overflow-hidden backdrop-blur-sm shadow-inner">
@@ -745,18 +845,32 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                       const isExpanded = expandedJobId === task.id;
                       return (
                         <div key={task.id} className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <div 
-                            onClick={() => toggleJobExpand(task.id)}
-                            className={`bg-neutral-950/50 p-4 rounded-xl border flex justify-between items-center transition-all cursor-pointer group/task ${isExpanded ? 'border-blue-500/50 bg-neutral-900/50 rounded-b-none' : 'border-neutral-800 hover:border-neutral-700'}`}
-                          >
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                               <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                                 <ChevronDown className="w-3.5 h-3.5 text-neutral-600" />
-                               </div>
-                               <span className={`text-xs font-medium truncate pr-6 ${isExpanded ? 'text-white' : 'text-neutral-400'}`} title={task.prompt}>
-                                 {task.prompt}
-                               </span>
-                            </div>
+                            <div className={`bg-neutral-950/50 p-4 rounded-xl border flex justify-between items-center transition-all cursor-pointer group/task ${isExpanded ? 'border-blue-500/50 bg-neutral-900/50 rounded-b-none' : 'border-neutral-800 hover:border-neutral-700'}`}>
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                 <button 
+                                   onClick={(e) => { e.stopPropagation(); toggleDraftSelection(task.id); }}
+                                   className="p-1 hover:bg-neutral-800 rounded transition-colors"
+                                 >
+                                   {selectedDraftIds.has(task.id) ? (
+                                     <CheckSquare className="w-4 h-4 text-blue-500" />
+                                   ) : (
+                                     <Square className="w-4 h-4 text-neutral-600" />
+                                   )}
+                                 </button>
+                                 <div 
+                                   className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                                   onClick={() => toggleJobExpand(task.id)}
+                                 >
+                                   <ChevronDown className="w-3.5 h-3.5 text-neutral-600" />
+                                 </div>
+                                 <span 
+                                   className={`text-xs font-medium truncate pr-6 ${isExpanded ? 'text-white' : 'text-neutral-400'}`} 
+                                   title={task.prompt}
+                                   onClick={() => toggleJobExpand(task.id)}
+                                 >
+                                   {task.prompt}
+                                 </span>
+                              </div>
                             <div className="flex items-center gap-2">
                               <span className="text-[9px] font-bold text-amber-500/70 uppercase tracking-widest px-2.5 py-1.5 bg-amber-500/5 rounded-lg border border-amber-500/20">Draft</span>
                               <div className="flex items-center gap-1">
@@ -999,6 +1113,26 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           }
           setEditingItem(null);
         }}
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteSelectedModal}
+        onClose={() => setShowDeleteSelectedModal(false)}
+        onConfirm={deleteSelectedDrafts}
+        title="Delete Selected Drafts"
+        message={`Are you sure you want to delete ${selectedDraftIds.size} selected drafts? This action cannot be undone.`}
+        confirmText="Delete Selected"
+        type="danger"
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteAllDraftsModal}
+        onClose={() => setShowDeleteAllDraftsModal(false)}
+        onConfirm={deleteAllDrafts}
+        title="Delete All Drafts"
+        message={`Are you sure you want to delete all ${draftJobs.length} draft tasks? This action cannot be undone.`}
+        confirmText="Delete All"
+        type="danger"
       />
 
       <ConfirmModal
