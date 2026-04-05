@@ -41,11 +41,11 @@ export function QueueTab({
       <div className="flex flex-col gap-8">
         {/* Queue Toolbar */}
         {queueJobs.length > 0 && (
-          <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 p-3 rounded-xl flex-wrap gap-2">
+          <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 px-4 py-3 rounded-xl flex-wrap gap-2">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleSelectAllQueue}
-                className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
+                className="flex items-center gap-2 p-1 rounded-lg hover:bg-neutral-800 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
               >
                 {selectedQueueIds.size === queueJobs.length ? (
                   <CheckSquare className="w-4 h-4 text-blue-500" />
@@ -90,8 +90,7 @@ export function QueueTab({
         )}
 
         {/* Active Jobs */}
-        <div className="bg-neutral-900/30 border border-neutral-800 rounded-2xl overflow-hidden backdrop-blur-sm shadow-inner">
-          <div className="p-4 space-y-3">
+        <div className="space-y-3">
             {queueJobs.map(task => {
               const isExpanded = expandedJobId === task.id;
               return (
@@ -101,10 +100,10 @@ export function QueueTab({
                     className={`bg-neutral-950/50 p-4 rounded-xl border flex justify-between items-center transition-all cursor-pointer group/task ${isExpanded ? 'border-blue-500/50 bg-neutral-900/50 rounded-b-none' : 'border-neutral-800 hover:border-neutral-700'} ${task.status === 'failed' ? 'border-red-900/30 bg-red-950/5' : ''}`}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                       <button
-                         onClick={(e) => { e.stopPropagation(); toggleQueueSelection(task.id); }}
-                         className="flex-shrink-0 text-neutral-500 hover:text-white transition-colors"
-                       >
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleQueueSelection(task.id); }}
+                          className="flex-shrink-0 p-1 rounded-lg hover:bg-neutral-800 text-neutral-500 hover:text-white transition-colors"
+                        >
                          {selectedQueueIds.has(task.id) ? (
                            <CheckSquare className="w-4 h-4 text-blue-500" />
                          ) : (
@@ -224,7 +223,6 @@ export function QueueTab({
                 <div className="text-[9px] opacity-40 mt-2">Active jobs will appear here</div>
               </div>
             )}
-          </div>
         </div>
       </div>
     </section>
