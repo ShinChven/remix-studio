@@ -209,6 +209,27 @@ export function AlbumTab({
                           {getModelName(item.providerId, item.modelConfigId)}
                         </span>
                       </div>
+                      
+                      <div className="flex items-center gap-1 px-1.5 py-1 bg-neutral-950/30 rounded-lg border border-neutral-800/30">
+                        {[
+                          { label: 'RAW', size: item.size },
+                          { label: 'OPT', size: item.optimizedSize },
+                          { label: 'THMB', size: item.thumbnailSize }
+                        ].map((s, i) => s.size ? (
+                          <React.Fragment key={s.label}>
+                            {i > 0 && <span className="text-[8px] text-neutral-800 font-bold mx-0.5">|</span>}
+                            <div className="flex items-center gap-1">
+                              <span className="text-[7px] font-black text-neutral-600 uppercase tracking-tighter">{s.label}</span>
+                              <span className="text-[8px] font-mono font-bold text-neutral-400">
+                                {s.size > 1024 * 1024 
+                                  ? `${(s.size / (1024 * 1024)).toFixed(1)}M` 
+                                  : `${(s.size / 1024).toFixed(0)}K`}
+                              </span>
+                            </div>
+                          </React.Fragment>
+                        ) : null)}
+                      </div>
+
                       <div className="flex gap-1.5 h-6">
                         {item.quality && (
                           <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 bg-neutral-950/30 rounded-md border border-neutral-800 uppercase tracking-widest">

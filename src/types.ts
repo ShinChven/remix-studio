@@ -91,6 +91,8 @@ export interface Job {
   thumbnailUrl?: string;
   optimizedUrl?: string;
   size?: number;
+  optimizedSize?: number;
+  thumbnailSize?: number;
   error?: string;
   createdAt?: number;
   providerId?: string;
@@ -115,6 +117,8 @@ export interface AlbumItem {
   quality?: string;
   format?: 'png' | 'jpeg' | 'webp';
   size?: number; // Size in bytes
+  optimizedSize?: number; // Size in bytes
+  thumbnailSize?: number; // Size in bytes
   createdAt: number;
 }
 

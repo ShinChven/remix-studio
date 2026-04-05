@@ -21,6 +21,9 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
   const jobs = await Promise.all(
     project.jobs.map(async (job) => {
       let size = job.size;
+      let optimizedSize = job.optimizedSize;
+      let thumbnailSize = job.thumbnailSize;
+
       if (!size && job.imageUrl) {
         try {
           const s3Size = await storage.getSize(job.imageUrl);
@@ -29,15 +32,35 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
           console.warn(`Failed to recover size for job ${job.id}:`, e);
         }
       }
+      if (!optimizedSize && job.optimizedUrl) {
+        try {
+          const s3Size = await storage.getSize(job.optimizedUrl);
+          if (s3Size) optimizedSize = s3Size;
+        } catch (e) {
+          console.warn(`Failed to recover optimizedSize for job ${job.id}:`, e);
+        }
+      }
+      if (!thumbnailSize && job.thumbnailUrl) {
+        try {
+          const s3Size = await storage.getSize(job.thumbnailUrl);
+          if (s3Size) thumbnailSize = s3Size;
+        } catch (e) {
+          console.warn(`Failed to recover thumbnailSize for job ${job.id}:`, e);
+        }
+      }
+
       const imageUrl = job.imageUrl ? await presignIfKey(job.imageUrl, storage) : job.imageUrl;
       const thumbnailUrl = job.thumbnailUrl ? await presignIfKey(job.thumbnailUrl, storage) : job.thumbnailUrl;
       const optimizedUrl = job.optimizedUrl ? await presignIfKey(job.optimizedUrl, storage) : job.optimizedUrl;
-      return { ...job, imageUrl, thumbnailUrl, optimizedUrl, size };
+      return { ...job, imageUrl, thumbnailUrl, optimizedUrl, size, optimizedSize, thumbnailSize };
     })
   );
   const album = await Promise.all(
     (project.album || []).map(async (item) => {
       let size = item.size;
+      let optimizedSize = item.optimizedSize;
+      let thumbnailSize = item.thumbnailSize;
+
       if (!size && item.imageUrl) {
         try {
           const s3Size = await storage.getSize(item.imageUrl);
@@ -46,10 +69,27 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
           console.warn(`Failed to recover size for album item ${item.id}:`, e);
         }
       }
+      if (!optimizedSize && item.optimizedUrl) {
+        try {
+          const s3Size = await storage.getSize(item.optimizedUrl);
+          if (s3Size) optimizedSize = s3Size;
+        } catch (e) {
+          console.warn(`Failed to recover optimizedSize for album item ${item.id}:`, e);
+        }
+      }
+      if (!thumbnailSize && item.thumbnailUrl) {
+        try {
+          const s3Size = await storage.getSize(item.thumbnailUrl);
+          if (s3Size) thumbnailSize = s3Size;
+        } catch (e) {
+          console.warn(`Failed to recover thumbnailSize for album item ${item.id}:`, e);
+        }
+      }
+
       const imageUrl = await presignIfKey(item.imageUrl, storage);
       const thumbnailUrl = item.thumbnailUrl ? await presignIfKey(item.thumbnailUrl, storage) : item.thumbnailUrl;
       const optimizedUrl = item.optimizedUrl ? await presignIfKey(item.optimizedUrl, storage) : item.optimizedUrl;
-      return { ...item, imageUrl, thumbnailUrl, optimizedUrl, size };
+      return { ...item, imageUrl, thumbnailUrl, optimizedUrl, size, optimizedSize, thumbnailSize };
     })
   );
   const workflow = await Promise.all(

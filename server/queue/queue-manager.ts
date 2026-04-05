@@ -326,6 +326,8 @@ export class QueueManager {
         quality: queued.quality || job.quality,
         format: targetFormat as any,
         size: finalBytes.length,
+        optimizedSize: optBuffer.length,
+        thumbnailSize: thumbBuffer.length,
         createdAt: Date.now(),
       };
       await this.projectRepo.addAlbumItem(userId, projectId, albumItem);
@@ -336,6 +338,9 @@ export class QueueManager {
         imageUrl: `${filename}.${ext}`,
         thumbnailUrl: thumbKey,
         optimizedUrl: optKey,
+        size: finalBytes.length,
+        optimizedSize: optBuffer.length,
+        thumbnailSize: thumbBuffer.length,
         error: undefined,
         taskId: undefined
       });
