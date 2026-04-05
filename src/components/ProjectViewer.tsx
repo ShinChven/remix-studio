@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Project, Job, Library, WorkflowItem, WorkflowItemType, Provider } from '../types';
+import { Project, Job, Library, LibraryItem, WorkflowItem, WorkflowItemType, Provider } from '../types';
 import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow } from '../api';
 import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X, Shuffle, List, Grid, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateWorkflowCombinations } from '../lib/remixEngine';
@@ -1162,6 +1162,34 @@ function LibrarySelectionModal({ isOpen, onClose, onSelect, libraries, selectedL
   );
 }
 
+function TextLibraryItem({ item }: { item: LibraryItem }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  return (
+    <div 
+      onClick={() => setIsExpanded(!isExpanded)}
+      className={`bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5 cursor-pointer transition-all hover:border-emerald-500/30 hover:bg-neutral-800/50 group/text-item ${isExpanded ? 'shadow-xl border-emerald-500/20 ring-1 ring-emerald-500/10' : 'shadow-sm'}`}
+    >
+      <div className="flex justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          {item.title && (
+            <div className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-2.5 flex items-center gap-2">
+              <span className="w-1 h-1 rounded-full bg-emerald-500" />
+              {item.title}
+            </div>
+          )}
+          <p className={`text-neutral-300 text-sm leading-relaxed transition-all whitespace-pre-wrap ${isExpanded ? '' : 'line-clamp-1'}`}>
+            {item.content}
+          </p>
+        </div>
+        <div className={`p-1.5 rounded-lg bg-neutral-950/50 border border-neutral-800/50 group-hover/text-item:bg-neutral-800 transition-all self-start ${isExpanded ? 'rotate-180 bg-emerald-500/10 border-emerald-500/20' : ''}`}>
+           <ChevronDown className={`w-4 h-4 transition-colors ${isExpanded ? 'text-emerald-500' : 'text-neutral-600 group-hover/text-item:text-neutral-400'}`} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LibraryPreviewModal({ library, onClose }: { library: Library | null; onClose: () => void }) {
   const [previewLightbox, setPreviewLightbox] = useState<{images: string[], index: number} | null>(null);
   
@@ -1191,27 +1219,31 @@ function LibraryPreviewModal({ library, onClose }: { library: Library | null; on
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar bg-neutral-950/10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={library.type === 'text' ? "max-w-4xl mx-auto space-y-3" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
             {library.items.map(item => (
-              <div key={item.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col shadow-sm">
-                {library.type === 'image' && (
-                  <div className="aspect-video bg-black relative border-b border-neutral-800">
-                    <img src={item.content} alt={item.content} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => {
-                      const imageItems = library.items.filter(i => i.content).map(i => i.content);
-                      const idx = imageItems.indexOf(item.content);
-                      setPreviewLightbox({ images: imageItems, index: idx >= 0 ? idx : 0 });
-                    }} />
-                  </div>
-                )}
-                <div className="p-4 flex-1">
-                  {item.title && (
-                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-2">{item.title}</div>
+              library.type === 'text' ? (
+                <TextLibraryItem key={item.id} item={item} />
+              ) : (
+                <div key={item.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col shadow-sm">
+                  {library.type === 'image' && (
+                    <div className="aspect-video bg-black relative border-b border-neutral-800">
+                      <img src={item.content} alt={item.content} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => {
+                        const imageItems = library.items.filter(i => i.content).map(i => i.content);
+                        const idx = imageItems.indexOf(item.content);
+                        setPreviewLightbox({ images: imageItems, index: idx >= 0 ? idx : 0 });
+                      }} />
+                    </div>
                   )}
-                  <p className={`text-neutral-400 leading-relaxed ${library.type === 'text' ? 'text-sm' : 'text-[11px] line-clamp-4'}`}>
-                    {library.type === 'text' ? item.content : <span className="opacity-60 italic whitespace-nowrap overflow-hidden text-ellipsis block">{item.content}</span>}
-                  </p>
+                  <div className="p-4 flex-1">
+                    {item.title && (
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-2">{item.title}</div>
+                    )}
+                    <p className="text-neutral-400 text-[11px] line-clamp-4 leading-relaxed">
+                      <span className="opacity-60 italic whitespace-nowrap overflow-hidden text-ellipsis block">{item.content}</span>
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )
             ))}
           </div>
         </div>
