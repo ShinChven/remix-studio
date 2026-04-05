@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrashItem } from '../types';
 import { fetchTrash, restoreTrashItem, restoreTrashBatch, deleteTrashPermanently, deleteTrashBatch, emptyTrash, imageDisplayUrl } from '../api';
-import { Trash2, RotateCcw, CheckSquare, Square, CheckCircle2, Layers, AlertTriangle, Loader2, Calendar, Folder, HardDrive } from 'lucide-react';
+import { Trash2, RotateCcw, CheckSquare, Square, CheckCircle2, Layers, AlertTriangle, Calendar, Folder, HardDrive } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { ImageLightbox } from './ProjectViewer/ImageLightbox';
 
@@ -107,14 +107,7 @@ export function TrashView() {
     return acc + (item?.size || 0);
   }, 0);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-neutral-500 gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        <p className="text-[10px] font-bold uppercase tracking-widest">Scanning Recycle Bin...</p>
-      </div>
-    );
-  }
+
 
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-700">
@@ -168,7 +161,7 @@ export function TrashView() {
         </div>
       </header>
 
-      {items.length === 0 ? (
+      {!loading && items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-[40px] text-center space-y-6 transition-colors hover:border-neutral-700">
           <div className="p-6 bg-neutral-900/50 rounded-full border border-neutral-800">
             <Trash2 className="w-12 h-12 text-neutral-800" />
