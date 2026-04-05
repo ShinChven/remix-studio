@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Project, Job, Library, LibraryItem, WorkflowItem, WorkflowItemType, Provider } from '../types';
+import { Project, Job, Library, LibraryItem, WorkflowItem, WorkflowItemType, Provider, ModelConfig } from '../types';
 import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow } from '../api';
 import { Play, Square, CheckSquare, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X, Shuffle, List, Grid, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -31,6 +31,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [previewingLibrary, setPreviewingLibrary] = useState<Library | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(project.providerId || '');
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [isFetchingProviders, setIsFetchingProviders] = useState(true);
   const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(true);
   const [queueCount, setQueueCount] = useState<number>(0);
@@ -41,6 +42,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
   const [lightboxData, setLightboxData] = useState<{images: string[], index: number} | null>(null);
+  const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   
   const projectRef = useRef(localProject);
   const isProcessing = localProject.jobs.some(j => j.status === 'pending' || j.status === 'processing');
@@ -80,9 +82,12 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       try {
         const p = await fetchProviders();
         setProviders(p);
-        if (!selectedProviderId && p.length > 0) {
+        if (p.length > 0) {
           const defaultProv = p.find(prov => prov.id === project.providerId) || p[0];
           setSelectedProviderId(defaultProv.id);
+          if (defaultProv.models.length > 0) {
+            setSelectedModelId(defaultProv.models[0].id);
+          }
         }
       } catch (e) {
         console.error('Failed to fetch providers:', e);
@@ -91,6 +96,30 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       }
     })();
   }, []);
+
+  const selectedProvider = providers.find(p => p.id === selectedProviderId);
+  const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
+
+  useEffect(() => {
+    if (selectedModel) {
+      let needsUpdate = false;
+      const updated = { ...localProject };
+      
+      if (!selectedModel.options.aspectRatios.includes(localProject.aspectRatio || '')) {
+          updated.aspectRatio = selectedModel.options.aspectRatios[0];
+          needsUpdate = true;
+      }
+      if (!selectedModel.options.qualities.includes(localProject.quality || '')) {
+          updated.quality = selectedModel.options.qualities[0];
+          needsUpdate = true;
+      }
+      
+      if (needsUpdate) {
+        setLocalProject(updated);
+        onUpdate(updated);
+      }
+    }
+  }, [selectedModelId, selectedModel]);
 
   const combinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
 
@@ -251,8 +280,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       imageContexts: combo.imageContexts,
       status: 'draft',
       providerId: selectedProviderId,
-      aspectRatio: localProject.aspectRatio || '1:1',
-      quality: localProject.quality || '1K',
+      modelConfigId: selectedModelId,
+      aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1:1'),
+      quality: localProject.quality || (selectedModel?.options.qualities[0] || '1K'),
     }));
 
     const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
@@ -377,6 +407,23 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
   return (
     <div className="flex flex-col lg:flex-row h-full bg-neutral-950 overflow-hidden lg:overflow-visible">
+      <ModelSelectorModal
+        isOpen={isModelSelectorOpen}
+        onClose={() => setIsModelSelectorOpen(false)}
+        providers={providers}
+        selectedProviderId={selectedProviderId}
+        selectedModelId={selectedModelId}
+        onSelect={(providerId, modelId) => {
+          setSelectedProviderId(providerId);
+          setSelectedModelId(modelId);
+          setIsModelSelectorOpen(false);
+          
+          // Trigger immediate update
+          const updated = { ...localProject, providerId: providerId };
+          setLocalProject(updated);
+          onUpdate(updated);
+        }}
+      />
       {/* Left Pane: Workflow Builder */}
       <div className="w-full lg:w-96 lg:h-full border-b lg:border-b-0 lg:border-r border-neutral-800 bg-neutral-900/30 flex flex-col flex-shrink-0">
         <div className="p-4 border-b border-neutral-800 flex flex-col gap-3">
@@ -598,31 +645,28 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             <div className="space-y-4 pt-2">
               <div className="space-y-1.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                  AI Provider
+                  AI Model
                 </label>
-                <select
-                  value={selectedProviderId}
-                  onChange={(e) => {
-                    setSelectedProviderId(e.target.value);
-                    const updated = { ...localProject, providerId: e.target.value };
-                    setLocalProject(updated);
-                    onUpdate(updated);
-                  }}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/40 transition-all font-medium appearance-none cursor-pointer hover:bg-neutral-900 shadow-inner"
-                  disabled={isProcessing || isFetchingProviders}
+                <button
+                  onClick={() => setIsModelSelectorOpen(true)}
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-2xl p-4 text-left hover:bg-neutral-900 transition-all group/model-btn relative overflow-hidden shadow-inner"
+                  disabled={isProcessing}
                 >
-                  {isFetchingProviders ? (
-                    <option>Loading providers...</option>
-                  ) : providers.length === 0 ? (
-                    <option>No providers configured</option>
-                  ) : (
-                    providers.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.type})
-                      </option>
-                    ))
-                  )}
-                </select>
+                  <div className="flex items-center justify-between relative z-10">
+                    <div className="min-w-0">
+                      <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-1">
+                        {providers.find(p => p.id === selectedProviderId)?.name || 'Select Provider'}
+                      </div>
+                      <div className="text-sm font-black text-white truncate tracking-tight">
+                        {selectedModel?.name || 'Select Model'}
+                      </div>
+                    </div>
+                    <div className="p-2 bg-neutral-800 rounded-xl group-hover/model-btn:bg-blue-600 group-hover/model-btn:text-white transition-all">
+                      <Layers className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-500/0 group-hover/model-btn:from-blue-500/5 group-hover/model-btn:to-transparent transition-all" />
+                </button>
               </div>
 
               <div className="space-y-2.5">
@@ -630,32 +674,33 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                   Aspect Ratio
                 </label>
                 <div className="grid grid-cols-4 gap-1.5">
-                  {[
-                    { label: '1:1', ratio: '1:1', icon: 'w-3 h-3' },
-                    { label: '4:3', ratio: '4:3', icon: 'w-4 h-3' },
-                    { label: '3:4', ratio: '3:4', icon: 'w-3 h-4' },
-                    { label: '16:9', ratio: '16:9', icon: 'w-5 h-3' },
-                    { label: '9:16', ratio: '9:16', icon: 'w-3 h-5' },
-                    { label: '2:3', ratio: '2:3', icon: 'w-3 h-4.5' },
-                    { label: '3:2', ratio: '3:2', icon: 'w-4.5 h-3' },
-                  ].map((r) => (
-                    <button
-                      key={r.ratio}
-                      onClick={() => {
-                        const updated = { ...localProject, aspectRatio: r.ratio };
-                        setLocalProject(updated);
-                        onUpdate(updated);
-                      }}
-                      className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
-                        (localProject.aspectRatio || '1:1') === r.ratio
-                          ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
-                          : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
-                      }`}
-                    >
-                      <div className={`border-2 rounded-[2px] ${r.icon} ${(localProject.aspectRatio || '1:1') === r.ratio ? 'border-white' : 'border-neutral-700'}`} />
-                      <span className="text-[8px] font-bold">{r.label}</span>
-                    </button>
-                  ))}
+                  {(selectedModel?.options.aspectRatios || ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2']).map((ratio) => {
+                    const iconClass = ratio === '1:1' ? 'w-3 h-3' :
+                                     ratio === '4:3' ? 'w-4 h-3' :
+                                     ratio === '3:4' ? 'w-3 h-4' :
+                                     ratio === '16:9' ? 'w-5 h-3' :
+                                     ratio === '9:16' ? 'w-3 h-5' :
+                                     ratio === '2:3' ? 'w-3 h-4.5' :
+                                     ratio === '3:2' ? 'w-4.5 h-3' : 'w-3 h-3';
+                    return (
+                      <button
+                        key={ratio}
+                        onClick={() => {
+                          const updated = { ...localProject, aspectRatio: ratio };
+                          setLocalProject(updated);
+                          onUpdate(updated);
+                        }}
+                        className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
+                          (localProject.aspectRatio || '1:1') === ratio
+                            ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
+                            : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
+                        }`}
+                      >
+                        <div className={`border-2 rounded-[2px] ${iconClass} ${(localProject.aspectRatio || '1:1') === ratio ? 'border-white' : 'border-neutral-700'}`} />
+                        <span className="text-[8px] font-bold">{ratio}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -664,7 +709,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                   Quality
                 </label>
                 <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
-                  {['1K', '2K', '4K'].map((q) => (
+                  {(selectedModel?.options.qualities || ['1K', '2K', '4K']).map((q) => (
                     <button
                       key={q}
                       onClick={() => {
@@ -1557,6 +1602,127 @@ export function ImageLightbox({ images, startIndex, onClose }: { images: string[
           {currentIndex + 1} / {images.length}
         </div>
       )}
+    </div>
+  );
+}
+
+interface ModelSelectorModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  providers: Provider[];
+  selectedProviderId: string;
+  selectedModelId: string;
+  onSelect: (providerId: string, modelId: string) => void;
+}
+
+function ModelSelectorModal({
+  isOpen,
+  onClose,
+  providers,
+  selectedProviderId,
+  selectedModelId,
+  onSelect
+}: ModelSelectorModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-neutral-900 border border-neutral-800/50 rounded-[40px] shadow-[0_50px_100px_rgba(0,0,0,0.9)] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-8 border-b border-neutral-800/50 flex items-center justify-between bg-neutral-950/20 backdrop-blur-md">
+          <div>
+            <h3 className="text-3xl font-black text-white tracking-tight leading-none mb-2">Select Model</h3>
+            <p className="text-neutral-500 text-sm font-medium">Choose an AI provider and a specific model for your workflow</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-3 bg-neutral-800/50 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-2xl transition-all active:scale-90 border border-neutral-700/30"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+          {providers.length === 0 ? (
+            <div className="text-center py-20 bg-neutral-950/30 rounded-[32px] border border-dashed border-neutral-800">
+              <AlertCircle className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
+              <p className="text-neutral-500 font-bold uppercase tracking-widest text-xs">No providers configured</p>
+              <p className="text-neutral-600 text-sm mt-2">Go to settings to add your first AI provider</p>
+            </div>
+          ) : (
+            providers.map((provider) => (
+              <div key={provider.id} className="space-y-4">
+                <div className="flex items-center gap-3 px-2">
+                  <div className="p-2 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                    <Layers className="w-4 h-4 text-blue-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-white uppercase tracking-wider">{provider.name}</h4>
+                    <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">{provider.type}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {provider.models?.map((model) => {
+                    const isSelected = provider.id === selectedProviderId && model.id === selectedModelId;
+                    return (
+                      <button
+                        key={model.id}
+                        onClick={() => onSelect(provider.id, model.id)}
+                        className={`group relative p-5 rounded-[24px] text-left transition-all border-2 active:scale-[0.98] overflow-hidden ${
+                          isSelected
+                            ? 'bg-blue-600 border-blue-500 shadow-[0_10px_30px_rgba(37,99,235,0.3)]'
+                            : 'bg-neutral-950/50 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900 shadow-inner'
+                        }`}
+                      >
+                        <div className="relative z-10 flex items-center justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className={`text-[10px] font-black uppercase tracking-widest mb-1 transition-colors ${isSelected ? 'text-blue-100' : 'text-neutral-500'}`}>
+                              {model.generatorId}
+                            </div>
+                            <div className={`text-base font-black truncate tracking-tight transition-colors ${isSelected ? 'text-white' : 'text-neutral-200'}`}>
+                              {model.name}
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <div className="p-1.5 bg-white/20 backdrop-blur-md rounded-lg">
+                              <CheckCircle2 className="w-4 h-4 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Hover/Selected decorators */}
+                        <div className={`absolute inset-0 bg-gradient-to-br from-white/0 to-white/0 transition-all duration-500 ${
+                          isSelected ? 'from-white/10 to-transparent opacity-100' : 'group-hover:from-white/5 opacity-0 group-hover:opacity-100'
+                        }`} />
+                      </button>
+                    );
+                  })}
+                  {(!provider.models || provider.models.length === 0) && (
+                    <div className="col-span-full py-4 text-center text-neutral-600 text-xs font-bold uppercase tracking-widest italic opacity-40">
+                      No models available for this provider
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 bg-neutral-950/40 border-t border-neutral-800/50 flex items-center justify-center">
+           <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+             Click a model card to select and continue
+           </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -23,6 +23,57 @@ export interface Library {
   items: LibraryItem[];
 }
 
+export interface ModelConfig {
+  id: string; // Local UUID
+  name: string; // Display name e.g. "nano banana 2"
+  generatorId: ProviderType; // Which generator type to use
+  modelId: string; // The actual API model string (e.g. 'gemini-3.1-flash-image')
+  apiUrl?: string; // Optional override
+  options: {
+    aspectRatios: string[];
+    qualities: string[];
+  };
+}
+
+export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
+  GoogleAI: [
+    {
+      id: 'google-nano-banana-2',
+      name: 'nano banana 2',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-3.1-flash-image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+  ],
+  VertexAI: [
+    {
+      id: 'vertex-nano-banana-2',
+      name: 'nano banana 2',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-3.1-flash-image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+  ],
+  RunningHub: [
+    {
+      id: 'runninghub-nano-banana-2',
+      name: 'nano banana 2',
+      generatorId: 'RunningHub',
+      modelId: 'rhart-image-n-g31-flash',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+  ],
+};
+
 export interface Job {
   id: string;
   prompt: string;
@@ -32,6 +83,7 @@ export interface Job {
   error?: string;
   createdAt?: number;
   providerId?: string;
+  modelConfigId?: string;
   aspectRatio?: string;
   quality?: string;
 }
@@ -58,6 +110,7 @@ export interface Provider {
   concurrency: number;
   hasKey: boolean; // raw apiKey is never sent to the client
   createdAt: number;
+  models: ModelConfig[];
 }
 
 export type UserRole = 'admin' | 'user';

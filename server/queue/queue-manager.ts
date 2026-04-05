@@ -14,6 +14,7 @@ interface QueuedJob {
   job: Job;
   aspectRatio?: string;
   quality?: string;
+  modelConfigId?: string;
 }
 
 /**
@@ -47,19 +48,20 @@ export class QueueManager {
         job, 
         job.providerId || project.providerId!, 
         job.aspectRatio || project.aspectRatio, 
-        job.quality || project.quality
+        job.quality || project.quality,
+        job.modelConfigId
       );
     }
   }
 
-  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string) {
+  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, modelConfigId?: string) {
     if (!this.queues.has(providerId)) this.queues.set(providerId, []);
     
     // Avoid double-queuing if it's already there
     const exists = this.queues.get(providerId)!.some(q => q.job.id === job.id);
     if (exists) return;
 
-    this.queues.get(providerId)!.push({ userId, projectId, job, aspectRatio, quality });
+    this.queues.get(providerId)!.push({ userId, projectId, job, aspectRatio, quality, modelConfigId });
     this.processNext(providerId);
   }
 
@@ -115,9 +117,13 @@ export class QueueManager {
         ? job.imageContexts.map(b64 => b64.replace(/^data:image\/\w+;base64,/, ''))
         : undefined;
 
+      const modelConfig = providerRecord.models?.find((m: any) => m.id === job.modelConfigId || m.id === queued.modelConfigId);
+
       // 3. Generate
       const result = await generator.generate({
         prompt: job.prompt,
+        modelId: modelConfig?.modelId,
+        apiUrl: modelConfig?.apiUrl,
         aspectRatio: queued.aspectRatio || '1:1', 
         imageSize: queued.quality || '1K',
         refImagesBase64: refImages

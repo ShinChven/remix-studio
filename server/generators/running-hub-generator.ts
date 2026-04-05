@@ -63,7 +63,9 @@ export class RunningHubGenerator extends ImageGenerator {
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
-    const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64 } = req;
+    const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
+
+    const actualSubmitUrl = reqApiUrl || (modelId ? `https://www.runninghub.ai/openapi/v2/${modelId}/image-to-image` : this.submitUrl);
 
     // --- Step 1: optional image upload ---
     const imageUrls: string[] = [];
@@ -87,7 +89,7 @@ export class RunningHubGenerator extends ImageGenerator {
 
     let taskId: string;
     try {
-      const res = await fetch(this.submitUrl, {
+      const res = await fetch(actualSubmitUrl, {
         method: 'POST',
         headers: { ...this.authHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

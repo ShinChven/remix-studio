@@ -6,7 +6,8 @@ import {
   UpdateCommand,
   GetCommand,
 } from '@aws-sdk/lib-dynamodb';
-import type { Provider, ProviderType } from '../../src/types';
+import type { Provider, ProviderType, ModelConfig } from '../../src/types';
+import { PROVIDER_MODELS_MAP } from '../../src/types';
 import { encrypt, decrypt } from '../utils/crypto';
 
 const TABLE_NAME = 'remix-studio';
@@ -23,6 +24,7 @@ interface ProviderRecord {
   apiUrl?: string;
   concurrency?: number;
   createdAt: number;
+  models?: any[];
 }
 
 function toPublic(record: ProviderRecord): Provider {
@@ -34,6 +36,7 @@ function toPublic(record: ProviderRecord): Provider {
     concurrency: record.concurrency ?? 1,
     hasKey: !!record.apiKeyEncrypted,
     createdAt: record.createdAt,
+    models: PROVIDER_MODELS_MAP[record.type] || [],
   };
 }
 

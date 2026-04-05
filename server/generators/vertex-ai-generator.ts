@@ -16,7 +16,10 @@ export class VertexAIGenerator extends ImageGenerator {
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
-    const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64 } = req;
+    const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
+
+    const actualModelId = modelId || DEFAULT_MODEL;
+    const actualApiUrl = reqApiUrl || `https://${DEFAULT_ENDPOINT}/v1/publishers/google/models/${actualModelId}:generateContent?key=${this.apiKey}`;
 
     const parts: object[] = [{ text: prompt }];
     if (refImagesBase64 && refImagesBase64.length > 0) {
@@ -45,7 +48,7 @@ export class VertexAIGenerator extends ImageGenerator {
     };
 
     try {
-      const res = await fetch(this.apiUrl, {
+      const res = await fetch(actualApiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

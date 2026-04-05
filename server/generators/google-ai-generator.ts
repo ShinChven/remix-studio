@@ -14,7 +14,10 @@ export class GoogleAIGenerator extends ImageGenerator {
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
-    const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64 } = req;
+    const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
+
+    const actualModelId = modelId || 'gemini-3.1-flash-image-preview';
+    const actualApiUrl = reqApiUrl || `https://generativelanguage.googleapis.com/v1beta/models/${actualModelId}:generateContent`;
 
     const parts: object[] = [{ text: prompt }];
     if (refImagesBase64 && refImagesBase64.length > 0) {
@@ -32,9 +35,9 @@ export class GoogleAIGenerator extends ImageGenerator {
     };
 
     try {
-      const res = await fetch(this.apiUrl, {
+      const res = await fetch(`${actualApiUrl}${actualApiUrl.includes('?') ? '&' : '?'}key=${this.apiKey}`, {
         method: 'POST',
-        headers: { 'x-goog-api-key': this.apiKey, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         // @ts-ignore — node-fetch timeout
         timeout: 180_000,
