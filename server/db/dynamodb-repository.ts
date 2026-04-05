@@ -1,5 +1,5 @@
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { AppData, Library, LibraryItem, Project, AlbumItem } from '../../src/types';
+import { AppData, Library, LibraryItem, Project, AlbumItem, TrashItem } from '../../src/types';
 import { IRepository } from './repository';
 import { LibraryRepository } from './library-repository';
 import { ProjectRepository } from './project-repository';
@@ -44,6 +44,13 @@ export class DynamoDBRepository implements IRepository {
   // === Album CRUD ===
   addAlbumItem(userId: string, projectId: string, item: AlbumItem) { return this.projects.addAlbumItem(userId, projectId, item); }
   deleteAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.deleteAlbumItem(userId, projectId, itemId); }
+  
+  // === Trash CRUD ===
+  getTrashItems(userId: string) { return this.projects.getTrashItems(userId); }
+  moveToTrash(userId: string, projectId: string, itemId: string) { return this.projects.moveToTrash(userId, projectId, itemId); }
+  restoreTrashItem(userId: string, itemId: string) { return this.projects.restoreTrashItem(userId, itemId); }
+  deleteTrashPermanently(userId: string, itemId: string) { return this.projects.deleteTrashPermanently(userId, itemId); }
+  emptyTrash(userId: string) { return this.projects.emptyTrash(userId); }
 
   // === Legacy / Migration ===
   getUserData(userId: string) { return this.data.getUserData(userId); }

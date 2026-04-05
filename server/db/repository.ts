@@ -1,4 +1,4 @@
-import { AppData, Library, LibraryItem, Project, AlbumItem } from '../../src/types';
+import { AppData, Library, LibraryItem, Project, AlbumItem, TrashItem } from '../../src/types';
 
 export interface IRepository {
   // === Library CRUD ===
@@ -24,7 +24,14 @@ export interface IRepository {
 
   // === Album CRUD ===
   addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void>;
-  deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<void>;
+  deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
+
+  // === Trash CRUD ===
+  getTrashItems(userId: string): Promise<TrashItem[]>;
+  moveToTrash(userId: string, projectId: string, itemId: string): Promise<void>;
+  restoreTrashItem(userId: string, itemId: string): Promise<void>;
+  deleteTrashPermanently(userId: string, itemId: string): Promise<string | null>; // Returns S3 key
+  emptyTrash(userId: string): Promise<string[]>; // Returns S3 keys
 
   // === Legacy (for migration/import) ===
   getUserData(userId: string): Promise<AppData>;

@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Project, Job, Library, LibraryItem, WorkflowItem, WorkflowItemType, Provider, ModelConfig } from '../types';
-import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl } from '../api';
+import { Project, Job, Library, LibraryItem, WorkflowItem, WorkflowItemType, Provider, ModelConfig, AlbumItem, TrashItem } from '../types';
+import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl, moveToTrash, moveToTrashBatch } from '../api';
 import { Play, Square, CheckSquare, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X, Shuffle, List, Grid, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
@@ -51,6 +51,10 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'workflow' | 'jobs'>('workflow');
   const [selectedQueueIds, setSelectedQueueIds] = useState<Set<string>>(new Set());
+  const [selectedAlbumIds, setSelectedAlbumIds] = useState<Set<string>>(new Set());
+  const [lastSelectedAlbumId, setLastSelectedAlbumId] = useState<string | null>(null);
+  const [showDeleteAlbumModal, setShowDeleteAlbumModal] = useState(false);
+  const [albumItemsToDelete, setAlbumItemsToDelete] = useState<AlbumItem[] | null>(null);
   
   const projectRef = useRef(localProject);
   const isProcessing = localProject.jobs.some(j => j.status === 'pending' || j.status === 'processing');
@@ -461,6 +465,73 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     setLocalProject({ ...localProject, jobs: updatedJobs });
     setSelectedQueueIds(new Set());
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+  };
+
+  const toggleAlbumSelection = (id: string, isShiftPressed: boolean) => {
+    setSelectedAlbumIds(prev => {
+      const next = new Set(prev);
+      const album = localProject.album || [];
+      
+      if (isShiftPressed && lastSelectedAlbumId && next.has(lastSelectedAlbumId)) {
+        const lastIndex = album.findIndex(item => item.id === lastSelectedAlbumId);
+        const currentIndex = album.findIndex(item => item.id === id);
+        
+        if (lastIndex !== -1 && currentIndex !== -1) {
+          const start = Math.min(lastIndex, currentIndex);
+          const end = Math.max(lastIndex, currentIndex);
+          
+          for (let i = start; i <= end; i++) {
+            next.add(album[i].id);
+          }
+        }
+      } else {
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+      }
+      
+      return next;
+    });
+    setLastSelectedAlbumId(id);
+  };
+
+  const toggleSelectAllAlbum = () => {
+    const albumIds = (localProject.album || []).map(item => item.id);
+    if (selectedAlbumIds.size === albumIds.length) {
+      setSelectedAlbumIds(new Set());
+    } else {
+      setSelectedAlbumIds(new Set(albumIds));
+    }
+  };
+
+  const deleteAlbumItems = async (items: AlbumItem[]) => {
+    try {
+      const itemIds = items.map(i => i.id);
+      if (itemIds.length === 1) {
+        await moveToTrash(localProject.id, itemIds[0]);
+      } else {
+        await moveToTrashBatch(localProject.id, itemIds);
+      }
+
+      const itemIdsSet = new Set(itemIds);
+      const updatedAlbum = (localProject.album || []).filter(item => !itemIdsSet.has(item.id));
+      setLocalProject({ ...localProject, album: updatedAlbum });
+      
+      setSelectedAlbumIds(prev => {
+        const next = new Set(prev);
+        itemIdsSet.forEach(id => next.delete(id));
+        return next;
+      });
+    } catch (e) {
+      console.error('Failed to move items to trash:', e);
+      alert('Failed to move items to trash');
+    }
+  };
+
+  const deleteSelectedAlbumItems = async () => {
+    const itemsToDelete = (localProject.album || []).filter(item => selectedAlbumIds.has(item.id));
+    if (itemsToDelete.length > 0) {
+      await deleteAlbumItems(itemsToDelete);
+    }
   };
 
   const draftJobs = localProject.jobs.filter(j => j.status === 'draft');
@@ -1293,58 +1364,149 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           {/* Album Section */}
           {activeTab === 'album' && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {albumItems.length === 0 ? (
-                <div className="bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-3xl p-12 md:p-24 text-center text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner">
-                  <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />
-                  <div>
-                    <p className="text-sm font-bold text-neutral-400 tracking-wider uppercase">Gallery is empty</p>
-                    <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">Start a generation to build your album</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                  {albumItems.map(item => (
-                    <div key={item.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group hover:border-blue-500/50 transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 active:scale-100">
-                      <div className="aspect-square bg-neutral-950 relative flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => {
-                            const validItems = albumItems.filter(a => a.imageUrl);
-                            const imgUrls = validItems.map(a => imageDisplayUrl(a.imageUrl));
-                            const idx = validItems.findIndex(a => a.id === item.id);
-                            setLightboxData({ images: imgUrls, index: idx >= 0 ? idx : 0 });
-                          }}>
-                        <img src={imageDisplayUrl(item.imageUrl)} alt={item.prompt} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 shadow-lg" referrerPolicy="no-referrer" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4 pointer-events-none">
-                          <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-                        </div>
+              <div className="flex flex-col gap-6">
+                {albumItems.length > 0 && (
+                  <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 p-3 rounded-xl">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest transition-colors mr-2">
+                        <Layers className="w-4 h-4 text-blue-500" />
+                        {albumItems.length} Items
+                        <span className="mx-1 text-neutral-800">·</span>
+                        <span className="text-blue-500/80">
+                          {( (albumItems || []).reduce((acc, item) => acc + (item.size || 0), 0) / (1024 * 1024) ).toFixed(2)} MB
+                        </span>
                       </div>
-                      <div className="p-4 bg-neutral-900/80 backdrop-blur-sm">
-                        <p className="text-[10px] leading-relaxed text-neutral-400 line-clamp-3 font-medium mb-3" title={item.prompt}>
-                          {item.prompt}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <div className="flex items-center gap-1 mr-1">
-                            <span className="text-[7px] font-black text-neutral-500 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
-                                {getProviderName(item.providerId)}
-                            </span>
-                            <span className="text-[7px] font-black text-blue-500/60 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
-                                {getModelName(item.providerId, item.modelConfigId)}
-                            </span>
-                          </div>
-                          {item.aspectRatio && (
-                            <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                              {item.aspectRatio}
-                            </span>
-                          )}
-                          {item.quality && (
-                            <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                              {item.quality}
-                            </span>
-                          )}
+                      
+                      <div className="h-4 w-px bg-neutral-800 mx-1" />
+
+                      <button 
+                        onClick={toggleSelectAllAlbum}
+                        className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
+                      >
+                        {selectedAlbumIds.size === albumItems.length ? (
+                          <CheckSquare className="w-4 h-4 text-blue-500" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
+                        Select All
+                      </button>
+                      
+                      {selectedAlbumIds.size > 0 && (
+                        <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
+                          <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
+                            {selectedAlbumIds.size} Selected
+                          </span>
+                          <button 
+                            onClick={() => {
+                              const itemsToDelete = albumItems.filter(item => selectedAlbumIds.has(item.id));
+                              setAlbumItemsToDelete(itemsToDelete);
+                              setShowDeleteAlbumModal(true);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete Selected
+                          </button>
+                          <button 
+                            onClick={() => setSelectedAlbumIds(new Set())}
+                            className="text-[10px] font-bold text-neutral-500 hover:text-white uppercase tracking-widest transition-colors px-3 py-1.5"
+                          >
+                            Clear
+                          </button>
                         </div>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                )}
+
+                {albumItems.length === 0 ? (
+                  <div className="bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-3xl p-12 md:p-24 text-center text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner">
+                    <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />
+                    <div>
+                      <p className="text-sm font-bold text-neutral-400 tracking-wider uppercase">Gallery is empty</p>
+                      <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">Start a generation to build your album</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                    {albumItems.map(item => {
+                      const isSelected = selectedAlbumIds.has(item.id);
+                      return (
+                        <div key={item.id} className={`bg-neutral-900/50 border rounded-2xl overflow-hidden flex flex-col group transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 active:scale-100 ${isSelected ? 'border-blue-500 ring-1 ring-blue-500/50 bg-blue-500/5 shadow-lg shadow-blue-500/5' : 'border-neutral-800 hover:border-blue-500/30'}`}>
+                          <div className="aspect-square bg-neutral-950 relative flex items-center justify-center overflow-hidden">
+                            {/* Selection Overlay */}
+                            <div className={`absolute top-3 left-3 z-10 transition-all ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
+                                className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20 hover:border-white/40'}`}
+                              >
+                                {isSelected && <CheckSquare className="w-4 h-4 text-white" />}
+                                {!isSelected && <Square className="w-4 h-4 text-white/40" />}
+                              </button>
+                            </div>
+
+                            {/* Individual Delete Button */}
+                            <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-all">
+                              <button 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  setAlbumItemsToDelete([item]);
+                                  setShowDeleteAlbumModal(true);
+                                }}
+                                className="w-6 h-6 rounded-lg bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-lg"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            <img 
+                              src={imageDisplayUrl(item.imageUrl)} 
+                              alt={item.prompt} 
+                              className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 shadow-lg cursor-pointer ${isSelected ? 'opacity-40' : ''}`} 
+                              referrerPolicy="no-referrer"
+                              onClick={() => {
+                                const validItems = albumItems.filter(a => a.imageUrl);
+                                const imgUrls = validItems.map(a => imageDisplayUrl(a.imageUrl));
+                                const idx = validItems.findIndex(a => a.id === item.id);
+                                setLightboxData({ images: imgUrls, index: idx >= 0 ? idx : 0 });
+                              }}
+                            />
+                            {isSelected && (
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <CheckCircle2 className="w-12 h-12 text-blue-500 animate-in zoom-in duration-300" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-4 bg-neutral-900/80 backdrop-blur-sm relative">
+                            <p className="text-[10px] leading-relaxed text-neutral-400 line-clamp-3 font-medium mb-3" title={item.prompt}>
+                              {item.prompt}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <div className="flex items-center gap-1 mr-1">
+                                <span className="text-[7px] font-black text-neutral-500 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
+                                    {getProviderName(item.providerId)}
+                                </span>
+                                <span className="text-[7px] font-black text-blue-500/60 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
+                                    {getModelName(item.providerId, item.modelConfigId)}
+                                </span>
+                              </div>
+                              {item.aspectRatio && (
+                                <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                                  {item.aspectRatio}
+                                </span>
+                              )}
+                              {item.quality && (
+                                <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                                  {item.quality}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </section>
           )}
 
@@ -1439,6 +1601,25 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           onClose={() => setLightboxData(null)}
         />
       )}
+
+      <ConfirmModal
+        isOpen={showDeleteAlbumModal}
+        onClose={() => {
+          setShowDeleteAlbumModal(false);
+          setAlbumItemsToDelete(null);
+        }}
+        onConfirm={async () => {
+          if (albumItemsToDelete) {
+            await deleteAlbumItems(albumItemsToDelete);
+            setShowDeleteAlbumModal(false);
+            setAlbumItemsToDelete(null);
+          }
+        }}
+        title="Move to Recycle Bin"
+        message={`Are you sure you want to move ${albumItemsToDelete?.length || 0} items to the Recycle Bin? You can restore them later.`}
+        confirmText="Move to Trash"
+        type="danger"
+      />
     </div>
   );
 }

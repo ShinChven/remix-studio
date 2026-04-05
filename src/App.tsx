@@ -21,6 +21,7 @@ import { PromptEditor } from './pages/PromptEditor.tsx';
 import { LibraryCleanup } from './pages/LibraryCleanup.tsx';
 import { Providers } from './pages/Providers.tsx';
 import { ProviderForm } from './pages/ProviderForm.tsx';
+import { TrashView } from './components/TrashView';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -56,6 +57,7 @@ export default function App() {
               <Route path="providers" element={<Providers />} />
               <Route path="provider/new" element={<ProviderForm />} />
               <Route path="provider/:id/edit" element={<ProviderForm />} />
+              <Route path="trash" element={<TrashView />} />
             </Route>
           </Routes>
         </BrowserRouter>

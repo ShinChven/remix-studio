@@ -1,4 +1,4 @@
-import { AppData, Library, LibraryItem, Project, Provider, ProviderType, User, UserRole } from './types';
+import { AppData, Library, LibraryItem, Project, Provider, ProviderType, User, UserRole, TrashItem } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const token = localStorage.getItem('token');
@@ -272,5 +272,72 @@ export async function runProjectWorkflow(projectId: string): Promise<void> {
     headers: getHeaders(),
   });
   if (!res.ok) throw new Error('Failed to run project workflow');
+}
+
+// ========== Trash CRUD ==========
+
+export async function fetchTrash(): Promise<TrashItem[]> {
+  const res = await fetch('/api/trash', { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to fetch trash');
+  return res.json();
+}
+
+export async function moveToTrash(projectId: string, itemId: string): Promise<void> {
+  const res = await fetch(`/api/projects/${projectId}/album/${itemId}/trash`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to move item to trash');
+}
+
+export async function moveToTrashBatch(projectId: string, ids: string[]): Promise<void> {
+  const res = await fetch(`/api/projects/${projectId}/album/trash-batch`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error('Failed to move items to trash');
+}
+
+export async function restoreTrashItem(id: string): Promise<void> {
+  const res = await fetch(`/api/trash/${id}/restore`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to restore item');
+}
+
+export async function restoreTrashBatch(ids: string[]): Promise<void> {
+  const res = await fetch('/api/trash/restore-batch', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error('Failed to restore items');
+}
+
+export async function deleteTrashPermanently(id: string): Promise<void> {
+  const res = await fetch(`/api/trash/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to delete item permanently');
+}
+
+export async function deleteTrashBatch(ids: string[]): Promise<void> {
+  const res = await fetch('/api/trash/batch', {
+    method: 'DELETE',
+    headers: getHeaders(),
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error('Failed to delete items permanently');
+}
+
+export async function emptyTrash(): Promise<void> {
+  const res = await fetch('/api/trash/empty', {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to empty trash');
 }
 

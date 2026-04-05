@@ -6,7 +6,7 @@ import {
   UpdateCommand,
   TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { Project, Job, WorkflowItem, AlbumItem } from '../../src/types';
+import { Project, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/types';
 
 const TABLE_NAME = 'remix-studio';
 
@@ -260,12 +260,146 @@ export class ProjectRepository {
     }));
   }
 
-  async deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<void> {
+  async deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null> {
     const pk = `USER_DATA#${userId}`;
+    const sk = `PROJECT#${projectId}#ALBUM#${itemId}`;
+    
+    // Get item first to return it
+    const result = await this.client.send(new QueryCommand({
+      TableName: TABLE_NAME,
+      KeyConditionExpression: 'pk = :pk AND sk = :sk',
+      ExpressionAttributeValues: { ':pk': pk, ':sk': sk }
+    }));
+    
+    const item = result.Items?.[0];
+    if (!item) return null;
+
     await this.client.send(new DeleteCommand({
       TableName: TABLE_NAME,
-      Key: { pk, sk: `PROJECT#${projectId}#ALBUM#${itemId}` }
+      Key: { pk, sk }
     }));
+
+    return {
+      id: item.sk.split('#ALBUM#')[1],
+      jobId: item.jobId,
+      prompt: item.prompt,
+      imageUrl: item.imageUrl,
+      providerId: item.providerId,
+      modelConfigId: item.modelConfigId,
+      aspectRatio: item.aspectRatio,
+      quality: item.quality,
+      size: item.size,
+      createdAt: item.createdAt,
+    };
+  }
+
+  async moveToTrash(userId: string, projectId: string, itemId: string): Promise<void> {
+    const pk = `USER_DATA#${userId}`;
+    const project = await this.getProject(userId, projectId);
+    if (!project) throw new Error('Project not found');
+    
+    const item = await this.deleteAlbumItem(userId, projectId, itemId);
+    if (!item) throw new Error('Album item not found');
+
+    const trashItem: TrashItem = {
+      ...item,
+      projectId,
+      projectName: project.name,
+      deletedAt: Date.now()
+    };
+
+    await this.client.send(new PutCommand({
+      TableName: TABLE_NAME,
+      Item: {
+        pk,
+        sk: `TRASH#${item.id}`,
+        ...trashItem
+      }
+    }));
+  }
+
+  async getTrashItems(userId: string): Promise<TrashItem[]> {
+    const pk = `USER_DATA#${userId}`;
+    const result = await this.client.send(new QueryCommand({
+      TableName: TABLE_NAME,
+      KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+      ExpressionAttributeValues: { ':pk': pk, ':prefix': 'TRASH#' }
+    }));
+
+    return (result.Items || []).map(item => ({
+      id: item.sk.replace('TRASH#', ''),
+      jobId: item.jobId,
+      prompt: item.prompt,
+      imageUrl: item.imageUrl,
+      providerId: item.providerId,
+      modelConfigId: item.modelConfigId,
+      aspectRatio: item.aspectRatio,
+      quality: item.quality,
+      size: item.size,
+      createdAt: item.createdAt,
+      projectId: item.projectId,
+      projectName: item.projectName,
+      deletedAt: item.deletedAt
+    }));
+  }
+
+  async restoreTrashItem(userId: string, itemId: string): Promise<void> {
+    const pk = `USER_DATA#${userId}`;
+    const sk = `TRASH#${itemId}`;
+    
+    const result = await this.client.send(new QueryCommand({
+      TableName: TABLE_NAME,
+      KeyConditionExpression: 'pk = :pk AND sk = :sk',
+      ExpressionAttributeValues: { ':pk': pk, ':sk': sk }
+    }));
+    
+    const trashItem = result.Items?.[0] as TrashItem | undefined;
+    if (!trashItem) throw new Error('Trash item not found');
+
+    // Restore to project album
+    const { projectId, projectName, deletedAt, ...albumItem } = trashItem;
+    await this.addAlbumItem(userId, projectId, albumItem);
+
+    // Remove from trash
+    await this.client.send(new DeleteCommand({
+      TableName: TABLE_NAME,
+      Key: { pk, sk }
+    }));
+  }
+
+  async deleteTrashPermanently(userId: string, itemId: string): Promise<string | null> {
+    const pk = `USER_DATA#${userId}`;
+    const sk = `TRASH#${itemId}`;
+    
+    const result = await this.client.send(new QueryCommand({
+      TableName: TABLE_NAME,
+      KeyConditionExpression: 'pk = :pk AND sk = :sk',
+      ExpressionAttributeValues: { ':pk': pk, ':sk': sk }
+    }));
+    
+    const item = result.Items?.[0];
+    if (!item) return null;
+
+    const s3Key = item.imageUrl;
+
+    await this.client.send(new DeleteCommand({
+      TableName: TABLE_NAME,
+      Key: { pk, sk }
+    }));
+
+    return s3Key;
+  }
+
+  async emptyTrash(userId: string): Promise<string[]> {
+    const items = await this.getTrashItems(userId);
+    const keys: string[] = [];
+    
+    for (const item of items) {
+      const key = await this.deleteTrashPermanently(userId, item.id);
+      if (key) keys.push(key);
+    }
+    
+    return keys;
   }
 
   async deleteProject(userId: string, projectId: string): Promise<void> {

@@ -97,7 +97,14 @@ export interface AlbumItem {
   modelConfigId?: string;
   aspectRatio?: string;
   quality?: string;
+  size?: number; // Size in bytes
   createdAt: number;
+}
+
+export interface TrashItem extends AlbumItem {
+  projectId: string;
+  projectName: string;
+  deletedAt: number;
 }
 
 export interface Project {

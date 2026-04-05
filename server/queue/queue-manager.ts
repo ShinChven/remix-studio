@@ -163,6 +163,7 @@ export class QueueManager {
         modelConfigId: queued.modelConfigId || job.modelConfigId,
         aspectRatio: queued.aspectRatio || job.aspectRatio,
         quality: queued.quality || job.quality,
+        size: result.imageBytes.length,
         createdAt: Date.now(),
       };
       await this.projectRepo.addAlbumItem(userId, projectId, albumItem);
