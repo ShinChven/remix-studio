@@ -164,6 +164,18 @@ export interface User {
   createdAt: number;
 }
 
+export interface ExportTask {
+  id: string;
+  projectId: string;
+  projectName: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  current: number;
+  total: number;
+  downloadUrl?: string;
+  error?: string;
+  createdAt: number;
+}
+
 export interface AppData {
   libraries: Library[];
   projects: Project[];

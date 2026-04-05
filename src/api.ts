@@ -1,4 +1,4 @@
-import { AppData, Library, LibraryItem, Project, Provider, ProviderType, User, UserRole, TrashItem } from './types';
+import { AppData, Library, LibraryItem, Project, Provider, ProviderType, User, UserRole, TrashItem, ExportTask } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const token = localStorage.getItem('token');
@@ -408,18 +408,33 @@ export async function startAlbumExport(projectId: string, itemIds?: string[]): P
   return res.json();
 }
 
-export interface ExportStatus {
-  id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  current: number;
-  total: number;
-  downloadUrl?: string;
-  error?: string;
-}
-
-export async function fetchExportStatus(projectId: string, taskId: string): Promise<ExportStatus> {
+export async function fetchExportStatus(projectId: string, taskId: string): Promise<ExportTask> {
   const res = await fetch(`/api/projects/${projectId}/export/${taskId}`, { headers: getHeaders(false) });
   if (!res.ok) throw new Error('Failed to get export status');
   return res.json();
+}
+
+export async function fetchProjectExports(projectId: string): Promise<ExportTask[]> {
+  const res = await fetch(`/api/projects/${projectId}/exports`, { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to list exports');
+  return res.json();
+}
+
+export async function fetchAllExports(limit?: number, cursor?: string): Promise<{ items: ExportTask[]; nextCursor?: string }> {
+  const url = new URL('/api/exports', window.location.origin);
+  if (limit) url.searchParams.set('limit', limit.toString());
+  if (cursor) url.searchParams.set('cursor', cursor);
+
+  const res = await fetch(url.toString(), { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to list all exports');
+  return res.json();
+}
+
+export async function deleteProjectExport(projectId: string, taskId: string): Promise<void> {
+  const res = await fetch(`/api/projects/${projectId}/exports/${taskId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to delete export');
 }
 

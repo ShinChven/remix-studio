@@ -2,39 +2,62 @@ import archiver from 'archiver';
 import { S3Storage } from '../storage/s3-storage';
 import { AlbumItem } from '../../src/types';
 import crypto from 'crypto';
+import { IRepository } from '../db/repository';
 
 export interface ExportTask {
   id: string;
+  projectId: string;
+  projectName: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   current: number;
   total: number;
   downloadUrl?: string;
   error?: string;
+  createdAt: number;
 }
 
 export class ExportManager {
-  private tasks: Map<string, ExportTask> = new Map();
-
   constructor(
+    private repository: IRepository,
     private imageStorage: S3Storage,
     private exportStorage: S3Storage
   ) {}
 
   async startExport(userId: string, projectId: string, projectName: string, items: AlbumItem[]): Promise<string> {
     const taskId = crypto.randomUUID();
-    this.tasks.set(taskId, { id: taskId, status: 'pending', current: 0, total: items.length });
+    const task: ExportTask = { 
+      id: taskId, 
+      projectId,
+      projectName,
+      status: 'pending', 
+      current: 0, 
+      total: items.length,
+      createdAt: Date.now()
+    };
+    
+    await this.repository.saveExportTask(userId, projectId, task);
 
-    this.runExportTask(taskId, projectName, items).catch(e => {
+    this.runExportTask(userId, projectId, taskId, projectName, items).catch(e => {
       console.error(`[ExportManager] Task ${taskId} fatal:`, e);
-      const task = this.tasks.get(taskId);
-      if (task) this.tasks.set(taskId, { ...task, status: 'failed', error: e.message });
+      this.updateTaskStatus(userId, projectId, taskId, { status: 'failed', error: e.message });
     });
 
     return taskId;
   }
 
-  private async runExportTask(taskId: string, projectName: string, items: AlbumItem[]) {
-    this.tasks.set(taskId, { id: taskId, status: 'processing', current: 0, total: items.length });
+  private async updateTaskStatus(userId: string, projectId: string, taskId: string, updates: Partial<ExportTask>) {
+    try {
+      const task = await this.getTask(userId, projectId, taskId);
+      if (task) {
+        await this.repository.saveExportTask(userId, projectId, { ...task, ...updates });
+      }
+    } catch (e) {
+      console.error(`[ExportManager] Failed to update task ${taskId}:`, e);
+    }
+  }
+
+  private async runExportTask(userId: string, projectId: string, taskId: string, projectName: string, items: AlbumItem[]) {
+    await this.updateTaskStatus(userId, projectId, taskId, { status: 'processing', current: 0 });
 
     const safeProjectName = projectName.replace(/[^a-zA-Z0-9-_]/g, '_');
     const zipKey = `${safeProjectName}_Album_${taskId.slice(0, 8)}.zip`;
@@ -63,8 +86,8 @@ export class ExportManager {
           console.error(`[ExportManager] ${taskId}: Skipping ${item.imageUrl}: ${err.message}`);
         }
 
-        // Update progress after each file regardless of success/failure
-        this.tasks.set(taskId, { id: taskId, status: 'processing', current: i + 1, total: items.length });
+        // Update progress after each file
+        await this.updateTaskStatus(userId, projectId, taskId, { status: 'processing', current: i + 1 });
       }
 
       if (entries.length === 0) throw new Error('No files could be downloaded');
@@ -95,15 +118,16 @@ export class ExportManager {
       console.log(`[ExportManager] ${taskId}: Uploaded to export bucket.`);
 
       const downloadUrl = await this.exportStorage.getPresignedUrl(zipKey);
-      this.tasks.set(taskId, { id: taskId, status: 'completed', current: items.length, total: items.length, downloadUrl });
+      await this.updateTaskStatus(userId, projectId, taskId, { status: 'completed', current: items.length, downloadUrl });
 
     } catch (err: any) {
       console.error(`[ExportManager] ${taskId} error:`, err);
-      this.tasks.set(taskId, { id: taskId, status: 'failed', current: 0, total: items.length, error: err.message });
+      await this.updateTaskStatus(userId, projectId, taskId, { status: 'failed', current: 0, error: err.message });
     }
   }
 
-  getTask(taskId: string): ExportTask | undefined {
-    return this.tasks.get(taskId);
+  async getTask(userId: string, projectId: string, taskId: string): Promise<ExportTask | undefined> {
+    const tasks = await this.repository.getExportTasks(userId, projectId);
+    return tasks.find(t => t.id === taskId);
   }
 }

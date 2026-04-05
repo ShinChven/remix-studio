@@ -388,13 +388,67 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
 
   router.get('/api/projects/:id/export/:taskId', authMiddleware, async (c) => {
     try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
       const taskId = c.req.param('taskId');
-      const task = exportManager.getTask(taskId);
+      const task = await exportManager.getTask(user.userId, projectId, taskId);
       if (!task) return c.json({ error: 'Task not found' }, 404);
       return c.json(task);
     } catch (e) {
       console.error('[GET /api/projects/:id/export/:taskId]', e);
       return c.json({ error: 'Failed to get export status' }, 500);
+    }
+  });
+  
+  router.get('/api/exports', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const limit = parseInt(c.req.query('limit') || '20');
+      const cursorStr = c.req.query('cursor');
+      let exclusiveStartKey: any;
+      if (cursorStr) {
+        exclusiveStartKey = JSON.parse(Buffer.from(cursorStr, 'base64').toString());
+      }
+      
+      const result = await repository.getAllExportTasks(user.userId, limit, exclusiveStartKey);
+      
+      let nextCursor: string | undefined;
+      if (result.nextCursor) {
+        nextCursor = Buffer.from(JSON.stringify(result.nextCursor)).toString('base64');
+      }
+
+      return c.json({
+        items: result.items,
+        nextCursor
+      });
+    } catch (e) {
+      console.error('[GET /api/exports]', e);
+      return c.json({ error: 'Failed to list all exports' }, 500);
+    }
+  });
+
+  router.get('/api/projects/:id/exports', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const exports = await repository.getExportTasks(user.userId, projectId);
+      return c.json(exports);
+    } catch (e) {
+      console.error('[GET /api/projects/:id/exports]', e);
+      return c.json({ error: 'Failed to list exports' }, 500);
+    }
+  });
+
+  router.delete('/api/projects/:id/exports/:taskId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const taskId = c.req.param('taskId');
+      await repository.deleteExportTask(user.userId, projectId, taskId);
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/projects/:id/exports/:taskId]', e);
+      return c.json({ error: 'Failed to delete export task' }, 500);
     }
   });
 

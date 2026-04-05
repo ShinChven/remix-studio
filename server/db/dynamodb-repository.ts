@@ -53,6 +53,12 @@ export class DynamoDBRepository implements IRepository {
   deleteTrashPermanently(userId: string, itemId: string) { return this.projects.deleteTrashPermanently(userId, itemId); }
   emptyTrash(userId: string) { return this.projects.emptyTrash(userId); }
 
+  // === Export CRUD ===
+  getExportTasks(userId: string, projectId: string) { return this.projects.getExportTasks(userId, projectId); }
+  getAllExportTasks(userId: string, limit?: number, exclusiveStartKey?: any) { return this.projects.getAllExportTasks(userId, limit, exclusiveStartKey); }
+  saveExportTask(userId: string, projectId: string, task: any) { return this.projects.saveExportTask(userId, projectId, task); }
+  deleteExportTask(userId: string, projectId: string, taskId: string) { return this.projects.deleteExportTask(userId, projectId, taskId); }
+
   // === Legacy / Migration ===
   getUserData(userId: string) { return this.data.getUserData(userId); }
   saveAllData(data: AppData) { return this.data.saveAllData(data); }

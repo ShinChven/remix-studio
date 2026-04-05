@@ -27,6 +27,12 @@ export interface IRepository {
   addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void>;
   deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
 
+  // === Export CRUD ===
+  getExportTasks(userId: string, projectId: string): Promise<any[]>;
+  getAllExportTasks(userId: string, limit?: number, exclusiveStartKey?: any): Promise<{ items: any[]; nextCursor?: any }>;
+  saveExportTask(userId: string, projectId: string, task: any): Promise<void>;
+  deleteExportTask(userId: string, projectId: string, taskId: string): Promise<void>;
+
   // === Trash CRUD ===
   getTrashItems(userId: string): Promise<TrashItem[]>;
   moveToTrash(userId: string, projectId: string, itemId: string): Promise<void>;

@@ -82,7 +82,7 @@ async function startServer() {
   // Important: Recover tasks before starting the server to resume background work
   await queueManager.recoverTasks();
 
-  const exportManager = new ExportManager(storage, exportStorage);
+  const exportManager = new ExportManager(repository, storage, exportStorage);
 
   // === Auto-provision default admin ===
   const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;

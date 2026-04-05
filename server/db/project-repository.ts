@@ -566,4 +566,107 @@ export class ProjectRepository {
     const prefix = `PROJECT#${projectId}`;
     await this.cleanupItems(pk, prefix);
   }
+
+  // === Export CRUD ===
+  async getExportTasks(userId: string, projectId: string): Promise<any[]> {
+    const pk = `USER_DATA#${userId}`;
+    const prefix = `PROJECT#${projectId}#EXPORT#`;
+    
+    const result = await this.client.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
+        ExpressionAttributeNames: { '#sk': 'sk' },
+        ExpressionAttributeValues: { ':pk': pk, ':prefix': prefix },
+      })
+    );
+
+    const exports = (result.Items || []).map(item => ({
+      ...item,
+      id: item.sk.split('#EXPORT#')[1],
+    })) as any[];
+    
+    // Sort by createdAt descending (newest first)
+    return exports.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+
+  async getAllExportTasks(userId: string, limit: number = 20, exclusiveStartKey?: any): Promise<{ items: any[]; nextCursor?: any }> {
+    const pk = `USER_DATA#${userId}`;
+    let items: any[] = [];
+    let lastEvaluatedKey = exclusiveStartKey;
+
+    // DynamoDB forbids filtering on primary key attributes (sk), so we filter
+    // on the `itemType` attribute that is written by saveExportTask.
+    while (items.length < limit) {
+      const params: any = {
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'pk = :pk',
+        FilterExpression: 'itemType = :exportType',
+        ExpressionAttributeValues: {
+          ':pk': pk,
+          ':exportType': 'export'
+        },
+      };
+      if (lastEvaluatedKey) params.ExclusiveStartKey = lastEvaluatedKey;
+
+      const result = await this.client.send(new QueryCommand(params));
+
+      const found = (result.Items || []).map(item => ({
+        ...item,
+        id: item.sk.split('#EXPORT#')[1],
+      }));
+
+      items.push(...found);
+      lastEvaluatedKey = result.LastEvaluatedKey;
+
+      // No more data in partition
+      if (!lastEvaluatedKey) break;
+    }
+
+    // Trim to requested limit
+    let nextCursor: any;
+    if (items.length > limit) {
+      items = items.slice(0, limit);
+      // We can't provide an accurate DynamoDB cursor here, so signal there may be more
+      nextCursor = lastEvaluatedKey;
+    } else {
+      nextCursor = lastEvaluatedKey;
+    }
+
+    return {
+      items: items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+      nextCursor
+    };
+  }
+
+  async saveExportTask(userId: string, projectId: string, task: any): Promise<void> {
+    const pk = `USER_DATA#${userId}`;
+    const sk = `PROJECT#${projectId}#EXPORT#${task.id}`;
+    
+    await this.client.send(
+      new PutCommand({
+        TableName: TABLE_NAME,
+        Item: {
+          pk,
+          sk,
+          projectId,
+          ...task,
+          itemType: 'export',
+          createdAt: task.createdAt || Date.now()
+        }
+      })
+    );
+  }
+
+  async deleteExportTask(userId: string, projectId: string, taskId: string): Promise<void> {
+    const pk = `USER_DATA#${userId}`;
+    const sk = `PROJECT#${projectId}#EXPORT#${taskId}`;
+    
+    await this.client.send(
+      new DeleteCommand({
+        TableName: TABLE_NAME,
+        Key: { pk, sk }
+      })
+    );
+  }
 }
