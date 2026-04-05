@@ -15,30 +15,33 @@ export class ProjectRepository {
 
   async getUserProjects(userId: string): Promise<Project[]> {
     const pk = `USER_DATA#${userId}`;
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-        FilterExpression: 'NOT contains(sk, :jobMarker) AND NOT contains(sk, :wfMarker)',
-        ExpressionAttributeValues: { 
-          ':pk': pk, 
-          ':prefix': 'PROJECT#',
-          ':jobMarker': '#JOB#',
-          ':wfMarker': '#WF#'
-        },
-      })
-    );
+    try {
+      const result = await this.client.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          IndexName: 'GSI_ProjectList',
+          KeyConditionExpression: 'pk = :pk AND projectType = :pType',
+          ExpressionAttributeValues: { 
+            ':pk': pk, 
+            ':pType': 'PROJECT'
+          },
+        })
+      );
 
-    return (result.Items || []).map((item) => ({
-      id: item.sk.replace('PROJECT#', ''),
-      name: item.name,
-      createdAt: item.createdAt,
-      workflow: item.workflow || [], // May contain legacy workflow
-      jobs: item.jobs || [], // May contain legacy jobs
-      providerId: item.providerId,
-      aspectRatio: item.aspectRatio,
-      quality: item.quality,
-    }));
+      return (result.Items || []).map((item) => ({
+        id: item.sk.replace('PROJECT#', ''),
+        name: item.name,
+        createdAt: item.createdAt,
+        workflow: [], 
+        jobs: [], 
+        providerId: item.providerId,
+        aspectRatio: item.aspectRatio,
+        quality: item.quality,
+      }));
+    } catch (e) {
+      console.error('[ProjectRepository.getUserProjects] ERROR:', e);
+      throw e;
+    }
   }
 
   async getProject(userId: string, projectId: string): Promise<Project | null> {
@@ -48,7 +51,8 @@ export class ProjectRepository {
     const result = await this.client.send(
       new QueryCommand({
         TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
+        ExpressionAttributeNames: { '#sk': 'sk' },
         ExpressionAttributeValues: { ':pk': pk, ':prefix': prefix },
       })
     ) as any;
@@ -100,7 +104,12 @@ export class ProjectRepository {
     await this.client.send(
       new PutCommand({
         TableName: TABLE_NAME,
-        Item: { pk, sk: projectSk, ...metadata },
+        Item: { 
+          pk, 
+          sk: projectSk, 
+          projectType: 'PROJECT', // Sparse Index Marker
+          ...metadata 
+        },
       })
     );
 
@@ -112,28 +121,39 @@ export class ProjectRepository {
     const pk = `USER_DATA#${userId}`;
     const projectSk = `PROJECT#${projectId}`;
 
-    const expressions: string[] = [];
-    const names: Record<string, string> = {};
-    const values: Record<string, unknown> = {};
+    const expressions: string[] = ['#pt = :pt']; // Ensure projectType is always present
+    const names: Record<string, string> = { '#pt': 'projectType' };
+    const values: Record<string, unknown> = { ':pt': 'PROJECT' };
 
     if (updates.name !== undefined) { expressions.push('#n = :n'); names['#n'] = 'name'; values[':n'] = updates.name; }
     if (updates.providerId !== undefined) { expressions.push('#p = :p'); names['#p'] = 'providerId'; values[':p'] = updates.providerId; }
     if (updates.aspectRatio !== undefined) { expressions.push('#ar = :ar'); names['#ar'] = 'aspectRatio'; values[':ar'] = updates.aspectRatio; }
     if (updates.quality !== undefined) { expressions.push('#q = :q'); names['#q'] = 'quality'; values[':q'] = updates.quality; }
 
-    if (updates.jobs !== undefined) await this.saveJobs(userId, projectId, updates.jobs);
-    if (updates.workflow !== undefined) await this.saveWorkflow(userId, projectId, updates.workflow);
+    const removeExprs: string[] = [];
+    if (updates.jobs !== undefined) {
+      await this.saveJobs(userId, projectId, updates.jobs);
+      removeExprs.push('jobs');
+    }
+    if (updates.workflow !== undefined) {
+      await this.saveWorkflow(userId, projectId, updates.workflow);
+      removeExprs.push('workflow');
+    }
 
-    if (expressions.length > 0) {
-      const updateParams: any = {
+    let updateExpression = `SET ${expressions.join(', ')}`;
+    if (removeExprs.length > 0) {
+      updateExpression += ` REMOVE ${removeExprs.join(', ')}`;
+    }
+
+    await this.client.send(
+      new UpdateCommand({
         TableName: TABLE_NAME,
         Key: { pk, sk: projectSk },
-        UpdateExpression: `SET ${expressions.join(', ')}`,
+        UpdateExpression: updateExpression,
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
-      };
-      await this.client.send(new UpdateCommand(updateParams));
-    }
+      })
+    );
   }
 
   private async saveJobs(userId: string, projectId: string, jobs: Job[]): Promise<void> {
@@ -187,7 +207,8 @@ export class ProjectRepository {
     const result = await this.client.send(
       new QueryCommand({
         TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
+        ExpressionAttributeNames: { '#sk': 'sk' },
         ExpressionAttributeValues: { ':pk': pk, ':prefix': prefix },
       })
     );

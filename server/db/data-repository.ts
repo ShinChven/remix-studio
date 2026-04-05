@@ -28,7 +28,8 @@ export class DataRepository {
       (await this.client.send(
         new QueryCommand({
           TableName: TABLE_NAME,
-          KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+          KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
+          ExpressionAttributeNames: { '#sk': 'sk' },
           ExpressionAttributeValues: { ':pk': `USER_DATA#${userId}`, ':prefix': 'PROJECT#' },
         })
       )) as any,
@@ -63,7 +64,7 @@ export class DataRepository {
       }
     }
 
-    // Second pass: Jobs and Workflow Items
+    // Second pass: Split Jobs and Workflow Items (Append to legacy)
     for (const item of projectItems) {
       if (item.sk.includes('#JOB#')) {
         const [projPart, jobPart] = item.sk.split('#JOB#');
