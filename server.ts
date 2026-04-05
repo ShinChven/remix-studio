@@ -23,6 +23,7 @@ import { createGenerateRouter } from './server/routes/generate';
 import { createTrashRouter } from './server/routes/trash';
 import { ProviderRepository } from './server/db/provider-repository';
 import { ProjectRepository } from './server/db/project-repository';
+import { createStorageRouter } from './server/routes/storage-router';
 import { QueueManager } from './server/queue/queue-manager';
 import { ExportManager } from './server/queue/export-manager';
 
@@ -116,6 +117,7 @@ async function startServer() {
   app.route('/', createProviderRouter(providerRepository));
   app.route('/', createGenerateRouter(providerRepository));
   app.route('/', createTrashRouter(repository, storage));
+  app.route('/', createStorageRouter(repository, storage, exportStorage));
 
   // Shared legacy path (can be refactored eventually)
   app.get('/api/data', authMiddleware, async (c) => {

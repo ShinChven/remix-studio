@@ -180,6 +180,35 @@ export interface ExportTask {
   createdAt: number;
 }
 
+export interface StorageSubCategory {
+  id: string;
+  name: string;
+  size: number;
+}
+
+export interface StorageCategory {
+  id: string;
+  name: string;
+  size: number;
+  subCategories?: StorageSubCategory[];
+}
+
+export interface ProjectStorageStats {
+  id: string;
+  name: string;
+  total: number;
+  album: number;
+  drafts: number;
+  workflow: number;
+  orphans: number;
+}
+
+export interface StorageAnalysis {
+  totalSize: number;
+  categories: StorageCategory[];
+  projects: ProjectStorageStats[];
+}
+
 export interface AppData {
   libraries: Library[];
   projects: Project[];

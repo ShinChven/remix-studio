@@ -116,6 +116,19 @@ export class S3Storage implements IStorage {
     );
     return (result.Contents || []).map((obj) => obj.Key!).filter(Boolean);
   }
+  
+  async listObjectsWithMetadata(prefix: string): Promise<{ key: string; size: number | undefined }[]> {
+    const result = await this.client.send(
+      new ListObjectsV2Command({
+        Bucket: this.bucket,
+        Prefix: prefix,
+      })
+    );
+    return (result.Contents || []).map((obj) => ({
+      key: obj.Key!,
+      size: obj.Size
+    })).filter((obj) => Boolean(obj.key));
+  }
 
   async getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {
     const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });

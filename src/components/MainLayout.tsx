@@ -6,6 +6,7 @@ import { Folder, Layers, Play, LogOut, User as UserIcon, Shield, LayoutGrid, Pan
 
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from './ConfirmModal';
+import { StorageIndicator } from './StorageIndicator';
 
 export function MainLayout() {
   const [libraries, setLibraries] = useState<Library[]>([]);
@@ -210,6 +211,9 @@ export function MainLayout() {
             <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Recycle Bin</span>
           </Link>
         </div>
+
+        {/* Storage Info */}
+        <StorageIndicator isCollapsed={isCollapsed} />
 
         {/* User Profile */}
         <div className="p-4 border-t border-neutral-800 bg-neutral-900/50 flex-shrink-0">

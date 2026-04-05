@@ -4,6 +4,7 @@ export interface IStorage {
   exists(key: string): Promise<boolean>;
   delete(key: string): Promise<void>;
   listObjects(prefix: string): Promise<string[]>;
+  listObjectsWithMetadata(prefix: string): Promise<{ key: string; size: number | undefined }[]>;
   getSize(key: string): Promise<number | undefined>;
   rename(oldPrefix: string, newPrefix: string): Promise<void>;
   getPresignedUrl(key: string, expiresIn?: number): Promise<string>;

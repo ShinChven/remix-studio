@@ -1,4 +1,4 @@
-import { AppData, Library, LibraryItem, Project, Provider, ProviderType, User, UserRole, TrashItem, ExportTask } from './types';
+import { AppData, Library, LibraryItem, Project, Provider, ProviderType, User, UserRole, TrashItem, ExportTask, StorageAnalysis } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const token = localStorage.getItem('token');
@@ -436,5 +436,13 @@ export async function deleteProjectExport(projectId: string, taskId: string): Pr
     headers: getHeaders(),
   });
   if (!res.ok) throw new Error('Failed to delete export');
+}
+
+// ========== Storage ==========
+
+export async function fetchStorageAnalysis(): Promise<StorageAnalysis> {
+  const res = await fetch('/api/storage/analysis', { headers: getHeaders(false) });
+  if (!res.ok) throw new Error('Failed to analyze storage');
+  return res.json();
 }
 
