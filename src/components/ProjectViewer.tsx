@@ -601,14 +601,21 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         }} 
         onSelect={(libraryId) => {
           if (selectingLibraryForItemId) {
-            // If we're selecting a single image for an 'image' item, we show the library preview modal instead
             const lib = libraries.find(l => l.id === libraryId);
-            if (lib) setPreviewingLibrary(lib);
+            if (lib) {
+              setPreviewingLibrary(lib);
+              setPreviewingWorkflowItemId(selectingLibraryForItemId);
+            }
           } else {
             handleLibrarySelect(libraryId);
           }
         }} 
-        libraries={selectingLibraryForItemId ? libraries.filter(l => l.type === 'image') : libraries} 
+        libraries={(() => {
+          if (!selectingLibraryForItemId) return libraries;
+          const item = (localProject.workflow || []).find(i => i.id === selectingLibraryForItemId);
+          if (!item) return libraries;
+          return libraries.filter(l => l.type === item.type);
+        })()} 
         selectedLibraryIds={(localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)} 
       />
       <LibraryPreviewModal 
@@ -620,7 +627,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         isSelectionMode={!!selectingLibraryForItemId}
         onSelectItem={(content) => {
           if (selectingLibraryForItemId) {
-            handleImageFromLibrarySelect(previewingLibrary!.id, content);
+            updateWorkflowItem(selectingLibraryForItemId, content);
+            setSelectingLibraryForItemId(null);
             setPreviewingLibrary(null);
             setPreviewingWorkflowItemId(null);
           }

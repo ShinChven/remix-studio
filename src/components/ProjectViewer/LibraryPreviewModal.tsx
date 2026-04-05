@@ -1,24 +1,46 @@
 import React, { useState } from 'react';
 import { X, ChevronDown, Library as LibraryIcon } from 'lucide-react';
 import { Library, LibraryItem } from '../../types';
+import { imageDisplayUrl } from '../../api';
 import { ImageLightbox } from './ImageLightbox';
 
-function TextLibraryItem({ item }: { item: LibraryItem }) {
+function TextLibraryItem({ 
+  item, 
+  isSelectionMode, 
+  onSelect 
+}: { 
+  item: LibraryItem, 
+  isSelectionMode?: boolean, 
+  onSelect?: (content: string) => void 
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   
   return (
     <div 
-      onClick={() => setIsExpanded(!isExpanded)}
-      className={`bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5 cursor-pointer transition-all hover:border-emerald-500/30 hover:bg-neutral-800/50 group/text-item ${isExpanded ? 'shadow-xl border-emerald-500/20 ring-1 ring-emerald-500/10' : 'shadow-sm'}`}
+      onClick={() => {
+        if (isSelectionMode && onSelect) {
+          onSelect(item.content);
+        } else {
+          setIsExpanded(!isExpanded);
+        }
+      }}
+      className={`bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5 cursor-pointer transition-all hover:border-emerald-500/30 hover:bg-neutral-800/50 group/text-item ${isExpanded ? 'shadow-xl border-emerald-500/20 ring-1 ring-emerald-500/10' : 'shadow-sm'} ${isSelectionMode ? 'hover:ring-2 hover:ring-blue-500/50' : ''}`}
     >
       <div className="flex justify-between gap-4">
         <div className="flex-1 min-w-0">
-          {item.title && (
-            <div className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-2.5 flex items-center gap-2">
-              <span className="w-1 h-1 rounded-full bg-emerald-500" />
-              {item.title}
-            </div>
-          )}
+          <div className="flex items-center justify-between mb-2.5">
+            {item.title && (
+              <div className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500 flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                {item.title}
+              </div>
+            )}
+            {isSelectionMode && (
+              <div className="text-[8px] font-black uppercase tracking-widest text-blue-400 opacity-0 group-hover/text-item:opacity-100 transition-opacity">
+                Pick this text
+              </div>
+            )}
+          </div>
           <p className={`text-neutral-300 text-sm leading-relaxed transition-all whitespace-pre-wrap ${isExpanded ? '' : 'line-clamp-1'}`}>
             {item.content}
           </p>
@@ -59,6 +81,14 @@ export function LibraryPreviewModal({
     return Array.from(tagSet).sort();
   }, [library]);
 
+  const filteredItems = React.useMemo(() => {
+    if (!library) return [];
+    if (!selectedTags || selectedTags.length === 0) return library.items;
+    return library.items.filter(item => 
+      item.tags && item.tags.some(tag => selectedTags.includes(tag))
+    );
+  }, [library, selectedTags]);
+
   const toggleTag = (tag: string) => {
     const next = selectedTags.includes(tag) 
       ? selectedTags.filter(t => t !== tag) 
@@ -80,7 +110,9 @@ export function LibraryPreviewModal({
             </div>
             <div>
               <h3 className="text-lg font-bold text-white tracking-tight">{library.name}</h3>
-              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">{library.items.length} workflow items</p>
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">
+                {filteredItems.length} of {library.items.length} items
+              </p>
             </div>
           </div>
           <button 
@@ -95,7 +127,7 @@ export function LibraryPreviewModal({
           <div className="px-6 py-4 bg-neutral-900 border-b border-neutral-800 flex flex-wrap gap-2">
             <div className="w-full text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-2 flex items-center gap-2">
               <span className="w-4 h-px bg-neutral-800" />
-              Filter generation by tags
+              Filter by tags
             </div>
             <button
               onClick={() => onUpdateTags([])}
@@ -124,52 +156,67 @@ export function LibraryPreviewModal({
         )}
 
         <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar bg-neutral-950/10">
-          <div className={library.type === 'text' ? "max-w-4xl mx-auto space-y-3" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
-            {library.items.map(item => (
-              library.type === 'text' ? (
-                <TextLibraryItem key={item.id} item={item} />
-              ) : (
-                <div key={item.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col shadow-sm">
-                  {library.type === 'image' && (
-                    <div 
-                      className={`aspect-video bg-black relative border-b border-neutral-800 group/img-container cursor-pointer overflow-hidden ${isSelectionMode ? 'ring-inset hover:ring-2 hover:ring-blue-500' : ''}`}
-                      onClick={() => {
-                        if (isSelectionMode && onSelectItem) {
-                          onSelectItem(item.content);
-                        } else {
-                          const imageItems = library.items.filter(i => i.content).map(i => i.optimizedUrl || i.content);
-                          const currentOptimized = item.optimizedUrl || item.content;
-                          const idx = imageItems.indexOf(currentOptimized);
-                          setPreviewLightbox({ images: imageItems, index: idx >= 0 ? idx : 0 });
-                        }
-                      }}
-                    >
-                      <img 
-                        src={item.thumbnailUrl || item.content} 
-                        alt={item.content} 
-                        className="w-full h-full object-cover group-hover/img-container:scale-105 transition-transform duration-500" 
-                      />
-                      {isSelectionMode && (
-                        <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover/img-container:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
-                            Click to Select
+          {filteredItems.length === 0 ? (
+             <div className="h-64 flex flex-col items-center justify-center text-neutral-600 gap-4 opacity-50">
+               <LibraryIcon className="w-12 h-12 stroke-[1px]" />
+               <div className="text-center">
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">No items match</p>
+                 <button onClick={() => onUpdateTags([])} className="text-[9px] font-bold text-blue-500/60 hover:text-blue-500 underline uppercase tracking-widest">Clear all filters</button>
+               </div>
+             </div>
+          ) : (
+            <div className={library.type === 'text' ? "max-w-4xl mx-auto space-y-3" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
+              {filteredItems.map(item => (
+                library.type === 'text' ? (
+                  <TextLibraryItem 
+                    key={item.id} 
+                    item={item} 
+                    isSelectionMode={isSelectionMode} 
+                    onSelect={onSelectItem} 
+                  />
+                ) : (
+                  <div key={item.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col shadow-sm group/card">
+                    {library.type === 'image' && (
+                      <div 
+                        className={`aspect-video bg-black relative border-b border-neutral-800 group/img-container cursor-pointer overflow-hidden ${isSelectionMode ? 'ring-inset hover:ring-2 hover:ring-blue-500' : ''}`}
+                        onClick={() => {
+                          if (isSelectionMode && onSelectItem) {
+                            onSelectItem(item.content);
+                          } else {
+                            const imageItems = library.items.filter(i => i.content).map(i => imageDisplayUrl(i.optimizedUrl || i.content));
+                            const currentDisplay = imageDisplayUrl(item.optimizedUrl || item.content);
+                            const idx = imageItems.indexOf(currentDisplay);
+                            setPreviewLightbox({ images: imageItems, index: idx >= 0 ? idx : 0 });
+                          }
+                        }}
+                      >
+                        <img 
+                          src={imageDisplayUrl(item.thumbnailUrl || item.content)} 
+                          alt={item.content} 
+                          className="w-full h-full object-cover group-hover/img-container:scale-105 transition-transform duration-500" 
+                        />
+                        {isSelectionMode && (
+                          <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover/img-container:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
+                              Click to Select
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="p-4 flex-1">
-                    {item.title && (
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-2">{item.title}</div>
+                        )}
+                      </div>
                     )}
-                    <p className="text-neutral-400 text-[11px] line-clamp-4 leading-relaxed">
-                      <span className="opacity-60 italic whitespace-nowrap overflow-hidden text-ellipsis block">{item.content}</span>
-                    </p>
+                    <div className="p-4 flex-1">
+                      {item.title && (
+                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-2">{item.title}</div>
+                      )}
+                      <p className="text-neutral-400 text-[11px] line-clamp-4 leading-relaxed group-hover/card:text-neutral-200 transition-colors">
+                        <span className="opacity-60 italic whitespace-nowrap overflow-hidden text-ellipsis block">{item.content}</span>
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )
-            ))}
-          </div>
+                )
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="p-6 border-t border-neutral-800 bg-neutral-950/40 flex justify-end">
