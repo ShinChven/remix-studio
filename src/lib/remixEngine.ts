@@ -3,8 +3,7 @@ import { Library, WorkflowItem } from '../types';
 export interface Combination {
   prompt: string;
   imageContexts?: string[];
-  tags: string[];
-  titles: string[];
+  filenameParts: string[];
 }
 
 export function generateWorkflowCombinations(workflow: WorkflowItem[], libraries: Library[]): Combination[] {
@@ -56,27 +55,31 @@ export function generateWorkflowCombinations(workflow: WorkflowItem[], libraries
   for (const combo of combinations) {
     const texts: string[] = [];
     const images: string[] = [];
-    const allTags: string[] = [];
-    const allTitles: string[] = [];
+    const stepParts: string[] = [];
     
     for (const c of combo) {
       if (c.type === 'text') texts.push(c.value);
       if (c.type === 'image') images.push(c.value);
-      if (c.tags) allTags.push(...c.tags);
-      if (c.title) allTitles.push(c.title);
+      
+      // Collect filename parts for this step (Tags + Title)
+      if (c.tags && c.tags.length > 0) {
+        stepParts.push(...c.tags);
+      }
+      if (c.title) {
+        stepParts.push(c.title);
+      }
     }
     
     results.push({
       prompt: texts.join('\n\n'),
       imageContexts: images.length > 0 ? images : undefined,
-      tags: [...new Set(allTags)], // Dedup tags
-      titles: allTitles
+      filenameParts: stepParts
     });
   }
 
   // Ensure there is at least one blank combination if no choices were made, to maintain expected fallbacks.
   if (results.length === 0) {
-    results.push({ prompt: '', tags: [], titles: [] });
+    results.push({ prompt: '', filenameParts: [] });
   }
 
   return results.filter(r => r.prompt || (r.imageContexts && r.imageContexts.length > 0));
@@ -85,8 +88,7 @@ export function generateWorkflowCombinations(workflow: WorkflowItem[], libraries
 function generateRandomCombination(workflow: WorkflowItem[], libraries: Library[]): Combination {
   const texts: string[] = [];
   const images: string[] = [];
-  const allTags: string[] = [];
-  const allTitles: string[] = [];
+  const stepParts: string[] = [];
   
   for (const item of workflow) {
     if (item.type === 'text') {
@@ -109,8 +111,8 @@ function generateRandomCombination(workflow: WorkflowItem[], libraries: Library[
           } else {
             images.push(randomItem.content);
           }
-          if (randomItem.tags) allTags.push(...randomItem.tags);
-          if (randomItem.title) allTitles.push(randomItem.title);
+          if (randomItem.tags) stepParts.push(...randomItem.tags);
+          if (randomItem.title) stepParts.push(randomItem.title);
         }
       }
     }
@@ -118,14 +120,13 @@ function generateRandomCombination(workflow: WorkflowItem[], libraries: Library[
 
   // Fallback if everything is empty
   if (texts.length === 0 && images.length === 0) {
-    return { prompt: '', tags: [], titles: [] };
+    return { prompt: '', filenameParts: [] };
   }
 
   return {
     prompt: texts.join('\n\n'),
     imageContexts: images.length > 0 ? images : undefined,
-    tags: [...new Set(allTags)],
-    titles: allTitles
+    filenameParts: stepParts
   };
 }
 

@@ -273,8 +273,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       const shortuuid = crypto.randomUUID().slice(0, 8);
       const parts = [
         localProject.prefix,
-        combo.tags.join('_'),
-        combo.titles.join('_'),
+        ...combo.filenameParts,
         shortuuid
       ].filter(Boolean);
       // Sanitize filename: remove invalid characters and truncate to 200 chars

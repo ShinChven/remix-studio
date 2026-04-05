@@ -171,6 +171,7 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
         quality: typeof body.quality === 'string' ? body.quality : undefined,
         format: typeof body.format === 'string' ? body.format : undefined,
         shuffle: typeof body.shuffle === 'boolean' ? body.shuffle : undefined,
+        prefix: typeof body.prefix === 'string' ? body.prefix.trim() : undefined,
       };
 
       await repository.createProject(user.userId, project);
@@ -185,7 +186,7 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
     try {
       const user = c.get('user') as JwtPayload;
       const body = await c.req.json();
-      const updates: { name?: string; workflow?: WorkflowItem[]; jobs?: Job[]; providerId?: string; aspectRatio?: string; quality?: string; format?: 'png' | 'jpeg' | 'webp'; shuffle?: boolean; modelConfigId?: string } = {};
+      const updates: { name?: string; workflow?: WorkflowItem[]; jobs?: Job[]; providerId?: string; aspectRatio?: string; quality?: string; format?: 'png' | 'jpeg' | 'webp'; shuffle?: boolean; modelConfigId?: string; prefix?: string } = {};
       if (typeof body?.name === 'string') updates.name = body.name.trim();
       if (Array.isArray(body?.workflow)) updates.workflow = body.workflow;
       if (Array.isArray(body?.jobs)) updates.jobs = body.jobs;
@@ -195,6 +196,7 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
       if (typeof body?.format === 'string') updates.format = body.format as 'png' | 'jpeg' | 'webp';
       if (typeof body?.shuffle === 'boolean') updates.shuffle = body.shuffle;
       if (typeof body?.modelConfigId === 'string') updates.modelConfigId = body.modelConfigId;
+      if (typeof body?.prefix === 'string') updates.prefix = body.prefix.trim();
 
       await repository.updateProject(user.userId, c.req.param('id'), updates);
       return c.json({ success: true });
