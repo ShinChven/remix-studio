@@ -38,6 +38,9 @@ export class ProjectRepository {
         providerId: item.providerId,
         aspectRatio: item.aspectRatio,
         quality: item.quality,
+        format: item.format,
+        shuffle: item.shuffle,
+        modelConfigId: item.modelConfigId,
       }));
     } catch (e) {
       console.error('[ProjectRepository.getUserProjects] ERROR:', e);
@@ -79,6 +82,7 @@ export class ProjectRepository {
       modelConfigId: item.modelConfigId,
       aspectRatio: item.aspectRatio,
       quality: item.quality,
+      format: item.format,
     }));
     jobs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 
@@ -99,6 +103,8 @@ export class ProjectRepository {
       modelConfigId: item.modelConfigId,
       aspectRatio: item.aspectRatio,
       quality: item.quality,
+      format: item.format,
+      size: item.size,
       createdAt: item.createdAt,
     }));
     album.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
@@ -113,6 +119,9 @@ export class ProjectRepository {
       providerId: projectItem.providerId,
       aspectRatio: projectItem.aspectRatio,
       quality: projectItem.quality,
+      format: projectItem.format,
+      shuffle: projectItem.shuffle,
+      modelConfigId: projectItem.modelConfigId,
     };
   }
 
@@ -149,6 +158,9 @@ export class ProjectRepository {
     if (updates.providerId !== undefined) { expressions.push('#p = :p'); names['#p'] = 'providerId'; values[':p'] = updates.providerId; }
     if (updates.aspectRatio !== undefined) { expressions.push('#ar = :ar'); names['#ar'] = 'aspectRatio'; values[':ar'] = updates.aspectRatio; }
     if (updates.quality !== undefined) { expressions.push('#q = :q'); names['#q'] = 'quality'; values[':q'] = updates.quality; }
+    if (updates.format !== undefined) { expressions.push('#f = :f'); names['#f'] = 'format'; values[':f'] = updates.format; }
+    if (updates.shuffle !== undefined) { expressions.push('#sh = :sh'); names['#sh'] = 'shuffle'; values[':sh'] = updates.shuffle; }
+    if (updates.modelConfigId !== undefined) { expressions.push('#mc = :mc'); names['#mc'] = 'modelConfigId'; values[':mc'] = updates.modelConfigId; }
 
     const removeExprs: string[] = [];
     if (updates.jobs !== undefined) {
@@ -288,6 +300,7 @@ export class ProjectRepository {
       modelConfigId: item.modelConfigId,
       aspectRatio: item.aspectRatio,
       quality: item.quality,
+      format: item.format,
       size: item.size,
       createdAt: item.createdAt,
     };
@@ -335,6 +348,7 @@ export class ProjectRepository {
       modelConfigId: item.modelConfigId,
       aspectRatio: item.aspectRatio,
       quality: item.quality,
+      format: item.format,
       size: item.size,
       createdAt: item.createdAt,
       projectId: item.projectId,

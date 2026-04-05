@@ -154,9 +154,9 @@ export class QueueManager {
 
       // 4. Save to storage
       const targetFormat = queued.format || job.format || 'png';
-      let finalBytes = result.imageBytes;
-      let mimeType = 'image/png';
-      let ext = 'png';
+      let finalBytes: Buffer;
+      let mimeType: string;
+      let ext: string;
 
       if (targetFormat === 'jpeg' || targetFormat === 'jpg') {
         finalBytes = await sharp(result.imageBytes).jpeg({ quality: 100, chromaSubsampling: '4:4:4' }).toBuffer();
@@ -166,6 +166,12 @@ export class QueueManager {
         finalBytes = await sharp(result.imageBytes).webp({ quality: 100, lossless: true }).toBuffer();
         mimeType = 'image/webp';
         ext = 'webp';
+      } else {
+        // Always explicitly convert to PNG via sharp, so the output bytes truly are PNG
+        // regardless of what format the AI provider returned.
+        finalBytes = await sharp(result.imageBytes).png().toBuffer();
+        mimeType = 'image/png';
+        ext = 'png';
       }
 
       const filename = `${userId}/${projectId}/${crypto.randomUUID()}.${ext}`;

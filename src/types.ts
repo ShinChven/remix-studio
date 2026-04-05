@@ -121,6 +121,7 @@ export interface Project {
   quality?: string;
   format?: 'png' | 'jpeg' | 'webp';
   shuffle?: boolean;
+  modelConfigId?: string;
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub';

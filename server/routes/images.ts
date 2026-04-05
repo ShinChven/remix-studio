@@ -20,13 +20,17 @@ export function createImageRouter(storage: S3Storage) {
       if (!projectId || typeof projectId !== 'string') return c.json({ error: 'projectId is required' }, 400);
 
       const safeProjectId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
-      const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}.png`;
+      const mimeMatch = base64.match(/^data:(image\/[\w+.-]+);base64,/);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'image/png';
+      const extMap: Record<string, string> = { 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif', 'image/png': 'png' };
+      const ext = extMap[mimeType] ?? 'png';
+      const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
       const key = `${user.userId}/${safeProjectId}/${filename}`;
 
-      const base64Data = base64.replace(/^data:image\/\w+;base64,/, '');
+      const base64Data = base64.replace(/^data:image\/[\w+.-]+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
 
-      const s3Key = await storage.save(key, buffer, 'image/png');
+      const s3Key = await storage.save(key, buffer, mimeType);
       const signedUrl = await storage.getPresignedUrl(s3Key);
       return c.json({ key: s3Key, url: signedUrl });
     } catch (e) {

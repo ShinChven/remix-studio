@@ -67,7 +67,9 @@ export function ProjectRoute() {
         jobs: updatedProject.jobs,
         aspectRatio: updatedProject.aspectRatio,
         quality: updatedProject.quality,
+        format: updatedProject.format,
         shuffle: updatedProject.shuffle,
+        modelConfigId: updatedProject.modelConfigId,
       });
       setProject(updatedProject);
     } catch (e) {
