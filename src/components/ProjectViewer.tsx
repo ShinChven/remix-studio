@@ -17,6 +17,7 @@ import { WorkflowItem } from './ProjectViewer/WorkflowItem';
 import { SettingsPanel } from './ProjectViewer/SettingsPanel';
 import { DraftsTab } from './ProjectViewer/DraftsTab';
 import { QueueTab } from './ProjectViewer/QueueTab';
+import { CompletedTab } from './ProjectViewer/CompletedTab';
 import { AlbumTab } from './ProjectViewer/AlbumTab';
 
 interface Props {
@@ -29,15 +30,15 @@ interface Props {
 export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = (searchParams.get('tab') as 'draft' | 'queue' | 'album') || 'draft';
-  const setActiveTab = (tab: 'draft' | 'queue' | 'album') => {
+  const activeTab = (searchParams.get('tab') as 'draft' | 'queue' | 'completed' | 'album') || 'draft';
+  const setActiveTab = (tab: 'draft' | 'queue' | 'completed' | 'album') => {
     setSearchParams({ tab }, { replace: true });
   };
 
   const [localProject, setLocalProject] = useState<Project>(project);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  
+
   const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
   const [itemToRemoveId, setItemToRemoveId] = useState<string | null>(null);
   const [jobToDeleteId, setJobToDeleteId] = useState<string | null>(null);
@@ -58,15 +59,17 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [selectingLibraryForItemId, setSelectingLibraryForItemId] = useState<string | null>(null);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
-  const [lightboxData, setLightboxData] = useState<{images: string[], index: number} | null>(null);
+  const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'workflow' | 'jobs'>('workflow');
   const [selectedQueueIds, setSelectedQueueIds] = useState<Set<string>>(new Set());
   const [selectedAlbumIds, setSelectedAlbumIds] = useState<Set<string>>(new Set());
   const [lastSelectedAlbumId, setLastSelectedAlbumId] = useState<string | null>(null);
   const [showDeleteAlbumModal, setShowDeleteAlbumModal] = useState(false);
+  const [showDeleteCompletedSelectedModal, setShowDeleteCompletedSelectedModal] = useState(false);
   const [albumItemsToDelete, setAlbumItemsToDelete] = useState<AlbumItem[] | null>(null);
-  
+  const [selectedCompletedIds, setSelectedCompletedIds] = useState<Set<string>>(new Set());
+
   const projectRef = useRef(localProject);
   const isProcessing = localProject.jobs.some(j => j.status === 'pending' || j.status === 'processing');
 
@@ -131,12 +134,12 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       let needsUpdate = false;
       const updated = { ...localProject };
       if (!selectedModel.options.aspectRatios.includes(localProject.aspectRatio || '')) {
-          updated.aspectRatio = selectedModel.options.aspectRatios[0];
-          needsUpdate = true;
+        updated.aspectRatio = selectedModel.options.aspectRatios[0];
+        needsUpdate = true;
       }
       if (!selectedModel.options.qualities.includes(localProject.quality || '')) {
-          updated.quality = selectedModel.options.qualities[0];
-          needsUpdate = true;
+        updated.quality = selectedModel.options.qualities[0];
+        needsUpdate = true;
       }
       if (needsUpdate) {
         setLocalProject(updated);
@@ -180,7 +183,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     if (!selectingLibraryForItemId) return;
     const item = localProject.workflow.find(i => i.id === selectingLibraryForItemId);
     if (!item) return;
-    
+
     updateWorkflowItem(selectingLibraryForItemId, imageKey);
     setSelectingLibraryForItemId(null);
   };
@@ -278,7 +281,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       ].filter(Boolean);
       // Sanitize filename: remove invalid characters and truncate to 200 chars
       const filename = parts.join('_').replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 200);
-      
+
       return {
         id: crypto.randomUUID(),
         prompt: combo.prompt,
@@ -300,7 +303,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     setLocalProject(updatedProject);
     setActiveTab('draft');
   };
-  
+
   const toggleJobExpand = (jobId: string) => setExpandedJobId(prev => prev === jobId ? null : jobId);
 
   const runJob = async (jobId: string) => {
@@ -407,6 +410,26 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     setSelectedQueueIds(new Set());
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
+  
+  const toggleCompletedSelection = (jobId: string) => {
+    setSelectedCompletedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+      return next;
+    });
+  };
+
+  const toggleSelectAllCompleted = () => {
+    const completedIds = localProject.jobs.filter(j => j.status === 'completed').map(j => j.id);
+    setSelectedCompletedIds(selectedCompletedIds.size === completedIds.length ? new Set() : new Set(completedIds));
+  };
+
+  const deleteSelectedCompleted = async () => {
+    const updatedJobs = localProject.jobs.filter(j => !selectedCompletedIds.has(j.id));
+    setLocalProject({ ...localProject, jobs: updatedJobs });
+    setSelectedCompletedIds(new Set());
+    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+  };
 
   const toggleAlbumSelection = (id: string, isShiftPressed: boolean) => {
     setSelectedAlbumIds(prev => {
@@ -453,6 +476,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
   const draftJobs = localProject.jobs.filter(j => j.status === 'draft');
   const queueJobs = localProject.jobs.filter(j => ['pending', 'processing', 'failed'].includes(j.status));
+  const completedJobs = localProject.jobs.filter(j => j.status === 'completed');
   const albumItems = localProject.album || [];
 
   return (
@@ -470,7 +494,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       />
 
       {document.getElementById('mobile-header-actions') && createPortal(
-        <button 
+        <button
           onClick={() => setMobileView(mobileView === 'workflow' ? 'jobs' : 'workflow')}
           className="lg:hidden px-3 py-1.5 bg-blue-600/10 text-blue-500 rounded-xl hover:bg-blue-600/20 transition-all flex items-center gap-1.5 border border-blue-500/10 active:scale-95"
         >
@@ -486,12 +510,12 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             <div className="flex items-center justify-between gap-2 flex-1 group">
               <h2 className="text-xl font-bold text-white truncate tracking-tight">{localProject.name}</h2>
               <div className="flex items-center gap-1">
-                <button 
+                <button
                   onClick={() => navigate(`/project/${project.id}/edit`)}
                   className="p-1.5 text-neutral-600 hover:text-green-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-green-400/10 rounded-lg"
                   title="Edit Project Information"
                 ><Settings className="w-4 h-4" /></button>
-                <button 
+                <button
                   onClick={() => navigate(`/project/${project.id}/orphans`)}
                   className="p-1.5 text-neutral-600 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-blue-400/10 rounded-lg"
                   title="Manage Orphan Files (Cleanup)"
@@ -499,7 +523,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 flex-1">
               <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-neutral-950 border border-neutral-800 rounded">ID: {project.id}</span>
@@ -559,17 +583,36 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       <div className={`flex-1 flex-col overflow-hidden min-h-0 ${mobileView === 'jobs' ? 'flex h-full' : 'hidden lg:flex'}`}>
         <div className="p-3 border-b border-neutral-800 bg-neutral-900/20 backdrop-blur-md shadow-sm flex flex-col gap-3">
           <div className="flex items-center justify-center gap-4">
-              <div className="flex bg-neutral-950 border border-neutral-800 rounded-xl p-1 flex-1 max-w-lg">
-                <button onClick={() => setActiveTab('draft')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'draft' ? 'bg-neutral-800/80 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
-                  <Plus className="w-3.5 h-3.5" /> Draft ({draftJobs.length})
-                </button>
-                <button onClick={() => setActiveTab('queue')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'queue' ? 'bg-neutral-800/80 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
-                  <List className="w-3.5 h-3.5" /> Queue ({queueJobs.length})
-                </button>
-                <button onClick={() => setActiveTab('album')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'album' ? 'bg-neutral-800/80 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
-                  <Grid className="w-3.5 h-3.5" /> Album ({albumItems.length})
-                </button>
-              </div>
+            <div className="flex bg-neutral-950 border border-neutral-800 rounded-xl p-1 flex-1 max-w-lg">
+              <button onClick={() => setActiveTab('draft')} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg transition-all ${activeTab === 'draft' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
+                <div className="flex items-center gap-1.5">
+                  <Plus className="w-3 h-3" />
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">Draft</span>
+                </div>
+                <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({draftJobs.length})</span>
+              </button>
+              <button onClick={() => setActiveTab('queue')} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg transition-all ${activeTab === 'queue' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
+                <div className="flex items-center gap-1.5">
+                  <List className="w-3 h-3" />
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">Queue</span>
+                </div>
+                <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({queueJobs.length})</span>
+              </button>
+              <button onClick={() => setActiveTab('completed')} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg transition-all ${activeTab === 'completed' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">Done</span>
+                </div>
+                <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({completedJobs.length})</span>
+              </button>
+              <button onClick={() => setActiveTab('album')} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg transition-all ${activeTab === 'album' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
+                <div className="flex items-center gap-1.5">
+                  <Grid className="w-3 h-3" />
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">Album</span>
+                </div>
+                <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({albumItems.length})</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -593,6 +636,15 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
             />
           )}
+          {activeTab === 'completed' && (
+            <CompletedTab
+              completedJobs={completedJobs} expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand}
+              selectedCompletedIds={selectedCompletedIds} toggleCompletedSelection={toggleCompletedSelection}
+              toggleSelectAllCompleted={toggleSelectAllCompleted} setShowDeleteSelectedModal={setShowDeleteCompletedSelectedModal}
+              getProviderName={getProviderName} getModelName={getModelName}
+              setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
+            />
+          )}
           {activeTab === 'album' && (
             <AlbumTab
               albumItems={albumItems} selectedAlbumIds={selectedAlbumIds} toggleSelectAllAlbum={toggleSelectAllAlbum}
@@ -610,12 +662,12 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       <ConfirmModal isOpen={showDeleteAllDraftsModal} onClose={() => setShowDeleteAllDraftsModal(false)} onConfirm={deleteAllDrafts} title="Delete All Drafts" message={`Are you sure you want to delete all ${draftJobs.length} draft tasks?`} confirmText="Delete All" type="danger" />
       <ConfirmModal isOpen={showDeleteProjectModal} onClose={() => setShowDeleteProjectModal(false)} onConfirm={onDelete} title="Delete Project" message={`Are you sure you want to delete "${localProject.name}"?`} confirmText="Delete Project" type="danger" />
       <ConfirmModal isOpen={jobToDeleteId !== null} onClose={() => setJobToDeleteId(null)} onConfirm={() => { if (jobToDeleteId) { deleteJob(jobToDeleteId); setJobToDeleteId(null); } }} title="Delete Job" message="Are you sure you want to delete this job?" confirmText="Delete Job" type="danger" />
-      <LibrarySelectionModal 
-        isOpen={showLibrarySelector || !!selectingLibraryForItemId} 
+      <LibrarySelectionModal
+        isOpen={showLibrarySelector || !!selectingLibraryForItemId}
         onClose={() => {
           setShowLibrarySelector(false);
           setSelectingLibraryForItemId(null);
-        }} 
+        }}
         onSelect={(libraryId) => {
           if (selectingLibraryForItemId) {
             const lib = libraries.find(l => l.id === libraryId);
@@ -626,17 +678,17 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           } else {
             handleLibrarySelect(libraryId);
           }
-        }} 
+        }}
         libraries={(() => {
           if (!selectingLibraryForItemId) return libraries;
           const item = (localProject.workflow || []).find(i => i.id === selectingLibraryForItemId);
           if (!item) return libraries;
           return libraries.filter(l => l.type === item.type);
-        })()} 
-        selectedLibraryIds={(localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)} 
+        })()}
+        selectedLibraryIds={(localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)}
       />
-      <LibraryPreviewModal 
-        library={previewingLibrary} 
+      <LibraryPreviewModal
+        library={previewingLibrary}
         selectedTags={localProject.workflow.find(i => i.id === previewingWorkflowItemId)?.selectedTags || []}
         onUpdateTags={(tags) => {
           if (previewingWorkflowItemId) updateWorkflowItemTags(previewingWorkflowItemId, tags);
@@ -653,10 +705,11 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         onClose={() => {
           setPreviewingLibrary(null);
           setPreviewingWorkflowItemId(null);
-        }} 
+        }}
       />
       {lightboxData && <ImageLightbox images={lightboxData.images} startIndex={lightboxData.index} onClose={() => setLightboxData(null)} />}
       <ConfirmModal isOpen={showDeleteAlbumModal} onClose={() => { setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); }} onConfirm={async () => { if (albumItemsToDelete) { await deleteAlbumItems(albumItemsToDelete); setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); } }} title="Move to Recycle Bin" message={`Are you sure you want to move ${albumItemsToDelete?.length || 0} items to the Recycle Bin?`} confirmText="Move to Trash" type="danger" />
+      <ConfirmModal isOpen={showDeleteCompletedSelectedModal} onClose={() => setShowDeleteCompletedSelectedModal(false)} onConfirm={deleteSelectedCompleted} title="Remove Selected Finished Records" message={`Are you sure you want to remove ${selectedCompletedIds.size} completed job records? (Album images will not be deleted)`} confirmText="Remove Selected" type="danger" />
     </div>
   );
 }

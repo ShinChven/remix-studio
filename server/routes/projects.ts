@@ -242,10 +242,10 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
 
       const safeProjectId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const projectPrefix = `${user.userId}/${safeProjectId}/`;
-      
+
       // 1. List all files in S3 for this project
       const allS3Keys = await storage.listObjects(projectPrefix);
-      
+
       // 2. Collect all referenced keys from DynamoDB
       const referencedKeys = new Set<string>();
 
@@ -284,7 +284,7 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
 
       // 3. Find orphans
       const orphans = allS3Keys.filter(key => !referencedKeys.has(key));
-      
+
       // 4. Return orphans with pre-signed URLs and metadata
       const result = await Promise.all(orphans.map(async (key) => ({
         key,

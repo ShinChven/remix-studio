@@ -37,13 +37,13 @@ export function AlbumTab({
                 {albumItems.length} Items
                 <span className="mx-1 text-neutral-800">·</span>
                 <span className="text-blue-500/80">
-                  {( (albumItems || []).reduce((acc, item) => acc + (item.size || 0), 0) / (1024 * 1024) ).toFixed(2)} MB
+                  {((albumItems || []).reduce((acc, item) => acc + (item.size || 0), 0) / (1024 * 1024)).toFixed(2)} MB
                 </span>
               </div>
-              
+
               <div className="h-4 w-px bg-neutral-800 mx-1" />
 
-              <button 
+              <button
                 onClick={toggleSelectAllAlbum}
                 className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
               >
@@ -54,13 +54,13 @@ export function AlbumTab({
                 )}
                 Select All
               </button>
-              
+
               {selectedAlbumIds.size > 0 && (
                 <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
                   <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
                     {selectedAlbumIds.size} Selected
                   </span>
-                  <button 
+                  <button
                     onClick={() => {
                       const itemsToDelete = albumItems.filter(item => selectedAlbumIds.has(item.id));
                       setAlbumItemsToDelete(itemsToDelete);
@@ -93,7 +93,7 @@ export function AlbumTab({
                   <div className="aspect-square bg-neutral-950 relative flex items-center justify-center overflow-hidden">
                     {/* Selection Overlay */}
                     <div className={`absolute top-3 left-3 z-10 transition-all ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                      <button 
+                      <button
                         onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
                         className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20 hover:border-white/40'}`}
                       >
@@ -104,9 +104,9 @@ export function AlbumTab({
 
                     {/* Individual Delete Button */}
                     <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-all flex flex-col gap-2">
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setAlbumItemsToDelete([item]);
                           setShowDeleteAlbumModal(true);
                         }}
@@ -115,10 +115,10 @@ export function AlbumTab({
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                      
-                      <a 
-                        href={imageDisplayUrl(item.imageUrl)} 
-                        target="_blank" 
+
+                      <a
+                        href={imageDisplayUrl(item.imageUrl)}
+                        target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
                         className="w-6 h-6 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all shadow-lg"
@@ -128,10 +128,10 @@ export function AlbumTab({
                       </a>
                     </div>
 
-                    <img 
-                      src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)} 
-                      alt={item.prompt} 
-                      className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 shadow-lg cursor-pointer ${isSelected ? 'opacity-40' : ''}`} 
+                    <img
+                      src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)}
+                      alt={item.prompt}
+                      className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 shadow-lg cursor-pointer ${isSelected ? 'opacity-40' : ''}`}
                       referrerPolicy="no-referrer"
                       onClick={() => {
                         const validItems = albumItems.filter(a => a.imageUrl);
@@ -153,10 +153,10 @@ export function AlbumTab({
                     <div className="flex flex-wrap items-center gap-1.5">
                       <div className="flex items-center gap-1 mr-1">
                         <span className="text-[7px] font-black text-neutral-500 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
-                            {getProviderName(item.providerId)}
+                          {getProviderName(item.providerId)}
                         </span>
                         <span className="text-[7px] font-black text-blue-500/60 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
-                            {getModelName(item.providerId, item.modelConfigId)}
+                          {getModelName(item.providerId, item.modelConfigId)}
                         </span>
                       </div>
                       {item.aspectRatio && (
