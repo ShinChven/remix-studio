@@ -740,7 +740,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                   </div>
                 )}
                 <div className="bg-neutral-900/30 border border-neutral-800 rounded-2xl overflow-hidden backdrop-blur-sm shadow-inner">
-                  <div className="max-h-[65vh] overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                  <div className="p-4 space-y-3">
                     {draftJobs.map(task => {
                       const isExpanded = expandedJobId === task.id;
                       return (
@@ -829,7 +829,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               <div className="flex flex-col gap-8">
                 {/* Active Jobs */}
                 <div className="bg-neutral-900/30 border border-neutral-800 rounded-2xl overflow-hidden backdrop-blur-sm shadow-inner">
-                  <div className="max-h-[65vh] overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                  <div className="p-4 space-y-3">
                     {queueJobs.map(task => {
                       const isExpanded = expandedJobId === task.id;
                       return (
