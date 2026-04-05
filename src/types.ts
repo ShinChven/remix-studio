@@ -4,6 +4,7 @@ export interface WorkflowItem {
   id: string;
   type: WorkflowItemType;
   value: string; // text content, library ID, or base64 image data URL
+  order?: number;
 }
 
 export interface LibraryItem {
@@ -29,6 +30,7 @@ export interface Job {
   status: 'draft' | 'pending' | 'processing' | 'completed' | 'failed';
   imageUrl?: string;
   error?: string;
+  createdAt?: number;
 }
 
 export interface Project {

@@ -1,11 +1,12 @@
 import {
   DynamoDBDocumentClient,
   ScanCommand,
+  QueryCommand,
   BatchWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import fs from 'fs';
 import path from 'path';
-import { AppData } from '../../src/types';
+import { AppData, Project } from '../../src/types';
 import { LibraryRepository } from './library-repository';
 import { ProjectRepository } from './project-repository';
 
@@ -22,11 +23,18 @@ export class DataRepository {
   }
 
   async getUserData(userId: string): Promise<AppData> {
-    const [libraries, projects] = await Promise.all([
+    const [libraries, allProjectItems] = await Promise.all([
       this.libraryRepo.getUserLibraries(userId),
-      this.projectRepo.getUserProjects(userId),
+      (await this.client.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+          ExpressionAttributeValues: { ':pk': `USER_DATA#${userId}`, ':prefix': 'PROJECT#' },
+        })
+      )) as any,
     ]);
 
+    // Aggregate library items (current implementation uses separate calls)
     const fullLibraries = await Promise.all(
       libraries.map(async (lib) => {
         const items = await this.libraryRepo.getLibraryItems(userId, lib.id);
@@ -34,49 +42,145 @@ export class DataRepository {
       })
     );
 
+    // Group allProjectItems into Project objects
+    const projectsMap: Record<string, Project> = {};
+    const projectItems = allProjectItems.Items || [];
+
+    // First pass: Metadata items
+    for (const item of projectItems) {
+      if (item.sk.startsWith('PROJECT#') && !item.sk.includes('#JOB#') && !item.sk.includes('#WF#')) {
+        const id = item.sk.replace('PROJECT#', '');
+        projectsMap[id] = {
+          id,
+          name: item.name,
+          createdAt: item.createdAt,
+          workflow: [],
+          jobs: [],
+          providerId: item.providerId,
+          aspectRatio: item.aspectRatio,
+          quality: item.quality,
+        };
+      }
+    }
+
+    // Second pass: Jobs and Workflow Items
+    for (const item of projectItems) {
+      if (item.sk.includes('#JOB#')) {
+        const [projPart, jobPart] = item.sk.split('#JOB#');
+        const projId = projPart.replace('PROJECT#', '');
+        if (projectsMap[projId]) {
+          projectsMap[projId].jobs.push({
+            id: jobPart,
+            prompt: item.prompt,
+            status: item.status,
+            imageContexts: item.imageContexts,
+            imageUrl: item.imageUrl,
+            error: item.error,
+            createdAt: item.createdAt,
+          });
+        }
+      } else if (item.sk.includes('#WF#')) {
+        const [projPart, wfPart] = item.sk.split('#WF#');
+        const projId = projPart.replace('PROJECT#', '');
+        if (projectsMap[projId]) {
+          projectsMap[projId].workflow.push({
+            id: wfPart,
+            type: item.type,
+            value: item.value,
+            order: item.order,
+          });
+        }
+      }
+    }
+
+    // Final sorting
+    const projects = Object.values(projectsMap).map((proj) => {
+      proj.jobs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      proj.workflow.sort((a, b) => (a.order || 0) - (b.order || 0));
+      return proj;
+    });
+
     return { libraries: fullLibraries, projects };
   }
 
   async saveAllData(data: AppData): Promise<void> {
+    // WARNING: Wipe all data for a fresh restore. 
+    // This is currently a global action. We should ideally take a userId.
+    const userId = 'default_user';
+    const pk = `USER_DATA#${userId}`;
+
     await this.deleteAllItems();
 
     const putRequests: Array<{ PutRequest: { Item: Record<string, unknown> } }> = [];
 
+    // Libraries split
     for (const lib of data.libraries || []) {
       putRequests.push({
         PutRequest: {
-          Item: { pk: 'LIBRARY', sk: lib.id, name: lib.name, type: lib.type },
+          Item: { pk, sk: `LIBRARY#${lib.id}`, name: lib.name, type: lib.type },
         },
       });
       for (const item of lib.items || []) {
         putRequests.push({
           PutRequest: {
             Item: {
-              pk: 'LIBRARY',
-              sk: `${lib.id}#ITEM#${item.id}`,
+              pk,
+              sk: `LIBRARY#${lib.id}#ITEM#${item.id}`,
               content: item.content,
-              ...(item.title ? { title: item.title } : {}),
+              title: item.title,
+              order: item.order,
             },
           },
         });
       }
     }
 
+    // Projects split
     for (const proj of data.projects || []) {
       putRequests.push({
         PutRequest: {
           Item: {
-            pk: 'PROJECT',
-            sk: proj.id,
+            pk,
+            sk: `PROJECT#${proj.id}`,
             name: proj.name,
             createdAt: proj.createdAt,
-            workflow: proj.workflow,
-            jobs: proj.jobs,
+            providerId: proj.providerId,
+            aspectRatio: proj.aspectRatio,
+            quality: proj.quality,
           },
         },
       });
+
+      // Split Jobs
+      for (const job of proj.jobs || []) {
+        putRequests.push({
+          PutRequest: {
+            Item: {
+              pk,
+              sk: `PROJECT#${proj.id}#JOB#${job.id}`,
+              ...job,
+              createdAt: job.createdAt || Date.now()
+            },
+          },
+        });
+      }
+
+      // Split Workflow
+      for (const [idx, item] of (proj.workflow || []).entries()) {
+        putRequests.push({
+          PutRequest: {
+            Item: {
+              pk,
+              sk: `PROJECT#${proj.id}#WF#${item.id}`,
+              ...item,
+              order: item.order ?? idx
+            },
+          },
+        });
+      }
     }
 
+    // Chunks of 25 for BatchWriteItem
     for (let i = 0; i < putRequests.length; i += BATCH_LIMIT) {
       const batch = putRequests.slice(i, i + BATCH_LIMIT);
       await this.client.send(new BatchWriteCommand({ RequestItems: { [TABLE_NAME]: batch } }));

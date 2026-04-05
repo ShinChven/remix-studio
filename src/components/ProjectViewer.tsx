@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Project, Job, Library, LibraryItem, WorkflowItem, WorkflowItemType, Provider } from '../types';
 import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow } from '../api';
 import { Play, Square, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X, Shuffle, List, Grid, ChevronLeft, ChevronRight } from 'lucide-react';
-import { generateWorkflowCombinations } from '../lib/remixEngine';
+import { generateWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
 
 interface Props {
@@ -92,7 +92,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const combinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
 
   useEffect(() => {
-    if (!hasManuallySetQueueCount || queueCount > combinations.length) {
+    if (!hasManuallySetQueueCount) {
       setQueueCount(combinations.length);
     }
   }, [combinations.length]);
@@ -239,10 +239,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       return;
     }
 
-    const currentCombinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
-    if (currentCombinations.length === 0) return;
+    const selectedCombinations = generateJobs(localProject.workflow || [], libraries, queueCount, !!localProject.shuffle);
+    if (selectedCombinations.length === 0) return;
 
-    const selectedCombinations = currentCombinations.slice(0, queueCount);
     const newJobs: Job[] = selectedCombinations.map(combo => ({
       id: crypto.randomUUID(),
       prompt: combo.prompt,
@@ -520,18 +519,17 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                 <input
                   type="number"
                   min="1"
-                  max={combinations.length}
                   value={queueCount}
                   onChange={(e) => {
                     const val = parseInt(e.target.value);
                     if (!isNaN(val)) {
-                      setQueueCount(Math.min(val, combinations.length));
+                      setQueueCount(val);
                       setHasManuallySetQueueCount(true);
                     }
                   }}
                   className="w-10 bg-transparent text-[10px] text-blue-400 font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
                 />
-                <span className="text-[9px] text-neutral-500 font-black">/ {combinations.length}</span>
+                <span className="text-[9px] text-neutral-500 font-black" title="Total unique combinations">/ {combinations.length}</span>
               </div>
             </div>
           </button>
