@@ -15,10 +15,21 @@ export function createTrashRouter(repository: IRepository, storage: S3Storage) {
       
       // Presign URLs for viewing in the trash
       const signed = await Promise.all(items.map(async (item) => {
+        // Self-heal missing sizes from S3
+        let size = item.size;
+        if (!size && item.imageUrl) {
+          try {
+            const s3Size = await storage.getSize(item.imageUrl);
+            if (s3Size) size = s3Size;
+          } catch (e) {
+            console.warn(`Failed to recover size for trash item ${item.id}:`, e);
+          }
+        }
+
         const imageUrl = item.imageUrl ? await storage.getPresignedUrl(item.imageUrl) : item.imageUrl;
         const thumbnailUrl = item.thumbnailUrl ? await storage.getPresignedUrl(item.thumbnailUrl) : item.thumbnailUrl;
         const optimizedUrl = item.optimizedUrl ? await storage.getPresignedUrl(item.optimizedUrl) : item.optimizedUrl;
-        return { ...item, imageUrl, thumbnailUrl, optimizedUrl };
+        return { ...item, imageUrl, thumbnailUrl, optimizedUrl, size };
       }));
       
       return c.json(signed);

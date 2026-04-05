@@ -55,6 +55,7 @@ export class LibraryRepository {
               order: record.order,
               thumbnailUrl: record.thumbnailUrl,
               optimizedUrl: record.optimizedUrl,
+              size: record.size,
             });
           }
         }
@@ -100,6 +101,7 @@ export class LibraryRepository {
         order: r.order,
         thumbnailUrl: r.thumbnailUrl,
         optimizedUrl: r.optimizedUrl,
+        size: r.size,
       }))
       .sort((a, b) => {
         if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
@@ -187,6 +189,7 @@ export class LibraryRepository {
         order: r.order,
         thumbnailUrl: r.thumbnailUrl,
         optimizedUrl: r.optimizedUrl,
+        size: r.size,
       }))
       .sort((a, b) => {
         if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
@@ -206,6 +209,7 @@ export class LibraryRepository {
     if (item.order !== undefined) record.order = item.order;
     if (item.thumbnailUrl !== undefined) record.thumbnailUrl = item.thumbnailUrl;
     if (item.optimizedUrl !== undefined) record.optimizedUrl = item.optimizedUrl;
+    if (item.size !== undefined) record.size = item.size;
     await this.client.send(new PutCommand({ TableName: TABLE_NAME, Item: record }));
   }
 

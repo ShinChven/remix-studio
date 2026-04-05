@@ -146,13 +146,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           reader.readAsDataURL(file);
         });
 
-        const { key, url, thumbnailUrl, optimizedUrl } = await saveImage(base64, library.id);
+        const { key, url, thumbnailUrl, optimizedUrl, size } = await saveImage(base64, library.id);
         const newItem = { 
           id: crypto.randomUUID(), 
           content: key, 
           order: newItems.length,
           thumbnailUrl: thumbnailUrl ? key.replace(/(\.[^.]+)$/, '.thumb.jpg') : undefined,
-          optimizedUrl: optimizedUrl ? key.replace(/(\.[^.]+)$/, '.opt.jpg') : undefined
+          optimizedUrl: optimizedUrl ? key.replace(/(\.[^.]+)$/, '.opt.jpg') : undefined,
+          size: size
         };
         await createLibraryItem(library.id, newItem);
         // Use signed URLs for immediate display, DB stores the S3 keys

@@ -163,6 +163,7 @@ export async function saveImage(base64: string, projectId: string): Promise<{
   thumbnailUrl: string;
   optimizedKey: string;
   optimizedUrl: string;
+  size: number;
 }> {
   const res = await fetch('/api/images', {
     method: 'POST',
@@ -177,7 +178,8 @@ export async function saveImage(base64: string, projectId: string): Promise<{
     thumbnailKey: data.thumbnailKey,
     thumbnailUrl: data.thumbnailUrl,
     optimizedKey: data.optimizedKey,
-    optimizedUrl: data.optimizedUrl
+    optimizedUrl: data.optimizedUrl,
+    size: data.size
   };
 }
 

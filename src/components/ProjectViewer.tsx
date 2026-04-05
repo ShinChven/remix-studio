@@ -174,8 +174,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     setShowLibrarySelector(false);
   };
 
-  const updateWorkflowItem = (id: string, value: string, thumbnailUrl?: string, optimizedUrl?: string) => {
-    const updated = { ...localProject, workflow: localProject.workflow.map(item => item.id === id ? { ...item, value, thumbnailUrl, optimizedUrl } : item) };
+  const updateWorkflowItem = (id: string, value: string, thumbnailUrl?: string, optimizedUrl?: string, size?: number) => {
+    const updated = { ...localProject, workflow: localProject.workflow.map(item => item.id === id ? { ...item, value, thumbnailUrl, optimizedUrl, size } : item) };
     setLocalProject(updated);
     onUpdate(updated);
   };
@@ -227,8 +227,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       reader.readAsDataURL(file);
       try {
         const base64 = await base64Promise;
-        const { key, thumbnailUrl, optimizedUrl } = await saveImage(base64, localProject.id);
-        updateWorkflowItem(id, key, thumbnailUrl, optimizedUrl);
+        const { key, thumbnailUrl, optimizedUrl, size } = await saveImage(base64, localProject.id);
+        updateWorkflowItem(id, key, thumbnailUrl, optimizedUrl, size);
       } catch (err) {
         console.error('Failed to upload image:', err);
         setWorkflowError("Failed to upload image. Please try again.");

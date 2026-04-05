@@ -11,6 +11,16 @@ async function signLibraryImages(items: LibraryItem[], storage: S3Storage, libra
   if (libraryType !== 'image') return items;
   return Promise.all(
     items.map(async (item) => {
+      let size = item.size;
+      if (!size && item.content && !item.content.startsWith('http') && !item.content.startsWith('data:')) {
+        try {
+          const s3Size = await storage.getSize(item.content);
+          if (s3Size) size = s3Size;
+        } catch (e) {
+          console.warn(`Failed to recover size for library item ${item.id}:`, e);
+        }
+      }
+
       const content = (item.content && !item.content.startsWith('http') && !item.content.startsWith('data:'))
         ? await storage.getPresignedUrl(item.content)
         : item.content;
@@ -20,7 +30,7 @@ async function signLibraryImages(items: LibraryItem[], storage: S3Storage, libra
       const optimizedUrl = (item.optimizedUrl && !item.optimizedUrl.startsWith('http'))
         ? await storage.getPresignedUrl(item.optimizedUrl)
         : item.optimizedUrl;
-      return { ...item, content, thumbnailUrl, optimizedUrl };
+      return { ...item, content, thumbnailUrl, optimizedUrl, size };
     })
   );
 }

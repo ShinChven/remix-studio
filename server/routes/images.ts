@@ -54,7 +54,8 @@ export function createImageRouter(storage: S3Storage) {
         thumbnailKey: thumbKey,
         thumbnailUrl: thumbUrl,
         optimizedKey: optKey,
-        optimizedUrl: optUrl
+        optimizedUrl: optUrl,
+        size: buffer.length
       });
     } catch (e) {
       console.error('[POST /api/images]', e);

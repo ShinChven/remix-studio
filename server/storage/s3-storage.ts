@@ -71,6 +71,17 @@ export class S3Storage implements IStorage {
     return Buffer.from(bytes);
   }
 
+  async getSize(key: string): Promise<number | undefined> {
+    try {
+      const result = await this.client.send(
+        new HeadObjectCommand({ Bucket: this.bucket, Key: key })
+      );
+      return result.ContentLength;
+    } catch {
+      return undefined;
+    }
+  }
+
   async exists(key: string): Promise<boolean> {
     try {
       await this.client.send(

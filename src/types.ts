@@ -7,6 +7,7 @@ export interface WorkflowItem {
   order?: number;
   thumbnailUrl?: string;
   optimizedUrl?: string;
+  size?: number;
 }
 
 export interface LibraryItem {
@@ -16,6 +17,7 @@ export interface LibraryItem {
   order?: number;
   thumbnailUrl?: string;
   optimizedUrl?: string;
+  size?: number;
 }
 
 export type LibraryType = 'text' | 'image';
@@ -86,6 +88,7 @@ export interface Job {
   imageUrl?: string;
   thumbnailUrl?: string;
   optimizedUrl?: string;
+  size?: number;
   error?: string;
   createdAt?: number;
   providerId?: string;
