@@ -14,6 +14,8 @@ export function TrashView() {
   const [showDeleteSelectedConfirm, setShowDeleteSelectedConfirm] = useState(false);
   const [lightboxData, setLightboxData] = useState<{images: string[], index: number} | null>(null);
 
+  const [itemToDeleteId, setItemToDeleteId] = useState<string | null>(null);
+
   const loadTrash = async () => {
     try {
       setLoading(true);
@@ -76,6 +78,20 @@ export function TrashView() {
       setShowDeleteSelectedConfirm(false);
     } catch (e) {
       console.error('Batch delete failed:', e);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteSingle = async () => {
+    if (!itemToDeleteId) return;
+    try {
+      setIsDeleting(true);
+      await deleteTrashPermanently(itemToDeleteId);
+      setItems(prev => prev.filter(i => i.id !== itemToDeleteId));
+      setItemToDeleteId(null);
+    } catch (e) {
+      console.error('Delete failed:', e);
     } finally {
       setIsDeleting(false);
     }
@@ -241,12 +257,7 @@ export function TrashView() {
                         <RotateCcw className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={async () => {
-                          if (confirm('Permanently delete this image?')) {
-                            await deleteTrashPermanently(item.id);
-                            setItems(prev => prev.filter(i => i.id !== item.id));
-                          }
-                        }}
+                        onClick={() => setItemToDeleteId(item.id)}
                         className="p-2 bg-red-500/10 text-red-500 rounded-lg border border-red-500/20 hover:bg-red-500/20 transition-all"
                         title="Delete Permanently"
                       >
@@ -278,6 +289,16 @@ export function TrashView() {
         onConfirm={handleDeleteSelected}
         title="Delete Selected Items"
         message={`Are you sure you want to permanently delete ${selectedIds.size} items? This will free up ${formatSize(selectedSize)} and cannot be undone.`}
+        confirmText={isDeleting ? "Deleting..." : "Delete Permanently"}
+        type="danger"
+      />
+
+      <ConfirmModal
+        isOpen={!!itemToDeleteId}
+        onClose={() => setItemToDeleteId(null)}
+        onConfirm={handleDeleteSingle}
+        title="Permanently Delete Image"
+        message="Are you sure you want to permanently delete this image? This action cannot be undone."
         confirmText={isDeleting ? "Deleting..." : "Delete Permanently"}
         type="danger"
       />

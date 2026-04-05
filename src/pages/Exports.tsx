@@ -3,12 +3,15 @@ import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, FileArchive, A
 import { Link } from 'react-router-dom';
 import { ExportTask } from '../types';
 import { fetchAllExports, deleteProjectExport } from '../api';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 export function Exports() {
   const [exports, setExports] = useState<ExportTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<{ projectId: string, taskId: string } | null>(null);
 
   const loadExports = async (cursor?: string, append = false) => {
     try {
@@ -51,12 +54,20 @@ export function Exports() {
   };
 
   const handleDelete = async (projectId: string, taskId: string) => {
-    if (!confirm('Are you sure you want to delete this export record?')) return;
+    setTaskToDelete({ projectId, taskId });
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!taskToDelete) return;
     try {
-      await deleteProjectExport(projectId, taskId);
-      setExports(prev => prev.filter(t => t.id !== taskId));
+      await deleteProjectExport(taskToDelete.projectId, taskToDelete.taskId);
+      setExports(prev => prev.filter(t => t.id !== taskToDelete.taskId));
     } catch (err) {
       alert('Failed to delete export record');
+    } finally {
+      setTaskToDelete(null);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -224,6 +235,20 @@ export function Exports() {
           )}
         </div>
       )}
+
+      {/* Modals */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setTaskToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Export Record"
+        message="Are you sure you want to delete this export record? This action cannot be undone."
+        confirmText="Delete Record"
+        type="danger"
+      />
     </div>
   );
 }
