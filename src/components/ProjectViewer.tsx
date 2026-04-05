@@ -345,6 +345,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
     try {
       await apiRunWorkflow(localProject.id);
+      setActiveTab('queue');
     } catch (e) {
       console.error("Failed to run job:", e);
     }
@@ -359,6 +360,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
     try {
       await apiRunWorkflow(localProject.id);
+      setActiveTab('queue');
     } catch (e) {
       console.error("Failed to run all drafts:", e);
     }
@@ -375,6 +377,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
     try {
       await apiRunWorkflow(localProject.id);
+      setActiveTab('queue');
     } catch (e) {
       console.error("Failed to run selected drafts:", e);
     }
@@ -1242,12 +1245,14 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                           <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
                             {selectedQueueIds.size} Selected
                           </span>
-                          <button
-                            onClick={retrySelectedQueue}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
-                          >
-                            <Play className="w-3 h-3 fill-current" /> Retry
-                          </button>
+                          {queueJobs.some(j => selectedQueueIds.has(j.id) && j.status === 'failed') && (
+                            <button
+                              onClick={retrySelectedQueue}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
+                            >
+                              <Play className="w-3 h-3 fill-current" /> Retry
+                            </button>
+                          )}
                           <button
                             onClick={deleteSelectedQueue}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
@@ -1333,7 +1338,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                 {task.status === 'failed' && <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-3 py-1.5 bg-red-500/10 rounded-lg border border-red-500/20">Failed</span>}
                               
                               <div className="flex items-center gap-1">
-                                {(task.status === 'failed' || task.status === 'pending') && (
+                                {task.status === 'failed' && (
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); runJob(task.id); }}
                                     className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"

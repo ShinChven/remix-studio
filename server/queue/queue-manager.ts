@@ -69,7 +69,6 @@ export class QueueManager {
   }
 
   private async processNext(providerId: string) {
-    const active = this.activeJobs.get(providerId) || 0;
     const queue = this.queues.get(providerId) || [];
 
     if (queue.length === 0) return;
@@ -84,6 +83,9 @@ export class QueueManager {
       return;
     }
 
+    // Re-read active AFTER the await — reading before would capture a stale value
+    // since another processNext() could run during the await and already increment it.
+    const active = this.activeJobs.get(providerId) || 0;
     const limit = provider.concurrency || 1;
     if (active >= limit) return;
 
