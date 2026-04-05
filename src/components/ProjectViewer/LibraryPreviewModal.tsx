@@ -33,11 +33,38 @@ function TextLibraryItem({ item }: { item: LibraryItem }) {
 
 interface LibraryPreviewModalProps {
   library: Library | null;
+  selectedTags: string[];
+  onUpdateTags: (tags: string[]) => void;
   onClose: () => void;
+  isSelectionMode?: boolean;
+  onSelectItem?: (itemContent: string) => void;
 }
 
-export function LibraryPreviewModal({ library, onClose }: LibraryPreviewModalProps) {
+export function LibraryPreviewModal({ 
+  library, 
+  selectedTags, 
+  onUpdateTags, 
+  onClose,
+  isSelectionMode = false,
+  onSelectItem
+}: LibraryPreviewModalProps) {
   const [previewLightbox, setPreviewLightbox] = useState<{images: string[], index: number} | null>(null);
+  
+  const availableTags = React.useMemo(() => {
+    if (!library) return [];
+    const tagSet = new Set<string>();
+    library.items.forEach(i => {
+      if (i.tags) i.tags.forEach(t => tagSet.add(t));
+    });
+    return Array.from(tagSet).sort();
+  }, [library]);
+
+  const toggleTag = (tag: string) => {
+    const next = selectedTags.includes(tag) 
+      ? selectedTags.filter(t => t !== tag) 
+      : [...selectedTags, tag];
+    onUpdateTags(next);
+  };
   
   if (!library) return null;
 
@@ -64,6 +91,38 @@ export function LibraryPreviewModal({ library, onClose }: LibraryPreviewModalPro
           </button>
         </div>
 
+        {availableTags.length > 0 && (
+          <div className="px-6 py-4 bg-neutral-900 border-b border-neutral-800 flex flex-wrap gap-2">
+            <div className="w-full text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-2 flex items-center gap-2">
+              <span className="w-4 h-px bg-neutral-800" />
+              Filter generation by tags
+            </div>
+            <button
+              onClick={() => onUpdateTags([])}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                selectedTags.length === 0
+                  ? 'bg-blue-600 text-white border-transparent'
+                  : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
+              }`}
+            >
+              All Items
+            </button>
+            {availableTags.map(tag => (
+              <button
+                key={tag}
+                onClick={() => toggleTag(tag)}
+                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                  selectedTags.includes(tag)
+                    ? 'bg-blue-600/20 text-blue-400 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                    : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar bg-neutral-950/10">
           <div className={library.type === 'text' ? "max-w-4xl mx-auto space-y-3" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
             {library.items.map(item => (
@@ -72,13 +131,31 @@ export function LibraryPreviewModal({ library, onClose }: LibraryPreviewModalPro
               ) : (
                 <div key={item.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col shadow-sm">
                   {library.type === 'image' && (
-                    <div className="aspect-video bg-black relative border-b border-neutral-800">
-                      <img src={item.thumbnailUrl || item.content} alt={item.content} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => {
-                        const imageItems = library.items.filter(i => i.content).map(i => i.optimizedUrl || i.content);
-                        const currentOptimized = item.optimizedUrl || item.content;
-                        const idx = imageItems.indexOf(currentOptimized);
-                        setPreviewLightbox({ images: imageItems, index: idx >= 0 ? idx : 0 });
-                      }} />
+                    <div 
+                      className={`aspect-video bg-black relative border-b border-neutral-800 group/img-container cursor-pointer overflow-hidden ${isSelectionMode ? 'ring-inset hover:ring-2 hover:ring-blue-500' : ''}`}
+                      onClick={() => {
+                        if (isSelectionMode && onSelectItem) {
+                          onSelectItem(item.content);
+                        } else {
+                          const imageItems = library.items.filter(i => i.content).map(i => i.optimizedUrl || i.content);
+                          const currentOptimized = item.optimizedUrl || item.content;
+                          const idx = imageItems.indexOf(currentOptimized);
+                          setPreviewLightbox({ images: imageItems, index: idx >= 0 ? idx : 0 });
+                        }
+                      }}
+                    >
+                      <img 
+                        src={item.thumbnailUrl || item.content} 
+                        alt={item.content} 
+                        className="w-full h-full object-cover group-hover/img-container:scale-105 transition-transform duration-500" 
+                      />
+                      {isSelectionMode && (
+                        <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover/img-container:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
+                            Click to Select
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="p-4 flex-1">

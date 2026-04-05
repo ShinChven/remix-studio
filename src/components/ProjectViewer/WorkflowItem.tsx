@@ -19,6 +19,7 @@ interface WorkflowItemProps {
   uploadingItemIds: Set<string>;
   onLightbox: (images: string[], index: number) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
+  onSelectFromLibrary: (id: string) => void;
   libraries: Library[];
 }
 
@@ -38,25 +39,11 @@ export function WorkflowItem({
   uploadingItemIds,
   onLightbox,
   onUpdateTags,
+  onSelectFromLibrary,
   libraries
 }: WorkflowItemProps) {
   const isLibrary = item.type === 'library';
   const library = isLibrary ? libraries.find(l => l.id === item.value) : null;
-  const availableTags = React.useMemo(() => {
-    if (!library) return [];
-    const tagSet = new Set<string>();
-    library.items.forEach(i => {
-      if (i.tags) i.tags.forEach(t => tagSet.add(t));
-    });
-    return Array.from(tagSet).sort();
-  }, [library]);
-
-  const toggleTag = (e: React.MouseEvent, tag: string) => {
-    e.stopPropagation();
-    const current = item.selectedTags || [];
-    const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag];
-    onUpdateTags(item.id, next);
-  };
 
   return (
     <div 
@@ -127,8 +114,13 @@ export function WorkflowItem({
                 <div className="text-neutral-200 font-bold truncate">
                   {library?.name || 'Unknown Library'}
                 </div>
-                <div className="text-[10px] text-neutral-500 font-medium mt-0.5">
+                <div className="text-[10px] text-neutral-500 font-medium mt-0.5 flex items-center gap-2">
                   {library?.items.length || 0} items
+                  {(item.selectedTags || []).length > 0 && (
+                    <span className="text-[9px] font-black text-blue-500/80 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 uppercase tracking-widest">
+                      Filtered: {(item.selectedTags || []).length} tags
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -136,44 +128,34 @@ export function WorkflowItem({
               <Maximize2 className="w-3.5 h-3.5" />
             </div>
           </div>
-          {availableTags.length > 0 && (
-            <div className="mt-2.5 flex flex-wrap gap-1.5" onClick={e => e.stopPropagation()}>
-              {availableTags.map(tag => {
-                const isSelected = (item.selectedTags || []).includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    onClick={(e) => toggleTag(e, tag)}
-                    className={`px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wider transition-all border ${
-                      isSelected 
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
-                        : 'bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700 hover:text-neutral-300'
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
       )}
 
       {item.type === 'image' && (
         <div className="space-y-3">
-          <label className="block w-full text-center py-5 border border-dashed border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-amber-500/50 transition-all group relative overflow-hidden">
-            {uploadingItemIds.has(item.id) ? (
-              <div className="flex flex-col items-center gap-2">
-                <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-amber-500/70">Uploading...</span>
-              </div>
-            ) : (
-              <>
-                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">Choose Image</span>
-                <input type="file" accept="image/*" onChange={(e) => onImageUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
-              </>
-            )}
-          </label>
+          <div className="flex gap-2">
+            <label className="flex-1 block text-center py-5 border border-dashed border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-amber-500/50 transition-all group relative overflow-hidden">
+              {uploadingItemIds.has(item.id) ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-500/70">Uploading...</span>
+                </div>
+              ) : (
+                <>
+                  <ImageIcon className="w-3.5 h-3.5 text-neutral-500 group-hover:text-amber-500 mb-1 mx-auto" />
+                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">Upload</span>
+                  <input type="file" accept="image/*" onChange={(e) => onImageUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
+                </>
+              )}
+            </label>
+            <button 
+              onClick={() => onSelectFromLibrary(item.id)}
+              className="flex-1 flex flex-col items-center justify-center py-5 border border-dashed border-neutral-800 rounded-lg hover:bg-neutral-800/50 hover:border-emerald-500/50 transition-all group"
+            >
+              <LibraryIcon className="w-4 h-4 text-neutral-500 group-hover:text-emerald-500 mb-1" />
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">Library</span>
+            </button>
+          </div>
           {item.value && !uploadingItemIds.has(item.id) && (
             <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-800 mt-2">
                <img 

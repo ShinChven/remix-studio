@@ -46,6 +46,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [editingItem, setEditingItem] = useState<WorkflowItemType | null>(null);
   const [showLibrarySelector, setShowLibrarySelector] = useState(false);
   const [previewingLibrary, setPreviewingLibrary] = useState<Library | null>(null);
+  const [previewingWorkflowItemId, setPreviewingWorkflowItemId] = useState<string | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(project.providerId || '');
   const [selectedModelId, setSelectedModelId] = useState<string>('');
@@ -54,6 +55,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [hasManuallySetQueueCount, setHasManuallySetQueueCount] = useState(false);
   const [workflowError, setWorkflowError] = useState<string | null>(null);
   const [uploadingItemIds, setUploadingItemIds] = useState<Set<string>>(new Set());
+  const [selectingLibraryForItemId, setSelectingLibraryForItemId] = useState<string | null>(null);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
   const [lightboxData, setLightboxData] = useState<{images: string[], index: number} | null>(null);
@@ -172,6 +174,15 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     setLocalProject(updated);
     onUpdate(updated);
     setShowLibrarySelector(false);
+  };
+
+  const handleImageFromLibrarySelect = (libraryId: string, imageKey: string) => {
+    if (!selectingLibraryForItemId) return;
+    const item = localProject.workflow.find(i => i.id === selectingLibraryForItemId);
+    if (!item) return;
+    
+    updateWorkflowItem(selectingLibraryForItemId, imageKey);
+    setSelectingLibraryForItemId(null);
   };
 
   const updateWorkflowItem = (id: string, value: string, thumbnailUrl?: string, optimizedUrl?: string, size?: number) => {
@@ -498,16 +509,19 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             <LibraryIcon className="w-3 h-3" /> Lib
           </button>
         </div>
-
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar lg:max-h-none">
           {(localProject.workflow || []).map((item, index) => (
             <WorkflowItem
               key={item.id} item={item} index={index} draggedIndex={draggedIndex} dragOverIndex={dragOverIndex}
               onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} onDragEnd={() => { setDraggedIndex(null); setDragOverIndex(null); }}
-              onRemove={setItemToRemoveId} onEdit={setEditingItem} onPreviewLibrary={setPreviewingLibrary}
+              onRemove={setItemToRemoveId} onEdit={setEditingItem} onPreviewLibrary={(lib) => {
+                setPreviewingLibrary(lib);
+                setPreviewingWorkflowItemId(item.id);
+              }}
               onImageUpload={handleImageUpload} uploadingItemIds={uploadingItemIds} libraries={libraries}
               onLightbox={(images, index) => setLightboxData({ images, index })}
               onUpdateTags={updateWorkflowItemTags}
+              onSelectFromLibrary={(id) => setSelectingLibraryForItemId(id)}
             />
           ))}
           {(localProject.workflow || []).length === 0 && (
@@ -579,8 +593,43 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       <ConfirmModal isOpen={showDeleteAllDraftsModal} onClose={() => setShowDeleteAllDraftsModal(false)} onConfirm={deleteAllDrafts} title="Delete All Drafts" message={`Are you sure you want to delete all ${draftJobs.length} draft tasks?`} confirmText="Delete All" type="danger" />
       <ConfirmModal isOpen={showDeleteProjectModal} onClose={() => setShowDeleteProjectModal(false)} onConfirm={onDelete} title="Delete Project" message={`Are you sure you want to delete "${localProject.name}"?`} confirmText="Delete Project" type="danger" />
       <ConfirmModal isOpen={jobToDeleteId !== null} onClose={() => setJobToDeleteId(null)} onConfirm={() => { if (jobToDeleteId) { deleteJob(jobToDeleteId); setJobToDeleteId(null); } }} title="Delete Job" message="Are you sure you want to delete this job?" confirmText="Delete Job" type="danger" />
-      <LibrarySelectionModal isOpen={showLibrarySelector} onClose={() => setShowLibrarySelector(false)} onSelect={handleLibrarySelect} libraries={libraries} selectedLibraryIds={(localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)} />
-      <LibraryPreviewModal library={previewingLibrary} onClose={() => setPreviewingLibrary(null)} />
+      <LibrarySelectionModal 
+        isOpen={showLibrarySelector || !!selectingLibraryForItemId} 
+        onClose={() => {
+          setShowLibrarySelector(false);
+          setSelectingLibraryForItemId(null);
+        }} 
+        onSelect={(libraryId) => {
+          if (selectingLibraryForItemId) {
+            // If we're selecting a single image for an 'image' item, we show the library preview modal instead
+            const lib = libraries.find(l => l.id === libraryId);
+            if (lib) setPreviewingLibrary(lib);
+          } else {
+            handleLibrarySelect(libraryId);
+          }
+        }} 
+        libraries={selectingLibraryForItemId ? libraries.filter(l => l.type === 'image') : libraries} 
+        selectedLibraryIds={(localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)} 
+      />
+      <LibraryPreviewModal 
+        library={previewingLibrary} 
+        selectedTags={localProject.workflow.find(i => i.id === previewingWorkflowItemId)?.selectedTags || []}
+        onUpdateTags={(tags) => {
+          if (previewingWorkflowItemId) updateWorkflowItemTags(previewingWorkflowItemId, tags);
+        }}
+        isSelectionMode={!!selectingLibraryForItemId}
+        onSelectItem={(content) => {
+          if (selectingLibraryForItemId) {
+            handleImageFromLibrarySelect(previewingLibrary!.id, content);
+            setPreviewingLibrary(null);
+            setPreviewingWorkflowItemId(null);
+          }
+        }}
+        onClose={() => {
+          setPreviewingLibrary(null);
+          setPreviewingWorkflowItemId(null);
+        }} 
+      />
       {lightboxData && <ImageLightbox images={lightboxData.images} startIndex={lightboxData.index} onClose={() => setLightboxData(null)} />}
       <ConfirmModal isOpen={showDeleteAlbumModal} onClose={() => { setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); }} onConfirm={async () => { if (albumItemsToDelete) { await deleteAlbumItems(albumItemsToDelete); setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); } }} title="Move to Recycle Bin" message={`Are you sure you want to move ${albumItemsToDelete?.length || 0} items to the Recycle Bin?`} confirmText="Move to Trash" type="danger" />
     </div>
