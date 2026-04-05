@@ -100,6 +100,17 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const selectedProvider = providers.find(p => p.id === selectedProviderId);
   const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
 
+  const getProviderName = (id?: string) => {
+    if (!id) return 'Unknown Provider';
+    return providers.find(p => p.id === id)?.name || id;
+  };
+
+  const getModelName = (providerId?: string, modelId?: string) => {
+    if (!modelId) return 'Unknown Model';
+    const provider = providers.find(p => p.id === providerId);
+    return provider?.models.find(m => m.id === modelId)?.name || modelId;
+  };
+
   useEffect(() => {
     if (selectedModel) {
       let needsUpdate = false;
@@ -920,6 +931,15 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                  </span>
                               </div>
                             <div className="flex items-center gap-2">
+                              <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-neutral-950 rounded-lg border border-neutral-800/50">
+                                <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest leading-none">
+                                  {getProviderName(task.providerId)}
+                                </span>
+                                <span className="w-1 h-1 rounded-full bg-neutral-800" />
+                                <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest leading-none">
+                                  {getModelName(task.providerId, task.modelConfigId)}
+                                </span>
+                              </div>
                               {task.aspectRatio && (
                                 <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
                                   {task.aspectRatio}
@@ -1023,6 +1043,15 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                </span>
                             </div>
                               <div className="flex-shrink-0 ml-4 flex items-center gap-3">
+                                <div className="hidden md:flex items-center gap-1.5 px-2 py-1 bg-neutral-950/50 rounded-lg border border-neutral-800/50">
+                                  <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest leading-none">
+                                    {getProviderName(task.providerId)}
+                                  </span>
+                                  <span className="w-1 h-1 rounded-full bg-neutral-800" />
+                                  <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest leading-none">
+                                    {getModelName(task.providerId, task.modelConfigId)}
+                                  </span>
+                                </div>
                                 {task.aspectRatio && (
                                   <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
                                     {task.aspectRatio}
@@ -1151,7 +1180,15 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                         <p className="text-[10px] leading-relaxed text-neutral-400 line-clamp-3 font-medium mb-3" title={job.prompt}>
                           {job.prompt}
                         </p>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <div className="flex items-center gap-1 mr-1">
+                            <span className="text-[7px] font-black text-neutral-500 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
+                                {getProviderName(job.providerId)}
+                            </span>
+                            <span className="text-[7px] font-black text-blue-500/60 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
+                                {getModelName(job.providerId, job.modelConfigId)}
+                            </span>
+                          </div>
                           {job.aspectRatio && (
                             <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
                               {job.aspectRatio}
