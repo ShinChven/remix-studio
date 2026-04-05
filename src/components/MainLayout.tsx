@@ -77,7 +77,8 @@ export function MainLayout() {
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
-        <Link to="/" className="flex items-center px-2" onClick={() => setIsMobileMenuOpen(false)}>
+        <Link to="/" className="flex items-center px-2 gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+          <img src="/favicon.svg" alt="Remix Studio" className="w-6 h-6 flex-shrink-0" />
           <h1 className="text-lg font-bold text-white whitespace-nowrap tracking-tight">Remix Studio</h1>
         </Link>
         <div id="mobile-header-actions" className="ml-auto flex items-center px-2"></div>
@@ -104,8 +105,8 @@ export function MainLayout() {
             onClick={() => setIsMobileMenuOpen(false)}
             className={`flex-1 transition-all duration-300 overflow-hidden ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'}`}
           >
-            <h1 className="text-xl font-bold text-white flex items-center gap-2 whitespace-nowrap">
-              <Layers className="w-6 h-6 text-blue-500 flex-shrink-0" />
+            <h1 className="text-xl font-bold text-white flex items-center gap-3 whitespace-nowrap">
+              <img src="/favicon.svg" alt="Remix Studio" className="w-7 h-7 flex-shrink-0" />
               Remix Studio
             </h1>
           </Link>

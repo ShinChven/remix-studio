@@ -37,7 +37,8 @@ export function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 px-4">
-      <div className="max-w-md w-full p-8 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl">
+      <div className="max-w-md w-full p-8 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl flex flex-col items-center">
+        <img src="/favicon.svg" alt="Remix Studio Logo" className="w-16 h-16 mb-6" />
         <h2 className="text-3xl font-bold text-center text-zinc-100 mb-8">Welcome Back</h2>
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
