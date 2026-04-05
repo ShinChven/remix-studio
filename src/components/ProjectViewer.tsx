@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Project, Job, Library, LibraryItem, WorkflowItem, WorkflowItemType, Provider, ModelConfig } from '../types';
-import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow } from '../api';
+import { saveImage, fetchProviders, generateImage, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl } from '../api';
 import { Play, Square, CheckSquare, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon, Trash2, GripVertical, Type, Library as LibraryIcon, Plus, Layers, ChevronDown, ChevronUp, Save, Settings, Maximize2, X, Shuffle, List, Grid, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
@@ -45,6 +45,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [lightboxData, setLightboxData] = useState<{images: string[], index: number} | null>(null);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'workflow' | 'jobs'>('workflow');
+  const [selectedQueueIds, setSelectedQueueIds] = useState<Set<string>>(new Set());
   
   const projectRef = useRef(localProject);
   const isProcessing = localProject.jobs.some(j => j.status === 'pending' || j.status === 'processing');
@@ -67,8 +68,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           const updated = await apiFetchProject(localProject.id);
           
           // Check if anything actually changed to avoid unnecessary re-renders
-          const hasUpdates = JSON.stringify(updated.jobs) !== JSON.stringify(localProject.jobs);
-          if (hasUpdates) {
+          const jobsChanged = JSON.stringify(updated.jobs) !== JSON.stringify(localProject.jobs);
+          const albumChanged = JSON.stringify(updated.album) !== JSON.stringify(localProject.album);
+          if (jobsChanged || albumChanged) {
             setLocalProject(updated);
           }
         } catch (e) {
@@ -77,7 +79,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       }, 10000);
     }
     return () => clearInterval(interval);
-  }, [isProcessing, localProject.id, localProject.jobs]);
+  }, [isProcessing, localProject.id, localProject.jobs, localProject.album]);
 
   useEffect(() => {
     (async () => {
@@ -253,8 +255,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       
       try {
         const base64 = await base64Promise;
-        const { url } = await saveImage(base64, localProject.id);
-        updateWorkflowItem(id, url);
+        const { key } = await saveImage(base64, localProject.id);
+        updateWorkflowItem(id, key);
       } catch (err) {
         console.error('Failed to upload image:', err);
         setWorkflowError("Failed to upload image. Please try again.");
@@ -408,9 +410,57 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     }
   };
 
+  const toggleQueueSelection = (jobId: string) => {
+    setSelectedQueueIds(prev => {
+      const next = new Set(prev);
+      if (next.has(jobId)) next.delete(jobId);
+      else next.add(jobId);
+      return next;
+    });
+  };
+
+  const toggleSelectAllQueue = () => {
+    const queueIds = localProject.jobs
+      .filter(j => j.status === 'pending' || j.status === 'processing' || j.status === 'failed')
+      .map(j => j.id);
+    if (selectedQueueIds.size === queueIds.length) {
+      setSelectedQueueIds(new Set());
+    } else {
+      setSelectedQueueIds(new Set(queueIds));
+    }
+  };
+
+  const retrySelectedQueue = async () => {
+    if (selectedQueueIds.size === 0) return;
+    const updatedJobs = localProject.jobs.map(j =>
+      selectedQueueIds.has(j.id) && (j.status === 'failed' || j.status === 'pending')
+        ? { ...j, status: 'pending' as const, error: undefined }
+        : j
+    );
+    setLocalProject({ ...localProject, jobs: updatedJobs });
+    setSelectedQueueIds(new Set());
+    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+    try { await apiRunWorkflow(localProject.id); } catch (e) { console.error("Failed to retry selected:", e); }
+  };
+
+  const deleteSelectedQueue = async () => {
+    if (selectedQueueIds.size === 0) return;
+    const updatedJobs = localProject.jobs.filter(j => !selectedQueueIds.has(j.id));
+    setLocalProject({ ...localProject, jobs: updatedJobs });
+    setSelectedQueueIds(new Set());
+    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+  };
+
+  const clearAllFailed = async () => {
+    const updatedJobs = localProject.jobs.filter(j => j.status !== 'failed');
+    setLocalProject({ ...localProject, jobs: updatedJobs });
+    setSelectedQueueIds(new Set());
+    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+  };
+
   const draftJobs = localProject.jobs.filter(j => j.status === 'draft');
   const queueJobs = localProject.jobs.filter(j => j.status === 'pending' || j.status === 'processing' || j.status === 'failed');
-  const completedJobs = localProject.jobs.filter(j => j.status === 'completed');
+  const albumItems = localProject.album || [];
   const total = localProject.jobs.length;
   // Progress calculations for the active queue
   const activeQueueCount = localProject.jobs.filter(j => j.status === 'pending' || j.status === 'processing').length;
@@ -607,7 +657,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                   </label>
                   {item.value && !uploadingItemIds.has(item.id) && (
                     <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-800 mt-2">
-                       <img src={item.value} alt="Reference" className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLightboxData({ images: [item.value], index: 0 })} />
+                       <img src={imageDisplayUrl(item.value)} alt="Reference" className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLightboxData({ images: [imageDisplayUrl(item.value)], index: 0 })} />
                     </div>
                   )}
                 </div>
@@ -861,7 +911,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                       : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'
                   }`}
                 >
-                  <Grid className="w-3.5 h-3.5" /> Album ({completedJobs.length})
+                  <Grid className="w-3.5 h-3.5" /> Album ({albumItems.length})
                 </button>
               </div>
           </div>
@@ -1012,13 +1062,13 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                       {task.imageContexts.map((ctx, idx) => (
                                         <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-blue-500/50">
                                           <img 
-                                            src={ctx} 
+                                            src={imageDisplayUrl(ctx)}
                                             alt={`Context ${idx + 1}`} 
                                             className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
                                             loading="lazy"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setLightboxData({ images: task.imageContexts || [], index: idx });
+                                                setLightboxData({ images: (task.imageContexts || []).map(imageDisplayUrl), index: idx });
                                             }}
                                           />
                                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/ctx:opacity-100 transition-opacity flex items-end p-1.5 pointer-events-none">
@@ -1051,6 +1101,54 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           {activeTab === 'queue' && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex flex-col gap-8">
+                {/* Queue Toolbar */}
+                {queueJobs.length > 0 && (
+                  <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 p-3 rounded-xl flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={toggleSelectAllQueue}
+                        className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
+                      >
+                        {selectedQueueIds.size === queueJobs.length ? (
+                          <CheckSquare className="w-4 h-4 text-blue-500" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
+                        Select All
+                      </button>
+
+                      {selectedQueueIds.size > 0 && (
+                        <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
+                          <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
+                            {selectedQueueIds.size} Selected
+                          </span>
+                          <button
+                            onClick={retrySelectedQueue}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
+                          >
+                            <Play className="w-3 h-3 fill-current" /> Retry
+                          </button>
+                          <button
+                            onClick={deleteSelectedQueue}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {queueJobs.some(j => j.status === 'failed') && (
+                      <button
+                        onClick={clearAllFailed}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                      >
+                        <Trash2 className="w-3 h-3" /> Clear All Failed
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* Active Jobs */}
                 <div className="bg-neutral-900/30 border border-neutral-800 rounded-2xl overflow-hidden backdrop-blur-sm shadow-inner">
                   <div className="p-4 space-y-3">
@@ -1058,11 +1156,21 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                       const isExpanded = expandedJobId === task.id;
                       return (
                         <div key={task.id} className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <div 
+                          <div
                             onClick={() => toggleJobExpand(task.id)}
                             className={`bg-neutral-950/50 p-4 rounded-xl border flex justify-between items-center transition-all cursor-pointer group/task ${isExpanded ? 'border-blue-500/50 bg-neutral-900/50 rounded-b-none' : 'border-neutral-800 hover:border-neutral-700'} ${task.status === 'failed' ? 'border-red-900/30 bg-red-950/5' : ''}`}
                           >
                             <div className="flex items-center gap-3 flex-1 min-w-0">
+                               <button
+                                 onClick={(e) => { e.stopPropagation(); toggleQueueSelection(task.id); }}
+                                 className="flex-shrink-0 text-neutral-500 hover:text-white transition-colors"
+                               >
+                                 {selectedQueueIds.has(task.id) ? (
+                                   <CheckSquare className="w-4 h-4 text-blue-500" />
+                                 ) : (
+                                   <Square className="w-4 h-4" />
+                                 )}
+                               </button>
                                <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
                                  <ChevronDown className="w-3.5 h-3.5 text-neutral-600" />
                                </div>
@@ -1134,13 +1242,13 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                                       {task.imageContexts.map((ctx, idx) => (
                                         <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-blue-500/50">
                                           <img 
-                                            src={ctx} 
+                                            src={imageDisplayUrl(ctx)}
                                             alt={`Context ${idx + 1}`} 
                                             className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
                                             loading="lazy"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setLightboxData({ images: task.imageContexts || [], index: idx });
+                                                setLightboxData({ images: (task.imageContexts || []).map(imageDisplayUrl), index: idx });
                                             }}
                                           />
                                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/ctx:opacity-100 transition-opacity flex items-end p-1.5 pointer-events-none">
@@ -1180,7 +1288,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           {/* Album Section */}
           {activeTab === 'album' && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {completedJobs.length === 0 ? (
+              {albumItems.length === 0 ? (
                 <div className="bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-3xl p-12 md:p-24 text-center text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner">
                   <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />
                   <div>
@@ -1190,41 +1298,40 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                  {completedJobs.map(job => (
-                    <div key={job.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group hover:border-blue-500/50 transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 active:scale-100">
-                      <div className="aspect-square bg-neutral-950 relative flex items-center justify-center overflow-hidden">
-                        <img src={job.imageUrl} alt={job.prompt} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 shadow-lg cursor-pointer" referrerPolicy="no-referrer" onClick={(e) => {
-                            e.stopPropagation();
-                            const validJobs = completedJobs.filter(j => j.imageUrl);
-                            const imgUrls = validJobs.map(j => j.imageUrl as string);
-                            const idx = imgUrls.indexOf(job.imageUrl as string);
+                  {albumItems.map(item => (
+                    <div key={item.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group hover:border-blue-500/50 transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 active:scale-100">
+                      <div className="aspect-square bg-neutral-950 relative flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => {
+                            const validItems = albumItems.filter(a => a.imageUrl);
+                            const imgUrls = validItems.map(a => imageDisplayUrl(a.imageUrl));
+                            const idx = validItems.findIndex(a => a.id === item.id);
                             setLightboxData({ images: imgUrls, index: idx >= 0 ? idx : 0 });
-                          }} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                          }}>
+                        <img src={imageDisplayUrl(item.imageUrl)} alt={item.prompt} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 shadow-lg" referrerPolicy="no-referrer" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4 pointer-events-none">
                           <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                         </div>
                       </div>
                       <div className="p-4 bg-neutral-900/80 backdrop-blur-sm">
-                        <p className="text-[10px] leading-relaxed text-neutral-400 line-clamp-3 font-medium mb-3" title={job.prompt}>
-                          {job.prompt}
+                        <p className="text-[10px] leading-relaxed text-neutral-400 line-clamp-3 font-medium mb-3" title={item.prompt}>
+                          {item.prompt}
                         </p>
                         <div className="flex flex-wrap items-center gap-1.5">
                           <div className="flex items-center gap-1 mr-1">
                             <span className="text-[7px] font-black text-neutral-500 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
-                                {getProviderName(job.providerId)}
+                                {getProviderName(item.providerId)}
                             </span>
                             <span className="text-[7px] font-black text-blue-500/60 uppercase tracking-widest bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800">
-                                {getModelName(job.providerId, job.modelConfigId)}
+                                {getModelName(item.providerId, item.modelConfigId)}
                             </span>
                           </div>
-                          {job.aspectRatio && (
+                          {item.aspectRatio && (
                             <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                              {job.aspectRatio}
+                              {item.aspectRatio}
                             </span>
                           )}
-                          {job.quality && (
+                          {item.quality && (
                             <span className="text-[8px] font-bold text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                              {job.quality}
+                              {item.quality}
                             </span>
                           )}
                         </div>

@@ -1,5 +1,5 @@
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { AppData, Library, LibraryItem, Project } from '../../src/types';
+import { AppData, Library, LibraryItem, Project, AlbumItem } from '../../src/types';
 import { IRepository } from './repository';
 import { LibraryRepository } from './library-repository';
 import { ProjectRepository } from './project-repository';
@@ -40,6 +40,10 @@ export class DynamoDBRepository implements IRepository {
   createProject(userId: string, project: Project) { return this.projects.createProject(userId, project); }
   updateProject(userId: string, projectId: string, updates: Partial<Project>) { return this.projects.updateProject(userId, projectId, updates); }
   deleteProject(userId: string, projectId: string) { return this.projects.deleteProject(userId, projectId); }
+
+  // === Album CRUD ===
+  addAlbumItem(userId: string, projectId: string, item: AlbumItem) { return this.projects.addAlbumItem(userId, projectId, item); }
+  deleteAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.deleteAlbumItem(userId, projectId, itemId); }
 
   // === Legacy / Migration ===
   getUserData(userId: string) { return this.data.getUserData(userId); }

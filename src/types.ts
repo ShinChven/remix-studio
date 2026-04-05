@@ -88,12 +88,25 @@ export interface Job {
   quality?: string;
 }
 
+export interface AlbumItem {
+  id: string;
+  jobId: string;
+  prompt: string;
+  imageUrl: string; // S3 key (presigned on read)
+  providerId?: string;
+  modelConfigId?: string;
+  aspectRatio?: string;
+  quality?: string;
+  createdAt: number;
+}
+
 export interface Project {
   id: string;
   name: string;
   createdAt: number;
   workflow: WorkflowItem[];
   jobs: Job[];
+  album: AlbumItem[];
   providerId?: string;
   aspectRatio?: string;
   quality?: string;

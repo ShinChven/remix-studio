@@ -6,7 +6,7 @@ import {
   UpdateCommand,
   TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { Project, Job, WorkflowItem } from '../../src/types';
+import { Project, Job, WorkflowItem, AlbumItem } from '../../src/types';
 
 const TABLE_NAME = 'remix-studio';
 
@@ -32,8 +32,9 @@ export class ProjectRepository {
         id: item.sk.replace('PROJECT#', ''),
         name: item.name,
         createdAt: item.createdAt,
-        workflow: [], 
-        jobs: [], 
+        workflow: [],
+        jobs: [],
+        album: [],
         providerId: item.providerId,
         aspectRatio: item.aspectRatio,
         quality: item.quality,
@@ -64,6 +65,7 @@ export class ProjectRepository {
 
     const jobItems = result.Items.filter((item: any) => item.sk.includes('#JOB#'));
     const wfItems = result.Items.filter((item: any) => item.sk.includes('#WF#'));
+    const albumItems = result.Items.filter((item: any) => item.sk.includes('#ALBUM#'));
     
     const jobs: Job[] = jobItems.map((item: any) => ({
       id: item.sk.split('#JOB#')[1],
@@ -73,6 +75,10 @@ export class ProjectRepository {
       imageUrl: item.imageUrl,
       error: item.error,
       createdAt: item.createdAt,
+      providerId: item.providerId,
+      modelConfigId: item.modelConfigId,
+      aspectRatio: item.aspectRatio,
+      quality: item.quality,
     }));
     jobs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 
@@ -84,12 +90,26 @@ export class ProjectRepository {
     }));
     workflow.sort((a, b) => (a.order || 0) - (b.order || 0));
 
+    const album: AlbumItem[] = albumItems.map((item: any) => ({
+      id: item.sk.split('#ALBUM#')[1],
+      jobId: item.jobId,
+      prompt: item.prompt,
+      imageUrl: item.imageUrl,
+      providerId: item.providerId,
+      modelConfigId: item.modelConfigId,
+      aspectRatio: item.aspectRatio,
+      quality: item.quality,
+      createdAt: item.createdAt,
+    }));
+    album.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
     return {
       id: projectId,
       name: projectItem.name,
       createdAt: projectItem.createdAt,
       workflow: workflow,
       jobs: jobs,
+      album: album,
       providerId: projectItem.providerId,
       aspectRatio: projectItem.aspectRatio,
       quality: projectItem.quality,
@@ -225,6 +245,27 @@ export class ProjectRepository {
         }));
       }
     }
+  }
+
+  async addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void> {
+    const pk = `USER_DATA#${userId}`;
+    await this.client.send(new PutCommand({
+      TableName: TABLE_NAME,
+      Item: {
+        pk,
+        sk: `PROJECT#${projectId}#ALBUM#${item.id}`,
+        ...item,
+        projectId,
+      }
+    }));
+  }
+
+  async deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<void> {
+    const pk = `USER_DATA#${userId}`;
+    await this.client.send(new DeleteCommand({
+      TableName: TABLE_NAME,
+      Key: { pk, sk: `PROJECT#${projectId}#ALBUM#${itemId}` }
+    }));
   }
 
   async deleteProject(userId: string, projectId: string): Promise<void> {

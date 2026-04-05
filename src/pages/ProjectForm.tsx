@@ -46,6 +46,7 @@ export function ProjectForm() {
           createdAt: Date.now(),
           workflow: [],
           jobs: [],
+          album: [],
           shuffle: false,
         });
       } else {

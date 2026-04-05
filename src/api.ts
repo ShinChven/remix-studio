@@ -167,6 +167,12 @@ export async function saveImage(base64: string, projectId: string): Promise<{ ke
   return { key: data.key, url: data.url };
 }
 
+/** Build a stable display URL for an S3 key. Returns the value as-is if it's already a URL or data URI. */
+export function imageDisplayUrl(value: string): string {
+  if (!value || value.startsWith('http') || value.startsWith('data:')) return value;
+  return `/api/images/view?key=${encodeURIComponent(value)}`;
+}
+
 export async function renameProjectFolder(oldId: string, newId: string): Promise<void> {
   const res = await fetch('/api/projects/rename', {
     method: 'POST',

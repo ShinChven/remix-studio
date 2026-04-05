@@ -57,6 +57,7 @@ export class DataRepository {
           createdAt: item.createdAt,
           workflow: [],
           jobs: [],
+          album: [],
           providerId: item.providerId,
           aspectRatio: item.aspectRatio,
           quality: item.quality,

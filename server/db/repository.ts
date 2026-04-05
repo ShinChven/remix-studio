@@ -1,4 +1,4 @@
-import { AppData, Library, LibraryItem, Project } from '../../src/types';
+import { AppData, Library, LibraryItem, Project, AlbumItem } from '../../src/types';
 
 export interface IRepository {
   // === Library CRUD ===
@@ -21,6 +21,10 @@ export interface IRepository {
   createProject(userId: string, project: Project): Promise<void>;
   updateProject(userId: string, projectId: string, updates: Partial<Project>): Promise<void>;
   deleteProject(userId: string, projectId: string): Promise<void>;
+
+  // === Album CRUD ===
+  addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void>;
+  deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<void>;
 
   // === Legacy (for migration/import) ===
   getUserData(userId: string): Promise<AppData>;

@@ -7,18 +7,30 @@ import type { WorkflowItem, Job, Project } from '../../src/types';
 
 type Variables = { user: JwtPayload };
 
-/** Sign all S3 keys in a project's jobs with pre-signed URLs */
+/** Presign an S3 key if it looks like one (not already a URL) */
+async function presignIfKey(value: string, storage: S3Storage): Promise<string> {
+  if (value && !value.startsWith('http') && !value.startsWith('data:')) {
+    return storage.getPresignedUrl(value);
+  }
+  return value;
+}
+
+/** Sign all S3 keys in a project's jobs, album items, and workflow images with pre-signed URLs */
 async function signProjectImages(project: Project, storage: S3Storage): Promise<Project> {
   const jobs = await Promise.all(
     project.jobs.map(async (job) => {
-      if (job.imageUrl && !job.imageUrl.startsWith('http')) {
-        const signedUrl = await storage.getPresignedUrl(job.imageUrl);
-        return { ...job, imageUrl: signedUrl };
-      }
-      return job;
+      const imageUrl = job.imageUrl ? await presignIfKey(job.imageUrl, storage) : job.imageUrl;
+      // imageContexts are S3 keys — NOT presigned here; frontend uses /api/images/view for display
+      return { ...job, imageUrl };
     })
   );
-  return { ...project, jobs };
+  const album = await Promise.all(
+    (project.album || []).map(async (item) => {
+      const imageUrl = await presignIfKey(item.imageUrl, storage);
+      return { ...item, imageUrl };
+    })
+  );
+  return { ...project, jobs, album };
 }
 
 export function createProjectRouter(repository: IRepository, storage: S3Storage, queueManager: QueueManager) {
@@ -42,7 +54,7 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
 
       await storage.rename(oldPrefix, newPrefix);
 
-      // Update S3 keys in DB job records
+      // Update S3 keys in DB job and album records
       const project = await repository.getProject(user.userId, newId);
       if (project) {
         const updatedJobs = project.jobs.map((job) => {
@@ -52,6 +64,16 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
           return job;
         });
         await repository.updateProject(user.userId, newId, { jobs: updatedJobs });
+
+        // Update album item S3 keys
+        for (const item of (project.album || [])) {
+          if (item.imageUrl && item.imageUrl.startsWith(oldPrefix)) {
+            await repository.addAlbumItem(user.userId, newId, {
+              ...item,
+              imageUrl: item.imageUrl.replace(oldPrefix, newPrefix),
+            });
+          }
+        }
       }
 
       return c.json({ success: true });
@@ -101,6 +123,7 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
         createdAt: typeof body.createdAt === 'number' ? body.createdAt : Date.now(),
         workflow: Array.isArray(body.workflow) ? body.workflow : [],
         jobs: Array.isArray(body.jobs) ? body.jobs : [],
+        album: [],
         providerId: typeof body.providerId === 'string' ? body.providerId : undefined,
       };
 
@@ -140,6 +163,17 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
     } catch (e) {
       console.error('[DELETE /api/projects/:id]', e);
       return c.json({ error: 'Failed to delete project' }, 500);
+    }
+  });
+
+  router.delete('/api/projects/:id/album/:itemId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      await repository.deleteAlbumItem(user.userId, c.req.param('id'), c.req.param('itemId'));
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/projects/:id/album/:itemId]', e);
+      return c.json({ error: 'Failed to delete album item' }, 500);
     }
   });
 

@@ -3,7 +3,7 @@ import { ProviderRepository } from '../db/provider-repository';
 import { ProjectRepository } from '../db/project-repository';
 import { S3Storage } from '../storage/s3-storage';
 import { buildGenerator } from '../generators/build-generator';
-import { Job, Project, ProviderType } from '../../src/types';
+import { Job, Project, ProviderType, AlbumItem } from '../../src/types';
 import crypto from 'crypto';
 
 const TABLE_NAME = 'remix-studio';
@@ -113,9 +113,27 @@ export class QueueManager {
 
       const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
       
-      const refImages = job.imageContexts 
-        ? job.imageContexts.map(b64 => b64.replace(/^data:image\/\w+;base64,/, ''))
-        : undefined;
+      // Resolve imageContexts: could be S3 keys, presigned URLs, or base64 data URLs
+      let refImages: string[] | undefined;
+      if (job.imageContexts && job.imageContexts.length > 0) {
+        refImages = [];
+        for (const ctx of job.imageContexts) {
+          if (ctx.startsWith('data:')) {
+            // Base64 data URL — strip prefix
+            refImages.push(ctx.replace(/^data:image\/\w+;base64,/, ''));
+          } else if (ctx.startsWith('http')) {
+            // Presigned URL — download the image
+            const response = await fetch(ctx);
+            if (!response.ok) throw new Error(`Failed to download reference image: ${response.status}`);
+            const buffer = Buffer.from(await response.arrayBuffer());
+            refImages.push(buffer.toString('base64'));
+          } else {
+            // S3 key — read directly from storage
+            const buffer = await this.storage.read(ctx);
+            refImages.push(buffer.toString('base64'));
+          }
+        }
+      }
 
       const modelConfig = providerRecord.models?.find((m: any) => m.id === job.modelConfigId || m.id === queued.modelConfigId);
 
@@ -135,11 +153,25 @@ export class QueueManager {
       const filename = `${userId}/${projectId}/${crypto.randomUUID()}.png`;
       const s3Url = await this.storage.save(filename, result.imageBytes, 'image/png');
 
-      // 5. Mark as completed in DB
-      await this.updateJobStatus(userId, projectId, job.id, { 
-        status: 'completed', 
+      // 5. Create album item
+      const albumItem: AlbumItem = {
+        id: crypto.randomUUID(),
+        jobId: job.id,
+        prompt: job.prompt,
         imageUrl: s3Url,
-        error: undefined 
+        providerId: job.providerId || queued.job.providerId,
+        modelConfigId: queued.modelConfigId || job.modelConfigId,
+        aspectRatio: queued.aspectRatio || job.aspectRatio,
+        quality: queued.quality || job.quality,
+        createdAt: Date.now(),
+      };
+      await this.projectRepo.addAlbumItem(userId, projectId, albumItem);
+
+      // 6. Mark job as completed in DB
+      await this.updateJobStatus(userId, projectId, job.id, {
+        status: 'completed',
+        imageUrl: s3Url,
+        error: undefined
       });
 
     } catch (e: any) {
