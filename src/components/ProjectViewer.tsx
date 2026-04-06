@@ -153,6 +153,10 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         updated.quality = selectedModel.options.qualities[0];
         needsUpdate = true;
       }
+      if (selectedModel.options.backgrounds && !selectedModel.options.backgrounds.includes(localProject.background || '')) {
+        updated.background = selectedModel.options.backgrounds[0];
+        needsUpdate = true;
+      }
       if (needsUpdate) {
         setLocalProject(updated);
         onUpdate(updated);
@@ -306,8 +310,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         status: 'draft',
         providerId: selectedProviderId,
         modelConfigId: selectedModelId,
-        aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1:1'),
-        quality: localProject.quality || (selectedModel?.options.qualities[0] || '1K'),
+        aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1024x1024'),
+        quality: localProject.quality || (selectedModel?.options.qualities[0] || 'standard'),
+        background: localProject.background || (selectedModel?.options.backgrounds?.[0]),
         format: localProject.format || 'png',
         filename: filename
       };
@@ -315,7 +320,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
     await apiUpdateProject(updatedProject.id, {
       jobs: updatedProject.jobs, workflow: updatedProject.workflow, providerId: selectedProviderId,
-      aspectRatio: localProject.aspectRatio, quality: localProject.quality, format: localProject.format || 'png', shuffle: localProject.shuffle,
+      aspectRatio: localProject.aspectRatio, quality: localProject.quality, background: localProject.background, format: localProject.format || 'png', shuffle: localProject.shuffle,
     });
     setLocalProject(updatedProject);
     setActiveTab('draft');

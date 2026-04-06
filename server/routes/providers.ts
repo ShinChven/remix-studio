@@ -4,7 +4,7 @@ import { ProviderRepository } from '../db/provider-repository';
 import type { ProviderType } from '../../src/types';
 import crypto from 'crypto';
 
-const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub'];
+const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'OpenAI'];
 type Variables = { user: JwtPayload };
 
 export function createProviderRouter(repo: ProviderRepository) {

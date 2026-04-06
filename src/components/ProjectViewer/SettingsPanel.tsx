@@ -82,25 +82,6 @@ export function SettingsPanel({
             )}
           </div>
 
-          <div 
-            onClick={(e) => e.stopPropagation()} 
-            className="flex items-center gap-2 bg-neutral-900 px-2 py-1 rounded-md border border-neutral-800"
-          >
-            <input
-              type="number"
-              min="1"
-              value={queueCount}
-              onChange={(e) => {
-                const val = parseInt(e.target.value);
-                if (!isNaN(val)) {
-                  setQueueCount(val);
-                  setHasManuallySetQueueCount(true);
-                }
-              }}
-              className="w-10 bg-transparent text-[10px] text-blue-400 font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
-            />
-            <span className="text-[9px] text-neutral-500 font-black" title="Total unique combinations">/ {combinations.length}</span>
-          </div>
         </div>
       </button>
 
@@ -141,33 +122,28 @@ export function SettingsPanel({
               Aspect Ratio
             </label>
             <div className="grid grid-cols-4 gap-1.5">
-              {(selectedModel?.options.aspectRatios || ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2']).map((ratio) => {
-                const iconClass = ratio === '1:1' ? 'w-3 h-3' :
-                                 ratio === '4:3' ? 'w-4 h-3' :
-                                 ratio === '3:4' ? 'w-3 h-4' :
-                                 ratio === '16:9' ? 'w-5 h-3' :
-                                 ratio === '9:16' ? 'w-3 h-5' :
-                                 ratio === '2:3' ? 'w-3 h-4.5' :
-                                 ratio === '3:2' ? 'w-4.5 h-3' : 'w-3 h-3';
-                return (
-                  <button
-                    key={ratio}
-                    onClick={() => {
-                      const updated = { ...localProject, aspectRatio: ratio };
-                      setLocalProject(updated);
-                      onUpdate(updated);
-                    }}
-                    className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
-                      (localProject.aspectRatio || '1:1') === ratio
-                        ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
-                        : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
-                    }`}
-                  >
-                    <div className={`border-2 rounded-[2px] ${iconClass} ${(localProject.aspectRatio || '1:1') === ratio ? 'border-white' : 'border-neutral-700'}`} />
-                    <span className="text-[8px] font-bold">{ratio}</span>
-                  </button>
-                );
-              })}
+              {(selectedModel?.options.aspectRatios || ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2']).map((ratio) => (
+                <button
+                  key={ratio}
+                  onClick={() => {
+                    const updated = { ...localProject, aspectRatio: ratio };
+                    setLocalProject(updated);
+                    onUpdate(updated);
+                  }}
+                  className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
+                    (localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1024x1024')) === ratio
+                      ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
+                      : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
+                  }`}
+                >
+                  <div className={`border-2 rounded-[2px] ${
+                    ratio === '1024x1024' || ratio === '1:1' ? 'w-3 h-3' :
+                    ratio === '1792x1024' || ratio === '16:9' ? 'w-5 h-3' :
+                    ratio === '1024x1792' || ratio === '9:16' ? 'w-3 h-5' : 'w-3 h-3'
+                  } ${(localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1024x1024')) === ratio ? 'border-white' : 'border-neutral-700'}`} />
+                  <span className="text-[8px] font-bold">{ratio}</span>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -176,7 +152,7 @@ export function SettingsPanel({
               Quality
             </label>
             <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
-              {(selectedModel?.options.qualities || ['1K', '2K', '4K']).map((q) => (
+              {(selectedModel?.options.qualities || ['standard', 'hd']).map((q) => (
                 <button
                   key={q}
                   onClick={() => {
@@ -185,7 +161,7 @@ export function SettingsPanel({
                     onUpdate(updated);
                   }}
                   className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
-                    (localProject.quality || '1K') === q
+                    (localProject.quality || (selectedModel?.options.qualities[0] || 'standard')) === q
                       ? 'bg-neutral-800 text-blue-400 shadow-sm'
                       : 'text-neutral-600 hover:text-neutral-400'
                   }`}
@@ -195,6 +171,33 @@ export function SettingsPanel({
               ))}
             </div>
           </div>
+
+          {selectedModel?.options.backgrounds && selectedModel.options.backgrounds.length > 0 && (
+            <div className="space-y-2.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                Background
+              </label>
+              <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                {selectedModel.options.backgrounds.map((b) => (
+                  <button
+                    key={b}
+                    onClick={() => {
+                      const updated = { ...localProject, background: b };
+                      setLocalProject(updated);
+                      onUpdate(updated);
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                      (localProject.background || selectedModel.options.backgrounds![0]) === b
+                        ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                        : 'text-neutral-600 hover:text-neutral-400'
+                    }`}
+                  >
+                    {b}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2.5">
             <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
@@ -253,6 +256,30 @@ export function SettingsPanel({
               </div>
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-1 mb-3">
+        <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600">
+          Job Quantity
+        </label>
+        <div className="flex items-center gap-2 bg-neutral-950 px-3 py-1.5 rounded-xl border border-neutral-800 shadow-inner">
+          <input
+            type="number"
+            min="1"
+            value={queueCount}
+            onChange={(e) => {
+              const val = parseInt(e.target.value);
+              if (!isNaN(val)) {
+                setQueueCount(val);
+                setHasManuallySetQueueCount(true);
+              }
+            }}
+            className="w-10 bg-transparent text-xs text-blue-400 font-black focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
+          />
+          <span className="text-[10px] text-neutral-600 font-bold tracking-tighter" title="Total unique combinations">
+            OF {combinations.length}
+          </span>
         </div>
       </div>
 

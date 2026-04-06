@@ -18,6 +18,7 @@ interface QueuedJob {
   job: Job;
   aspectRatio?: string;
   quality?: string;
+  background?: string;
   format?: string;
   modelConfigId?: string;
 }
@@ -182,25 +183,26 @@ export class QueueManager {
         job.providerId || project.providerId!, 
         job.aspectRatio || project.aspectRatio, 
         job.quality || project.quality,
+        job.background || project.background,
         job.format || project.format,
         job.modelConfigId
       );
     }
   }
 
-  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, format?: string, modelConfigId?: string) {
+  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, background?: string, format?: string, modelConfigId?: string) {
     // Global dedup: covers both in-queue and currently-executing jobs
     if (this.activeJobIds.has(job.id)) return;
 
     if (this.sqsClient && this.queueUrl) {
       this.activeJobIds.add(job.id);
-      this.sqsClient.sendMessage(this.queueUrl, { userId, projectId, job, providerId, aspectRatio, quality, format, modelConfigId });
+      this.sqsClient.sendMessage(this.queueUrl, { userId, projectId, job, providerId, aspectRatio, quality, background, format, modelConfigId });
       console.log(`[QueueManager] Job ${job.id} pushed to SQS.`);
     } else {
       // Legacy fallback
       if (!this.queues.has(providerId)) this.queues.set(providerId, []);
       this.activeJobIds.add(job.id);
-      this.queues.get(providerId)!.push({ userId, projectId, job, aspectRatio, quality, format, modelConfigId });
+      this.queues.get(providerId)!.push({ userId, projectId, job, aspectRatio, quality, background, format, modelConfigId });
       this.processNext(providerId);
     }
   }
@@ -283,6 +285,7 @@ export class QueueManager {
         apiUrl: modelConfig?.apiUrl,
         aspectRatio: queued.aspectRatio || '1:1', 
         imageSize: queued.quality || '1K',
+        background: queued.background || job.background,
         refImagesBase64: refImages
       });
 

@@ -40,6 +40,7 @@ export interface ModelConfig {
   options: {
     aspectRatios: string[];
     qualities: string[];
+    backgrounds?: string[];
   };
 }
 
@@ -80,6 +81,19 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  OpenAI: [
+    {
+      id: 'openai-gpt-image-1-5',
+      name: 'GPT Image 1.5',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-image-1.5',
+      options: {
+        aspectRatios: ['1024x1024', '1024x1792', '1792x1024', 'auto'],
+        qualities: ['low', 'medium', 'high', 'auto'],
+        backgrounds: ['transparent', 'opaque', 'auto'],
+      },
+    },
+  ],
 };
 
 export interface Job {
@@ -99,6 +113,7 @@ export interface Job {
   modelConfigId?: string;
   aspectRatio?: string;
   quality?: string;
+  background?: string;
   format?: 'png' | 'jpeg' | 'webp';
   taskId?: string; // For long-running remote tasks (e.g. RunningHub)
   filename?: string; // Custom filename for S3 storage (ProjectPrefix_Tags_Title_shortuuid)
@@ -115,6 +130,7 @@ export interface AlbumItem {
   modelConfigId?: string;
   aspectRatio?: string;
   quality?: string;
+  background?: string;
   format?: 'png' | 'jpeg' | 'webp';
   size?: number; // Size in bytes
   optimizedSize?: number; // Size in bytes
@@ -140,13 +156,14 @@ export interface Project {
   providerId?: string;
   aspectRatio?: string;
   quality?: string;
+  background?: string;
   format?: 'png' | 'jpeg' | 'webp';
   shuffle?: boolean;
   modelConfigId?: string;
   prefix?: string; // Project prefix for file naming
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI';
 
 export interface Provider {
   id: string;

@@ -4,12 +4,13 @@ import { fetchProviders, createProvider, updateProvider } from '../api';
 import { ProviderType } from '../types';
 import { Save, Key, Eye, EyeOff } from 'lucide-react';
 
-const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub'];
+const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'OpenAI'];
 
 const TYPE_DESCRIPTIONS: Record<ProviderType, string> = {
   GoogleAI:   'Google AI Studio — x-goog-api-key header',
   VertexAI:   'Google Cloud Vertex AI — API key in URL',
   RunningHub: 'RunningHub OpenAPI v2 — Bearer token',
+  OpenAI:     'OpenAI GPT Image 1.5 — Bearer token',
 };
 
 export function ProviderForm() {

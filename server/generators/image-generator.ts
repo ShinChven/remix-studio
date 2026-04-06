@@ -6,6 +6,7 @@ export interface GenerateRequest {
   imageSize?: string;     // e.g. "1K", "4K"
   refImagesBase64?: string[]; // base64-encoded PNGs for img2img sequentially
   targetPath?: string;    // hint for async generators (RunningHub)
+  background?: string;
 }
 
 export type GenerateResult =

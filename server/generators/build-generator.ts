@@ -3,6 +3,7 @@ import { ImageGenerator } from './image-generator';
 import { GoogleAIGenerator } from './google-ai-generator';
 import { VertexAIGenerator } from './vertex-ai-generator';
 import { RunningHubGenerator } from './running-hub-generator';
+import { OpenAIGenerator } from './openai-generator';
 
 /**
  * Instantiate the correct generator for a given provider type and credentials.
@@ -21,6 +22,8 @@ export function buildGenerator(
       return new VertexAIGenerator(apiKey, apiUrl ?? undefined);
     case 'RunningHub':
       return new RunningHubGenerator(apiKey, apiUrl ?? undefined);
+    case 'OpenAI':
+      return new OpenAIGenerator(apiKey, apiUrl ?? undefined);
     default: {
       // Exhaustiveness check — TypeScript will error here if a new ProviderType is added
       const _never: never = type;
