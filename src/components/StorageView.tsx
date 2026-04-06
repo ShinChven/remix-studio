@@ -3,6 +3,7 @@ import { Database, HardDrive, FileArchive, Trash2, Folder, Zap, AlertCircle, Che
 import { fetchStorageAnalysis } from '../api';
 import { StorageAnalysis, StorageCategory } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
+import { Link } from 'react-router-dom';
 
 const COLORS: Record<string, string> = {
   projects: '#3b82f6',
@@ -110,7 +111,7 @@ export function StorageView() {
           {/* Main 3x2 (or adaptive) Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 1. Capacity & Consumption Overview Card */}
-            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-md border-blue-500/10">
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-md border-blue-500/10 h-full min-h-[220px]">
               <div>
                 <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-black mb-4 block">Capacity Overview</span>
                 <div className="space-y-4">
@@ -142,53 +143,91 @@ export function StorageView() {
             </div>
 
             {/* 2-6. Categories cards */}
-            {analysis.categories.map((cat, idx) => (
-              <motion.div
-                key={cat.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: idx * 0.05 }}
-                onMouseEnter={() => setHoveredCategory(cat.id)}
-                onMouseLeave={() => setHoveredCategory(null)}
-                className={`
-                  p-5 rounded-2xl transition-all duration-300 group cursor-default flex flex-col justify-between
-                  ${hoveredCategory === cat.id ? 'bg-neutral-800 border-neutral-600' : 'bg-neutral-900/50 border-neutral-800'}
-                  border backdrop-blur-md
-                `}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[cat.id] || COLORS.other }} />
-                      <h3 className="text-[10px] uppercase tracking-widest font-black text-neutral-500">{cat.name}</h3>
-                    </div>
-                    <span className="text-lg font-black text-white">{formatSize(cat.size)}</span>
-                  </div>
-                  
-                  {/* Progress Bar for each category relative to total */}
-                  <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden mb-4">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(cat.size / totalSize) * 100}%` }}
-                      className="h-full rounded-full" 
-                      style={{ backgroundColor: COLORS[cat.id] || COLORS.other }} 
-                    />
-                  </div>
+            {analysis.categories.map((cat, idx) => {
+              const href = cat.id === 'projects' ? '/projects' : 
+                          cat.id === 'libraries' ? '/libraries' :
+                          cat.id === 'archives' ? '/exports' : 
+                          cat.id === 'trash' ? '/trash' : null;
 
-                  {/* Sub-categories (for Projects) */}
-                  {cat.subCategories && (
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-2">
-                       {cat.subCategories.map(sub => (
-                         <div key={sub.id} className="flex flex-col">
-                            <span className="text-[9px] text-neutral-500 uppercase font-black tracking-tight mb-0.5">{sub.name}</span>
-                            <span className="text-xs font-bold text-neutral-300">{formatSize(sub.size)}</span>
-                         </div>
-                       ))}
+              const CardContent = (
+                <>
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[cat.id] || COLORS.other }} />
+                        <h3 className="text-[10px] uppercase tracking-widest font-black text-neutral-500">{cat.name}</h3>
+                      </div>
+                      <span className="text-lg font-black text-white">{formatSize(cat.size)}</span>
+                    </div>
+                    
+                    {/* Progress Bar for each category relative to total */}
+                    <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden mb-4">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(cat.size / totalSize) * 100}%` }}
+                        className="h-full rounded-full" 
+                        style={{ backgroundColor: COLORS[cat.id] || COLORS.other }} 
+                      />
+                    </div>
+
+                    {/* Sub-categories (for Projects) */}
+                    {cat.subCategories && (
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-2">
+                         {cat.subCategories.map(sub => (
+                           <div key={sub.id} className="flex flex-col">
+                              <span className="text-[9px] text-neutral-500 uppercase font-black tracking-tight mb-0.5">{sub.name}</span>
+                              <span className="text-xs font-bold text-neutral-300">{formatSize(sub.size)}</span>
+                           </div>
+                         ))}
+                      </div>
+                    )}
+                  </div>
+                  {href && (
+                    <div className="mt-4 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ChevronRight className="w-4 h-4 text-neutral-500" />
                     </div>
                   )}
-                </div>
-              </motion.div>
-            ))}
+                </>
+              );
+
+              const cardClasses = `
+                p-5 rounded-2xl transition-all duration-300 group flex flex-col justify-between h-full min-h-[220px]
+                ${hoveredCategory === cat.id ? 'bg-neutral-800 border-neutral-600' : 'bg-neutral-900/50 border-neutral-800'}
+                border backdrop-blur-md ${href ? 'cursor-pointer' : 'cursor-default'}
+              `;
+
+              if (href) {
+                return (
+                  <motion.div
+                    key={cat.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: idx * 0.05 }}
+                    onMouseEnter={() => setHoveredCategory(cat.id)}
+                    onMouseLeave={() => setHoveredCategory(null)}
+                    className="h-full"
+                  >
+                    <Link to={href} className={cardClasses}>
+                      {CardContent}
+                    </Link>
+                  </motion.div>
+                );
+              }
+
+              return (
+                <motion.div
+                  key={cat.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: idx * 0.05 }}
+                  onMouseEnter={() => setHoveredCategory(cat.id)}
+                  onMouseLeave={() => setHoveredCategory(null)}
+                  className={cardClasses}
+                >
+                  {CardContent}
+                </motion.div>
+              );
+            })}
           </div>
 
           {/* Quick Stats Panel (Storage Optimization) */}
@@ -207,15 +246,15 @@ export function StorageView() {
                      <p className="text-sm text-neutral-400">Identify and remove unreferenced files from project folders to reclaim space.</p>
                   </div>
                </div>
-               <div className="flex gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                <Link to="/trash" className="flex gap-4 group cursor-pointer">
+                  <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-red-500/20 transition-colors">
                      <Trash2 className="w-6 h-6 text-red-400" />
                   </div>
                   <div>
-                     <p className="text-white font-bold mb-1">Recycle Bin</p>
+                     <p className="text-white font-bold mb-1 group-hover:text-red-400 transition-colors">Recycle Bin</p>
                      <p className="text-sm text-neutral-400">Total of {formatSize(analysis.categories.find(c => c.id === 'trash')?.size || 0)} can be permanently deleted.</p>
                   </div>
-               </div>
+               </Link>
             </div>
           </div>
         </div>
@@ -292,27 +331,36 @@ export function StorageView() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
           {analysis.projects.map(proj => (
-            <div key={proj.id} className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 hover:border-neutral-700 transition-colors group">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-neutral-200 font-bold group-hover:text-white transition-colors truncate pr-2">{proj.name}</span>
-                <span className="text-sm font-black text-blue-400 whitespace-nowrap">{formatSize(proj.total)}</span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-widest text-neutral-500">
-                   <span>Album</span>
-                   <span>{formatSize(proj.album)}</span>
+            <Link 
+              key={proj.id} 
+              to={`/project/${proj.id}`}
+              className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 hover:border-blue-500/50 hover:bg-neutral-800/50 transition-all group flex flex-col justify-between h-full min-h-[160px]"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-neutral-200 font-bold group-hover:text-white transition-colors truncate pr-2">{proj.name}</span>
+                  <span className="text-sm font-black text-blue-400 whitespace-nowrap">{formatSize(proj.total)}</span>
                 </div>
-                <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden">
-                   <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(proj.album / proj.total) * 100}%` }} />
-                </div>
-                {proj.orphans > 0 && (
-                  <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-widest text-orange-500/70">
-                    <span>Orphans</span>
-                    <span>{formatSize(proj.orphans)}</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-widest text-neutral-500">
+                    <span>Album</span>
+                    <span>{formatSize(proj.album)}</span>
                   </div>
-                )}
+                  <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(proj.album / proj.total) * 100}%` }} />
+                  </div>
+                  {proj.orphans > 0 && (
+                    <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-widest text-orange-500/70 group-hover:text-orange-400 transition-colors">
+                      <span>Orphans</span>
+                      <span>{formatSize(proj.orphans)}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+              <div className="pt-2 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                <ChevronRight className="w-3 h-3 text-neutral-600" />
+              </div>
+            </Link>
           ))}
         </div>
       </motion.section>

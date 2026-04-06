@@ -28,29 +28,27 @@ export async function getUserStorageUsage(
   ]);
 
   let totalSize = 0;
+  const exportTasks: any[] = [];
 
   // Sum sizes from known DB records
   for (const item of allItems) {
-    const sk = item.sk || '';
-    const isProjectContent =
-      sk.includes('#ALBUM#') ||
-      sk.includes('#JOB#') ||
-      sk.includes('#WF#');
-    const isLibraryItem = sk.startsWith('LIBRARY#') && sk.includes('#ITEM#');
+    const type = item._type;
+    const itemSize = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
 
-    if (isProjectContent || isLibraryItem) {
-      totalSize += (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
+    if (type === 'JOB' || type === 'ALBUM' || type === 'LIBRARY_ITEM' || type === 'WORKFLOW_ITEM') {
+      totalSize += itemSize;
+    } else if (type === 'EXPORT') {
+      exportTasks.push(item);
     }
   }
 
-  // Trash items (fetched separately since getTrashItems is its own method)
+  // Trash items (already fetched separately)
   for (const item of trashItems) {
-    totalSize += (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
+    totalSize += Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
   }
 
-  // Archives: S3 HeadObject per completed export task (no size field in DB)
-  const exportTasksResult = await repository.getAllExportTasks(userId, 1000);
-  for (const task of exportTasksResult.items) {
+  // Archives: S3 getSize lookup per completed export task
+  for (const task of exportTasks) {
     if (task.status === 'completed' && task.s3Key) {
       try {
         const size = await exportStorage.getSize(task.s3Key);

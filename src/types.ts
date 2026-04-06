@@ -161,6 +161,7 @@ export interface Project {
   shuffle?: boolean;
   modelConfigId?: string;
   prefix?: string; // Project prefix for file naming
+  totalSize?: number;
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI';

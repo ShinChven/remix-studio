@@ -46,69 +46,64 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
       };
 
       for (const item of allItems) {
-        const sk = item.sk || '';
+        const type = item._type;
+        const projectId = item.projectId;
+        const itemSize = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
 
-        if (sk.startsWith('PROJECT#')) {
-          const parts = sk.split('#');
-          const projectId = parts[1];
+        if (type === 'JOB' || type === 'ALBUM' || type === 'WORKFLOW_ITEM') {
+          if (projectId) {
+            if (!projectBreakdown[projectId]) {
+              projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: 'Unknown Project' };
+            }
 
-          if (parts.length === 2) {
-            // Project metadata record
-            if (!projectBreakdown[projectId]) {
-              projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: item.name };
-            } else {
-              projectBreakdown[projectId].name = item.name;
-            }
-          } else if (sk.includes('#ALBUM#')) {
-            if (!projectBreakdown[projectId]) {
-              projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: 'Unknown Project' };
-            }
-            // Sum all three stored file sizes (original + optimized + thumbnail)
-            const itemSize = (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
-            projectBreakdown[projectId].album += itemSize;
-            projectBreakdown[projectId].total += itemSize;
-            // Mark keys so these files are excluded from orphan detection
-            markKey(item.imageUrl);
-            markKey(item.thumbnailUrl);
-            markKey(item.optimizedUrl);
-          } else if (sk.includes('#JOB#')) {
-            if (!projectBreakdown[projectId]) {
-              projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: 'Unknown Project' };
-            }
-            const itemSize = (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
-            projectBreakdown[projectId].drafts += itemSize;
-            projectBreakdown[projectId].total += itemSize;
-            markKey(item.imageUrl);
-            markKey(item.thumbnailUrl);
-            markKey(item.optimizedUrl);
-          } else if (sk.includes('#WF#')) {
-            if (!projectBreakdown[projectId]) {
-              projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: 'Unknown Project' };
-            }
-            const itemSize = (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
-            if (itemSize > 0) {
+            if (type === 'ALBUM') {
+              projectBreakdown[projectId].album += itemSize;
+              projectBreakdown[projectId].total += itemSize;
+              markKey(item.imageUrl);
+              markKey(item.thumbnailUrl);
+              markKey(item.optimizedUrl);
+            } else if (type === 'JOB') {
+              projectBreakdown[projectId].drafts += itemSize;
+              projectBreakdown[projectId].total += itemSize;
+              markKey(item.imageUrl);
+              markKey(item.thumbnailUrl);
+              markKey(item.optimizedUrl);
+            } else if (type === 'WORKFLOW_ITEM') {
+              // Workflow items currently don't have size fields in schema, but URLs exist
               projectBreakdown[projectId].workflow += itemSize;
               projectBreakdown[projectId].total += itemSize;
+              if (item.type === 'image' && item.value) markKey(item.value);
+              markKey(item.thumbnailUrl);
+              markKey(item.optimizedUrl);
             }
-            if (item.type === 'image' && item.value) markKey(item.value);
-            markKey(item.thumbnailUrl);
-            markKey(item.optimizedUrl);
           }
-        } else if (sk.startsWith('EXPORT#')) {
-          exportTasks.push(item);
-        } else if (sk.startsWith('LIBRARY#')) {
-          if (sk.includes('#ITEM#')) {
-            const itemSize = (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
-            totalLibrarySize += itemSize;
-            markKey(item.content);
-            markKey(item.thumbnailUrl);
-            markKey(item.optimizedUrl);
-          }
-        } else if (sk.startsWith('TRASH#')) {
-          // Mark trash keys so they don't appear as orphans during S3 scan
+        } else if (type === 'LIBRARY_ITEM') {
+          totalLibrarySize += itemSize;
+          markKey(item.content);
+          markKey(item.thumbnailUrl);
+          markKey(item.optimizedUrl);
+        } else if (type === 'TRASH') {
+          // Trash size is already calculated from trashItems fetch, just mark keys for orphan detection
           markKey(item.imageUrl);
           markKey(item.thumbnailUrl);
           markKey(item.optimizedUrl);
+        } else if (type === 'EXPORT') {
+          // Export tasks are handled in a separate loop for size (via lookup) or via size field
+          // but we still want to mark the key to avoid orphan detection
+          exportTasks.push(item);
+          if (item.data?.s3Key) markKey(item.data.s3Key);
+          if (item.downloadUrl) markKey(item.downloadUrl);
+        }
+      }
+
+      // Also mark names for projects that were fetched
+      const allProjects = await repository.getUserProjects(userId);
+      for (const p of allProjects) {
+        if (projectBreakdown[p.id]) {
+          projectBreakdown[p.id].name = p.name;
+        } else {
+          // Ensure project is represented even if it has no items
+          projectBreakdown[p.id] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: p.name };
         }
       }
 

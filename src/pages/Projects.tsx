@@ -1,6 +1,6 @@
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Project } from '../types';
-import { Plus, Play, Clock, LayoutGrid, ImageIcon } from 'lucide-react';
+import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive } from 'lucide-react';
 
 interface ContextType {
   projects: Project[];
@@ -10,6 +10,14 @@ interface ContextType {
 export function Projects() {
   const { projects, addProject } = useOutletContext<ContextType>();
   const navigate = useNavigate();
+
+  const formatSize = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
@@ -59,6 +67,10 @@ export function Projects() {
                   <div className="flex items-center gap-1.5">
                     <ImageIcon className="w-4 h-4" />
                     <span>{(project.albumCount ?? project.album?.length) || 0} images</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-blue-500/80 font-medium">
+                    <HardDrive className="w-4 h-4" />
+                    <span>{formatSize(project.totalSize || 0)}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock className="w-4 h-4" />

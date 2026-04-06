@@ -5,13 +5,25 @@ export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
 
   async getUserProjects(userId: string): Promise<Project[]> {
-    const projects = await this.prisma.project.findMany({
-      where: { userId },
-      include: {
-        _count: { select: { jobs: true, albumItems: true } },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+    const [projects, allItems] = await Promise.all([
+      this.prisma.project.findMany({
+        where: { userId },
+        include: {
+          _count: { select: { jobs: true, albumItems: true } },
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.getAllUserItems(userId),
+    ]);
+
+    // Aggregate sizes by project
+    const projectSizes: Record<string, number> = {};
+    for (const item of allItems) {
+      if (item.projectId) {
+        const itemSize = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
+        projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + itemSize;
+      }
+    }
 
     return projects.map((p) => ({
       id: p.id,
@@ -22,6 +34,7 @@ export class ProjectRepository {
       album: [],
       jobCount: p._count.jobs,
       albumCount: p._count.albumItems,
+      totalSize: projectSizes[p.id] || 0,
       providerId: p.providerId ?? undefined,
       aspectRatio: p.aspectRatio ?? undefined,
       quality: p.quality ?? undefined,
@@ -345,19 +358,59 @@ export class ProjectRepository {
   }
 
   async getAllUserItems(userId: string): Promise<any[]> {
-    const [jobs, albumItems, trashItems, exportTasks] = await Promise.all([
+    const [jobs, albumItems, trashItems, exportTasks, libraryItems, workflowItems] = await Promise.all([
       this.prisma.job.findMany({ where: { userId } }),
       this.prisma.albumItem.findMany({ where: { userId } }),
       this.prisma.trashItem.findMany({ where: { userId } }),
       this.prisma.exportTask.findMany({ where: { userId } }),
+      this.prisma.libraryItem.findMany({ where: { library: { userId } } }),
+      this.prisma.workflowItem.findMany({ where: { project: { userId } } }),
     ]);
 
     return [
-      ...jobs.map((j) => ({ ...j, _type: 'JOB' })),
-      ...albumItems.map((a) => ({ ...a, _type: 'ALBUM' })),
-      ...trashItems.map((t) => ({ ...t, _type: 'TRASH' })),
-      ...exportTasks.map((e) => ({ ...e, _type: 'EXPORT' })),
+      ...jobs.map((j) => ({ ...this.mapJob(j), _type: 'JOB', projectId: j.projectId })),
+      ...albumItems.map((a) => ({ ...this.mapAlbumItem(a), _type: 'ALBUM', projectId: a.projectId })),
+      ...trashItems.map((t) => ({ ...this.mapTrashItem(t), _type: 'TRASH', projectId: t.projectId })),
+      ...exportTasks.map((e) => ({ ...this.mapExportTask(e), _type: 'EXPORT', projectId: e.projectId ?? undefined })),
+      ...libraryItems.map((l) => ({ ...this.mapLibItem(l), _type: 'LIBRARY_ITEM' })),
+      ...workflowItems.map((w) => ({ ...this.mapWorkflow(w), _type: 'WORKFLOW_ITEM', projectId: w.projectId })),
     ];
+  }
+
+  private mapTrashItem(t: any): TrashItem {
+    return {
+      id: t.id,
+      jobId: t.jobId ?? undefined,
+      prompt: t.prompt ?? undefined,
+      imageUrl: t.imageUrl ?? undefined,
+      thumbnailUrl: t.thumbnailUrl ?? undefined,
+      optimizedUrl: t.optimizedUrl ?? undefined,
+      providerId: t.providerId ?? undefined,
+      modelConfigId: t.modelConfigId ?? undefined,
+      aspectRatio: t.aspectRatio ?? undefined,
+      quality: t.quality ?? undefined,
+      format: t.format as any ?? undefined,
+      size: t.size != null ? Number(t.size) : undefined,
+      optimizedSize: t.optimizedSize != null ? Number(t.optimizedSize) : undefined,
+      thumbnailSize: t.thumbnailSize != null ? Number(t.thumbnailSize) : undefined,
+      createdAt: t.createdAt.getTime(),
+      projectId: t.projectId,
+      projectName: t.projectName,
+      deletedAt: t.deletedAt.getTime(),
+    };
+  }
+
+  private mapLibItem(l: any): any {
+    return {
+      id: l.id,
+      content: l.content,
+      title: l.title ?? undefined,
+      tags: (l.tags as string[]) ?? [],
+      order: l.order ?? undefined,
+      thumbnailUrl: l.thumbnailUrl ?? undefined,
+      optimizedUrl: l.optimizedUrl ?? undefined,
+      size: l.size != null ? Number(l.size) : undefined,
+    };
   }
 
   private async saveJobs(userId: string, projectId: string, jobs: Job[]): Promise<void> {
