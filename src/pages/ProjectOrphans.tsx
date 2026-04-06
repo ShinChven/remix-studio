@@ -100,9 +100,9 @@ export function ProjectOrphans() {
     try {
       await deleteProjectOrphansBatch(id, Array.from(selectedKeys));
       await loadData();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to delete orphans:', e);
-      toast.error('Failed to delete some files. Please try again.');
+      toast.error(`Failed to delete some files: ${e.message}`);
     } finally {
       setDeleting(false);
       setShowDeleteModal(false);

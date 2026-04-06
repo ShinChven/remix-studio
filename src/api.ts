@@ -8,26 +8,37 @@ function getHeaders(isJson = true): HeadersInit {
   return headers;
 }
 
+async function handleResponse<T>(res: Response, defaultError: string): Promise<T> {
+  if (!res.ok) {
+    let errorMsg = defaultError;
+    try {
+      const data = await res.json();
+      if (data.error) errorMsg = data.error;
+    } catch {
+      // Use default error if JSON parsing fails
+    }
+    throw new Error(errorMsg);
+  }
+  return res.json();
+}
+
 // ========== Legacy bulk load (used for initial data fetch) ==========
 
 export async function loadData(): Promise<AppData> {
   const res = await fetch('/api/data', { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to load data');
-  return res.json();
+  return handleResponse<AppData>(res, 'Failed to load data');
 }
 
 // ========== Library CRUD ==========
 
 export async function fetchLibraries(): Promise<Library[]> {
   const res = await fetch('/api/libraries', { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to list libraries');
-  return res.json();
+  return handleResponse<Library[]>(res, 'Failed to list libraries');
 }
 
 export async function fetchLibrary(id: string): Promise<Library> {
   const res = await fetch(`/api/libraries/${id}`, { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to get library');
-  return res.json();
+  return handleResponse<Library>(res, 'Failed to get library');
 }
 
 export async function createLibrary(library: { id: string; name: string; type: string }): Promise<void> {
@@ -36,7 +47,10 @@ export async function createLibrary(library: { id: string; name: string; type: s
     headers: getHeaders(),
     body: JSON.stringify(library),
   });
-  if (!res.ok) throw new Error('Failed to create library');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to create library');
+  }
 }
 
 export async function updateLibrary(id: string, updates: { name?: string; type?: string }): Promise<void> {
@@ -45,7 +59,10 @@ export async function updateLibrary(id: string, updates: { name?: string; type?:
     headers: getHeaders(),
     body: JSON.stringify(updates),
   });
-  if (!res.ok) throw new Error('Failed to update library');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update library');
+  }
 }
 
 export async function deleteLibrary(id: string): Promise<void> {
@@ -53,13 +70,15 @@ export async function deleteLibrary(id: string): Promise<void> {
     method: 'DELETE',
     headers: getHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to delete library');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete library');
+  }
 }
 
 export async function fetchLibraryReferences(libraryId: string): Promise<{ id: string; name: string }[]> {
   const res = await fetch(`/api/libraries/${libraryId}/references`, { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to check library references');
-  return res.json();
+  return handleResponse<{ id: string; name: string }[]>(res, 'Failed to check library references');
 }
 
 export async function removeLibraryReferences(libraryId: string, projectIds?: string[]): Promise<void> {
@@ -68,15 +87,17 @@ export async function removeLibraryReferences(libraryId: string, projectIds?: st
     headers: getHeaders(),
     body: JSON.stringify({ projectIds }),
   });
-  if (!res.ok) throw new Error('Failed to remove library references');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to remove library references');
+  }
 }
 
 // ========== Library Item CRUD ==========
 
 export async function fetchLibraryItems(libraryId: string): Promise<LibraryItem[]> {
   const res = await fetch(`/api/libraries/${libraryId}/items`, { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to list items');
-  return res.json();
+  return handleResponse<LibraryItem[]>(res, 'Failed to list items');
 }
 
 export async function createLibraryItem(libraryId: string, item: LibraryItem): Promise<void> {
@@ -85,7 +106,10 @@ export async function createLibraryItem(libraryId: string, item: LibraryItem): P
     headers: getHeaders(),
     body: JSON.stringify(item),
   });
-  if (!res.ok) throw new Error('Failed to create item');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to create item');
+  }
 }
 
 export async function createLibraryItemsBatch(libraryId: string, items: LibraryItem[]): Promise<void> {
@@ -94,7 +118,10 @@ export async function createLibraryItemsBatch(libraryId: string, items: LibraryI
     headers: getHeaders(),
     body: JSON.stringify(items),
   });
-  if (!res.ok) throw new Error('Failed to create items batch');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to create items batch');
+  }
 }
 
 export async function updateLibraryItem(libraryId: string, itemId: string, updates: Partial<LibraryItem>): Promise<void> {
@@ -103,7 +130,10 @@ export async function updateLibraryItem(libraryId: string, itemId: string, updat
     headers: getHeaders(),
     body: JSON.stringify(updates),
   });
-  if (!res.ok) throw new Error('Failed to update item');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update item');
+  }
 }
 
 export async function updateLibraryItemOrders(libraryId: string, updates: { id: string; order: number }[]): Promise<void> {
@@ -112,7 +142,10 @@ export async function updateLibraryItemOrders(libraryId: string, updates: { id: 
     headers: getHeaders(),
     body: JSON.stringify(updates),
   });
-  if (!res.ok) throw new Error('Failed to reorder items');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to reorder items');
+  }
 }
 
 export async function deleteLibraryItem(libraryId: string, itemId: string): Promise<void> {
@@ -120,21 +153,22 @@ export async function deleteLibraryItem(libraryId: string, itemId: string): Prom
     method: 'DELETE',
     headers: getHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to delete item');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete item');
+  }
 }
 
 // ========== Project CRUD ==========
 
 export async function fetchProjects(): Promise<Project[]> {
   const res = await fetch('/api/projects', { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to list projects');
-  return res.json();
+  return handleResponse<Project[]>(res, 'Failed to list projects');
 }
 
 export async function fetchProject(id: string): Promise<Project> {
   const res = await fetch(`/api/projects/${id}`, { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to get project');
-  return res.json();
+  return handleResponse<Project>(res, 'Failed to get project');
 }
 
 export async function createProject(project: Project): Promise<void> {
@@ -143,7 +177,10 @@ export async function createProject(project: Project): Promise<void> {
     headers: getHeaders(),
     body: JSON.stringify(project),
   });
-  if (!res.ok) throw new Error('Failed to create project');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to create project');
+  }
 }
 
 export async function updateProject(id: string, updates: Partial<Project>): Promise<void> {
@@ -152,7 +189,10 @@ export async function updateProject(id: string, updates: Partial<Project>): Prom
     headers: getHeaders(),
     body: JSON.stringify(updates),
   });
-  if (!res.ok) throw new Error('Failed to update project');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update project');
+  }
 }
 
 export async function deleteProject(id: string): Promise<void> {
@@ -160,7 +200,10 @@ export async function deleteProject(id: string): Promise<void> {
     method: 'DELETE',
     headers: getHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to delete project');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete project');
+  }
 }
 
 export interface OrphanFile {
@@ -171,8 +214,7 @@ export interface OrphanFile {
 
 export async function fetchProjectOrphans(projectId: string): Promise<OrphanFile[]> {
   const res = await fetch(`/api/projects/${projectId}/orphans`, { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to fetch orphan files');
-  return res.json();
+  return handleResponse<OrphanFile[]>(res, 'Failed to fetch orphan files');
 }
 
 export async function deleteProjectOrphansBatch(projectId: string, keys: string[]): Promise<void> {
@@ -181,7 +223,10 @@ export async function deleteProjectOrphansBatch(projectId: string, keys: string[
     headers: getHeaders(),
     body: JSON.stringify({ keys }),
   });
-  if (!res.ok) throw new Error('Failed to delete orphan files');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete orphan files');
+  }
 }
 
 // ========== Image Storage ==========
@@ -200,17 +245,15 @@ export async function saveImage(base64: string, projectId: string): Promise<{
     headers: getHeaders(),
     body: JSON.stringify({ base64, projectId }),
   });
-  if (!res.ok) throw new Error('Failed to save image');
-  const data = await res.json();
-  return { 
-    key: data.key, 
-    url: data.url, 
-    thumbnailKey: data.thumbnailKey,
-    thumbnailUrl: data.thumbnailUrl,
-    optimizedKey: data.optimizedKey,
-    optimizedUrl: data.optimizedUrl,
-    size: data.size
-  };
+  return handleResponse<{ 
+    key: string; 
+    url: string;
+    thumbnailKey: string;
+    thumbnailUrl: string;
+    optimizedKey: string;
+    optimizedUrl: string;
+    size: number;
+  }>(res, 'Failed to save image');
 }
 
 /**
@@ -236,15 +279,17 @@ export async function renameProjectFolder(oldId: string, newId: string): Promise
     headers: getHeaders(),
     body: JSON.stringify({ oldId, newId }),
   });
-  if (!res.ok) throw new Error('Failed to rename project folder');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to rename project folder');
+  }
 }
 
 // ========== Admin ==========
 
 export async function getUsers(): Promise<User[]> {
   const res = await fetch('/api/admin/users', { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to load users');
-  return res.json();
+  return handleResponse<User[]>(res, 'Failed to load users');
 }
 
 export async function updateUserRole(id: string, role: UserRole): Promise<void> {
@@ -253,7 +298,10 @@ export async function updateUserRole(id: string, role: UserRole): Promise<void> 
     headers: getHeaders(),
     body: JSON.stringify({ role }),
   });
-  if (!res.ok) throw new Error('Failed to update role');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update role');
+  }
 }
 
 export async function updateUserStorageLimit(id: string, limit: number): Promise<void> {
@@ -262,15 +310,17 @@ export async function updateUserStorageLimit(id: string, limit: number): Promise
     headers: getHeaders(),
     body: JSON.stringify({ limit }),
   });
-  if (!res.ok) throw new Error('Failed to update storage limit');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update storage limit');
+  }
 }
 
 // ========== Providers ==========
 
 export async function fetchProviders(): Promise<Provider[]> {
   const res = await fetch('/api/providers', { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to list providers');
-  return res.json();
+  return handleResponse<Provider[]>(res, 'Failed to list providers');
 }
 
 export async function createProvider(data: {
@@ -286,8 +336,7 @@ export async function createProvider(data: {
     headers: getHeaders(),
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to create provider');
-  const result = await res.json();
+  const result = await handleResponse<{ id: string }>(res, 'Failed to create provider');
   return result.id;
 }
 
@@ -300,7 +349,10 @@ export async function updateProvider(
     headers: getHeaders(),
     body: JSON.stringify(updates),
   });
-  if (!res.ok) throw new Error('Failed to update provider');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update provider');
+  }
 }
 
 export async function deleteProvider(id: string): Promise<void> {
@@ -308,7 +360,10 @@ export async function deleteProvider(id: string): Promise<void> {
     method: 'DELETE',
     headers: getHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to delete provider');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete provider');
+  }
 }
 
 // ========== AI Generation ==========
@@ -325,11 +380,7 @@ export async function generateImage(params: {
     headers: getHeaders(),
     body: JSON.stringify(params),
   });
-  if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData.error || 'Failed to generate image');
-  }
-  return res.json();
+  return handleResponse<{ image: string }>(res, 'Failed to generate image');
 }
 
 export async function runProjectWorkflow(projectId: string): Promise<void> {
@@ -337,15 +388,17 @@ export async function runProjectWorkflow(projectId: string): Promise<void> {
     method: 'POST',
     headers: getHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to run project workflow');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to run project workflow');
+  }
 }
 
 // ========== Trash CRUD ==========
 
 export async function fetchTrash(): Promise<TrashItem[]> {
   const res = await fetch('/api/trash', { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to fetch trash');
-  return res.json();
+  return handleResponse<TrashItem[]>(res, 'Failed to fetch trash');
 }
 
 export async function moveToTrash(projectId: string, itemId: string): Promise<void> {
@@ -353,7 +406,10 @@ export async function moveToTrash(projectId: string, itemId: string): Promise<vo
     method: 'POST',
     headers: getHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to move item to trash');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to move item to trash');
+  }
 }
 
 export async function moveToTrashBatch(projectId: string, ids: string[]): Promise<void> {
@@ -362,7 +418,10 @@ export async function moveToTrashBatch(projectId: string, ids: string[]): Promis
     headers: getHeaders(),
     body: JSON.stringify({ ids }),
   });
-  if (!res.ok) throw new Error('Failed to move items to trash');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to move items to trash');
+  }
 }
 
 export async function restoreTrashItem(id: string): Promise<void> {
@@ -370,7 +429,10 @@ export async function restoreTrashItem(id: string): Promise<void> {
     method: 'POST',
     headers: getHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to restore item');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to restore item');
+  }
 }
 
 export async function restoreTrashBatch(ids: string[]): Promise<void> {
@@ -379,7 +441,10 @@ export async function restoreTrashBatch(ids: string[]): Promise<void> {
     headers: getHeaders(),
     body: JSON.stringify({ ids }),
   });
-  if (!res.ok) throw new Error('Failed to restore items');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to restore items');
+  }
 }
 
 export async function deleteTrashPermanently(id: string): Promise<void> {
@@ -387,7 +452,10 @@ export async function deleteTrashPermanently(id: string): Promise<void> {
     method: 'DELETE',
     headers: getHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to delete item permanently');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete item permanently');
+  }
 }
 
 export async function deleteTrashBatch(ids: string[]): Promise<void> {
@@ -396,7 +464,10 @@ export async function deleteTrashBatch(ids: string[]): Promise<void> {
     headers: getHeaders(),
     body: JSON.stringify({ ids }),
   });
-  if (!res.ok) throw new Error('Failed to delete items permanently');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete items permanently');
+  }
 }
 
 export async function emptyTrash(): Promise<void> {
@@ -404,7 +475,10 @@ export async function emptyTrash(): Promise<void> {
     method: 'DELETE',
     headers: getHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to empty trash');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to empty trash');
+  }
 }
 
 export async function startAlbumExport(projectId: string, itemIds?: string[]): Promise<{ taskId: string }> {
@@ -413,20 +487,17 @@ export async function startAlbumExport(projectId: string, itemIds?: string[]): P
     headers: getHeaders(),
     body: JSON.stringify({ itemIds }),
   });
-  if (!res.ok) throw new Error('Failed to start export');
-  return res.json();
+  return handleResponse<{ taskId: string }>(res, 'Failed to start export');
 }
 
 export async function fetchExportStatus(projectId: string, taskId: string): Promise<ExportTask> {
   const res = await fetch(`/api/projects/${projectId}/export/${taskId}`, { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to get export status');
-  return res.json();
+  return handleResponse<ExportTask>(res, 'Failed to get export status');
 }
 
 export async function fetchProjectExports(projectId: string): Promise<ExportTask[]> {
   const res = await fetch(`/api/projects/${projectId}/exports`, { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to list exports');
-  return res.json();
+  return handleResponse<ExportTask[]>(res, 'Failed to list exports');
 }
 
 export async function fetchAllExports(limit?: number, cursor?: string): Promise<{ items: ExportTask[]; nextCursor?: string }> {
@@ -435,8 +506,7 @@ export async function fetchAllExports(limit?: number, cursor?: string): Promise<
   if (cursor) url.searchParams.set('cursor', cursor);
 
   const res = await fetch(url.toString(), { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to list all exports');
-  return res.json();
+  return handleResponse<{ items: ExportTask[]; nextCursor?: string }>(res, 'Failed to list all exports');
 }
 
 export async function deleteExport(taskId: string): Promise<void> {
@@ -444,7 +514,10 @@ export async function deleteExport(taskId: string): Promise<void> {
     method: 'DELETE',
     headers: getHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to delete export');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete export');
+  }
 }
 
 /** @deprecated use deleteExport(taskId) instead */
@@ -456,7 +529,6 @@ export async function deleteProjectExport(projectId: string, taskId: string): Pr
 
 export async function fetchStorageAnalysis(): Promise<StorageAnalysis> {
   const res = await fetch('/api/storage/analysis', { headers: getHeaders(false) });
-  if (!res.ok) throw new Error('Failed to analyze storage');
-  return res.json();
+  return handleResponse<StorageAnalysis>(res, 'Failed to analyze storage');
 }
 

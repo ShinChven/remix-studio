@@ -64,8 +64,8 @@ export function Exports() {
     try {
       await deleteProjectExport(taskToDelete.projectId, taskToDelete.taskId);
       setExports(prev => prev.filter(t => t.id !== taskToDelete.taskId));
-    } catch (err) {
-      toast.error('Failed to delete export record');
+    } catch (err: any) {
+      toast.error(`Failed to delete export record: ${err.message}`);
     } finally {
       setTaskToDelete(null);
       setShowDeleteConfirm(false);

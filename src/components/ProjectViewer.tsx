@@ -493,9 +493,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         itemIdsSet.forEach(id => next.delete(id));
         return next;
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to move items to trash:', e);
-      toast.error('Failed to move items to trash');
+      toast.error(`Failed to move items to trash: ${e.message}`);
     }
   };
 

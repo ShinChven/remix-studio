@@ -114,9 +114,9 @@ export function LibraryImportExport() {
       
       await createLibraryItemsBatch(id, itemsToCreate);
       navigate(`/library/${id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to import items:', error);
-      toast.error('Failed to import items. Please try again.');
+      toast.error(`Failed to import items: ${error.message}`);
     } finally {
       setIsImporting(false);
     }
