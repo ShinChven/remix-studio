@@ -247,7 +247,8 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         if (currentProject) {
           const newJobs = updates.jobs.filter(job => !currentProject.jobs.find(cj => cj.id === job.id));
           if (newJobs.length > 0) {
-            const estimatedNewSize = newJobs.length * 20 * 1024 * 1024; // 20MB per image as requested
+            // Simple estimate: 25MB per image (orig + thumb + opt)
+            const estimatedNewSize = newJobs.length * 25 * 1024 * 1024;
             const { allowed, currentUsage, limit } = await checkStorageLimit(
               user.userId, 
               estimatedNewSize, 
@@ -259,7 +260,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
             
             if (!allowed) {
               return c.json({ 
-                error: `Storage limit exceeded. Cannot add more drafts. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ${estimatedNewSize / (1024 * 1024)}MB.` 
+                error: `Storage limit exceeded. Cannot add more drafts. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedNewSize / (1024 * 1024)).toFixed(0)}MB.` 
               }, 403);
             }
           }
@@ -412,7 +413,8 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       // Storage check for pending jobs before enqueuing
       const pendingJobsCount = project.jobs.filter(j => j.status === 'pending').length;
       if (pendingJobsCount > 0) {
-        const estimatedNewSize = pendingJobsCount * 20 * 1024 * 1024; // 20MB per image
+        // Simple estimate: 25MB per pending image
+        const estimatedNewSize = pendingJobsCount * 25 * 1024 * 1024;
         const { allowed, currentUsage, limit } = await checkStorageLimit(
           user.userId, 
           estimatedNewSize, 
@@ -424,7 +426,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
         if (!allowed) {
           return c.json({ 
-            error: `Storage limit exceeded. Cannot start generation. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ${estimatedNewSize / (1024 * 1024)}MB.` 
+            error: `Storage limit exceeded. Cannot start generation. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedNewSize / (1024 * 1024)).toFixed(0)}MB.`
           }, 403);
         }
       }
@@ -466,6 +468,24 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         : (project.album || []);
 
       if (itemsToExport.length === 0) return c.json({ error: 'No items to export' }, 400);
+
+      // Estimate the ZIP size using the sum of original image sizes
+      // (JPEGs and PNGs are already compressed, so the ZIP will be roughly this size)
+      const estimatedZipSize = itemsToExport.reduce((acc, item) => acc + (item.size || 5 * 1024 * 1024), 0);
+      const { allowed, currentUsage, limit } = await checkStorageLimit(
+        user.userId,
+        estimatedZipSize,
+        userRepository,
+        storage,
+        exportStorage,
+        repository
+      );
+
+      if (!allowed) {
+        return c.json({ 
+          error: `Storage limit exceeded. Cannot export album. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedZipSize / (1024 * 1024)).toFixed(1)}MB.` 
+        }, 403);
+      }
 
       const taskId = await exportManager.startExport(user.userId, projectId, project.name, itemsToExport);
       return c.json({ taskId });

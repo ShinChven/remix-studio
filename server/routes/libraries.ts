@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
+import { UserRepository } from '../auth/user-repository';
+import { checkStorageLimit } from '../utils/storage-check';
 import type { LibraryItem, Library } from '../../src/types';
 
 type Variables = { user: JwtPayload };
@@ -39,7 +41,7 @@ async function signLibrary(lib: Library, storage: S3Storage): Promise<Library> {
   return { ...lib, items: await signLibraryImages(lib.items, storage, lib.type) };
 }
 
-export function createLibraryRouter(repository: IRepository, storage: S3Storage) {
+export function createLibraryRouter(repository: IRepository, storage: S3Storage, userRepository: UserRepository, exportStorage: S3Storage) {
   const router = new Hono<{ Variables: Variables }>();
 
   // === Libraries ===
@@ -180,6 +182,25 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage)
     try {
       const user = c.get('user') as JwtPayload;
       const item = await c.req.json();
+
+      // Estimate size from item fields (image libraries store size in DB fields)
+      const estimatedSize = (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
+      if (estimatedSize > 0) {
+        const { allowed, currentUsage, limit } = await checkStorageLimit(
+          user.userId,
+          estimatedSize,
+          userRepository,
+          storage,
+          exportStorage,
+          repository
+        );
+        if (!allowed) {
+          return c.json({
+            error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ${(estimatedSize / (1024 * 1024)).toFixed(1)}MB.`
+          }, 403);
+        }
+      }
+
       await repository.createLibraryItem(user.userId, c.req.param('libId'), item);
       return c.json({ success: true }, 201);
     } catch (e) {
@@ -195,6 +216,26 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage)
       if (!Array.isArray(items)) {
         return c.json({ error: 'Expected an array of items' }, 400);
       }
+
+      // Sum sizes across all items in the batch
+      const batchSize = items.reduce((acc: number, item: any) =>
+        acc + (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0), 0);
+      if (batchSize > 0) {
+        const { allowed, currentUsage, limit } = await checkStorageLimit(
+          user.userId,
+          batchSize,
+          userRepository,
+          storage,
+          exportStorage,
+          repository
+        );
+        if (!allowed) {
+          return c.json({
+            error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ${(batchSize / (1024 * 1024)).toFixed(1)}MB.`
+          }, 403);
+        }
+      }
+
       await repository.createLibraryItemsBatch(user.userId, c.req.param('libId'), items);
       return c.json({ success: true }, 201);
     } catch (e) {

@@ -3,6 +3,8 @@ import { S3Storage } from '../storage/s3-storage';
 import { AlbumItem } from '../../src/types';
 import crypto from 'crypto';
 import { IRepository } from '../db/repository';
+import { UserRepository } from '../auth/user-repository';
+import { getUserStorageUsage } from '../utils/storage-check';
 
 // TTL helpers (Unix seconds)
 const TTL_24H  = () => Math.floor(Date.now() / 1000) + 86400;
@@ -28,7 +30,8 @@ export class ExportManager {
   constructor(
     private repository: IRepository,
     private imageStorage: S3Storage,
-    private exportStorage: S3Storage
+    private exportStorage: S3Storage,
+    private userRepository: UserRepository
   ) {}
 
   async startExport(userId: string, projectId: string, projectName: string, items: AlbumItem[]): Promise<string> {
@@ -116,6 +119,15 @@ export class ExportManager {
       });
 
       console.log(`[ExportManager] ${taskId}: ZIP built (${(zipBuffer.length / 1024 / 1024).toFixed(1)} MB). Uploading...`);
+
+      // --- Runtime quota check ---
+      const totalNewSize = zipBuffer.length;
+      const user = await this.userRepository.findById(userId);
+      const limit = user?.storageLimit || 5 * 1024 * 1024 * 1024;
+      const currentUsage = await getUserStorageUsage(userId, this.imageStorage, this.exportStorage, this.repository);
+      if (currentUsage + totalNewSize > limit) {
+        throw new Error(`Storage quota exceeded (${((currentUsage + totalNewSize - limit) / (1024 * 1024)).toFixed(1)}MB over limit). Export aborted.`);
+      }
 
       // --- Phase 3: Upload ZIP to export bucket ---
       await this.exportStorage.save(s3Key, zipBuffer, 'application/zip');

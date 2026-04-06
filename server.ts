@@ -79,11 +79,11 @@ async function startServer() {
   });
   await exportStorage.ensureBucket();
 
-  const queueManager = new QueueManager(docClient, providerRepository, projectRepository, storage);
+  const queueManager = new QueueManager(docClient, providerRepository, projectRepository, storage, userRepository, exportStorage);
   // Important: Recover tasks before starting the server to resume background work
   await queueManager.recoverTasks();
 
-  const exportManager = new ExportManager(repository, storage, exportStorage);
+  const exportManager = new ExportManager(repository, storage, exportStorage, userRepository);
 
   // === Auto-provision default admin ===
   const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
@@ -111,7 +111,7 @@ async function startServer() {
 
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
-  app.route('/', createLibraryRouter(repository, storage));
+  app.route('/', createLibraryRouter(repository, storage, userRepository, exportStorage));
   app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager));
   app.route('/', createImageRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createProviderRouter(providerRepository));

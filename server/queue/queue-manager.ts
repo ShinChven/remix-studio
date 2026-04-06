@@ -2,9 +2,11 @@ import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { ProviderRepository } from '../db/provider-repository';
 import { ProjectRepository } from '../db/project-repository';
 import { S3Storage } from '../storage/s3-storage';
+import { UserRepository } from '../auth/user-repository';
 import { buildGenerator } from '../generators/build-generator';
 import { Job, Project, ProviderType, AlbumItem } from '../../src/types';
 import { generateThumbnail, generateOptimized } from '../utils/image-utils';
+import { getUserStorageUsage } from '../utils/storage-check';
 import crypto from 'crypto';
 import sharp from 'sharp';
 
@@ -34,7 +36,9 @@ export class QueueManager {
     private client: DynamoDBDocumentClient,
     private providerRepo: ProviderRepository,
     private projectRepo: ProjectRepository,
-    private storage: S3Storage
+    private storage: S3Storage,
+    private userRepository: UserRepository,
+    private exportStorage: S3Storage
   ) {
     this.intervalId = setInterval(() => {
       this.pollDetachedTasks().catch((e) => {
@@ -312,7 +316,21 @@ export class QueueManager {
       const optKey = `${filename}.opt.jpg`;
       await this.storage.save(optKey, optBuffer, 'image/jpeg');
 
-      // 5. Create album item
+      // 5. Runtime quota check — guards against concurrent uploads filling the space
+      //    during the generation window. Uses actual file sizes (not estimates).
+      const totalNewSize = finalBytes.length + thumbBuffer.length + optBuffer.length;
+      const user = await this.userRepository.findById(userId);
+      const limit = user?.storageLimit || 5 * 1024 * 1024 * 1024;
+      const currentUsage = await getUserStorageUsage(userId, this.storage, this.exportStorage, this.projectRepo as any);
+      if (currentUsage + totalNewSize > limit) {
+        // Clean up already-uploaded S3 files before failing
+        try { await this.storage.delete(s3Url); } catch (_) {}
+        try { await this.storage.delete(thumbKey); } catch (_) {}
+        try { await this.storage.delete(optKey); } catch (_) {}
+        throw new Error(`Storage quota exceeded (${((currentUsage + totalNewSize - limit) / (1024 * 1024)).toFixed(1)}MB over limit). Generated image was discarded.`);
+      }
+
+      // 6. Create album item
       const albumItem: AlbumItem = {
         id: crypto.randomUUID(),
         jobId: job.id,

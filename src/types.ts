@@ -166,6 +166,7 @@ export interface User {
   email: string;
   role: UserRole;
   createdAt: number;
+  storageLimit?: number;
 }
 
 export interface ExportTask {
