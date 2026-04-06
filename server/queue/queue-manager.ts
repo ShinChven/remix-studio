@@ -34,6 +34,8 @@ export class QueueManager {
   private queues: Map<string, QueuedJob[]> = new Map(); // providerId -> pending jobs
   private activeJobIds: Set<string> = new Set(); // global dedup: tracks jobIds from enqueue through executeJob completion
   private intervalId?: NodeJS.Timeout;
+  private isPollingDetached = false;
+  private activePolls: Set<string> = new Set();
 
   constructor(
     private client: DynamoDBDocumentClient,
@@ -167,9 +169,15 @@ export class QueueManager {
   }
 
   public async pollDetachedTasks() {
-    let lastKey: any;
-    do {
-      const result = await this.client.send(new ScanCommand({
+    if (this.isPollingDetached) {
+      console.log('[QueueManager] Detached Poller already running, skipping this interval.');
+      return;
+    }
+    this.isPollingDetached = true;
+    try {
+      let lastKey: any;
+      do {
+        const result = await this.client.send(new ScanCommand({
         TableName: TABLE_NAME,
         FilterExpression: 'begins_with(pk, :prefix) AND begins_with(sk, :projPrefix)',
         ExpressionAttributeValues: {
@@ -197,9 +205,14 @@ export class QueueManager {
       }
       lastKey = result.LastEvaluatedKey;
     } while (lastKey);
+    } finally {
+      this.isPollingDetached = false;
+    }
   }
 
   private async checkJobStatus(userId: string, projectId: string, job: Job) {
+    if (this.activePolls.has(job.id)) return;
+    this.activePolls.add(job.id);
     try {
       const providerRecord = await this.providerRepo.getProvider(userId, job.providerId!);
       if (!providerRecord) return;
@@ -229,6 +242,8 @@ export class QueueManager {
       }
     } catch (e: any) {
       console.error(`[QueueManager] checkStatus for ${job.id} failed:`, e);
+    } finally {
+      this.activePolls.delete(job.id);
     }
   }
 
@@ -317,9 +332,14 @@ export class QueueManager {
     console.log(`[QueueManager] Executing job ${job.id} for project ${projectId} using provider ${providerRecord.providerId}`);
 
     try {
+      if (!job.filename) {
+        job.filename = job.id;
+      }
+
       // 1. Mark as processing in DB
       await this.updateJobStatus(userId, projectId, job.id, { 
         status: 'processing', 
+        filename: job.filename,
         error: undefined 
       });
 
@@ -431,7 +451,7 @@ export class QueueManager {
         ext = 'png';
       }
 
-      const idPart = job.filename || crypto.randomUUID();
+      const idPart = job.filename || job.id;
       const filename = `${userId}/${projectId}/${idPart}`;
       const s3Url = await this.storage.save(`${filename}.${ext}`, finalBytes, mimeType);
 
@@ -460,7 +480,7 @@ export class QueueManager {
 
       // 6. Create album item
       const albumItem: AlbumItem = {
-        id: crypto.randomUUID(),
+        id: job.id,
         jobId: job.id,
         prompt: job.prompt,
         imageUrl: `${filename}.${ext}`,
