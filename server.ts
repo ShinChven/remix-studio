@@ -3,14 +3,14 @@ import { Hono } from 'hono';
 import { serve, getRequestListener } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { createServer as createViteServer } from 'vite';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import fs from 'fs';
 import path from 'path';
 import http from 'http';
 import crypto from 'crypto';
-import { DynamoDBRepository } from './server/db/dynamodb-repository';
-import { ensureTable } from './server/db/init-table';
+import { PrismaRepository } from './server/db/prisma-repository';
 import { S3Storage } from './server/storage/s3-storage';
 import { UserRepository } from './server/auth/user-repository';
 import { hashPassword, JwtPayload, authMiddleware } from './server/auth/auth';
@@ -32,7 +32,7 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 
 // ========== Production secret guard ==========
 if (process.env.NODE_ENV === 'production') {
-  const required = ['JWT_SECRET', 'MINIO_ACCESS_KEY', 'MINIO_SECRET_KEY'];
+  const required = ['JWT_SECRET', 'MINIO_ACCESS_KEY', 'MINIO_SECRET_KEY', 'DATABASE_URL'];
   for (const key of required) {
     if (!process.env[key]) throw new Error(`Missing required environment variable: ${key}`);
   }
@@ -41,24 +41,20 @@ if (process.env.NODE_ENV === 'production') {
 async function startServer() {
   const isProd = process.env.NODE_ENV === 'production';
 
-  // === DynamoDB ===
-  const dynamoClient = new DynamoDBClient({
-    endpoint: process.env.DYNAMODB_ENDPOINT || 'http://localhost:18000',
-    region: process.env.AWS_REGION || 'us-east-1',
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'local',
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'local',
-    },
-  });
-  const docClient = DynamoDBDocumentClient.from(dynamoClient, { marshallOptions: { removeUndefinedValues: true } });
-  await ensureTable(dynamoClient);
+  // === PostgreSQL via Prisma ===
+  const connectionString = process.env.DATABASE_URL!;
+  const pool = new Pool({ connectionString });
+  const adapter = new PrismaPg(pool);
+  const prisma = new PrismaClient({ adapter });
+  await prisma.$connect();
+  console.log('Connected to PostgreSQL via Prisma');
 
-  const repository = new DynamoDBRepository(docClient);
+  const repository = new PrismaRepository(prisma);
   await repository.autoImportJson(DATA_DIR);
 
-  const userRepository = new UserRepository(docClient);
-  const providerRepository = new ProviderRepository(docClient);
-  const projectRepository = new ProjectRepository(docClient);
+  const userRepository = new UserRepository(prisma);
+  const providerRepository = new ProviderRepository(prisma);
+  const projectRepository = new ProjectRepository(prisma);
 
   const storage = new S3Storage({
     endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:19000',
@@ -80,7 +76,7 @@ async function startServer() {
   });
   await exportStorage.ensureBucket();
 
-  const queueManager = new QueueManager(docClient, providerRepository, projectRepository, storage, userRepository, exportStorage);
+  const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, userRepository, exportStorage);
   // Important: Recover tasks before starting the server to resume background work
   await queueManager.recoverTasks();
 

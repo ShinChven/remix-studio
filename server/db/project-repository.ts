@@ -1,543 +1,259 @@
-import {
-  DynamoDBDocumentClient,
-  QueryCommand,
-  PutCommand,
-  DeleteCommand,
-  UpdateCommand,
-  TransactWriteCommand,
-} from '@aws-sdk/lib-dynamodb';
+import { PrismaClient } from '@prisma/client';
 import { Project, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/types';
 
-const TABLE_NAME = 'remix-studio';
-
 export class ProjectRepository {
-  constructor(private client: DynamoDBDocumentClient) {}
+  constructor(private prisma: PrismaClient) {}
 
   async getUserProjects(userId: string): Promise<Project[]> {
-    const pk = `USER_DATA#${userId}`;
-    try {
-      const result = await this.client.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          IndexName: 'GSI_ProjectList',
-          KeyConditionExpression: 'pk = :pk AND projectType = :pType',
-          ExpressionAttributeValues: { 
-            ':pk': pk, 
-            ':pType': 'PROJECT'
-          },
-        })
-      );
+    const projects = await this.prisma.project.findMany({
+      where: { userId },
+      include: {
+        _count: { select: { jobs: true, albumItems: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
 
-      return await Promise.all((result.Items || []).map(async (item) => {
-        const id = item.sk.replace('PROJECT#', '');
-        
-        // Fetch counts for jobs and album items
-        const [jobRes, albumRes] = await Promise.all([
-          this.client.send(new QueryCommand({
-            TableName: TABLE_NAME,
-            KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-            ExpressionAttributeValues: { ':pk': pk, ':prefix': `PROJECT#${id}#JOB#` },
-            Select: 'COUNT'
-          })),
-          this.client.send(new QueryCommand({
-            TableName: TABLE_NAME,
-            KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-            ExpressionAttributeValues: { ':pk': pk, ':prefix': `PROJECT#${id}#ALBUM#` },
-            Select: 'COUNT'
-          }))
-        ]);
-
-        return {
-          id,
-          name: item.name,
-          createdAt: item.createdAt,
-          workflow: [],
-          jobs: [],
-          album: [],
-          jobCount: jobRes.Count || 0,
-          albumCount: albumRes.Count || 0,
-          providerId: item.providerId,
-          aspectRatio: item.aspectRatio,
-          quality: item.quality,
-          format: item.format,
-          shuffle: item.shuffle,
-          modelConfigId: item.modelConfigId,
-          prefix: item.prefix,
-        };
-      }));
-    } catch (e) {
-      console.error('[ProjectRepository.getUserProjects] ERROR:', e);
-      throw e;
-    }
+    return projects.map((p) => ({
+      id: p.id,
+      name: p.name,
+      createdAt: p.createdAt.getTime(),
+      workflow: [],
+      jobs: [],
+      album: [],
+      jobCount: p._count.jobs,
+      albumCount: p._count.albumItems,
+      providerId: p.providerId ?? undefined,
+      aspectRatio: p.aspectRatio ?? undefined,
+      quality: p.quality ?? undefined,
+      format: p.format as 'png' | 'jpeg' | 'webp' | undefined ?? undefined,
+      shuffle: p.shuffle ?? undefined,
+      modelConfigId: p.modelConfigId ?? undefined,
+      prefix: p.prefix ?? undefined,
+      background: (p as any).background ?? undefined,
+    }));
   }
 
   async getProject(userId: string, projectId: string): Promise<Project | null> {
-    const pk = `USER_DATA#${userId}`;
-    const prefix = `PROJECT#${projectId}`;
-    
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
-        ExpressionAttributeNames: { '#sk': 'sk' },
-        ExpressionAttributeValues: { ':pk': pk, ':prefix': prefix },
-      })
-    ) as any;
-
-    if (!result.Items || result.Items.length === 0) return null;
-
-    const projectItem = result.Items.find((item: any) => item.sk === prefix);
-    if (!projectItem) return null;
-
-    const jobItems = result.Items.filter((item: any) => item.sk.includes('#JOB#'));
-    const wfItems = result.Items.filter((item: any) => item.sk.includes('#WF#'));
-    const albumItems = result.Items.filter((item: any) => item.sk.includes('#ALBUM#'));
-    
-    const jobs: Job[] = jobItems.map((item: any) => ({
-      id: item.sk.split('#JOB#')[1],
-      prompt: item.prompt,
-      status: item.status,
-      imageContexts: item.imageContexts,
-      imageUrl: item.imageUrl,
-      thumbnailUrl: item.thumbnailUrl,
-      optimizedUrl: item.optimizedUrl,
-      error: item.error,
-      createdAt: item.createdAt,
-      providerId: item.providerId,
-      modelConfigId: item.modelConfigId,
-      aspectRatio: item.aspectRatio,
-      quality: item.quality,
-      format: item.format,
-      taskId: item.taskId,
-      filename: item.filename,
-    }));
-    jobs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-
-    const workflow: WorkflowItem[] = wfItems.map((item: any) => ({
-      id: item.sk.split('#WF#')[1],
-      type: item.type,
-      value: item.value || '',
-      order: item.order,
-      thumbnailUrl: item.thumbnailUrl,
-      optimizedUrl: item.optimizedUrl,
-    }));
-    workflow.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-    const album: AlbumItem[] = albumItems.map((item: any) => ({
-      id: item.sk.split('#ALBUM#')[1],
-      jobId: item.jobId,
-      prompt: item.prompt,
-      imageUrl: item.imageUrl,
-      thumbnailUrl: item.thumbnailUrl,
-      optimizedUrl: item.optimizedUrl,
-      providerId: item.providerId,
-      modelConfigId: item.modelConfigId,
-      aspectRatio: item.aspectRatio,
-      quality: item.quality,
-      format: item.format,
-      size: item.size,
-      createdAt: item.createdAt,
-    }));
-    album.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    const p = await this.prisma.project.findFirst({
+      where: { id: projectId, userId },
+      include: {
+        jobs: { orderBy: { createdAt: 'asc' } },
+        workflowItems: { orderBy: { order: 'asc' } },
+        albumItems: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    if (!p) return null;
 
     return {
-      id: projectId,
-      name: projectItem.name,
-      createdAt: projectItem.createdAt,
-      workflow: workflow,
-      jobs: jobs,
-      album: album,
-      providerId: projectItem.providerId,
-      aspectRatio: projectItem.aspectRatio,
-      quality: projectItem.quality,
-      format: projectItem.format,
-      shuffle: projectItem.shuffle,
-      modelConfigId: projectItem.modelConfigId,
-      prefix: projectItem.prefix,
+      id: p.id,
+      name: p.name,
+      createdAt: p.createdAt.getTime(),
+      providerId: p.providerId ?? undefined,
+      aspectRatio: p.aspectRatio ?? undefined,
+      quality: p.quality ?? undefined,
+      format: p.format as 'png' | 'jpeg' | 'webp' | undefined ?? undefined,
+      shuffle: p.shuffle ?? undefined,
+      modelConfigId: p.modelConfigId ?? undefined,
+      prefix: p.prefix ?? undefined,
+      background: (p as any).background ?? undefined,
+      jobs: p.jobs.map((j) => this.mapJob(j)),
+      workflow: p.workflowItems.map((w) => this.mapWorkflow(w)),
+      album: p.albumItems.map((a) => this.mapAlbumItem(a)),
     };
   }
 
   async createProject(userId: string, project: Project): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    const projectSk = `PROJECT#${project.id}`;
-    const { jobs, workflow, ...metadata } = project;
-    
-    await this.client.send(
-      new PutCommand({
-        TableName: TABLE_NAME,
-        Item: { 
-          pk, 
-          sk: projectSk, 
-          projectType: 'PROJECT', // Sparse Index Marker
-          ...metadata 
-        },
-      })
-    );
+    await this.prisma.project.create({
+      data: {
+        id: project.id,
+        userId,
+        name: project.name,
+        createdAt: project.createdAt ? new Date(project.createdAt) : new Date(),
+        providerId: project.providerId ?? null,
+        aspectRatio: project.aspectRatio ?? null,
+        quality: project.quality ?? null,
+        format: project.format ?? null,
+        shuffle: project.shuffle ?? null,
+        modelConfigId: project.modelConfigId ?? null,
+        prefix: project.prefix ?? null,
+        background: (project as any).background ?? null,
+      },
+    });
 
-    if (jobs && jobs.length > 0) await this.saveJobs(userId, project.id, jobs);
-    if (workflow && workflow.length > 0) await this.saveWorkflow(userId, project.id, workflow);
+    if (project.jobs?.length) await this.saveJobs(userId, project.id, project.jobs);
+    if (project.workflow?.length) await this.saveWorkflow(project.id, project.workflow);
   }
 
   async updateProject(userId: string, projectId: string, updates: Partial<Project>): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    const projectSk = `PROJECT#${projectId}`;
+    const data: any = {};
+    if (updates.name !== undefined) data.name = updates.name;
+    if (updates.providerId !== undefined) data.providerId = updates.providerId ?? null;
+    if (updates.aspectRatio !== undefined) data.aspectRatio = updates.aspectRatio ?? null;
+    if (updates.quality !== undefined) data.quality = updates.quality ?? null;
+    if (updates.format !== undefined) data.format = updates.format ?? null;
+    if (updates.shuffle !== undefined) data.shuffle = updates.shuffle ?? null;
+    if (updates.modelConfigId !== undefined) data.modelConfigId = updates.modelConfigId ?? null;
+    if (updates.prefix !== undefined) data.prefix = updates.prefix ?? null;
+    if ((updates as any).background !== undefined) data.background = (updates as any).background ?? null;
 
-    const expressions: string[] = ['#pt = :pt']; // Ensure projectType is always present
-    const names: Record<string, string> = { '#pt': 'projectType' };
-    const values: Record<string, unknown> = { ':pt': 'PROJECT' };
-
-    if (updates.name !== undefined) { expressions.push('#n = :n'); names['#n'] = 'name'; values[':n'] = updates.name; }
-    if (updates.providerId !== undefined) { expressions.push('#p = :p'); names['#p'] = 'providerId'; values[':p'] = updates.providerId; }
-    if (updates.aspectRatio !== undefined) { expressions.push('#ar = :ar'); names['#ar'] = 'aspectRatio'; values[':ar'] = updates.aspectRatio; }
-    if (updates.quality !== undefined) { expressions.push('#q = :q'); names['#q'] = 'quality'; values[':q'] = updates.quality; }
-    if (updates.format !== undefined) { expressions.push('#f = :f'); names['#f'] = 'format'; values[':f'] = updates.format; }
-    if (updates.shuffle !== undefined) { expressions.push('#sh = :sh'); names['#sh'] = 'shuffle'; values[':sh'] = updates.shuffle; }
-    if (updates.modelConfigId !== undefined) { expressions.push('#mc = :mc'); names['#mc'] = 'modelConfigId'; values[':mc'] = updates.modelConfigId; }
-    if (updates.prefix !== undefined) { expressions.push('#pref = :pref'); names['#pref'] = 'prefix'; values[':pref'] = updates.prefix; }
-
-    const removeExprs: string[] = [];
-    if (updates.jobs !== undefined) {
-      await this.saveJobs(userId, projectId, updates.jobs);
-      removeExprs.push('jobs');
-    }
-    if (updates.workflow !== undefined) {
-      await this.saveWorkflow(userId, projectId, updates.workflow);
-      removeExprs.push('workflow');
+    if (Object.keys(data).length > 0) {
+      await this.prisma.project.updateMany({ where: { id: projectId, userId }, data });
     }
 
-    let updateExpression = `SET ${expressions.join(', ')}`;
-    if (removeExprs.length > 0) {
-      updateExpression += ` REMOVE ${removeExprs.join(', ')}`;
-    }
+    if (updates.jobs !== undefined) await this.saveJobs(userId, projectId, updates.jobs);
+    if (updates.workflow !== undefined) await this.saveWorkflow(projectId, updates.workflow);
+  }
 
-    if (updates.jobs !== undefined) {
-      // Find items in DB that are NO LONGER in updates.jobs and delete them
-      const prefix = `PROJECT#${projectId}#JOB#`;
-      const result = await this.client.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
-          ExpressionAttributeNames: { '#sk': 'sk' },
-          ExpressionAttributeValues: { ':pk': pk, ':prefix': prefix },
-        })
-      );
-
-      const dbJobIds = new Set((result.Items || []).map(item => item.sk.split('#JOB#')[1]));
-      const newJobIds = new Set(updates.jobs.map(j => j.id));
-
-      for (const id of dbJobIds) {
-        if (!newJobIds.has(id)) {
-          const sk = `PROJECT#${projectId}#JOB#${id}`;
-          await this.client.send(new DeleteCommand({
-            TableName: TABLE_NAME,
-            Key: { pk, sk }
-          }));
-        }
-      }
-    }
-
-    await this.client.send(
-      new UpdateCommand({
-        TableName: TABLE_NAME,
-        Key: { pk, sk: projectSk },
-        UpdateExpression: updateExpression,
-        ExpressionAttributeNames: names,
-        ExpressionAttributeValues: values,
-      })
-    );
+  async deleteProject(userId: string, projectId: string): Promise<void> {
+    await this.prisma.project.deleteMany({ where: { id: projectId, userId } });
   }
 
   async getJob(userId: string, projectId: string, jobId: string): Promise<Job | null> {
-    const pk = `USER_DATA#${userId}`;
-    const sk = `PROJECT#${projectId}#JOB#${jobId}`;
-
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND sk = :sk',
-        ExpressionAttributeValues: { ':pk': pk, ':sk': sk },
-      })
-    );
-
-    const item = result.Items?.[0];
-    if (!item) return null;
-
-    return {
-      id: jobId,
-      prompt: item.prompt,
-      status: item.status,
-      imageContexts: item.imageContexts,
-      imageUrl: item.imageUrl,
-      thumbnailUrl: item.thumbnailUrl,
-      optimizedUrl: item.optimizedUrl,
-      error: item.error,
-      createdAt: item.createdAt,
-      providerId: item.providerId,
-      modelConfigId: item.modelConfigId,
-      aspectRatio: item.aspectRatio,
-      quality: item.quality,
-      format: item.format,
-      taskId: item.taskId,
-      filename: item.filename,
-    };
+    const j = await this.prisma.job.findFirst({
+      where: { id: jobId, projectId, userId },
+    });
+    if (!j) return null;
+    return this.mapJob(j);
   }
 
   async updateJob(userId: string, projectId: string, jobId: string, updates: Partial<Job>): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    const sk = `PROJECT#${projectId}#JOB#${jobId}`;
+    const data: any = {};
+    if (updates.status !== undefined) data.status = updates.status;
+    if (updates.imageUrl !== undefined) data.imageUrl = updates.imageUrl ?? null;
+    if (updates.thumbnailUrl !== undefined) data.thumbnailUrl = updates.thumbnailUrl ?? null;
+    if (updates.optimizedUrl !== undefined) data.optimizedUrl = updates.optimizedUrl ?? null;
+    if (updates.error !== undefined) data.error = updates.error ?? null;
+    if (updates.taskId !== undefined) data.taskId = updates.taskId ?? null;
+    if (updates.filename !== undefined) data.filename = updates.filename ?? null;
+    if (updates.size !== undefined) data.size = updates.size != null ? BigInt(updates.size) : null;
+    if ((updates as any).optimizedSize !== undefined) data.optimizedSize = (updates as any).optimizedSize != null ? BigInt((updates as any).optimizedSize) : null;
+    if ((updates as any).thumbnailSize !== undefined) data.thumbnailSize = (updates as any).thumbnailSize != null ? BigInt((updates as any).thumbnailSize) : null;
 
-    const setExprs: string[] = [];
-    const removeExprs: string[] = [];
-    const names: Record<string, string> = {};
-    const values: Record<string, unknown> = {};
-    let idx = 0;
-
-    for (const [key, value] of Object.entries(updates)) {
-      const nameKey = `#n${idx}`;
-      names[nameKey] = key;
-      if (value === undefined) {
-        // REMOVE the attribute from DynamoDB
-        removeExprs.push(nameKey);
-      } else {
-        const valKey = `:v${idx}`;
-        setExprs.push(`${nameKey} = ${valKey}`);
-        values[valKey] = value;
-      }
-      idx++;
-    }
-
-    if (setExprs.length === 0 && removeExprs.length === 0) return;
-
-    let updateExpression = '';
-    if (setExprs.length > 0) updateExpression += `SET ${setExprs.join(', ')}`;
-    if (removeExprs.length > 0) updateExpression += ` REMOVE ${removeExprs.join(', ')}`;
-
-    await this.client.send(
-      new UpdateCommand({
-        TableName: TABLE_NAME,
-        Key: { pk, sk },
-        UpdateExpression: updateExpression.trim(),
-        ExpressionAttributeNames: names,
-        ...(Object.keys(values).length > 0 ? { ExpressionAttributeValues: values } : {}),
-      })
-    );
-  }
-
-  private async saveJobs(userId: string, projectId: string, jobs: Job[]): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    // const prefix = `PROJECT#${projectId}#JOB#`;
-    // await this.cleanupItems(pk, prefix); 
-    // ^ DANGEROUS: Deleting all jobs before saving the project list leads to data loss 
-    // when multiple jobs update the project status simultaneously.
-    // Moving to an incremental update model (PutCommand only).
-
-    const CHUNK_SIZE = 25;
-    for (let i = 0; i < jobs.length; i += CHUNK_SIZE) {
-      const chunk = jobs.slice(i, i + CHUNK_SIZE);
-      await Promise.all(chunk.map(job => {
-        return this.client.send(new PutCommand({
-          TableName: TABLE_NAME,
-          Item: {
-            pk,
-            sk: `PROJECT#${projectId}#JOB#${job.id}`,
-            ...job,
-            projectId,
-            createdAt: job.createdAt || Date.now()
-          }
-        }));
-      }));
-    }
-  }
-
-  private async saveWorkflow(userId: string, projectId: string, workflow: WorkflowItem[]): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    const prefix = `PROJECT#${projectId}#WF#`;
-    await this.cleanupItems(pk, prefix);
-
-    const CHUNK_SIZE = 25;
-    for (let i = 0; i < workflow.length; i += CHUNK_SIZE) {
-      const chunk = workflow.slice(i, i + CHUNK_SIZE);
-      await Promise.all(chunk.map((item, idx) => {
-        const itemToSave = { ...item };
-        if (itemToSave.value === '') {
-          delete (itemToSave as any).value;
-        }
-        return this.client.send(new PutCommand({
-          TableName: TABLE_NAME,
-          Item: {
-            pk,
-            sk: `PROJECT#${projectId}#WF#${item.id}`,
-            ...itemToSave,
-            projectId,
-            order: (i + idx) // Preserve array order
-          }
-        }));
-      }));
-    }
-  }
-
-  /** Helper to delete all items matching a specific prefix under a PK */
-  private async cleanupItems(pk: string, prefix: string): Promise<void> {
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
-        ExpressionAttributeNames: { '#sk': 'sk' },
-        ExpressionAttributeValues: { ':pk': pk, ':prefix': prefix },
-      })
-    );
-
-    if (result.Items && result.Items.length > 0) {
-      const CHUNK_SIZE = 25;
-      for (let i = 0; i < result.Items.length; i += CHUNK_SIZE) {
-        const chunk = result.Items.slice(i, i + CHUNK_SIZE);
-        await Promise.all(chunk.map(item => {
-          return this.client.send(new DeleteCommand({
-            TableName: TABLE_NAME,
-            Key: { pk, sk: item.sk }
-          }));
-        }));
-      }
-    }
+    await this.prisma.job.updateMany({ where: { id: jobId, projectId }, data });
   }
 
   async addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    await this.client.send(new PutCommand({
-      TableName: TABLE_NAME,
-      Item: {
-        pk,
-        sk: `PROJECT#${projectId}#ALBUM#${item.id}`,
-        ...item,
+    await this.prisma.albumItem.create({
+      data: {
+        id: item.id,
         projectId,
-      }
-    }));
+        userId,
+        jobId: item.jobId ?? null,
+        prompt: item.prompt ?? null,
+        imageUrl: item.imageUrl ?? null,
+        thumbnailUrl: item.thumbnailUrl ?? null,
+        optimizedUrl: item.optimizedUrl ?? null,
+        providerId: item.providerId ?? null,
+        modelConfigId: item.modelConfigId ?? null,
+        aspectRatio: item.aspectRatio ?? null,
+        quality: item.quality ?? null,
+        format: item.format ?? null,
+        size: item.size != null ? BigInt(item.size) : null,
+        optimizedSize: (item as any).optimizedSize != null ? BigInt((item as any).optimizedSize) : null,
+        thumbnailSize: (item as any).thumbnailSize != null ? BigInt((item as any).thumbnailSize) : null,
+        createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+      },
+    });
   }
 
   async deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null> {
-    const pk = `USER_DATA#${userId}`;
-    const sk = `PROJECT#${projectId}#ALBUM#${itemId}`;
-    
-    // Get item first to return it
-    const result = await this.client.send(new QueryCommand({
-      TableName: TABLE_NAME,
-      KeyConditionExpression: 'pk = :pk AND sk = :sk',
-      ExpressionAttributeValues: { ':pk': pk, ':sk': sk }
-    }));
-    
-    const item = result.Items?.[0];
+    const item = await this.prisma.albumItem.findFirst({ where: { id: itemId, projectId, userId } });
     if (!item) return null;
-
-    await this.client.send(new DeleteCommand({
-      TableName: TABLE_NAME,
-      Key: { pk, sk }
-    }));
-
-    return {
-      id: item.sk.split('#ALBUM#')[1],
-      jobId: item.jobId,
-      prompt: item.prompt,
-      imageUrl: item.imageUrl,
-      thumbnailUrl: item.thumbnailUrl,
-      optimizedUrl: item.optimizedUrl,
-      providerId: item.providerId,
-      modelConfigId: item.modelConfigId,
-      aspectRatio: item.aspectRatio,
-      quality: item.quality,
-      format: item.format,
-      size: item.size,
-      createdAt: item.createdAt,
-    };
+    await this.prisma.albumItem.delete({ where: { id: itemId } });
+    return this.mapAlbumItem(item);
   }
 
   async moveToTrash(userId: string, projectId: string, itemId: string): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    const project = await this.getProject(userId, projectId);
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, userId } });
     if (!project) throw new Error('Project not found');
-    
-    const item = await this.deleteAlbumItem(userId, projectId, itemId);
+
+    const item = await this.prisma.albumItem.findFirst({ where: { id: itemId, projectId, userId } });
     if (!item) throw new Error('Album item not found');
 
-    const trashItem: TrashItem = {
-      ...item,
-      projectId,
-      projectName: project.name,
-      deletedAt: Date.now()
-    };
+    await this.prisma.trashItem.create({
+      data: {
+        id: item.id,
+        userId,
+        projectId,
+        projectName: project.name,
+        jobId: item.jobId ?? null,
+        prompt: item.prompt ?? null,
+        imageUrl: item.imageUrl ?? null,
+        thumbnailUrl: item.thumbnailUrl ?? null,
+        optimizedUrl: item.optimizedUrl ?? null,
+        providerId: item.providerId ?? null,
+        modelConfigId: item.modelConfigId ?? null,
+        aspectRatio: item.aspectRatio ?? null,
+        quality: item.quality ?? null,
+        format: item.format ?? null,
+        size: item.size ?? null,
+        optimizedSize: item.optimizedSize ?? null,
+        thumbnailSize: item.thumbnailSize ?? null,
+        createdAt: item.createdAt,
+        deletedAt: new Date(),
+      },
+    });
 
-    await this.client.send(new PutCommand({
-      TableName: TABLE_NAME,
-      Item: {
-        pk,
-        sk: `TRASH#${item.id}`,
-        ...trashItem
-      }
-    }));
+    await this.prisma.albumItem.delete({ where: { id: itemId } });
   }
 
   async getTrashItems(userId: string): Promise<TrashItem[]> {
-    const pk = `USER_DATA#${userId}`;
-    const result = await this.client.send(new QueryCommand({
-      TableName: TABLE_NAME,
-      KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-      ExpressionAttributeValues: { ':pk': pk, ':prefix': 'TRASH#' }
-    }));
-
-    return (result.Items || []).map(item => ({
-      id: item.sk.replace('TRASH#', ''),
-      jobId: item.jobId,
-      prompt: item.prompt,
-      imageUrl: item.imageUrl,
-      thumbnailUrl: item.thumbnailUrl,
-      optimizedUrl: item.optimizedUrl,
-      providerId: item.providerId,
-      modelConfigId: item.modelConfigId,
-      aspectRatio: item.aspectRatio,
-      quality: item.quality,
-      format: item.format,
-      size: item.size,
-      createdAt: item.createdAt,
+    const items = await this.prisma.trashItem.findMany({
+      where: { userId },
+      orderBy: { deletedAt: 'desc' },
+    });
+    return items.map((item) => ({
+      id: item.id,
+      userId: item.userId,
       projectId: item.projectId,
       projectName: item.projectName,
-      deletedAt: item.deletedAt
+      jobId: item.jobId ?? undefined,
+      prompt: item.prompt ?? undefined,
+      imageUrl: item.imageUrl ?? undefined,
+      thumbnailUrl: item.thumbnailUrl ?? undefined,
+      optimizedUrl: item.optimizedUrl ?? undefined,
+      providerId: item.providerId ?? undefined,
+      modelConfigId: item.modelConfigId ?? undefined,
+      aspectRatio: item.aspectRatio ?? undefined,
+      quality: item.quality ?? undefined,
+      format: item.format as 'png' | 'jpeg' | 'webp' | undefined ?? undefined,
+      size: item.size != null ? Number(item.size) : undefined,
+      createdAt: item.createdAt.getTime(),
+      deletedAt: item.deletedAt.getTime(),
     }));
   }
 
   async restoreTrashItem(userId: string, itemId: string): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    const sk = `TRASH#${itemId}`;
-    
-    const result = await this.client.send(new QueryCommand({
-      TableName: TABLE_NAME,
-      KeyConditionExpression: 'pk = :pk AND sk = :sk',
-      ExpressionAttributeValues: { ':pk': pk, ':sk': sk }
-    }));
-    
-    const trashItem = result.Items?.[0] as TrashItem | undefined;
+    const trashItem = await this.prisma.trashItem.findFirst({ where: { id: itemId, userId } });
     if (!trashItem) throw new Error('Trash item not found');
 
-    // Restore to project album
-    const { projectId, projectName, deletedAt, ...albumItem } = trashItem;
-    await this.addAlbumItem(userId, projectId, albumItem);
+    await this.prisma.albumItem.create({
+      data: {
+        id: trashItem.id,
+        projectId: trashItem.projectId,
+        userId,
+        jobId: trashItem.jobId ?? null,
+        prompt: trashItem.prompt ?? null,
+        imageUrl: trashItem.imageUrl ?? null,
+        thumbnailUrl: trashItem.thumbnailUrl ?? null,
+        optimizedUrl: trashItem.optimizedUrl ?? null,
+        providerId: trashItem.providerId ?? null,
+        modelConfigId: trashItem.modelConfigId ?? null,
+        aspectRatio: trashItem.aspectRatio ?? null,
+        quality: trashItem.quality ?? null,
+        format: trashItem.format ?? null,
+        size: trashItem.size ?? null,
+        optimizedSize: trashItem.optimizedSize ?? null,
+        thumbnailSize: trashItem.thumbnailSize ?? null,
+        createdAt: trashItem.createdAt,
+      },
+    });
 
-    // Remove from trash
-    await this.client.send(new DeleteCommand({
-      TableName: TABLE_NAME,
-      Key: { pk, sk }
-    }));
+    await this.prisma.trashItem.delete({ where: { id: itemId } });
   }
 
   async deleteTrashPermanently(userId: string, itemId: string): Promise<string[]> {
-    const pk = `USER_DATA#${userId}`;
-    const sk = `TRASH#${itemId}`;
-    
-    const result = await this.client.send(new QueryCommand({
-      TableName: TABLE_NAME,
-      KeyConditionExpression: 'pk = :pk AND sk = :sk',
-      ExpressionAttributeValues: { ':pk': pk, ':sk': sk }
-    }));
-    
-    const item = result.Items?.[0];
+    const item = await this.prisma.trashItem.findFirst({ where: { id: itemId, userId } });
     if (!item) return [];
 
     const keys: string[] = [];
@@ -545,144 +261,245 @@ export class ProjectRepository {
     if (item.thumbnailUrl) keys.push(item.thumbnailUrl);
     if (item.optimizedUrl) keys.push(item.optimizedUrl);
 
-    await this.client.send(new DeleteCommand({
-      TableName: TABLE_NAME,
-      Key: { pk, sk }
-    }));
-
+    await this.prisma.trashItem.delete({ where: { id: itemId } });
     return keys;
   }
 
   async emptyTrash(userId: string): Promise<string[]> {
-    const items = await this.getTrashItems(userId);
-    const allKeys: string[] = [];
-    
+    const items = await this.prisma.trashItem.findMany({ where: { userId } });
+    const keys: string[] = [];
     for (const item of items) {
-      const keys = await this.deleteTrashPermanently(userId, item.id);
-      allKeys.push(...keys);
+      if (item.imageUrl) keys.push(item.imageUrl);
+      if (item.thumbnailUrl) keys.push(item.thumbnailUrl);
+      if (item.optimizedUrl) keys.push(item.optimizedUrl);
     }
-    
-    return allKeys;
-  }
-
-  async deleteProject(userId: string, projectId: string): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    const prefix = `PROJECT#${projectId}`;
-    await this.cleanupItems(pk, prefix);
+    await this.prisma.trashItem.deleteMany({ where: { userId } });
+    return keys;
   }
 
   // === Export CRUD ===
-  // New schema: SK = EXPORT#{taskId} (flat, no project coupling)
-  // TTL field (Unix seconds) enables automatic DynamoDB cleanup:
-  //   - failed tasks: 24 hours
-  //   - completed tasks: 30 days
 
   async getExportTasks(userId: string, projectId: string): Promise<any[]> {
-    const pk = `USER_DATA#${userId}`;
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
-        FilterExpression: 'projectId = :projectId',
-        ExpressionAttributeNames: { '#sk': 'sk' },
-        ExpressionAttributeValues: { ':pk': pk, ':prefix': 'EXPORT#', ':projectId': projectId },
-      })
-    );
-    return (result.Items || [])
-      .map(item => ({ ...item, id: (item as any).sk.replace('EXPORT#', '') }))
-      .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
+    const tasks = await this.prisma.exportTask.findMany({
+      where: { userId, projectId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return tasks.map((t) => this.mapExportTask(t));
   }
 
-  async getAllExportTasks(userId: string, limit: number = 20, exclusiveStartKey?: any): Promise<{ items: any[]; nextCursor?: any }> {
-    const pk = `USER_DATA#${userId}`;
-    let items: any[] = [];
-    let lastEvaluatedKey = exclusiveStartKey;
+  async getAllExportTasks(userId: string, limit: number = 20, cursor?: string): Promise<{ items: any[]; nextCursor?: string }> {
+    const tasks = await this.prisma.exportTask.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
 
-    // Efficient prefix query — no FilterExpression needed with new flat SK
-    while (items.length < limit) {
-      const params: any = {
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
-        ExpressionAttributeNames: { '#sk': 'sk' },
-        ExpressionAttributeValues: { ':pk': pk, ':prefix': 'EXPORT#' },
-      };
-      if (lastEvaluatedKey) params.ExclusiveStartKey = lastEvaluatedKey;
-
-      const result = await this.client.send(new QueryCommand(params));
-      const found = (result.Items || []).map(item => ({ ...item, id: item.sk.replace('EXPORT#', '') }));
-      items.push(...found);
-      lastEvaluatedKey = result.LastEvaluatedKey;
-      if (!lastEvaluatedKey) break;
+    let nextCursor: string | undefined;
+    if (tasks.length > limit) {
+      nextCursor = tasks[limit].id;
+      tasks.splice(limit);
     }
 
-    let nextCursor: any;
-    if (items.length > limit) {
-      items = items.slice(0, limit);
-      nextCursor = lastEvaluatedKey;
-    } else {
-      nextCursor = lastEvaluatedKey;
-    }
-
-    return {
-      items: items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
-      nextCursor
-    };
-  }
-
-  async saveExportTask(userId: string, taskId: string, data: any): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    const sk = `EXPORT#${taskId}`;
-    await this.client.send(
-      new PutCommand({
-        TableName: TABLE_NAME,
-        Item: { pk, sk, ...data, createdAt: data.createdAt || Date.now() }
-      })
-    );
+    return { items: tasks.map((t) => this.mapExportTask(t)), nextCursor };
   }
 
   async getExportTask(userId: string, taskId: string): Promise<any | undefined> {
-    const pk = `USER_DATA#${userId}`;
-    const sk = `EXPORT#${taskId}`;
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND #sk = :sk',
-        ExpressionAttributeNames: { '#sk': 'sk' },
-        ExpressionAttributeValues: { ':pk': pk, ':sk': sk },
-      })
-    );
-    const item = result.Items?.[0];
-    if (!item) return undefined;
-    return { ...item, id: item.sk.replace('EXPORT#', '') };
+    const t = await this.prisma.exportTask.findFirst({ where: { id: taskId, userId } });
+    if (!t) return undefined;
+    return this.mapExportTask(t);
+  }
+
+  async saveExportTask(userId: string, taskId: string, data: any): Promise<void> {
+    const { projectId, status, downloadUrl, error, size, createdAt, expiresAt, ...rest } = data;
+    await this.prisma.exportTask.upsert({
+      where: { id: taskId },
+      create: {
+        id: taskId,
+        userId,
+        projectId: projectId ?? null,
+        status: status ?? 'pending',
+        downloadUrl: downloadUrl ?? null,
+        error: error ?? null,
+        size: size != null ? BigInt(size) : null,
+        data: Object.keys(rest).length > 0 ? rest : undefined,
+        createdAt: createdAt ? new Date(createdAt) : new Date(),
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      },
+      update: {
+        projectId: projectId ?? null,
+        status: status ?? undefined,
+        downloadUrl: downloadUrl ?? null,
+        error: error ?? null,
+        size: size != null ? BigInt(size) : null,
+        data: Object.keys(rest).length > 0 ? rest : undefined,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      },
+    });
   }
 
   async deleteExportTask(userId: string, taskId: string): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    const sk = `EXPORT#${taskId}`;
-    await this.client.send(new DeleteCommand({ TableName: TABLE_NAME, Key: { pk, sk } }));
+    await this.prisma.exportTask.deleteMany({ where: { id: taskId, userId } });
   }
 
   async getAllUserItems(userId: string): Promise<any[]> {
-    const pk = `USER_DATA#${userId}`;
-    const items: any[] = [];
-    let lastEvaluatedKey: any = undefined;
+    const [jobs, albumItems, trashItems, exportTasks] = await Promise.all([
+      this.prisma.job.findMany({ where: { userId } }),
+      this.prisma.albumItem.findMany({ where: { userId } }),
+      this.prisma.trashItem.findMany({ where: { userId } }),
+      this.prisma.exportTask.findMany({ where: { userId } }),
+    ]);
 
-    do {
-      const result = await this.client.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          KeyConditionExpression: 'pk = :pk',
-          ExpressionAttributeValues: { ':pk': pk },
-          ExclusiveStartKey: lastEvaluatedKey,
-        })
-      );
+    return [
+      ...jobs.map((j) => ({ ...j, _type: 'JOB' })),
+      ...albumItems.map((a) => ({ ...a, _type: 'ALBUM' })),
+      ...trashItems.map((t) => ({ ...t, _type: 'TRASH' })),
+      ...exportTasks.map((e) => ({ ...e, _type: 'EXPORT' })),
+    ];
+  }
 
-      if (result.Items) {
-        items.push(...result.Items);
-      }
-      lastEvaluatedKey = result.LastEvaluatedKey;
-    } while (lastEvaluatedKey);
+  private async saveJobs(userId: string, projectId: string, jobs: Job[]): Promise<void> {
+    for (const job of jobs) {
+      await this.prisma.job.upsert({
+        where: { id: job.id },
+        create: {
+          id: job.id,
+          projectId,
+          userId,
+          prompt: job.prompt,
+          status: job.status ?? 'pending',
+          imageContexts: job.imageContexts ?? [],
+          imageUrl: job.imageUrl ?? null,
+          thumbnailUrl: job.thumbnailUrl ?? null,
+          optimizedUrl: job.optimizedUrl ?? null,
+          error: job.error ?? null,
+          providerId: job.providerId ?? null,
+          modelConfigId: job.modelConfigId ?? null,
+          aspectRatio: job.aspectRatio ?? null,
+          quality: job.quality ?? null,
+          format: job.format ?? null,
+          background: (job as any).background ?? null,
+          taskId: job.taskId ?? null,
+          filename: job.filename ?? null,
+          size: job.size != null ? BigInt(job.size) : null,
+          createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
+        },
+        update: {
+          prompt: job.prompt,
+          status: job.status ?? 'pending',
+          imageContexts: job.imageContexts ?? [],
+          imageUrl: job.imageUrl ?? null,
+          thumbnailUrl: job.thumbnailUrl ?? null,
+          optimizedUrl: job.optimizedUrl ?? null,
+          error: job.error ?? null,
+          providerId: job.providerId ?? null,
+          modelConfigId: job.modelConfigId ?? null,
+          aspectRatio: job.aspectRatio ?? null,
+          quality: job.quality ?? null,
+          format: job.format ?? null,
+          taskId: job.taskId ?? null,
+          filename: job.filename ?? null,
+          size: job.size != null ? BigInt(job.size) : null,
+        },
+      });
+    }
 
-    return items;
+    // Delete jobs no longer in list
+    const newIds = new Set(jobs.map((j) => j.id));
+    const dbJobs = await this.prisma.job.findMany({ where: { projectId }, select: { id: true } });
+    const toDelete = dbJobs.filter((j) => !newIds.has(j.id)).map((j) => j.id);
+    if (toDelete.length) {
+      await this.prisma.job.deleteMany({ where: { id: { in: toDelete } } });
+    }
+  }
+
+  private async saveWorkflow(projectId: string, workflow: WorkflowItem[]): Promise<void> {
+    // Replace all workflow items for the project
+    await this.prisma.workflowItem.deleteMany({ where: { projectId } });
+    if (!workflow.length) return;
+
+    await this.prisma.workflowItem.createMany({
+      data: workflow.map((item, idx) => ({
+        id: item.id,
+        projectId,
+        type: item.type,
+        value: item.value ?? null,
+        order: item.order ?? idx,
+        thumbnailUrl: item.thumbnailUrl ?? null,
+        optimizedUrl: item.optimizedUrl ?? null,
+      })),
+    });
+  }
+
+  private mapJob(j: any): Job {
+    return {
+      id: j.id,
+      prompt: j.prompt,
+      status: j.status,
+      imageContexts: (j.imageContexts as string[]) ?? [],
+      imageUrl: j.imageUrl ?? undefined,
+      thumbnailUrl: j.thumbnailUrl ?? undefined,
+      optimizedUrl: j.optimizedUrl ?? undefined,
+      error: j.error ?? undefined,
+      createdAt: j.createdAt instanceof Date ? j.createdAt.getTime() : j.createdAt,
+      providerId: j.providerId ?? undefined,
+      modelConfigId: j.modelConfigId ?? undefined,
+      aspectRatio: j.aspectRatio ?? undefined,
+      quality: j.quality ?? undefined,
+      format: j.format as 'png' | 'jpeg' | 'webp' | undefined ?? undefined,
+      background: j.background ?? undefined,
+      taskId: j.taskId ?? undefined,
+      filename: j.filename ?? undefined,
+      size: j.size != null ? Number(j.size) : undefined,
+      optimizedSize: j.optimizedSize != null ? Number(j.optimizedSize) : undefined,
+      thumbnailSize: j.thumbnailSize != null ? Number(j.thumbnailSize) : undefined,
+    };
+  }
+
+  private mapWorkflow(w: any): WorkflowItem {
+    return {
+      id: w.id,
+      type: w.type,
+      value: w.value ?? '',
+      order: w.order,
+      thumbnailUrl: w.thumbnailUrl ?? undefined,
+      optimizedUrl: w.optimizedUrl ?? undefined,
+    };
+  }
+
+  private mapAlbumItem(a: any): AlbumItem {
+    return {
+      id: a.id,
+      jobId: a.jobId ?? undefined,
+      prompt: a.prompt ?? undefined,
+      imageUrl: a.imageUrl ?? undefined,
+      thumbnailUrl: a.thumbnailUrl ?? undefined,
+      optimizedUrl: a.optimizedUrl ?? undefined,
+      providerId: a.providerId ?? undefined,
+      modelConfigId: a.modelConfigId ?? undefined,
+      aspectRatio: a.aspectRatio ?? undefined,
+      quality: a.quality ?? undefined,
+      format: a.format as 'png' | 'jpeg' | 'webp' | undefined ?? undefined,
+      size: a.size != null ? Number(a.size) : undefined,
+      optimizedSize: a.optimizedSize != null ? Number(a.optimizedSize) : undefined,
+      thumbnailSize: a.thumbnailSize != null ? Number(a.thumbnailSize) : undefined,
+      createdAt: a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt,
+    };
+  }
+
+  private mapExportTask(t: any): any {
+    const extra = (t.data as any) ?? {};
+    return {
+      id: t.id,
+      userId: t.userId,
+      projectId: t.projectId ?? undefined,
+      status: t.status,
+      downloadUrl: t.downloadUrl ?? undefined,
+      error: t.error ?? undefined,
+      size: t.size != null ? Number(t.size) : undefined,
+      createdAt: t.createdAt instanceof Date ? t.createdAt.getTime() : t.createdAt,
+      expiresAt: t.expiresAt ? (t.expiresAt instanceof Date ? t.expiresAt.getTime() : t.expiresAt) : undefined,
+      ...extra,
+    };
   }
 }

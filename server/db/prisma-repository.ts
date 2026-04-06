@@ -1,4 +1,4 @@
-import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { PrismaClient } from '@prisma/client';
 import { AppData, Library, LibraryItem, Project, AlbumItem, TrashItem } from '../../src/types';
 import { IRepository } from './repository';
 import { LibraryRepository } from './library-repository';
@@ -6,15 +6,14 @@ import { ProjectRepository } from './project-repository';
 import { DataRepository } from './data-repository';
 
 /**
- * Facade that composes domain-specific repositories into a single IRepository.
- * Add new domains by creating a dedicated *-repository.ts and delegating here.
+ * Prisma-based facade that composes domain repositories into a single IRepository.
  */
-export class DynamoDBRepository implements IRepository {
+export class PrismaRepository implements IRepository {
   private libraries: LibraryRepository;
   private projects: ProjectRepository;
   private data: DataRepository;
 
-  constructor(client: DynamoDBDocumentClient) {
+  constructor(client: PrismaClient) {
     this.libraries = new LibraryRepository(client);
     this.projects = new ProjectRepository(client);
     this.data = new DataRepository(client);
@@ -45,7 +44,7 @@ export class DynamoDBRepository implements IRepository {
   // === Album CRUD ===
   addAlbumItem(userId: string, projectId: string, item: AlbumItem) { return this.projects.addAlbumItem(userId, projectId, item); }
   deleteAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.deleteAlbumItem(userId, projectId, itemId); }
-  
+
   // === Trash CRUD ===
   getTrashItems(userId: string) { return this.projects.getTrashItems(userId); }
   moveToTrash(userId: string, projectId: string, itemId: string) { return this.projects.moveToTrash(userId, projectId, itemId); }
@@ -55,7 +54,7 @@ export class DynamoDBRepository implements IRepository {
 
   // === Export CRUD ===
   getExportTasks(userId: string, projectId: string) { return this.projects.getExportTasks(userId, projectId); }
-  getAllExportTasks(userId: string, limit?: number, exclusiveStartKey?: any) { return this.projects.getAllExportTasks(userId, limit, exclusiveStartKey); }
+  getAllExportTasks(userId: string, limit?: number, cursor?: any) { return this.projects.getAllExportTasks(userId, limit, cursor); }
   getExportTask(userId: string, taskId: string) { return this.projects.getExportTask(userId, taskId); }
   saveExportTask(userId: string, taskId: string, data: any) { return this.projects.saveExportTask(userId, taskId, data); }
   deleteExportTask(userId: string, taskId: string) { return this.projects.deleteExportTask(userId, taskId); }

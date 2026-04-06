@@ -1,118 +1,73 @@
-import {
-  DynamoDBDocumentClient,
-  PutCommand,
-  GetCommand,
-  QueryCommand,
-  DeleteCommand,
-  ScanCommand,
-} from '@aws-sdk/lib-dynamodb';
+import { PrismaClient } from '@prisma/client';
 import type { UserRole } from '../../src/types';
 import type { UserRecord } from './auth';
 
-const TABLE_NAME = 'remix-studio';
-
 export class UserRepository {
-  constructor(private client: DynamoDBDocumentClient) {}
+  constructor(private prisma: PrismaClient) {}
 
   async createUser(user: UserRecord): Promise<void> {
-    // Check email uniqueness
     const existing = await this.findByEmail(user.email);
-    if (existing) {
-      throw new Error('Email already exists');
-    }
+    if (existing) throw new Error('Email already exists');
 
-    await this.client.send(
-      new PutCommand({
-        TableName: TABLE_NAME,
-        Item: {
-          ...user,
-          storageLimit: user.storageLimit || 5 * 1024 * 1024 * 1024, // 5GB Default
-        },
-      })
-    );
+    await this.prisma.user.create({
+      data: {
+        id: user.sk, // sk was the UUID in DynamoDB
+        email: user.email,
+        passwordHash: user.passwordHash,
+        role: user.role ?? 'user',
+        storageLimit: BigInt(user.storageLimit ?? 5 * 1024 * 1024 * 1024),
+        createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
+      },
+    });
   }
 
   async findById(userId: string): Promise<UserRecord | null> {
-    const result = await this.client.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: { pk: 'USER', sk: userId },
-      })
-    );
-    return (result.Item as UserRecord) || null;
+    const u = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!u) return null;
+    return this.toRecord(u);
   }
 
   async findByEmail(email: string): Promise<UserRecord | null> {
-    // Scan with filter since email is not a key
-    const result = await this.client.send(
-      new ScanCommand({
-        TableName: TABLE_NAME,
-        FilterExpression: 'pk = :pk AND email = :email',
-        ExpressionAttributeValues: {
-          ':pk': 'USER',
-          ':email': email,
-        },
-      })
-    );
-    return (result.Items?.[0] as UserRecord) || null;
+    const u = await this.prisma.user.findUnique({ where: { email } });
+    if (!u) return null;
+    return this.toRecord(u);
   }
 
   async listUsers(): Promise<UserRecord[]> {
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk',
-        ExpressionAttributeValues: { ':pk': 'USER' },
-      })
-    );
-    return (result.Items || []).map((item) => {
-      const { passwordHash: _omit, ...safeUser } = item as UserRecord;
-      return safeUser as UserRecord;
+    const users = await this.prisma.user.findMany({ orderBy: { createdAt: 'asc' } });
+    return users.map((u) => {
+      const record = this.toRecord(u);
+      const { passwordHash: _omit, ...safe } = record;
+      return safe as UserRecord;
     });
   }
 
   async updateRole(userId: string, role: UserRole): Promise<void> {
-    const user = await this.findById(userId);
-    if (!user) throw new Error('User not found');
-
-    await this.client.send(
-      new PutCommand({
-        TableName: TABLE_NAME,
-        Item: { ...user, role },
-      })
-    );
+    await this.prisma.user.update({ where: { id: userId }, data: { role } });
   }
 
   async updateStorageLimit(userId: string, limit: number): Promise<void> {
-    const user = await this.findById(userId);
-    if (!user) throw new Error('User not found');
-
-    await this.client.send(
-      new PutCommand({
-        TableName: TABLE_NAME,
-        Item: { ...user, storageLimit: limit },
-      })
-    );
+    await this.prisma.user.update({ where: { id: userId }, data: { storageLimit: BigInt(limit) } });
   }
 
   async deleteUser(userId: string): Promise<void> {
-    await this.client.send(
-      new DeleteCommand({
-        TableName: TABLE_NAME,
-        Key: { pk: 'USER', sk: userId },
-      })
-    );
+    await this.prisma.user.delete({ where: { id: userId } });
   }
 
   async hasAnyUsers(): Promise<boolean> {
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk',
-        ExpressionAttributeValues: { ':pk': 'USER' },
-        Limit: 1,
-      })
-    );
-    return (result.Items?.length || 0) > 0;
+    const count = await this.prisma.user.count();
+    return count > 0;
+  }
+
+  private toRecord(u: any): UserRecord {
+    return {
+      pk: 'USER',
+      sk: u.id,
+      email: u.email,
+      passwordHash: u.passwordHash,
+      role: u.role as UserRole,
+      storageLimit: Number(u.storageLimit),
+      createdAt: u.createdAt instanceof Date ? u.createdAt.getTime() : u.createdAt,
+    };
   }
 }

@@ -1,290 +1,140 @@
-import {
-  DynamoDBDocumentClient,
-  QueryCommand,
-  PutCommand,
-  DeleteCommand,
-  UpdateCommand,
-  BatchWriteCommand,
-} from '@aws-sdk/lib-dynamodb';
+import { PrismaClient } from '@prisma/client';
+import type { LibraryType } from '../../src/types';
 import { Library, LibraryItem } from '../../src/types';
 
-const TABLE_NAME = 'remix-studio';
-const BATCH_LIMIT = 25;
-
 export class LibraryRepository {
-  constructor(private client: DynamoDBDocumentClient) { }
+  constructor(private prisma: PrismaClient) {}
 
   async getUserLibraries(userId: string): Promise<Library[]> {
-    const pk = `USER_DATA#${userId}`;
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-        ExpressionAttributeValues: { ':pk': pk, ':prefix': 'LIBRARY#' },
-      })
-    );
+    const libs = await this.prisma.library.findMany({
+      where: { userId },
+      include: {
+        items: {
+          orderBy: [{ order: 'asc' }, { id: 'asc' }],
+        },
+      },
+    });
 
-    const records = result.Items || [];
-    const libraries: Record<string, Library> = {};
-
-    // First pass, extract library metadata
-    for (const record of records) {
-      if (!record.sk.includes('#ITEM#')) {
-        const id = record.sk.replace('LIBRARY#', '');
-        libraries[id] = {
-          id,
-          name: record.name,
-          type: record.type,
-          items: [],
-        };
-      }
-    }
-
-    // Second pass, append items
-    for (const record of records) {
-      if (record.sk.includes('#ITEM#')) {
-        const parts = record.sk.split('#'); // ['LIBRARY', '<libId>', 'ITEM', '<itemId>']
-        if (parts.length >= 4) {
-          const libId = parts[1];
-          const itemId = parts[3];
-          if (libraries[libId]) {
-            libraries[libId].items.push({
-              id: itemId,
-              content: record.content,
-              title: record.title,
-              tags: record.tags || [],
-              order: record.order,
-              thumbnailUrl: record.thumbnailUrl,
-              optimizedUrl: record.optimizedUrl,
-              size: record.size,
-            });
-          }
-        }
-      }
-    }
-
-    // Convert to array and sort items
-    const libsArray = Object.values(libraries);
-    for (const lib of libsArray) {
-      lib.items.sort((a, b) => {
-        if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
-        if (a.order !== undefined) return -1;
-        if (b.order !== undefined) return 1;
-        return a.id.localeCompare(b.id);
-      });
-    }
-
-    return libsArray;
+    return libs.map((lib) => ({
+      id: lib.id,
+      name: lib.name,
+      type: lib.type as LibraryType,
+      items: lib.items.map((item) => this.mapItem(item)),
+    }));
   }
 
   async getLibrary(userId: string, libraryId: string): Promise<Library | null> {
-    const pk = `USER_DATA#${userId}`;
-    const sk = `LIBRARY#${libraryId}`;
+    const lib = await this.prisma.library.findFirst({
+      where: { id: libraryId, userId },
+      include: {
+        items: {
+          orderBy: [{ order: 'asc' }, { id: 'asc' }],
+        },
+      },
+    });
+    if (!lib) return null;
 
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-        ExpressionAttributeValues: { ':pk': pk, ':prefix': sk },
-      })
-    );
-
-    const records = result.Items || [];
-    const metaRecord = records.find((r) => r.sk === sk);
-    if (!metaRecord) return null;
-
-    const items: LibraryItem[] = records
-      .filter((r) => r.sk.includes('#ITEM#'))
-      .map((r) => ({
-        id: r.sk.split('#ITEM#')[1],
-        content: r.content,
-        title: r.title,
-        tags: r.tags || [],
-        order: r.order,
-        thumbnailUrl: r.thumbnailUrl,
-        optimizedUrl: r.optimizedUrl,
-        size: r.size,
-      }))
-      .sort((a, b) => {
-        if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
-        if (a.order !== undefined) return -1;
-        if (b.order !== undefined) return 1;
-        return a.id.localeCompare(b.id);
-      });
-
-    return { id: libraryId, name: metaRecord.name, type: metaRecord.type, items };
+    return {
+      id: lib.id,
+      name: lib.name,
+      type: lib.type as LibraryType,
+      items: lib.items.map((item) => this.mapItem(item)),
+    };
   }
 
   async createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void> {
-    await this.client.send(
-      new PutCommand({
-        TableName: TABLE_NAME,
-        Item: {
-          pk: `USER_DATA#${userId}`,
-          sk: `LIBRARY#${library.id}`,
-          name: library.name,
-          type: library.type,
-        },
-      })
-    );
+    await this.prisma.library.create({
+      data: { id: library.id, userId, name: library.name, type: library.type },
+    });
   }
 
   async updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }): Promise<void> {
-    const expressions: string[] = [];
-    const names: Record<string, string> = {};
-    const values: Record<string, unknown> = {};
-
-    if (updates.name !== undefined) { expressions.push('#n = :n'); names['#n'] = 'name'; values[':n'] = updates.name; }
-    if (updates.type !== undefined) { expressions.push('#t = :t'); names['#t'] = 'type'; values[':t'] = updates.type; }
-    if (expressions.length === 0) return;
-
-    await this.client.send(
-      new UpdateCommand({
-        TableName: TABLE_NAME,
-        Key: { pk: `USER_DATA#${userId}`, sk: `LIBRARY#${libraryId}` },
-        UpdateExpression: `SET ${expressions.join(', ')}`,
-        ExpressionAttributeNames: names,
-        ExpressionAttributeValues: values,
-      })
-    );
+    await this.prisma.library.updateMany({
+      where: { id: libraryId, userId },
+      data: updates,
+    });
   }
 
   async deleteLibrary(userId: string, libraryId: string): Promise<void> {
-    const pk = `USER_DATA#${userId}`;
-    const prefix = `LIBRARY#${libraryId}`;
-
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-        ExpressionAttributeValues: { ':pk': pk, ':prefix': prefix },
-        ProjectionExpression: 'pk, sk',
-      })
-    );
-
-    const items = result.Items || [];
-    for (let i = 0; i < items.length; i += BATCH_LIMIT) {
-      const batch = items.slice(i, i + BATCH_LIMIT).map((item) => ({
-        DeleteRequest: { Key: { pk: item.pk, sk: item.sk } },
-      }));
-      await this.client.send(new BatchWriteCommand({ RequestItems: { [TABLE_NAME]: batch } }));
-    }
+    await this.prisma.library.deleteMany({ where: { id: libraryId, userId } });
   }
 
-  // === Library Item CRUD ===
-
   async getLibraryItems(userId: string, libraryId: string): Promise<LibraryItem[]> {
-    const pk = `USER_DATA#${userId}`;
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-        ExpressionAttributeValues: { ':pk': pk, ':prefix': `LIBRARY#${libraryId}#ITEM#` },
-      })
-    );
+    const lib = await this.prisma.library.findFirst({ where: { id: libraryId, userId } });
+    if (!lib) return [];
 
-    return (result.Items || [])
-      .map((r) => ({
-        id: r.sk.split('#ITEM#')[1],
-        content: r.content,
-        title: r.title,
-        tags: r.tags || [],
-        order: r.order,
-        thumbnailUrl: r.thumbnailUrl,
-        optimizedUrl: r.optimizedUrl,
-        size: r.size,
-      }))
-      .sort((a, b) => {
-        if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
-        if (a.order !== undefined) return -1;
-        if (b.order !== undefined) return 1;
-        return a.id.localeCompare(b.id);
-      });
+    const items = await this.prisma.libraryItem.findMany({
+      where: { libraryId },
+      orderBy: [{ order: 'asc' }, { id: 'asc' }],
+    });
+    return items.map((item) => this.mapItem(item));
   }
 
   async createLibraryItem(userId: string, libraryId: string, item: LibraryItem): Promise<void> {
-    const record: Record<string, unknown> = {
-      pk: `USER_DATA#${userId}`,
-      sk: `LIBRARY#${libraryId}#ITEM#${item.id}`,
-      content: item.content,
-    };
-    if (item.title !== undefined) record.title = item.title;
-    if (item.order !== undefined) record.order = item.order;
-    if (item.thumbnailUrl !== undefined) record.thumbnailUrl = item.thumbnailUrl;
-    if (item.optimizedUrl !== undefined) record.optimizedUrl = item.optimizedUrl;
-    if (item.size !== undefined) record.size = item.size;
-    if (item.tags !== undefined) record.tags = item.tags;
-    await this.client.send(new PutCommand({ TableName: TABLE_NAME, Item: record }));
+    await this.prisma.libraryItem.create({
+      data: {
+        id: item.id,
+        libraryId,
+        content: item.content,
+        title: item.title ?? null,
+        tags: item.tags ?? [],
+        order: item.order ?? null,
+        thumbnailUrl: item.thumbnailUrl ?? null,
+        optimizedUrl: item.optimizedUrl ?? null,
+        size: item.size != null ? BigInt(item.size) : null,
+      },
+    });
   }
 
   async createLibraryItemsBatch(userId: string, libraryId: string, items: LibraryItem[]): Promise<void> {
-    for (let i = 0; i < items.length; i += BATCH_LIMIT) {
-      const batchItems = items.slice(i, i + BATCH_LIMIT);
-      const putRequests = batchItems.map((item) => {
-        const record: Record<string, unknown> = {
-          pk: `USER_DATA#${userId}`,
-          sk: `LIBRARY#${libraryId}#ITEM#${item.id}`,
-          content: item.content,
-        };
-        if (item.title !== undefined) record.title = item.title;
-        if (item.order !== undefined) record.order = item.order;
-        if (item.thumbnailUrl !== undefined) record.thumbnailUrl = item.thumbnailUrl;
-        if (item.optimizedUrl !== undefined) record.optimizedUrl = item.optimizedUrl;
-        if (item.size !== undefined) record.size = item.size;
-        if (item.tags !== undefined) record.tags = item.tags;
-        return {
-          PutRequest: {
-            Item: record,
-          },
-        };
-      });
-
-      await this.client.send(
-        new BatchWriteCommand({
-          RequestItems: {
-            [TABLE_NAME]: putRequests,
-          },
-        })
-      );
-    }
+    await this.prisma.libraryItem.createMany({
+      data: items.map((item) => ({
+        id: item.id,
+        libraryId,
+        content: item.content,
+        title: item.title ?? null,
+        tags: item.tags ?? [],
+        order: item.order ?? null,
+        thumbnailUrl: item.thumbnailUrl ?? null,
+        optimizedUrl: item.optimizedUrl ?? null,
+        size: item.size != null ? BigInt(item.size) : null,
+      })),
+    });
   }
 
   async updateLibraryItem(userId: string, libraryId: string, itemId: string, updates: Partial<LibraryItem>): Promise<void> {
-    const expressions: string[] = [];
-    const names: Record<string, string> = {};
-    const values: Record<string, unknown> = {};
+    const data: any = {};
+    if (updates.content !== undefined) data.content = updates.content;
+    if (updates.title !== undefined) data.title = updates.title;
+    if (updates.order !== undefined) data.order = updates.order;
+    if (updates.thumbnailUrl !== undefined) data.thumbnailUrl = updates.thumbnailUrl;
+    if (updates.optimizedUrl !== undefined) data.optimizedUrl = updates.optimizedUrl;
+    if (updates.tags !== undefined) data.tags = updates.tags;
+    if (updates.size !== undefined) data.size = updates.size != null ? BigInt(updates.size) : null;
 
-    if (updates.content !== undefined) { expressions.push('#c = :c'); names['#c'] = 'content'; values[':c'] = updates.content; }
-    if (updates.title !== undefined) { expressions.push('#t = :t'); names['#t'] = 'title'; values[':t'] = updates.title; }
-    if (updates.order !== undefined) { expressions.push('#o = :o'); names['#o'] = 'order'; values[':o'] = updates.order; }
-    if (updates.thumbnailUrl !== undefined) { expressions.push('#th = :th'); names['#th'] = 'thumbnailUrl'; values[':th'] = updates.thumbnailUrl; }
-    if (updates.optimizedUrl !== undefined) { expressions.push('#op = :op'); names['#op'] = 'optimizedUrl'; values[':op'] = updates.optimizedUrl; }
-    if (updates.tags !== undefined) { expressions.push('#tags = :tags'); names['#tags'] = 'tags'; values[':tags'] = updates.tags; }
-    if (expressions.length === 0) return;
-
-    await this.client.send(
-      new UpdateCommand({
-        TableName: TABLE_NAME,
-        Key: { pk: `USER_DATA#${userId}`, sk: `LIBRARY#${libraryId}#ITEM#${itemId}` },
-        UpdateExpression: `SET ${expressions.join(', ')}`,
-        ExpressionAttributeNames: names,
-        ExpressionAttributeValues: values,
-      })
-    );
+    await this.prisma.libraryItem.update({ where: { id: itemId }, data });
   }
 
   async deleteLibraryItem(userId: string, libraryId: string, itemId: string): Promise<void> {
-    await this.client.send(
-      new DeleteCommand({
-        TableName: TABLE_NAME,
-        Key: { pk: `USER_DATA#${userId}`, sk: `LIBRARY#${libraryId}#ITEM#${itemId}` },
-      })
-    );
+    await this.prisma.libraryItem.delete({ where: { id: itemId } });
   }
 
   async reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]): Promise<void> {
     await Promise.all(
-      updates.map((update) => this.updateLibraryItem(userId, libraryId, update.id, { order: update.order }))
+      updates.map((u) => this.prisma.libraryItem.update({ where: { id: u.id }, data: { order: u.order } }))
     );
+  }
+
+  private mapItem(item: any): LibraryItem {
+    return {
+      id: item.id,
+      content: item.content,
+      title: item.title ?? undefined,
+      tags: (item.tags as string[]) ?? [],
+      order: item.order ?? undefined,
+      thumbnailUrl: item.thumbnailUrl ?? undefined,
+      optimizedUrl: item.optimizedUrl ?? undefined,
+      size: item.size != null ? Number(item.size) : undefined,
+    };
   }
 }

@@ -1,24 +1,20 @@
 services:
-  localstack:
-    image: localstack/localstack:latest
-    container_name: remix-studio-localstack
+  postgres:
+    image: postgres:17-alpine
+    container_name: remix-studio-postgres
     ports:
-      - "4566:4566"
+      - "5432:5432"
     environment:
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
+      POSTGRES_DB: remix_studio
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
-      - "./data/localstack:/var/lib/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-
-  dynamodb-local:
-    image: amazon/dynamodb-local:latest
-    container_name: remix-studio-dynamodb
-    ports:
-      - "18000:8000"
-    volumes:
-      - ./data/dynamodb:/home/dynamodblocal/data
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data"
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   minio:
     image: minio/minio:latest

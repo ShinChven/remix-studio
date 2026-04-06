@@ -1,0 +1,211 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("user")
+  storageLimit BigInt   @default(5368709120) // 5GB in bytes
+  createdAt    DateTime @default(now())
+
+  providers    Provider[]
+  libraries    Library[]
+  projects     Project[]
+  trashItems   TrashItem[]
+  exportTasks  ExportTask[]
+}
+
+model Provider {
+  id              String   @id @default(uuid())
+  userId          String
+  name            String
+  type            String
+  apiKeyEncrypted String?
+  apiUrl          String?
+  concurrency     Int      @default(1)
+  models          Json?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  jobs Job[]
+
+  @@index([userId])
+}
+
+model Library {
+  id     String  @id @default(uuid())
+  userId String
+  name   String
+  type   String
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items LibraryItem[]
+
+  @@index([userId])
+}
+
+model LibraryItem {
+  id           String  @id @default(uuid())
+  libraryId    String
+  content      String  @db.Text
+  title        String?
+  tags         Json?   // String[]
+  order        Int?
+  thumbnailUrl String?
+  optimizedUrl String?
+  size         BigInt?
+
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+
+  @@index([libraryId])
+  @@index([libraryId, order])
+}
+
+model Project {
+  id           String   @id @default(uuid())
+  userId       String
+  name         String
+  providerId   String?
+  aspectRatio  String?
+  quality      String?
+  format       String?
+  shuffle      Boolean?
+  modelConfigId String?
+  prefix       String?
+  background   String?
+  createdAt    DateTime @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobs          Job[]
+  workflowItems WorkflowItem[]
+  albumItems    AlbumItem[]
+  exportTasks   ExportTask[]
+
+  @@index([userId])
+}
+
+model Job {
+  id            String   @id @default(uuid())
+  projectId     String
+  userId        String
+  prompt        String   @db.Text
+  status        String   @default("pending")
+  imageContexts Json?    // String[]
+  imageUrl      String?
+  thumbnailUrl  String?
+  optimizedUrl  String?
+  error         String?  @db.Text
+  providerId    String?
+  modelConfigId String?
+  aspectRatio   String?
+  quality       String?
+  format        String?
+  background    String?
+  taskId        String?
+  filename      String?
+  size          BigInt?
+  optimizedSize BigInt?
+  thumbnailSize BigInt?
+  createdAt     DateTime @default(now())
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  provider Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([userId, status])
+  @@index([status, taskId])
+}
+
+model WorkflowItem {
+  id           String  @id @default(uuid())
+  projectId    String
+  type         String
+  value        String? @db.Text
+  order        Int     @default(0)
+  thumbnailUrl String?
+  optimizedUrl String?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model AlbumItem {
+  id            String   @id @default(uuid())
+  projectId     String
+  userId        String
+  jobId         String?
+  prompt        String?  @db.Text
+  imageUrl      String?
+  thumbnailUrl  String?
+  optimizedUrl  String?
+  providerId    String?
+  modelConfigId String?
+  aspectRatio   String?
+  quality       String?
+  format        String?
+  size          BigInt?
+  optimizedSize BigInt?
+  thumbnailSize BigInt?
+  createdAt     DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+model TrashItem {
+  id            String   @id @default(uuid())
+  userId        String
+  projectId     String
+  projectName   String
+  jobId         String?
+  prompt        String?  @db.Text
+  imageUrl      String?
+  thumbnailUrl  String?
+  optimizedUrl  String?
+  providerId    String?
+  modelConfigId String?
+  aspectRatio   String?
+  quality       String?
+  format        String?
+  size          BigInt?
+  optimizedSize BigInt?
+  thumbnailSize BigInt?
+  createdAt     DateTime @default(now())
+  deletedAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ExportTask {
+  id          String   @id @default(uuid())
+  userId      String
+  projectId   String?
+  status      String   @default("pending")
+  downloadUrl String?
+  error       String?  @db.Text
+  size        BigInt?
+  data        Json?    // Flexible blob for any extra fields
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, projectId])
+}

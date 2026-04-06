@@ -1,4 +1,4 @@
-import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { PrismaClient } from '@prisma/client';
 import { ProviderRepository } from '../db/provider-repository';
 import { ProjectRepository } from '../db/project-repository';
 import { S3Storage } from '../storage/s3-storage';
@@ -9,8 +9,6 @@ import { generateThumbnail, generateOptimized } from '../utils/image-utils';
 import { getUserStorageUsage } from '../utils/storage-check';
 import crypto from 'crypto';
 import sharp from 'sharp';
-
-const TABLE_NAME = 'remix-studio';
 
 interface QueuedJob {
   userId: string;
@@ -37,7 +35,7 @@ export class QueueManager {
   private activePolls: Set<string> = new Set();
 
   constructor(
-    private client: DynamoDBDocumentClient,
+    private prisma: PrismaClient,
     private providerRepo: ProviderRepository,
     private projectRepo: ProjectRepository,
     private storage: S3Storage,
@@ -58,36 +56,18 @@ export class QueueManager {
     }
     this.isPollingDetached = true;
     try {
-      let lastKey: any;
-      do {
-        const result = await this.client.send(new ScanCommand({
-        TableName: TABLE_NAME,
-        FilterExpression: 'begins_with(pk, :prefix) AND begins_with(sk, :projPrefix)',
-        ExpressionAttributeValues: {
-          ':prefix': 'USER_DATA#',
-          ':projPrefix': 'PROJECT#'
+      // Query jobs with 'processing' status that have a taskId (owned by detached poller)
+      const jobs = await this.prisma.job.findMany({
+        where: {
+          status: { in: ['processing', 'failed'] },
+          taskId: { not: null },
         },
-        ExclusiveStartKey: lastKey
-      }));
+      });
 
-      for (const item of (result.Items || [])) {
-        const userId = item.pk.replace('USER_DATA#', '');
-        const sk = item.sk as string;
-
-        // If it's a individual Job item (Sort Key contains #JOB#)
-        if (sk.includes('#JOB#')) {
-          const job = item as unknown as Job;
-          const [projPrefix, jobId] = sk.split('#JOB#');
-          const projectId = projPrefix.replace('PROJECT#', '');
-
-          if ((job.status === 'processing' || job.status === 'failed') && job.taskId) {
-            console.log(`[QueueManager] Detached Poll (Healing): Checking Job ${jobId} in Project ${projectId} - Last status: ${job.status}`);
-            await this.checkJobStatus(userId, projectId, job);
-          }
-        }
+      for (const item of jobs) {
+        const job = this.prisma_jobToJob(item);
+        await this.checkJobStatus(item.userId, item.projectId, job);
       }
-      lastKey = result.LastEvaluatedKey;
-    } while (lastKey);
     } finally {
       this.isPollingDetached = false;
     }
@@ -100,7 +80,7 @@ export class QueueManager {
       const providerRecord = await this.providerRepo.getProvider(userId, job.providerId!);
       if (!providerRecord) return;
 
-      const apiKey = await this.providerRepo.getDecryptedApiKey(userId, providerRecord.providerId);
+      const apiKey = await this.providerRepo.getDecryptedApiKey(userId, providerRecord.id);
       if (!apiKey) return;
 
       const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
@@ -156,7 +136,7 @@ export class QueueManager {
         job.providerId || project.providerId!, 
         job.aspectRatio || project.aspectRatio, 
         job.quality || project.quality,
-        job.background || project.background,
+        (job as any).background || (project as any).background,
         job.format || project.format,
         job.modelConfigId
       );
@@ -205,7 +185,7 @@ export class QueueManager {
   private async executeJob(queued: QueuedJob, providerRecord: any) {
     const { userId, projectId, job } = queued;
     
-    console.log(`[QueueManager] Executing job ${job.id} for project ${projectId} using provider ${providerRecord.providerId}`);
+    console.log(`[QueueManager] Executing job ${job.id} for project ${projectId} using provider ${providerRecord.id}`);
 
     try {
       if (!job.filename) {
@@ -220,7 +200,7 @@ export class QueueManager {
       });
 
       // 2. Build generator
-      const apiKey = await this.providerRepo.getDecryptedApiKey(userId, providerRecord.providerId);
+      const apiKey = await this.providerRepo.getDecryptedApiKey(userId, providerRecord.id);
       if (!apiKey) throw new Error('Stored API key not found for provider');
 
       const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
@@ -374,7 +354,7 @@ export class QueueManager {
       };
       await this.projectRepo.addAlbumItem(userId, projectId, albumItem);
 
-      // 6. Mark job as completed in DB
+      // 7. Mark job as completed in DB
       await this.updateJobStatus(userId, projectId, job.id, {
         status: 'completed',
         imageUrl: `${filename}.${ext}`,
@@ -408,50 +388,35 @@ export class QueueManager {
    */
   async recoverTasks() {
     console.log('[QueueManager] Starting task recovery scan...');
-    let lastKey: any;
-    let count = 0;
-    
+
     let pendingCount = 0;
     let pollingCount = 0;
     const projectSet = new Set<string>();
 
-    do {
-      const result = await this.client.send(new ScanCommand({
-        TableName: TABLE_NAME,
-        FilterExpression: 'begins_with(pk, :prefix) AND begins_with(sk, :projPrefix)',
-        ExpressionAttributeValues: {
-          ':prefix': 'USER_DATA#',
-          ':projPrefix': 'PROJECT#'
-        },
-        ExclusiveStartKey: lastKey
-      }));
+    // Use Prisma to query jobs instead of DynamoDB scan
+    const jobs = await this.prisma.job.findMany({
+      where: {
+        status: { in: ['pending', 'processing'] },
+      },
+    });
 
-      for (const item of (result.Items || [])) {
-        const userId = item.pk.replace('USER_DATA#', '');
-        const sk = item.sk as string;
+    for (const item of jobs) {
+      const job = this.prisma_jobToJob(item);
+      const userId = item.userId;
+      const projectId = item.projectId;
 
-        if (sk.includes('#JOB#')) {
-          const job = item as unknown as Job;
-          const [projPrefix, jobId] = sk.split('#JOB#');
-          const projectId = projPrefix.replace('PROJECT#', '');
-
-          if (job.status === 'processing' || job.status === 'pending') {
-            if (job.status === 'processing' && job.taskId) {
-              pollingCount++;
-            } else if (job.status === 'processing' && !job.taskId) {
-              await this.updateJobStatus(userId, projectId, jobId, { status: 'pending' });
-              console.log(`[QueueManager] Resetting interrupted job ${jobId} to pending.`);
-              projectSet.add(`${userId}|${projectId}`);
-              pendingCount++;
-            } else if (job.status === 'pending') {
-              projectSet.add(`${userId}|${projectId}`);
-              pendingCount++;
-            }
-          }
-        }
+      if (job.status === 'processing' && job.taskId) {
+        pollingCount++;
+      } else if (job.status === 'processing' && !job.taskId) {
+        await this.updateJobStatus(userId, projectId, job.id, { status: 'pending' });
+        console.log(`[QueueManager] Resetting interrupted job ${job.id} to pending.`);
+        projectSet.add(`${userId}|${projectId}`);
+        pendingCount++;
+      } else if (job.status === 'pending') {
+        projectSet.add(`${userId}|${projectId}`);
+        pendingCount++;
       }
-      lastKey = result.LastEvaluatedKey;
-    } while (lastKey);
+    }
 
     // Enqueue projects once
     for (const entry of projectSet) {
@@ -467,5 +432,27 @@ export class QueueManager {
       console.log(`[QueueManager] Starting initial poll for ${pollingCount} detached jobs...`);
       await this.pollDetachedTasks();
     }
+  }
+
+  private prisma_jobToJob(item: any): Job {
+    return {
+      id: item.id,
+      prompt: item.prompt,
+      status: item.status,
+      imageContexts: (item.imageContexts as string[]) ?? [],
+      imageUrl: item.imageUrl ?? undefined,
+      thumbnailUrl: item.thumbnailUrl ?? undefined,
+      optimizedUrl: item.optimizedUrl ?? undefined,
+      error: item.error ?? undefined,
+      createdAt: item.createdAt instanceof Date ? item.createdAt.getTime() : item.createdAt,
+      providerId: item.providerId ?? undefined,
+      modelConfigId: item.modelConfigId ?? undefined,
+      aspectRatio: item.aspectRatio ?? undefined,
+      quality: item.quality ?? undefined,
+      format: item.format ?? undefined,
+      taskId: item.taskId ?? undefined,
+      filename: item.filename ?? undefined,
+      size: item.size != null ? Number(item.size) : undefined,
+    };
   }
 }

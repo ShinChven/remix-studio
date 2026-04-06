@@ -1,89 +1,48 @@
-import {
-  DynamoDBDocumentClient,
-  PutCommand,
-  QueryCommand,
-  DeleteCommand,
-  UpdateCommand,
-  GetCommand,
-} from '@aws-sdk/lib-dynamodb';
-import type { Provider, ProviderType, ModelConfig } from '../../src/types';
+import { PrismaClient } from '@prisma/client';
+import type { Provider, ProviderType } from '../../src/types';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 import { encrypt, decrypt } from '../utils/crypto';
 
-const TABLE_NAME = 'remix-studio';
-const PK = 'PROVIDER';
-
-interface ProviderRecord {
-  pk: string;
-  sk: string;             // "<userId>#<providerId>"
-  userId: string;
-  providerId: string;
-  name: string;
-  type: ProviderType;
-  apiKeyEncrypted?: string;
-  apiUrl?: string;
-  concurrency?: number;
-  createdAt: number;
-  models?: any[];
-}
-
-function toPublic(record: ProviderRecord): Provider {
+function toPublic(record: any): Provider {
   return {
-    id: record.providerId,
+    id: record.id,
     name: record.name,
-    type: record.type,
-    apiUrl: record.apiUrl,
+    type: record.type as ProviderType,
+    apiUrl: record.apiUrl ?? undefined,
     concurrency: record.concurrency ?? 1,
     hasKey: !!record.apiKeyEncrypted,
-    createdAt: record.createdAt,
-    models: PROVIDER_MODELS_MAP[record.type] || [],
+    createdAt: record.createdAt instanceof Date ? record.createdAt.getTime() : record.createdAt,
+    models: PROVIDER_MODELS_MAP[record.type as ProviderType] || [],
   };
 }
 
 export class ProviderRepository {
-  constructor(private client: DynamoDBDocumentClient) {}
+  constructor(private prisma: PrismaClient) {}
 
   async listProviders(userId: string): Promise<Provider[]> {
-    const result = await this.client.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-        ExpressionAttributeValues: {
-          ':pk': PK,
-          ':prefix': `${userId}#`,
-        },
-      })
-    );
-    return (result.Items || []).map((item) => toPublic(item as ProviderRecord));
+    const records = await this.prisma.provider.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } });
+    return records.map((r) => toPublic(r));
   }
 
-  async getProvider(userId: string, providerId: string): Promise<ProviderRecord | null> {
-    const result = await this.client.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: { pk: PK, sk: `${userId}#${providerId}` },
-      })
-    );
-    return (result.Item as ProviderRecord) || null;
+  async getProvider(userId: string, providerId: string): Promise<any | null> {
+    return this.prisma.provider.findFirst({ where: { id: providerId, userId } });
   }
 
   async createProvider(
     userId: string,
     data: { id: string; name: string; type: ProviderType; apiKey: string; apiUrl?: string; concurrency?: number }
   ): Promise<void> {
-    const item: ProviderRecord = {
-      pk: PK,
-      sk: `${userId}#${data.id}`,
-      userId,
-      providerId: data.id,
-      name: data.name,
-      type: data.type,
-      apiKeyEncrypted: encrypt(data.apiKey),
-      ...(data.apiUrl ? { apiUrl: data.apiUrl } : {}),
-      ...(data.concurrency !== undefined ? { concurrency: data.concurrency } : {}),
-      createdAt: Date.now(),
-    };
-    await this.client.send(new PutCommand({ TableName: TABLE_NAME, Item: item }));
+    await this.prisma.provider.create({
+      data: {
+        id: data.id,
+        userId,
+        name: data.name,
+        type: data.type,
+        apiKeyEncrypted: encrypt(data.apiKey),
+        apiUrl: data.apiUrl ?? null,
+        concurrency: data.concurrency ?? 1,
+      },
+    });
   }
 
   async updateProvider(
@@ -91,34 +50,18 @@ export class ProviderRepository {
     providerId: string,
     updates: { name?: string; type?: ProviderType; apiKey?: string; apiUrl?: string | null; concurrency?: number }
   ): Promise<void> {
-    const existing = await this.getProvider(userId, providerId);
-    if (!existing) throw new Error('Provider not found');
+    const data: any = {};
+    if (updates.name !== undefined) data.name = updates.name;
+    if (updates.type !== undefined) data.type = updates.type;
+    if (updates.apiKey) data.apiKeyEncrypted = encrypt(updates.apiKey);
+    if (updates.apiUrl !== undefined) data.apiUrl = updates.apiUrl;
+    if (updates.concurrency !== undefined) data.concurrency = updates.concurrency;
 
-    const merged: ProviderRecord = {
-      ...existing,
-      ...(updates.name !== undefined ? { name: updates.name } : {}),
-      ...(updates.type !== undefined ? { type: updates.type } : {}),
-      // Only re-encrypt if a new key was provided
-      ...(updates.apiKey ? { apiKeyEncrypted: encrypt(updates.apiKey) } : {}),
-      // apiUrl: null means clear it; undefined means leave unchanged
-      ...(updates.apiUrl === null
-        ? { apiUrl: undefined }
-        : updates.apiUrl !== undefined
-        ? { apiUrl: updates.apiUrl }
-        : {}),
-      ...(updates.concurrency !== undefined ? { concurrency: updates.concurrency } : {}),
-    };
-
-    await this.client.send(new PutCommand({ TableName: TABLE_NAME, Item: merged }));
+    await this.prisma.provider.updateMany({ where: { id: providerId, userId }, data });
   }
 
   async deleteProvider(userId: string, providerId: string): Promise<void> {
-    await this.client.send(
-      new DeleteCommand({
-        TableName: TABLE_NAME,
-        Key: { pk: PK, sk: `${userId}#${providerId}` },
-      })
-    );
+    await this.prisma.provider.deleteMany({ where: { id: providerId, userId } });
   }
 
   /** Returns the decrypted API key — only for internal server-side use. */
