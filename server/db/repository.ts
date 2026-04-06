@@ -30,8 +30,9 @@ export interface IRepository {
   // === Export CRUD ===
   getExportTasks(userId: string, projectId: string): Promise<any[]>;
   getAllExportTasks(userId: string, limit?: number, exclusiveStartKey?: any): Promise<{ items: any[]; nextCursor?: any }>;
-  saveExportTask(userId: string, projectId: string, task: any): Promise<void>;
-  deleteExportTask(userId: string, projectId: string, taskId: string): Promise<void>;
+  getExportTask(userId: string, taskId: string): Promise<any | undefined>;
+  saveExportTask(userId: string, taskId: string, data: any): Promise<void>;
+  deleteExportTask(userId: string, taskId: string): Promise<void>;
 
   // === Trash CRUD ===
   getTrashItems(userId: string): Promise<TrashItem[]>;

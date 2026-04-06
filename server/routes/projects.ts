@@ -478,9 +478,8 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   router.get('/api/projects/:id/export/:taskId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      const projectId = c.req.param('id');
       const taskId = c.req.param('taskId');
-      const task = await exportManager.getTask(user.userId, projectId, taskId);
+      const task = await exportManager.getTask(user.userId, taskId);
       if (!task) return c.json({ error: 'Task not found' }, 404);
       return c.json(task);
     } catch (e) {
@@ -498,18 +497,18 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (cursorStr) {
         exclusiveStartKey = JSON.parse(Buffer.from(cursorStr, 'base64').toString());
       }
-      
+
       const result = await repository.getAllExportTasks(user.userId, limit, exclusiveStartKey);
-      
+
+      // Presign completed tasks on read
+      const items = await Promise.all(result.items.map(t => exportManager.presignTask(t)));
+
       let nextCursor: string | undefined;
       if (result.nextCursor) {
         nextCursor = Buffer.from(JSON.stringify(result.nextCursor)).toString('base64');
       }
 
-      return c.json({
-        items: result.items,
-        nextCursor
-      });
+      return c.json({ items, nextCursor });
     } catch (e) {
       console.error('[GET /api/exports]', e);
       return c.json({ error: 'Failed to list all exports' }, 500);
@@ -528,15 +527,21 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
-  router.delete('/api/projects/:id/exports/:taskId', authMiddleware, async (c) => {
+  router.delete('/api/exports/:taskId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      const projectId = c.req.param('id');
       const taskId = c.req.param('taskId');
-      await repository.deleteExportTask(user.userId, projectId, taskId);
+      // Fetch task to get s3Key for S3 cleanup
+      const task = await repository.getExportTask(user.userId, taskId);
+      if (task?.s3Key) {
+        try { await exportStorage.delete(task.s3Key); } catch (s3Err) {
+          console.warn(`[ExportManager] Failed to delete S3 file ${task.s3Key}:`, s3Err);
+        }
+      }
+      await repository.deleteExportTask(user.userId, taskId);
       return c.json({ success: true });
     } catch (e) {
-      console.error('[DELETE /api/projects/:id/exports/:taskId]', e);
+      console.error('[DELETE /api/exports/:taskId]', e);
       return c.json({ error: 'Failed to delete export task' }, 500);
     }
   });

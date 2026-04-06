@@ -93,9 +93,9 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
             if (item.type === 'image' && item.value) markKey(item.value);
             markKey(item.thumbnailUrl);
             markKey(item.optimizedUrl);
-          } else if (sk.includes('#EXPORT#')) {
-            exportTasks.push(item);
           }
+        } else if (sk.startsWith('EXPORT#')) {
+          exportTasks.push(item);
         } else if (sk.startsWith('LIBRARY#')) {
           if (sk.includes('#ITEM#')) {
             const itemSize = (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
@@ -132,13 +132,11 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
         void matched;
       }
 
-      // 5. Categorize Archives (Exports) via S3 size lookup
+      // 5. Categorize Archives (Exports) via S3 size lookup using stored s3Key
       for (const task of exportTasks) {
-        if (task.status === 'completed' && task.downloadUrl) {
+        if (task.status === 'completed' && task.s3Key) {
           try {
-            const url = new URL(task.downloadUrl);
-            const key = decodeURIComponent(url.pathname.split('/').slice(2).join('/')); // Skip bucket name
-            const size = await exportStorage.getSize(key);
+            const size = await exportStorage.getSize(task.s3Key);
             if (size) totalExportSize += size;
           } catch (e) {
             console.warn(`Failed to get size for export ${task.id}:`, e);

@@ -72,6 +72,18 @@ export async function ensureTable(client: DynamoDBClient): Promise<void> {
         })
       );
       console.log(`Created DynamoDB table with GSI: ${TABLE_NAME}`);
+      // Enable TTL on the 'ttl' attribute (used by export tasks for auto-expiry)
+      try {
+        const { UpdateTimeToLiveCommand } = await import('@aws-sdk/client-dynamodb');
+        await client.send(new UpdateTimeToLiveCommand({
+          TableName: TABLE_NAME,
+          TimeToLiveSpecification: { AttributeName: 'ttl', Enabled: true },
+        }));
+        console.log(`TTL enabled on attribute 'ttl' for table: ${TABLE_NAME}`);
+      } catch (ttlErr: any) {
+        // DynamoDB Local does not support TTL — safe to ignore
+        console.warn(`[TTL] Could not enable TTL (may be DynamoDB Local): ${ttlErr.message}`);
+      }
     } else {
       throw err;
     }

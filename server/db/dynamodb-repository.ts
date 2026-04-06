@@ -56,8 +56,9 @@ export class DynamoDBRepository implements IRepository {
   // === Export CRUD ===
   getExportTasks(userId: string, projectId: string) { return this.projects.getExportTasks(userId, projectId); }
   getAllExportTasks(userId: string, limit?: number, exclusiveStartKey?: any) { return this.projects.getAllExportTasks(userId, limit, exclusiveStartKey); }
-  saveExportTask(userId: string, projectId: string, task: any) { return this.projects.saveExportTask(userId, projectId, task); }
-  deleteExportTask(userId: string, projectId: string, taskId: string) { return this.projects.deleteExportTask(userId, projectId, taskId); }
+  getExportTask(userId: string, taskId: string) { return this.projects.getExportTask(userId, taskId); }
+  saveExportTask(userId: string, taskId: string, data: any) { return this.projects.saveExportTask(userId, taskId, data); }
+  deleteExportTask(userId: string, taskId: string) { return this.projects.deleteExportTask(userId, taskId); }
 
   // === Legacy / Migration ===
   getUserData(userId: string) { return this.data.getUserData(userId); }

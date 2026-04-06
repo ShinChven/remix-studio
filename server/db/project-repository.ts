@@ -568,26 +568,25 @@ export class ProjectRepository {
   }
 
   // === Export CRUD ===
+  // New schema: SK = EXPORT#{taskId} (flat, no project coupling)
+  // TTL field (Unix seconds) enables automatic DynamoDB cleanup:
+  //   - failed tasks: 24 hours
+  //   - completed tasks: 30 days
+
   async getExportTasks(userId: string, projectId: string): Promise<any[]> {
     const pk = `USER_DATA#${userId}`;
-    const prefix = `PROJECT#${projectId}#EXPORT#`;
-    
     const result = await this.client.send(
       new QueryCommand({
         TableName: TABLE_NAME,
         KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
+        FilterExpression: 'projectId = :projectId',
         ExpressionAttributeNames: { '#sk': 'sk' },
-        ExpressionAttributeValues: { ':pk': pk, ':prefix': prefix },
+        ExpressionAttributeValues: { ':pk': pk, ':prefix': 'EXPORT#', ':projectId': projectId },
       })
     );
-
-    const exports = (result.Items || []).map(item => ({
-      ...item,
-      id: item.sk.split('#EXPORT#')[1],
-    })) as any[];
-    
-    // Sort by createdAt descending (newest first)
-    return exports.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    return (result.Items || [])
+      .map(item => ({ ...item, id: (item as any).sk.replace('EXPORT#', '') }))
+      .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
   }
 
   async getAllExportTasks(userId: string, limit: number = 20, exclusiveStartKey?: any): Promise<{ items: any[]; nextCursor?: any }> {
@@ -595,36 +594,23 @@ export class ProjectRepository {
     let items: any[] = [];
     let lastEvaluatedKey = exclusiveStartKey;
 
-    // Use SK contains '#EXPORT#' — same logic as getAllUserItems, avoids relying
-    // on the `itemType` field which may be missing from older records.
+    // Efficient prefix query — no FilterExpression needed with new flat SK
     while (items.length < limit) {
       const params: any = {
         TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk',
-        FilterExpression: 'contains(#sk, :exportMarker)',
+        KeyConditionExpression: 'pk = :pk AND begins_with(#sk, :prefix)',
         ExpressionAttributeNames: { '#sk': 'sk' },
-        ExpressionAttributeValues: {
-          ':pk': pk,
-          ':exportMarker': '#EXPORT#',
-        },
+        ExpressionAttributeValues: { ':pk': pk, ':prefix': 'EXPORT#' },
       };
       if (lastEvaluatedKey) params.ExclusiveStartKey = lastEvaluatedKey;
 
       const result = await this.client.send(new QueryCommand(params));
-
-      const found = (result.Items || []).map(item => ({
-        ...item,
-        id: item.sk.split('#EXPORT#')[1],
-      }));
-
+      const found = (result.Items || []).map(item => ({ ...item, id: item.sk.replace('EXPORT#', '') }));
       items.push(...found);
       lastEvaluatedKey = result.LastEvaluatedKey;
-
-      // No more data in partition
       if (!lastEvaluatedKey) break;
     }
 
-    // Trim to requested limit
     let nextCursor: any;
     if (items.length > limit) {
       items = items.slice(0, limit);
@@ -639,35 +625,37 @@ export class ProjectRepository {
     };
   }
 
-  async saveExportTask(userId: string, projectId: string, task: any): Promise<void> {
+  async saveExportTask(userId: string, taskId: string, data: any): Promise<void> {
     const pk = `USER_DATA#${userId}`;
-    const sk = `PROJECT#${projectId}#EXPORT#${task.id}`;
-    
+    const sk = `EXPORT#${taskId}`;
     await this.client.send(
       new PutCommand({
         TableName: TABLE_NAME,
-        Item: {
-          pk,
-          sk,
-          projectId,
-          ...task,
-          itemType: 'export',
-          createdAt: task.createdAt || Date.now()
-        }
+        Item: { pk, sk, ...data, createdAt: data.createdAt || Date.now() }
       })
     );
   }
 
-  async deleteExportTask(userId: string, projectId: string, taskId: string): Promise<void> {
+  async getExportTask(userId: string, taskId: string): Promise<any | undefined> {
     const pk = `USER_DATA#${userId}`;
-    const sk = `PROJECT#${projectId}#EXPORT#${taskId}`;
-    
-    await this.client.send(
-      new DeleteCommand({
+    const sk = `EXPORT#${taskId}`;
+    const result = await this.client.send(
+      new QueryCommand({
         TableName: TABLE_NAME,
-        Key: { pk, sk }
+        KeyConditionExpression: 'pk = :pk AND #sk = :sk',
+        ExpressionAttributeNames: { '#sk': 'sk' },
+        ExpressionAttributeValues: { ':pk': pk, ':sk': sk },
       })
     );
+    const item = result.Items?.[0];
+    if (!item) return undefined;
+    return { ...item, id: item.sk.replace('EXPORT#', '') };
+  }
+
+  async deleteExportTask(userId: string, taskId: string): Promise<void> {
+    const pk = `USER_DATA#${userId}`;
+    const sk = `EXPORT#${taskId}`;
+    await this.client.send(new DeleteCommand({ TableName: TABLE_NAME, Key: { pk, sk } }));
   }
 
   async getAllUserItems(userId: string): Promise<any[]> {

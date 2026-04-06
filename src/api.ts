@@ -439,12 +439,17 @@ export async function fetchAllExports(limit?: number, cursor?: string): Promise<
   return res.json();
 }
 
-export async function deleteProjectExport(projectId: string, taskId: string): Promise<void> {
-  const res = await fetch(`/api/projects/${projectId}/exports/${taskId}`, {
+export async function deleteExport(taskId: string): Promise<void> {
+  const res = await fetch(`/api/exports/${taskId}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
   if (!res.ok) throw new Error('Failed to delete export');
+}
+
+/** @deprecated use deleteExport(taskId) instead */
+export async function deleteProjectExport(projectId: string, taskId: string): Promise<void> {
+  return deleteExport(taskId);
 }
 
 // ========== Storage ==========
