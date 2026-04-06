@@ -88,7 +88,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'OpenAI',
       modelId: 'gpt-image-1.5',
       options: {
-        aspectRatios: ['1024x1024', '1024x1792', '1792x1024', 'auto'],
+        aspectRatios: ['1024x1024', '1024x1536', '1536x1024', 'auto'],
         qualities: ['low', 'medium', 'high', 'auto'],
         backgrounds: ['transparent', 'opaque', 'auto'],
       },

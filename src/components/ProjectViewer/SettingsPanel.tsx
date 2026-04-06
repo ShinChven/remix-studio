@@ -136,8 +136,8 @@ export function SettingsPanel({
                 >
                   <div className={`border-2 rounded-[2px] ${
                     ratio === '1024x1024' || ratio === '1:1' ? 'w-3 h-3' :
-                    ratio === '1792x1024' || ratio === '16:9' ? 'w-5 h-3' :
-                    ratio === '1024x1792' || ratio === '9:16' ? 'w-3 h-5' : 'w-3 h-3'
+                    ratio === '1536x1024' || ratio === '16:9' ? 'w-5 h-3' :
+                    ratio === '1024x1536' || ratio === '9:16' ? 'w-3 h-5' : 'w-3 h-3'
                   } ${(localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1024x1024')) === ratio ? 'border-white' : 'border-neutral-700'}`} />
                   <span className="text-[8px] font-bold">{ratio}</span>
                 </button>

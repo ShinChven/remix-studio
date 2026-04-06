@@ -67,6 +67,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [lastSelectedAlbumId, setLastSelectedAlbumId] = useState<string | null>(null);
   const [showDeleteAlbumModal, setShowDeleteAlbumModal] = useState(false);
   const [showDeleteCompletedSelectedModal, setShowDeleteCompletedSelectedModal] = useState(false);
+  const [showDeleteQueueSelectedModal, setShowDeleteQueueSelectedModal] = useState(false);
+  const [showClearAllFailedModal, setShowClearAllFailedModal] = useState(false);
   const [albumItemsToDelete, setAlbumItemsToDelete] = useState<AlbumItem[] | null>(null);
   const [selectedCompletedIds, setSelectedCompletedIds] = useState<Set<string>>(new Set());
 
@@ -652,8 +654,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           {activeTab === 'queue' && (
             <QueueTab
               queueJobs={queueJobs} selectedQueueIds={selectedQueueIds} toggleSelectAllQueue={toggleSelectAllQueue}
-              toggleQueueSelection={toggleQueueSelection} retrySelectedQueue={retrySelectedQueue} deleteSelectedQueue={deleteSelectedQueue}
-              clearAllFailed={clearAllFailed} expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand}
+              toggleQueueSelection={toggleQueueSelection} retrySelectedQueue={retrySelectedQueue} deleteSelectedQueue={() => setShowDeleteQueueSelectedModal(true)}
+              clearAllFailed={() => setShowClearAllFailedModal(true)} expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand}
               getProviderName={getProviderName} getModelName={getModelName} runJob={runJob}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
             />
@@ -735,6 +737,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       {lightboxData && <ImageLightbox images={lightboxData.images} startIndex={lightboxData.index} onClose={() => setLightboxData(null)} />}
       <ConfirmModal isOpen={showDeleteAlbumModal} onClose={() => { setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); }} onConfirm={async () => { if (albumItemsToDelete) { await deleteAlbumItems(albumItemsToDelete); setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); } }} title="Move to Recycle Bin" message={`Are you sure you want to move ${albumItemsToDelete?.length || 0} items to the Recycle Bin?`} confirmText="Move to Trash" type="danger" />
       <ConfirmModal isOpen={showDeleteCompletedSelectedModal} onClose={() => setShowDeleteCompletedSelectedModal(false)} onConfirm={deleteSelectedCompleted} title="Remove Selected Finished Records" message={`Are you sure you want to remove ${selectedCompletedIds.size} completed job records? (Album images will not be deleted)`} confirmText="Remove Selected" type="danger" />
+      <ConfirmModal isOpen={showDeleteQueueSelectedModal} onClose={() => setShowDeleteQueueSelectedModal(false)} onConfirm={deleteSelectedQueue} title="Delete Selected Jobs" message={`Are you sure you want to delete ${selectedQueueIds.size} selected jobs?`} confirmText="Delete Selected" type="danger" />
+      <ConfirmModal isOpen={showClearAllFailedModal} onClose={() => setShowClearAllFailedModal(false)} onConfirm={clearAllFailed} title="Clear All Failed Jobs" message="Are you sure you want to clear all failed jobs from the queue?" confirmText="Clear All Failed" type="danger" />
     </div>
   );
 }
