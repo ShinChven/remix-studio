@@ -4,6 +4,8 @@ import { AlbumItem } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import { ExportTask } from '../../types';
 
+import { toast } from 'sonner';
+
 interface AlbumTabProps {
   projectId: string;
   projectName: string;
@@ -39,7 +41,7 @@ export function AlbumTab({
       await startAlbumExport(projectId, itemIds);
       onExportStarted();
     } catch (err: any) {
-      alert(`Export failed: ${err.message}`);
+      toast.error(`Export failed: ${err.message}`);
     }
   };
 

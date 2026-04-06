@@ -14,6 +14,7 @@ import {
   Plus,
   ArrowRight
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function LibraryImportExport() {
   const { id } = useParams<{ id: string }>();
@@ -115,7 +116,7 @@ export function LibraryImportExport() {
       navigate(`/library/${id}`);
     } catch (error) {
       console.error('Failed to import items:', error);
-      alert('Failed to import items. Please try again.');
+      toast.error('Failed to import items. Please try again.');
     } finally {
       setIsImporting(false);
     }

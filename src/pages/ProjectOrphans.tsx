@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ImageLightbox } from '../components/ProjectViewer/ImageLightbox';
+import { toast } from 'sonner';
 
 export function ProjectOrphans() {
   const { id } = useParams();
@@ -101,7 +102,7 @@ export function ProjectOrphans() {
       await loadData();
     } catch (e) {
       console.error('Failed to delete orphans:', e);
-      alert('Failed to delete some files. Please try again.');
+      toast.error('Failed to delete some files. Please try again.');
     } finally {
       setDeleting(false);
       setShowDeleteModal(false);

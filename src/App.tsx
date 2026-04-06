@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { ApiKeyCheck } from './components/ApiKeyCheck';
 import { MainLayout } from './components/MainLayout';
 import { Dashboard } from './components/Dashboard';
@@ -69,6 +70,7 @@ export default function App() {
             </Route>
           </Routes>
         </BrowserRouter>
+        <Toaster position="bottom-right" theme="dark" />
       </ApiKeyCheck>
     </AuthProvider>
   );

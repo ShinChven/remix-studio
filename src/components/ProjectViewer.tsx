@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Project, Job, Library, WorkflowItem as WorkflowItemType, WorkflowItemType as WorkflowItemTypeKind, Provider, AlbumItem } from '../types';
 import { saveImage, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Type, ImageIcon, Library as LibraryIcon, Plus, Settings, Trash2, Eraser, FileArchive } from 'lucide-react';
+import { toast } from 'sonner';
 import { generateWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -494,7 +495,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       });
     } catch (e) {
       console.error('Failed to move items to trash:', e);
-      alert('Failed to move items to trash');
+      toast.error('Failed to move items to trash');
     }
   };
 

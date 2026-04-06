@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ExportTask } from '../types';
 import { fetchAllExports, deleteProjectExport } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { toast } from 'sonner';
 
 export function Exports() {
   const [exports, setExports] = useState<ExportTask[]>([]);
@@ -64,7 +65,7 @@ export function Exports() {
       await deleteProjectExport(taskToDelete.projectId, taskToDelete.taskId);
       setExports(prev => prev.filter(t => t.id !== taskToDelete.taskId));
     } catch (err) {
-      alert('Failed to delete export record');
+      toast.error('Failed to delete export record');
     } finally {
       setTaskToDelete(null);
       setShowDeleteConfirm(false);

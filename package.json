@@ -37,6 +37,7 @@
     "react-router-dom": "^7.13.2",
     "remark-gfm": "^4.0.1",
     "sharp": "^0.34.5",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "vite": "^6.2.0"
   },

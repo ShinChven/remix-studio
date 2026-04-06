@@ -4,6 +4,7 @@ import { Project, Library } from '../types';
 import { fetchProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject, renameProjectFolder } from '../api';
 import { ProjectViewer } from './ProjectViewer';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ContextType {
   libraries: Library[];
@@ -55,7 +56,7 @@ export function ProjectRoute() {
         await renameProjectFolder(project.id, updatedProject.id);
       } catch (e) {
         console.error("Failed to rename project folder:", e);
-        alert("Failed to rename project folder. Reverting ID change.");
+        toast.error("Failed to rename project folder. Reverting ID change.");
         updatedProject = { ...updatedProject, id: project.id };
       }
     }
