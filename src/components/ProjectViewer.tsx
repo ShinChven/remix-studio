@@ -597,7 +597,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           providers={providers} selectedProviderId={selectedProviderId} selectedModelId={selectedModelId}
           isSettingsCollapsed={isSettingsCollapsed} setIsSettingsCollapsed={setIsSettingsCollapsed}
           queueCount={queueCount} setQueueCount={setQueueCount} setHasManuallySetQueueCount={setHasManuallySetQueueCount}
-          combinations={combinations} setIsModelSelectorOpen={setIsModelSelectorOpen} isProcessing={isProcessing}
+          combinations={combinations} setIsModelSelectorOpen={setIsModelSelectorOpen}
           workflowError={workflowError} uploadingItemIds={uploadingItemIds} onAddDraftsToQueue={addDraftsToQueue}
         />
       </div>

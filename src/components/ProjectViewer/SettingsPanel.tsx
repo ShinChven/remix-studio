@@ -16,7 +16,6 @@ interface SettingsPanelProps {
   setHasManuallySetQueueCount: (manual: boolean) => void;
   combinations: any[];
   setIsModelSelectorOpen: (open: boolean) => void;
-  isProcessing: boolean;
   workflowError: string | null;
   uploadingItemIds: Set<string>;
   onAddDraftsToQueue: () => void;
@@ -36,7 +35,6 @@ export function SettingsPanel({
   setHasManuallySetQueueCount,
   combinations,
   setIsModelSelectorOpen,
-  isProcessing,
   workflowError,
   uploadingItemIds,
   onAddDraftsToQueue
@@ -98,7 +96,7 @@ export function SettingsPanel({
                   ? 'bg-amber-500/5 border-amber-500/50 hover:bg-amber-500/10' 
                   : 'bg-neutral-950 border-neutral-800 hover:bg-neutral-900'
               }`}
-              disabled={isProcessing}
+
             >
               <div className="flex items-center justify-between relative z-10">
                 <div className="min-w-0">

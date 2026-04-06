@@ -55,33 +55,108 @@ export class QueueManager {
   public async startWorker() {
     if (!this.sqsClient || !this.queueUrl) return;
     console.log('[QueueManager] Starting SQS Consumer Worker...');
-    
+
+    const inFlight = new Set<string>();
+    // Buffer for messages received from SQS but not yet executed due to concurrency limits.
+    // These are already invisible in SQS, so we must process them locally.
+    const pending: { payload: QueuedJob & { providerId: string }; receiptHandle: string }[] = [];
+
+    const tryDrainPending = async () => {
+      let i = 0;
+      while (i < pending.length) {
+        const item = pending[i];
+        const jobId = item.payload.job.id;
+
+        if (inFlight.has(jobId)) {
+          // Duplicate — discard from buffer
+          await this.sqsClient!.deleteMessage(this.queueUrl!, item.receiptHandle);
+          pending.splice(i, 1);
+          continue;
+        }
+
+        const provider = await this.providerRepo.getProvider(item.payload.userId, item.payload.providerId);
+        if (!provider) {
+          await this.sqsClient!.deleteMessage(this.queueUrl!, item.receiptHandle);
+          pending.splice(i, 1);
+          continue;
+        }
+
+        const limit = provider.concurrency || 1;
+        const active = this.activeJobs.get(item.payload.providerId) || 0;
+        if (active >= limit) {
+          i++; // still at capacity, keep in buffer
+          continue;
+        }
+
+        // Remove from buffer and launch
+        pending.splice(i, 1);
+        launchJob(item.payload, provider, item.receiptHandle);
+      }
+    };
+
+    const launchJob = (payload: QueuedJob & { providerId: string }, provider: any, receiptHandle: string) => {
+      const jobId = payload.job.id;
+      console.log(`[QueueManager] Working on SQS msg for job ${jobId} (provider ${payload.providerId}: ${(this.activeJobs.get(payload.providerId) || 0) + 1}/${provider.concurrency || 1})`);
+
+      inFlight.add(jobId);
+      this.activeJobs.set(payload.providerId, (this.activeJobs.get(payload.providerId) || 0) + 1);
+
+      this.executeJob(payload, provider).catch((jobError) => {
+        console.error(`[QueueManager] Job execution error:`, jobError);
+      }).finally(async () => {
+        inFlight.delete(jobId);
+        this.activeJobIds.delete(jobId);
+        this.activeJobs.set(payload.providerId, Math.max(0, (this.activeJobs.get(payload.providerId) || 1) - 1));
+        await this.sqsClient!.deleteMessage(this.queueUrl!, receiptHandle);
+        // A slot freed up — try to drain buffered messages
+        tryDrainPending().catch(e => console.error('[QueueManager] drain error:', e));
+      });
+    };
+
     setImmediate(async () => {
       while (true) {
         try {
-          const messages = await this.sqsClient!.receiveMessages(this.queueUrl!, 1, 20);
+          // Only fetch from SQS when we have capacity (no point fetching if buffer is full)
+          const totalActive = inFlight.size;
+          const fetchCount = Math.min(Math.max(1, 10 - totalActive - pending.length), 10);
+          const waitTime = (totalActive > 0 || pending.length > 0) ? 1 : 20;
+
+          const messages = await this.sqsClient!.receiveMessages(this.queueUrl!, fetchCount, waitTime);
+
+          // Process new messages — launch immediately if capacity allows, otherwise buffer
           for (const msg of messages) {
             if (!msg.Body || !msg.ReceiptHandle) continue;
-            
+
             const payload = JSON.parse(msg.Body) as QueuedJob & { providerId: string };
-            console.log(`[QueueManager] Working on SQS msg for job ${payload.job.id}`);
-            
-            const provider = await this.providerRepo.getProvider(payload.userId, payload.providerId);
-            if (!provider) {
-               await this.sqsClient!.deleteMessage(this.queueUrl!, msg.ReceiptHandle);
-               continue;
+            const jobId = payload.job.id;
+
+            if (inFlight.has(jobId)) {
+              await this.sqsClient!.deleteMessage(this.queueUrl!, msg.ReceiptHandle);
+              continue;
             }
 
-            try {
-              // Execute synchronously for now on worker, or we can await executeJob.
-              await this.executeJob(payload, provider);
-            } catch (jobError) {
-              console.error(`[QueueManager] Job execution error:`, jobError);
-            } finally {
-              // Once execution finished (success, failed, or shifted to detached), 
-              // we delete the SQS message because detached processing handles itself.
+            const provider = await this.providerRepo.getProvider(payload.userId, payload.providerId);
+            if (!provider) {
               await this.sqsClient!.deleteMessage(this.queueUrl!, msg.ReceiptHandle);
+              continue;
             }
+
+            const limit = provider.concurrency || 1;
+            const active = this.activeJobs.get(payload.providerId) || 0;
+            if (active >= limit) {
+              console.log(`[QueueManager] Provider ${payload.providerId} at capacity (${active}/${limit}), buffering job ${jobId}.`);
+              pending.push({ payload, receiptHandle: msg.ReceiptHandle });
+              continue;
+            }
+
+            launchJob(payload, provider, msg.ReceiptHandle);
+          }
+
+          // Also try to drain buffer in case capacity freed up during message processing above
+          await tryDrainPending();
+
+          if (messages.length === 0 && inFlight.size === 0 && pending.length === 0) {
+            // Completely idle — the long-poll above already waited, just loop
           }
         } catch (err) {
           console.error('[QueueManager] SQS polling error:', err);
