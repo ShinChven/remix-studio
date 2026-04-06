@@ -5,9 +5,31 @@ services:
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=s3,dynamodb,sqs
-      - DEBUG=1
       - DOCKER_HOST=unix:///var/run/docker.sock
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
     volumes:
       - "./data/localstack:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: remix-studio-dynamodb
+    ports:
+      - "18000:8000"
+    volumes:
+      - ./data/dynamodb:/home/dynamodblocal/data
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data"
+
+  minio:
+    image: minio/minio:latest
+    container_name: remix-studio-minio
+    ports:
+      - "19000:9000"
+      - "19001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_DRIVE_MAX_USAGE_PCT: 99
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"

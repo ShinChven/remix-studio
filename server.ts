@@ -84,7 +84,13 @@ async function startServer() {
   await exportStorage.ensureBucket();
 
   // === SQS ===
-  const sqsClient = new SqsClient(storageOpts);
+  const sqsOpts = {
+    endpoint: process.env.SQS_ENDPOINT || process.env.DYNAMODB_ENDPOINT || 'http://localhost:4566',
+    region: process.env.AWS_REGION || 'us-east-1',
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'test',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'test',
+  };
+  const sqsClient = new SqsClient(sqsOpts);
   const generatorQueueUrl = await sqsClient.ensureQueue('remix-generator-queue');
   const exportQueueUrl = await sqsClient.ensureQueue('remix-export-queue');
 
