@@ -3,12 +3,15 @@ import { bodyLimit } from 'hono/body-limit';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { S3Storage } from '../storage/s3-storage';
 import { generateThumbnail, generateOptimized } from '../utils/image-utils';
+import { checkStorageLimit } from '../utils/storage-check';
+import { IRepository } from '../db/repository';
+import { UserRepository } from '../auth/user-repository';
 
 type Variables = { user: JwtPayload };
 
 const IMAGE_SIZE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
 
-export function createImageRouter(storage: S3Storage) {
+export function createImageRouter(storage: S3Storage, exportStorage: S3Storage, repository: IRepository, userRepository: UserRepository) {
   const router = new Hono<{ Variables: Variables }>();
 
   router.post('/api/images', authMiddleware, bodyLimit({ maxSize: IMAGE_SIZE_LIMIT_BYTES, onError: (c) => c.json({ error: 'Image too large (max 50MB)' }, 413) }), async (c) => {
@@ -30,6 +33,26 @@ export function createImageRouter(storage: S3Storage) {
 
       const base64Data = base64.replace(/^data:image\/[\w+.-]+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
+      
+      // Estimated total size (orig + thumb + opt)
+      // Thumb and opt are usually much smaller, but let's be safe and count them.
+      const estimatedSize = buffer.length * 2.5; // Rough estimate for original + variants
+
+      // 0. Check storage limit
+      const { allowed, currentUsage, limit } = await checkStorageLimit(
+        user.userId, 
+        estimatedSize, 
+        userRepository, 
+        storage, 
+        exportStorage, 
+        repository
+      );
+
+      if (!allowed) {
+        return c.json({ 
+          error: `Storage limit exceeded. Remaining: ${(limit - currentUsage) / (1024 * 1024)}MB. Required: ~${estimatedSize / (1024 * 1024)}MB.` 
+        }, 403);
+      }
 
       // 1. Save original
       const s3Key = await storage.save(key, buffer, mimeType);

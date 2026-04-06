@@ -256,6 +256,15 @@ export async function updateUserRole(id: string, role: UserRole): Promise<void> 
   if (!res.ok) throw new Error('Failed to update role');
 }
 
+export async function updateUserStorageLimit(id: string, limit: number): Promise<void> {
+  const res = await fetch(`/api/admin/users/${id}/storage-limit`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ limit }),
+  });
+  if (!res.ok) throw new Error('Failed to update storage limit');
+}
+
 // ========== Providers ==========
 
 export async function fetchProviders(): Promise<Provider[]> {

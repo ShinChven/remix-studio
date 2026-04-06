@@ -112,12 +112,12 @@ async function startServer() {
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
   app.route('/', createLibraryRouter(repository, storage));
-  app.route('/', createProjectRouter(repository, storage, queueManager, exportManager));
-  app.route('/', createImageRouter(storage));
+  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager));
+  app.route('/', createImageRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createProviderRouter(providerRepository));
   app.route('/', createGenerateRouter(providerRepository));
   app.route('/', createTrashRouter(repository, storage));
-  app.route('/', createStorageRouter(repository, storage, exportStorage));
+  app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));
 
   // Shared legacy path (can be refactored eventually)
   app.get('/api/data', authMiddleware, async (c) => {

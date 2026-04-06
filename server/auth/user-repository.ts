@@ -24,7 +24,10 @@ export class UserRepository {
     await this.client.send(
       new PutCommand({
         TableName: TABLE_NAME,
-        Item: user,
+        Item: {
+          ...user,
+          storageLimit: user.storageLimit || 5 * 1024 * 1024 * 1024, // 5GB Default
+        },
       })
     );
   }
@@ -76,6 +79,18 @@ export class UserRepository {
       new PutCommand({
         TableName: TABLE_NAME,
         Item: { ...user, role },
+      })
+    );
+  }
+
+  async updateStorageLimit(userId: string, limit: number): Promise<void> {
+    const user = await this.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    await this.client.send(
+      new PutCommand({
+        TableName: TABLE_NAME,
+        Item: { ...user, storageLimit: limit },
       })
     );
   }

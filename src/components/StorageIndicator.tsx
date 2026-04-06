@@ -10,6 +10,7 @@ interface StorageIndicatorProps {
 
 export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
   const [size, setSize] = useState<number | null>(null);
+  const [limit, setLimit] = useState<number>(5 * 1024 * 1024 * 1024);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,13 +18,13 @@ export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
       try {
         const analysis = await fetchStorageAnalysis();
         setSize(analysis.totalSize);
+        setLimit(analysis.limit);
       } catch (e) {
         console.error('Failed to load storage size:', e);
       }
     };
     load();
 
-    // Refresh every 5 minutes
     const interval = setInterval(load, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
@@ -38,6 +39,8 @@ export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
 
   if (size === null) return null;
 
+  const usagePercent = Math.min(100, (size / limit) * 100);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -51,16 +54,26 @@ export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
         flex items-center gap-3 overflow-hidden
         ${isCollapsed ? 'justify-center' : ''}
       `}
-      title={`Total Storage: ${formatSize(size)}`}
+      title={`Storage: ${formatSize(size)} / ${formatSize(limit)} (${usagePercent.toFixed(1)}%)`}
     >
       <div className="w-8 h-8 rounded-lg bg-blue-600/10 flex items-center justify-center flex-shrink-0">
-        <Database className="w-4 h-4 text-blue-400" />
+        <Database className={`w-4 h-4 ${usagePercent > 90 ? 'text-red-400' : 'text-blue-400'}`} />
       </div>
       
       {!isCollapsed && (
-        <div className="flex flex-col min-w-0">
-          <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">Storage Used</span>
-          <span className="text-xs font-semibold text-neutral-200 truncate">{formatSize(size)}</span>
+        <div className="flex flex-col min-w-0 flex-1">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">Storage</span>
+            <span className="text-[10px] font-bold text-neutral-400">{usagePercent.toFixed(0)}%</span>
+          </div>
+          <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${usagePercent}%` }}
+              className={`h-full rounded-full ${usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-amber-500' : 'bg-blue-500'}`}
+            />
+          </div>
+          <span className="text-[10px] font-semibold text-neutral-400 mt-1 truncate">{formatSize(size)} of {formatSize(limit)}</span>
         </div>
       )}
     </motion.div>

@@ -21,6 +21,12 @@ export function StorageView() {
   const [loading, setLoading] = useState(true);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
+  const TIER_NAMES: Record<number, string> = {
+    [5 * 1024 * 1024 * 1024]: 'Free',
+    [100 * 1024 * 1024 * 1024]: 'Professional',
+    [500 * 1024 * 1024 * 1024]: 'Premium',
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -99,9 +105,29 @@ export function StorageView() {
           <p className="text-neutral-400 text-lg">Detailed breakdown of your digital footprint.</p>
         </div>
         
-        <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 flex flex-col items-end backdrop-blur-md">
-          <span className="text-xs uppercase tracking-[0.2em] text-neutral-500 font-bold mb-1">Total Consumption</span>
-          <span className="text-4xl font-black text-white leading-none">{formatSize(analysis.totalSize)}</span>
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4">
+          <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 flex flex-col items-start lg:items-end backdrop-blur-md min-w-[240px]">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-black mb-1">Your Capacity</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-white">{formatSize(analysis.limit)}</span>
+              <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">{TIER_NAMES[analysis.limit] || 'Custom'}</span>
+            </div>
+            <div className="w-full h-1.5 bg-neutral-800 rounded-full mt-4 overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, (analysis.totalSize / analysis.limit) * 100)}%` }}
+                className={`h-full rounded-full ${ (analysis.totalSize / analysis.limit) > 0.9 ? 'bg-red-500' : 'bg-blue-500' }`}
+              />
+            </div>
+            <span className="text-[10px] text-neutral-500 font-bold mt-2">
+              {((analysis.totalSize / analysis.limit) * 100).toFixed(1)}% consumed
+            </span>
+          </div>
+
+          <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 flex flex-col items-start lg:items-end backdrop-blur-md min-w-[200px]">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-black mb-1">Total Consumption</span>
+            <span className="text-4xl font-black text-white leading-none">{formatSize(analysis.totalSize)}</span>
+          </div>
         </div>
       </motion.div>
 

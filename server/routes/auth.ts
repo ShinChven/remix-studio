@@ -68,7 +68,13 @@ export function createAuthRouter(userRepository: UserRepository) {
   router.get('/api/admin/users', authMiddleware, adminOnly, async (c) => {
     try {
       const users = await userRepository.listUsers();
-      return c.json(users.map(u => ({ id: u.sk, email: u.email, role: u.role, createdAt: u.createdAt })));
+      return c.json(users.map(u => ({ 
+        id: u.sk, 
+        email: u.email, 
+        role: u.role, 
+        storageLimit: u.storageLimit,
+        createdAt: u.createdAt 
+      })));
     } catch (e) {
       console.error('[GET /api/admin/users]', e);
       return c.json({ error: 'Failed to list users' }, 500);
@@ -90,6 +96,24 @@ export function createAuthRouter(userRepository: UserRepository) {
     } catch (e) {
       console.error('[PUT /api/admin/users/:id/role]', e);
       return c.json({ error: 'Failed to update role' }, 500);
+    }
+  });
+
+  router.put('/api/admin/users/:id/storage-limit', authMiddleware, adminOnly, async (c) => {
+    try {
+      const userId = c.req.param('id');
+      const body = await c.req.json();
+      const limit = Number(body?.limit);
+
+      if (isNaN(limit) || limit < 0) {
+        return c.json({ error: 'Invalid storage limit' }, 400);
+      }
+
+      await userRepository.updateStorageLimit(userId, limit);
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[PUT /api/admin/users/:id/storage-limit]', e);
+      return c.json({ error: 'Failed to update storage limit' }, 500);
     }
   });
 

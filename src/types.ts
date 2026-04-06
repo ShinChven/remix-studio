@@ -205,6 +205,7 @@ export interface ProjectStorageStats {
 
 export interface StorageAnalysis {
   totalSize: number;
+  limit: number;
   categories: StorageCategory[];
   projects: ProjectStorageStats[];
 }

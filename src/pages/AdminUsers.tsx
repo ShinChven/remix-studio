@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { getUsers, updateUserRole } from '../api';
+import { getUsers, updateUserRole, updateUserStorageLimit } from '../api';
 import { User, UserRole } from '../types';
-import { Loader2, Shield, User as UserIcon, AlertCircle } from 'lucide-react';
+import { Loader2, Shield, User as UserIcon, AlertCircle, HardDrive } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function AdminUsers() {
@@ -35,6 +35,22 @@ export function AdminUsers() {
     }
   };
 
+  const handleStorageLimitChange = async (userId: string, newLimit: number) => {
+    try {
+      setUsers(users.map(u => u.id === userId ? { ...u, storageLimit: newLimit } : u));
+      await updateUserStorageLimit(userId, newLimit);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update storage limit');
+      loadUsers(); // Revert on failure
+    }
+  };
+
+  const STORAGE_TIERS = [
+    { name: 'Free (5GB)', value: 5 * 1024 * 1024 * 1024 },
+    { name: 'Professional (100GB)', value: 100 * 1024 * 1024 * 1024 },
+    { name: 'Premium (500GB)', value: 500 * 1024 * 1024 * 1024 },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -64,6 +80,7 @@ export function AdminUsers() {
               <th className="py-4 px-6 text-sm font-medium text-zinc-400">Email Address</th>
               <th className="py-4 px-6 text-sm font-medium text-zinc-400">ID</th>
               <th className="py-4 px-6 text-sm font-medium text-zinc-400">Role</th>
+              <th className="py-4 px-6 text-sm font-medium text-zinc-400">Storage Tier</th>
               <th className="py-4 px-6 text-sm font-medium text-zinc-400 text-right">Actions</th>
             </tr>
           </thead>
@@ -95,16 +112,35 @@ export function AdminUsers() {
                     {user.role}
                   </span>
                 </td>
+                <td className="py-4 px-6">
+                  <div className="flex items-center gap-2 text-zinc-300">
+                    <HardDrive className="w-4 h-4 text-zinc-500" />
+                    <span className="text-xs">
+                      {STORAGE_TIERS.find(t => Math.abs(t.value - (user.storageLimit || 0)) < 1000)?.name || 'Custom'}
+                    </span>
+                  </div>
+                </td>
                 <td className="py-4 px-6 text-right">
-                  <select
-                    value={user.role}
-                    onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
-                    disabled={user.id === currentUser?.id}
-                    className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  <div className="flex items-center justify-end gap-2">
+                    <select
+                      value={user.storageLimit || STORAGE_TIERS[0].value}
+                      onChange={(e) => handleStorageLimitChange(user.id, Number(e.target.value))}
+                      className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    >
+                      {STORAGE_TIERS.map(tier => (
+                        <option key={tier.value} value={tier.value}>{tier.name}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={user.role}
+                      onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
+                      disabled={user.id === currentUser?.id}
+                      className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -140,17 +176,31 @@ export function AdminUsers() {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-xs text-zinc-500">Change Role</span>
-                <select
-                  value={user.role}
-                  onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
-                  disabled={user.id === currentUser?.id}
-                  className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
+              <div className="flex flex-col gap-3 pt-2 border-t border-zinc-800/50 mt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Storage Tier</span>
+                  <select
+                    value={user.storageLimit || STORAGE_TIERS[0].value}
+                    onChange={(e) => handleStorageLimitChange(user.id, Number(e.target.value))}
+                    className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  >
+                    {STORAGE_TIERS.map(tier => (
+                      <option key={tier.value} value={tier.value}>{tier.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Change Role</span>
+                  <select
+                    value={user.role}
+                    onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
+                    disabled={user.id === currentUser?.id}
+                    className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
               </div>
             </div>
           ))}

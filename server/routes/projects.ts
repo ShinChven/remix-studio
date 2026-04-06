@@ -4,6 +4,8 @@ import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
 import { QueueManager } from '../queue/queue-manager';
 import { ExportManager } from '../queue/export-manager';
+import { checkStorageLimit } from '../utils/storage-check';
+import { UserRepository } from '../auth/user-repository';
 import type { WorkflowItem, Job, Project } from '../../src/types';
 
 type Variables = { user: JwtPayload };
@@ -115,7 +117,7 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
   return { ...project, jobs, album, workflow };
 }
 
-export function createProjectRouter(repository: IRepository, storage: S3Storage, queueManager: QueueManager, exportManager: ExportManager) {
+export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager) {
   const router = new Hono<{ Variables: Variables }>();
 
   // NOTE: /rename must be registered before /:id to avoid route shadowing
@@ -238,6 +240,31 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
       if (typeof body?.shuffle === 'boolean') updates.shuffle = body.shuffle;
       if (typeof body?.modelConfigId === 'string') updates.modelConfigId = body.modelConfigId;
       if (typeof body?.prefix === 'string') updates.prefix = body.prefix.trim();
+      
+      // Storage check for new jobs (Drafts)
+      if (updates.jobs) {
+        const currentProject = await repository.getProject(user.userId, c.req.param('id'));
+        if (currentProject) {
+          const newJobs = updates.jobs.filter(job => !currentProject.jobs.find(cj => cj.id === job.id));
+          if (newJobs.length > 0) {
+            const estimatedNewSize = newJobs.length * 20 * 1024 * 1024; // 20MB per image as requested
+            const { allowed, currentUsage, limit } = await checkStorageLimit(
+              user.userId, 
+              estimatedNewSize, 
+              userRepository, 
+              storage, 
+              exportStorage, 
+              repository
+            );
+            
+            if (!allowed) {
+              return c.json({ 
+                error: `Storage limit exceeded. Cannot add more drafts. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ${estimatedNewSize / (1024 * 1024)}MB.` 
+              }, 403);
+            }
+          }
+        }
+      }
 
       await repository.updateProject(user.userId, c.req.param('id'), updates);
       return c.json({ success: true });
@@ -379,6 +406,28 @@ export function createProjectRouter(repository: IRepository, storage: S3Storage,
     try {
       const user = c.get('user') as JwtPayload;
       const projectId = c.req.param('id');
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Project not found' }, 404);
+
+      // Storage check for pending jobs before enqueuing
+      const pendingJobsCount = project.jobs.filter(j => j.status === 'pending').length;
+      if (pendingJobsCount > 0) {
+        const estimatedNewSize = pendingJobsCount * 20 * 1024 * 1024; // 20MB per image
+        const { allowed, currentUsage, limit } = await checkStorageLimit(
+          user.userId, 
+          estimatedNewSize, 
+          userRepository, 
+          storage, 
+          exportStorage, 
+          repository
+        );
+
+        if (!allowed) {
+          return c.json({ 
+            error: `Storage limit exceeded. Cannot start generation. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ${estimatedNewSize / (1024 * 1024)}MB.` 
+          }, 403);
+        }
+      }
 
       // We explicitly don't await the queue processing
       queueManager.enqueueProject(user.userId, projectId);

@@ -2,10 +2,11 @@ import { Hono } from 'hono';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
+import { UserRepository } from '../auth/user-repository';
 
 type Variables = { user: JwtPayload };
 
-export function createStorageRouter(repository: IRepository, storage: S3Storage, exportStorage: S3Storage) {
+export function createStorageRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage) {
   const router = new Hono<{ Variables: Variables }>();
 
   router.get('/api/storage/analysis', authMiddleware, async (c) => {
@@ -18,12 +19,15 @@ export function createStorageRouter(repository: IRepository, storage: S3Storage,
       const allObjects = await storage.listObjectsWithMetadata(`${userId}/`);
 
       // 2. Fetch all metadata from DB
-      const [projects, libraries, trashItems, exportTasksResult] = await Promise.all([
+      const [projects, libraries, trashItems, exportTasksResult, userRecord] = await Promise.all([
         repository.getUserProjects(userId),
         repository.getUserLibraries(userId),
         repository.getTrashItems(userId),
         repository.getAllExportTasks(userId, 1000), // Assuming not more than 1000 exports for now
+        userRepository.findById(userId),
       ]);
+
+      const storageLimit = userRecord?.storageLimit || 5 * 1024 * 1024 * 1024; // Default to 5GB
 
       const exportTasks = exportTasksResult.items;
 
@@ -172,6 +176,7 @@ export function createStorageRouter(repository: IRepository, storage: S3Storage,
 
       return c.json({
         totalSize,
+        limit: storageLimit,
         categories: [
           { id: 'projects', name: 'Projects', size: totalProjectsSize, subCategories: [
             { id: 'album', name: 'Album', size: totalAlbumSize },

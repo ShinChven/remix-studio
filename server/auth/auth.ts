@@ -18,6 +18,7 @@ export interface UserRecord {
   email: string;
   passwordHash: string;
   role: UserRole;
+  storageLimit?: number;
   createdAt: number;
 }
 
