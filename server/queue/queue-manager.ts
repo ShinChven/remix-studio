@@ -59,7 +59,7 @@ export class QueueManager {
       // Query jobs with 'processing' status that have a taskId (owned by detached poller)
       const jobs = await this.prisma.job.findMany({
         where: {
-          status: { in: ['processing', 'failed'] },
+          status: 'processing',
           taskId: { not: null },
         },
       });
@@ -101,7 +101,7 @@ export class QueueManager {
         const errorMsg = res.error || 'Task failed on remote server.';
         console.log(`[QueueManager] Job ${job.id} detached poll failed (final): ${errorMsg}`);
         // RunningHub definitively says FAILED — clear taskId to stop polling
-        await this.updateJobStatus(userId, projectId, job.id, { status: 'failed', error: errorMsg, taskId: undefined });
+        await this.updateJobStatus(userId, projectId, job.id, { status: 'failed', error: errorMsg, taskId: null as any });
       }
     } catch (e: any) {
       console.error(`[QueueManager] checkStatus for ${job.id} failed:`, e);
@@ -364,7 +364,7 @@ export class QueueManager {
         optimizedSize: optBuffer.length,
         thumbnailSize: thumbBuffer.length,
         error: undefined,
-        taskId: undefined
+        taskId: null as any
       });
 
     } catch (e: any) {

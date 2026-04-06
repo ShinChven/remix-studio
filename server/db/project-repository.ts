@@ -133,26 +133,28 @@ export class ProjectRepository {
   }
 
   async addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void> {
-    await this.prisma.albumItem.create({
-      data: {
-        id: item.id,
-        projectId,
-        userId,
-        jobId: item.jobId ?? null,
-        prompt: item.prompt ?? null,
-        imageUrl: item.imageUrl ?? null,
-        thumbnailUrl: item.thumbnailUrl ?? null,
-        optimizedUrl: item.optimizedUrl ?? null,
-        providerId: item.providerId ?? null,
-        modelConfigId: item.modelConfigId ?? null,
-        aspectRatio: item.aspectRatio ?? null,
-        quality: item.quality ?? null,
-        format: item.format ?? null,
-        size: item.size != null ? BigInt(item.size) : null,
-        optimizedSize: (item as any).optimizedSize != null ? BigInt((item as any).optimizedSize) : null,
-        thumbnailSize: (item as any).thumbnailSize != null ? BigInt((item as any).thumbnailSize) : null,
-        createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
-      },
+    const data = {
+      projectId,
+      userId,
+      jobId: item.jobId ?? null,
+      prompt: item.prompt ?? null,
+      imageUrl: item.imageUrl ?? null,
+      thumbnailUrl: item.thumbnailUrl ?? null,
+      optimizedUrl: item.optimizedUrl ?? null,
+      providerId: item.providerId ?? null,
+      modelConfigId: item.modelConfigId ?? null,
+      aspectRatio: item.aspectRatio ?? null,
+      quality: item.quality ?? null,
+      format: item.format ?? null,
+      size: item.size != null ? BigInt(item.size) : null,
+      optimizedSize: (item as any).optimizedSize != null ? BigInt((item as any).optimizedSize) : null,
+      thumbnailSize: (item as any).thumbnailSize != null ? BigInt((item as any).thumbnailSize) : null,
+      createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+    };
+    await this.prisma.albumItem.upsert({
+      where: { id: item.id },
+      create: { id: item.id, ...data },
+      update: data,
     });
   }
 
