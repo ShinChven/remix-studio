@@ -273,10 +273,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         onUpdate(dbProject);
         // Display presigned URLs in local state for immediate rendering
         setLocalProject(prev => ({ ...prev, workflow: prev.workflow.map(item => item.id === id ? { ...item, value: url, thumbnailUrl, optimizedUrl, size } : item) }));
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to upload image:', err);
-        setWorkflowError("Failed to upload image. Please try again.");
-        setTimeout(() => setWorkflowError(null), 4000);
+        toast.error(err.message || "Failed to upload image. Please try again.");
       } finally {
         setUploadingItemIds(prev => {
           const next = new Set(prev);

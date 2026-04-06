@@ -4,6 +4,7 @@ import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
 import { UserRepository } from '../auth/user-repository';
 import { checkStorageLimit } from '../utils/storage-check';
+import { formatError } from '../utils/error-handler';
 import type { LibraryItem, Library } from '../../src/types';
 
 type Variables = { user: JwtPayload };
@@ -205,7 +206,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       return c.json({ success: true }, 201);
     } catch (e) {
       console.error('[POST /api/libraries/:libId/items]', e);
-      return c.json({ error: 'Failed to create item' }, 500);
+      return c.json({ error: formatError(e, 'Failed to create item') }, 500);
     }
   });
 
@@ -240,7 +241,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       return c.json({ success: true }, 201);
     } catch (e) {
       console.error('[POST /api/libraries/:libId/items/batch]', e);
-      return c.json({ error: 'Failed to create items batch' }, 500);
+      return c.json({ error: formatError(e, 'Failed to create items batch') }, 500);
     }
   });
 

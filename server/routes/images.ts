@@ -7,6 +7,8 @@ import { checkStorageLimit } from '../utils/storage-check';
 import { IRepository } from '../db/repository';
 import { UserRepository } from '../auth/user-repository';
 
+import { formatError } from '../utils/error-handler';
+
 type Variables = { user: JwtPayload };
 
 const IMAGE_SIZE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
@@ -50,7 +52,7 @@ export function createImageRouter(storage: S3Storage, exportStorage: S3Storage, 
 
       if (!allowed) {
         return c.json({ 
-          error: `Storage limit exceeded. Remaining: ${(limit - currentUsage) / (1024 * 1024)}MB. Required: ~${estimatedSize / (1024 * 1024)}MB.` 
+          error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedSize / (1024 * 1024)).toFixed(1)}MB.` 
         }, 403);
       }
 
@@ -82,7 +84,7 @@ export function createImageRouter(storage: S3Storage, exportStorage: S3Storage, 
       });
     } catch (e) {
       console.error('[POST /api/images]', e);
-      return c.json({ error: 'Failed to save image' }, 500);
+      return c.json({ error: formatError(e, 'Failed to save image') }, 500);
     }
   });
 

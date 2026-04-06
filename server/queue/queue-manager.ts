@@ -7,6 +7,7 @@ import { buildGenerator } from '../generators/build-generator';
 import { Job, Project, ProviderType, AlbumItem } from '../../src/types';
 import { generateThumbnail, generateOptimized } from '../utils/image-utils';
 import { getUserStorageUsage } from '../utils/storage-check';
+import { formatError } from '../utils/error-handler';
 import crypto from 'crypto';
 import sharp from 'sharp';
 
@@ -373,7 +374,7 @@ export class QueueManager {
       // only local processing (download/S3/thumbnail) failed. The poller will retry.
       await this.updateJobStatus(userId, projectId, job.id, {
         status: 'processing',
-        error: e.message || 'Image processing error, will retry'
+        error: formatError(e, 'Image processing error, will retry')
       });
     }
   }

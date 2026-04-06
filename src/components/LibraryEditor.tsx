@@ -5,6 +5,7 @@ import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search
 import { ConfirmModal } from './ConfirmModal';
 import { TagModal } from './TagModal';
 import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem } from '../api';
+import { toast } from 'sonner';
 
 interface Props {
   library: Library;
@@ -285,8 +286,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       }
 
       onUpdate({ ...library, items: newItems });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to upload images:', err);
+      toast.error(err.message || 'Failed to upload images');
     } finally {
       setUploading(false);
     }
