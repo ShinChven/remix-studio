@@ -26,16 +26,13 @@ export interface ExportTask {
   ttl?: number;
 }
 
-import { SqsClient } from './sqs-client';
 
 export class ExportManager {
   constructor(
     private repository: IRepository,
     private imageStorage: S3Storage,
     private exportStorage: S3Storage,
-    private userRepository: UserRepository,
-    private sqsClient?: SqsClient,
-    private queueUrl?: string
+    private userRepository: UserRepository
   ) {}
 
   async startExport(userId: string, projectId: string, projectName: string, items: AlbumItem[]): Promise<string> {
@@ -53,53 +50,12 @@ export class ExportManager {
 
     await this.repository.saveExportTask(userId, taskId, taskData);
 
-    const payload = { userId, projectId, taskId, projectName, items };
-    
-    if (this.sqsClient && this.queueUrl) {
-      // Send to SQS
-      await this.sqsClient.sendMessage(this.queueUrl, payload);
-      console.log(`[ExportManager] Task ${taskId} pushed to SQS.`);
-    } else {
-      // Fallback
-      this.runExportTask(userId, projectId, taskId, projectName, items).catch(e => {
-        console.error(`[ExportManager] Task ${taskId} fatal:`, e);
-        this.updateTask(userId, taskId, { status: 'failed', error: e.message, ttl: TTL_24H() });
-      });
-    }
+    this.runExportTask(userId, projectId, taskId, projectName, items).catch(e => {
+      console.error(`[ExportManager] Task ${taskId} fatal:`, e);
+      this.updateTask(userId, taskId, { status: 'failed', error: e.message, ttl: TTL_24H() });
+    });
 
     return taskId;
-  }
-
-  async startWorker() {
-    if (!this.sqsClient || !this.queueUrl) return;
-    console.log('[ExportManager] Starting SQS Consumer Worker...');
-    
-    // Background loop forever
-    setImmediate(async () => {
-      while (true) {
-        try {
-          const messages = await this.sqsClient!.receiveMessages(this.queueUrl!, 1, 20);
-          for (const msg of messages) {
-            if (!msg.Body || !msg.ReceiptHandle) continue;
-            const data = JSON.parse(msg.Body);
-            
-            console.log(`[ExportManager] Working on SQS msg for task ${data.taskId}`);
-            try {
-              await this.runExportTask(data.userId, data.projectId, data.taskId, data.projectName, data.items);
-            } catch (jobError: any) {
-              console.error(`[ExportManager] SQS Worker failed task ${data.taskId}:`, jobError);
-              await this.updateTask(data.userId, data.taskId, { status: 'failed', error: jobError.message, ttl: TTL_24H() });
-            } finally {
-              // Always delete message to prevent poison pill loops in this simple mock
-              await this.sqsClient!.deleteMessage(this.queueUrl!, msg.ReceiptHandle);
-            }
-          }
-        } catch (err) {
-          console.error('[ExportManager] SQS polling error:', err);
-          await new Promise(r => setTimeout(r, 5000));
-        }
-      }
-    });
   }
 
   private async updateTask(userId: string, taskId: string, updates: Partial<ExportTask>) {
