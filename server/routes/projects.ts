@@ -318,11 +318,46 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   router.delete('/api/projects/:id', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      await repository.deleteProject(user.userId, c.req.param('id'));
+      const projectId = c.req.param('id');
+      const safeProjectId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const projectPrefix = `${user.userId}/${safeProjectId}/`;
+
+      // 1. Cleanup main project storage (original, optimized, thumbnails)
+      try {
+        const objects = await storage.listObjects(projectPrefix);
+        for (const key of objects) {
+          await storage.delete(key);
+        }
+      } catch (s3Err) {
+        console.warn(`[ProjectDelete] Failed to cleanup main storage for project ${projectId}:`, s3Err);
+      }
+
+      // 2. Fetch all associated export tasks for S3 cleanup
+      try {
+        const exports = await repository.getExportTasks(user.userId, projectId);
+        for (const task of exports) {
+          if (task.s3Key) {
+            try {
+              await exportStorage.delete(task.s3Key);
+            } catch (s3Err) {
+              console.warn(`[ProjectDelete] Failed to delete export file ${task.s3Key}:`, s3Err);
+            }
+          }
+          // Note: export task records in DB will be cleaned up by deleteProject if cascaded, 
+          // or manually here if they are 'SetNull' records from previous project deletions.
+          await repository.deleteExportTask(user.userId, task.id);
+        }
+      } catch (e) {
+        console.warn(`[ProjectDelete] Failed to cleanup exports for project ${projectId}:`, e);
+      }
+
+      // 3. Delete the project and any cascading relations in DB
+      await repository.deleteProject(user.userId, projectId);
+
       return c.json({ success: true });
     } catch (e) {
       console.error('[DELETE /api/projects/:id]', e);
-      return c.json({ error: 'Failed to delete project' }, 500);
+      return c.json({ error: 'Failed to delete project and cleanup storage' }, 500);
     }
   });
 
