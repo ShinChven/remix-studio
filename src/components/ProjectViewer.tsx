@@ -71,9 +71,14 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [selectedCompletedIds, setSelectedCompletedIds] = useState<Set<string>>(new Set());
 
   const projectRef = useRef(localProject);
+  const skipProjectSyncRef = useRef(false);
   const isProcessing = localProject.jobs.some(j => j.status === 'pending' || j.status === 'processing');
 
   useEffect(() => {
+    if (skipProjectSyncRef.current) {
+      skipProjectSyncRef.current = false;
+      return;
+    }
     setLocalProject(project);
   }, [project]);
 
@@ -247,8 +252,13 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       reader.readAsDataURL(file);
       try {
         const base64 = await base64Promise;
-        const { key, thumbnailUrl, optimizedUrl, size } = await saveImage(base64, localProject.id);
-        updateWorkflowItem(id, key, thumbnailUrl, optimizedUrl, size);
+        const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveImage(base64, localProject.id);
+        // Persist bare keys to DB (server will presign on GET)
+        const dbProject = { ...localProject, workflow: localProject.workflow.map(item => item.id === id ? { ...item, value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size } : item) };
+        skipProjectSyncRef.current = true;
+        onUpdate(dbProject);
+        // Display presigned URLs in local state for immediate rendering
+        setLocalProject(prev => ({ ...prev, workflow: prev.workflow.map(item => item.id === id ? { ...item, value: url, thumbnailUrl, optimizedUrl, size } : item) }));
       } catch (err) {
         console.error('Failed to upload image:', err);
         setWorkflowError("Failed to upload image. Please try again.");

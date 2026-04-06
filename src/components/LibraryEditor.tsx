@@ -265,13 +265,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           reader.readAsDataURL(file);
         });
 
-        const { key, url, thumbnailUrl, optimizedUrl, size } = await saveImage(base64, library.id);
+        const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveImage(base64, library.id);
         const newItem = { 
           id: crypto.randomUUID(), 
           content: key, 
           order: newItems.length,
-          thumbnailUrl: thumbnailUrl ? key.replace(/(\.[^.]+)$/, '.thumb.jpg') : undefined,
-          optimizedUrl: optimizedUrl ? key.replace(/(\.[^.]+)$/, '.opt.jpg') : undefined,
+          thumbnailUrl: thumbnailKey,
+          optimizedUrl: optimizedKey,
           size: size
         };
         await createLibraryItem(library.id, newItem);

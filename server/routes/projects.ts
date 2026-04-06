@@ -10,12 +10,38 @@ import type { WorkflowItem, Job, Project } from '../../src/types';
 
 type Variables = { user: JwtPayload };
 
-/** Presign an S3 key if it looks like one (not already a URL) */
+/** Presign an S3 key if it looks like one (not already a URL), or re-sign an expired presigned URL */
 async function presignIfKey(value: string, storage: S3Storage): Promise<string> {
-  if (value && !value.startsWith('http') && !value.startsWith('data:')) {
+  if (!value || value.startsWith('data:')) return value;
+  if (!value.startsWith('http')) {
     return storage.getPresignedUrl(value);
   }
+  // If it's a presigned URL that was accidentally stored, extract the key and re-sign
+  const key = stripToKey(value, storage.getBucketName());
+  if (key && key !== value) {
+    return storage.getPresignedUrl(key);
+  }
   return value;
+}
+
+/** Extract bare S3 key from a presigned URL, or return the value as-is if already a key */
+function stripToKey(value: string | undefined, bucket: string): string | undefined {
+  if (!value || !value.startsWith('http')) return value;
+  try {
+    const url = new URL(value);
+    // Path-style: /bucket/key (used by MinIO/LocalStack)
+    const prefix = `/${bucket}/`;
+    if (url.pathname.startsWith(prefix)) {
+      return decodeURIComponent(url.pathname.slice(prefix.length));
+    }
+    // Virtual-hosted style: bucket.host/key (used by AWS S3)
+    if (url.hostname.startsWith(`${bucket}.`)) {
+      return decodeURIComponent(url.pathname.slice(1));
+    }
+    return value;
+  } catch {
+    return value;
+  }
 }
 
 /** Sign all S3 keys in a project's jobs, album items, and workflow images with pre-signed URLs */
@@ -231,7 +257,21 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const body = await c.req.json();
       const updates: { name?: string; workflow?: WorkflowItem[]; jobs?: Job[]; providerId?: string; aspectRatio?: string; quality?: string; format?: 'png' | 'jpeg' | 'webp'; shuffle?: boolean; modelConfigId?: string; prefix?: string } = {};
       if (typeof body?.name === 'string') updates.name = body.name.trim();
-      if (Array.isArray(body?.workflow)) updates.workflow = body.workflow;
+      if (Array.isArray(body?.workflow)) {
+        // Strip presigned URLs back to bare S3 keys before storing
+        const bucket = storage.getBucketName();
+        updates.workflow = body.workflow.map((item: WorkflowItem) => {
+          if (item.type === 'image') {
+            return {
+              ...item,
+              value: stripToKey(item.value, bucket) || item.value,
+              thumbnailUrl: stripToKey(item.thumbnailUrl, bucket),
+              optimizedUrl: stripToKey(item.optimizedUrl, bucket),
+            };
+          }
+          return item;
+        });
+      }
       if (Array.isArray(body?.jobs)) updates.jobs = body.jobs;
       if (typeof body?.providerId === 'string') updates.providerId = body.providerId;
       if (typeof body?.aspectRatio === 'string') updates.aspectRatio = body.aspectRatio;
