@@ -390,7 +390,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       // 1. List all files in S3 for this project
       const allS3Keys = await storage.listObjects(projectPrefix);
 
-      // 2. Collect all referenced keys from DynamoDB
+      // 2. Collect all referenced keys from database
       const referencedKeys = new Set<string>();
 
       // From Workflow
@@ -587,21 +587,14 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     try {
       const user = c.get('user') as JwtPayload;
       const limit = parseInt(c.req.query('limit') || '20');
-      const cursorStr = c.req.query('cursor');
-      let exclusiveStartKey: any;
-      if (cursorStr) {
-        exclusiveStartKey = JSON.parse(Buffer.from(cursorStr, 'base64').toString());
-      }
+      const cursor = c.req.query('cursor');
 
-      const result = await repository.getAllExportTasks(user.userId, limit, exclusiveStartKey);
+      const result = await repository.getAllExportTasks(user.userId, limit, cursor);
 
       // Presign completed tasks on read
       const items = await Promise.all(result.items.map(t => exportManager.presignTask(t)));
 
-      let nextCursor: string | undefined;
-      if (result.nextCursor) {
-        nextCursor = Buffer.from(JSON.stringify(result.nextCursor)).toString('base64');
-      }
+      const nextCursor = result.nextCursor;
 
       return c.json({ items, nextCursor });
     } catch (e) {

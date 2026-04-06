@@ -27,9 +27,18 @@ Tweak parameters, swap engines, and watch a single idea evolve into a production
 
 - **Frontend**: [React 19](https://react.dev/), [Vite](https://vitejs.dev/), [Tailwind CSS 4](https://tailwindcss.com/)
 - **Server**: [Hono](https://hono.dev/) (Edge-ready Node.js framework)
-- **Database**: [Prisma](https://www.prisma.io/) with PostgreSQL/DynamoDB support
+- **Database**: [Prisma](https://www.prisma.io/) with PostgreSQL support
 - **Storage**: [AWS SDK](https://aws.amazon.com/sdk-for-javascript/) (S3/MinIO compatible)
 - **Processing**: [Sharp](https://sharp.pixelplumbing.com/) (High-performance image transformation)
+
+---
+
+## 🌍 Deployment Flexibility
+
+Remix Studio is architected to scale from a developer's laptop to a production-grade cloud environment.
+
+- **Local-First**: Develop and iterate locally with zero-cost overhead using Node.js and MinIO. A `docker-compose.yml` is included to spin up a full local environment in seconds.
+- **Cloud-Ready**: Fully compatible with enterprise-grade infrastructure, including AWS S3 and PostgreSQL. Its stateless server design is optimized for containerization and high-availability deployments.
 
 ---
 
@@ -38,10 +47,18 @@ Tweak parameters, swap engines, and watch a single idea evolve into a production
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v20+ recommended)
-- A running [MinIO](https://min.io/) or S3 bucket
-- API keys for your preferred providers (Gemini, OpenAI, etc.)
+- [Docker](https://www.docker.com/) (recommended for local infrastructure)
+- API keys for your preferred providers (**nano banana 2** on Gemini, OpenAI, etc.)
 
-### Installation
+### 🐳 Local Infrastructure (Docker)
+
+Spin up your local PostgreSQL and MinIO environment with one command:
+```bash
+docker-compose up -d
+```
+This will initialize your database on port `5432` and MinIO on port `19000` (API) and `19001` (Console).
+
+### 🛠️ App Installation
 
 1. **Clone and Install**
    ```bash
@@ -57,6 +74,7 @@ Tweak parameters, swap engines, and watch a single idea evolve into a production
    ```
 
 3. **Database Migration**
+   Apply the schema to your PostgreSQL instance:
    ```bash
    npx prisma migrate dev
    ```
