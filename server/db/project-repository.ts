@@ -595,16 +595,17 @@ export class ProjectRepository {
     let items: any[] = [];
     let lastEvaluatedKey = exclusiveStartKey;
 
-    // DynamoDB forbids filtering on primary key attributes (sk), so we filter
-    // on the `itemType` attribute that is written by saveExportTask.
+    // Use SK contains '#EXPORT#' — same logic as getAllUserItems, avoids relying
+    // on the `itemType` field which may be missing from older records.
     while (items.length < limit) {
       const params: any = {
         TableName: TABLE_NAME,
         KeyConditionExpression: 'pk = :pk',
-        FilterExpression: 'itemType = :exportType',
+        FilterExpression: 'contains(#sk, :exportMarker)',
+        ExpressionAttributeNames: { '#sk': 'sk' },
         ExpressionAttributeValues: {
           ':pk': pk,
-          ':exportType': 'export'
+          ':exportMarker': '#EXPORT#',
         },
       };
       if (lastEvaluatedKey) params.ExclusiveStartKey = lastEvaluatedKey;
@@ -627,7 +628,6 @@ export class ProjectRepository {
     let nextCursor: any;
     if (items.length > limit) {
       items = items.slice(0, limit);
-      // We can't provide an accurate DynamoDB cursor here, so signal there may be more
       nextCursor = lastEvaluatedKey;
     } else {
       nextCursor = lastEvaluatedKey;

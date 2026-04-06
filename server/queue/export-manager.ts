@@ -60,7 +60,7 @@ export class ExportManager {
     await this.updateTaskStatus(userId, projectId, taskId, { status: 'processing', current: 0 });
 
     const safeProjectName = projectName.replace(/[^a-zA-Z0-9-_]/g, '_');
-    const zipKey = `${safeProjectName}_Album_${taskId.slice(0, 8)}.zip`;
+    const zipKey = `${userId}/exports/${safeProjectName}_Album_${taskId.slice(0, 8)}.zip`;
 
     try {
       // --- Phase 1: Download each image sequentially ---
