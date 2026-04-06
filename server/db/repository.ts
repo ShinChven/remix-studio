@@ -44,4 +44,10 @@ export interface IRepository {
   getUserData(userId: string): Promise<AppData>;
   saveAllData(data: AppData): Promise<void>;
   autoImportJson(dataDir: string): Promise<void>;
+
+  /** 
+   * Fetches all items in a user's partition for storage analysis.
+   * This is more efficient than fetching projects, libraries, and trash separately.
+   */
+  getAllUserItems(userId: string): Promise<any[]>;
 }

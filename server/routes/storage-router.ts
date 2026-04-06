@@ -14,101 +14,82 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
       const user = c.get('user') as JwtPayload;
       const userId = user.userId;
 
-      // 1. List all objects in main storage for this user
-      // All user files are prefixed with their userId
-      const allObjects = await storage.listObjectsWithMetadata(`${userId}/`);
-
-      // 2. Fetch all metadata from DB
-      const [projects, libraries, trashItems, exportTasksResult, userRecord] = await Promise.all([
-        repository.getUserProjects(userId),
-        repository.getUserLibraries(userId),
-        repository.getTrashItems(userId),
-        repository.getAllExportTasks(userId, 1000), // Assuming not more than 1000 exports for now
+      // 1. Fetch all metadata from DB in a single pass
+      const [allItems, userRecord] = await Promise.all([
+        repository.getAllUserItems(userId),
         userRepository.findById(userId),
       ]);
 
+      // 2. List all objects in main storage for this user
+      const allObjects = await storage.listObjectsWithMetadata(`${userId}/`);
+
       const storageLimit = userRecord?.storageLimit || 5 * 1024 * 1024 * 1024; // Default to 5GB
 
-      const exportTasks = exportTasksResult.items;
-
-      // 3. Define categories and their sizes
+      // 3. Process allItems into categorization map and specific lists
       const projectBreakdown: Record<string, { total: number; album: number; drafts: number; workflow: number; orphans: number; name: string }> = {};
+      const exportTasks: any[] = [];
+      const libraries: Record<string, string> = {}; // id -> name
       let totalLibrarySize = 0;
       let totalTrashSize = 0;
       let totalExportSize = 0;
       let totalOtherSize = 0;
 
-      // Maps to track which keys belong to which category
+      // Map to track which keys belong to which category
       const referencedKeys = new Map<string, string>(); // key -> category
 
-      // Categorize Library items
-      for (const lib of libraries) {
-        for (const item of lib.items) {
-          if (item.content && !item.content.startsWith('http') && !item.content.startsWith('data:')) referencedKeys.set(item.content, 'library');
-          if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, 'library');
-          if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, 'library');
+      for (const item of allItems) {
+        const sk = item.sk || '';
+        if (sk.startsWith('PROJECT#')) {
+          const parts = sk.split('#');
+          const projectId = parts[1];
+          
+          if (parts.length === 2) {
+            // Project Metadata
+            if (!projectBreakdown[projectId]) {
+              projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: item.name };
+            } else {
+              projectBreakdown[projectId].name = item.name;
+            }
+          } else if (sk.includes('#JOB#')) {
+            const cat = 'drafts';
+            if (item.imageUrl && !item.imageUrl.startsWith('http')) referencedKeys.set(item.imageUrl, `project:${projectId}:${cat}`);
+            if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, `project:${projectId}:${cat}`);
+            if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, `project:${projectId}:${cat}`);
+          } else if (sk.includes('#ALBUM#')) {
+            const cat = 'album';
+            if (item.imageUrl && !item.imageUrl.startsWith('http')) referencedKeys.set(item.imageUrl, `project:${projectId}:${cat}`);
+            if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, `project:${projectId}:${cat}`);
+            if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, `project:${projectId}:${cat}`);
+          } else if (sk.includes('#WF#')) {
+            const cat = 'workflow';
+            if (item.type === 'image' && item.value && !item.value.startsWith('http') && !item.value.startsWith('data:')) {
+              referencedKeys.set(item.value, `project:${projectId}:${cat}`);
+            }
+            if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, `project:${projectId}:${cat}`);
+            if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, `project:${projectId}:${cat}`);
+          } else if (sk.includes('#EXPORT#')) {
+            exportTasks.push(item);
+          }
+        } else if (sk.startsWith('LIBRARY#')) {
+          if (sk.includes('#ITEM#')) {
+            if (item.content && !item.content.startsWith('http') && !item.content.startsWith('data:')) referencedKeys.set(item.content, 'library');
+            if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, 'library');
+            if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, 'library');
+          }
+        } else if (sk.startsWith('TRASH#')) {
+          if (item.imageUrl && !item.imageUrl.startsWith('http')) referencedKeys.set(item.imageUrl, 'trash');
+          if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, 'trash');
+          if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, 'trash');
         }
       }
 
-      // Categorize Trash items
-      for (const item of trashItems) {
-        if (item.imageUrl && !item.imageUrl.startsWith('http')) referencedKeys.set(item.imageUrl, 'trash');
-        if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, 'trash');
-        if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, 'trash');
-      }
-
-      // Pre-process Projects
-      for (const project of projects) {
-        const pId = project.id;
-        const safePId = pId.replace(/[^a-zA-Z0-9-_]/g, '_');
-        const projectPrefix = `${userId}/${safePId}/`;
-        
-        projectBreakdown[pId] = {
-          total: 0,
-          album: 0,
-          drafts: 0,
-          workflow: 0,
-          orphans: 0,
-          name: project.name
-        };
-
-        // Track sub-categories in project
-        const projectReferencedKeys = new Map<string, string>();
-
-        project.album.forEach(item => {
-          if (item.imageUrl && !item.imageUrl.startsWith('http')) projectReferencedKeys.set(item.imageUrl, 'album');
-          if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) projectReferencedKeys.set(item.thumbnailUrl, 'album');
-          if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) projectReferencedKeys.set(item.optimizedUrl, 'album');
-        });
-
-        project.jobs.forEach(job => {
-          if (job.imageUrl && !job.imageUrl.startsWith('http')) {
-            // Only add if not already in album (album takes priority)
-            if (!projectReferencedKeys.has(job.imageUrl)) projectReferencedKeys.set(job.imageUrl, 'drafts');
+      // Ensure all projects found in sub-items are represented even if metadata item was missing (shouldn't happen)
+      for (const [key, ref] of referencedKeys) {
+        if (ref.startsWith('project:')) {
+          const projectId = ref.split(':')[1];
+          if (!projectBreakdown[projectId]) {
+            projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: 'Unknown Project' };
           }
-          if (job.thumbnailUrl && !job.thumbnailUrl.startsWith('http')) {
-            if (!projectReferencedKeys.has(job.thumbnailUrl)) projectReferencedKeys.set(job.thumbnailUrl, 'drafts');
-          }
-          if (job.optimizedUrl && !job.optimizedUrl.startsWith('http')) {
-            if (!projectReferencedKeys.has(job.optimizedUrl)) projectReferencedKeys.set(job.optimizedUrl, 'drafts');
-          }
-        });
-
-        project.workflow.forEach(item => {
-          if (item.type === 'image' && item.value && !item.value.startsWith('http') && !item.value.startsWith('data:')) {
-            if (!projectReferencedKeys.has(item.value)) projectReferencedKeys.set(item.value, 'workflow');
-            if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) {
-              if (!projectReferencedKeys.has(item.thumbnailUrl)) projectReferencedKeys.set(item.thumbnailUrl, 'workflow');
-            }
-            if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) {
-              if (!projectReferencedKeys.has(item.optimizedUrl)) projectReferencedKeys.set(item.optimizedUrl, 'workflow');
-            }
-          }
-        });
-
-        // Store project-level references globally
-        for (const [key, cat] of projectReferencedKeys) {
-          referencedKeys.set(key, `project:${pId}:${cat}`);
         }
       }
 
@@ -124,24 +105,27 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
             totalTrashSize += size;
           } else if (ref.startsWith('project:')) {
             const parts = ref.split(':');
-            const pId = parts[1];
+            const projectId = parts[1];
             const cat = parts[2] as 'album' | 'drafts' | 'workflow';
-            if (projectBreakdown[pId]) {
-              projectBreakdown[pId].total += size;
-              projectBreakdown[pId][cat] += size;
+            if (projectBreakdown[projectId]) {
+              projectBreakdown[projectId].total += size;
+              projectBreakdown[projectId][cat] += size;
             }
           }
         } else {
           // Check if it belongs to a project folder (Orphan)
-          const matchedProject = projects.find(p => {
-             const safePId = p.id.replace(/[^a-zA-Z0-9-_]/g, '_');
-             return obj.key.startsWith(`${userId}/${safePId}/`);
-          });
+          let matched = false;
+          for (const projectId in projectBreakdown) {
+             const safePId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
+             if (obj.key.startsWith(`${userId}/${safePId}/`)) {
+                projectBreakdown[projectId].total += size;
+                projectBreakdown[projectId].orphans += size;
+                matched = true;
+                break;
+             }
+          }
 
-          if (matchedProject) {
-            projectBreakdown[matchedProject.id].total += size;
-            projectBreakdown[matchedProject.id].orphans += size;
-          } else {
+          if (!matched) {
             totalOtherSize += size;
           }
         }

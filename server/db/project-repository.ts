@@ -669,4 +669,28 @@ export class ProjectRepository {
       })
     );
   }
+
+  async getAllUserItems(userId: string): Promise<any[]> {
+    const pk = `USER_DATA#${userId}`;
+    const items: any[] = [];
+    let lastEvaluatedKey: any = undefined;
+
+    do {
+      const result = await this.client.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: 'pk = :pk',
+          ExpressionAttributeValues: { ':pk': pk },
+          ExclusiveStartKey: lastEvaluatedKey,
+        })
+      );
+
+      if (result.Items) {
+        items.push(...result.Items);
+      }
+      lastEvaluatedKey = result.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    return items;
+  }
 }

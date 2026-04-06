@@ -93,47 +93,135 @@ export function StorageView() {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-6"
+        className="mb-12"
       >
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center">
-              <HardDrive className="w-6 h-6 text-blue-400" />
-            </div>
-            <h1 className="text-3xl font-black text-white tracking-tight">Storage Analysis</h1>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center">
+            <HardDrive className="w-6 h-6 text-blue-400" />
           </div>
-          <p className="text-neutral-400 text-lg">Detailed breakdown of your digital footprint.</p>
+          <h1 className="text-3xl font-black text-white tracking-tight">Storage Analysis</h1>
         </div>
-        
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4">
-          <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 flex flex-col items-start lg:items-end backdrop-blur-md min-w-[240px]">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-black mb-1">Your Capacity</span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-white">{formatSize(analysis.limit)}</span>
-              <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">{TIER_NAMES[analysis.limit] || 'Custom'}</span>
-            </div>
-            <div className="w-full h-1.5 bg-neutral-800 rounded-full mt-4 overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, (analysis.totalSize / analysis.limit) * 100)}%` }}
-                className={`h-full rounded-full ${ (analysis.totalSize / analysis.limit) > 0.9 ? 'bg-red-500' : 'bg-blue-500' }`}
-              />
-            </div>
-            <span className="text-[10px] text-neutral-500 font-bold mt-2">
-              {((analysis.totalSize / analysis.limit) * 100).toFixed(1)}% consumed
-            </span>
-          </div>
-
-          <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 flex flex-col items-start lg:items-end backdrop-blur-md min-w-[200px]">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-black mb-1">Total Consumption</span>
-            <span className="text-4xl font-black text-white leading-none">{formatSize(analysis.totalSize)}</span>
-          </div>
-        </div>
+        <p className="text-neutral-400 text-lg">Detailed breakdown of your digital footprint.</p>
       </motion.div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start">
-        {/* Pie Chart Section */}
-        <div className="xl:col-span-5 relative flex items-center justify-center">
+        {/* Left Column: Data Blocks */}
+        <div className="xl:col-span-7 space-y-8">
+          {/* Main 3x2 (or adaptive) Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* 1. Capacity & Consumption Overview Card */}
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-md border-blue-500/10">
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-black mb-4 block">Capacity Overview</span>
+                <div className="space-y-4">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-neutral-500 uppercase font-black tracking-tight mb-1">Consumption</span>
+                    <span className="text-2xl font-black text-white leading-none">{formatSize(analysis.totalSize)}</span>
+                  </div>
+                  <div className="flex flex-col border-t border-neutral-800/50 pt-3">
+                    <span className="text-[10px] text-neutral-500 uppercase font-black tracking-tight mb-1">Total Limit</span>
+                    <div className="flex items-baseline gap-2">
+                       <span className="text-xl font-black text-neutral-300">{formatSize(analysis.limit)}</span>
+                       <span className="text-[10px] font-bold text-blue-500 uppercase">{TIER_NAMES[analysis.limit] || 'Custom'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="w-full mt-6">
+                <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, (analysis.totalSize / analysis.limit) * 100)}%` }}
+                    className={`h-full rounded-full ${ (analysis.totalSize / analysis.limit) > 0.9 ? 'bg-red-500' : 'bg-blue-500' }`}
+                  />
+                </div>
+                <div className="text-[10px] text-neutral-500 font-bold mt-2">
+                  {((analysis.totalSize / analysis.limit) * 100).toFixed(1)}% consumed
+                </div>
+              </div>
+            </div>
+
+            {/* 2-6. Categories cards */}
+            {analysis.categories.map((cat, idx) => (
+              <motion.div
+                key={cat.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.05 }}
+                onMouseEnter={() => setHoveredCategory(cat.id)}
+                onMouseLeave={() => setHoveredCategory(null)}
+                className={`
+                  p-5 rounded-2xl transition-all duration-300 group cursor-default flex flex-col justify-between
+                  ${hoveredCategory === cat.id ? 'bg-neutral-800 border-neutral-600' : 'bg-neutral-900/50 border-neutral-800'}
+                  border backdrop-blur-md
+                `}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[cat.id] || COLORS.other }} />
+                      <h3 className="text-[10px] uppercase tracking-widest font-black text-neutral-500">{cat.name}</h3>
+                    </div>
+                    <span className="text-lg font-black text-white">{formatSize(cat.size)}</span>
+                  </div>
+                  
+                  {/* Progress Bar for each category relative to total */}
+                  <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden mb-4">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(cat.size / totalSize) * 100}%` }}
+                      className="h-full rounded-full" 
+                      style={{ backgroundColor: COLORS[cat.id] || COLORS.other }} 
+                    />
+                  </div>
+
+                  {/* Sub-categories (for Projects) */}
+                  {cat.subCategories && (
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-2">
+                       {cat.subCategories.map(sub => (
+                         <div key={sub.id} className="flex flex-col">
+                            <span className="text-[9px] text-neutral-500 uppercase font-black tracking-tight mb-0.5">{sub.name}</span>
+                            <span className="text-xs font-bold text-neutral-300">{formatSize(sub.size)}</span>
+                         </div>
+                       ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Quick Stats Panel (Storage Optimization) */}
+          <div className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-3xl p-8 backdrop-blur-xl">
+            <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+              Storage Optimization
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                     <AlertCircle className="w-6 h-6 text-orange-400" />
+                  </div>
+                  <div>
+                     <p className="text-white font-bold mb-1">Clean Orphans</p>
+                     <p className="text-sm text-neutral-400">Identify and remove unreferenced files from project folders to reclaim space.</p>
+                  </div>
+               </div>
+               <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                     <Trash2 className="w-6 h-6 text-red-400" />
+                  </div>
+                  <div>
+                     <p className="text-white font-bold mb-1">Recycle Bin</p>
+                     <p className="text-sm text-neutral-400">Total of {formatSize(analysis.categories.find(c => c.id === 'trash')?.size || 0)} can be permanently deleted.</p>
+                  </div>
+               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Pie Chart Section */}
+        <div className="xl:col-span-5 relative flex items-center justify-center lg:sticky lg:top-8">
           <div className="relative w-full aspect-square max-w-[400px]">
              <svg viewBox="-1.2 -1.2 2.4 2.4" className="w-full h-full -rotate-90">
                 <AnimatePresence>
@@ -188,85 +276,6 @@ export function StorageView() {
                 </AnimatePresence>
              </div>
           </div>
-        </div>
-
-        {/* Legend Section */}
-        <div className="xl:col-span-7 space-y-8">
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {analysis.categories.map((cat, idx) => (
-                <motion.div
-                  key={cat.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  onMouseEnter={() => setHoveredCategory(cat.id)}
-                  onMouseLeave={() => setHoveredCategory(null)}
-                  className={`
-                    p-4 rounded-2xl transition-all duration-300 group cursor-default
-                    ${hoveredCategory === cat.id ? 'bg-neutral-800 border-neutral-600' : 'bg-neutral-900 border-neutral-800'}
-                    border
-                  `}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[cat.id] || COLORS.other }} />
-                      <h3 className="font-bold text-neutral-200">{cat.name}</h3>
-                    </div>
-                    <span className="text-lg font-black text-white">{formatSize(cat.size)}</span>
-                  </div>
-                  
-                  {/* Progress Bar for each category relative to total */}
-                  <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(cat.size / totalSize) * 100}%` }}
-                      className="h-full rounded-full" 
-                      style={{ backgroundColor: COLORS[cat.id] || COLORS.other }} 
-                    />
-                  </div>
-
-                  {/* Sub-categories (for Projects) */}
-                  {cat.subCategories && (
-                    <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2">
-                       {cat.subCategories.map(sub => (
-                         <div key={sub.id} className="flex flex-col">
-                            <span className="text-[10px] text-neutral-500 uppercase font-black tracking-tight">{sub.name}</span>
-                            <span className="text-xs font-semibold text-neutral-300">{formatSize(sub.size)}</span>
-                         </div>
-                       ))}
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-           </div>
-
-           {/* Quick Stats Panel */}
-           <div className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-3xl p-8 backdrop-blur-xl">
-              <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                Storage Optimization
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
-                       <AlertCircle className="w-6 h-6 text-orange-400" />
-                    </div>
-                    <div>
-                       <p className="text-white font-bold mb-1">Clean Orphans</p>
-                       <p className="text-sm text-neutral-400">Identify and remove unreferenced files from project folders to reclaim space.</p>
-                    </div>
-                 </div>
-                 <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                       <Trash2 className="w-6 h-6 text-red-400" />
-                    </div>
-                    <div>
-                       <p className="text-white font-bold mb-1">Recycle Bin</p>
-                       <p className="text-sm text-neutral-400">Total of {formatSize(analysis.categories.find(c => c.id === 'trash')?.size || 0)} can be permanently deleted.</p>
-                    </div>
-                 </div>
-              </div>
-           </div>
         </div>
       </div>
 

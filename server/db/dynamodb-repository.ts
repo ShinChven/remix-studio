@@ -63,4 +63,5 @@ export class DynamoDBRepository implements IRepository {
   getUserData(userId: string) { return this.data.getUserData(userId); }
   saveAllData(data: AppData) { return this.data.saveAllData(data); }
   autoImportJson(dataDir: string) { return this.data.autoImportJson(dataDir); }
+  getAllUserItems(userId: string) { return this.projects.getAllUserItems(userId); }
 }
