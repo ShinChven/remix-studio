@@ -111,12 +111,19 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         const p = await fetchProviders();
         setProviders(p);
         if (p.length > 0) {
-          const defaultProv = p.find(prov => prov.id === project.providerId) || p[0];
-          setSelectedProviderId(defaultProv.id);
-          if (defaultProv.models.length > 0) {
-            const savedModelId = project.modelConfigId;
-            const modelExists = defaultProv.models.some(m => m.id === savedModelId);
-            setSelectedModelId(modelExists ? savedModelId! : defaultProv.models[0].id);
+          const savedProvId = project.providerId;
+          const provExists = p.some(prov => prov.id === savedProvId);
+          if (provExists && savedProvId) {
+            setSelectedProviderId(savedProvId);
+            const prov = p.find(prov => prov.id === savedProvId)!;
+            if (prov.models.length > 0) {
+              const savedModelId = project.modelConfigId;
+              const modelExists = prov.models.some(m => m.id === savedModelId);
+              setSelectedModelId(modelExists ? savedModelId! : prov.models[0].id);
+            }
+          } else {
+            setSelectedProviderId('');
+            setSelectedModelId('');
           }
         }
       } catch (e) {

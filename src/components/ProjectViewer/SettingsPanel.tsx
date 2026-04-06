@@ -112,7 +112,11 @@ export function SettingsPanel({
             </label>
             <button
               onClick={() => setIsModelSelectorOpen(true)}
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-2xl p-4 text-left hover:bg-neutral-900 transition-all group/model-btn relative overflow-hidden shadow-inner"
+              className={`w-full border rounded-2xl p-4 text-left transition-all group/model-btn relative overflow-hidden shadow-inner ${
+                !selectedProviderId 
+                  ? 'bg-amber-500/5 border-amber-500/50 hover:bg-amber-500/10' 
+                  : 'bg-neutral-950 border-neutral-800 hover:bg-neutral-900'
+              }`}
               disabled={isProcessing}
             >
               <div className="flex items-center justify-between relative z-10">
@@ -252,16 +256,20 @@ export function SettingsPanel({
         </div>
       </div>
 
-      <div className={`transition-all duration-300 overflow-hidden ${workflowError ? 'max-h-12 opacity-100 mb-3' : 'max-h-0 opacity-0 mb-0'}`}>
-        <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] font-bold text-red-500 shadow-lg shadow-red-500/5">
+      <div className={`transition-all duration-300 overflow-hidden ${workflowError || !selectedProviderId ? 'max-h-16 opacity-100 mb-3' : 'max-h-0 opacity-0 mb-0'}`}>
+        <div className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-[10px] font-bold shadow-lg ${
+          !selectedProviderId 
+            ? 'bg-amber-500/10 border-amber-500/20 text-amber-500 shadow-amber-500/5' 
+            : 'bg-red-500/10 border-red-500/20 text-red-500 shadow-red-500/5'
+        }`}>
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span className="line-clamp-2">{workflowError}</span>
+          <span className="line-clamp-2">{!selectedProviderId ? 'Please select an AI provider and model to continue.' : workflowError}</span>
         </div>
       </div>
 
       <button
         onClick={onAddDraftsToQueue}
-        disabled={localProject.workflow.length === 0 || uploadingItemIds.size > 0}
+        disabled={localProject.workflow.length === 0 || uploadingItemIds.size > 0 || !selectedProviderId}
         className="w-full py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-all bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-[0.98]"
       >
         {uploadingItemIds.size > 0 ? (
