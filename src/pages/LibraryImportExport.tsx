@@ -12,7 +12,8 @@ import {
   AlertCircle, 
   Loader2,
   Plus,
-  ArrowRight
+  ArrowRight,
+  Tag
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -23,6 +24,7 @@ export function LibraryImportExport() {
   const [loading, setLoading] = useState(true);
   const [importText, setImportText] = useState('');
   const [previewItems, setPreviewItems] = useState<{ title?: string; content: string }[]>([]);
+  const [tagsInput, setTagsInput] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,10 +107,16 @@ export function LibraryImportExport() {
     
     setIsImporting(true);
     try {
+      const tags = tagsInput
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t !== '');
+
       const itemsToCreate: LibraryItem[] = previewItems.map((item, index) => ({
         id: crypto.randomUUID(),
         content: item.content,
         title: item.title,
+        tags: tags.length > 0 ? tags : undefined,
         order: library.items.length + index,
       }));
       
@@ -191,6 +199,23 @@ export function LibraryImportExport() {
           
           {/* Left Side: Input */}
           <div className="flex flex-col gap-6 min-h-0">
+             {/* Global Tags Input */}
+             <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[24px] p-4 group transition-all hover:border-neutral-700">
+                <div className="flex items-center gap-3 mb-2 px-1">
+                  <Tag className="w-3.5 h-3.5 text-blue-500" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
+                    Apply Tags to all items
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
+                  placeholder="e.g. nature, photography, portrait (comma separated)"
+                  className="w-full bg-transparent border-none p-1 text-sm text-neutral-200 placeholder:text-neutral-700 focus:outline-none focus:ring-0"
+                />
+             </div>
+
              <div 
                className={`flex-1 flex flex-col bg-neutral-900/40 border-2 border-dashed rounded-[32px] p-6 transition-all relative group ${isDragOver ? 'border-blue-500 bg-blue-500/5 scale-[0.99]' : 'border-neutral-800/60 hover:border-neutral-700'}`}
                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
