@@ -51,7 +51,7 @@ async function startServer() {
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'test',
     },
   });
-  const docClient = DynamoDBDocumentClient.from(dynamoClient);
+  const docClient = DynamoDBDocumentClient.from(dynamoClient, { marshallOptions: { removeUndefinedValues: true } });
   await ensureTable(dynamoClient);
 
   const repository = new DynamoDBRepository(docClient);

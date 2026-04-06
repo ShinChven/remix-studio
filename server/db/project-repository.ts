@@ -116,7 +116,7 @@ export class ProjectRepository {
     const workflow: WorkflowItem[] = wfItems.map((item: any) => ({
       id: item.sk.split('#WF#')[1],
       type: item.type,
-      value: item.value,
+      value: item.value || '',
       order: item.order,
       thumbnailUrl: item.thumbnailUrl,
       optimizedUrl: item.optimizedUrl,
@@ -358,12 +358,16 @@ export class ProjectRepository {
     for (let i = 0; i < workflow.length; i += CHUNK_SIZE) {
       const chunk = workflow.slice(i, i + CHUNK_SIZE);
       await Promise.all(chunk.map((item, idx) => {
+        const itemToSave = { ...item };
+        if (itemToSave.value === '') {
+          delete (itemToSave as any).value;
+        }
         return this.client.send(new PutCommand({
           TableName: TABLE_NAME,
           Item: {
             pk,
             sk: `PROJECT#${projectId}#WF#${item.id}`,
-            ...item,
+            ...itemToSave,
             projectId,
             order: (i + idx) // Preserve array order
           }
