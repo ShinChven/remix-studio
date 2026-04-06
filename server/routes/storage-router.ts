@@ -15,8 +15,9 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
       const userId = user.userId;
 
       // 1. Fetch all metadata from DB in a single pass
-      const [allItems, userRecord] = await Promise.all([
+      const [allItems, trashItems, userRecord] = await Promise.all([
         repository.getAllUserItems(userId),
+        repository.getTrashItems(userId),
         userRepository.findById(userId),
       ]);
 
@@ -25,120 +26,116 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
 
       const storageLimit = userRecord?.storageLimit || 5 * 1024 * 1024 * 1024; // Default to 5GB
 
-      // 3. Process allItems into categorization map and specific lists
+      // 3. Build project/library breakdown from DB size fields.
+      //    This is the authoritative source — same as what project pages and trash page display.
       const projectBreakdown: Record<string, { total: number; album: number; drafts: number; workflow: number; orphans: number; name: string }> = {};
       const exportTasks: any[] = [];
-      const libraries: Record<string, string> = {}; // id -> name
       let totalLibrarySize = 0;
-      let totalTrashSize = 0;
-      let totalExportSize = 0;
-      let totalOtherSize = 0;
 
-      // Map to track which keys belong to which category
-      const referencedKeys = new Map<string, string>(); // key -> category
+      // Trash: sum size + optimizedSize + thumbnailSize from DB records (same as Trash page)
+      const totalTrashSize = trashItems.reduce((sum, item) => {
+        return sum + (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
+      }, 0);
+
+      let totalExportSize = 0;
+
+      // Track all S3 keys referenced by DB records (used for orphan detection only)
+      const referencedKeys = new Set<string>();
+      const markKey = (url?: string) => {
+        if (url && !url.startsWith('http') && !url.startsWith('data:')) referencedKeys.add(url);
+      };
 
       for (const item of allItems) {
         const sk = item.sk || '';
+
         if (sk.startsWith('PROJECT#')) {
           const parts = sk.split('#');
           const projectId = parts[1];
-          
+
           if (parts.length === 2) {
-            // Project Metadata
+            // Project metadata record
             if (!projectBreakdown[projectId]) {
               projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: item.name };
             } else {
               projectBreakdown[projectId].name = item.name;
             }
-          } else if (sk.includes('#JOB#')) {
-            const cat = 'drafts';
-            if (item.imageUrl && !item.imageUrl.startsWith('http')) referencedKeys.set(item.imageUrl, `project:${projectId}:${cat}`);
-            if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, `project:${projectId}:${cat}`);
-            if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, `project:${projectId}:${cat}`);
           } else if (sk.includes('#ALBUM#')) {
-            const cat = 'album';
-            if (item.imageUrl && !item.imageUrl.startsWith('http')) referencedKeys.set(item.imageUrl, `project:${projectId}:${cat}`);
-            if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, `project:${projectId}:${cat}`);
-            if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, `project:${projectId}:${cat}`);
-          } else if (sk.includes('#WF#')) {
-            const cat = 'workflow';
-            if (item.type === 'image' && item.value && !item.value.startsWith('http') && !item.value.startsWith('data:')) {
-              referencedKeys.set(item.value, `project:${projectId}:${cat}`);
+            if (!projectBreakdown[projectId]) {
+              projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: 'Unknown Project' };
             }
-            if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, `project:${projectId}:${cat}`);
-            if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, `project:${projectId}:${cat}`);
+            // Sum all three stored file sizes (original + optimized + thumbnail)
+            const itemSize = (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
+            projectBreakdown[projectId].album += itemSize;
+            projectBreakdown[projectId].total += itemSize;
+            // Mark keys so these files are excluded from orphan detection
+            markKey(item.imageUrl);
+            markKey(item.thumbnailUrl);
+            markKey(item.optimizedUrl);
+          } else if (sk.includes('#JOB#')) {
+            if (!projectBreakdown[projectId]) {
+              projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: 'Unknown Project' };
+            }
+            const itemSize = (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
+            projectBreakdown[projectId].drafts += itemSize;
+            projectBreakdown[projectId].total += itemSize;
+            markKey(item.imageUrl);
+            markKey(item.thumbnailUrl);
+            markKey(item.optimizedUrl);
+          } else if (sk.includes('#WF#')) {
+            if (!projectBreakdown[projectId]) {
+              projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: 'Unknown Project' };
+            }
+            const itemSize = (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
+            if (itemSize > 0) {
+              projectBreakdown[projectId].workflow += itemSize;
+              projectBreakdown[projectId].total += itemSize;
+            }
+            if (item.type === 'image' && item.value) markKey(item.value);
+            markKey(item.thumbnailUrl);
+            markKey(item.optimizedUrl);
           } else if (sk.includes('#EXPORT#')) {
             exportTasks.push(item);
           }
         } else if (sk.startsWith('LIBRARY#')) {
           if (sk.includes('#ITEM#')) {
-            if (item.content && !item.content.startsWith('http') && !item.content.startsWith('data:')) referencedKeys.set(item.content, 'library');
-            if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, 'library');
-            if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, 'library');
+            const itemSize = (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
+            totalLibrarySize += itemSize;
+            markKey(item.content);
+            markKey(item.thumbnailUrl);
+            markKey(item.optimizedUrl);
           }
         } else if (sk.startsWith('TRASH#')) {
-          if (item.imageUrl && !item.imageUrl.startsWith('http')) referencedKeys.set(item.imageUrl, 'trash');
-          if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.set(item.thumbnailUrl, 'trash');
-          if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.set(item.optimizedUrl, 'trash');
+          // Mark trash keys so they don't appear as orphans during S3 scan
+          markKey(item.imageUrl);
+          markKey(item.thumbnailUrl);
+          markKey(item.optimizedUrl);
         }
       }
 
-      // Ensure all projects found in sub-items are represented even if metadata item was missing (shouldn't happen)
-      for (const [key, ref] of referencedKeys) {
-        if (ref.startsWith('project:')) {
-          const projectId = ref.split(':')[1];
-          if (!projectBreakdown[projectId]) {
-            projectBreakdown[projectId] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: 'Unknown Project' };
-          }
-        }
-      }
-
-      // 4. Sum up main storage objects
+      // 4. Scan S3 objects to find orphans (files in storage not referenced by any DB record)
       for (const obj of allObjects) {
+        if (referencedKeys.has(obj.key)) continue; // Already accounted for via DB
+
         const size = obj.size || 0;
-        const ref = referencedKeys.get(obj.key);
 
-        if (ref) {
-          if (ref === 'library') {
-            totalLibrarySize += size;
-          } else if (ref === 'trash') {
-            totalTrashSize += size;
-          } else if (ref.startsWith('project:')) {
-            const parts = ref.split(':');
-            const projectId = parts[1];
-            const cat = parts[2] as 'album' | 'drafts' | 'workflow';
-            if (projectBreakdown[projectId]) {
-              projectBreakdown[projectId].total += size;
-              projectBreakdown[projectId][cat] += size;
-            }
-          }
-        } else {
-          // Check if it belongs to a project folder (Orphan)
-          let matched = false;
-          for (const projectId in projectBreakdown) {
-             const safePId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
-             if (obj.key.startsWith(`${userId}/${safePId}/`)) {
-                projectBreakdown[projectId].total += size;
-                projectBreakdown[projectId].orphans += size;
-                matched = true;
-                break;
-             }
-          }
-
-          if (!matched) {
-            totalOtherSize += size;
+        // Assign orphan to its project folder if recognizable
+        let matched = false;
+        for (const projectId in projectBreakdown) {
+          if (obj.key.startsWith(`${userId}/${projectId}/`)) {
+            projectBreakdown[projectId].total += size;
+            projectBreakdown[projectId].orphans += size;
+            matched = true;
+            break;
           }
         }
+        // Truly unclassified files are ignored from total to avoid double-counting
+        void matched;
       }
 
-      // 5. Categorize Archives (Exports)
-      // Since archives are in a different bucket and not strictly prefixed by userId in S3,
-      // we sum them up using their DynamoDB records (ExportTask doesn't have size yet, we need to fetch it)
+      // 5. Categorize Archives (Exports) via S3 size lookup
       for (const task of exportTasks) {
         if (task.status === 'completed' && task.downloadUrl) {
           try {
-            // Extract key from URL or just use a placeholder for now if it's too expensive
-            // For now, let's try to get the size from S3 if we can derive the key
             const url = new URL(task.downloadUrl);
             const key = decodeURIComponent(url.pathname.split('/').slice(2).join('/')); // Skip bucket name
             const size = await exportStorage.getSize(key);
@@ -156,7 +153,7 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
       const totalWorkflowSize = Object.values(projectBreakdown).reduce((acc, p) => acc + p.workflow, 0);
       const totalOrphansSize = Object.values(projectBreakdown).reduce((acc, p) => acc + p.orphans, 0);
 
-      const totalSize = totalProjectsSize + totalLibrarySize + totalExportSize + totalTrashSize + totalOtherSize;
+      const totalSize = totalProjectsSize + totalLibrarySize + totalExportSize + totalTrashSize;
 
       return c.json({
         totalSize,
@@ -171,7 +168,6 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
           { id: 'libraries', name: 'Libraries', size: totalLibrarySize },
           { id: 'archives', name: 'Archives (Exports)', size: totalExportSize },
           { id: 'trash', name: 'Recycle Bin', size: totalTrashSize },
-          { id: 'other', name: 'Other / Uploaded', size: totalOtherSize },
         ],
         projects: Object.entries(projectBreakdown).map(([id, stats]) => ({
           id,
