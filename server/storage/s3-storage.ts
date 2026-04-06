@@ -28,17 +28,18 @@ export class S3Storage implements IStorage {
       accessKeyId: opts.accessKeyId,
       secretAccessKey: opts.secretAccessKey,
     };
+    const isProd = process.env.NODE_ENV === 'production';
     this.client = new S3Client({
-      endpoint: opts.endpoint,
+      endpoint: isProd ? undefined : opts.endpoint,
       region: opts.region,
       credentials,
-      forcePathStyle: true, // required for MinIO
+      forcePathStyle: !isProd, // true for Localstack/MinIO, false for real AWS S3
     });
     this.publicClient = new S3Client({
-      endpoint: opts.publicEndpoint || opts.endpoint,
+      endpoint: isProd ? undefined : (opts.publicEndpoint || opts.endpoint),
       region: opts.region,
       credentials,
-      forcePathStyle: true,
+      forcePathStyle: !isProd,
     });
   }
 

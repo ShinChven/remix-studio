@@ -22,6 +22,8 @@ interface QueuedJob {
   modelConfigId?: string;
 }
 
+import { SqsClient } from './sqs-client';
+
 /**
  * QueueManager manages parallel AI generation tasks globally across all users.
  * It enforces per-provider concurrency limits and ensures task persistence.
@@ -38,13 +40,54 @@ export class QueueManager {
     private projectRepo: ProjectRepository,
     private storage: S3Storage,
     private userRepository: UserRepository,
-    private exportStorage: S3Storage
+    private exportStorage: S3Storage,
+    private sqsClient?: SqsClient,
+    private queueUrl?: string
   ) {
     this.intervalId = setInterval(() => {
       this.pollDetachedTasks().catch((e) => {
         console.error('[QueueManager] Detached Poller Error:', e);
       });
     }, 30_000); // 30s
+  }
+
+  public async startWorker() {
+    if (!this.sqsClient || !this.queueUrl) return;
+    console.log('[QueueManager] Starting SQS Consumer Worker...');
+    
+    setImmediate(async () => {
+      while (true) {
+        try {
+          const messages = await this.sqsClient!.receiveMessages(this.queueUrl!, 1, 20);
+          for (const msg of messages) {
+            if (!msg.Body || !msg.ReceiptHandle) continue;
+            
+            const payload = JSON.parse(msg.Body) as QueuedJob & { providerId: string };
+            console.log(`[QueueManager] Working on SQS msg for job ${payload.job.id}`);
+            
+            const provider = await this.providerRepo.getProvider(payload.userId, payload.providerId);
+            if (!provider) {
+               await this.sqsClient!.deleteMessage(this.queueUrl!, msg.ReceiptHandle);
+               continue;
+            }
+
+            try {
+              // Execute synchronously for now on worker, or we can await executeJob.
+              await this.executeJob(payload, provider);
+            } catch (jobError) {
+              console.error(`[QueueManager] Job execution error:`, jobError);
+            } finally {
+              // Once execution finished (success, failed, or shifted to detached), 
+              // we delete the SQS message because detached processing handles itself.
+              await this.sqsClient!.deleteMessage(this.queueUrl!, msg.ReceiptHandle);
+            }
+          }
+        } catch (err) {
+          console.error('[QueueManager] SQS polling error:', err);
+          await new Promise(r => setTimeout(r, 5000));
+        }
+      }
+    });
   }
 
   public async pollDetachedTasks() {
@@ -149,10 +192,17 @@ export class QueueManager {
     // Global dedup: covers both in-queue and currently-executing jobs
     if (this.activeJobIds.has(job.id)) return;
 
-    if (!this.queues.has(providerId)) this.queues.set(providerId, []);
-    this.activeJobIds.add(job.id);
-    this.queues.get(providerId)!.push({ userId, projectId, job, aspectRatio, quality, format, modelConfigId });
-    this.processNext(providerId);
+    if (this.sqsClient && this.queueUrl) {
+      this.activeJobIds.add(job.id);
+      this.sqsClient.sendMessage(this.queueUrl, { userId, projectId, job, providerId, aspectRatio, quality, format, modelConfigId });
+      console.log(`[QueueManager] Job ${job.id} pushed to SQS.`);
+    } else {
+      // Legacy fallback
+      if (!this.queues.has(providerId)) this.queues.set(providerId, []);
+      this.activeJobIds.add(job.id);
+      this.queues.get(providerId)!.push({ userId, projectId, job, aspectRatio, quality, format, modelConfigId });
+      this.processNext(providerId);
+    }
   }
 
   private async processNext(providerId: string) {

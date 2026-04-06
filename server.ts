@@ -12,6 +12,7 @@ import crypto from 'crypto';
 import { DynamoDBRepository } from './server/db/dynamodb-repository';
 import { ensureTable } from './server/db/init-table';
 import { S3Storage } from './server/storage/s3-storage';
+import { SqsClient } from './server/queue/sqs-client';
 import { UserRepository } from './server/auth/user-repository';
 import { hashPassword, JwtPayload, authMiddleware } from './server/auth/auth';
 import { createAuthRouter } from './server/routes/auth';
@@ -39,13 +40,15 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 async function startServer() {
+  const isProd = process.env.NODE_ENV === 'production';
+
   // === DynamoDB ===
   const dynamoClient = new DynamoDBClient({
-    endpoint: process.env.DYNAMODB_ENDPOINT || 'http://localhost:18000',
+    endpoint: isProd ? undefined : (process.env.DYNAMODB_ENDPOINT || 'http://localhost:4566'),
     region: process.env.AWS_REGION || 'us-east-1',
     credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'local',
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'local',
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'test',
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'test',
     },
   });
   const docClient = DynamoDBDocumentClient.from(dynamoClient);
@@ -59,31 +62,39 @@ async function startServer() {
   const projectRepository = new ProjectRepository(docClient);
 
   // === Queue Manager / S3 ===
-  const storage = new S3Storage({
-    endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:19000',
+  const storageOpts = {
+    endpoint: process.env.S3_ENDPOINT || process.env.MINIO_ENDPOINT || 'http://localhost:4566',
     region: process.env.AWS_REGION || 'us-east-1',
-    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-    secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
-    bucket: process.env.MINIO_BUCKET || 'remix-studio',
+    accessKeyId: process.env.S3_ACCESS_KEY || process.env.MINIO_ACCESS_KEY || 'test',
+    secretAccessKey: process.env.S3_SECRET_KEY || process.env.MINIO_SECRET_KEY || 'test',
+  };
+
+  const storage = new S3Storage({
+    ...storageOpts,
+    bucket: process.env.S3_BUCKET || process.env.MINIO_BUCKET || 'remix-studio',
     publicEndpoint: process.env.S3_PUBLIC_ENDPOINT,
   });
   await storage.ensureBucket();
 
   const exportStorage = new S3Storage({
-    endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:19000',
-    region: process.env.AWS_REGION || 'us-east-1',
-    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-    secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
-    bucket: process.env.MINIO_EXPORT_BUCKET || `${process.env.MINIO_BUCKET || 'remix-studio'}-exports`,
+    ...storageOpts,
+    bucket: process.env.S3_EXPORT_BUCKET || process.env.MINIO_EXPORT_BUCKET || 'remix-studio-exports',
     publicEndpoint: process.env.S3_PUBLIC_ENDPOINT,
   });
   await exportStorage.ensureBucket();
 
-  const queueManager = new QueueManager(docClient, providerRepository, projectRepository, storage, userRepository, exportStorage);
+  // === SQS ===
+  const sqsClient = new SqsClient(storageOpts);
+  const generatorQueueUrl = await sqsClient.ensureQueue('remix-generator-queue');
+  const exportQueueUrl = await sqsClient.ensureQueue('remix-export-queue');
+
+  const queueManager = new QueueManager(docClient, providerRepository, projectRepository, storage, userRepository, exportStorage, sqsClient, generatorQueueUrl);
   // Important: Recover tasks before starting the server to resume background work
   await queueManager.recoverTasks();
+  queueManager.startWorker();
 
-  const exportManager = new ExportManager(repository, storage, exportStorage, userRepository);
+  const exportManager = new ExportManager(repository, storage, exportStorage, userRepository, sqsClient, exportQueueUrl);
+  exportManager.startWorker();
 
   // === Auto-provision default admin ===
   const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
