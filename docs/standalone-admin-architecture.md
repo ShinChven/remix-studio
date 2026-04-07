@@ -34,7 +34,7 @@ Two main paths are available for the new admin application:
 Create a new repository (e.g., `remix-studio-admin`).
 *   **Frontend:** A new React or Next.js app focused purely on data tables, user management, and internal metrics.
 *   **Backend/Database Access:**
-    *   *Option 1 (Shared Database):* The admin app connects directly to the existing DynamoDB/Minio databases. Fastest to set up but tightly couples the admin app to the main app's database schema.
+    *   *Option 1 (Shared Database):* The admin app connects directly to the existing PostgreSQL/Minio databases. Fastest to set up but tightly couples the admin app to the main app's database schema.
     *   *Option 2 (Admin API):* Build a dedicated internal API on the main app (secured with internal API keys) that the admin app consumes. This is safer as it maintains a single source of truth for business logic.
 
 ### Path B: Low-Code Internal Tooling (Recommended)

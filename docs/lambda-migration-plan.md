@@ -17,7 +17,7 @@ Remix Studio currently runs as a single Node.js process: Hono HTTP server + SQS 
 
 ### Local Development
 
-Unchanged. `npm run dev` runs `server.ts` as a single process. LocalStack provides SQS/DynamoDB/S3.
+Unchanged. `npm run dev` runs `server.ts` as a single process. LocalStack provides SQS/S3, and a local PostgreSQL database is used via Prisma.
 
 ## Implementation Plan
 

@@ -53,7 +53,7 @@ Project Album page, Trash page, and Library page — because they all read from 
 GET /api/storage/analysis
   │
   ├─ 1. Parallel DB fetch
-  │     ├─ getAllUserItems(userId)   → all items in user's DynamoDB partition
+  │     ├─ getAllUserItems(userId)   → aggregates items across multiple PostgreSQL tables
   │     ├─ getTrashItems(userId)    → trash records (for size sum)
   │     └─ userRepository.findById  → storage limit from user record
   │
