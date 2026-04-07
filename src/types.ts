@@ -234,6 +234,13 @@ export interface AppData {
   projects: Project[];
 }
 
+export interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
 declare global {
   interface Window {
     aistudio?: {

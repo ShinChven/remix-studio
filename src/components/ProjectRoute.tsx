@@ -1,20 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Project, Library } from '../types';
-import { fetchProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject, renameProjectFolder } from '../api';
+import { fetchProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject, renameProjectFolder, fetchLibraries } from '../api';
 import { ProjectViewer } from './ProjectViewer';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface ContextType {
-  libraries: Library[];
-  refreshProjects: () => Promise<void>;
-}
-
 export function ProjectRoute() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { libraries, refreshProjects } = useOutletContext<ContextType>();
+  const [libraries, setLibraries] = useState<Library[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,10 +26,23 @@ export function ProjectRoute() {
     }
   };
 
+  const loadLibraries = async () => {
+    try {
+      const res = await fetchLibraries(1, 100);
+      setLibraries(res.items);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     setLoading(true);
     loadProject();
   }, [id]);
+
+  useEffect(() => {
+    loadLibraries();
+  }, []);
 
   if (loading) {
     return (
@@ -86,7 +94,6 @@ export function ProjectRoute() {
     if (!id) return;
     try {
       await apiDeleteProject(id);
-      await refreshProjects();
       navigate('/');
     } catch (e) {
       console.error(e);

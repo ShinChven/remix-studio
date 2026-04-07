@@ -50,9 +50,16 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
   router.get('/api/libraries', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      const libraries = await repository.getUserLibraries(user.userId);
-      const signed = await Promise.all(libraries.map((lib) => signLibrary(lib, storage)));
-      return c.json(signed);
+      const page = parseInt(c.req.query('page') || '1', 10);
+      const limit = parseInt(c.req.query('limit') || '50', 10);
+
+      const result = await repository.getUserLibraries(user.userId, page, limit);
+      const signedItems = await Promise.all(result.items.map((lib) => signLibrary(lib, storage)));
+      
+      return c.json({
+        ...result,
+        items: signedItems
+      });
     } catch (e) {
       console.error('[GET /api/libraries]', e);
       return c.json({ error: 'Failed to list libraries' }, 500);
@@ -111,8 +118,8 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
     try {
       const user = c.get('user') as JwtPayload;
       const libraryId = c.req.param('id');
-      const projects = await repository.getUserProjects(user.userId);
-      const referencingProjects = projects.filter((p) =>
+      const projectsResult = await repository.getUserProjects(user.userId, 1, 10000);
+      const referencingProjects = projectsResult.items.filter((p) =>
         p.workflow.some((item) => item.type === 'library' && item.value === libraryId)
       );
       return c.json(referencingProjects.map((p) => ({ id: p.id, name: p.name })));
@@ -130,10 +137,10 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       const body = await c.req.json();
       const projectIds: string[] | undefined = body?.projectIds; // undefined = all
 
-      const projects = await repository.getUserProjects(user.userId);
+      const projectsResult = await repository.getUserProjects(user.userId, 1, 10000);
       const targets = projectIds
-        ? projects.filter((p) => projectIds.includes(p.id))
-        : projects;
+        ? projectsResult.items.filter((p) => projectIds.includes(p.id))
+        : projectsResult.items;
 
       for (const project of targets) {
         const filtered = project.workflow.filter(

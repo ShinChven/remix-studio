@@ -9,8 +9,6 @@ import { ConfirmModal } from './ConfirmModal';
 import { StorageIndicator } from './StorageIndicator';
 
 export function MainLayout() {
-  const [libraries, setLibraries] = useState<Library[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -35,29 +33,6 @@ export function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-
-  const refreshLibraries = async () => {
-    try {
-      const libs = await fetchLibraries();
-      setLibraries(libs);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const refreshProjects = async () => {
-    try {
-      const projs = await fetchProjects();
-      setProjects(projs);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  useEffect(() => {
-    refreshLibraries();
-    refreshProjects();
-  }, []);
 
   const addLibrary = () => {
     navigate('/library/new');
@@ -251,7 +226,7 @@ export function MainLayout() {
 
       <div className="flex-1 overflow-hidden bg-neutral-950 flex flex-col mt-16 lg:mt-0 min-w-0 relative">
         <div className="flex-1 overflow-y-auto min-w-0 custom-scrollbar">
-          <Outlet context={{ libraries, projects, refreshLibraries, refreshProjects, addLibrary, addProject }} />
+          <Outlet />
         </div>
       </div>
 

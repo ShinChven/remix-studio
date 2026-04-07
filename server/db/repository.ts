@@ -2,7 +2,7 @@ import { AppData, Library, LibraryItem, Project, AlbumItem, TrashItem } from '..
 
 export interface IRepository {
   // === Library CRUD ===
-  getUserLibraries(userId: string): Promise<Library[]>;
+  getUserLibraries(userId: string, page?: number, limit?: number): Promise<{ items: Library[], total: number, page: number, pages: number }>;
   getLibrary(userId: string, libraryId: string): Promise<Library | null>;
   createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void>;
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }): Promise<void>;
@@ -17,7 +17,7 @@ export interface IRepository {
   reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]): Promise<void>;
 
   // === Project CRUD ===
-  getUserProjects(userId: string): Promise<Project[]>;
+  getUserProjects(userId: string, page?: number, limit?: number): Promise<{ items: Project[], total: number, page: number, pages: number }>;
   getProject(userId: string, projectId: string): Promise<Project | null>;
   createProject(userId: string, project: Project): Promise<void>;
   updateProject(userId: string, projectId: string, updates: Partial<Project>): Promise<void>;

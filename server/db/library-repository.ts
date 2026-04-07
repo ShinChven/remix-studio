@@ -5,22 +5,37 @@ import { Library, LibraryItem } from '../../src/types';
 export class LibraryRepository {
   constructor(private prisma: PrismaClient) {}
 
-  async getUserLibraries(userId: string): Promise<Library[]> {
-    const libs = await this.prisma.library.findMany({
-      where: { userId },
-      include: {
-        items: {
-          orderBy: [{ order: 'asc' }, { id: 'asc' }],
-        },
-      },
-    });
+  async getUserLibraries(userId: string, page: number = 1, limit: number = 50): Promise<{ items: Library[], total: number, page: number, pages: number }> {
+    const skip = (page - 1) * limit;
 
-    return libs.map((lib) => ({
+    const [total, libs] = await Promise.all([
+      this.prisma.library.count({ where: { userId } }),
+      this.prisma.library.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        orderBy: { id: 'desc' }, // Fix: Library model doesn't have createdAt, sort by id locally
+        include: {
+          items: {
+            orderBy: [{ order: 'asc' }, { id: 'asc' }],
+          },
+        },
+      })
+    ]);
+
+    const items = libs.map((lib) => ({
       id: lib.id,
       name: lib.name,
       type: lib.type as LibraryType,
       items: lib.items.map((item) => this.mapItem(item)),
     }));
+
+    return {
+      items,
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    };
   }
 
   async getLibrary(userId: string, libraryId: string): Promise<Library | null> {

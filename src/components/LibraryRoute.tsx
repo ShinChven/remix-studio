@@ -1,18 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Library } from '../types';
 import { fetchLibrary, deleteLibrary as apiDeleteLibrary } from '../api';
 import { LibraryEditor } from './LibraryEditor';
 import { Loader2 } from 'lucide-react';
 
-interface ContextType {
-  refreshLibraries: () => Promise<void>;
-}
-
 export function LibraryRoute() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { refreshLibraries } = useOutletContext<ContextType>();
   const [library, setLibrary] = useState<Library | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -54,8 +49,7 @@ export function LibraryRoute() {
     if (!id) return;
     try {
       await apiDeleteLibrary(id);
-      await refreshLibraries();
-      navigate('/');
+      navigate('/libraries');
     } catch (e) {
       console.error(e);
     }

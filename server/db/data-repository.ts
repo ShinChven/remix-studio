@@ -16,10 +16,10 @@ export class DataRepository {
 
   async getUserData(userId: string): Promise<AppData> {
     const [libraries, projects] = await Promise.all([
-      this.libraryRepo.getUserLibraries(userId),
-      this.projectRepo.getUserProjects(userId),
+      this.libraryRepo.getUserLibraries(userId, 1, 100000),
+      this.projectRepo.getUserProjects(userId, 1, 100000),
     ]);
-    return { libraries, projects };
+    return { libraries: libraries.items, projects: projects.items };
   }
 
   async saveAllData(data: AppData): Promise<void> {

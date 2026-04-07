@@ -31,9 +31,13 @@ export async function loadData(): Promise<AppData> {
 
 // ========== Library CRUD ==========
 
-export async function fetchLibraries(): Promise<Library[]> {
-  const res = await fetch('/api/libraries', { headers: getHeaders(false) });
-  return handleResponse<Library[]>(res, 'Failed to list libraries');
+export async function fetchLibraries(page: number = 1, limit: number = 50): Promise<import('./types').PaginatedResult<Library>> {
+  const params = new URLSearchParams();
+  if (page) params.set('page', page.toString());
+  if (limit) params.set('limit', limit.toString());
+  
+  const res = await fetch(`/api/libraries?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<import('./types').PaginatedResult<Library>>(res, 'Failed to list libraries');
 }
 
 export async function fetchLibrary(id: string): Promise<Library> {
@@ -161,9 +165,13 @@ export async function deleteLibraryItem(libraryId: string, itemId: string): Prom
 
 // ========== Project CRUD ==========
 
-export async function fetchProjects(): Promise<Project[]> {
-  const res = await fetch('/api/projects', { headers: getHeaders(false) });
-  return handleResponse<Project[]>(res, 'Failed to list projects');
+export async function fetchProjects(page: number = 1, limit: number = 50): Promise<import('./types').PaginatedResult<Project>> {
+  const params = new URLSearchParams();
+  if (page) params.set('page', page.toString());
+  if (limit) params.set('limit', limit.toString());
+
+  const res = await fetch(`/api/projects?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<import('./types').PaginatedResult<Project>>(res, 'Failed to list projects');
 }
 
 export async function fetchProject(id: string): Promise<Project> {

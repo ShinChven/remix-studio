@@ -196,9 +196,16 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   router.get('/api/projects', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      const projects = await repository.getUserProjects(user.userId);
-      const signed = await Promise.all(projects.map((p) => signProjectImages(p, storage)));
-      return c.json(signed);
+      const page = parseInt(c.req.query('page') || '1', 10);
+      const limit = parseInt(c.req.query('limit') || '50', 10);
+
+      const result = await repository.getUserProjects(user.userId, page, limit);
+      const signedItems = await Promise.all(result.items.map((p) => signProjectImages(p, storage)));
+      
+      return c.json({
+        ...result,
+        items: signedItems
+      });
     } catch (e) {
       console.error('[GET /api/projects]', e);
       return c.json({ error: 'Failed to list projects' }, 500);

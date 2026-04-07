@@ -1,36 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
-import { Project } from '../types';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Layers, Terminal, Play } from 'lucide-react';
 import { createProject, updateProject, fetchProject } from '../api';
-
-interface ContextType {
-  projects: Project[];
-  refreshProjects: () => Promise<void>;
-}
 
 export function ProjectForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { projects, refreshProjects } = useOutletContext<ContextType>();
 
   const isNew = !id;
-  const existingProject = id ? projects.find(p => p.id === id) : null;
 
-  const [name, setName] = useState(existingProject?.name || '');
-  const [projectId, setProjectId] = useState(existingProject?.id || '');
-  const [prefix, setPrefix] = useState(existingProject?.prefix || '');
+  const [name, setName] = useState('');
+  const [projectId, setProjectId] = useState('');
+  const [prefix, setPrefix] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (id && !existingProject) {
+    if (id) {
       fetchProject(id).then(proj => {
         setName(proj.name);
         setProjectId(proj.id);
         setPrefix(proj.prefix || '');
       }).catch(() => navigate('/projects'));
     }
-  }, [id, existingProject, navigate]);
+  }, [id, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,8 +48,6 @@ export function ProjectForm() {
         targetId = id!;
         await updateProject(targetId, { name: name.trim(), prefix: prefix.trim() });
       }
-
-      await refreshProjects();
       navigate(`/project/${targetId}`);
     } catch (error) {
       console.error('Failed to save project:', error);

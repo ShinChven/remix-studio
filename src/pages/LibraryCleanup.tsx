@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Library } from '../types';
 import {
   fetchLibrary,
@@ -10,10 +10,6 @@ import {
 import { Loader2, Trash2, Unlink, AlertTriangle, Play, ArrowLeft } from 'lucide-react';
 import { ConfirmModal } from '../components/ConfirmModal';
 
-interface ContextType {
-  refreshLibraries: () => Promise<void>;
-}
-
 interface ProjectRef {
   id: string;
   name: string;
@@ -22,7 +18,6 @@ interface ProjectRef {
 export function LibraryCleanup() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { refreshLibraries } = useOutletContext<ContextType>();
 
   const [library, setLibrary] = useState<Library | null>(null);
   const [references, setReferences] = useState<ProjectRef[]>([]);
@@ -74,7 +69,6 @@ export function LibraryCleanup() {
     try {
       await removeLibraryReferences(id);
       await apiDeleteLibrary(id);
-      await refreshLibraries();
       navigate('/libraries');
     } catch (e) {
       console.error('Failed to clean and delete:', e);
@@ -87,7 +81,6 @@ export function LibraryCleanup() {
     setCleaningAll(true);
     try {
       await apiDeleteLibrary(id);
-      await refreshLibraries();
       navigate('/libraries');
     } catch (e) {
       console.error('Failed to delete:', e);

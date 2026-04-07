@@ -4,14 +4,19 @@ import { Project, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/type
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
 
-  async getUserProjects(userId: string): Promise<Project[]> {
-    const [projects, allItems] = await Promise.all([
+  async getUserProjects(userId: string, page: number = 1, limit: number = 50): Promise<{ items: Project[], total: number, page: number, pages: number }> {
+    const skip = (page - 1) * limit;
+
+    const [total, projects, allItems] = await Promise.all([
+      this.prisma.project.count({ where: { userId } }),
       this.prisma.project.findMany({
         where: { userId },
+        skip,
+        take: limit,
         include: {
           _count: { select: { jobs: true, albumItems: true } },
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: 'desc' },
       }),
       this.getAllUserItems(userId),
     ]);
@@ -25,7 +30,7 @@ export class ProjectRepository {
       }
     }
 
-    return projects.map((p) => ({
+    const items = projects.map((p) => ({
       id: p.id,
       name: p.name,
       createdAt: p.createdAt.getTime(),
@@ -44,6 +49,13 @@ export class ProjectRepository {
       prefix: p.prefix ?? undefined,
       background: (p as any).background ?? undefined,
     }));
+
+    return {
+      items,
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    };
   }
 
   async getProject(userId: string, projectId: string): Promise<Project | null> {

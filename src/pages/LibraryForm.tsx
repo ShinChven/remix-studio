@@ -1,35 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
-import { Library } from '../types';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Folder, Type, Image as ImageIcon } from 'lucide-react';
 import { createLibrary, updateLibrary, fetchLibrary } from '../api';
-
-interface ContextType {
-  libraries: Library[];
-  refreshLibraries: () => Promise<void>;
-}
 
 export function LibraryForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { libraries, refreshLibraries } = useOutletContext<ContextType>();
 
   const isNew = !id;
-  const existingLibrary = id ? libraries.find(l => l.id === id) : null;
 
-  const [name, setName] = useState(existingLibrary?.name || '');
-  const [type, setType] = useState<'text' | 'image'>(existingLibrary?.type || 'text');
+  const [name, setName] = useState('');
+  const [type, setType] = useState<'text' | 'image'>('text');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (id && !existingLibrary) {
-      // Try to fetch it directly in case libraries list hasn't loaded yet
+    if (id) {
       fetchLibrary(id).then(lib => {
         setName(lib.name);
         setType(lib.type);
       }).catch(() => navigate('/libraries'));
     }
-  }, [id, existingLibrary, navigate]);
+  }, [id, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +38,6 @@ export function LibraryForm() {
         await updateLibrary(targetId, { name: name.trim(), type });
       }
 
-      await refreshLibraries();
       navigate(`/library/${targetId}`);
     } catch (error) {
       console.error('Failed to save library:', error);
