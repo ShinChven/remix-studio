@@ -267,7 +267,7 @@ export function ProjectOrphans() {
                     className={`group relative aspect-square w-full rounded-xl overflow-hidden border transition-all cursor-pointer hover:scale-[1.02] ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-neutral-800 hover:border-neutral-700'}`}
                    >
                      {/* Overlay Actions */}
-                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex flex-col justify-between p-1.5">
+                     <div className="absolute inset-0 bg-black/60 opacity-100 transition-opacity z-10 flex flex-col justify-between p-1.5">
                         <div className="flex justify-between items-start">
                            <div 
                             className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20'}`}

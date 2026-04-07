@@ -183,7 +183,7 @@ export function StorageView() {
                     )}
                   </div>
                   {href && (
-                    <div className="mt-4 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="mt-4 flex justify-end opacity-100 transition-opacity">
                       <ChevronRight className="w-4 h-4 text-neutral-500" />
                     </div>
                   )}
@@ -357,7 +357,7 @@ export function StorageView() {
                   )}
                 </div>
               </div>
-              <div className="pt-2 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="pt-2 flex justify-end opacity-100 transition-opacity">
                 <ChevronRight className="w-3 h-3 text-neutral-600" />
               </div>
             </Link>

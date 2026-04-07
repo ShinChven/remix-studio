@@ -119,11 +119,11 @@ export function Projects() {
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-neutral-800/50 flex items-center justify-end text-xs text-green-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="pt-4 border-t border-neutral-800/50 flex items-center justify-end text-xs text-green-500 font-medium opacity-100 transition-opacity">
                       Open Project →
                     </div>
 
-                    <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-green-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-green-500/20 to-transparent opacity-100 transition-opacity" />
                   </button>
                 ))}
 

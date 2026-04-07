@@ -213,7 +213,7 @@ export function TrashView() {
                   />
                   
                   {/* Selection Overlay */}
-                  <div className={`absolute top-4 left-4 z-10 transition-all ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  <div className={`absolute top-4 left-4 z-10 transition-all opacity-100`}>
                     <button
                       onClick={() => toggleSelection(item.id, false)}
                       className={`w-8 h-8 rounded-xl flex items-center justify-center border shadow-xl transition-all ${isSelected ? 'bg-blue-600 border-blue-500' : 'bg-black/40 backdrop-blur-xl border-white/20 hover:border-white/40'}`}
@@ -222,7 +222,7 @@ export function TrashView() {
                     </button>
                   </div>
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
                     <p className="text-[9px] leading-relaxed text-blue-100/90 font-medium line-clamp-3 mb-2">{item.prompt}</p>
                     <div className="flex items-center gap-2 text-[8px] font-bold text-neutral-400 uppercase tracking-widest">
                        <HardDrive className="w-3 h-3" /> {formatSize(item.size)}

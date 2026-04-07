@@ -96,7 +96,7 @@ export function ModelSelectorModal({
                         
                         {/* Hover/Selected decorators */}
                         <div className={`absolute inset-0 bg-gradient-to-br from-white/0 to-white/0 transition-all duration-500 ${
-                          isSelected ? 'from-white/10 to-transparent opacity-100' : 'group-hover:from-white/5 opacity-0 group-hover:opacity-100'
+                          isSelected ? 'from-white/10 to-transparent opacity-100' : 'from-white/5 opacity-100'
                         }`} />
                       </button>
                     );

@@ -126,14 +126,14 @@ export function Providers() {
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => navigate(`/provider/${provider.id}/edit`)}
-                        className="p-2 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-2 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors opacity-100"
                         title="Edit"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setDeleteTarget(provider)}
-                        className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-100"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />

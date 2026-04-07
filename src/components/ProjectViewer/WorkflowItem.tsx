@@ -70,7 +70,7 @@ export function WorkflowItem({
             {item.type}
           </span>
         </div>
-        <button onClick={() => onRemove(item.id)} className="text-neutral-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1">
+        <button onClick={() => onRemove(item.id)} className="text-neutral-600 hover:text-red-400 opacity-100 transition-all p-1">
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -83,7 +83,7 @@ export function WorkflowItem({
           >
             <div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-xs text-neutral-400 line-clamp-4 min-h-[96px] transition-all hover:border-blue-500/30 hover:bg-neutral-900/50">
               {item.value || <span className="opacity-30 italic">No text content...</span>}
-              <div className="absolute top-2 right-2 p-1.5 bg-neutral-900/80 rounded-md border border-neutral-800 opacity-0 group-hover/text:opacity-100 transition-all hover:text-blue-400">
+              <div className="absolute top-2 right-2 p-1.5 bg-neutral-900/80 rounded-md border border-neutral-800 opacity-100 transition-all hover:text-blue-400">
                 <Maximize2 className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -133,7 +133,7 @@ export function WorkflowItem({
                 </div>
               </div>
             </div>
-            <div className="p-1.5 bg-neutral-900/80 rounded-md border border-neutral-800 opacity-0 group-hover/library:opacity-100 transition-all hover:text-emerald-400">
+            <div className="p-1.5 bg-neutral-900/80 rounded-md border border-neutral-800 opacity-100 transition-all hover:text-emerald-400">
               <Maximize2 className="w-3.5 h-3.5" />
             </div>
           </div>

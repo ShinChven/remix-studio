@@ -129,7 +129,7 @@ export function AlbumTab({
                 <div key={item.id} className={`bg-neutral-900/50 border rounded-2xl overflow-hidden flex flex-col group transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 active:scale-100 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/50 bg-blue-500/5 shadow-lg shadow-blue-500/20' : 'border-neutral-800 hover:border-blue-500/40'}`}>
                   <div className="bg-neutral-950 relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: aspectRatioStr }}>
                     {/* Selection Overlay */}
-                    <div className={`absolute top-4 left-4 z-20 transition-all ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    <div className={`absolute top-4 left-4 z-20 transition-all opacity-100`}>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
                         className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20 hover:border-white/40'}`}
@@ -140,7 +140,7 @@ export function AlbumTab({
                     </div>
 
                     {/* Actions Overlay */}
-                    <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-all flex flex-col gap-2">
+                    <div className="absolute top-4 right-4 z-20 opacity-100 transition-all flex flex-col gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -179,13 +179,13 @@ export function AlbumTab({
                     />
 
                     {/* Sequential Identifier Overlay */}
-                    <div className="absolute bottom-4 right-4 z-10 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-mono text-white/80 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <div className="absolute bottom-4 right-4 z-10 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-mono text-white/80 border border-white/10 opacity-100 transition-opacity pointer-events-none">
                       #{(index + 1).toString().padStart(2, '0')}
                     </div>
 
                     {/* Aspect Ratio Pill */}
                     {item.aspectRatio && (
-                      <div className="absolute bottom-4 left-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-75 pointer-events-none">
+                      <div className="absolute bottom-4 left-4 z-10 opacity-100 transition-opacity duration-500 delay-75 pointer-events-none">
                         <span className="px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-bold text-white/60 border border-white/5 uppercase tracking-widest leading-none">
                           {item.aspectRatio}
                         </span>

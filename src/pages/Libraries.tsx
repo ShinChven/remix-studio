@@ -98,7 +98,7 @@ export function Libraries() {
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
-                      <span className="hidden sm:inline text-sm font-medium text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">Open Editor →</span>
+                      <span className="hidden sm:inline text-sm font-medium text-blue-500 opacity-100 transition-opacity">Open Editor →</span>
                       <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-blue-500 transition-colors" />
                     </div>
                   </button>

@@ -536,12 +536,12 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => navigate(`/project/${project.id}/edit`)}
-                  className="p-1.5 text-neutral-600 hover:text-green-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-green-400/10 rounded-lg"
+                  className="p-1.5 text-neutral-600 hover:text-green-400 opacity-100 transition-all hover:bg-green-400/10 rounded-lg"
                   title="Edit Project Information"
                 ><Settings className="w-4 h-4" /></button>
                 <button
                   onClick={() => navigate(`/project/${project.id}/orphans`)}
-                  className="p-1.5 text-neutral-600 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-blue-400/10 rounded-lg"
+                  className="p-1.5 text-neutral-600 hover:text-blue-400 opacity-100 transition-all hover:bg-blue-400/10 rounded-lg"
                   title="Manage Orphan Files (Cleanup)"
                 ><Eraser className="w-4 h-4" /></button>
               </div>
