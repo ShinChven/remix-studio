@@ -130,11 +130,10 @@ export function MainLayout() {
           <Link
             to="/"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${
-              location.pathname === '/'
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/'
                 ? 'bg-blue-600/10 text-blue-400 border-blue-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
-            } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Dashboard"
           >
             <LayoutGrid className="w-5 h-5 flex-shrink-0" />
@@ -144,11 +143,10 @@ export function MainLayout() {
           <Link
             to="/projects"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${
-              location.pathname === '/projects' || location.pathname.startsWith('/project/')
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/projects' || location.pathname.startsWith('/project/')
                 ? 'bg-green-600/10 text-green-400 border-green-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
-            } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Projects"
           >
             <Play className="w-5 h-5 flex-shrink-0" />
@@ -158,11 +156,10 @@ export function MainLayout() {
           <Link
             to="/libraries"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${
-              location.pathname === '/libraries' || location.pathname.startsWith('/library/')
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/libraries' || location.pathname.startsWith('/library/')
                 ? 'bg-blue-600/10 text-blue-400 border-blue-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
-            } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Libraries"
           >
             <Folder className="w-5 h-5 flex-shrink-0" />
@@ -172,11 +169,10 @@ export function MainLayout() {
           <Link
             to="/providers"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${
-              location.pathname === '/providers' || location.pathname.startsWith('/provider/')
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/providers' || location.pathname.startsWith('/provider/')
                 ? 'bg-amber-600/10 text-amber-400 border-amber-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
-            } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Providers"
           >
             <Key className="w-5 h-5 flex-shrink-0" />
@@ -186,11 +182,10 @@ export function MainLayout() {
           <Link
             to="/exports"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${
-              location.pathname === '/exports'
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/exports'
                 ? 'bg-blue-600/10 text-blue-400 border-blue-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
-            } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Archive"
           >
             <FileArchive className="w-5 h-5 flex-shrink-0" />
@@ -200,11 +195,10 @@ export function MainLayout() {
           <Link
             to="/trash"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${
-              location.pathname === '/trash'
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/trash'
                 ? 'bg-red-600/10 text-red-400 border-red-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
-            } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Recycle Bin"
           >
             <Trash2 className="w-5 h-5 flex-shrink-0" />
@@ -217,19 +211,16 @@ export function MainLayout() {
           <Link
             to="/account"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`flex items-center overflow-hidden rounded-xl border p-3 transition-colors ${
-              location.pathname === '/account'
+            className={`flex items-center overflow-hidden rounded-xl border p-3 transition-colors ${location.pathname === '/account'
                 ? 'border-cyan-600/30 bg-cyan-600/10'
                 : 'border-neutral-700/50 bg-neutral-800/40 hover:border-neutral-600 hover:bg-neutral-800/70'
-            } ${
-              isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
-            }`}
+              } ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
+              }`}
           >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-              location.pathname === '/account'
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${location.pathname === '/account'
                 ? 'bg-cyan-500/15 text-cyan-300'
                 : 'bg-neutral-800 text-neutral-400'
-            }`}>
+              }`}>
               <UserIcon className="w-4 h-4" />
             </div>
             {!isCollapsed && (
@@ -240,9 +231,8 @@ export function MainLayout() {
                 </p>
                 <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
                   <div
-                    className={`h-full rounded-full transition-all ${
-                      storageUsagePercent > 90 ? 'bg-red-500' : storageUsagePercent > 70 ? 'bg-amber-500' : 'bg-blue-500'
-                    }`}
+                    className={`h-full rounded-full transition-all ${storageUsagePercent > 90 ? 'bg-red-500' : storageUsagePercent > 70 ? 'bg-amber-500' : 'bg-blue-500'
+                      }`}
                     style={{ width: `${storageUsagePercent}%` }}
                   />
                 </div>
@@ -253,9 +243,8 @@ export function MainLayout() {
             <Link
               to="/admin/users"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`mt-3 flex items-center rounded-xl border border-neutral-700/50 bg-neutral-800/40 p-3 text-sm text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-800/70 ${
-                isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
-              }`}
+              className={`mt-3 flex items-center rounded-xl border border-neutral-700/50 bg-neutral-800/40 p-3 text-sm text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-800/70 ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
+                }`}
               title="User Management"
             >
               <Shield className="w-5 h-5 text-blue-400 flex-shrink-0" />
