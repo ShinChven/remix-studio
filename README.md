@@ -11,6 +11,8 @@ It combines a React frontend with a Hono server, PostgreSQL via Prisma, and S3-c
 - Manage image generation providers and their API credentials
 - Organize projects, prompt libraries, and related assets
 - Run image generation through multiple providers
+- Queue pending generation jobs for background processing
+- Control per-provider parallelism with configurable concurrency limits
 - Store generated images in S3 or MinIO
 - Export project outputs as ZIP archives
 - Support authenticated access and basic admin/user separation
@@ -22,6 +24,18 @@ It combines a React frontend with a Hono server, PostgreSQL via Prisma, and S3-c
 - Database: PostgreSQL with Prisma
 - Object storage: S3-compatible storage, including MinIO
 - Image processing: Sharp
+
+## Queue and Concurrency
+
+Remix Studio includes a server-side generation queue for image jobs.
+
+- Running a project enqueues only jobs marked as `pending`
+- The queue is global in-process and groups work by provider
+- Each provider has its own configurable concurrency limit, so you can control how many jobs run in parallel for that provider
+- Jobs are snapshotted into `processing` state before dispatch so the worker and poller operate on resolved metadata
+- Providers that return a remote task ID are handed off to a detached poller, which checks status every 30 seconds until completion or failure
+- On server startup, pending jobs are re-enqueued and interrupted processing jobs are recovered so work can continue after restarts
+- A storage limit check runs before enqueuing pending jobs for a project
 
 ## Repository Structure
 
