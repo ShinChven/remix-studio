@@ -185,10 +185,25 @@ export interface User {
   email: string;
   role: UserRole;
   status: UserStatus;
+  twoFactorEnabled?: boolean;
   createdAt: number;
   updatedAt?: number;
   lastLoginAt?: number;
   storageLimit?: number;
+}
+
+export interface PasskeySummary {
+  id: string;
+  name: string;
+  createdAt: number;
+  lastUsedAt?: number;
+  transports?: string[];
+}
+
+export interface SecuritySettings {
+  twoFactorEnabled: boolean;
+  pendingTwoFactorSetup: boolean;
+  passkeys: PasskeySummary[];
 }
 
 export interface UserSummary extends User {

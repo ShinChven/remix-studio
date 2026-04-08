@@ -38,6 +38,10 @@ export class UserRepository {
         role: user.role ?? 'user',
         status: user.status ?? 'disabled',
         storageLimit: BigInt(user.storageLimit ?? DEFAULT_STORAGE_LIMIT),
+        twoFactorEnabled: user.twoFactorEnabled ?? false,
+        twoFactorSecret: user.twoFactorSecret ?? null,
+        twoFactorTempSecret: user.twoFactorTempSecret ?? null,
+        twoFactorTempExpiresAt: user.twoFactorTempExpiresAt ? new Date(user.twoFactorTempExpiresAt) : null,
         createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
         lastLoginAt: user.lastLoginAt ? new Date(user.lastLoginAt) : null,
       },
@@ -170,8 +174,143 @@ export class UserRepository {
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
   }
 
+  async startTwoFactorSetup(userId: string, encryptedSecret: string, expiresAt: Date): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorTempSecret: encryptedSecret,
+        twoFactorTempExpiresAt: expiresAt,
+      },
+    });
+  }
+
+  async enableTwoFactor(userId: string, encryptedSecret: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorEnabled: true,
+        twoFactorSecret: encryptedSecret,
+        twoFactorTempSecret: null,
+        twoFactorTempExpiresAt: null,
+      },
+    });
+  }
+
+  async disableTwoFactor(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+        twoFactorTempSecret: null,
+        twoFactorTempExpiresAt: null,
+      },
+    });
+  }
+
+  async clearPendingTwoFactorSetup(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorTempSecret: null,
+        twoFactorTempExpiresAt: null,
+      },
+    });
+  }
+
   async touchLastLogin(userId: string): Promise<void> {
     await this.prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
+  }
+
+  async listPasskeys(userId: string) {
+    const passkeys = await this.prisma.passkeyCredential.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return passkeys.map((passkey) => ({
+      id: passkey.id,
+      userId: passkey.userId,
+      name: passkey.name,
+      credentialId: passkey.credentialId,
+      publicKey: passkey.publicKey,
+      algorithm: passkey.algorithm,
+      counter: toNumber(passkey.counter),
+      transports: Array.isArray(passkey.transports) ? passkey.transports : [],
+      createdAt: passkey.createdAt.getTime(),
+      lastUsedAt: passkey.lastUsedAt ? passkey.lastUsedAt.getTime() : undefined,
+    }));
+  }
+
+  async findPasskeyByCredentialId(credentialId: string) {
+    const passkey = await this.prisma.passkeyCredential.findUnique({ where: { credentialId } });
+    if (!passkey) return null;
+
+    return {
+      id: passkey.id,
+      userId: passkey.userId,
+      name: passkey.name,
+      credentialId: passkey.credentialId,
+      publicKey: passkey.publicKey,
+      algorithm: passkey.algorithm,
+      counter: toNumber(passkey.counter),
+      transports: Array.isArray(passkey.transports) ? passkey.transports : [],
+      createdAt: passkey.createdAt.getTime(),
+      lastUsedAt: passkey.lastUsedAt ? passkey.lastUsedAt.getTime() : undefined,
+    };
+  }
+
+  async createPasskey(userId: string, data: {
+    name: string;
+    credentialId: string;
+    publicKey: string;
+    algorithm: string;
+    counter: number;
+    transports?: string[];
+  }) {
+    const passkey = await this.prisma.passkeyCredential.create({
+      data: {
+        userId,
+        name: data.name,
+        credentialId: data.credentialId,
+        publicKey: data.publicKey,
+        algorithm: data.algorithm,
+        counter: BigInt(data.counter),
+        transports: data.transports || [],
+      },
+    });
+
+    return {
+      id: passkey.id,
+      userId: passkey.userId,
+      name: passkey.name,
+      credentialId: passkey.credentialId,
+      publicKey: passkey.publicKey,
+      algorithm: passkey.algorithm,
+      counter: toNumber(passkey.counter),
+      transports: Array.isArray(passkey.transports) ? passkey.transports : [],
+      createdAt: passkey.createdAt.getTime(),
+      lastUsedAt: passkey.lastUsedAt ? passkey.lastUsedAt.getTime() : undefined,
+    };
+  }
+
+  async deletePasskey(userId: string, passkeyId: string): Promise<void> {
+    const result = await this.prisma.passkeyCredential.deleteMany({
+      where: { id: passkeyId, userId },
+    });
+    if (result.count === 0) {
+      throw new Error('Passkey not found');
+    }
+  }
+
+  async updatePasskeyCounter(passkeyId: string, counter: number): Promise<void> {
+    await this.prisma.passkeyCredential.update({
+      where: { id: passkeyId },
+      data: {
+        counter: BigInt(counter),
+        lastUsedAt: new Date(),
+      },
+    });
   }
 
   async countActiveAdmins(excludeUserId?: string): Promise<number> {
@@ -261,6 +400,7 @@ export class UserRepository {
       role: u.role as UserRole,
       status: u.status as UserStatus,
       storageLimit: toNumber(u.storageLimit) || DEFAULT_STORAGE_LIMIT,
+      twoFactorEnabled: Boolean(u.twoFactorEnabled),
       createdAt: u.createdAt instanceof Date ? u.createdAt.getTime() : u.createdAt,
       updatedAt: u.updatedAt instanceof Date ? u.updatedAt.getTime() : u.updatedAt,
       lastLoginAt: u.lastLoginAt instanceof Date ? u.lastLoginAt.getTime() : undefined,
@@ -276,6 +416,10 @@ export class UserRepository {
       role: u.role as UserRole,
       status: u.status as UserStatus,
       storageLimit: toNumber(u.storageLimit) || DEFAULT_STORAGE_LIMIT,
+      twoFactorEnabled: Boolean(u.twoFactorEnabled),
+      twoFactorSecret: u.twoFactorSecret ?? null,
+      twoFactorTempSecret: u.twoFactorTempSecret ?? null,
+      twoFactorTempExpiresAt: u.twoFactorTempExpiresAt instanceof Date ? u.twoFactorTempExpiresAt.getTime() : u.twoFactorTempExpiresAt ?? null,
       createdAt: u.createdAt instanceof Date ? u.createdAt.getTime() : u.createdAt,
       updatedAt: u.updatedAt instanceof Date ? u.updatedAt.getTime() : u.updatedAt,
       lastLoginAt: u.lastLoginAt instanceof Date ? u.lastLoginAt.getTime() : undefined,

@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { type SignOptions } from 'jsonwebtoken';
 import type { Context, Next } from 'hono';
 import type { UserRole, UserStatus } from '../../src/types';
 import type { UserRepository } from './user-repository';
@@ -13,6 +13,18 @@ export interface JwtPayload {
   role: UserRole;
 }
 
+export interface AuthFlowPayload {
+  purpose:
+    | 'login-2fa'
+    | 'passkey-register'
+    | 'passkey-login';
+  userId?: string;
+  email?: string;
+  challenge?: string;
+  name?: string;
+  method?: 'password' | 'passkey';
+}
+
 export interface UserRecord {
   pk: string;       // 'USER'
   sk: string;       // userId
@@ -21,6 +33,10 @@ export interface UserRecord {
   role: UserRole;
   status: UserStatus;
   storageLimit?: number;
+  twoFactorEnabled?: boolean;
+  twoFactorSecret?: string | null;
+  twoFactorTempSecret?: string | null;
+  twoFactorTempExpiresAt?: number | null;
   createdAt: number;
   updatedAt?: number;
   lastLoginAt?: number;
@@ -48,6 +64,14 @@ export function signToken(payload: JwtPayload): string {
 
 export function verifyToken(token: string): JwtPayload {
   return jwt.verify(token, JWT_SECRET) as JwtPayload;
+}
+
+export function signFlowToken(payload: AuthFlowPayload, expiresIn: SignOptions['expiresIn'] = '10m'): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+}
+
+export function verifyFlowToken(token: string): AuthFlowPayload {
+  return jwt.verify(token, JWT_SECRET) as AuthFlowPayload;
 }
 
 export async function authMiddleware(c: Context, next: Next): Promise<Response | void> {

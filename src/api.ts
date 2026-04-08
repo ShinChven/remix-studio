@@ -1,4 +1,4 @@
-import { AppData, Library, LibraryItem, Project, Provider, ProviderType, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult } from './types';
+import { AppData, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const token = localStorage.getItem('token');
@@ -40,6 +40,100 @@ export async function updatePassword(currentPassword: string, newPassword: strin
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.error || 'Failed to update password');
   }
+}
+
+export async function fetchSecuritySettings(): Promise<SecuritySettings> {
+  const res = await fetch('/api/auth/security', { headers: getHeaders(false) });
+  return handleResponse<SecuritySettings>(res, 'Failed to load security settings');
+}
+
+export async function beginPasskeyRegistration(name: string): Promise<{ options: any; flowToken: string }> {
+  const res = await fetch('/api/auth/passkeys/register/options', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ name }),
+  });
+  return handleResponse<{ options: any; flowToken: string }>(res, 'Failed to start passkey registration');
+}
+
+export async function finishPasskeyRegistration(flowToken: string, credential: any): Promise<{ passkey: PasskeySummary }> {
+  const res = await fetch('/api/auth/passkeys/register/verify', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ flowToken, credential }),
+  });
+  return handleResponse<{ passkey: PasskeySummary }>(res, 'Failed to register passkey');
+}
+
+export async function removePasskey(passkeyId: string): Promise<void> {
+  const res = await fetch(`/api/auth/passkeys/${passkeyId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to remove passkey');
+  }
+}
+
+export async function beginPasskeyLogin(email?: string): Promise<{ options: any; flowToken: string }> {
+  const res = await fetch('/api/auth/passkeys/login/options', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  return handleResponse<{ options: any; flowToken: string }>(res, 'Failed to start passkey login');
+}
+
+export async function finishPasskeyLogin(flowToken: string, credential: any): Promise<{ token: string; user: User }> {
+  const res = await fetch('/api/auth/passkeys/login/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ flowToken, credential }),
+  });
+  return handleResponse<{ token: string; user: User }>(res, 'Failed to finish passkey login');
+}
+
+export async function setupTwoFactor(password: string): Promise<{ secret: string; otpauthUri: string; expiresAt: number }> {
+  const res = await fetch('/api/auth/2fa/setup', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ password }),
+  });
+  return handleResponse<{ secret: string; otpauthUri: string; expiresAt: number }>(res, 'Failed to set up 2FA');
+}
+
+export async function enableTwoFactor(code: string): Promise<void> {
+  const res = await fetch('/api/auth/2fa/enable', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ code }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to enable 2FA');
+  }
+}
+
+export async function disableTwoFactor(password: string, code: string): Promise<void> {
+  const res = await fetch('/api/auth/2fa/disable', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ password, code }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to disable 2FA');
+  }
+}
+
+export async function verifyTwoFactorLogin(tempToken: string, code: string): Promise<{ token: string; user: User }> {
+  const res = await fetch('/api/auth/2fa/verify-login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tempToken, code }),
+  });
+  return handleResponse<{ token: string; user: User }>(res, 'Failed to verify 2FA login');
 }
 
 // ========== Legacy bulk load (used for initial data fetch) ==========

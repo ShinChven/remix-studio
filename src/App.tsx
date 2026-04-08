@@ -27,6 +27,7 @@ import { TrashView } from './components/TrashView.tsx';
 import { ProjectOrphans } from './pages/ProjectOrphans.tsx';
 import { Exports } from './pages/Exports.tsx';
 import { Account } from './pages/Account.tsx';
+import { AccountTwoFactorSetup } from './pages/AccountTwoFactorSetup.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -68,6 +69,7 @@ export default function App() {
               <Route path="trash" element={<TrashView />} />
               <Route path="storage" element={<Navigate to="/account?tab=storage" replace />} />
               <Route path="account" element={<Account />} />
+              <Route path="account/security/2fa" element={<AccountTwoFactorSetup />} />
             </Route>
           </Routes>
         </BrowserRouter>

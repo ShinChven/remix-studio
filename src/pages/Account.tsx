@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Folder, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap } from 'lucide-react';
-import { fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchStorageAnalysis, updatePassword } from '../api';
+import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap } from 'lucide-react';
+import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, updatePassword } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { StorageAnalysis, User } from '../types';
+import { SecuritySettings, StorageAnalysis, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { isPasskeySupported, serializeAttestationCredential, toPublicKeyCreationOptions } from '../lib/passkey';
 
 type AccountTab = 'overview' | 'storage' | 'security';
 const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security'];
@@ -67,6 +68,20 @@ export function Account() {
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [securitySettings, setSecuritySettings] = useState<SecuritySettings | null>(null);
+  const [securityLoading, setSecurityLoading] = useState(false);
+  const [securityLoaded, setSecurityLoaded] = useState(false);
+  const [securityError, setSecurityError] = useState('');
+  const [passkeyName, setPasskeyName] = useState('');
+  const [passkeyError, setPasskeyError] = useState('');
+  const [passkeySuccess, setPasskeySuccess] = useState('');
+  const [savingPasskey, setSavingPasskey] = useState(false);
+  const [removingPasskeyId, setRemovingPasskeyId] = useState<string | null>(null);
+  const [twoFactorDisablePassword, setTwoFactorDisablePassword] = useState('');
+  const [twoFactorDisableCode, setTwoFactorDisableCode] = useState('');
+  const [twoFactorError, setTwoFactorError] = useState('');
+  const [twoFactorSuccess, setTwoFactorSuccess] = useState('');
+  const [disablingTwoFactor, setDisablingTwoFactor] = useState(false);
   const [activeTab, setActiveTab] = useState<AccountTab>(() => {
     const tab = searchParams.get('tab');
     return isAccountTab(tab) ? tab : 'overview';
@@ -163,6 +178,27 @@ export function Account() {
     void loadStorage();
   }, [activeTab, storageLoaded, storageLoading, user]);
 
+  useEffect(() => {
+    if (!user || activeTab !== 'security' || securityLoaded || securityLoading) return;
+
+    const loadSecurity = async () => {
+      setSecurityLoading(true);
+      setSecurityError('');
+
+      try {
+        const settings = await fetchSecuritySettings();
+        setSecuritySettings(settings);
+        setSecurityLoaded(true);
+      } catch (error: any) {
+        setSecurityError(error.message || 'Failed to load security settings');
+      } finally {
+        setSecurityLoading(false);
+      }
+    };
+
+    void loadSecurity();
+  }, [activeTab, securityLoaded, securityLoading, user]);
+
   const usagePercent = useMemo(() => {
     if (!storage?.limit) return 0;
     return Math.min(100, (storage.totalSize / storage.limit) * 100);
@@ -214,8 +250,87 @@ export function Account() {
     setStorageLoadError('');
   };
 
+  const retrySecurityLoad = () => {
+    setSecurityLoaded(false);
+    setSecurityError('');
+  };
+
+  const refreshSecurity = async () => {
+    const settings = await fetchSecuritySettings();
+    setSecuritySettings(settings);
+    setSecurityLoaded(true);
+    const me = await fetchCurrentUser();
+    setUser(me);
+  };
+
   const handleConfirmSignOut = () => {
     logout();
+  };
+
+  const handlePasskeyRegistration = async () => {
+    if (!isPasskeySupported()) {
+      setPasskeyError('This browser does not support passkeys.');
+      return;
+    }
+
+    setPasskeyError('');
+    setPasskeySuccess('');
+    setSavingPasskey(true);
+
+    try {
+      const { options, flowToken } = await beginPasskeyRegistration(passkeyName.trim() || 'This device');
+      const credential = await navigator.credentials.create({
+        publicKey: toPublicKeyCreationOptions(options),
+      });
+
+      if (!credential) {
+        throw new Error('Passkey registration was cancelled.');
+      }
+
+      await finishPasskeyRegistration(flowToken, serializeAttestationCredential(credential as PublicKeyCredential));
+      setPasskeyName('');
+      setPasskeySuccess('Passkey added successfully.');
+      await refreshSecurity();
+    } catch (error: any) {
+      setPasskeyError(error.message || 'Failed to register passkey.');
+    } finally {
+      setSavingPasskey(false);
+    }
+  };
+
+  const handlePasskeyRemoval = async (passkeyId: string) => {
+    setPasskeyError('');
+    setPasskeySuccess('');
+    setRemovingPasskeyId(passkeyId);
+
+    try {
+      await removePasskey(passkeyId);
+      setPasskeySuccess('Passkey removed.');
+      await refreshSecurity();
+    } catch (error: any) {
+      setPasskeyError(error.message || 'Failed to remove passkey.');
+    } finally {
+      setRemovingPasskeyId(null);
+    }
+  };
+
+  const handleDisableTwoFactor = async (event: FormEvent) => {
+    event.preventDefault();
+    setTwoFactorError('');
+    setTwoFactorSuccess('');
+    setDisablingTwoFactor(true);
+
+    try {
+      await disableTwoFactor(twoFactorDisablePassword, twoFactorDisableCode);
+      setTwoFactorDisablePassword('');
+      setTwoFactorDisableCode('');
+      setTwoFactorSuccess('Two-factor authentication has been disabled.');
+      await refreshSecurity();
+    } catch (error: any) {
+      setTwoFactorError(error.message || 'Failed to disable 2FA.');
+    } finally {
+      setDisablingTwoFactor(false);
+    }
   };
 
   if (userLoading) {
@@ -519,79 +634,274 @@ export function Account() {
         )}
 
         {activeTab === 'security' && (
-          <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-300">
-                <Shield className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-white">Security</h2>
-                <p className="text-sm text-neutral-400">Rotate your password without leaving the app.</p>
-              </div>
-            </div>
-
-            <form onSubmit={handlePasswordSubmit} className="mt-6 w-full space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(event) => setCurrentPassword(event.target.value)}
-                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
-                  required
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-neutral-400">New password</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(event) => setNewPassword(event.target.value)}
-                    className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
-                    minLength={8}
-                    required
-                  />
+          <div className="space-y-6">
+            {securityLoading && !securityLoaded ? (
+              <section className="flex min-h-[320px] items-center justify-center rounded-3xl border border-neutral-800 bg-neutral-900/60 p-6">
+                <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
+              </section>
+            ) : securityError || !securitySettings ? (
+              <section className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-6 text-amber-300">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                    <div>
+                      <h2 className="font-semibold text-white">Security unavailable</h2>
+                      <p className="mt-1 text-sm">{securityError || 'The security settings could not be loaded.'}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={retrySecurityLoad}
+                    className="rounded-xl border border-amber-400/20 px-3 py-2 text-sm font-medium text-amber-200 transition-colors hover:bg-amber-400/10"
+                  >
+                    Retry
+                  </button>
                 </div>
+              </section>
+            ) : (
+              <>
+                <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-300">
+                      <Shield className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-white">Password</h2>
+                      <p className="text-sm text-neutral-400">Rotate your password without leaving the app.</p>
+                    </div>
+                  </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-neutral-400">Confirm new password</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
-                    minLength={8}
-                    required
-                  />
-                </div>
-              </div>
+                  <form onSubmit={handlePasswordSubmit} className="mt-6 w-full space-y-4">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
+                      <input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(event) => setCurrentPassword(event.target.value)}
+                        className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                        required
+                      />
+                    </div>
 
-              {passwordError && (
-                <div className="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                  <span>{passwordError}</span>
-                </div>
-              )}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-neutral-400">New password</label>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(event) => setNewPassword(event.target.value)}
+                          className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                          minLength={8}
+                          required
+                        />
+                      </div>
 
-              {passwordSuccess && (
-                <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                  <span>{passwordSuccess}</span>
-                </div>
-              )}
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-neutral-400">Confirm new password</label>
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(event) => setConfirmPassword(event.target.value)}
+                          className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                          minLength={8}
+                          required
+                        />
+                      </div>
+                    </div>
 
-              <button
-                type="submit"
-                disabled={savingPassword}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
-                Update password
-              </button>
-            </form>
-          </section>
+                    {passwordError && (
+                      <div className="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                        <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <span>{passwordError}</span>
+                      </div>
+                    )}
+
+                    {passwordSuccess && (
+                      <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <span>{passwordSuccess}</span>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={savingPassword}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
+                      Update password
+                    </button>
+                  </form>
+                </section>
+
+                <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-300">
+                        <Fingerprint className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-white">Passkeys</h2>
+                        <p className="text-sm text-neutral-400">Use Face ID, Touch ID, Windows Hello, or a hardware key to sign in.</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-300">
+                      {securitySettings.passkeys.length} registered
+                    </span>
+                  </div>
+
+                  <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-neutral-800 bg-neutral-950/70 p-4 md:flex-row">
+                    <input
+                      type="text"
+                      value={passkeyName}
+                      onChange={(event) => setPasskeyName(event.target.value)}
+                      placeholder="This MacBook"
+                      className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={handlePasskeyRegistration}
+                      disabled={savingPasskey}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {savingPasskey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Fingerprint className="h-4 w-4" />}
+                      Add passkey
+                    </button>
+                  </div>
+
+                  {passkeyError && (
+                    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                      <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                      <span>{passkeyError}</span>
+                    </div>
+                  )}
+
+                  {passkeySuccess && (
+                    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                      <span>{passkeySuccess}</span>
+                    </div>
+                  )}
+
+                  <div className="mt-6 space-y-3">
+                    {securitySettings.passkeys.length === 0 ? (
+                      <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 px-4 py-5 text-sm text-neutral-400">
+                        No passkeys registered yet.
+                      </div>
+                    ) : (
+                      securitySettings.passkeys.map((passkey) => (
+                        <div key={passkey.id} className="flex flex-col gap-3 rounded-2xl border border-neutral-800 bg-neutral-950/60 px-4 py-4 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="font-medium text-white">{passkey.name}</p>
+                            <p className="mt-1 text-sm text-neutral-500">
+                              Added {new Date(passkey.createdAt).toLocaleString()}
+                              {passkey.lastUsedAt ? ` • Last used ${new Date(passkey.lastUsedAt).toLocaleString()}` : ''}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void handlePasskeyRemoval(passkey.id)}
+                            disabled={removingPasskeyId === passkey.id}
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/15 disabled:opacity-60"
+                          >
+                            {removingPasskeyId === passkey.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            Remove
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </section>
+
+                <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-300">
+                        <Shield className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-white">Two-Factor Authentication</h2>
+                        <p className="text-sm text-neutral-400">Require a time-based authenticator code after password login.</p>
+                      </div>
+                    </div>
+                    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${securitySettings.twoFactorEnabled ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-neutral-700 bg-neutral-800 text-neutral-300'}`}>
+                      {securitySettings.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+
+                  {twoFactorError && (
+                    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                      <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                      <span>{twoFactorError}</span>
+                    </div>
+                  )}
+
+                  {twoFactorSuccess && (
+                    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                      <span>{twoFactorSuccess}</span>
+                    </div>
+                  )}
+
+                  {!securitySettings.twoFactorEnabled ? (
+                    <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950/70 p-4">
+                      <p className="text-sm text-neutral-400">
+                        Start the authenticator setup in a dedicated page so the verification flow has more room.
+                      </p>
+                      {securitySettings.pendingTwoFactorSetup && (
+                        <p className="mt-2 text-sm text-amber-300">
+                          A setup is already in progress. Opening the page will let you continue and verify it.
+                        </p>
+                      )}
+                      <Link
+                        to="/account/security/2fa"
+                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
+                      >
+                        <Shield className="h-4 w-4" />
+                        Open 2FA Setup
+                      </Link>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleDisableTwoFactor} className="mt-6 space-y-4 rounded-2xl border border-neutral-800 bg-neutral-950/70 p-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
+                          <input
+                            type="password"
+                            value={twoFactorDisablePassword}
+                            onChange={(event) => setTwoFactorDisablePassword(event.target.value)}
+                            className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-neutral-400">Authenticator code</label>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={twoFactorDisableCode}
+                            onChange={(event) => setTwoFactorDisableCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                            className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50 font-mono tracking-[0.3em]"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={disablingTwoFactor}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {disablingTwoFactor ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
+                        Disable 2FA
+                      </button>
+                    </form>
+                  )}
+                </section>
+              </>
+            )}
+          </div>
         )}
 
         <ConfirmModal

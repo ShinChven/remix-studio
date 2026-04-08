@@ -16,6 +16,10 @@ model User {
   role         String   @default("user")
   status       String   @default("disabled")
   storageLimit BigInt   @default(5368709120) // 5GB in bytes
+  twoFactorEnabled       Boolean  @default(false)
+  twoFactorSecret        String?
+  twoFactorTempSecret    String?
+  twoFactorTempExpiresAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   lastLoginAt  DateTime?
@@ -25,6 +29,24 @@ model User {
   projects     Project[]
   trashItems   TrashItem[]
   exportTasks  ExportTask[]
+  passkeys     PasskeyCredential[]
+}
+
+model PasskeyCredential {
+  id           String   @id @default(uuid())
+  userId       String
+  name         String
+  credentialId String   @unique
+  publicKey    String   @db.Text
+  algorithm    String
+  counter      BigInt   @default(0)
+  transports   Json?
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Provider {
