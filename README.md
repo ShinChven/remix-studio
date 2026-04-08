@@ -15,7 +15,7 @@ It combines a React frontend with a Hono server, PostgreSQL via Prisma, and S3-c
 - Control per-provider parallelism with configurable concurrency limits
 - Store generated images in S3 or MinIO
 - Export project outputs as ZIP archives
-- Support authenticated access and basic admin/user separation
+- Support authenticated access with admin controls, 2FA, and passkeys
 
 ## Local Development
 
@@ -54,7 +54,13 @@ npm install
 cp .env.example .env
 ```
 
-For local development, point these values at the MinIO container started by Docker Compose.
+If you run `npm run dev` on your host machine, point storage at the host-published MinIO port:
+
+```env
+MINIO_ENDPOINT=http://localhost:9000
+```
+
+Use `http://minio:9000` only when the app itself is running inside Docker Compose on the same Docker network.
 
 For self-hosted or production-style deployments, point the same storage settings at your S3-compatible object storage instead. AWS S3 works, and MinIO also works as long as the endpoint and credentials are configured correctly.
 
@@ -66,12 +72,21 @@ You should set at least:
 - `MINIO_SECRET_KEY`
 - `MINIO_BUCKET`
 - `MINIO_EXPORT_BUCKET`
+- `AWS_REGION`
 - `PROVIDER_ENCRYPTION_KEY`
 - `JWT_SECRET`
 - `DEFAULT_ADMIN_EMAIL`
 - `DEFAULT_ADMIN_PASSWORD`
 
 `PROVIDER_ENCRYPTION_KEY` must be a 64-character hex string.
+
+Do not change `PROVIDER_ENCRYPTION_KEY` after providers have been created unless you are also re-encrypting the stored provider credentials. Existing provider API keys in the database are encrypted with this value, so changing it later can make those saved credentials unreadable.
+
+If you previously ran an older version of the app with a longer key value, the app may have been using only the first 64 hex characters. Keep that same effective 64-character value when upgrading, or existing provider credentials may fail to decrypt.
+
+Optional:
+
+- `S3_PUBLIC_ENDPOINT`, if stored objects need to be served through a different public base URL than the internal server-side endpoint
 
 Generate one with:
 
@@ -100,6 +115,15 @@ The app runs at [http://localhost:3000](http://localhost:3000).
 - Database: PostgreSQL with Prisma
 - Object storage: S3-compatible storage, including MinIO
 - Image processing: Sharp
+
+## Authentication and Access
+
+- Email/password authentication with JWT-based sessions
+- Admin and user roles
+- User status controls, including disabling accounts
+- TOTP-based two-factor authentication
+- Passkey/WebAuthn registration and sign-in
+- Admin user management, including password reset and per-user storage limits
 
 ## Queue and Concurrency
 
@@ -203,6 +227,7 @@ remix-studio/
 - This repository is aimed at local or self-hosted use. Production deployment is possible, but it still requires you to make your own decisions around secrets, storage, database operations, and infrastructure.
 - The app auto-creates a default admin user if `DEFAULT_ADMIN_EMAIL` and `DEFAULT_ADMIN_PASSWORD` are provided and the user does not already exist.
 - Storage is implemented against S3-compatible APIs, so MinIO works well for development.
+- For host-based local development with `docker compose up -d postgres minio` and `npm run dev`, MinIO should be reached at `http://localhost:9000`.
 
 ## Scripts
 

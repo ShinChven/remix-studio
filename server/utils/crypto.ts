@@ -6,10 +6,10 @@ const TAG_LENGTH = 16;
 
 function getKey(): Buffer {
   const hex = process.env.PROVIDER_ENCRYPTION_KEY;
-  if (!hex || hex.length < 64) {
+  if (!hex || !/^[0-9a-fA-F]{64}$/.test(hex)) {
     throw new Error('PROVIDER_ENCRYPTION_KEY must be a 64-char hex string (32 bytes)');
   }
-  return Buffer.from(hex.slice(0, 64), 'hex');
+  return Buffer.from(hex, 'hex');
 }
 
 /**
