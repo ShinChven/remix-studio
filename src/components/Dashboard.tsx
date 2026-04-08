@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Library, Project } from '../types';
 import { Plus, Play, Folder, LayoutGrid, Clock, Loader2 } from 'lucide-react';
 import { fetchProjects, fetchLibraries } from '../api';
@@ -63,9 +63,9 @@ export function Dashboard() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {projects.map(project => (
-                  <button
+                  <Link
                     key={project.id}
-                    onClick={() => navigate(`/project/${project.id}`)}
+                    to={`/project/${project.id}`}
                     className="bg-neutral-900 border border-neutral-800 hover:border-green-500/50 p-4 rounded-xl text-left transition-all group"
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -76,7 +76,7 @@ export function Dashboard() {
                     </div>
                     <h4 className="font-medium text-white truncate">{project.name}</h4>
                     <p className="text-xs text-neutral-500 mt-1">{(project.jobCount ?? project.jobs?.length) || 0} jobs • {(project.albumCount ?? project.album?.length) || 0} images • {new Date(project.createdAt).toLocaleDateString()}</p>
-                  </button>
+                  </Link>
                 ))}
                 {projects.length === 0 && (
                   <div className="col-span-full p-8 border border-neutral-800 border-dashed rounded-xl text-center text-neutral-500">
@@ -100,9 +100,9 @@ export function Dashboard() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {libraries.map(lib => (
-                  <button
+                  <Link
                     key={lib.id}
-                    onClick={() => navigate(`/library/${lib.id}`)}
+                    to={`/library/${lib.id}`}
                     className="bg-neutral-900 border border-neutral-800 hover:border-blue-500/50 p-4 rounded-xl text-left transition-all group"
                   >
                     <div className="flex items-center gap-3 mb-2">
@@ -112,7 +112,7 @@ export function Dashboard() {
                       <h4 className="font-medium text-white truncate flex-1">{lib.name}</h4>
                     </div>
                     <p className="text-xs text-neutral-500">{lib.items?.length || 0} items</p>
-                  </button>
+                  </Link>
                 ))}
                 {libraries.length === 0 && (
                   <div className="col-span-full p-8 border border-neutral-800 border-dashed rounded-xl text-center text-neutral-500">

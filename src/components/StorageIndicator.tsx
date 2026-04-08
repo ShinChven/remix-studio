@@ -16,7 +16,7 @@ export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
   useEffect(() => {
     const load = async () => {
       try {
-        const analysis = await fetchStorageAnalysis();
+        const analysis = await fetchStorageAnalysis({ includeProjects: false });
         setSize(analysis.totalSize);
         setLimit(analysis.limit);
       } catch (e) {
@@ -47,7 +47,7 @@ export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      onClick={() => navigate('/storage')}
+      onClick={() => navigate('/account?tab=storage')}
       className={`
         mx-3 mb-2 p-2 rounded-xl cursor-pointer transition-all duration-300
         bg-neutral-800/40 border border-neutral-700/50 hover:bg-neutral-800/60 hover:border-neutral-600

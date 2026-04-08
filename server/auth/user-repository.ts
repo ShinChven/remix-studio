@@ -50,6 +50,10 @@ export class UserRepository {
     await this.prisma.user.update({ where: { id: userId }, data: { storageLimit: BigInt(limit) } });
   }
 
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  }
+
   async deleteUser(userId: string): Promise<void> {
     await this.prisma.user.delete({ where: { id: userId } });
   }

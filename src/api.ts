@@ -22,6 +22,26 @@ async function handleResponse<T>(res: Response, defaultError: string): Promise<T
   return res.json();
 }
 
+// ========== Auth / Account ==========
+
+export async function fetchCurrentUser(): Promise<User> {
+  const res = await fetch('/api/auth/me', { headers: getHeaders(false) });
+  const data = await handleResponse<{ user: User }>(res, 'Failed to load account');
+  return data.user;
+}
+
+export async function updatePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const res = await fetch('/api/auth/password', {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update password');
+  }
+}
+
 // ========== Legacy bulk load (used for initial data fetch) ==========
 
 export async function loadData(): Promise<AppData> {
@@ -165,10 +185,15 @@ export async function deleteLibraryItem(libraryId: string, itemId: string): Prom
 
 // ========== Project CRUD ==========
 
-export async function fetchProjects(page: number = 1, limit: number = 50): Promise<import('./types').PaginatedResult<Project>> {
+export async function fetchProjects(
+  page: number = 1,
+  limit: number = 50,
+  sort: 'createdAt' | 'totalSize' = 'createdAt'
+): Promise<import('./types').PaginatedResult<Project>> {
   const params = new URLSearchParams();
   if (page) params.set('page', page.toString());
   if (limit) params.set('limit', limit.toString());
+  if (sort) params.set('sort', sort);
 
   const res = await fetch(`/api/projects?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Project>>(res, 'Failed to list projects');
@@ -535,8 +560,11 @@ export async function deleteProjectExport(projectId: string, taskId: string): Pr
 
 // ========== Storage ==========
 
-export async function fetchStorageAnalysis(): Promise<StorageAnalysis> {
-  const res = await fetch('/api/storage/analysis', { headers: getHeaders(false) });
+export async function fetchStorageAnalysis(options?: { includeProjects?: boolean }): Promise<StorageAnalysis> {
+  const params = new URLSearchParams();
+  if (options?.includeProjects === false) params.set('includeProjects', 'false');
+
+  const query = params.toString();
+  const res = await fetch(`/api/storage/analysis${query ? `?${query}` : ''}`, { headers: getHeaders(false) });
   return handleResponse<StorageAnalysis>(res, 'Failed to analyze storage');
 }
-

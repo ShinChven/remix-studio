@@ -4,15 +4,14 @@ import { Project, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/type
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
 
-  async getUserProjects(userId: string, page: number = 1, limit: number = 50): Promise<{ items: Project[], total: number, page: number, pages: number }> {
+  async getUserProjects(userId: string, page: number = 1, limit: number = 50, sortBy: 'createdAt' | 'totalSize' = 'createdAt'): Promise<{ items: Project[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
     const [total, projects, allItems] = await Promise.all([
       this.prisma.project.count({ where: { userId } }),
       this.prisma.project.findMany({
         where: { userId },
-        skip,
-        take: limit,
+        ...(sortBy === 'createdAt' ? { skip, take: limit } : {}),
         include: {
           _count: { select: { jobs: true, albumItems: true } },
         },
@@ -30,7 +29,7 @@ export class ProjectRepository {
       }
     }
 
-    const items = projects.map((p) => ({
+    const mappedProjects = projects.map((p) => ({
       id: p.id,
       name: p.name,
       createdAt: p.createdAt.getTime(),
@@ -49,6 +48,12 @@ export class ProjectRepository {
       prefix: p.prefix ?? undefined,
       background: (p as any).background ?? undefined,
     }));
+
+    const items = sortBy === 'totalSize'
+      ? mappedProjects
+          .sort((a, b) => (b.totalSize || 0) - (a.totalSize || 0) || b.createdAt - a.createdAt)
+          .slice(skip, skip + limit)
+      : mappedProjects;
 
     return {
       items,

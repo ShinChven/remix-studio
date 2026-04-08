@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrashItem } from '../types';
 import { fetchTrash, restoreTrashItem, restoreTrashBatch, deleteTrashPermanently, deleteTrashBatch, emptyTrash, imageDisplayUrl } from '../api';
-import { Trash2, RotateCcw, CheckSquare, Square, CheckCircle2, Layers, AlertTriangle, Calendar, Folder, HardDrive } from 'lucide-react';
+import { Trash2, RotateCcw, CheckSquare, Square, CheckCircle2, Calendar, Folder, HardDrive } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { ImageLightbox } from './ProjectViewer/ImageLightbox';
 
@@ -127,25 +127,20 @@ export function TrashView() {
 
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-700">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-red-500/10 rounded-2xl">
-              <Trash2 className="w-6 h-6 text-red-500" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-white tracking-tight">Recycle Bin</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
-                  <Layers className="w-3 h-3" /> {items.length} Items
-                </span>
-                <span className="text-neutral-800">·</span>
-                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <HardDrive className="w-3 h-3" /> {formatSize(totalSize)} Total
-                </span>
-              </div>
-            </div>
-          </div>
+      <header className="mb-6 md:mb-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Recycle Bin</h2>
+        <p className="text-sm md:text-base text-neutral-400">Review deleted items, restore what you need, or remove them permanently.</p>
+      </header>
+
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
+            {items.length} Items
+          </span>
+          <span className="text-neutral-800">·</span>
+          <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
+            {formatSize(totalSize)} Total
+          </span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -175,7 +170,7 @@ export function TrashView() {
             </button>
           )}
         </div>
-      </header>
+      </div>
 
       {!loading && items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-[40px] text-center space-y-6 transition-colors hover:border-neutral-700">

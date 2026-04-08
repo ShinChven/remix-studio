@@ -163,7 +163,7 @@ export function LibraryImportExport() {
 
   return (
     <div className="h-full flex flex-col bg-neutral-950 p-4 md:p-8 animate-in fade-in duration-700">
-      <div className="max-w-6xl mx-auto w-full flex flex-col h-full gap-8">
+      <div className="w-full flex flex-col h-full gap-8">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">

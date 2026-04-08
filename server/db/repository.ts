@@ -17,7 +17,7 @@ export interface IRepository {
   reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]): Promise<void>;
 
   // === Project CRUD ===
-  getUserProjects(userId: string, page?: number, limit?: number): Promise<{ items: Project[], total: number, page: number, pages: number }>;
+  getUserProjects(userId: string, page?: number, limit?: number, sortBy?: 'createdAt' | 'totalSize'): Promise<{ items: Project[], total: number, page: number, pages: number }>;
   getProject(userId: string, projectId: string): Promise<Project | null>;
   createProject(userId: string, project: Project): Promise<void>;
   updateProject(userId: string, projectId: string, updates: Partial<Project>): Promise<void>;

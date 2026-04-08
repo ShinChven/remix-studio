@@ -42,7 +42,16 @@ export function createAuthRouter(userRepository: UserRepository) {
         path: '/',
       });
 
-      return c.json({ token, user: { id: user.sk, email: user.email, role: user.role } });
+      return c.json({
+        token,
+        user: {
+          id: user.sk,
+          email: user.email,
+          role: user.role,
+          storageLimit: user.storageLimit,
+          createdAt: user.createdAt,
+        }
+      });
     } catch (e) {
       console.error('[POST /api/auth/login]', e);
       return c.json({ error: 'Login failed' }, 500);
@@ -51,7 +60,53 @@ export function createAuthRouter(userRepository: UserRepository) {
 
   router.get('/api/auth/me', authMiddleware, async (c) => {
     const payload = c.get('user') as JwtPayload;
-    return c.json({ user: { id: payload.userId, email: payload.email, role: payload.role } });
+    const user = await userRepository.findById(payload.userId);
+    if (!user) return c.json({ error: 'User not found' }, 404);
+
+    return c.json({
+      user: {
+        id: user.sk,
+        email: user.email,
+        role: user.role,
+        storageLimit: user.storageLimit,
+        createdAt: user.createdAt,
+      }
+    });
+  });
+
+  router.put('/api/auth/password', authMiddleware, async (c) => {
+    try {
+      const payload = c.get('user') as JwtPayload;
+      const body = await c.req.json();
+      const currentPassword = typeof body?.currentPassword === 'string' ? body.currentPassword : '';
+      const newPassword = typeof body?.newPassword === 'string' ? body.newPassword : '';
+
+      if (!currentPassword || !newPassword) {
+        return c.json({ error: 'Current password and new password are required' }, 400);
+      }
+
+      if (newPassword.length < 8) {
+        return c.json({ error: 'New password must be at least 8 characters long' }, 400);
+      }
+
+      const user = await userRepository.findById(payload.userId);
+      if (!user) return c.json({ error: 'User not found' }, 404);
+
+      const isValid = await verifyPassword(currentPassword, user.passwordHash);
+      if (!isValid) return c.json({ error: 'Current password is incorrect' }, 401);
+
+      if (currentPassword === newPassword) {
+        return c.json({ error: 'New password must be different from your current password' }, 400);
+      }
+
+      const passwordHash = await hashPassword(newPassword);
+      await userRepository.updatePassword(payload.userId, passwordHash);
+
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[PUT /api/auth/password]', e);
+      return c.json({ error: 'Failed to update password' }, 500);
+    }
   });
 
   router.post('/api/auth/logout', async (c) => {

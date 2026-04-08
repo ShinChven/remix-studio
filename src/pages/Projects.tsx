@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Project } from '../types';
 import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { fetchProjects } from '../api';
 
+type ProjectSort = 'createdAt' | 'totalSize';
+
+function isProjectSort(value: string | null): value is ProjectSort {
+  return value === 'createdAt' || value === 'totalSize';
+}
+
 export function Projects() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
+  const rawSort = searchParams.get('sort');
+  const sort: ProjectSort = isProjectSort(rawSort) ? rawSort : 'createdAt';
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [total, setTotal] = useState(0);
@@ -20,7 +28,7 @@ export function Projects() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const result = await fetchProjects(page, 24);
+        const result = await fetchProjects(page, 24, sort);
         if (mounted) {
           setProjects(result.items);
           setTotal(result.total);
@@ -34,7 +42,7 @@ export function Projects() {
     };
     load();
     return () => { mounted = false; };
-  }, [page]);
+  }, [page, sort]);
 
   const addProject = () => navigate('/project/new');
 
@@ -42,6 +50,16 @@ export function Projects() {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       next.set('page', newPage.toString());
+      next.set('sort', sort);
+      return next;
+    });
+  };
+
+  const handleSortChange = (nextSort: ProjectSort) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('sort', nextSort);
+      next.set('page', '1');
       return next;
     });
   };
@@ -65,15 +83,42 @@ export function Projects() {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-              <Clock className="w-5 h-5 text-green-500" />
+              {sort === 'totalSize' ? <HardDrive className="w-5 h-5 text-blue-500" /> : <Clock className="w-5 h-5 text-green-500" />}
               All Projects {total > 0 && <span className="text-sm text-neutral-500 font-normal">({total})</span>}
             </h3>
-            <button
-              onClick={addProject}
-              className="text-xs md:text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-green-600/30 font-medium"
-            >
-              <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Project</span><span className="sm:hidden">New</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="flex rounded-xl border border-neutral-800 bg-neutral-950/70 p-1">
+                <button
+                  type="button"
+                  onClick={() => handleSortChange('createdAt')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    sort === 'createdAt'
+                      ? 'bg-green-600/15 text-green-300'
+                      : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  Newest
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSortChange('totalSize')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    sort === 'totalSize'
+                      ? 'bg-blue-600/15 text-blue-300'
+                      : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  Largest
+                </button>
+              </div>
+
+              <button
+                onClick={addProject}
+                className="text-xs md:text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-green-600/30 font-medium"
+              >
+                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Project</span><span className="sm:hidden">New</span>
+              </button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -84,9 +129,9 @@ export function Projects() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {projects.map(project => (
-                  <button
+                  <Link
                     key={project.id}
-                    onClick={() => navigate(`/project/${project.id}`)}
+                    to={`/project/${project.id}`}
                     className="bg-neutral-900/50 backdrop-blur-sm border border-neutral-800 hover:border-green-500/50 p-5 rounded-2xl text-left transition-all group relative overflow-hidden"
                   >
                     <div className="flex items-start justify-between mb-4">
@@ -124,7 +169,7 @@ export function Projects() {
                     </div>
 
                     <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-green-500/20 to-transparent opacity-100 transition-opacity" />
-                  </button>
+                  </Link>
                 ))}
 
                 {projects.length === 0 && (
