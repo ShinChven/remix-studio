@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate, Outlet, Link } from 'react-router-dom';
-import { Library, Project } from '../types';
-import { fetchLibraries, fetchProjects } from '../api';
-import { Folder, Layers, Play, LogOut, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Github } from 'lucide-react';
+import { useLocation, Outlet, Link } from 'react-router-dom';
+import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive } from 'lucide-react';
 
+import { fetchStorageAnalysis } from '../api';
 import { useAuth } from '../contexts/AuthContext';
-import { ConfirmModal } from './ConfirmModal';
-import { StorageIndicator } from './StorageIndicator';
 
 export function MainLayout() {
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [storageSize, setStorageSize] = useState<number | null>(null);
+  const [storageLimit, setStorageLimit] = useState<number | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar-collapsed');
     return saved === 'true';
@@ -31,16 +29,43 @@ export function MainLayout() {
   }, [isCollapsed]);
 
   const location = useLocation();
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
-  const addLibrary = () => {
-    navigate('/library/new');
+  useEffect(() => {
+    if (!user) {
+      setStorageSize(null);
+      setStorageLimit(null);
+      return;
+    }
+
+    const loadStorage = async () => {
+      try {
+        const analysis = await fetchStorageAnalysis({ includeProjects: false });
+        setStorageSize(analysis.totalSize);
+        setStorageLimit(analysis.limit);
+      } catch (error) {
+        console.error('Failed to load storage size:', error);
+      }
+    };
+
+    void loadStorage();
+    const interval = setInterval(() => void loadStorage(), 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const formatStorageSize = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const unitIndex = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${parseFloat((bytes / Math.pow(1024, unitIndex)).toFixed(1))} ${units[unitIndex]}`;
   };
 
-  const addProject = () => {
-    navigate('/project/new');
-  };
+  const storageText = storageSize !== null && storageLimit !== null
+    ? `${formatStorageSize(storageSize)} / ${formatStorageSize(storageLimit)}`
+    : 'Storage unavailable';
+  const storageUsagePercent = storageSize !== null && storageLimit
+    ? Math.min(100, (storageSize / storageLimit) * 100)
+    : 0;
 
   return (
     <div className="flex h-screen w-screen bg-neutral-950 text-neutral-200 font-sans overflow-hidden">
@@ -187,50 +212,56 @@ export function MainLayout() {
           </Link>
         </div>
 
-        {/* Storage Info */}
-        <StorageIndicator isCollapsed={isCollapsed} />
-
         {/* User Profile */}
         <div className="p-4 border-t border-neutral-800 bg-neutral-900/50 flex-shrink-0">
-          <div className={`flex items-center ${isCollapsed ? 'lg:flex-col lg:gap-4' : 'justify-between'}`}>
-            <div className={`flex items-center overflow-hidden gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}>
-              <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 text-neutral-400">
-                <UserIcon className="w-4 h-4" />
-              </div>
-              <div className={`transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>
-                <p className="text-sm font-medium text-neutral-200 truncate">{user?.email}</p>
-                <p className="text-xs text-neutral-500 capitalize">{user?.role}</p>
-              </div>
+          <Link
+            to="/account"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`flex items-center overflow-hidden rounded-xl border p-3 transition-colors ${
+              location.pathname === '/account'
+                ? 'border-cyan-600/30 bg-cyan-600/10'
+                : 'border-neutral-700/50 bg-neutral-800/40 hover:border-neutral-600 hover:bg-neutral-800/70'
+            } ${
+              isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+              location.pathname === '/account'
+                ? 'bg-cyan-500/15 text-cyan-300'
+                : 'bg-neutral-800 text-neutral-400'
+            }`}>
+              <UserIcon className="w-4 h-4" />
             </div>
-            <button
-              onClick={() => setIsLogoutModalOpen(true)}
-              className={`p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ${isCollapsed ? 'lg:w-full lg:flex lg:justify-center' : ''}`}
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+            {!isCollapsed && (
+              <div className="ml-auto min-w-0 flex-1 text-right">
+                <p className={`text-[10px] uppercase tracking-wider ${location.pathname === '/account' ? 'text-cyan-200/70' : 'text-neutral-500'}`}>Storage</p>
+                <p className={`text-xs font-medium truncate ${location.pathname === '/account' ? 'text-cyan-50' : 'text-neutral-300'}`} title={storageText}>
+                  {storageText}
+                </p>
+                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      storageUsagePercent > 90 ? 'bg-red-500' : storageUsagePercent > 70 ? 'bg-amber-500' : 'bg-blue-500'
+                    }`}
+                    style={{ width: `${storageUsagePercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </Link>
           {user?.role === 'admin' && (
             <Link
               to="/admin/users"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`mt-3 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm rounded-lg transition-colors border border-neutral-700/50 p-2 gap-2 ${isCollapsed ? 'lg:gap-0' : 'w-full'}`}
+              className={`mt-3 flex items-center rounded-xl border border-neutral-700/50 bg-neutral-800/40 p-3 text-sm text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-800/70 ${
+                isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
+              }`}
               title="User Management"
             >
-              <Shield className="w-4 h-4 text-blue-400 flex-shrink-0" />
-              <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline'}`}>User Management</span>
+              <Shield className="w-5 h-5 text-blue-400 flex-shrink-0" />
+              <span className={`overflow-hidden whitespace-nowrap font-medium transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline'}`}>User Management</span>
             </Link>
           )}
-          <a
-            href="https://github.com/ShinChven/remix-studio"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`mt-3 flex items-center px-3 py-2 rounded-lg hover:bg-neutral-800 text-neutral-500 hover:text-neutral-300 transition-all border border-transparent hover:border-neutral-700/50 gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full'}`}
-            title="Open Source"
-          >
-            <Github className="w-4 h-4 flex-shrink-0" />
-            <span className={`text-xs font-medium overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Open Source</span>
-          </a>
         </div>
       </div>
 
@@ -239,16 +270,6 @@ export function MainLayout() {
           <Outlet />
         </div>
       </div>
-
-      <ConfirmModal
-        isOpen={isLogoutModalOpen}
-        onClose={() => setIsLogoutModalOpen(false)}
-        onConfirm={logout}
-        title="Log Out"
-        message="Are you sure you want to log out? Any unsaved changes might be lost."
-        confirmText="Log Out"
-        type="danger"
-      />
     </div>
   );
 }

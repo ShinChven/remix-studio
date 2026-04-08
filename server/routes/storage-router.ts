@@ -13,6 +13,7 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
     try {
       const user = c.get('user') as JwtPayload;
       const userId = user.userId;
+      const includeProjects = c.req.query('includeProjects') !== 'false';
 
       // 1. Fetch all metadata from DB in a single pass
       const [allItems, trashItems, userRecord] = await Promise.all([
@@ -63,8 +64,7 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
               markKey(item.thumbnailUrl);
               markKey(item.optimizedUrl);
             } else if (type === 'JOB') {
-              projectBreakdown[projectId].drafts += itemSize;
-              projectBreakdown[projectId].total += itemSize;
+              // Jobs are transient execution records and do not count against storage usage.
               markKey(item.imageUrl);
               markKey(item.thumbnailUrl);
               markKey(item.optimizedUrl);
@@ -97,13 +97,15 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
       }
 
       // Also mark names for projects that were fetched
-      const allProjectsRes = await repository.getUserProjects(userId, 1, 100000);
-      for (const p of allProjectsRes.items) {
-        if (projectBreakdown[p.id]) {
-          projectBreakdown[p.id].name = p.name;
-        } else {
-          // Ensure project is represented even if it has no items
-          projectBreakdown[p.id] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: p.name };
+      if (includeProjects) {
+        const allProjectsRes = await repository.getUserProjects(userId, 1, 100000);
+        for (const p of allProjectsRes.items) {
+          if (projectBreakdown[p.id]) {
+            projectBreakdown[p.id].name = p.name;
+          } else {
+            // Ensure project is represented even if it has no items
+            projectBreakdown[p.id] = { total: 0, album: 0, drafts: 0, workflow: 0, orphans: 0, name: p.name };
+          }
         }
       }
 
@@ -154,7 +156,6 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
         categories: [
           { id: 'projects', name: 'Projects', size: totalProjectsSize, subCategories: [
             { id: 'album', name: 'Album', size: totalAlbumSize },
-            { id: 'drafts', name: 'Drafts/Jobs', size: totalDraftsSize },
             { id: 'workflow', name: 'Workflow', size: totalWorkflowSize },
             { id: 'orphans', name: 'Orphans', size: totalOrphansSize },
           ]},
@@ -162,10 +163,10 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
           { id: 'archives', name: 'Archives (Exports)', size: totalExportSize },
           { id: 'trash', name: 'Recycle Bin', size: totalTrashSize },
         ],
-        projects: Object.entries(projectBreakdown).map(([id, stats]) => ({
+        projects: includeProjects ? Object.entries(projectBreakdown).map(([id, stats]) => ({
           id,
           ...stats
-        })).sort((a, b) => b.total - a.total)
+        })).sort((a, b) => b.total - a.total) : []
       });
     } catch (e) {
       console.error('[GET /api/storage/analysis]', e);

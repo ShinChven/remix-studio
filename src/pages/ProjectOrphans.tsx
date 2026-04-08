@@ -135,7 +135,7 @@ export function ProjectOrphans() {
     <div className="h-full flex flex-col bg-neutral-950 overflow-hidden">
       {/* Header */}
       <header className="p-4 md:p-6 border-b border-neutral-800 bg-neutral-900/20 backdrop-blur-md sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
             <button
               onClick={() => navigate(`/project/${id}`)}
@@ -187,7 +187,7 @@ export function ProjectOrphans() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-        <div className="max-w-7xl mx-auto w-full space-y-8">
+        <div className="w-full space-y-8">
           
           {/* Legend / Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

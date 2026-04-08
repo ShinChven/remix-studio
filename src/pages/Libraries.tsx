@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Library } from '../types';
 import { Plus, Folder, LayoutGrid, Layers, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { fetchLibraries } from '../api';
@@ -78,9 +78,9 @@ export function Libraries() {
             <>
               <div className="space-y-3">
                 {libraries.map(lib => (
-                  <button
+                  <Link
                     key={lib.id}
-                    onClick={() => navigate(`/library/${lib.id}`)}
+                    to={`/library/${lib.id}`}
                     className="w-full bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/60 hover:border-blue-500/40 hover:bg-neutral-900/60 p-3 md:p-4 rounded-xl text-left transition-all group flex items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
@@ -101,7 +101,7 @@ export function Libraries() {
                       <span className="hidden sm:inline text-sm font-medium text-blue-500 opacity-100 transition-opacity">Open Editor →</span>
                       <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-blue-500 transition-colors" />
                     </div>
-                  </button>
+                  </Link>
                 ))}
 
                 {libraries.length === 0 && (

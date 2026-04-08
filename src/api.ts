@@ -1,4 +1,4 @@
-import { AppData, Library, LibraryItem, Project, Provider, ProviderType, User, UserRole, TrashItem, ExportTask, StorageAnalysis } from './types';
+import { AppData, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const token = localStorage.getItem('token');
@@ -20,6 +20,120 @@ async function handleResponse<T>(res: Response, defaultError: string): Promise<T
     throw new Error(errorMsg);
   }
   return res.json();
+}
+
+// ========== Auth / Account ==========
+
+export async function fetchCurrentUser(): Promise<User> {
+  const res = await fetch('/api/auth/me', { headers: getHeaders(false) });
+  const data = await handleResponse<{ user: User }>(res, 'Failed to load account');
+  return data.user;
+}
+
+export async function updatePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const res = await fetch('/api/auth/password', {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update password');
+  }
+}
+
+export async function fetchSecuritySettings(): Promise<SecuritySettings> {
+  const res = await fetch('/api/auth/security', { headers: getHeaders(false) });
+  return handleResponse<SecuritySettings>(res, 'Failed to load security settings');
+}
+
+export async function beginPasskeyRegistration(name: string): Promise<{ options: any; flowToken: string }> {
+  const res = await fetch('/api/auth/passkeys/register/options', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ name }),
+  });
+  return handleResponse<{ options: any; flowToken: string }>(res, 'Failed to start passkey registration');
+}
+
+export async function finishPasskeyRegistration(flowToken: string, credential: any): Promise<{ passkey: PasskeySummary }> {
+  const res = await fetch('/api/auth/passkeys/register/verify', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ flowToken, credential }),
+  });
+  return handleResponse<{ passkey: PasskeySummary }>(res, 'Failed to register passkey');
+}
+
+export async function removePasskey(passkeyId: string): Promise<void> {
+  const res = await fetch(`/api/auth/passkeys/${passkeyId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to remove passkey');
+  }
+}
+
+export async function beginPasskeyLogin(email?: string): Promise<{ options: any; flowToken: string }> {
+  const res = await fetch('/api/auth/passkeys/login/options', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  return handleResponse<{ options: any; flowToken: string }>(res, 'Failed to start passkey login');
+}
+
+export async function finishPasskeyLogin(flowToken: string, credential: any): Promise<{ token: string; user: User }> {
+  const res = await fetch('/api/auth/passkeys/login/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ flowToken, credential }),
+  });
+  return handleResponse<{ token: string; user: User }>(res, 'Failed to finish passkey login');
+}
+
+export async function setupTwoFactor(password: string): Promise<{ secret: string; otpauthUri: string; expiresAt: number }> {
+  const res = await fetch('/api/auth/2fa/setup', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ password }),
+  });
+  return handleResponse<{ secret: string; otpauthUri: string; expiresAt: number }>(res, 'Failed to set up 2FA');
+}
+
+export async function enableTwoFactor(code: string): Promise<void> {
+  const res = await fetch('/api/auth/2fa/enable', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ code }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to enable 2FA');
+  }
+}
+
+export async function disableTwoFactor(password: string, code: string): Promise<void> {
+  const res = await fetch('/api/auth/2fa/disable', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ password, code }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to disable 2FA');
+  }
+}
+
+export async function verifyTwoFactorLogin(tempToken: string, code: string): Promise<{ token: string; user: User }> {
+  const res = await fetch('/api/auth/2fa/verify-login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tempToken, code }),
+  });
+  return handleResponse<{ token: string; user: User }>(res, 'Failed to verify 2FA login');
 }
 
 // ========== Legacy bulk load (used for initial data fetch) ==========
@@ -165,10 +279,15 @@ export async function deleteLibraryItem(libraryId: string, itemId: string): Prom
 
 // ========== Project CRUD ==========
 
-export async function fetchProjects(page: number = 1, limit: number = 50): Promise<import('./types').PaginatedResult<Project>> {
+export async function fetchProjects(
+  page: number = 1,
+  limit: number = 50,
+  sort: 'createdAt' | 'totalSize' = 'createdAt'
+): Promise<import('./types').PaginatedResult<Project>> {
   const params = new URLSearchParams();
   if (page) params.set('page', page.toString());
   if (limit) params.set('limit', limit.toString());
+  if (sort) params.set('sort', sort);
 
   const res = await fetch(`/api/projects?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Project>>(res, 'Failed to list projects');
@@ -295,9 +414,46 @@ export async function renameProjectFolder(oldId: string, newId: string): Promise
 
 // ========== Admin ==========
 
-export async function getUsers(): Promise<User[]> {
-  const res = await fetch('/api/admin/users', { headers: getHeaders(false) });
-  return handleResponse<User[]>(res, 'Failed to load users');
+export async function getUsers(params: {
+  q?: string;
+  role?: UserRole | 'all';
+  status?: UserStatus | 'all';
+  page?: number;
+  pageSize?: number;
+  sortBy?: 'createdAt' | 'lastLoginAt' | 'email';
+  sortOrder?: 'asc' | 'desc';
+} = {}): Promise<PaginatedResult<UserSummary>> {
+  const search = new URLSearchParams();
+  if (params.q) search.set('q', params.q);
+  if (params.role && params.role !== 'all') search.set('role', params.role);
+  if (params.status && params.status !== 'all') search.set('status', params.status);
+  if (params.page) search.set('page', params.page.toString());
+  if (params.pageSize) search.set('pageSize', params.pageSize.toString());
+  if (params.sortBy) search.set('sortBy', params.sortBy);
+  if (params.sortOrder) search.set('sortOrder', params.sortOrder);
+
+  const res = await fetch(`/api/admin/users?${search.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<PaginatedResult<UserSummary>>(res, 'Failed to load users');
+}
+
+export async function createUser(data: {
+  email: string;
+  password: string;
+  role: UserRole;
+  status: UserStatus;
+  storageLimit: number;
+}): Promise<{ user: User }> {
+  const res = await fetch('/api/admin/users', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<{ user: User }>(res, 'Failed to create user');
+}
+
+export async function getUserDetail(id: string): Promise<UserDetail> {
+  const res = await fetch(`/api/admin/users/${id}`, { headers: getHeaders(false) });
+  return handleResponse<UserDetail>(res, 'Failed to load user detail');
 }
 
 export async function updateUserRole(id: string, role: UserRole): Promise<void> {
@@ -321,6 +477,30 @@ export async function updateUserStorageLimit(id: string, limit: number): Promise
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.error || 'Failed to update storage limit');
+  }
+}
+
+export async function updateUserStatus(id: string, status: UserStatus): Promise<void> {
+  const res = await fetch(`/api/admin/users/${id}/status`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update user status');
+  }
+}
+
+export async function adminResetUserPassword(id: string, newPassword: string): Promise<void> {
+  const res = await fetch(`/api/admin/users/${id}/password`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ newPassword }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to reset password');
   }
 }
 
@@ -535,8 +715,11 @@ export async function deleteProjectExport(projectId: string, taskId: string): Pr
 
 // ========== Storage ==========
 
-export async function fetchStorageAnalysis(): Promise<StorageAnalysis> {
-  const res = await fetch('/api/storage/analysis', { headers: getHeaders(false) });
+export async function fetchStorageAnalysis(options?: { includeProjects?: boolean }): Promise<StorageAnalysis> {
+  const params = new URLSearchParams();
+  if (options?.includeProjects === false) params.set('includeProjects', 'false');
+
+  const query = params.toString();
+  const res = await fetch(`/api/storage/analysis${query ? `?${query}` : ''}`, { headers: getHeaders(false) });
   return handleResponse<StorageAnalysis>(res, 'Failed to analyze storage');
 }
-

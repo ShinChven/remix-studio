@@ -178,13 +178,51 @@ export interface Provider {
 }
 
 export type UserRole = 'admin' | 'user';
+export type UserStatus = 'active' | 'disabled';
 
 export interface User {
   id: string;
   email: string;
   role: UserRole;
+  status: UserStatus;
+  twoFactorEnabled?: boolean;
   createdAt: number;
+  updatedAt?: number;
+  lastLoginAt?: number;
   storageLimit?: number;
+}
+
+export interface PasskeySummary {
+  id: string;
+  name: string;
+  createdAt: number;
+  lastUsedAt?: number;
+  transports?: string[];
+}
+
+export interface SecuritySettings {
+  twoFactorEnabled: boolean;
+  pendingTwoFactorSetup: boolean;
+  passkeys: PasskeySummary[];
+}
+
+export interface UserSummary extends User {
+  projectCount: number;
+  libraryCount: number;
+  providerCount: number;
+  usedStorage: number;
+}
+
+export interface UserStorageBreakdown {
+  projects: number;
+  libraries: number;
+  exports: number;
+  trash: number;
+}
+
+export interface UserDetail extends UserSummary {
+  exportCount: number;
+  storageBreakdown: UserStorageBreakdown;
 }
 
 export interface ExportTask {

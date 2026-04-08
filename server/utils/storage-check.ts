@@ -9,7 +9,7 @@ import { UserRepository } from '../auth/user-repository';
  * quota enforcement and the dashboard display always agree.
  *
  * Size breakdown:
- *  - Projects (album + drafts + workflow): DB size fields on each item
+ *  - Projects (album + workflow): DB size fields on each item
  *  - Libraries: DB size fields on each library item
  *  - Trash: DB size fields on each trash item
  *  - Archives (exports): S3 HeadObject on each completed export task's s3Key
@@ -35,7 +35,7 @@ export async function getUserStorageUsage(
     const type = item._type;
     const itemSize = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
 
-    if (type === 'JOB' || type === 'ALBUM' || type === 'LIBRARY_ITEM' || type === 'WORKFLOW_ITEM') {
+    if (type === 'ALBUM' || type === 'LIBRARY_ITEM' || type === 'WORKFLOW_ITEM') {
       totalSize += itemSize;
     } else if (type === 'EXPORT') {
       exportTasks.push(item);

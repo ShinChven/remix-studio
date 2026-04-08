@@ -23,7 +23,7 @@ Archives, Recycle Bin) and provides a per-project ranking.
 
 **All categorized sizes are calculated from DynamoDB-stored `size` fields, not from S3.**
 
-Every file-bearing record in DynamoDB (`AlbumItem`, `Job`, `TrashItem`, `LibraryItem`)
+Every file-bearing record in DynamoDB (`AlbumItem`, `TrashItem`, `LibraryItem`)
 stores three size fields written at upload time:
 
 | Field | What it measures |
@@ -63,7 +63,7 @@ GET /api/storage/analysis
   ├─ 3. DB-based size aggregation (main loop)
   │     Iterates all items, dispatches by SK prefix:
   │     ├─ PROJECT#pid#ALBUM#iid  → album size   (DB size fields)
-  │     ├─ PROJECT#pid#JOB#jid   → drafts size   (DB size fields)
+  │     ├─ PROJECT#pid#JOB#jid   → referenced only, not counted toward storage
   │     ├─ PROJECT#pid#WF#wid    → workflow size (DB size fields)
   │     ├─ LIBRARY#lid#ITEM#iid  → library size  (DB size fields)
   │     ├─ TRASH#iid             → keys marked (size from getTrashItems)
@@ -85,7 +85,6 @@ GET /api/storage/analysis
 | Category | Sub-category | Data Source |
 |----------|-------------|-------------|
 | Projects | Album | DB: `AlbumItem.size + optimizedSize + thumbnailSize` |
-| Projects | Drafts/Jobs | DB: `Job.size + optimizedSize + thumbnailSize` |
 | Projects | Workflow | DB: `WorkflowItem.size + optimizedSize + thumbnailSize` |
 | Projects | Orphans | S3 scan: files in project folder not in DB |
 | Libraries | — | DB: `LibraryItem.size + optimizedSize + thumbnailSize` |
@@ -173,7 +172,8 @@ interface StorageAnalysis {
 
 The pre-upload quota check (`server/utils/storage-check.ts`) uses the **exact same
 DB-first strategy** as the analytics endpoint. Both call `getAllUserItems`, sum the same
-three size fields, and look up export sizes via `task.s3Key`.
+three size fields for album, workflow, library, and trash records, and look up export
+sizes via `task.s3Key`.
 
 This means:
 - The storage bar the user sees on the dashboard reflects what the upload gate actually enforces.

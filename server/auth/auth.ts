@@ -1,7 +1,8 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { type SignOptions } from 'jsonwebtoken';
 import type { Context, Next } from 'hono';
-import type { UserRole } from '../../src/types';
+import type { UserRole, UserStatus } from '../../src/types';
+import type { UserRepository } from './user-repository';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'remix-studio-dev-secret';
 const SALT_ROUNDS = 10;
@@ -12,14 +13,33 @@ export interface JwtPayload {
   role: UserRole;
 }
 
+export interface AuthFlowPayload {
+  purpose:
+    | 'login-2fa'
+    | 'passkey-register'
+    | 'passkey-login';
+  userId?: string;
+  email?: string;
+  challenge?: string;
+  name?: string;
+  method?: 'password' | 'passkey';
+}
+
 export interface UserRecord {
   pk: string;       // 'USER'
   sk: string;       // userId
   email: string;
   passwordHash: string;
   role: UserRole;
+  status: UserStatus;
   storageLimit?: number;
+  twoFactorEnabled?: boolean;
+  twoFactorSecret?: string | null;
+  twoFactorTempSecret?: string | null;
+  twoFactorTempExpiresAt?: number | null;
   createdAt: number;
+  updatedAt?: number;
+  lastLoginAt?: number;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -32,6 +52,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 
 import { getCookie } from 'hono/cookie';
 
+let authUserRepository: UserRepository | null = null;
+
+export function configureAuth(userRepository: UserRepository) {
+  authUserRepository = userRepository;
+}
+
 export function signToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
 }
@@ -40,7 +66,15 @@ export function verifyToken(token: string): JwtPayload {
   return jwt.verify(token, JWT_SECRET) as JwtPayload;
 }
 
-export function authMiddleware(c: Context, next: Next): Response | Promise<Response | void> {
+export function signFlowToken(payload: AuthFlowPayload, expiresIn: SignOptions['expiresIn'] = '10m'): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+}
+
+export function verifyFlowToken(token: string): AuthFlowPayload {
+  return jwt.verify(token, JWT_SECRET) as AuthFlowPayload;
+}
+
+export async function authMiddleware(c: Context, next: Next): Promise<Response | void> {
   const authHeader = c.req.header('Authorization');
   let token: string | undefined;
 
@@ -56,8 +90,19 @@ export function authMiddleware(c: Context, next: Next): Response | Promise<Respo
 
   try {
     const payload = verifyToken(token);
-    c.set('user', payload);
-    return next() as Promise<void>;
+    if (authUserRepository) {
+      const user = await authUserRepository.findById(payload.userId);
+      if (!user) {
+        return c.json({ error: 'User not found' }, 401);
+      }
+      if (user.status === 'disabled') {
+        return c.json({ error: 'This account has been disabled' }, 403);
+      }
+      c.set('user', { ...payload, role: user.role, email: user.email });
+    } else {
+      c.set('user', payload);
+    }
+    return next();
   } catch {
     return c.json({ error: 'Invalid token' }, 401);
   }
