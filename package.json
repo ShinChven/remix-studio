@@ -15,7 +15,7 @@
     "@aws-sdk/client-s3": "^3.1024.0",
     "@aws-sdk/lib-storage": "^3.1024.0",
     "@aws-sdk/s3-request-presigner": "^3.1024.0",
-    "@google/genai": "^1.29.0",
+    "@google/genai": "^1.48.0",
     "@hono/node-server": "^1.19.12",
     "@prisma/adapter-pg": "^7.6.0",
     "@tailwindcss/vite": "^4.1.14",
