@@ -205,6 +205,17 @@ export class QueueManager {
       if (!apiKey) throw new Error('Stored API key not found for provider');
 
       const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+
+      // If the job already has a taskId (e.g. it was a RunningHub job that failed locally and was retried),
+      // do not call generate() again. Just hand it off to the detached poller.
+      if (job.taskId && generator.checkStatus) {
+        console.log(`[QueueManager] Job ${job.id} already has taskId ${job.taskId}, resuming detached polling.`);
+        await this.updateJobStatus(userId, projectId, job.id, { 
+          status: 'processing', 
+          error: undefined 
+        });
+        return;
+      }
       
       // Resolve imageContexts: could be S3 keys, presigned URLs, or base64 data URLs
       let refImages: string[] | undefined;
@@ -370,11 +381,10 @@ export class QueueManager {
 
     } catch (e: any) {
       console.error(`[QueueManager] Job ${job.id} failed during image processing:`, e.message);
-      // Keep taskId and status as 'processing' — the remote task succeeded,
-      // only local processing (download/S3/thumbnail) failed. The poller will retry.
       await this.updateJobStatus(userId, projectId, job.id, {
-        status: 'processing',
-        error: formatError(e, 'Image processing error, will retry')
+        status: 'failed',
+        error: formatError(e, 'Image processing error')
+        // Do not clear taskId so that detached tasks can be resumed upon retry
       });
     }
   }
