@@ -26,6 +26,8 @@ import { ProjectRepository } from './server/db/project-repository';
 import { createStorageRouter } from './server/routes/storage-router';
 import { QueueManager } from './server/queue/queue-manager';
 import { ExportManager } from './server/queue/export-manager';
+import { ImageProcessor } from './server/queue/image-processor';
+import { DetachedPoller } from './server/queue/detached-poller';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
@@ -76,7 +78,9 @@ async function startServer() {
   });
   await exportStorage.ensureBucket();
 
-  const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, userRepository, exportStorage);
+  const imageProcessor = new ImageProcessor(projectRepository, storage, userRepository, exportStorage);
+  const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor);
+  const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, detachedPoller);
   // Important: Recover tasks before starting the server to resume background work
   await queueManager.recoverTasks();
 

@@ -55,19 +55,14 @@ export class VertexAIGenerator extends ImageGenerator {
           imageConfig: {
             aspectRatio,
             imageSize,
-            personGeneration: 'ALLOW_ALL',
-            imageOutputOptions: { mimeType: 'image/png' },
+            outputMimeType: 'image/png',
           },
           safetySettings: [
-            // @ts-ignore - The SDK might type the threshold as BLOCK_NONE instead of OFF
-            { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'OFF' },
-            // @ts-ignore
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'OFF' },
-            // @ts-ignore
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'OFF' },
-            // @ts-ignore
-            { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'OFF' },
-          ],
+            { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' },
+          ] as any,
         },
       });
 

@@ -52,7 +52,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'GoogleAI',
       modelId: 'gemini-3.1-flash-image',
       options: {
-        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21'],
         qualities: ['1K', '2K', '4K'],
       },
     },
@@ -64,7 +64,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'VertexAI',
       modelId: 'gemini-3.1-flash-image',
       options: {
-        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21'],
         qualities: ['1K', '2K', '4K'],
       },
     },
@@ -76,7 +76,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'RunningHub',
       modelId: 'rhart-image-n-g31-flash',
       options: {
-        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21'],
         qualities: ['1K', '2K', '4K'],
       },
     },
