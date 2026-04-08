@@ -8,7 +8,6 @@ import { Link } from 'react-router-dom';
 const COLORS: Record<string, string> = {
   projects: '#3b82f6',
   album: '#60a5fa',
-  drafts: '#8b5cf6',
   workflow: '#10b981',
   orphans: '#f59e0b',
   libraries: '#ec4899',
@@ -144,6 +143,7 @@ export function StorageView() {
 
             {/* 2-6. Categories cards */}
             {analysis.categories.map((cat, idx) => {
+              const visibleSubCategories = cat.subCategories?.filter((sub) => sub.id !== 'drafts');
               const href = cat.id === 'projects' ? '/projects' : 
                           cat.id === 'libraries' ? '/libraries' :
                           cat.id === 'archives' ? '/exports' : 
@@ -171,9 +171,9 @@ export function StorageView() {
                     </div>
 
                     {/* Sub-categories (for Projects) */}
-                    {cat.subCategories && (
+                    {visibleSubCategories && visibleSubCategories.length > 0 && (
                       <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-2">
-                         {cat.subCategories.map(sub => (
+                         {visibleSubCategories.map(sub => (
                            <div key={sub.id} className="flex flex-col">
                               <span className="text-[9px] text-neutral-500 uppercase font-black tracking-tight mb-0.5">{sub.name}</span>
                               <span className="text-xs font-bold text-neutral-300">{formatSize(sub.size)}</span>

@@ -11,7 +11,6 @@ const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security'];
 const STORAGE_COLORS: Record<string, string> = {
   projects: '#3b82f6',
   album: '#60a5fa',
-  drafts: '#8b5cf6',
   workflow: '#10b981',
   orphans: '#f59e0b',
   libraries: '#ec4899',
@@ -450,7 +449,10 @@ export function Account() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    {storage.categories.map((category) => (
+                    {storage.categories.map((category) => {
+                      const visibleSubCategories = category.subCategories?.filter((subCategory) => subCategory.id !== 'drafts');
+
+                      return (
                       <div key={category.id} className="flex h-full min-h-[210px] flex-col rounded-2xl border border-neutral-800 bg-neutral-950/60 p-5">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-3">
@@ -467,9 +469,9 @@ export function Account() {
                           {storage.totalSize > 0 ? `${((category.size / storage.totalSize) * 100).toFixed(1)}% of used space` : 'No usage yet'}
                         </p>
 
-                        {category.subCategories && (
+                        {visibleSubCategories && visibleSubCategories.length > 0 && (
                           <div className="mt-4 grid grid-cols-2 gap-3 border-t border-neutral-800 pt-4">
-                            {category.subCategories.map((subCategory) => (
+                            {visibleSubCategories.map((subCategory) => (
                               <div key={subCategory.id}>
                                 <p className="text-[10px] font-black uppercase tracking-[0.15em] text-neutral-500">{subCategory.name}</p>
                                 <p className="mt-1 text-xs font-semibold text-neutral-300">{formatBytes(subCategory.size)}</p>
@@ -478,7 +480,7 @@ export function Account() {
                           </div>
                         )}
                       </div>
-                    ))}
+                    )})}
                   </div>
 
                   <div>

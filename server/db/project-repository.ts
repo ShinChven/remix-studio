@@ -23,7 +23,7 @@ export class ProjectRepository {
     // Aggregate sizes by project
     const projectSizes: Record<string, number> = {};
     for (const item of allItems) {
-      if (item.projectId) {
+      if (item.projectId && item._type !== 'JOB') {
         const itemSize = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
         projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + itemSize;
       }

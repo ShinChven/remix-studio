@@ -64,8 +64,7 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
               markKey(item.thumbnailUrl);
               markKey(item.optimizedUrl);
             } else if (type === 'JOB') {
-              projectBreakdown[projectId].drafts += itemSize;
-              projectBreakdown[projectId].total += itemSize;
+              // Jobs are transient execution records and do not count against storage usage.
               markKey(item.imageUrl);
               markKey(item.thumbnailUrl);
               markKey(item.optimizedUrl);
@@ -157,7 +156,6 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
         categories: [
           { id: 'projects', name: 'Projects', size: totalProjectsSize, subCategories: [
             { id: 'album', name: 'Album', size: totalAlbumSize },
-            { id: 'drafts', name: 'Drafts/Jobs', size: totalDraftsSize },
             { id: 'workflow', name: 'Workflow', size: totalWorkflowSize },
             { id: 'orphans', name: 'Orphans', size: totalOrphansSize },
           ]},
