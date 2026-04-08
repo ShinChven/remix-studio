@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
 import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive } from 'lucide-react';
 
+import { fetchStorageAnalysis } from '../api';
 import { useAuth } from '../contexts/AuthContext';
-import { StorageIndicator } from './StorageIndicator';
 
 export function MainLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [storageSize, setStorageSize] = useState<number | null>(null);
+  const [storageLimit, setStorageLimit] = useState<number | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar-collapsed');
     return saved === 'true';
@@ -28,6 +30,42 @@ export function MainLayout() {
 
   const location = useLocation();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      setStorageSize(null);
+      setStorageLimit(null);
+      return;
+    }
+
+    const loadStorage = async () => {
+      try {
+        const analysis = await fetchStorageAnalysis({ includeProjects: false });
+        setStorageSize(analysis.totalSize);
+        setStorageLimit(analysis.limit);
+      } catch (error) {
+        console.error('Failed to load storage size:', error);
+      }
+    };
+
+    void loadStorage();
+    const interval = setInterval(() => void loadStorage(), 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const formatStorageSize = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const unitIndex = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${parseFloat((bytes / Math.pow(1024, unitIndex)).toFixed(1))} ${units[unitIndex]}`;
+  };
+
+  const storageText = storageSize !== null && storageLimit !== null
+    ? `${formatStorageSize(storageSize)} / ${formatStorageSize(storageLimit)}`
+    : 'Storage unavailable';
+  const storageUsagePercent = storageSize !== null && storageLimit
+    ? Math.min(100, (storageSize / storageLimit) * 100)
+    : 0;
 
   return (
     <div className="flex h-screen w-screen bg-neutral-950 text-neutral-200 font-sans overflow-hidden">
@@ -174,9 +212,6 @@ export function MainLayout() {
           </Link>
         </div>
 
-        {/* Storage Info */}
-        <StorageIndicator isCollapsed={isCollapsed} />
-
         {/* User Profile */}
         <div className="p-4 border-t border-neutral-800 bg-neutral-900/50 flex-shrink-0">
           <Link
@@ -197,10 +232,22 @@ export function MainLayout() {
             }`}>
               <UserIcon className="w-4 h-4" />
             </div>
-            <div className={`min-w-0 transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>
-              <p className={`text-sm font-medium truncate ${location.pathname === '/account' ? 'text-cyan-50' : 'text-neutral-200'}`}>{user?.email}</p>
-              <p className={`text-xs capitalize ${location.pathname === '/account' ? 'text-cyan-200/70' : 'text-neutral-500'}`}>{user?.role}</p>
-            </div>
+            {!isCollapsed && (
+              <div className="ml-auto min-w-0 flex-1 text-right">
+                <p className={`text-[10px] uppercase tracking-wider ${location.pathname === '/account' ? 'text-cyan-200/70' : 'text-neutral-500'}`}>Storage</p>
+                <p className={`text-xs font-medium truncate ${location.pathname === '/account' ? 'text-cyan-50' : 'text-neutral-300'}`} title={storageText}>
+                  {storageText}
+                </p>
+                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      storageUsagePercent > 90 ? 'bg-red-500' : storageUsagePercent > 70 ? 'bg-amber-500' : 'bg-blue-500'
+                    }`}
+                    style={{ width: `${storageUsagePercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </Link>
           {user?.role === 'admin' && (
             <Link
