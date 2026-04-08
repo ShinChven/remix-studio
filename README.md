@@ -4,6 +4,8 @@ Remix Studio is a self-hosted workspace for managing AI image generation project
 
 It combines a React frontend with a Hono server, PostgreSQL via Prisma, and S3-compatible storage. The project is built around a practical workflow: store provider credentials, organize prompts and libraries, run generation jobs, review results, and export finished assets.
 
+![Remix Studio screenshot](assets/screenshot.jpg)
+
 ## What It Does
 
 - Manage image generation providers and their API credentials
@@ -40,24 +42,33 @@ remix-studio/
 ### Requirements
 
 - Node.js 20+
-- Docker, if you want local PostgreSQL and MinIO
+- Docker with Docker Compose, for running local PostgreSQL and MinIO
 - At least one provider API key
 
-### 1. Start local services
+### 1. Clone the repository
 
 ```bash
-docker-compose up -d
+git clone https://github.com/ShinChven/remix-studio.git
+cd remix-studio
 ```
+
+### 2. Start local services
+
+```bash
+docker compose up -d postgres minio
+```
+
+Use Docker Compose for local development to run only PostgreSQL and MinIO.
 
 This starts PostgreSQL on `5432` and MinIO on `19000` with the console on `19001`.
 
-### 2. Install dependencies
+### 3. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure environment variables
+### 4. Configure environment variables
 
 ```bash
 cp .env.example .env
@@ -84,13 +95,13 @@ Generate one with:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### 4. Run database migrations
+### 5. Run database migrations
 
 ```bash
 npx prisma migrate dev
 ```
 
-### 5. Start the app
+### 6. Start the app
 
 ```bash
 npm run dev
