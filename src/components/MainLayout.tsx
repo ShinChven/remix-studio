@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Outlet, Link } from 'react-router-dom';
 import { Library, Project } from '../types';
 import { fetchLibraries, fetchProjects } from '../api';
-import { Folder, Layers, Play, LogOut, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive } from 'lucide-react';
+import { Folder, Layers, Play, LogOut, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Github } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from './ConfirmModal';
@@ -221,6 +221,16 @@ export function MainLayout() {
               <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline'}`}>User Management</span>
             </Link>
           )}
+          <a
+            href="https://github.com/ShinChven/remix-studio"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`mt-3 flex items-center px-3 py-2 rounded-lg hover:bg-neutral-800 text-neutral-500 hover:text-neutral-300 transition-all border border-transparent hover:border-neutral-700/50 gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full'}`}
+            title="Open Source"
+          >
+            <Github className="w-4 h-4 flex-shrink-0" />
+            <span className={`text-xs font-medium overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Open Source</span>
+          </a>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Github } from 'lucide-react';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -74,6 +74,18 @@ export function Login() {
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
           </button>
         </form>
+        <div className="mt-8 pt-6 border-t border-zinc-800 w-full flex flex-col items-center gap-3">
+          <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Open Source Project</p>
+          <a
+            href="https://github.com/ShinChven/remix-studio"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-4 py-2 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700/50 transition-all active:scale-95 group"
+          >
+            <Github className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
+            <span className="text-sm font-medium">github.com/ShinChven/remix-studio</span>
+          </a>
+        </div>
       </div>
     </div>
   );
