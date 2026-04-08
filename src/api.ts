@@ -1,4 +1,4 @@
-import { AppData, Library, LibraryItem, Project, Provider, ProviderType, User, UserRole, TrashItem, ExportTask, StorageAnalysis } from './types';
+import { AppData, Library, LibraryItem, Project, Provider, ProviderType, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const token = localStorage.getItem('token');
@@ -320,9 +320,46 @@ export async function renameProjectFolder(oldId: string, newId: string): Promise
 
 // ========== Admin ==========
 
-export async function getUsers(): Promise<User[]> {
-  const res = await fetch('/api/admin/users', { headers: getHeaders(false) });
-  return handleResponse<User[]>(res, 'Failed to load users');
+export async function getUsers(params: {
+  q?: string;
+  role?: UserRole | 'all';
+  status?: UserStatus | 'all';
+  page?: number;
+  pageSize?: number;
+  sortBy?: 'createdAt' | 'lastLoginAt' | 'email';
+  sortOrder?: 'asc' | 'desc';
+} = {}): Promise<PaginatedResult<UserSummary>> {
+  const search = new URLSearchParams();
+  if (params.q) search.set('q', params.q);
+  if (params.role && params.role !== 'all') search.set('role', params.role);
+  if (params.status && params.status !== 'all') search.set('status', params.status);
+  if (params.page) search.set('page', params.page.toString());
+  if (params.pageSize) search.set('pageSize', params.pageSize.toString());
+  if (params.sortBy) search.set('sortBy', params.sortBy);
+  if (params.sortOrder) search.set('sortOrder', params.sortOrder);
+
+  const res = await fetch(`/api/admin/users?${search.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<PaginatedResult<UserSummary>>(res, 'Failed to load users');
+}
+
+export async function createUser(data: {
+  email: string;
+  password: string;
+  role: UserRole;
+  status: UserStatus;
+  storageLimit: number;
+}): Promise<{ user: User }> {
+  const res = await fetch('/api/admin/users', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<{ user: User }>(res, 'Failed to create user');
+}
+
+export async function getUserDetail(id: string): Promise<UserDetail> {
+  const res = await fetch(`/api/admin/users/${id}`, { headers: getHeaders(false) });
+  return handleResponse<UserDetail>(res, 'Failed to load user detail');
 }
 
 export async function updateUserRole(id: string, role: UserRole): Promise<void> {
@@ -346,6 +383,30 @@ export async function updateUserStorageLimit(id: string, limit: number): Promise
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.error || 'Failed to update storage limit');
+  }
+}
+
+export async function updateUserStatus(id: string, status: UserStatus): Promise<void> {
+  const res = await fetch(`/api/admin/users/${id}/status`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update user status');
+  }
+}
+
+export async function adminResetUserPassword(id: string, newPassword: string): Promise<void> {
+  const res = await fetch(`/api/admin/users/${id}/password`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ newPassword }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to reset password');
   }
 }
 

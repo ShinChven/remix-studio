@@ -14,8 +14,11 @@ model User {
   email        String   @unique
   passwordHash String
   role         String   @default("user")
+  status       String   @default("disabled")
   storageLimit BigInt   @default(5368709120) // 5GB in bytes
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastLoginAt  DateTime?
 
   providers    Provider[]
   libraries    Library[]

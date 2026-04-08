@@ -13,7 +13,7 @@ import crypto from 'crypto';
 import { PrismaRepository } from './server/db/prisma-repository';
 import { S3Storage } from './server/storage/s3-storage';
 import { UserRepository } from './server/auth/user-repository';
-import { hashPassword, JwtPayload, authMiddleware } from './server/auth/auth';
+import { hashPassword, JwtPayload, authMiddleware, configureAuth } from './server/auth/auth';
 import { createAuthRouter } from './server/routes/auth';
 import { createLibraryRouter } from './server/routes/libraries';
 import { createProjectRouter } from './server/routes/projects';
@@ -55,6 +55,7 @@ async function startServer() {
   await repository.autoImportJson(DATA_DIR);
 
   const userRepository = new UserRepository(prisma);
+  configureAuth(userRepository);
   const providerRepository = new ProviderRepository(prisma);
   const projectRepository = new ProjectRepository(prisma);
 
@@ -99,6 +100,7 @@ async function startServer() {
         email: defaultAdminEmail,
         passwordHash,
         role: 'admin',
+        status: 'active',
         createdAt: Date.now(),
       });
       console.log(`Auto-provisioned default admin user: ${defaultAdminEmail}`);
