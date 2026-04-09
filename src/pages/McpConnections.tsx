@@ -25,6 +25,29 @@ const EXPIRY_OPTIONS = [
 ];
 
 export function McpConnections() {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const mcpUrl = origin ? `${origin}/mcp` : '/mcp';
+  const oauthMetadataUrl = origin ? `${origin}/.well-known/oauth-authorization-server` : '/.well-known/oauth-authorization-server';
+  const projectOAuthJson = JSON.stringify({
+    mcpServers: {
+      'remix-studio': {
+        type: 'http',
+        url: mcpUrl,
+      },
+    },
+  }, null, 2);
+  const projectTokenJson = JSON.stringify({
+    mcpServers: {
+      'remix-studio': {
+        type: 'http',
+        url: mcpUrl,
+        headers: {
+          Authorization: 'Bearer YOUR_MCP_TOKEN',
+        },
+      },
+    },
+  }, null, 2);
+
   const [clients, setClients] = useState<OAuthClientSummary[]>([]);
   const [tokens, setTokens] = useState<PersonalAccessTokenSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -118,6 +141,15 @@ export function McpConnections() {
     setCopied(false);
   };
 
+  const copyText = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error(`Failed to copy ${label.toLowerCase()}`);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full space-y-8">
@@ -127,6 +159,116 @@ export function McpConnections() {
             Manage OAuth clients and personal access tokens for MCP integrations.
           </p>
         </header>
+
+        <section className="rounded-2xl border border-neutral-800/70 bg-neutral-900/30 p-4 md:p-5">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex-shrink-0 rounded-lg bg-sky-500/10 p-2 text-sky-400">
+              <AlertCircle className="h-4 w-4" />
+            </div>
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold text-white">This page manages access, it does not start the connection</h3>
+                <p className="mt-1 text-sm text-neutral-400">
+                  If nothing is listed yet, that just means no client has connected yet. To let someone connect, send them the MCP server address below. If their client supports OAuth, they can authorize directly. If not, create a personal access token here and send them the MCP URL plus the token.
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">MCP server URL</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <code className="min-w-0 flex-1 break-all rounded-lg bg-neutral-900 px-3 py-2 text-xs text-sky-300">{mcpUrl}</code>
+                    <button
+                      onClick={() => copyText(mcpUrl, 'MCP URL')}
+                      className="flex-shrink-0 rounded-lg bg-neutral-800 p-2 text-neutral-300 transition-colors hover:bg-neutral-700"
+                      title="Copy MCP URL"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <p className="mt-2 text-sm text-neutral-500">
+                    Give this to clients that ask for a server URL or MCP endpoint.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">OAuth metadata URL</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <code className="min-w-0 flex-1 break-all rounded-lg bg-neutral-900 px-3 py-2 text-xs text-blue-300">{oauthMetadataUrl}</code>
+                    <button
+                      onClick={() => copyText(oauthMetadataUrl, 'OAuth metadata URL')}
+                      className="flex-shrink-0 rounded-lg bg-neutral-800 p-2 text-neutral-300 transition-colors hover:bg-neutral-700"
+                      title="Copy OAuth metadata URL"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <p className="mt-2 text-sm text-neutral-500">
+                    Use this when a client asks for OAuth discovery or authorization server metadata.
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">1. Share the URL</p>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    Send the MCP URL to the other person or client first. The page can stay empty until somebody actually connects.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">2. Choose auth mode</p>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    OAuth is preferred if the client supports browser authorization. Otherwise create a token and send that token separately.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">3. Review access here</p>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    After they finish authorization or start using a token, the client or token usage record will show up here. You can revoke it at any time.
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-4 space-y-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Copyable JSON config examples</h4>
+                  <p className="mt-1 text-sm text-neutral-400">
+                    For clients that support `.mcp.json` or JSON-based MCP config. These examples are in the current Claude Code format. OAuth-capable clients should prefer the OAuth version. Token-only clients should use the Bearer version.
+                  </p>
+                </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">OAuth config</p>
+                      <button
+                        onClick={() => copyText(projectOAuthJson, 'OAuth JSON')}
+                        className="flex-shrink-0 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-700"
+                      >
+                        Copy JSON
+                      </button>
+                    </div>
+                    <pre className="overflow-x-auto rounded-xl bg-neutral-900 p-3 text-xs text-sky-300"><code>{projectOAuthJson}</code></pre>
+                    <p className="text-sm text-neutral-500">
+                      Share this when the client can open a browser and complete OAuth authorization itself.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">Bearer token config</p>
+                      <button
+                        onClick={() => copyText(projectTokenJson, 'Bearer token JSON')}
+                        className="flex-shrink-0 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-700"
+                      >
+                        Copy JSON
+                      </button>
+                    </div>
+                    <pre className="overflow-x-auto rounded-xl bg-neutral-900 p-3 text-xs text-amber-300"><code>{projectTokenJson}</code></pre>
+                    <p className="text-sm text-neutral-500">
+                      Replace <code>YOUR_MCP_TOKEN</code> with a token created below, then send the full JSON to the other person.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {error && (
           <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2">
@@ -155,6 +297,13 @@ export function McpConnections() {
           <p className="text-sm text-neutral-500 mb-4">
             Use personal access tokens to authenticate MCP clients that don't support OAuth. Treat tokens like passwords.
           </p>
+
+          <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+            <p className="text-sm font-medium text-amber-300">Best for manual connection</p>
+            <p className="mt-1 text-sm text-neutral-400">
+              Use this if the other side asks you for a bearer token, API key, or secret. They usually need two things: the MCP server URL and this token. If the token is exposed, revoke it and create a new one.
+            </p>
+          </div>
 
           {/* Create PAT form */}
           {showCreatePat && (
@@ -298,6 +447,13 @@ export function McpConnections() {
           <p className="text-sm text-neutral-500 mb-4">
             These are MCP clients that authenticated via OAuth (e.g. Claude's MCP connector). They register automatically.
           </p>
+
+          <div className="mb-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+            <p className="text-sm font-medium text-blue-300">Best for one-click sign-in</p>
+            <p className="mt-1 text-sm text-neutral-400">
+              Use this if the other side supports OAuth or asks for a discovery URL. They start from their MCP client, finish the browser authorization flow, and then the client will appear here automatically.
+            </p>
+          </div>
 
           <div className="space-y-3">
             {isLoading ? (

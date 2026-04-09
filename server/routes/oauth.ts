@@ -37,6 +37,12 @@ function getBaseUrl(req: Request): string {
   return url.origin;
 }
 
+function buildLoginRedirect(req: Request): URL {
+  const loginUrl = new URL('/login', getBaseUrl(req));
+  loginUrl.searchParams.set('next', new URL(req.url).pathname + new URL(req.url).search);
+  return loginUrl;
+}
+
 export function createOAuthRouter(prisma: PrismaClient) {
   const router = new Hono<{ Variables: Variables }>();
 
@@ -164,6 +170,8 @@ export function createOAuthRouter(prisma: PrismaClient) {
       }
     }
 
+    if (!loggedInUser) return c.redirect(buildLoginRedirect(c.req.raw).toString());
+
     // Render a simple HTML consent page
     const html = renderAuthorizePage({
       clientName: client.clientName || clientId,
@@ -221,76 +229,7 @@ export function createOAuthRouter(prisma: PrismaClient) {
       }
     }
 
-    if (!userId) {
-      // Try email/password from form
-      const email = (body.email as string)?.trim().toLowerCase();
-      const password = body.password as string;
-
-      if (!email || !password) {
-        return c.html(renderAuthorizePage({
-          clientName: client.clientName || clientId,
-          scope: 'mcp:tools',
-          clientId,
-          redirectUri,
-          state: state || '',
-          codeChallenge: codeChallenge || '',
-          codeChallengeMethod,
-          loggedInEmail: null,
-          error: 'Email and password are required',
-        }));
-      }
-
-      // Verify credentials inline (avoiding circular dependency with auth router)
-      const { verifyPassword } = await import('../auth/auth');
-      const { UserRepository } = await import('../auth/user-repository');
-      const userRepo = new UserRepository(prisma);
-      const user = await userRepo.findByEmail(email);
-
-      if (!user || !user.passwordHash) {
-        return c.html(renderAuthorizePage({
-          clientName: client.clientName || clientId,
-          scope: 'mcp:tools',
-          clientId,
-          redirectUri,
-          state: state || '',
-          codeChallenge: codeChallenge || '',
-          codeChallengeMethod,
-          loggedInEmail: null,
-          error: 'Invalid credentials',
-        }));
-      }
-
-      const valid = await verifyPassword(password, user.passwordHash);
-      if (!valid) {
-        return c.html(renderAuthorizePage({
-          clientName: client.clientName || clientId,
-          scope: 'mcp:tools',
-          clientId,
-          redirectUri,
-          state: state || '',
-          codeChallenge: codeChallenge || '',
-          codeChallengeMethod,
-          loggedInEmail: null,
-          error: 'Invalid credentials',
-        }));
-      }
-
-      if (user.status === 'disabled') {
-        return c.html(renderAuthorizePage({
-          clientName: client.clientName || clientId,
-          scope: 'mcp:tools',
-          clientId,
-          redirectUri,
-          state: state || '',
-          codeChallenge: codeChallenge || '',
-          codeChallengeMethod,
-          loggedInEmail: null,
-          error: 'This account has been disabled',
-        }));
-      }
-
-      userId = user.sk;
-    }
+    if (!userId) return c.redirect(buildLoginRedirect(c.req.raw).toString());
 
     // Generate authorization code
     const code = generateSecureToken(32);
@@ -725,13 +664,7 @@ function renderAuthorizePage(opts: {
       <input type="hidden" name="code_challenge" value="${escHtml(opts.codeChallenge)}">
       <input type="hidden" name="code_challenge_method" value="${escHtml(opts.codeChallengeMethod)}">
 
-      ${opts.loggedInEmail
-        ? `<div class="logged-in">Logged in as <strong>${escHtml(opts.loggedInEmail)}</strong></div>`
-        : `<label for="email">Email</label>
-           <input type="email" id="email" name="email" required autocomplete="email">
-           <label for="password">Password</label>
-           <input type="password" id="password" name="password" required autocomplete="current-password">`
-      }
+      <div class="logged-in">Logged in as <strong>${escHtml(opts.loggedInEmail)}</strong></div>
 
       <div class="actions">
         <button type="submit" name="action" value="deny" class="btn-deny">Deny</button>

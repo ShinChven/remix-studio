@@ -89,7 +89,10 @@ function getSessionCookieOptions(url: string) {
   return {
     httpOnly: true,
     secure: requestUrl.protocol === 'https:' || process.env.NODE_ENV === 'production',
-    sameSite: 'Strict' as const,
+    // OAuth approval starts with a top-level navigation from another app/client.
+    // Lax keeps the cookie on those navigations so logged-in users don't need
+    // to enter credentials again on /authorize.
+    sameSite: 'Lax' as const,
     maxAge: 24 * 60 * 60,
     path: '/',
   };

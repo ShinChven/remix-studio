@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { beginPasskeyLogin, finishPasskeyLogin, verifyTwoFactorLogin } from '../api';
 import { isPasskeySupported, serializeAssertionCredential, toPublicKeyRequestOptions } from '../lib/passkey';
 import { Starfield } from '../components/Starfield';
+import type { User } from '../types';
 
 
 export function Login() {
@@ -16,9 +17,20 @@ export function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
-  const { login } = useAuth();
+  const { user, login, isLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const rawNextUrl = searchParams.get('next') || '/';
+  const nextUrl = rawNextUrl.startsWith('/') ? rawNextUrl : '/';
+
+  const finishLogin = (nextUser: User) => {
+    login(nextUser);
+    if (nextUrl.startsWith('/')) {
+      navigate(nextUrl);
+      return;
+    }
+    window.location.href = nextUrl;
+  };
 
   useEffect(() => {
     const oauthError = searchParams.get('error');
@@ -27,6 +39,16 @@ export function Login() {
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      if (nextUrl.startsWith('/')) {
+        navigate(nextUrl, { replace: true });
+      } else {
+        window.location.replace(nextUrl);
+      }
+    }
+  }, [isLoading, navigate, nextUrl, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,8 +72,7 @@ export function Login() {
         return;
       }
 
-      login(data.user);
-      navigate('/');
+      finishLogin(data.user);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -66,8 +87,7 @@ export function Login() {
 
     try {
       const data = await verifyTwoFactorLogin(twoFactorToken, twoFactorCode);
-      login(data.user);
-      navigate('/');
+      finishLogin(data.user);
     } catch (err: any) {
       setError(err.message || '2FA verification failed');
     } finally {
@@ -95,8 +115,7 @@ export function Login() {
       }
 
       const result = await finishPasskeyLogin(flowToken, serializeAssertionCredential(credential as PublicKeyCredential));
-      login(result.user);
-      navigate('/');
+      finishLogin(result.user);
     } catch (err: any) {
       setError(err.message || 'Passkey login failed');
     } finally {
