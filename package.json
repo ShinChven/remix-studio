@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch server.ts",
-    "build": "vite build && tsup server.ts --format esm --out-dir dist-server --clean",
+    "build": "vite build && tsup server.ts --format esm --out-dir dist-server --clean --external @prisma/client",
     "start": "NODE_ENV=production node dist-server/server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
