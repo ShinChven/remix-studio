@@ -351,7 +351,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               <button
                 onClick={() => navigate(`/library/${library.id}/import-export`)}
                 className="p-2.5 text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
-                title="Import / Export"
+                title="Import / Output"
               >
                 <UploadCloud className="w-5 h-5" />
               </button>

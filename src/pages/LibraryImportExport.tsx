@@ -1,42 +1,161 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { createLibraryItemsBatch, fetchLibrary } from '../api';
 import { Library, LibraryItem } from '../types';
-import { fetchLibrary, createLibraryItemsBatch } from '../api';
-import { 
-  ChevronLeft, 
-  UploadCloud, 
-  Download, 
-  FileText, 
-  Trash2, 
-  Check, 
-  AlertCircle, 
-  Loader2,
-  Plus,
+import {
+  AlertCircle,
   ArrowRight,
-  Tag
+  Check,
+  ChevronLeft,
+  Copy,
+  Download,
+  FileText,
+  Loader2,
+  Tag,
+  Trash2,
+  UploadCloud,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+type ParsedPreviewItem = {
+  title?: string;
+  content: string;
+  tags: string[];
+  sourceLine: number;
+};
+
+type ParseIssue = {
+  line: number;
+  raw: string;
+  reason: string;
+};
+
+type ExportMode = 'tagged' | 'plain';
+
+const TAG_SEGMENT_PATTERN = /\s+\|\s*tags\s*:\s*(.+)$/i;
+
+function normalizeTags(values: string[]): string[] {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+}
+
+function parseTagsInput(value: string): string[] {
+  return normalizeTags(value.split(','));
+}
+
+function parseImportText(importText: string, sharedTagsInput: string): {
+  items: ParsedPreviewItem[];
+  issues: ParseIssue[];
+} {
+  const items: ParsedPreviewItem[] = [];
+  const issues: ParseIssue[] = [];
+  const sharedTags = parseTagsInput(sharedTagsInput);
+
+  importText.split('\n').forEach((line, index) => {
+    const trimmed = line.trim();
+
+    if (!trimmed) return;
+
+    if (!trimmed.startsWith('- ')) {
+      issues.push({
+        line: index + 1,
+        raw: line,
+        reason: 'Missing "- " list marker',
+      });
+      return;
+    }
+
+    let itemText = trimmed.slice(2).trim();
+    if (!itemText) {
+      issues.push({
+        line: index + 1,
+        raw: line,
+        reason: 'Line is empty after "- "',
+      });
+      return;
+    }
+
+    let inlineTags: string[] = [];
+    const tagsMatch = itemText.match(TAG_SEGMENT_PATTERN);
+    if (tagsMatch) {
+      inlineTags = parseTagsInput(tagsMatch[1]);
+      itemText = itemText.replace(TAG_SEGMENT_PATTERN, '').trim();
+    }
+
+    if (!itemText) {
+      issues.push({
+        line: index + 1,
+        raw: line,
+        reason: 'Missing content before the tags segment',
+      });
+      return;
+    }
+
+    const colonIndex = itemText.indexOf(':');
+    const hasTitle = colonIndex > 0;
+    const title = hasTitle ? itemText.slice(0, colonIndex).trim() : undefined;
+    const content = hasTitle ? itemText.slice(colonIndex + 1).trim() : itemText;
+
+    if (!content) {
+      issues.push({
+        line: index + 1,
+        raw: line,
+        reason: 'Missing content after the title separator',
+      });
+      return;
+    }
+
+    items.push({
+      title: title || undefined,
+      content,
+      tags: normalizeTags([...sharedTags, ...inlineTags]),
+      sourceLine: index + 1,
+    });
+  });
+
+  return { items, issues };
+}
+
+function formatExportText(items: LibraryItem[], exportMode: ExportMode): string {
+  return items
+    .map((item) => {
+      const baseLine = item.title
+        ? `- ${item.title}: ${item.content}`
+        : `- ${item.content}`;
+
+      if (exportMode === 'plain' || !item.tags || item.tags.length === 0) {
+        return baseLine;
+      }
+
+      return `${baseLine} | tags: ${normalizeTags(item.tags).join(', ')}`;
+    })
+    .join('\n');
+}
 
 export function LibraryImportExport() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [library, setLibrary] = useState<Library | null>(null);
   const [loading, setLoading] = useState(true);
   const [importText, setImportText] = useState('');
-  const [previewItems, setPreviewItems] = useState<{ title?: string; content: string }[]>([]);
-  const [tagsInput, setTagsInput] = useState('');
+  const [sharedTagsInput, setSharedTagsInput] = useState('');
+  const [previewItems, setPreviewItems] = useState<ParsedPreviewItem[]>([]);
+  const [parseIssues, setParseIssues] = useState<ParseIssue[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [exportMode, setExportMode] = useState<ExportMode>('tagged');
 
   useEffect(() => {
     if (!id) return;
+
     fetchLibrary(id)
-      .then(lib => {
+      .then((lib) => {
         if (lib.type !== 'text') {
           navigate(`/library/${id}`);
           return;
         }
+
         setLibrary(lib);
       })
       .catch(() => navigate('/libraries'))
@@ -44,82 +163,74 @@ export function LibraryImportExport() {
   }, [id, navigate]);
 
   useEffect(() => {
-    // Parse import text into preview items
-    const lines = importText.split('\n').filter(line => line.trim().startsWith('- '));
-    const items = lines.map(line => {
-      const contentWithTitle = line.trim().substring(2); // Remove "- "
-      const colonIndex = contentWithTitle.indexOf(':');
-      
-      if (colonIndex !== -1) {
-        const title = contentWithTitle.substring(0, colonIndex).trim();
-        const content = contentWithTitle.substring(colonIndex + 1).trim();
-        return { title: title || undefined, content };
-      } else {
-        return { content: contentWithTitle.trim() };
-      }
-    }).filter(item => item.content !== '');
-    
-    setPreviewItems(items);
-  }, [importText]);
+    const parsed = parseImportText(importText, sharedTagsInput);
+    setPreviewItems(parsed.items);
+    setParseIssues(parsed.issues);
+  }, [importText, sharedTagsInput]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
-    
+
     let combinedText = importText;
+
     for (const file of files) {
       const text = await new Promise<string>((resolve) => {
         const reader = new FileReader();
-        reader.onload = (event) => resolve(event.target?.result as string);
+        reader.onload = (loadEvent) => resolve((loadEvent.target?.result as string) || '');
         reader.readAsText(file);
       });
+
       combinedText = combinedText ? `${combinedText}\n${text}` : text;
     }
+
     setImportText(combinedText);
-    
-    // Reset input so the same file can be uploaded again if needed
-    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDrop = async (event: React.DragEvent) => {
+    event.preventDefault();
     setIsDragOver(false);
-    
-    const files = Array.from(e.dataTransfer.files);
+
+    const files = Array.from(event.dataTransfer.files);
     if (files.length === 0) return;
 
     let combinedText = importText;
+
     for (const file of files) {
-      if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
-        const text = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (event) => resolve(event.target?.result as string);
-          reader.readAsText(file);
-        });
-        combinedText = combinedText ? `${combinedText}\n${text}` : text;
+      if (file.type !== 'text/plain' && !file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
+        continue;
       }
+
+      const text = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (loadEvent) => resolve((loadEvent.target?.result as string) || '');
+        reader.readAsText(file);
+      });
+
+      combinedText = combinedText ? `${combinedText}\n${text}` : text;
     }
+
     setImportText(combinedText);
   };
 
   const handleImport = async () => {
     if (!id || !library || previewItems.length === 0) return;
-    
-    setIsImporting(true);
-    try {
-      const tags = tagsInput
-        .split(',')
-        .map(t => t.trim())
-        .filter(t => t !== '');
 
+    setIsImporting(true);
+
+    try {
       const itemsToCreate: LibraryItem[] = previewItems.map((item, index) => ({
         id: crypto.randomUUID(),
         content: item.content,
         title: item.title,
-        tags: tags.length > 0 ? tags : undefined,
+        tags: item.tags.length > 0 ? item.tags : undefined,
         order: library.items.length + index,
       }));
-      
+
       await createLibraryItemsBatch(id, itemsToCreate);
       navigate(`/library/${id}`);
     } catch (error: any) {
@@ -130,24 +241,32 @@ export function LibraryImportExport() {
     }
   };
 
-  const handleExport = () => {
-    if (!library) return;
-    
-    const content = library.items.map(item => {
-      if (item.title) {
-        return `- ${item.title}: ${item.content}`;
-      }
-      return `- ${item.content}`;
-    }).join('\n');
-    
-    const blob = new Blob([content], { type: 'text/markdown' });
+  const currentExportText = library ? formatExportText(library.items, exportMode) : '';
+  const previewTagCount = normalizeTags(previewItems.flatMap((item) => item.tags)).length;
+  const libraryTagCount = library ? normalizeTags(library.items.flatMap((item) => item.tags || [])).length : 0;
+
+  const handleCopyOutput = async () => {
+    if (!currentExportText) return;
+
+    try {
+      await navigator.clipboard.writeText(currentExportText);
+      toast.success('Library output copied to clipboard');
+    } catch (error: any) {
+      toast.error(`Failed to copy output: ${error.message}`);
+    }
+  };
+
+  const handleDownloadOutput = () => {
+    if (!library || !currentExportText) return;
+
+    const blob = new Blob([currentExportText], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${library.name.replace(/\s+/g, '_')}_export.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${library.name.replace(/\s+/g, '_')}_${exportMode}.md`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
   };
 
@@ -162,171 +281,343 @@ export function LibraryImportExport() {
   if (!library) return null;
 
   return (
-    <div className="h-full flex flex-col bg-neutral-950 p-4 md:p-8 animate-in fade-in duration-700">
-      <div className="w-full flex flex-col h-full gap-8">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
+    <div className="h-full overflow-y-auto bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(34,197,94,0.10),_transparent_28%),linear-gradient(180deg,_#09090b_0%,_#050505_100%)] custom-scrollbar">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-8 px-4 py-4 md:px-8 md:py-8">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div className="flex items-start gap-4">
             <button
               onClick={() => navigate(`/library/${id}`)}
-              className="p-3 text-neutral-500 hover:text-white hover:bg-neutral-900 rounded-2xl transition-all border border-neutral-800/50"
+              className="mt-1 rounded-2xl border border-neutral-800/80 bg-neutral-950/70 p-3 text-neutral-500 transition-all hover:border-neutral-700 hover:text-white hover:bg-neutral-900/80"
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="h-6 w-6" />
             </button>
-            <div>
-              <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                <FileText className="w-8 h-8 text-blue-500" />
-                Import / Export
-              </h2>
-              <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mt-1">
-                Collection: {library.name}
-              </p>
+
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">
+                <FileText className="h-3.5 w-3.5" />
+                Text Library Workspace
+              </div>
+
+              <div>
+                <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">
+                  Import & Output
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-400">
+                  Bulk load prompt fragments, preserve tags in output, and keep a clean import format for editing outside the app.
+                </p>
+              </div>
             </div>
           </div>
 
-          <button
-            onClick={handleExport}
-            className="flex items-center justify-center gap-3 bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs transition-all border border-neutral-800 active:scale-95 shadow-xl shadow-black/20"
-          >
-            <Download className="w-4 h-4 text-blue-400" />
-            Export to .md
-          </button>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Library</div>
+              <div className="mt-2 truncate text-sm font-bold text-white">{library.name}</div>
+            </div>
+            <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Current Items</div>
+              <div className="mt-2 text-2xl font-black text-white">{library.items.length}</div>
+            </div>
+            <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Current Tags</div>
+              <div className="mt-2 text-2xl font-black text-white">{libraryTagCount}</div>
+            </div>
+            <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Ready To Import</div>
+              <div className="mt-2 text-2xl font-black text-blue-400">{previewItems.length}</div>
+            </div>
+          </div>
         </div>
 
-        {/* Content Tabs/Sections */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-8 overflow-hidden">
-          
-          {/* Left Side: Input */}
-          <div className="flex flex-col gap-6 min-h-0">
-             {/* Global Tags Input */}
-             <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[24px] p-4 group transition-all hover:border-neutral-700">
-                <div className="flex items-center gap-3 mb-2 px-1">
-                  <Tag className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
-                    Apply Tags to all items
-                  </span>
+        <div className="grid min-h-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <section className="flex min-h-0 flex-col rounded-[32px] border border-neutral-800/70 bg-neutral-950/65 p-5 shadow-[0_30px_80px_rgba(0,0,0,0.35)] md:p-6">
+            <div className="flex flex-col gap-4 border-b border-neutral-800/70 pb-5">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">Import Source</div>
+                  <h2 className="mt-2 text-xl font-black tracking-tight text-white">Compose incoming library items</h2>
+                  <p className="mt-2 max-w-xl text-sm leading-relaxed text-neutral-400">
+                    Supports the legacy list format and a new tag-aware variant:
+                    <span className="mt-1 block font-mono text-xs text-neutral-300">
+                      - Title: Content | tags: cinematic, portrait
+                    </span>
+                  </p>
                 </div>
-                <input
-                  type="text"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
-                  placeholder="e.g. nature, photography, portrait (comma separated)"
-                  className="w-full bg-transparent border-none p-1 text-sm text-neutral-200 placeholder:text-neutral-700 focus:outline-none focus:ring-0"
-                />
-             </div>
 
-             <div 
-               className={`flex-1 flex flex-col bg-neutral-900/40 border-2 border-dashed rounded-[32px] p-6 transition-all relative group ${isDragOver ? 'border-blue-500 bg-blue-500/5 scale-[0.99]' : 'border-neutral-800/60 hover:border-neutral-700'}`}
-               onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-               onDragLeave={() => setIsDragOver(false)}
-               onDrop={handleDrop}
-             >
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 flex items-center gap-2">
-                    <Plus className="w-3 h-3" />
-                    Import Fragments
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => setImportText('')}
-                      className="p-2 text-neutral-600 hover:text-red-400 transition-colors"
-                      title="Clear Input"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl transition-all border border-blue-600/20"
-                      title="Upload File"
-                    >
-                      <UploadCloud className="w-4 h-4" />
-                    </button>
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      className="hidden" 
-                      accept=".txt,.md" 
-                      multiple
-                      onChange={handleFileUpload} 
-                    />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => setImportText('')}
+                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-neutral-400 transition-all hover:border-red-500/30 hover:text-red-300"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-blue-300 transition-all hover:bg-blue-500 hover:text-white"
+                  >
+                    <UploadCloud className="h-4 w-4" />
+                    Upload Text
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".txt,.md"
+                    multiple
+                    onChange={handleFileUpload}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+                <label className="rounded-2xl border border-neutral-800/70 bg-neutral-900/60 p-4">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
+                    <Tag className="h-3.5 w-3.5 text-blue-400" />
+                    Shared Tags
+                  </div>
+                  <input
+                    type="text"
+                    value={sharedTagsInput}
+                    onChange={(event) => setSharedTagsInput(event.target.value)}
+                    placeholder="Applied to every imported item. Example: evergreen, short-form"
+                    className="mt-3 w-full border-none bg-transparent p-0 text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:ring-0"
+                  />
+                </label>
+
+                <div className="grid grid-cols-2 gap-3 lg:w-[240px]">
+                  <div className="rounded-2xl border border-neutral-800/70 bg-neutral-900/50 p-4">
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Detected Tags</div>
+                    <div className="mt-2 text-xl font-black text-white">{previewTagCount}</div>
+                  </div>
+                  <div className="rounded-2xl border border-neutral-800/70 bg-neutral-900/50 p-4">
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Skipped Lines</div>
+                    <div className={`mt-2 text-xl font-black ${parseIssues.length > 0 ? 'text-amber-300' : 'text-white'}`}>
+                      {parseIssues.length}
+                    </div>
                   </div>
                 </div>
-
-                <textarea
-                  value={importText}
-                  onChange={(e) => setImportText(e.target.value)}
-                  placeholder={`Paste content here using the format:\n- Title: Content fragment\n- Just content fragment...`}
-                  className="flex-1 w-full bg-transparent border-none p-2 text-neutral-300 text-sm font-mono leading-relaxed focus:outline-none focus:ring-0 resize-none placeholder:text-neutral-700 custom-scrollbar"
-                />
-
-                {!importText && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40 group-hover:opacity-60 transition-opacity">
-                    <UploadCloud className="w-12 h-12 text-neutral-700 mb-4" />
-                    <p className="text-sm font-bold text-neutral-600">Drag & Drop .txt file or paste items</p>
-                  </div>
-                )}
-             </div>
-
-             <div className="bg-blue-600/5 border border-blue-600/10 rounded-2xl p-4 flex items-start gap-4">
-                <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                <div className="text-[10px] leading-relaxed font-medium text-blue-400/80 uppercase tracking-wider">
-                  <strong className="text-blue-400 block mb-1">Format Guide</strong>
-                  Each item must start with "- ". Use a colon ":" to separate the title from the content. 
-                  Multiple items can be imported at once.
-                </div>
-             </div>
-          </div>
-
-          {/* Right Side: Preview */}
-          <div className="flex flex-col gap-6 min-h-0 bg-neutral-900/20 border border-neutral-800/40 rounded-[32px] p-6">
-            <div className="flex items-center justify-between">
-               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 flex items-center gap-2">
-                <Check className="w-3 h-3" />
-                Live Preview ({previewItems.length} items)
-              </span>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
-              {previewItems.length > 0 ? (
-                previewItems.map((item, idx) => (
-                  <div key={idx} className="bg-neutral-950/50 border border-neutral-800/40 rounded-2xl p-4 animate-in slide-in-from-right-2 duration-300" style={{ animationDelay: `${idx * 20}ms` }}>
-                    {item.title && (
-                      <h4 className="text-blue-400 text-[10px] font-black uppercase tracking-widest mb-1.5 truncate">
-                        {item.title}
-                      </h4>
-                    )}
-                    <p className="text-neutral-400 text-xs leading-relaxed line-clamp-2">
-                      {item.content}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-neutral-700 italic font-medium gap-4">
-                   <div className="w-12 h-12 rounded-2xl border-2 border-neutral-800/50 flex items-center justify-center">
-                    <ArrowRight className="w-6 h-6 text-neutral-800" />
-                   </div>
-                   Items will appear here once parsed...
+            <div
+              className={`relative mt-5 flex min-h-[320px] flex-1 flex-col rounded-[28px] border-2 border-dashed p-4 transition-all md:p-5 ${
+                isDragOver
+                  ? 'border-blue-500 bg-blue-500/8 shadow-[0_0_0_1px_rgba(59,130,246,0.25)]'
+                  : 'border-neutral-800/80 bg-neutral-900/35 hover:border-neutral-700/90'
+              }`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setIsDragOver(true);
+              }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={handleDrop}
+            >
+              <textarea
+                value={importText}
+                onChange={(event) => setImportText(event.target.value)}
+                placeholder={`Paste list items here.\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio`}
+                className="min-h-[320px] flex-1 resize-none border-none bg-transparent p-2 font-mono text-sm leading-7 text-neutral-200 placeholder:text-neutral-700 focus:outline-none focus:ring-0 custom-scrollbar"
+              />
+
+              {!importText && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-10 mx-auto flex max-w-sm items-center justify-center gap-3 rounded-2xl border border-neutral-800/70 bg-neutral-950/80 px-4 py-3 text-xs text-neutral-500 backdrop-blur-sm">
+                  <UploadCloud className="h-4 w-4 text-neutral-600" />
+                  Drop `.txt` or `.md` files here
                 </div>
               )}
+            </div>
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)]">
+              <div className="rounded-[28px] border border-neutral-800/70 bg-neutral-900/45 p-5">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-neutral-400">
+                  <AlertCircle className="h-3.5 w-3.5 text-blue-400" />
+                  Format Guide
+                </div>
+                <div className="mt-4 space-y-3 text-sm leading-relaxed text-neutral-300">
+                  <p>Each item must start with `- ` so the parser can split entries predictably.</p>
+                  <p>Use `Title: Content` when you want a display title. Use `| tags: a, b` at the end when you want per-item tags.</p>
+                  <p>Shared tags above are merged into every parsed item and deduplicated automatically.</p>
+                </div>
+              </div>
+
+              <div className="rounded-[28px] border border-neutral-800/70 bg-neutral-900/45 p-5">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-neutral-400">
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  Parse Status
+                </div>
+                {parseIssues.length === 0 ? (
+                  <p className="mt-4 text-sm leading-relaxed text-neutral-300">
+                    All non-empty lines are valid import entries.
+                  </p>
+                ) : (
+                  <div className="mt-4 max-h-36 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+                    {parseIssues.slice(0, 6).map((issue) => (
+                      <div key={`${issue.line}-${issue.reason}`} className="rounded-2xl border border-amber-500/20 bg-amber-500/6 px-3 py-2">
+                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">
+                          Line {issue.line}
+                        </div>
+                        <div className="mt-1 text-xs text-neutral-200">{issue.reason}</div>
+                      </div>
+                    ))}
+                    {parseIssues.length > 6 && (
+                      <div className="text-[11px] text-neutral-500">
+                        +{parseIssues.length - 6} more skipped lines
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <button
               onClick={handleImport}
               disabled={isImporting || previewItems.length === 0}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-30 text-white font-black uppercase tracking-[0.2em] text-xs py-4 rounded-2xl transition-all shadow-2xl shadow-blue-500/20 active:scale-[0.98] flex items-center justify-center gap-3"
+              className="mt-5 inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 px-5 py-4 text-xs font-black uppercase tracking-[0.22em] text-white transition-all hover:bg-blue-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-35"
             >
               {isImporting ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  Confirm Import
-                  <ArrowRight className="w-4 h-4" />
+                  Import {previewItems.length} Items
+                  <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </button>
-          </div>
+          </section>
 
+          <section className="flex min-h-0 flex-col gap-6 rounded-[32px] border border-neutral-800/70 bg-neutral-950/65 p-5 shadow-[0_30px_80px_rgba(0,0,0,0.35)] md:p-6">
+            <div className="rounded-[28px] border border-neutral-800/70 bg-neutral-900/45 p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">Import Preview</div>
+                  <h2 className="mt-2 text-xl font-black tracking-tight text-white">Review incoming tagged items</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-neutral-400">
+                    Parsed items show exactly what will be created in this text library.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/80 px-4 py-3">
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Preview Items</div>
+                  <div className="mt-1 text-2xl font-black text-white">{previewItems.length}</div>
+                </div>
+              </div>
+
+              <div className="mt-5 max-h-[420px] space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+                {previewItems.length > 0 ? (
+                  previewItems.map((item, index) => (
+                    <article
+                      key={`${item.sourceLine}-${index}`}
+                      className="rounded-[24px] border border-neutral-800/80 bg-neutral-950/80 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
+                            Source line {item.sourceLine}
+                          </div>
+                          {item.title && (
+                            <h3 className="mt-2 text-sm font-black uppercase tracking-[0.16em] text-blue-300">
+                              {item.title}
+                            </h3>
+                          )}
+                        </div>
+                        {item.tags.length > 0 && (
+                          <div className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-blue-300">
+                            {item.tags.length} tag{item.tags.length === 1 ? '' : 's'}
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="mt-3 text-sm leading-relaxed text-neutral-300">{item.content}</p>
+
+                      {item.tags.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {item.tags.map((tag) => (
+                            <span
+                              key={`${item.sourceLine}-${tag}`}
+                              className="rounded-full border border-neutral-800 bg-neutral-900/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-neutral-300"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  ))
+                ) : (
+                  <div className="flex min-h-[240px] flex-col items-center justify-center rounded-[24px] border border-dashed border-neutral-800 bg-neutral-950/60 px-6 text-center">
+                    <FileText className="h-10 w-10 text-neutral-800" />
+                    <div className="mt-4 text-[10px] font-black uppercase tracking-[0.22em] text-neutral-600">
+                      Nothing parsed yet
+                    </div>
+                    <p className="mt-3 max-w-sm text-sm leading-relaxed text-neutral-500">
+                      Add list items on the left and this panel will render the exact import result, including merged tags.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col rounded-[28px] border border-neutral-800/70 bg-neutral-900/45 p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">Library Output</div>
+                  <h2 className="mt-2 text-xl font-black tracking-tight text-white">Export current items with or without tags</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-neutral-400">
+                    Tagged output preserves text library metadata. Plain output keeps the original minimal list format.
+                  </p>
+                </div>
+
+                <div className="inline-flex rounded-2xl border border-neutral-800 bg-neutral-950/80 p-1">
+                  <button
+                    onClick={() => setExportMode('tagged')}
+                    className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
+                      exportMode === 'tagged'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-neutral-500 hover:text-neutral-200'
+                    }`}
+                  >
+                    Tagged
+                  </button>
+                  <button
+                    onClick={() => setExportMode('plain')}
+                    className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
+                      exportMode === 'plain'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-neutral-500 hover:text-neutral-200'
+                    }`}
+                  >
+                    Plain
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={handleCopyOutput}
+                  disabled={!currentExportText}
+                  className="inline-flex items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-950/90 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-neutral-300 transition-all hover:border-neutral-700 hover:text-white disabled:opacity-35"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copy Output
+                </button>
+                <button
+                  onClick={handleDownloadOutput}
+                  disabled={!currentExportText}
+                  className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-blue-300 transition-all hover:bg-blue-500 hover:text-white disabled:opacity-35"
+                >
+                  <Download className="h-4 w-4" />
+                  Download .md
+                </button>
+              </div>
+
+              <textarea
+                readOnly
+                value={currentExportText}
+                className="mt-5 min-h-[320px] flex-1 resize-none rounded-[24px] border border-neutral-800/80 bg-neutral-950/85 p-4 font-mono text-sm leading-7 text-neutral-200 focus:outline-none focus:ring-0 custom-scrollbar"
+              />
+            </div>
+          </section>
         </div>
       </div>
     </div>

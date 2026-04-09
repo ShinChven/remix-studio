@@ -274,6 +274,7 @@ Libraries are reusable collections that keep common prompt fragments and image r
 - Each library contains ordered items, and items can include titles and tags for easier filtering and reuse
 - Libraries can be edited independently from projects, so you can improve shared prompt/image collections once and reuse them across multiple workflows
 - Text libraries support import and export as Markdown-style lists for bulk editing outside the app
+- Text library output can optionally preserve tags using a line format like `- Title: Content | tags: tag-a, tag-b`
 
 ### Library Usage In Project View
 

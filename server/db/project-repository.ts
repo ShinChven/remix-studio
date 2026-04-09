@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import crypto from 'crypto';
 import { Project, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/types';
 
 export class ProjectRepository {
@@ -538,6 +539,18 @@ export class ProjectRepository {
   private async saveWorkflow(userId: string, projectId: string, workflow: WorkflowItem[]): Promise<void> {
     await this.assertOwnedProject(userId, projectId);
 
+    const seenIds = new Set<string>();
+    const normalizedWorkflow = workflow.map((item, idx) => {
+      const trimmedId = item.id?.trim();
+      const id = trimmedId && !seenIds.has(trimmedId) ? trimmedId : crypto.randomUUID();
+      seenIds.add(id);
+      return {
+        ...item,
+        id,
+        order: item.order ?? idx,
+      };
+    });
+
     // Replace all workflow items for the project
     await this.prisma.workflowItem.deleteMany({
       where: {
@@ -545,15 +558,15 @@ export class ProjectRepository {
         project: { userId },
       },
     });
-    if (!workflow.length) return;
+    if (!normalizedWorkflow.length) return;
 
     await this.prisma.workflowItem.createMany({
-      data: workflow.map((item, idx) => ({
+      data: normalizedWorkflow.map((item) => ({
         id: item.id,
         projectId,
         type: item.type,
         value: item.value ?? null,
-        order: item.order ?? idx,
+        order: item.order,
         thumbnailUrl: item.thumbnailUrl ?? null,
         optimizedUrl: item.optimizedUrl ?? null,
       })),
