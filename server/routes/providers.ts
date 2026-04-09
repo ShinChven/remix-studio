@@ -11,6 +11,11 @@ type Variables = { user: JwtPayload };
 export function createProviderRouter(repo: ProviderRepository) {
   const router = new Hono<{ Variables: Variables }>();
 
+  function normalizeConcurrency(value: unknown, fallback: number) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+    return Math.max(1, Math.floor(value));
+  }
+
   // List all providers for the current user (no raw API keys)
   router.get('/api/providers', authMiddleware, async (c) => {
     try {
@@ -20,6 +25,20 @@ export function createProviderRouter(repo: ProviderRepository) {
     } catch (e) {
       console.error('[GET /api/providers]', e);
       return c.json({ error: 'Failed to list providers' }, 500);
+    }
+  });
+
+  // Get one provider for the current user (no raw API keys)
+  router.get('/api/providers/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const providerId = c.req.param('id');
+      const provider = await repo.getPublicProvider(user.userId, providerId);
+      if (!provider) return c.json({ error: 'Provider not found' }, 404);
+      return c.json(provider);
+    } catch (e) {
+      console.error('[GET /api/providers/:id]', e);
+      return c.json({ error: 'Failed to get provider' }, 500);
     }
   });
 
@@ -33,7 +52,7 @@ export function createProviderRouter(repo: ProviderRepository) {
       const type = body?.type as ProviderType;
       const apiKey = typeof body?.apiKey === 'string' ? body.apiKey.trim() : '';
       const apiUrl = typeof body?.apiUrl === 'string' ? body.apiUrl.trim() || undefined : undefined;
-      const concurrency = typeof body?.concurrency === 'number' ? body.concurrency : 1;
+      const concurrency = normalizeConcurrency(body?.concurrency, 1);
 
       if (!name) return c.json({ error: 'name is required' }, 400);
       if (!VALID_TYPES.includes(type)) return c.json({ error: `type must be one of: ${VALID_TYPES.join(', ')}` }, 400);
@@ -88,8 +107,8 @@ export function createProviderRouter(repo: ProviderRepository) {
         updates.apiUrl = body.apiUrl.trim() || null;
       }
 
-      if (typeof body?.concurrency === 'number') {
-        updates.concurrency = body.concurrency;
+      if (body?.concurrency !== undefined) {
+        updates.concurrency = normalizeConcurrency(body.concurrency, 1);
       }
 
       const effectiveType = updates.type ?? body?.type ?? (await repo.getProvider(user.userId, providerId))?.type;
@@ -117,7 +136,8 @@ export function createProviderRouter(repo: ProviderRepository) {
       const providerId = c.req.param('id');
       await repo.deleteProvider(user.userId, providerId);
       return c.json({ success: true });
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.message === 'Provider not found') return c.json({ error: 'Provider not found' }, 404);
       console.error('[DELETE /api/providers/:id]', e);
       return c.json({ error: 'Failed to delete provider' }, 500);
     }

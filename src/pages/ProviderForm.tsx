@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchProviders, createProvider, updateProvider } from '../api';
+import { fetchProvider, createProvider, updateProvider } from '../api';
 import { ProviderType } from '../types';
 import { Save, Key, Eye, EyeOff } from 'lucide-react';
 
@@ -35,9 +35,7 @@ export function ProviderForm() {
     }
     (async () => {
       try {
-        const providers = await fetchProviders();
-        const p = providers.find(x => x.id === id);
-        if (!p) { navigate('/providers'); return; }
+        const p = await fetchProvider(id!);
         setName(p.name);
         setType(p.type);
         setApiUrl(p.apiUrl || '');
@@ -194,14 +192,14 @@ export function ProviderForm() {
                 Parallel Tasks <span className="normal-case font-normal tracking-normal">— concurrency limit</span>
               </label>
               <div className="flex items-center gap-4">
-                <input
-                  type="number"
-                  min="1"
-                  max="1000"
-                  value={concurrency}
-                  onChange={e => setConcurrency(parseInt(e.target.value) || 1)}
-                  className="w-24 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all"
-                />
+              <input
+                type="number"
+                min="1"
+                max="1000"
+                value={concurrency}
+                onChange={e => setConcurrency(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-24 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all"
+              />
                 <span className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">
                   Max requests
                 </span>

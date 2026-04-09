@@ -166,6 +166,11 @@ export interface Project {
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI';
 
+export interface ProviderUsageSummary {
+  projectCount: number;
+  activeJobCount: number;
+}
+
 export interface Provider {
   id: string;
   name: string;
@@ -175,6 +180,7 @@ export interface Provider {
   hasKey: boolean; // raw apiKey is never sent to the client
   createdAt: number;
   models: ModelConfig[];
+  usage?: ProviderUsageSummary;
 }
 
 export type UserRole = 'admin' | 'user';

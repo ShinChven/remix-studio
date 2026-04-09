@@ -509,6 +509,11 @@ export async function fetchProviders(): Promise<Provider[]> {
   return handleResponse<Provider[]>(res, 'Failed to list providers');
 }
 
+export async function fetchProvider(id: string): Promise<Provider> {
+  const res = await fetch(`/api/providers/${id}`, { headers: getHeaders(false) });
+  return handleResponse<Provider>(res, 'Failed to load provider');
+}
+
 export async function createProvider(data: {
   name: string;
   type: ProviderType;

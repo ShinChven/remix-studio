@@ -96,6 +96,8 @@ export function Providers() {
             ) : (
               providers.map(provider => {
                 const colors = TYPE_COLORS[provider.type];
+                const projectCount = provider.usage?.projectCount ?? 0;
+                const activeJobCount = provider.usage?.activeJobCount ?? 0;
                 return (
                   <div
                     key={provider.id}
@@ -119,6 +121,12 @@ export function Providers() {
                               ? <><CheckCircle className="w-3 h-3" /> Key stored</>
                               : <><AlertCircle className="w-3 h-3" /> No key</>}
                           </span>
+                          {(projectCount > 0 || activeJobCount > 0) && (
+                            <span className="flex items-center gap-2 text-[10px] text-neutral-500">
+                              {projectCount > 0 && <span>{projectCount} project{projectCount === 1 ? '' : 's'}</span>}
+                              {activeJobCount > 0 && <span>{activeJobCount} active job{activeJobCount === 1 ? '' : 's'}</span>}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -153,7 +161,11 @@ export function Providers() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Delete Provider"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? This will permanently remove the stored API key.`}
+        message={
+          deleteTarget
+            ? `Delete "${deleteTarget.name}"? This removes the stored API key. Existing project references will remain as warnings, and any pending or processing jobs using this provider may fail until you switch them to another provider.${deleteTarget.usage && (deleteTarget.usage.projectCount > 0 || deleteTarget.usage.activeJobCount > 0) ? ` Currently referenced by ${deleteTarget.usage.projectCount} project${deleteTarget.usage.projectCount === 1 ? '' : 's'} and ${deleteTarget.usage.activeJobCount} active job${deleteTarget.usage.activeJobCount === 1 ? '' : 's'}.` : ''}`
+            : ''
+        }
         confirmText={isDeleting ? 'Deleting…' : 'Delete'}
         type="danger"
       />

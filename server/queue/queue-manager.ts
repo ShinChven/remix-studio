@@ -103,7 +103,15 @@ export class QueueManager {
         
         if (!provider) {
           const dropped = queue.shift();
-          console.warn(`[QueueManager] Provider not found: ${providerId} for user ${dropped?.userId}`);
+          if (dropped) {
+            this.activeJobIds.delete(dropped.job.id);
+            console.warn(`[QueueManager] Provider not found: ${providerId} for user ${dropped.userId}. Marking job ${dropped.job.id} as failed.`);
+            await this.updateJobStatus(dropped.userId, dropped.projectId, dropped.job.id, {
+              status: 'failed',
+              error: 'Provider not found or was deleted',
+              taskId: null as any,
+            });
+          }
           continue;
         }
 

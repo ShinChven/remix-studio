@@ -1,9 +1,9 @@
 import { PrismaClient } from '@prisma/client';
-import type { Provider, ProviderType } from '../../src/types';
+import type { Provider, ProviderType, ProviderUsageSummary } from '../../src/types';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 import { encrypt, decrypt } from '../utils/crypto';
 
-function toPublic(record: any): Provider {
+function toPublic(record: any, usage?: ProviderUsageSummary): Provider {
   return {
     id: record.id,
     name: record.name,
@@ -13,6 +13,7 @@ function toPublic(record: any): Provider {
     hasKey: !!record.apiKeyEncrypted,
     createdAt: record.createdAt instanceof Date ? record.createdAt.getTime() : record.createdAt,
     models: PROVIDER_MODELS_MAP[record.type as ProviderType] || [],
+    usage,
   };
 }
 
@@ -21,11 +22,37 @@ export class ProviderRepository {
 
   async listProviders(userId: string): Promise<Provider[]> {
     const records = await this.prisma.provider.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } });
-    return records.map((r) => toPublic(r));
+    const usageEntries = await Promise.all(
+      records.map(async (record) => [record.id, await this.getProviderUsage(userId, record.id)] as const)
+    );
+    const usageByProviderId = new Map(usageEntries);
+    return records.map((r) => toPublic(r, usageByProviderId.get(r.id)));
   }
 
   async getProvider(userId: string, providerId: string): Promise<any | null> {
     return this.prisma.provider.findFirst({ where: { id: providerId, userId } });
+  }
+
+  async getPublicProvider(userId: string, providerId: string): Promise<Provider | null> {
+    const record = await this.getProvider(userId, providerId);
+    if (!record) return null;
+    const usage = await this.getProviderUsage(userId, providerId);
+    return toPublic(record, usage);
+  }
+
+  async getProviderUsage(userId: string, providerId: string): Promise<ProviderUsageSummary> {
+    const [projectCount, activeJobCount] = await Promise.all([
+      this.prisma.project.count({ where: { userId, providerId } }),
+      this.prisma.job.count({
+        where: {
+          userId,
+          providerId,
+          status: { in: ['pending', 'processing'] },
+        },
+      }),
+    ]);
+
+    return { projectCount, activeJobCount };
   }
 
   async createProvider(
@@ -57,11 +84,17 @@ export class ProviderRepository {
     if (updates.apiUrl !== undefined) data.apiUrl = updates.apiUrl;
     if (updates.concurrency !== undefined) data.concurrency = updates.concurrency;
 
-    await this.prisma.provider.updateMany({ where: { id: providerId, userId }, data });
+    const result = await this.prisma.provider.updateMany({ where: { id: providerId, userId }, data });
+    if (result.count === 0) {
+      throw new Error('Provider not found');
+    }
   }
 
   async deleteProvider(userId: string, providerId: string): Promise<void> {
-    await this.prisma.provider.deleteMany({ where: { id: providerId, userId } });
+    const result = await this.prisma.provider.deleteMany({ where: { id: providerId, userId } });
+    if (result.count === 0) {
+      throw new Error('Provider not found');
+    }
   }
 
   /** Returns the decrypted API key — only for internal server-side use. */
