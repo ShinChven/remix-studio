@@ -32,16 +32,28 @@ import { DetachedPoller } from './server/queue/detached-poller';
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 
+function parseBooleanEnv(value: string | undefined, fallback: boolean): boolean {
+  if (value === undefined) return fallback;
+  const normalized = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  return fallback;
+}
+
 // ========== Production secret guard ==========
 if (process.env.NODE_ENV === 'production') {
-  const required = ['JWT_SECRET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'DATABASE_URL'];
+  const required = ['JWT_SECRET', 'DATABASE_URL', 'PROVIDER_ENCRYPTION_KEY'];
   for (const key of required) {
     if (!process.env[key]) throw new Error(`Missing required environment variable: ${key}`);
   }
 }
 
 async function startServer() {
-  const isProd = process.env.NODE_ENV === 'production';
+  const autoCreateBuckets = parseBooleanEnv(process.env.S3_AUTO_CREATE_BUCKET, true);
+  const port = Number(process.env.PORT || 3000);
+  if (Number.isNaN(port) || port <= 0) {
+    throw new Error(`Invalid PORT value: ${process.env.PORT}`);
+  }
 
   // === PostgreSQL via Prisma ===
   const connectionString = process.env.DATABASE_URL!;
@@ -60,24 +72,24 @@ async function startServer() {
   const projectRepository = new ProjectRepository(prisma);
 
   const storage = new S3Storage({
-    endpoint: process.env.S3_ENDPOINT || 'http://localhost:9000',
+    endpoint: process.env.S3_ENDPOINT,
     region: process.env.AWS_REGION || 'us-east-1',
-    accessKeyId: process.env.S3_ACCESS_KEY_ID || 'minioadmin',
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'minioadmin',
+    accessKeyId: process.env.S3_ACCESS_KEY_ID,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     bucket: process.env.S3_BUCKET || 'remix-studio',
     publicEndpoint: process.env.S3_PUBLIC_ENDPOINT,
   });
-  await storage.ensureBucket();
+  await storage.ensureBucket(autoCreateBuckets);
 
   const exportStorage = new S3Storage({
-    endpoint: process.env.S3_ENDPOINT || 'http://localhost:9000',
+    endpoint: process.env.S3_ENDPOINT,
     region: process.env.AWS_REGION || 'us-east-1',
-    accessKeyId: process.env.S3_ACCESS_KEY_ID || 'minioadmin',
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'minioadmin',
+    accessKeyId: process.env.S3_ACCESS_KEY_ID,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     bucket: process.env.S3_EXPORT_BUCKET || `${process.env.S3_BUCKET || 'remix-studio'}-exports`,
     publicEndpoint: process.env.S3_PUBLIC_ENDPOINT,
   });
-  await exportStorage.ensureBucket();
+  await exportStorage.ensureBucket(autoCreateBuckets);
 
   const imageProcessor = new ImageProcessor(projectRepository, storage, userRepository, exportStorage);
   const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor);
@@ -110,7 +122,17 @@ async function startServer() {
   // === Hono app ===
   type Variables = { user: JwtPayload };
   const app = new Hono<{ Variables: Variables }>();
-  const PORT_NUM = 3000;
+
+  app.get('/healthz', (c) => c.json({ ok: true }));
+  app.get('/readyz', async (c) => {
+    try {
+      await prisma.$queryRawUnsafe('SELECT 1');
+      return c.json({ ok: true });
+    } catch (error) {
+      console.error('[GET /readyz]', error);
+      return c.json({ ok: false }, 503);
+    }
+  });
 
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
@@ -157,8 +179,8 @@ async function startServer() {
     server.maxRequestsPerSocket = 0;
     (server as any).timeout = 120000; // 2 minute timeout for uploads
 
-    server.listen(PORT_NUM, '0.0.0.0', () => {
-      console.log(`Server running on http://localhost:${PORT_NUM}`);
+    server.listen(port, '0.0.0.0', () => {
+      console.log(`Server running on http://localhost:${port}`);
     });
   } else {
     // Production: Hono serves everything
@@ -173,8 +195,8 @@ async function startServer() {
       return c.html(html);
     });
 
-    serve({ fetch: app.fetch, port: PORT_NUM }, () => {
-      console.log(`Server running on http://localhost:${PORT_NUM}`);
+    serve({ fetch: app.fetch, port }, () => {
+      console.log(`Server running on http://localhost:${port}`);
     });
   }
 }

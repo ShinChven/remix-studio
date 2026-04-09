@@ -6,5 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+!.env.docker.example
 data/
 dist-server

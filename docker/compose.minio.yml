@@ -1,28 +1,28 @@
 services:
   app:
-    profiles: ["app"]
-    build: .
-    image: shinchven/remix-studio
-    container_name: remix-studio-app
+    image: ${REMIX_STUDIO_IMAGE:-ghcr.io/shinchven/remix-studio:latest}
+    container_name: ${APP_CONTAINER_NAME:-remix-studio-app}
     restart: unless-stopped
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/remix_studio}
-      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
-      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-minioadmin}
-      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-minioadmin}
-      S3_BUCKET: ${S3_BUCKET:-remix-studio}
-      S3_EXPORT_BUCKET: ${S3_EXPORT_BUCKET:-remix-studio-exports}
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-}
-      S3_AUTO_CREATE_BUCKET: ${S3_AUTO_CREATE_BUCKET:-true}
-      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-admin@example.com}
-      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-your_secure_password}
-      PROVIDER_ENCRYPTION_KEY: ${PROVIDER_ENCRYPTION_KEY}
-      JWT_SECRET: ${JWT_SECRET}
       NODE_ENV: production
       PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_EXPORT_BUCKET: ${S3_EXPORT_BUCKET}
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-}
+      S3_AUTO_CREATE_BUCKET: ${S3_AUTO_CREATE_BUCKET:-true}
+      JWT_SECRET: ${JWT_SECRET}
+      PROVIDER_ENCRYPTION_KEY: ${PROVIDER_ENCRYPTION_KEY}
+      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD}
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-}
+      WEBAUTHN_RP_NAME: ${WEBAUTHN_RP_NAME:-Remix Studio}
     depends_on:
       postgres:
         condition: service_healthy
@@ -37,33 +37,33 @@ services:
 
   postgres:
     image: postgres:17-alpine
-    container_name: remix-studio-postgres
+    container_name: ${POSTGRES_CONTAINER_NAME:-remix-studio-postgres}
     restart: unless-stopped
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-remix_studio}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - ${POSTGRES_DATA_DIR:-./volumes/postgres}:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-remix_studio}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   minio:
     image: minio/minio:latest
-    container_name: remix-studio-minio
+    container_name: ${MINIO_CONTAINER_NAME:-remix-studio-minio}
     restart: unless-stopped
     ports:
       - "${MINIO_API_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY}
       MINIO_DRIVE_MAX_USAGE_PCT: 99
     volumes:
-      - ./data/minio:/data
+      - ${MINIO_DATA_DIR:-./volumes/minio}:/data
     command: server /data --console-address ":9001"

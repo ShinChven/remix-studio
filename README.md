@@ -54,6 +54,8 @@ npm install
 cp .env.example .env
 ```
 
+`.env.example` is for host-based local development, where the app runs with `npm run dev` on your machine instead of inside Docker Compose.
+
 If you run `npm run dev` on your host machine, point storage at the host-published MinIO port:
 
 ```env
@@ -107,6 +109,105 @@ npm run dev
 ```
 
 The app runs at [http://localhost:3000](http://localhost:3000).
+
+## Docker Deployment
+
+Use a separate environment file for containerized deployments so your local `.env` can keep using host addresses like `localhost`.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/ShinChven/remix-studio.git
+cd remix-studio
+```
+
+### 2. Create the Docker deployment environment file
+
+```bash
+cp .env.docker.example .env.docker
+```
+
+For the bundled PostgreSQL + MinIO stack, keep these container-network addresses:
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/remix_studio
+S3_ENDPOINT=http://minio:9000
+```
+
+Before starting the stack, set real values for:
+
+- `PROVIDER_ENCRYPTION_KEY`
+- `JWT_SECRET`
+- `DEFAULT_ADMIN_PASSWORD`
+- `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`, if you do not want the default MinIO credentials
+
+`PROVIDER_ENCRYPTION_KEY` must be a 64-character hex string.
+
+Generate one with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### 3. Build and start the full stack
+
+```bash
+docker compose --profile app --env-file .env.docker up -d --build
+```
+
+This starts:
+
+- `app` on `3000`
+- `postgres` on `5432`
+- `minio` API on `9000`
+- `minio` console on `9001`
+
+The application container runs `prisma migrate deploy` on startup before launching the server.
+
+### 4. View logs
+
+```bash
+docker compose --profile app --env-file .env.docker logs -f app
+```
+
+### 5. Stop the stack
+
+```bash
+docker compose --profile app --env-file .env.docker down
+```
+
+If you prefer AWS S3 or another external S3-compatible service, point `S3_ENDPOINT`, `S3_PUBLIC_ENDPOINT`, bucket names, and credentials at that storage instead. Leave `S3_ENDPOINT` empty only when you want the AWS SDK to use its default AWS S3 endpoint behavior.
+
+## Image Publishing
+
+This repository now includes a GitHub Actions workflow at `.github/workflows/docker.yml` that:
+
+- builds the Docker image on pull requests
+- publishes multi-arch images to GHCR on `main`
+- publishes version tags when you push tags like `v1.0.0`
+
+Published image tags include:
+
+- `ghcr.io/<owner>/<repo>:latest` on the default branch
+- `ghcr.io/<owner>/<repo>:main` on the default branch
+- `ghcr.io/<owner>/<repo>:sha-<commit>`
+- `ghcr.io/<owner>/<repo>:<tag>` for Git tags
+
+If you publish a release tag like `v1.2.3`, the workflow also publishes rolling tags like `1.2` and `1`.
+
+Images are stored in GitHub Container Registry (`ghcr.io`). Docker clients can pull them directly. If the package is private, log in first with a token that has `read:packages`.
+
+## Deployment Templates
+
+Deployment templates intended for a separate infra repository live in `docker/README.md`.
+
+The included templates are:
+
+- `docker/compose.aws-s3.yml`: app + PostgreSQL, with AWS S3 or another managed object store
+- `docker/compose.minio.yml`: app + PostgreSQL + MinIO
+- `docker/compose.app-only.yml`: app only, for environments with external PostgreSQL and object storage
+
+Each compose file has a matching env example in the same directory.
 
 ## Current Stack
 
@@ -252,6 +353,7 @@ npx prisma migrate deploy
 - The app auto-creates a default admin user if `DEFAULT_ADMIN_EMAIL` and `DEFAULT_ADMIN_PASSWORD` are provided and the user does not already exist.
 - Storage is implemented against S3-compatible APIs, so MinIO works well for development.
 - For host-based local development with `docker compose up -d postgres minio` and `npm run dev`, MinIO should be reached at `http://localhost:9000`.
+- For Docker deployment, use `docker compose --profile app --env-file .env.docker up -d --build` so the app receives container-network addresses instead of your host-based `.env` values.
 
 ## Scripts
 
