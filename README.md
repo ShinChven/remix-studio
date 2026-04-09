@@ -233,7 +233,7 @@ npx prisma migrate deploy
 ### Breaking changes to be aware of
 
 - **All existing sessions are invalidated after upgrading.** The authentication system was hardened to use HttpOnly cookies exclusively and now includes a session version in each token. Existing JWTs will no longer be accepted. All users will need to sign in again.
-- **Provider API URLs are now validated against an allowlist.** Each provider type only accepts its official API host (e.g. `api.openai.com` for OpenAI, `generativelanguage.googleapis.com` for Google AI). If you previously configured a custom or self-hosted endpoint, update the provider or extend the allowlist in `server/utils/url-safety.ts`.
+- **Provider API URLs are now validated against an allowlist.** Each provider type only accepts its official API host (e.g. `api.openai.com` for OpenAI, `generativelanguage.googleapis.com` for Google AI). If you use a custom or self-hosted endpoint, add its hostname to the `ALLOWED_PROVIDER_HOSTS` environment variable (comma-separated).
 - **Reference image URLs must use HTTPS and cannot point to private IPs.** Jobs that reference images via `http://` URLs or internal network addresses will be rejected.
 
 ## Notes

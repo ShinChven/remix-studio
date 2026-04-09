@@ -2,12 +2,27 @@ import dns from 'node:dns/promises';
 import net from 'node:net';
 import type { ProviderType } from '../../src/types';
 
-const ALLOWED_PROVIDER_HOSTS: Record<ProviderType, string[]> = {
+const BUILT_IN_HOSTS: Record<ProviderType, string[]> = {
   GoogleAI: ['generativelanguage.googleapis.com'],
   VertexAI: ['aiplatform.googleapis.com'],
   RunningHub: ['www.runninghub.ai', 'runninghub.ai'],
   OpenAI: ['api.openai.com'],
 };
+
+/**
+ * Extra hosts from the ALLOWED_PROVIDER_HOSTS env var.
+ * Format: comma-separated hostnames, e.g. "my-proxy.example.com,ai.internal.corp"
+ * These are added to every provider type's allowlist.
+ */
+function getExtraAllowedHosts(): string[] {
+  const raw = process.env.ALLOWED_PROVIDER_HOSTS;
+  if (!raw) return [];
+  return raw.split(',').map((h) => h.trim().toLowerCase()).filter(Boolean);
+}
+
+function getAllowedHosts(type: ProviderType): string[] {
+  return [...BUILT_IN_HOSTS[type], ...getExtraAllowedHosts()];
+}
 
 const BLOCKED_HOSTNAMES = new Set([
   'localhost',
@@ -76,7 +91,7 @@ export function assertSafeProviderApiUrl(type: ProviderType, value?: string | nu
     throw new Error('Provider API URL must use HTTPS');
   }
 
-  const allowedHosts = ALLOWED_PROVIDER_HOSTS[type];
+  const allowedHosts = getAllowedHosts(type);
   if (!allowedHosts.includes(parsed.hostname.toLowerCase())) {
     throw new Error(`Provider API URL host is not allowed for ${type}`);
   }
