@@ -15,6 +15,7 @@ model User {
   passwordHash String
   role         String   @default("user")
   status       String   @default("disabled")
+  sessionVersion Int    @default(0)
   storageLimit BigInt   @default(5368709120) // 5GB in bytes
   twoFactorEnabled       Boolean  @default(false)
   twoFactorSecret        String?

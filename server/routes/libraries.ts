@@ -45,6 +45,10 @@ async function signLibrary(lib: Library, storage: S3Storage): Promise<Library> {
 export function createLibraryRouter(repository: IRepository, storage: S3Storage, userRepository: UserRepository, exportStorage: S3Storage) {
   const router = new Hono<{ Variables: Variables }>();
 
+  function isNotFoundError(error: any) {
+    return error?.message === 'Library not found' || error?.message === 'Library item not found';
+  }
+
   // === Libraries ===
 
   router.get('/api/libraries', authMiddleware, async (c) => {
@@ -107,7 +111,8 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
 
       await repository.updateLibrary(user.userId, c.req.param('id'), updates);
       return c.json({ success: true });
-    } catch (e) {
+    } catch (e: any) {
+      if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
       console.error('[PUT /api/libraries/:id]', e);
       return c.json({ error: 'Failed to update library' }, 500);
     }
@@ -162,7 +167,8 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       const user = c.get('user') as JwtPayload;
       await repository.deleteLibrary(user.userId, c.req.param('id'));
       return c.json({ success: true });
-    } catch (e) {
+    } catch (e: any) {
+      if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
       console.error('[DELETE /api/libraries/:id]', e);
       return c.json({ error: 'Failed to delete library' }, 500);
     }
@@ -211,7 +217,8 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
 
       await repository.createLibraryItem(user.userId, c.req.param('libId'), item);
       return c.json({ success: true }, 201);
-    } catch (e) {
+    } catch (e: any) {
+      if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
       console.error('[POST /api/libraries/:libId/items]', e);
       return c.json({ error: formatError(e, 'Failed to create item') }, 500);
     }
@@ -246,7 +253,8 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
 
       await repository.createLibraryItemsBatch(user.userId, c.req.param('libId'), items);
       return c.json({ success: true }, 201);
-    } catch (e) {
+    } catch (e: any) {
+      if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
       console.error('[POST /api/libraries/:libId/items/batch]', e);
       return c.json({ error: formatError(e, 'Failed to create items batch') }, 500);
     }
@@ -263,7 +271,8 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       
       await repository.reorderLibraryItems(user.userId, c.req.param('libId'), body);
       return c.json({ success: true });
-    } catch (e) {
+    } catch (e: any) {
+      if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
       console.error('[PUT /api/libraries/:libId/items/reorder]', e);
       return c.json({ error: 'Failed to reorder items' }, 500);
     }
@@ -280,7 +289,8 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
 
       await repository.updateLibraryItem(user.userId, c.req.param('libId'), c.req.param('itemId'), updates);
       return c.json({ success: true });
-    } catch (e) {
+    } catch (e: any) {
+      if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
       console.error('[PUT /api/libraries/:libId/items/:itemId]', e);
       return c.json({ error: 'Failed to update item' }, 500);
     }
@@ -291,7 +301,8 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       const user = c.get('user') as JwtPayload;
       await repository.deleteLibraryItem(user.userId, c.req.param('libId'), c.req.param('itemId'));
       return c.json({ success: true });
-    } catch (e) {
+    } catch (e: any) {
+      if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
       console.error('[DELETE /api/libraries/:libId/items/:itemId]', e);
       return c.json({ error: 'Failed to delete item' }, 500);
     }

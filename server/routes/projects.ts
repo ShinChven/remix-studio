@@ -262,6 +262,10 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   router.put('/api/projects/:id', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const currentProject = await repository.getProject(user.userId, projectId);
+      if (!currentProject) return c.json({ error: 'Not found' }, 404);
+
       const body = await c.req.json();
       const updates: { name?: string; workflow?: WorkflowItem[]; jobs?: Job[]; providerId?: string; aspectRatio?: string; quality?: string; format?: 'png' | 'jpeg' | 'webp'; shuffle?: boolean; modelConfigId?: string; prefix?: string } = {};
       if (typeof body?.name === 'string') updates.name = body.name.trim();
@@ -291,33 +295,33 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       
       // Storage check for new jobs (Drafts)
       if (updates.jobs) {
-        const currentProject = await repository.getProject(user.userId, c.req.param('id'));
-        if (currentProject) {
-          const newJobs = updates.jobs.filter(job => !currentProject.jobs.find(cj => cj.id === job.id));
-          if (newJobs.length > 0) {
-            // Simple estimate: 25MB per image (orig + thumb + opt)
-            const estimatedNewSize = newJobs.length * 25 * 1024 * 1024;
-            const { allowed, currentUsage, limit } = await checkStorageLimit(
-              user.userId, 
-              estimatedNewSize, 
-              userRepository, 
-              storage, 
-              exportStorage, 
-              repository
-            );
-            
-            if (!allowed) {
-              return c.json({ 
-                error: `Storage limit exceeded. Cannot add more drafts. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedNewSize / (1024 * 1024)).toFixed(0)}MB.` 
-              }, 403);
-            }
+        const newJobs = updates.jobs.filter(job => !currentProject.jobs.find(cj => cj.id === job.id));
+        if (newJobs.length > 0) {
+          // Simple estimate: 25MB per image (orig + thumb + opt)
+          const estimatedNewSize = newJobs.length * 25 * 1024 * 1024;
+          const { allowed, currentUsage, limit } = await checkStorageLimit(
+            user.userId, 
+            estimatedNewSize, 
+            userRepository, 
+            storage, 
+            exportStorage, 
+            repository
+          );
+          
+          if (!allowed) {
+            return c.json({ 
+              error: `Storage limit exceeded. Cannot add more drafts. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedNewSize / (1024 * 1024)).toFixed(0)}MB.` 
+            }, 403);
           }
         }
       }
 
-      await repository.updateProject(user.userId, c.req.param('id'), updates);
+      await repository.updateProject(user.userId, projectId, updates);
       return c.json({ success: true });
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.message === 'Project not found' || e?.message === 'Job not found') {
+        return c.json({ error: 'Not found' }, 404);
+      }
       console.error('[PUT /api/projects/:id]', e);
       return c.json({ error: 'Failed to update project' }, 500);
     }
@@ -372,7 +376,8 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   router.delete('/api/projects/:id/album/:itemId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      await repository.deleteAlbumItem(user.userId, c.req.param('id'), c.req.param('itemId'));
+      const deleted = await repository.deleteAlbumItem(user.userId, c.req.param('id'), c.req.param('itemId'));
+      if (!deleted) return c.json({ error: 'Not found' }, 404);
       return c.json({ success: true });
     } catch (e) {
       console.error('[DELETE /api/projects/:id/album/:itemId]', e);

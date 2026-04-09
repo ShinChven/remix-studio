@@ -1,16 +1,25 @@
 import bcrypt from 'bcryptjs';
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import type { Context, Next } from 'hono';
+import { getCookie } from 'hono/cookie';
 import type { UserRole, UserStatus } from '../../src/types';
 import type { UserRepository } from './user-repository';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'remix-studio-dev-secret';
 const SALT_ROUNDS = 10;
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret && process.env.NODE_ENV !== 'test') {
+    throw new Error('JWT_SECRET is required');
+  }
+  return secret || 'test-jwt-secret';
+}
 
 export interface JwtPayload {
   userId: string;
   email: string;
   role: UserRole;
+  sessionVersion: number;
 }
 
 export interface AuthFlowPayload {
@@ -40,6 +49,7 @@ export interface UserRecord {
   createdAt: number;
   updatedAt?: number;
   lastLoginAt?: number;
+  sessionVersion?: number;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -50,8 +60,6 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-import { getCookie } from 'hono/cookie';
-
 let authUserRepository: UserRepository | null = null;
 
 export function configureAuth(userRepository: UserRepository) {
@@ -59,30 +67,23 @@ export function configureAuth(userRepository: UserRepository) {
 }
 
 export function signToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '24h' });
 }
 
 export function verifyToken(token: string): JwtPayload {
-  return jwt.verify(token, JWT_SECRET) as JwtPayload;
+  return jwt.verify(token, getJwtSecret()) as JwtPayload;
 }
 
 export function signFlowToken(payload: AuthFlowPayload, expiresIn: SignOptions['expiresIn'] = '10m'): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn });
 }
 
 export function verifyFlowToken(token: string): AuthFlowPayload {
-  return jwt.verify(token, JWT_SECRET) as AuthFlowPayload;
+  return jwt.verify(token, getJwtSecret()) as AuthFlowPayload;
 }
 
 export async function authMiddleware(c: Context, next: Next): Promise<Response | void> {
-  const authHeader = c.req.header('Authorization');
-  let token: string | undefined;
-
-  if (authHeader?.startsWith('Bearer ')) {
-    token = authHeader.slice(7);
-  } else {
-    token = getCookie(c, 'token');
-  }
+  const token = getCookie(c, 'token');
 
   if (!token) {
     return c.json({ error: 'Unauthorized' }, 401);
@@ -98,7 +99,15 @@ export async function authMiddleware(c: Context, next: Next): Promise<Response |
       if (user.status === 'disabled') {
         return c.json({ error: 'This account has been disabled' }, 403);
       }
-      c.set('user', { ...payload, role: user.role, email: user.email });
+      if ((user.sessionVersion ?? 0) !== payload.sessionVersion) {
+        return c.json({ error: 'Session expired' }, 401);
+      }
+      c.set('user', {
+        ...payload,
+        role: user.role,
+        email: user.email,
+        sessionVersion: user.sessionVersion ?? 0,
+      });
     } else {
       c.set('user', payload);
     }

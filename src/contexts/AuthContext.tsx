@@ -3,8 +3,7 @@ import { User } from '../types';
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  login: (token: string, user: User) => void;
+  login: (user: User) => void;
   logout: () => void;
   isLoading: boolean;
 }
@@ -13,39 +12,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      setToken(storedToken);
-      fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${storedToken}` }
-      })
+    fetch('/api/auth/me')
       .then(res => {
         if (res.ok) {
           return res.json();
         }
-        throw new Error('Invalid token');
+        throw new Error('Unauthorized');
       })
       .then(data => {
         setUser(data.user);
       })
       .catch(() => {
-        localStorage.removeItem('token');
-        setToken(null);
         setUser(null);
       })
       .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
   }, []);
 
-  const login = (newToken: string, newUser: User) => {
-    localStorage.setItem('token', newToken);
-    setToken(newToken);
+  const login = (newUser: User) => {
     setUser(newUser);
   };
 
@@ -55,14 +41,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error('Logout failed:', e);
     }
-    localStorage.removeItem('token');
-    setToken(null);
     setUser(null);
     window.location.href = '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

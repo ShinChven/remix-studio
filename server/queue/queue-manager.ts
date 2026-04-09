@@ -7,6 +7,7 @@ import { Job, ProviderType } from '../../src/types';
 import { ImageProcessor } from './image-processor';
 import { DetachedPoller } from './detached-poller';
 import { ImageGenerator } from '../generators/image-generator';
+import { assertSafeReferenceImageUrl } from '../utils/url-safety';
 
 export interface QueuedJob {
   userId: string;
@@ -285,6 +286,7 @@ export class QueueManager {
         if (ctx.startsWith('data:')) {
           refImages.push(ctx.replace(/^data:image\/\w+;base64,/, ''));
         } else if (ctx.startsWith('http')) {
+          await assertSafeReferenceImageUrl(ctx);
           const response = await fetch(ctx);
           if (!response.ok) throw new Error(`Failed to download reference image: ${response.status}`);
           const buffer = Buffer.from(await response.arrayBuffer());

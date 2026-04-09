@@ -39,7 +39,7 @@ export function Login() {
         return;
       }
 
-      login(data.token, data.user);
+      login(data.user);
       navigate('/');
     } catch (err: any) {
       setError(err.message);
@@ -55,7 +55,7 @@ export function Login() {
 
     try {
       const data = await verifyTwoFactorLogin(twoFactorToken, twoFactorCode);
-      login(data.token, data.user);
+      login(data.user);
       navigate('/');
     } catch (err: any) {
       setError(err.message || '2FA verification failed');
@@ -84,7 +84,7 @@ export function Login() {
       }
 
       const result = await finishPasskeyLogin(flowToken, serializeAssertionCredential(credential as PublicKeyCredential));
-      login(result.token, result.user);
+      login(result.user);
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Passkey login failed');

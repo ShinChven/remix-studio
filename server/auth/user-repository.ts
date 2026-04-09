@@ -37,6 +37,7 @@ export class UserRepository {
         passwordHash: user.passwordHash,
         role: user.role ?? 'user',
         status: user.status ?? 'disabled',
+        sessionVersion: user.sessionVersion ?? 0,
         storageLimit: BigInt(user.storageLimit ?? DEFAULT_STORAGE_LIMIT),
         twoFactorEnabled: user.twoFactorEnabled ?? false,
         twoFactorSecret: user.twoFactorSecret ?? null,
@@ -156,13 +157,22 @@ export class UserRepository {
   }
 
   async updateRole(userId: string, role: UserRole): Promise<void> {
-    await this.prisma.user.update({ where: { id: userId }, data: { role } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        role,
+        sessionVersion: { increment: 1 },
+      },
+    });
   }
 
   async updateStatus(userId: string, status: UserStatus): Promise<void> {
     await this.prisma.user.update({
       where: { id: userId },
-      data: { status },
+      data: {
+        status,
+        sessionVersion: { increment: 1 },
+      },
     });
   }
 
@@ -171,7 +181,13 @@ export class UserRepository {
   }
 
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
-    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+        sessionVersion: { increment: 1 },
+      },
+    });
   }
 
   async startTwoFactorSetup(userId: string, encryptedSecret: string, expiresAt: Date): Promise<void> {
@@ -423,6 +439,7 @@ export class UserRepository {
       createdAt: u.createdAt instanceof Date ? u.createdAt.getTime() : u.createdAt,
       updatedAt: u.updatedAt instanceof Date ? u.updatedAt.getTime() : u.updatedAt,
       lastLoginAt: u.lastLoginAt instanceof Date ? u.lastLoginAt.getTime() : undefined,
+      sessionVersion: u.sessionVersion ?? 0,
     };
   }
 }

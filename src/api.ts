@@ -1,10 +1,8 @@
 import { AppData, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
-  const token = localStorage.getItem('token');
   const headers: Record<string, string> = {};
   if (isJson) headers['Content-Type'] = 'application/json';
-  if (token) headers['Authorization'] = `Bearer ${token}`;
   return headers;
 }
 
@@ -85,13 +83,13 @@ export async function beginPasskeyLogin(email?: string): Promise<{ options: any;
   return handleResponse<{ options: any; flowToken: string }>(res, 'Failed to start passkey login');
 }
 
-export async function finishPasskeyLogin(flowToken: string, credential: any): Promise<{ token: string; user: User }> {
+export async function finishPasskeyLogin(flowToken: string, credential: any): Promise<{ user: User }> {
   const res = await fetch('/api/auth/passkeys/login/verify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ flowToken, credential }),
   });
-  return handleResponse<{ token: string; user: User }>(res, 'Failed to finish passkey login');
+  return handleResponse<{ user: User }>(res, 'Failed to finish passkey login');
 }
 
 export async function setupTwoFactor(password: string): Promise<{ secret: string; otpauthUri: string; expiresAt: number }> {
@@ -127,13 +125,13 @@ export async function disableTwoFactor(password: string, code: string): Promise<
   }
 }
 
-export async function verifyTwoFactorLogin(tempToken: string, code: string): Promise<{ token: string; user: User }> {
+export async function verifyTwoFactorLogin(tempToken: string, code: string): Promise<{ user: User }> {
   const res = await fetch('/api/auth/2fa/verify-login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tempToken, code }),
   });
-  return handleResponse<{ token: string; user: User }>(res, 'Failed to verify 2FA login');
+  return handleResponse<{ user: User }>(res, 'Failed to verify 2FA login');
 }
 
 // ========== Legacy bulk load (used for initial data fetch) ==========

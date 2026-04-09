@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { setCookie } from 'hono/cookie';
 import { authMiddleware, adminOnly, hashPassword, verifyPassword, signToken, JwtPayload, signFlowToken, verifyFlowToken } from '../auth/auth';
 import { UserRepository } from '../auth/user-repository';
-import { checkRateLimit } from '../utils/rate-limiter';
+import { checkRateLimit, getClientAddress } from '../utils/rate-limiter';
 import crypto from 'crypto';
 import type { UserRole, UserStatus } from '../../src/types';
 import { decrypt, encrypt } from '../utils/crypto';
@@ -12,6 +12,10 @@ import { generateOtpAuthUri, generateTotpSecret, verifyTotpCode } from '../auth/
 const VALID_ROLES: UserRole[] = ['admin', 'user'];
 const VALID_STATUSES: UserStatus[] = ['active', 'disabled'];
 const DEFAULT_STORAGE_LIMIT = 5 * 1024 * 1024 * 1024;
+const LOGIN_MAX_ATTEMPTS = 10;
+const LOGIN_WINDOW_MS = 60_000;
+const TWO_FACTOR_MAX_ATTEMPTS = 5;
+const TWO_FACTOR_WINDOW_MS = 5 * 60_000;
 
 type Variables = { user: JwtPayload };
 
@@ -33,20 +37,40 @@ function getRequestOrigin(url: string) {
   return new URL(url).origin;
 }
 
+function getSessionCookieOptions(url: string) {
+  const requestUrl = new URL(url);
+  return {
+    httpOnly: true,
+    secure: requestUrl.protocol === 'https:' || process.env.NODE_ENV === 'production',
+    sameSite: 'Strict' as const,
+    maxAge: 24 * 60 * 60,
+    path: '/',
+  };
+}
+
+function clearSessionCookie(c: any) {
+  setCookie(c, 'token', '', {
+    ...getSessionCookieOptions(c.req.url),
+    maxAge: 0,
+  });
+}
+
+function hashRateLimitValue(value: string) {
+  return crypto.createHash('sha256').update(value).digest('hex');
+}
+
 async function finalizeLogin(c: any, userRepository: UserRepository, user: NonNullable<Awaited<ReturnType<UserRepository['findById']>>>) {
   await userRepository.touchLastLogin(user.sk);
 
-  const token = signToken({ userId: user.sk, email: user.email, role: user.role });
-  setCookie(c, 'token', token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'Strict',
-    maxAge: 24 * 60 * 60,
-    path: '/',
+  const token = signToken({
+    userId: user.sk,
+    email: user.email,
+    role: user.role,
+    sessionVersion: user.sessionVersion ?? 0,
   });
+  setCookie(c, 'token', token, getSessionCookieOptions(c.req.url));
 
   return c.json({
-    token,
     user: {
       ...serializeUser({ ...user, lastLoginAt: Date.now() }),
     },
@@ -58,16 +82,21 @@ export function createAuthRouter(userRepository: UserRepository) {
 
   router.post('/api/auth/login', async (c) => {
     try {
-      const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
-      if (!checkRateLimit(ip)) {
-        return c.json({ error: 'Too many login attempts. Please try again later.' }, 429);
-      }
-
       const body = await c.req.json();
-      const email = typeof body?.email === 'string' ? body.email.trim() : null;
+      const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : null;
       const password = typeof body?.password === 'string' ? body.password : null;
 
       if (!email || !password) return c.json({ error: 'Email and password are required' }, 400);
+
+      const clientAddress = getClientAddress(c.req.raw);
+      if (!checkRateLimit({
+        bucket: 'auth-login',
+        keyParts: [clientAddress, email],
+        maxAttempts: LOGIN_MAX_ATTEMPTS,
+        windowMs: LOGIN_WINDOW_MS,
+      })) {
+        return c.json({ error: 'Too many login attempts. Please try again later.' }, 429);
+      }
 
       const user = await userRepository.findByEmail(email);
       if (!user) return c.json({ error: 'Invalid credentials' }, 401);
@@ -143,13 +172,7 @@ export function createAuthRouter(userRepository: UserRepository) {
   });
 
   router.post('/api/auth/logout', async (c) => {
-    setCookie(c, 'token', '', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Strict',
-      maxAge: 0,
-      path: '/',
-    });
+    clearSessionCookie(c);
     return c.json({ success: true });
   });
 
@@ -161,6 +184,16 @@ export function createAuthRouter(userRepository: UserRepository) {
 
       if (!tempToken || !code) {
         return c.json({ error: '2FA token and code are required' }, 400);
+      }
+
+      const clientAddress = getClientAddress(c.req.raw);
+      if (!checkRateLimit({
+        bucket: 'auth-login-2fa',
+        keyParts: [clientAddress, hashRateLimitValue(tempToken)],
+        maxAttempts: TWO_FACTOR_MAX_ATTEMPTS,
+        windowMs: TWO_FACTOR_WINDOW_MS,
+      })) {
+        return c.json({ error: 'Too many verification attempts. Please try again later.' }, 429);
       }
 
       const flow = verifyFlowToken(tempToken);

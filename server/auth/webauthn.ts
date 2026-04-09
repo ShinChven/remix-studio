@@ -272,7 +272,7 @@ export function buildRegistrationOptions(args: {
     attestation: 'none' as const,
     authenticatorSelection: {
       residentKey: 'required' as const,
-      userVerification: 'preferred' as const,
+      userVerification: 'required' as const,
     },
     excludeCredentials: args.excludeCredentialIds.map((credentialId) => ({
       id: credentialId,
@@ -292,7 +292,7 @@ export function buildAuthenticationOptions(args: {
     challenge: args.challenge,
     rpId,
     timeout: 60000,
-    userVerification: 'preferred' as const,
+    userVerification: 'required' as const,
     allowCredentials: (args.allowCredentialIds || []).map((credentialId) => ({
       id: credentialId,
       type: 'public-key' as const,
@@ -329,6 +329,10 @@ export function verifyRegistrationResponse(args: {
 
   if (!parsedAuthData.userPresent) {
     throw new Error('User presence is required');
+  }
+
+  if (!parsedAuthData.userVerified) {
+    throw new Error('Verified user interaction is required');
   }
 
   if (!parsedAuthData.rpIdHash.equals(expectedRpIdHash(rpId))) {
@@ -386,6 +390,10 @@ export function verifyAuthenticationResponse(args: {
 
   if (!parsedAuthData.userPresent) {
     throw new Error('User presence is required');
+  }
+
+  if (!parsedAuthData.userVerified) {
+    throw new Error('Verified user interaction is required');
   }
 
   if (!parsedAuthData.rpIdHash.equals(expectedRpIdHash(rpId))) {

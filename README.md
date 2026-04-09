@@ -222,6 +222,20 @@ remix-studio/
 └── docker-compose.yml
 ```
 
+## Upgrading
+
+When pulling new changes, always run database migrations before restarting the server:
+
+```bash
+npx prisma migrate deploy
+```
+
+### Breaking changes to be aware of
+
+- **All existing sessions are invalidated after upgrading.** The authentication system was hardened to use HttpOnly cookies exclusively and now includes a session version in each token. Existing JWTs will no longer be accepted. All users will need to sign in again.
+- **Provider API URLs are now validated against an allowlist.** Each provider type only accepts its official API host (e.g. `api.openai.com` for OpenAI, `generativelanguage.googleapis.com` for Google AI). If you previously configured a custom or self-hosted endpoint, update the provider or extend the allowlist in `server/utils/url-safety.ts`.
+- **Reference image URLs must use HTTPS and cannot point to private IPs.** Jobs that reference images via `http://` URLs or internal network addresses will be rejected.
+
 ## Notes
 
 - This repository is aimed at local or self-hosted use. Production deployment is possible, but it still requires you to make your own decisions around secrets, storage, database operations, and infrastructure.

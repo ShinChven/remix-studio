@@ -4,6 +4,17 @@ import { Project, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/type
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
 
+  private async assertOwnedProject(userId: string, projectId: string): Promise<void> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, userId },
+      select: { id: true },
+    });
+
+    if (!project) {
+      throw new Error('Project not found');
+    }
+  }
+
   async getUserProjects(userId: string, page: number = 1, limit: number = 50, sortBy: 'createdAt' | 'totalSize' = 'createdAt'): Promise<{ items: Project[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
@@ -111,10 +122,12 @@ export class ProjectRepository {
     });
 
     if (project.jobs?.length) await this.saveJobs(userId, project.id, project.jobs);
-    if (project.workflow?.length) await this.saveWorkflow(project.id, project.workflow);
+    if (project.workflow?.length) await this.saveWorkflow(userId, project.id, project.workflow);
   }
 
   async updateProject(userId: string, projectId: string, updates: Partial<Project>): Promise<void> {
+    await this.assertOwnedProject(userId, projectId);
+
     const data: any = {};
     if (updates.name !== undefined) data.name = updates.name;
     if (updates.providerId !== undefined) data.providerId = updates.providerId ?? null;
@@ -131,7 +144,7 @@ export class ProjectRepository {
     }
 
     if (updates.jobs !== undefined) await this.saveJobs(userId, projectId, updates.jobs);
-    if (updates.workflow !== undefined) await this.saveWorkflow(projectId, updates.workflow);
+    if (updates.workflow !== undefined) await this.saveWorkflow(userId, projectId, updates.workflow);
   }
 
   async deleteProject(userId: string, projectId: string): Promise<void> {
@@ -159,10 +172,12 @@ export class ProjectRepository {
     if ((updates as any).optimizedSize !== undefined) data.optimizedSize = (updates as any).optimizedSize != null ? BigInt((updates as any).optimizedSize) : null;
     if ((updates as any).thumbnailSize !== undefined) data.thumbnailSize = (updates as any).thumbnailSize != null ? BigInt((updates as any).thumbnailSize) : null;
 
-    await this.prisma.job.updateMany({ where: { id: jobId, projectId }, data });
+    await this.prisma.job.updateMany({ where: { id: jobId, projectId, userId }, data });
   }
 
   async addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void> {
+    await this.assertOwnedProject(userId, projectId);
+
     const data = {
       projectId,
       userId,
@@ -181,17 +196,33 @@ export class ProjectRepository {
       thumbnailSize: (item as any).thumbnailSize != null ? BigInt((item as any).thumbnailSize) : null,
       createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
     };
-    await this.prisma.albumItem.upsert({
+
+    const existing = await this.prisma.albumItem.findUnique({
       where: { id: item.id },
-      create: { id: item.id, ...data },
-      update: data,
+      select: { id: true, userId: true, projectId: true },
+    });
+
+    if (existing && (existing.userId !== userId || existing.projectId !== projectId)) {
+      throw new Error('Album item not found');
+    }
+
+    if (existing) {
+      await this.prisma.albumItem.updateMany({
+        where: { id: item.id, projectId, userId },
+        data,
+      });
+      return;
+    }
+
+    await this.prisma.albumItem.create({
+      data: { id: item.id, ...data },
     });
   }
 
   async deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null> {
     const item = await this.prisma.albumItem.findFirst({ where: { id: itemId, projectId, userId } });
     if (!item) return null;
-    await this.prisma.albumItem.delete({ where: { id: itemId } });
+    await this.prisma.albumItem.deleteMany({ where: { id: itemId, projectId, userId } });
     return this.mapAlbumItem(item);
   }
 
@@ -226,7 +257,7 @@ export class ProjectRepository {
       },
     });
 
-    await this.prisma.albumItem.delete({ where: { id: itemId } });
+    await this.prisma.albumItem.deleteMany({ where: { id: itemId, projectId, userId } });
   }
 
   async getTrashItems(userId: string): Promise<TrashItem[]> {
@@ -431,63 +462,89 @@ export class ProjectRepository {
   }
 
   private async saveJobs(userId: string, projectId: string, jobs: Job[]): Promise<void> {
+    await this.assertOwnedProject(userId, projectId);
+
     for (const job of jobs) {
-      await this.prisma.job.upsert({
+      const createData = {
+        id: job.id,
+        projectId,
+        userId,
+        prompt: job.prompt,
+        status: job.status ?? 'pending',
+        imageContexts: job.imageContexts ?? [],
+        imageUrl: job.imageUrl ?? null,
+        thumbnailUrl: job.thumbnailUrl ?? null,
+        optimizedUrl: job.optimizedUrl ?? null,
+        error: job.error ?? null,
+        providerId: job.providerId ?? null,
+        modelConfigId: job.modelConfigId ?? null,
+        aspectRatio: job.aspectRatio ?? null,
+        quality: job.quality ?? null,
+        format: job.format ?? null,
+        background: (job as any).background ?? null,
+        taskId: job.taskId ?? null,
+        filename: job.filename ?? null,
+        size: job.size != null ? BigInt(job.size) : null,
+        createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
+      };
+
+      const updateData = {
+        prompt: job.prompt,
+        status: job.status ?? 'pending',
+        imageContexts: job.imageContexts ?? [],
+        imageUrl: job.imageUrl ?? null,
+        thumbnailUrl: job.thumbnailUrl ?? null,
+        optimizedUrl: job.optimizedUrl ?? null,
+        error: job.error ?? null,
+        providerId: job.providerId ?? null,
+        modelConfigId: job.modelConfigId ?? null,
+        aspectRatio: job.aspectRatio ?? null,
+        quality: job.quality ?? null,
+        format: job.format ?? null,
+        background: (job as any).background ?? null,
+        taskId: job.taskId ?? null,
+        filename: job.filename ?? null,
+        size: job.size != null ? BigInt(job.size) : null,
+      };
+
+      const existing = await this.prisma.job.findUnique({
         where: { id: job.id },
-        create: {
-          id: job.id,
-          projectId,
-          userId,
-          prompt: job.prompt,
-          status: job.status ?? 'pending',
-          imageContexts: job.imageContexts ?? [],
-          imageUrl: job.imageUrl ?? null,
-          thumbnailUrl: job.thumbnailUrl ?? null,
-          optimizedUrl: job.optimizedUrl ?? null,
-          error: job.error ?? null,
-          providerId: job.providerId ?? null,
-          modelConfigId: job.modelConfigId ?? null,
-          aspectRatio: job.aspectRatio ?? null,
-          quality: job.quality ?? null,
-          format: job.format ?? null,
-          background: (job as any).background ?? null,
-          taskId: job.taskId ?? null,
-          filename: job.filename ?? null,
-          size: job.size != null ? BigInt(job.size) : null,
-          createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
-        },
-        update: {
-          prompt: job.prompt,
-          status: job.status ?? 'pending',
-          imageContexts: job.imageContexts ?? [],
-          imageUrl: job.imageUrl ?? null,
-          thumbnailUrl: job.thumbnailUrl ?? null,
-          optimizedUrl: job.optimizedUrl ?? null,
-          error: job.error ?? null,
-          providerId: job.providerId ?? null,
-          modelConfigId: job.modelConfigId ?? null,
-          aspectRatio: job.aspectRatio ?? null,
-          quality: job.quality ?? null,
-          format: job.format ?? null,
-          taskId: job.taskId ?? null,
-          filename: job.filename ?? null,
-          size: job.size != null ? BigInt(job.size) : null,
-        },
+        select: { id: true, userId: true, projectId: true },
       });
+
+      if (existing && (existing.userId !== userId || existing.projectId !== projectId)) {
+        throw new Error('Job not found');
+      }
+
+      if (existing) {
+        await this.prisma.job.updateMany({
+          where: { id: job.id, projectId, userId },
+          data: updateData,
+        });
+      } else {
+        await this.prisma.job.create({ data: createData });
+      }
     }
 
     // Delete jobs no longer in list
     const newIds = new Set(jobs.map((j) => j.id));
-    const dbJobs = await this.prisma.job.findMany({ where: { projectId }, select: { id: true } });
+    const dbJobs = await this.prisma.job.findMany({ where: { projectId, userId }, select: { id: true } });
     const toDelete = dbJobs.filter((j) => !newIds.has(j.id)).map((j) => j.id);
     if (toDelete.length) {
-      await this.prisma.job.deleteMany({ where: { id: { in: toDelete } } });
+      await this.prisma.job.deleteMany({ where: { id: { in: toDelete }, projectId, userId } });
     }
   }
 
-  private async saveWorkflow(projectId: string, workflow: WorkflowItem[]): Promise<void> {
+  private async saveWorkflow(userId: string, projectId: string, workflow: WorkflowItem[]): Promise<void> {
+    await this.assertOwnedProject(userId, projectId);
+
     // Replace all workflow items for the project
-    await this.prisma.workflowItem.deleteMany({ where: { projectId } });
+    await this.prisma.workflowItem.deleteMany({
+      where: {
+        projectId,
+        project: { userId },
+      },
+    });
     if (!workflow.length) return;
 
     await this.prisma.workflowItem.createMany({

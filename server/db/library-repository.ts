@@ -5,6 +5,17 @@ import { Library, LibraryItem } from '../../src/types';
 export class LibraryRepository {
   constructor(private prisma: PrismaClient) {}
 
+  private async assertOwnedLibrary(userId: string, libraryId: string): Promise<void> {
+    const library = await this.prisma.library.findFirst({
+      where: { id: libraryId, userId },
+      select: { id: true },
+    });
+
+    if (!library) {
+      throw new Error('Library not found');
+    }
+  }
+
   async getUserLibraries(userId: string, page: number = 1, limit: number = 50): Promise<{ items: Library[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
@@ -64,14 +75,21 @@ export class LibraryRepository {
   }
 
   async updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }): Promise<void> {
-    await this.prisma.library.updateMany({
+    const result = await this.prisma.library.updateMany({
       where: { id: libraryId, userId },
       data: updates,
     });
+
+    if (result.count === 0) {
+      throw new Error('Library not found');
+    }
   }
 
   async deleteLibrary(userId: string, libraryId: string): Promise<void> {
-    await this.prisma.library.deleteMany({ where: { id: libraryId, userId } });
+    const result = await this.prisma.library.deleteMany({ where: { id: libraryId, userId } });
+    if (result.count === 0) {
+      throw new Error('Library not found');
+    }
   }
 
   async getLibraryItems(userId: string, libraryId: string): Promise<LibraryItem[]> {
@@ -86,6 +104,8 @@ export class LibraryRepository {
   }
 
   async createLibraryItem(userId: string, libraryId: string, item: LibraryItem): Promise<void> {
+    await this.assertOwnedLibrary(userId, libraryId);
+
     await this.prisma.libraryItem.create({
       data: {
         id: item.id,
@@ -102,6 +122,8 @@ export class LibraryRepository {
   }
 
   async createLibraryItemsBatch(userId: string, libraryId: string, items: LibraryItem[]): Promise<void> {
+    await this.assertOwnedLibrary(userId, libraryId);
+
     await this.prisma.libraryItem.createMany({
       data: items.map((item) => ({
         id: item.id,
@@ -118,6 +140,8 @@ export class LibraryRepository {
   }
 
   async updateLibraryItem(userId: string, libraryId: string, itemId: string, updates: Partial<LibraryItem>): Promise<void> {
+    await this.assertOwnedLibrary(userId, libraryId);
+
     const data: any = {};
     if (updates.content !== undefined) data.content = updates.content;
     if (updates.title !== undefined) data.title = updates.title;
@@ -127,16 +151,64 @@ export class LibraryRepository {
     if (updates.tags !== undefined) data.tags = updates.tags;
     if (updates.size !== undefined) data.size = updates.size != null ? BigInt(updates.size) : null;
 
-    await this.prisma.libraryItem.update({ where: { id: itemId }, data });
+    const result = await this.prisma.libraryItem.updateMany({
+      where: {
+        id: itemId,
+        libraryId,
+        library: { userId },
+      },
+      data,
+    });
+
+    if (result.count === 0) {
+      throw new Error('Library item not found');
+    }
   }
 
   async deleteLibraryItem(userId: string, libraryId: string, itemId: string): Promise<void> {
-    await this.prisma.libraryItem.delete({ where: { id: itemId } });
+    await this.assertOwnedLibrary(userId, libraryId);
+
+    const result = await this.prisma.libraryItem.deleteMany({
+      where: {
+        id: itemId,
+        libraryId,
+        library: { userId },
+      },
+    });
+
+    if (result.count === 0) {
+      throw new Error('Library item not found');
+    }
   }
 
   async reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]): Promise<void> {
+    await this.assertOwnedLibrary(userId, libraryId);
+
+    const itemIds = [...new Set(updates.map((item) => item.id))];
+    const existing = await this.prisma.libraryItem.findMany({
+      where: {
+        id: { in: itemIds },
+        libraryId,
+        library: { userId },
+      },
+      select: { id: true },
+    });
+
+    if (existing.length !== itemIds.length) {
+      throw new Error('Library item not found');
+    }
+
     await Promise.all(
-      updates.map((u) => this.prisma.libraryItem.update({ where: { id: u.id }, data: { order: u.order } }))
+      updates.map((u) =>
+        this.prisma.libraryItem.updateMany({
+          where: {
+            id: u.id,
+            libraryId,
+            library: { userId },
+          },
+          data: { order: u.order },
+        })
+      )
     );
   }
 

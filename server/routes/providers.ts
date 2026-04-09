@@ -3,6 +3,7 @@ import { authMiddleware, JwtPayload } from '../auth/auth';
 import { ProviderRepository } from '../db/provider-repository';
 import type { ProviderType } from '../../src/types';
 import crypto from 'crypto';
+import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'OpenAI'];
 type Variables = { user: JwtPayload };
@@ -39,11 +40,21 @@ export function createProviderRouter(repo: ProviderRepository) {
       if (!apiKey) return c.json({ error: 'apiKey is required' }, 400);
 
       const id = crypto.randomUUID();
-      await repo.createProvider(user.userId, { id, name, type, apiKey, apiUrl, concurrency });
+      await repo.createProvider(user.userId, {
+        id,
+        name,
+        type,
+        apiKey,
+        apiUrl: assertSafeProviderApiUrl(type, apiUrl),
+        concurrency,
+      });
       return c.json({ id }, 201);
-    } catch (e) {
+    } catch (e: any) {
+      if (typeof e?.message === 'string' && e.message.startsWith('Provider API URL')) {
+        return c.json({ error: e.message }, 400);
+      }
       console.error('[POST /api/providers]', e);
-      return c.json({ error: 'Failed to create provider' }, 500);
+      return c.json({ error: e?.message || 'Failed to create provider' }, 500);
     }
   });
 
@@ -81,12 +92,21 @@ export function createProviderRouter(repo: ProviderRepository) {
         updates.concurrency = body.concurrency;
       }
 
+      const effectiveType = updates.type ?? body?.type ?? (await repo.getProvider(user.userId, providerId))?.type;
+      if (!effectiveType) return c.json({ error: 'Provider not found' }, 404);
+      if (updates.apiUrl !== undefined) {
+        updates.apiUrl = assertSafeProviderApiUrl(effectiveType, updates.apiUrl);
+      }
+
       await repo.updateProvider(user.userId, providerId, updates);
       return c.json({ success: true });
     } catch (e: any) {
       if (e?.message === 'Provider not found') return c.json({ error: 'Provider not found' }, 404);
+      if (typeof e?.message === 'string' && e.message.startsWith('Provider API URL')) {
+        return c.json({ error: e.message }, 400);
+      }
       console.error('[PUT /api/providers/:id]', e);
-      return c.json({ error: 'Failed to update provider' }, 500);
+      return c.json({ error: e?.message || 'Failed to update provider' }, 500);
     }
   });
 
