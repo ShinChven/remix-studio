@@ -754,6 +754,64 @@ export async function uploadExportToDrive(taskId: string): Promise<{ driveFileId
   return handleResponse<{ driveFileId: string; driveFileName: string; driveUrl: string }>(res, 'Failed to upload to Google Drive');
 }
 
+// ========== MCP / OAuth Clients ==========
+
+export interface OAuthClientSummary {
+  id: string;
+  clientId: string;
+  clientName: string | null;
+  redirectUris: string[];
+  scope: string | null;
+  activeTokens: number;
+  createdAt: number;
+}
+
+export interface PersonalAccessTokenSummary {
+  id: string;
+  name: string;
+  tokenPrefix: string;
+  scope: string;
+  lastUsedAt: number | null;
+  expiresAt: number | null;
+  expired: boolean;
+  createdAt: number;
+}
+
+export async function fetchOAuthClients(): Promise<OAuthClientSummary[]> {
+  const res = await fetch('/api/oauth/clients', { headers: getHeaders(false) });
+  return handleResponse<OAuthClientSummary[]>(res, 'Failed to load OAuth clients');
+}
+
+export async function revokeOAuthClient(clientId: string): Promise<void> {
+  const res = await fetch(`/api/oauth/clients/${encodeURIComponent(clientId)}/revoke`, {
+    method: 'DELETE',
+    headers: getHeaders(false),
+  });
+  await handleResponse<{ success: boolean }>(res, 'Failed to revoke client');
+}
+
+export async function fetchPersonalAccessTokens(): Promise<PersonalAccessTokenSummary[]> {
+  const res = await fetch('/api/oauth/tokens', { headers: getHeaders(false) });
+  return handleResponse<PersonalAccessTokenSummary[]>(res, 'Failed to load tokens');
+}
+
+export async function createPersonalAccessToken(name: string, expiresInDays?: number): Promise<{ token: string; name: string; tokenPrefix: string }> {
+  const res = await fetch('/api/oauth/tokens', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ name, expiresInDays: expiresInDays ?? null }),
+  });
+  return handleResponse<{ token: string; name: string; tokenPrefix: string }>(res, 'Failed to create token');
+}
+
+export async function revokePersonalAccessToken(id: string): Promise<void> {
+  const res = await fetch(`/api/oauth/tokens/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: getHeaders(false),
+  });
+  await handleResponse<{ success: boolean }>(res, 'Failed to revoke token');
+}
+
 // ========== Storage ==========
 
 export async function fetchStorageAnalysis(options?: { includeProjects?: boolean }): Promise<StorageAnalysis> {

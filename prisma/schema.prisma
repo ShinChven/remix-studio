@@ -32,6 +32,9 @@ model User {
   trashItems   TrashItem[]
   exportTasks  ExportTask[]
   passkeys     PasskeyCredential[]
+  oauthAuthorizationCodes OAuthAuthorizationCode[]
+  oauthAccessTokens       OAuthAccessToken[]
+  personalAccessTokens    PersonalAccessToken[]
 }
 
 model PasskeyCredential {
@@ -235,4 +238,82 @@ model ExportTask {
 
   @@index([userId])
   @@index([userId, projectId])
+}
+
+// === MCP OAuth 2.0 ===
+
+model OAuthClient {
+  id                      String   @id @default(uuid())
+  clientId                String   @unique
+  clientSecretHash        String?
+  clientName              String?
+  redirectUris            Json     // String[]
+  grantTypes              Json     // String[] e.g. ["authorization_code"]
+  responseTypes           Json     // String[] e.g. ["code"]
+  tokenEndpointAuthMethod String   @default("client_secret_basic")
+  scope                   String?
+  clientIdIssuedAt        DateTime @default(now())
+  clientSecretExpiresAt   DateTime?
+  createdAt               DateTime @default(now())
+
+  authorizationCodes OAuthAuthorizationCode[]
+  accessTokens       OAuthAccessToken[]
+}
+
+model OAuthAuthorizationCode {
+  id                  String   @id @default(uuid())
+  code                String   @unique
+  clientId            String
+  userId              String
+  redirectUri         String
+  scope               String?
+  codeChallenge       String?
+  codeChallengeMethod String?  @default("S256")
+  expiresAt           DateTime
+  used                Boolean  @default(false)
+  createdAt           DateTime @default(now())
+
+  client OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([code])
+  @@index([clientId])
+}
+
+model OAuthAccessToken {
+  id           String    @id @default(uuid())
+  token        String    @unique
+  clientId     String
+  userId       String
+  scope        String?
+  expiresAt    DateTime
+  refreshToken String?   @unique
+  refreshExpiresAt DateTime?
+  revoked      Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  client OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([refreshToken])
+  @@index([userId])
+}
+
+model PersonalAccessToken {
+  id          String    @id @default(uuid())
+  userId      String
+  name        String
+  tokenHash   String    @unique
+  tokenPrefix String    // first 8 chars for display (e.g. "pat_xxxx...")
+  scope       String    @default("mcp:tools")
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revoked     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
 }

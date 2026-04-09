@@ -28,6 +28,7 @@ import { ProjectOrphans } from './pages/ProjectOrphans.tsx';
 import { Exports } from './pages/Exports.tsx';
 import { Account } from './pages/Account.tsx';
 import { AccountTwoFactorSetup } from './pages/AccountTwoFactorSetup.tsx';
+import { McpConnections } from './pages/McpConnections.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -70,6 +71,7 @@ export default function App() {
               <Route path="storage" element={<Navigate to="/account?tab=storage" replace />} />
               <Route path="account" element={<Account />} />
               <Route path="account/security/2fa" element={<AccountTwoFactorSetup />} />
+              <Route path="account/mcp" element={<McpConnections />} />
             </Route>
           </Routes>
         </BrowserRouter>

@@ -24,6 +24,8 @@ import { createTrashRouter } from './server/routes/trash';
 import { ProviderRepository } from './server/db/provider-repository';
 import { ProjectRepository } from './server/db/project-repository';
 import { createStorageRouter } from './server/routes/storage-router';
+import { createOAuthRouter } from './server/routes/oauth';
+import { createMcpRouter } from './server/mcp/mcp-server';
 import { QueueManager } from './server/queue/queue-manager';
 import { ExportManager } from './server/queue/export-manager';
 import { ImageProcessor } from './server/queue/image-processor';
@@ -143,6 +145,8 @@ async function startServer() {
   app.route('/', createGenerateRouter(providerRepository));
   app.route('/', createTrashRouter(repository, storage));
   app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));
+  app.route('/', createOAuthRouter(prisma));
+  app.route('/', createMcpRouter(prisma, repository));
 
   // Shared legacy path (can be refactored eventually)
   app.get('/api/data', authMiddleware, async (c) => {
@@ -168,7 +172,7 @@ async function startServer() {
 
     const server = http.createServer((req, res) => {
       const url = req.url || '';
-      if (url.startsWith('/api/')) {
+      if (url.startsWith('/api/') || url.startsWith('/mcp') || url.startsWith('/authorize') || url.startsWith('/register') || url.startsWith('/token') || url.startsWith('/.well-known/') || url.startsWith('/healthz') || url.startsWith('/readyz')) {
         honoListener(req, res);
       } else {
         vite.middlewares(req, res);

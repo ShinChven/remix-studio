@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive } from 'lucide-react';
+import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Unplug } from 'lucide-react';
 
 import { fetchStorageAnalysis } from '../api';
 import { useAuth } from '../contexts/AuthContext';
@@ -177,6 +177,19 @@ export function MainLayout() {
           >
             <Key className="w-5 h-5 flex-shrink-0" />
             <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Providers</span>
+          </Link>
+
+          <Link
+            to="/account/mcp"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/account/mcp'
+                ? 'bg-violet-600/10 text-violet-400 border-violet-600/20'
+                : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
+              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+            title="MCP Connections"
+          >
+            <Unplug className="w-5 h-5 flex-shrink-0" />
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>MCP</span>
           </Link>
 
           <Link
