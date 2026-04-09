@@ -16,6 +16,9 @@ export interface IRepository {
   deleteLibraryItem(userId: string, libraryId: string, itemId: string): Promise<void>;
   reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]): Promise<void>;
 
+  // === Library Search ===
+  searchLibraryItems(userId: string, query: string, options?: { libraryId?: string; tags?: string[]; page?: number; limit?: number }): Promise<{ items: (LibraryItem & { libraryId: string; libraryName: string })[]; total: number; page: number; pages: number }>;
+
   // === Project CRUD ===
   getUserProjects(userId: string, page?: number, limit?: number, sortBy?: 'createdAt' | 'totalSize'): Promise<{ items: Project[], total: number, page: number, pages: number }>;
   getProject(userId: string, projectId: string): Promise<Project | null>;

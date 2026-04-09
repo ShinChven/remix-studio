@@ -146,7 +146,7 @@ async function startServer() {
   app.route('/', createTrashRouter(repository, storage));
   app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));
   app.route('/', createOAuthRouter(prisma));
-  app.route('/', createMcpRouter(prisma, repository));
+  app.route('/', createMcpRouter(prisma, repository, userRepository));
 
   // Shared legacy path (can be refactored eventually)
   app.get('/api/data', authMiddleware, async (c) => {

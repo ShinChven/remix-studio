@@ -26,6 +26,9 @@ export class PrismaRepository implements IRepository {
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }) { return this.libraries.updateLibrary(userId, libraryId, updates); }
   deleteLibrary(userId: string, libraryId: string) { return this.libraries.deleteLibrary(userId, libraryId); }
 
+  // === Library Search ===
+  searchLibraryItems(userId: string, query: string, options?: { libraryId?: string; tags?: string[]; page?: number; limit?: number }) { return this.libraries.searchLibraryItems(userId, query, options); }
+
   // === Library Item CRUD ===
   getLibraryItems(userId: string, libraryId: string) { return this.libraries.getLibraryItems(userId, libraryId); }
   createLibraryItem(userId: string, libraryId: string, item: LibraryItem) { return this.libraries.createLibraryItem(userId, libraryId, item); }

@@ -212,6 +212,55 @@ export class LibraryRepository {
     );
   }
 
+  async searchLibraryItems(
+    userId: string,
+    query: string,
+    options: { libraryId?: string; tags?: string[]; page?: number; limit?: number } = {},
+  ): Promise<{ items: (LibraryItem & { libraryId: string; libraryName: string })[]; total: number; page: number; pages: number }> {
+    const page = options.page ?? 1;
+    const limit = options.limit ?? 50;
+    const skip = (page - 1) * limit;
+
+    const where: any = { library: { userId } };
+    if (options.libraryId) where.libraryId = options.libraryId;
+
+    // Text search across content, title
+    if (query) {
+      where.OR = [
+        { content: { contains: query, mode: 'insensitive' } },
+        { title: { contains: query, mode: 'insensitive' } },
+      ];
+    }
+
+    // Tag filtering — match items that contain ALL specified tags
+    // Prisma Json field: use array_contains for PostgreSQL
+    if (options.tags && options.tags.length > 0) {
+      where.tags = { array_contains: options.tags };
+    }
+
+    const [total, items] = await Promise.all([
+      this.prisma.libraryItem.count({ where }),
+      this.prisma.libraryItem.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ order: 'asc' }, { id: 'asc' }],
+        include: { library: { select: { name: true } } },
+      }),
+    ]);
+
+    return {
+      items: items.map((item) => ({
+        ...this.mapItem(item),
+        libraryId: item.libraryId,
+        libraryName: item.library.name,
+      })),
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
   private mapItem(item: any): LibraryItem {
     return {
       id: item.id,
