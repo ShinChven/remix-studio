@@ -8,13 +8,13 @@ services:
   #   environment:
   #     # Network endpoints hardcoded for Docker internal networking
   #     DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-remix_studio}
-  #     MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
+  #     S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
 
   #     # Secrets and configs pulled from .env file implicitly by Docker Compose
-  #     MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-  #     MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
-  #     MINIO_BUCKET: ${MINIO_BUCKET:-remix-studio}
-  #     MINIO_EXPORT_BUCKET: ${MINIO_EXPORT_BUCKET:-remix-studio-exports}
+  #     S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-minioadmin}
+  #     S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-minioadmin}
+  #     S3_BUCKET: ${S3_BUCKET:-remix-studio}
+  #     S3_EXPORT_BUCKET: ${S3_EXPORT_BUCKET:-remix-studio-exports}
 
   #     DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-admin@example.com}
   #     DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-your_secure_password}
@@ -53,8 +53,8 @@ services:
       - "${MINIO_API_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
       MINIO_DRIVE_MAX_USAGE_PCT: 99
     volumes:
       - ./data/minio:/data

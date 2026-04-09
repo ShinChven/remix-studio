@@ -57,7 +57,7 @@ cp .env.example .env
 If you run `npm run dev` on your host machine, point storage at the host-published MinIO port:
 
 ```env
-MINIO_ENDPOINT=http://localhost:9000
+S3_ENDPOINT=http://localhost:9000
 ```
 
 Use `http://minio:9000` only when the app itself is running inside Docker Compose on the same Docker network.
@@ -67,11 +67,11 @@ For self-hosted or production-style deployments, point the same storage settings
 You should set at least:
 
 - `DATABASE_URL`
-- `MINIO_ENDPOINT`
-- `MINIO_ACCESS_KEY`
-- `MINIO_SECRET_KEY`
-- `MINIO_BUCKET`
-- `MINIO_EXPORT_BUCKET`
+- `S3_ENDPOINT`
+- `S3_ACCESS_KEY_ID`
+- `S3_SECRET_ACCESS_KEY`
+- `S3_BUCKET`
+- `S3_EXPORT_BUCKET`
 - `AWS_REGION`
 - `PROVIDER_ENCRYPTION_KEY`
 - `JWT_SECRET`

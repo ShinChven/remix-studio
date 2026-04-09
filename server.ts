@@ -34,7 +34,7 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 
 // ========== Production secret guard ==========
 if (process.env.NODE_ENV === 'production') {
-  const required = ['JWT_SECRET', 'MINIO_ACCESS_KEY', 'MINIO_SECRET_KEY', 'DATABASE_URL'];
+  const required = ['JWT_SECRET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'DATABASE_URL'];
   for (const key of required) {
     if (!process.env[key]) throw new Error(`Missing required environment variable: ${key}`);
   }
@@ -60,21 +60,21 @@ async function startServer() {
   const projectRepository = new ProjectRepository(prisma);
 
   const storage = new S3Storage({
-    endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:19000',
+    endpoint: process.env.S3_ENDPOINT || 'http://localhost:9000',
     region: process.env.AWS_REGION || 'us-east-1',
-    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-    secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
-    bucket: process.env.MINIO_BUCKET || 'remix-studio',
+    accessKeyId: process.env.S3_ACCESS_KEY_ID || 'minioadmin',
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'minioadmin',
+    bucket: process.env.S3_BUCKET || 'remix-studio',
     publicEndpoint: process.env.S3_PUBLIC_ENDPOINT,
   });
   await storage.ensureBucket();
 
   const exportStorage = new S3Storage({
-    endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:19000',
+    endpoint: process.env.S3_ENDPOINT || 'http://localhost:9000',
     region: process.env.AWS_REGION || 'us-east-1',
-    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-    secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
-    bucket: process.env.MINIO_EXPORT_BUCKET || `${process.env.MINIO_BUCKET || 'remix-studio'}-exports`,
+    accessKeyId: process.env.S3_ACCESS_KEY_ID || 'minioadmin',
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'minioadmin',
+    bucket: process.env.S3_EXPORT_BUCKET || `${process.env.S3_BUCKET || 'remix-studio'}-exports`,
     publicEndpoint: process.env.S3_PUBLIC_ENDPOINT,
   });
   await exportStorage.ensureBucket();
