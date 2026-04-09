@@ -803,6 +803,10 @@ export function createAuthRouter(userRepository: UserRepository) {
     const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
     if (!clientId || !redirectUri) {
+      console.error('[Google OAuth] Missing env vars:', {
+        GOOGLE_CLIENT_ID: clientId ? '(set)' : '(missing)',
+        GOOGLE_REDIRECT_URI: redirectUri ? '(set)' : '(missing)',
+      });
       return c.json({ error: 'Google OAuth is not configured' }, 500);
     }
 
