@@ -318,21 +318,13 @@ export function createOAuthRouter(prisma: PrismaClient) {
     try {
       const user = c.get('user') as JwtPayload;
 
-      // Find all clients that have issued tokens to this user
+      // Find all clients that have active (non-revoked, non-expired) tokens for this user
       const tokens = await prisma.oAuthAccessToken.findMany({
-        where: { userId: user.userId },
+        where: { userId: user.userId, revoked: false, expiresAt: { gt: new Date() } },
         select: { clientId: true },
         distinct: ['clientId'],
       });
-      const clientIds = tokens.map((t) => t.clientId);
-
-      // Also find clients from authorization codes
-      const codes = await prisma.oAuthAuthorizationCode.findMany({
-        where: { userId: user.userId },
-        select: { clientId: true },
-        distinct: ['clientId'],
-      });
-      const allClientIds = [...new Set([...clientIds, ...codes.map((c) => c.clientId)])];
+      const allClientIds = tokens.map((t) => t.clientId);
 
       const clients = await prisma.oAuthClient.findMany({
         where: { clientId: { in: allClientIds } },
