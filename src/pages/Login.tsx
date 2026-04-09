@@ -4,6 +4,8 @@ import { Fingerprint, Loader2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { beginPasskeyLogin, finishPasskeyLogin, verifyTwoFactorLogin } from '../api';
 import { isPasskeySupported, serializeAssertionCredential, toPublicKeyRequestOptions } from '../lib/passkey';
+import { Starfield } from '../components/Starfield';
+
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -111,8 +113,11 @@ export function Login() {
   const isTwoFactorStep = Boolean(twoFactorToken);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950 px-4">
-      <div className="max-w-md w-full p-8 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl flex flex-col items-center">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      <Starfield />
+      <div className="max-w-md w-full p-8 rounded-[2.5rem] bg-white/10 border border-white/20 shadow-2xl flex flex-col items-center backdrop-blur-2xl">
+
+
         <img src="/favicon.svg" alt="Remix Studio Logo" className="w-16 h-16 mb-6" />
         <h2 className="text-3xl font-bold text-center text-zinc-100 mb-2">
           {isTwoFactorStep ? 'Two-Factor Verification' : 'Welcome Back'}
@@ -137,7 +142,7 @@ export function Login() {
                 maxLength={6}
                 value={twoFactorCode}
                 onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-mono tracking-[0.3em]"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.3em]"
                 required
               />
             </div>
@@ -166,7 +171,7 @@ export function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-mono"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono"
                   required
                 />
               </div>
@@ -176,17 +181,18 @@ export function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-mono"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono"
                   required
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-zinc-100 hover:bg-white text-zinc-900 font-medium py-3 rounded-xl transition-colors shadow-lg disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-semibold py-3.5 rounded-2xl transition-all active:scale-[0.98] shadow-lg disabled:opacity-50"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
               </button>
+
             </form>
 
             <div className="my-6 flex w-full items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-500">
@@ -200,7 +206,7 @@ export function Login() {
                 type="button"
                 onClick={handlePasskeyLogin}
                 disabled={passkeyLoading}
-                className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 transition-colors hover:border-zinc-700 hover:bg-zinc-800 disabled:opacity-50"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
               >
                 {passkeyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />}
                 Passkey
@@ -208,7 +214,7 @@ export function Login() {
 
               <a
                 href="/api/auth/google"
-                className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 transition-colors hover:border-zinc-700 hover:bg-zinc-800"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98]"
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" aria-hidden="true">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -219,6 +225,7 @@ export function Login() {
                 Google
               </a>
             </div>
+
           </>
         )}
       </div>
