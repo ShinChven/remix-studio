@@ -88,7 +88,7 @@ export function MainLayout() {
       {/* Backdrop for Mobile Sidebar */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] transition-opacity duration-300"
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] transition-opacity duration-300 cursor-pointer"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
