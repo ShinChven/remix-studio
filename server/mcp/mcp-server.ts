@@ -178,9 +178,7 @@ export function createMcpRouter(prisma: PrismaClient, repository: IRepository) {
     const userId = c.get('mcpUserId');
     const server = createMcpServerInstance(repository, userId);
 
-    const transport = new WebStandardStreamableHTTPServerTransport({
-      sessionIdGenerator: () => crypto.randomUUID(),
-    });
+    const transport = new WebStandardStreamableHTTPServerTransport();
 
     await server.connect(transport);
     return transport.handleRequest(c.req.raw);
