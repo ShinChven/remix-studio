@@ -15,9 +15,23 @@ export class GoogleAIGenerator extends ImageGenerator {
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
     const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
+    const model = modelId || 'gemini-3.1-flash-image-preview';
+    let actualApiUrl = reqApiUrl;
 
-    const actualModelId = modelId || 'gemini-3.1-flash-image-preview';
-    const actualApiUrl = reqApiUrl || `https://generativelanguage.googleapis.com/v1beta/models/${actualModelId}:generateContent`;
+    if (!actualApiUrl) {
+      if (this.apiUrl && this.apiUrl !== DEFAULT_API_URL) {
+        if (this.apiUrl.includes('/models/')) {
+          // Replace hardcoded model in the URL if present
+          actualApiUrl = this.apiUrl.replace(/\/models\/[^:/]+/, `/models/${model}`);
+        } else {
+          // Treat as base URL and append standard path
+          const base = this.apiUrl.endsWith('/') ? this.apiUrl.slice(0, -1) : this.apiUrl;
+          actualApiUrl = `${base}/v1beta/models/${model}:generateContent`;
+        }
+      } else {
+        actualApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      }
+    }
 
     const parts: object[] = [{ text: prompt }];
     if (refImagesBase64 && refImagesBase64.length > 0) {

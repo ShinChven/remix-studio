@@ -11,15 +11,28 @@ export class VertexAIGenerator extends ImageGenerator {
     super();
     this.apiKey = apiKey;
     this.apiUrl =
-      apiUrl ||
-      `https://${DEFAULT_ENDPOINT}/v1/publishers/google/models/${DEFAULT_MODEL}:generateContent?key=${apiKey}`;
+      apiUrl || `https://${DEFAULT_ENDPOINT}/v1/publishers/google/models/${DEFAULT_MODEL}:generateContent`;
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
     const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
+    const model = modelId || DEFAULT_MODEL;
+    let actualApiUrl = reqApiUrl;
 
-    const actualModelId = modelId || DEFAULT_MODEL;
-    const actualApiUrl = reqApiUrl || `https://${DEFAULT_ENDPOINT}/v1/publishers/google/models/${actualModelId}:generateContent?key=${this.apiKey}`;
+    if (!actualApiUrl) {
+      if (this.apiUrl && !this.apiUrl.includes(DEFAULT_ENDPOINT)) {
+        if (this.apiUrl.includes('/models/')) {
+          // Replace hardcoded model in the URL if present
+          actualApiUrl = this.apiUrl.replace(/\/models\/[^:/]+/, `/models/${model}`);
+        } else {
+          // Treat as base URL and append standard path
+          const base = this.apiUrl.endsWith('/') ? this.apiUrl.slice(0, -1) : this.apiUrl;
+          actualApiUrl = `${base}/v1/publishers/google/models/${model}:generateContent`;
+        }
+      } else {
+        actualApiUrl = `https://${DEFAULT_ENDPOINT}/v1/publishers/google/models/${model}:generateContent`;
+      }
+    }
 
     const parts: object[] = [{ text: prompt }];
     if (refImagesBase64 && refImagesBase64.length > 0) {
@@ -48,7 +61,7 @@ export class VertexAIGenerator extends ImageGenerator {
     };
 
     try {
-      const res = await fetch(actualApiUrl, {
+      const res = await fetch(`${actualApiUrl}${actualApiUrl.includes('?') ? '&' : '?'}key=${this.apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
