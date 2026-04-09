@@ -251,23 +251,6 @@ export function MainLayout() {
               <span className={`overflow-hidden whitespace-nowrap font-medium transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline'}`}>User Management</span>
             </Link>
           )}
-          <a
-            href="https://github.com/ShinChven/remix-studio"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`mt-3 flex items-center rounded-xl border border-neutral-700/50 bg-neutral-800/40 p-3 text-sm text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-800/70 ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
-              }`}
-            title="Remix Studio on GitHub"
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="w-5 h-5 flex-shrink-0 fill-current text-neutral-400"
-            >
-              <path d="M12 1.5a10.5 10.5 0 0 0-3.32 20.46c.53.1.72-.23.72-.51v-1.8c-2.94.64-3.56-1.24-3.56-1.24-.48-1.2-1.16-1.52-1.16-1.52-.95-.65.07-.63.07-.63 1.05.08 1.6 1.08 1.6 1.08.94 1.6 2.46 1.14 3.06.87.1-.68.37-1.14.67-1.41-2.35-.27-4.82-1.17-4.82-5.23 0-1.16.41-2.1 1.08-2.84-.11-.27-.47-1.38.1-2.87 0 0 .88-.28 2.88 1.08a9.95 9.95 0 0 1 5.24 0c2-1.36 2.88-1.08 2.88-1.08.57 1.49.21 2.6.1 2.87.67.74 1.08 1.68 1.08 2.84 0 4.07-2.47 4.95-4.83 5.21.38.33.72.97.72 1.96v2.91c0 .28.19.61.73.51A10.5 10.5 0 0 0 12 1.5Z" />
-            </svg>
-            <span className={`overflow-hidden whitespace-nowrap font-medium transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline'}`}>GitHub</span>
-          </a>
         </div>
       </div>
 
