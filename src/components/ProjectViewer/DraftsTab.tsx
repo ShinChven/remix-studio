@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckSquare, Square, Trash2, Play, ChevronDown, Plus } from 'lucide-react';
-import { Job } from '../../types';
+import { Job, AlbumItem } from '../../types';
 import { imageDisplayUrl } from '../../api';
 
 interface DraftsTabProps {
@@ -19,6 +19,8 @@ interface DraftsTabProps {
   runJob: (id: string) => void;
   setJobToDeleteId: (id: string) => void;
   setLightboxData: (data: { images: string[], index: number } | null) => void;
+  albumItems?: AlbumItem[];
+  onSwitchToAlbum?: () => void;
 }
 
 export function DraftsTab({
@@ -36,8 +38,71 @@ export function DraftsTab({
   getModelName,
   runJob,
   setJobToDeleteId,
-  setLightboxData
+  setLightboxData,
+  albumItems = [],
+  onSwitchToAlbum
 }: DraftsTabProps) {
+  const displayAlbumItems = albumItems.slice(0, 5);
+
+  const StackedGallery = () => (
+    <div className="py-12 md:py-20 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-1000">
+      <div className="relative w-64 h-64 md:w-80 md:h-80 mb-12 group cursor-pointer" onClick={onSwitchToAlbum}>
+        {displayAlbumItems.map((item, idx) => {
+          const rotations = [-6, 4, -2, 5, -3];
+          const xOffsets = [-20, 15, -5, 25, -10];
+          const yOffsets = [10, -5, 0, 15, -8];
+          
+          return (
+            <div 
+              key={item.id}
+              className="absolute inset-0 transition-all duration-500 ease-out group-hover:scale-105"
+              style={{
+                transform: `rotate(${rotations[idx % rotations.length]}deg) translate(${xOffsets[idx % xOffsets.length]}px, ${yOffsets[idx % yOffsets.length]}px)`,
+                zIndex: displayAlbumItems.length - idx
+              }}
+            >
+              <div className="w-full h-full p-2 bg-white rounded-sm shadow-2xl border border-neutral-200 overflow-hidden">
+                <img 
+                  src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)} 
+                  alt={item.prompt}
+                  className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700"
+                />
+              </div>
+            </div>
+          );
+        })}
+        
+        {displayAlbumItems.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-neutral-800 rounded-3xl opacity-20">
+             <Plus className="w-12 h-12 text-neutral-500" />
+          </div>
+        )}
+      </div>
+
+      <div className="text-center space-y-4 max-w-sm px-6">
+        <h3 className="text-lg font-black text-white uppercase tracking-widest bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+          {displayAlbumItems.length > 0 ? "Your Collections" : "Empty Canvas"}
+        </h3>
+        <p className="text-[11px] font-medium text-neutral-500 uppercase tracking-[0.2em] leading-relaxed">
+          {displayAlbumItems.length > 0 
+            ? "You have beautiful creations ready. Start a new draft or explore your gallery."
+            : "Build your project workflow on the left to start generating images."}
+        </p>
+        
+        <div className="flex items-center justify-center gap-3 pt-4">
+          {displayAlbumItems.length > 0 && (
+            <button 
+              onClick={onSwitchToAlbum}
+              className="px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl border border-neutral-800 transition-all active:scale-95 flex items-center gap-2"
+            >
+              Open Album
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-4">
@@ -206,13 +271,7 @@ export function DraftsTab({
                 </div>
               );
             })}
-            {draftJobs.length === 0 && (
-              <div className="py-24 text-center text-neutral-600">
-                <Plus className="w-12 h-12 mx-auto opacity-10 mb-4" />
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em]">Add items to start a draft</div>
-                <div className="text-[9px] opacity-40 mt-2">Use the left configuration panel</div>
-              </div>
-            )}
+            {draftJobs.length === 0 && <StackedGallery />}
         </div>
       </div>
     </section>

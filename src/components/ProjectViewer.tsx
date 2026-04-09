@@ -649,6 +649,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand} toggleDraftSelection={toggleDraftSelection}
               getProviderName={getProviderName} getModelName={getModelName} runJob={runJob}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
+              albumItems={albumItems}
+              onSwitchToAlbum={() => setActiveTab('album')}
             />
           )}
           {activeTab === 'queue' && (
