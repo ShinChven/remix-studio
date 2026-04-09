@@ -1,11 +1,16 @@
 import sharp from 'sharp';
 
+const THUMBNAIL_MAX_DIMENSION = 768;
+const OPTIMIZED_MAX_DIMENSION = 2048;
+
 /**
- * Generate a thumbnail: max 400px, 80% JPEG quality.
+ * Generate a thumbnail for list/grid views.
+ * 768px keeps album cards sharper on high-density displays without
+ * jumping all the way to the optimized asset size.
  */
 export async function generateThumbnail(buffer: Buffer): Promise<Buffer> {
   return sharp(buffer)
-    .resize(400, 400, { fit: 'inside', withoutEnlargement: true })
+    .resize(THUMBNAIL_MAX_DIMENSION, THUMBNAIL_MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })
     .jpeg({ quality: 80 })
     .toBuffer();
 }
@@ -15,7 +20,7 @@ export async function generateThumbnail(buffer: Buffer): Promise<Buffer> {
  */
 export async function generateOptimized(buffer: Buffer): Promise<Buffer> {
   return sharp(buffer)
-    .resize(2048, 2048, { fit: 'inside', withoutEnlargement: true })
+    .resize(OPTIMIZED_MAX_DIMENSION, OPTIMIZED_MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })
     .jpeg({ quality: 90 })
     .toBuffer();
 }
