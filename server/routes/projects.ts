@@ -80,7 +80,8 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
       const imageUrl = job.imageUrl ? await presignIfKey(job.imageUrl, storage) : job.imageUrl;
       const thumbnailUrl = job.thumbnailUrl ? await presignIfKey(job.thumbnailUrl, storage) : job.thumbnailUrl;
       const optimizedUrl = job.optimizedUrl ? await presignIfKey(job.optimizedUrl, storage) : job.optimizedUrl;
-      return { ...job, imageUrl, thumbnailUrl, optimizedUrl, size, optimizedSize, thumbnailSize };
+      const imageContexts = job.imageContexts ? await Promise.all(job.imageContexts.map(ctx => presignIfKey(ctx, storage))) : job.imageContexts;
+      return { ...job, imageUrl, thumbnailUrl, optimizedUrl, imageContexts, size, optimizedSize, thumbnailSize };
     })
   );
   const album = await Promise.all(
@@ -284,7 +285,15 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
           return item;
         });
       }
-      if (Array.isArray(body?.jobs)) updates.jobs = body.jobs;
+      if (Array.isArray(body?.jobs)) {
+        const bucket = storage.getBucketName();
+        updates.jobs = body.jobs.map((job: Job) => {
+          const imageContexts = job.imageContexts 
+            ? job.imageContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
+            : job.imageContexts;
+          return { ...job, imageContexts };
+        });
+      }
       if (typeof body?.providerId === 'string') updates.providerId = body.providerId;
       if (typeof body?.aspectRatio === 'string') updates.aspectRatio = body.aspectRatio;
       if (typeof body?.quality === 'string') updates.quality = body.quality;
