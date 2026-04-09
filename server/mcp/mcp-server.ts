@@ -12,6 +12,24 @@ function sha256(value: string): string {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
+function getBaseUrl(req: Request): string {
+  const forwardedProto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
+  const forwardedHost = req.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto.toLowerCase()}://${forwardedHost}`;
+  }
+  return new URL(req.url).origin;
+}
+
+function setOAuthChallengeHeader(c: any) {
+  const baseUrl = getBaseUrl(c.req.raw);
+  const resourceMetadata = `${baseUrl}/.well-known/oauth-protected-resource`;
+  c.header(
+    'WWW-Authenticate',
+    `Bearer realm="remix-studio", scope="mcp:tools", resource_metadata="${resourceMetadata}"`,
+  );
+}
+
 async function resolveBearer(prisma: PrismaClient, authHeader: string | undefined): Promise<string | null> {
   if (!authHeader?.startsWith('Bearer ')) return null;
   const rawToken = authHeader.slice(7);
@@ -136,6 +154,7 @@ export function createMcpRouter(prisma: PrismaClient, repository: IRepository) {
     const authHeader = c.req.header('authorization');
     const userId = await resolveBearer(prisma, authHeader);
     if (!userId) {
+      setOAuthChallengeHeader(c);
       return c.json({ error: 'Unauthorized' }, 401);
     }
     c.set('mcpUserId', userId);
@@ -147,6 +166,7 @@ export function createMcpRouter(prisma: PrismaClient, repository: IRepository) {
     const authHeader = c.req.header('authorization');
     const userId = await resolveBearer(prisma, authHeader);
     if (!userId) {
+      setOAuthChallengeHeader(c);
       return c.json({ error: 'Unauthorized' }, 401);
     }
     c.set('mcpUserId', userId);

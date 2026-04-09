@@ -7,6 +7,19 @@ import { isPasskeySupported, serializeAssertionCredential, toPublicKeyRequestOpt
 import { Starfield } from '../components/Starfield';
 import type { User } from '../types';
 
+function isClientRoutablePath(url: string) {
+  if (!url.startsWith('/')) return false;
+
+  const pathname = new URL(url, window.location.origin).pathname;
+  if (pathname === '/authorize' || pathname === '/register' || pathname === '/token') {
+    return false;
+  }
+  if (pathname.startsWith('/.well-known/') || pathname.startsWith('/mcp')) {
+    return false;
+  }
+
+  return true;
+}
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -25,11 +38,11 @@ export function Login() {
 
   const finishLogin = (nextUser: User) => {
     login(nextUser);
-    if (nextUrl.startsWith('/')) {
-      navigate(nextUrl);
+    if (isClientRoutablePath(nextUrl)) {
+      navigate(nextUrl, { replace: true });
       return;
     }
-    window.location.href = nextUrl;
+    window.location.replace(nextUrl);
   };
 
   useEffect(() => {
@@ -42,7 +55,7 @@ export function Login() {
 
   useEffect(() => {
     if (!isLoading && user) {
-      if (nextUrl.startsWith('/')) {
+      if (isClientRoutablePath(nextUrl)) {
         navigate(nextUrl, { replace: true });
       } else {
         window.location.replace(nextUrl);

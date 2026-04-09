@@ -37,6 +37,10 @@ function getBaseUrl(req: Request): string {
   return url.origin;
 }
 
+function getProtectedResourceMetadataUrl(req: Request): string {
+  return `${getBaseUrl(req)}/.well-known/oauth-protected-resource`;
+}
+
 function buildLoginRedirect(req: Request): URL {
   const loginUrl = new URL('/login', getBaseUrl(req));
   loginUrl.searchParams.set('next', new URL(req.url).pathname + new URL(req.url).search);
@@ -60,6 +64,17 @@ export function createOAuthRouter(prisma: PrismaClient) {
       grant_types_supported: ['authorization_code', 'refresh_token'],
       token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post', 'none'],
       code_challenge_methods_supported: ['S256'],
+      scopes_supported: ['mcp:tools'],
+    });
+  });
+
+  // RFC 9728 — OAuth 2.0 Protected Resource Metadata
+  router.get('/.well-known/oauth-protected-resource', (c) => {
+    const baseUrl = getBaseUrl(c.req.raw);
+    return c.json({
+      resource: `${baseUrl}/mcp`,
+      authorization_servers: [baseUrl],
+      bearer_methods_supported: ['header'],
       scopes_supported: ['mcp:tools'],
     });
   });
@@ -89,14 +104,13 @@ export function createOAuthRouter(prisma: PrismaClient) {
       }
 
       const clientId = generateSecureToken(16);
-      const clientSecret = generateSecureToken(32);
-      const clientSecretHash = sha256(clientSecret);
-
       const grantTypes = body.grant_types ?? ['authorization_code'];
       const responseTypes = body.response_types ?? ['code'];
       const tokenEndpointAuthMethod = body.token_endpoint_auth_method ?? 'client_secret_basic';
       const clientName = body.client_name ?? null;
       const scope = body.scope ?? 'mcp:tools';
+      const clientSecret = tokenEndpointAuthMethod === 'none' ? null : generateSecureToken(32);
+      const clientSecretHash = clientSecret ? sha256(clientSecret) : null;
 
       await prisma.oAuthClient.create({
         data: {
@@ -114,9 +128,8 @@ export function createOAuthRouter(prisma: PrismaClient) {
       const now = Math.floor(Date.now() / 1000);
       return c.json({
         client_id: clientId,
-        client_secret: clientSecret,
         client_id_issued_at: now,
-        client_secret_expires_at: 0, // does not expire
+        ...(clientSecret ? { client_secret: clientSecret, client_secret_expires_at: 0 } : { client_secret_expires_at: 0 }),
         client_name: clientName,
         redirect_uris: redirectUris,
         grant_types: grantTypes,
