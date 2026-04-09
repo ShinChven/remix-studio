@@ -223,6 +223,39 @@ export function createAuthRouter(userRepository: UserRepository) {
     }
   });
 
+  router.delete('/api/auth/password', authMiddleware, async (c) => {
+    try {
+      const payload = c.get('user') as JwtPayload;
+      const body = await c.req.json().catch(() => ({}));
+      const currentPassword = typeof body?.currentPassword === 'string' ? body.currentPassword : '';
+
+      const user = await userRepository.findById(payload.userId);
+      if (!user) return c.json({ error: 'User not found' }, 404);
+
+      if (!user.passwordHash) {
+        return c.json({ error: 'Account already has no password' }, 400);
+      }
+
+      if (!currentPassword) {
+        return c.json({ error: 'Current password is required' }, 400);
+      }
+      const isValid = await verifyPassword(currentPassword, user.passwordHash);
+      if (!isValid) return c.json({ error: 'Current password is incorrect' }, 401);
+
+      // Ensure the user has at least one alternative login method (passkey)
+      const passkeys = await userRepository.listPasskeys(payload.userId);
+      if (passkeys.length === 0) {
+        return c.json({ error: 'You must have at least one passkey registered before removing your password' }, 400);
+      }
+
+      await userRepository.removePassword(payload.userId);
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/auth/password]', e);
+      return c.json({ error: 'Failed to remove password' }, 500);
+    }
+  });
+
   router.post('/api/auth/logout', async (c) => {
     clearSessionCookie(c);
     return c.json({ success: true });

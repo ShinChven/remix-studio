@@ -40,6 +40,18 @@ export async function updatePassword(currentPassword: string, newPassword: strin
   }
 }
 
+export async function removePassword(currentPassword: string): Promise<void> {
+  const res = await fetch('/api/auth/password', {
+    method: 'DELETE',
+    headers: getHeaders(),
+    body: JSON.stringify({ currentPassword }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to remove password');
+  }
+}
+
 export async function fetchSecuritySettings(): Promise<SecuritySettings> {
   const res = await fetch('/api/auth/security', { headers: getHeaders(false) });
   return handleResponse<SecuritySettings>(res, 'Failed to load security settings');

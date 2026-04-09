@@ -190,6 +190,16 @@ export class UserRepository {
     });
   }
 
+  async removePassword(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: null,
+        sessionVersion: { increment: 1 },
+      },
+    });
+  }
+
   async startTwoFactorSetup(userId: string, encryptedSecret: string, expiresAt: Date): Promise<void> {
     await this.prisma.user.update({
       where: { id: userId },

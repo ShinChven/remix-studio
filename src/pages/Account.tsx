@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap } from 'lucide-react';
-import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, updatePassword } from '../api';
+import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, updatePassword } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { SecuritySettings, StorageAnalysis, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -67,6 +67,9 @@ export function Account() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+  const [removePasswordInput, setRemovePasswordInput] = useState('');
+  const [removingPassword, setRemovingPassword] = useState(false);
+  const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings | null>(null);
   const [securityLoading, setSecurityLoading] = useState(false);
@@ -230,6 +233,24 @@ export function Account() {
       setPasswordError(error.message || 'Failed to update password.');
     } finally {
       setSavingPassword(false);
+    }
+  };
+
+  const handleRemovePassword = async () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+    setRemovingPassword(true);
+    try {
+      await removePassword(removePasswordInput);
+      setRemovePasswordInput('');
+      setShowRemovePasswordConfirm(false);
+      setPasswordSuccess('Password removed. Your account is now passwordless.');
+      const updated = await fetchCurrentUser();
+      setUser(updated);
+    } catch (error: any) {
+      setPasswordError(error.message || 'Failed to remove password.');
+    } finally {
+      setRemovingPassword(false);
     }
   };
 
@@ -736,6 +757,24 @@ export function Account() {
                       {user?.hasPassword ? 'Update password' : 'Set password'}
                     </button>
                   </form>
+
+                  {user?.hasPassword && securitySettings && securitySettings.passkeys.length > 0 && (
+                    <div className="mt-6 border-t border-neutral-800 pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-neutral-300">Go passwordless</p>
+                          <p className="text-xs text-neutral-500">Remove your password and sign in with passkeys only.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowRemovePasswordConfirm(true)}
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Remove password
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </section>
 
                 <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-6">
@@ -919,6 +958,61 @@ export function Account() {
           confirmText="Sign Out"
           type="danger"
         />
+
+        {showRemovePasswordConfirm && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
+            onClick={() => { setShowRemovePasswordConfirm(false); setRemovePasswordInput(''); setPasswordError(''); }}
+          >
+            <div
+              className="bg-neutral-900 border border-neutral-800/50 rounded-[32px] shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-8">
+                <div className="flex items-start gap-6">
+                  <div className="p-4 rounded-3xl flex-shrink-0 bg-red-500/10 text-red-500 border border-red-500/20">
+                    <AlertCircle className="w-8 h-8" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-2xl font-black text-white tracking-tight">Remove password</h3>
+                    <p className="mt-3 text-base text-neutral-400 font-medium leading-relaxed">
+                      This will remove your password. You will only be able to sign in using passkeys. Enter your current password to confirm.
+                    </p>
+                    <input
+                      type="password"
+                      value={removePasswordInput}
+                      onChange={(e) => setRemovePasswordInput(e.target.value)}
+                      placeholder="Current password"
+                      className="mt-4 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-red-500/50"
+                      autoFocus
+                    />
+                    {passwordError && (
+                      <div className="mt-3 flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                        <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <span>{passwordError}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="px-8 py-6 bg-neutral-950/40 flex items-center justify-end gap-4 border-t border-neutral-800/50">
+                <button
+                  onClick={() => { setShowRemovePasswordConfirm(false); setRemovePasswordInput(''); setPasswordError(''); }}
+                  className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRemovePassword}
+                  disabled={removingPassword || !removePasswordInput}
+                  className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {removingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Remove'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
