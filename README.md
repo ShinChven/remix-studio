@@ -186,6 +186,8 @@ This repository now includes a GitHub Actions workflow at `.github/workflows/doc
 - publishes multi-arch images to GHCR on `main`
 - publishes version tags when you push tags like `v1.0.0`
 
+The Docker image uses Debian-based Node images instead of Alpine to reduce `linux/arm64` build failures under GitHub Actions QEMU emulation during multi-arch `npm ci` steps.
+
 Published image tags include:
 
 - `ghcr.io/<owner>/<repo>:latest` on the default branch
