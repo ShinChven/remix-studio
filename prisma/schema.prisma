@@ -12,7 +12,7 @@ datasource db {
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
-  passwordHash String
+  passwordHash String?
   role         String   @default("user")
   status       String   @default("disabled")
   sessionVersion Int    @default(0)

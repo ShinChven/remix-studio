@@ -667,21 +667,25 @@ export function Account() {
                     </div>
                     <div>
                       <h2 className="text-lg font-bold text-white">Password</h2>
-                      <p className="text-sm text-neutral-400">Rotate your password without leaving the app.</p>
+                      <p className="text-sm text-neutral-400">
+                        {user?.hasPassword ? 'Rotate your password without leaving the app.' : 'Set a password to enable password-based sign in.'}
+                      </p>
                     </div>
                   </div>
 
                   <form onSubmit={handlePasswordSubmit} className="mt-6 w-full space-y-4">
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
-                      <input
-                        type="password"
-                        value={currentPassword}
-                        onChange={(event) => setCurrentPassword(event.target.value)}
-                        className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
-                        required
-                      />
-                    </div>
+                    {user?.hasPassword && (
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
+                        <input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(event) => setCurrentPassword(event.target.value)}
+                          className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                          required
+                        />
+                      </div>
+                    )}
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
@@ -729,7 +733,7 @@ export function Account() {
                       className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
-                      Update password
+                      {user?.hasPassword ? 'Update password' : 'Set password'}
                     </button>
                   </form>
                 </section>
@@ -864,16 +868,18 @@ export function Account() {
                   ) : (
                     <form onSubmit={handleDisableTwoFactor} className="mt-6 space-y-4 rounded-2xl border border-neutral-800 bg-neutral-950/70 p-4">
                       <div className="grid gap-4 md:grid-cols-2">
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
-                          <input
-                            type="password"
-                            value={twoFactorDisablePassword}
-                            onChange={(event) => setTwoFactorDisablePassword(event.target.value)}
-                            className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
-                            required
-                          />
-                        </div>
+                        {user?.hasPassword && (
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
+                            <input
+                              type="password"
+                              value={twoFactorDisablePassword}
+                              onChange={(event) => setTwoFactorDisablePassword(event.target.value)}
+                              className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                              required
+                            />
+                          </div>
+                        )}
                         <div>
                           <label className="mb-2 block text-sm font-medium text-neutral-400">Authenticator code</label>
                           <input

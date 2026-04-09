@@ -102,10 +102,10 @@ async function startServer() {
   // === Auto-provision default admin ===
   const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
   const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
-  if (defaultAdminEmail && defaultAdminPassword) {
+  if (defaultAdminEmail) {
     const existing = await userRepository.findByEmail(defaultAdminEmail);
     if (!existing) {
-      const passwordHash = await hashPassword(defaultAdminPassword);
+      const passwordHash = defaultAdminPassword ? await hashPassword(defaultAdminPassword) : null;
       await userRepository.createUser({
         pk: 'USER',
         sk: crypto.randomUUID(),
@@ -115,7 +115,7 @@ async function startServer() {
         status: 'active',
         createdAt: Date.now(),
       });
-      console.log(`Auto-provisioned default admin user: ${defaultAdminEmail}`);
+      console.log(`Auto-provisioned default admin user: ${defaultAdminEmail}${defaultAdminPassword ? '' : ' (no password, use OAuth to sign in)'}`);
     }
   }
 

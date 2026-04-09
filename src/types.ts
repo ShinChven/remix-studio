@@ -203,6 +203,7 @@ export interface User {
   email: string;
   role: UserRole;
   status: UserStatus;
+  hasPassword?: boolean;
   twoFactorEnabled?: boolean;
   createdAt: number;
   updatedAt?: number;

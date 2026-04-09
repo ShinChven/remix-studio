@@ -4,6 +4,7 @@ import { authMiddleware, adminOnly, hashPassword, verifyPassword, signToken, Jwt
 import { UserRepository } from '../auth/user-repository';
 import { checkRateLimit, getClientAddress } from '../utils/rate-limiter';
 import crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
 import type { UserRole, UserStatus } from '../../src/types';
 import { decrypt, encrypt } from '../utils/crypto';
 import { buildAuthenticationOptions, buildRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse } from '../auth/webauthn';
@@ -26,6 +27,7 @@ function serializeUser(user: NonNullable<Awaited<ReturnType<UserRepository['find
     role: user.role,
     status: user.status,
     storageLimit: user.storageLimit,
+    hasPassword: Boolean(user.passwordHash),
     twoFactorEnabled: Boolean(user.twoFactorEnabled),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -145,6 +147,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       const user = await userRepository.findByEmail(email);
       if (!user) return c.json({ error: 'Invalid credentials' }, 401);
       if (user.status === 'disabled') return c.json({ error: 'This account has been disabled' }, 403);
+      if (!user.passwordHash) return c.json({ error: 'This account does not have a password. Please use another sign-in method.' }, 400);
 
       const isValid = await verifyPassword(password, user.passwordHash);
       if (!isValid) return c.json({ error: 'Invalid credentials' }, 401);
@@ -187,8 +190,8 @@ export function createAuthRouter(userRepository: UserRepository) {
       const currentPassword = typeof body?.currentPassword === 'string' ? body.currentPassword : '';
       const newPassword = typeof body?.newPassword === 'string' ? body.newPassword : '';
 
-      if (!currentPassword || !newPassword) {
-        return c.json({ error: 'Current password and new password are required' }, 400);
+      if (!newPassword) {
+        return c.json({ error: 'New password is required' }, 400);
       }
 
       if (newPassword.length < 8) {
@@ -198,11 +201,16 @@ export function createAuthRouter(userRepository: UserRepository) {
       const user = await userRepository.findById(payload.userId);
       if (!user) return c.json({ error: 'User not found' }, 404);
 
-      const isValid = await verifyPassword(currentPassword, user.passwordHash);
-      if (!isValid) return c.json({ error: 'Current password is incorrect' }, 401);
+      if (user.passwordHash) {
+        if (!currentPassword) {
+          return c.json({ error: 'Current password is required' }, 400);
+        }
+        const isValid = await verifyPassword(currentPassword, user.passwordHash);
+        if (!isValid) return c.json({ error: 'Current password is incorrect' }, 401);
 
-      if (currentPassword === newPassword) {
-        return c.json({ error: 'New password must be different from your current password' }, 400);
+        if (currentPassword === newPassword) {
+          return c.json({ error: 'New password must be different from your current password' }, 400);
+        }
       }
 
       const passwordHash = await hashPassword(newPassword);
@@ -467,16 +475,17 @@ export function createAuthRouter(userRepository: UserRepository) {
       const body = await c.req.json();
       const password = typeof body?.password === 'string' ? body.password : '';
 
-      if (!password) {
-        return c.json({ error: 'Password is required to set up 2FA' }, 400);
-      }
-
       const user = await userRepository.findById(payload.userId);
       if (!user) return c.json({ error: 'User not found' }, 404);
 
-      const validPassword = await verifyPassword(password, user.passwordHash);
-      if (!validPassword) {
-        return c.json({ error: 'Current password is incorrect' }, 401);
+      if (user.passwordHash) {
+        if (!password) {
+          return c.json({ error: 'Password is required to set up 2FA' }, 400);
+        }
+        const validPassword = await verifyPassword(password, user.passwordHash);
+        if (!validPassword) {
+          return c.json({ error: 'Current password is incorrect' }, 401);
+        }
       }
 
       const secret = generateTotpSecret();
@@ -530,8 +539,8 @@ export function createAuthRouter(userRepository: UserRepository) {
       const password = typeof body?.password === 'string' ? body.password : '';
       const code = typeof body?.code === 'string' ? body.code : '';
 
-      if (!password || !code) {
-        return c.json({ error: 'Password and verification code are required' }, 400);
+      if (!code) {
+        return c.json({ error: 'Verification code is required' }, 400);
       }
 
       const user = await userRepository.findById(payload.userId);
@@ -540,9 +549,14 @@ export function createAuthRouter(userRepository: UserRepository) {
         return c.json({ error: '2FA is not enabled for this account' }, 400);
       }
 
-      const validPassword = await verifyPassword(password, user.passwordHash);
-      if (!validPassword) {
-        return c.json({ error: 'Current password is incorrect' }, 401);
+      if (user.passwordHash) {
+        if (!password) {
+          return c.json({ error: 'Password is required' }, 400);
+        }
+        const validPassword = await verifyPassword(password, user.passwordHash);
+        if (!validPassword) {
+          return c.json({ error: 'Current password is incorrect' }, 401);
+        }
       }
 
       const validCode = verifyTotpCode(decrypt(user.twoFactorSecret), code);
@@ -589,15 +603,15 @@ export function createAuthRouter(userRepository: UserRepository) {
     try {
       const body = await c.req.json();
       const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
-      const password = typeof body?.password === 'string' ? body.password : '';
+      const password = typeof body?.password === 'string' && body.password ? body.password : '';
       const role = body?.role;
       const status = body?.status;
       const storageLimit = Number(body?.storageLimit ?? DEFAULT_STORAGE_LIMIT);
 
-      if (!email || !password) {
-        return c.json({ error: 'Email and password are required' }, 400);
+      if (!email) {
+        return c.json({ error: 'Email is required' }, 400);
       }
-      if (password.length < 8) {
+      if (password && password.length < 8) {
         return c.json({ error: 'Password must be at least 8 characters long' }, 400);
       }
       if (!VALID_ROLES.includes(role)) {
@@ -610,7 +624,7 @@ export function createAuthRouter(userRepository: UserRepository) {
         return c.json({ error: 'Invalid storage limit' }, 400);
       }
 
-      const passwordHash = await hashPassword(password);
+      const passwordHash = password ? await hashPassword(password) : null;
       await userRepository.createUser({
         pk: 'USER',
         sk: crypto.randomUUID(),
@@ -847,14 +861,21 @@ export function createAuthRouter(userRepository: UserRepository) {
         return c.redirect('/login?error=Failed+to+get+identity+from+Google');
       }
 
-      // Decode ID token to get email (the token is already verified by Google's token endpoint)
-      const [, payloadB64] = tokenData.id_token.split('.');
-      const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString()) as {
-        email?: string;
-        email_verified?: boolean;
-      };
+      // Verify ID token signature and claims using Google's public keys
+      const oauth2Client = new OAuth2Client(clientId);
+      let payload;
+      try {
+        const ticket = await oauth2Client.verifyIdToken({
+          idToken: tokenData.id_token,
+          audience: clientId,
+        });
+        payload = ticket.getPayload();
+      } catch (e) {
+        console.error('[Google OAuth] ID token verification failed:', e);
+        return c.redirect('/login?error=Failed+to+verify+Google+identity');
+      }
 
-      if (!payload.email || !payload.email_verified) {
+      if (!payload?.email || !payload.email_verified) {
         return c.redirect('/login?error=Google+account+email+is+not+verified');
       }
 

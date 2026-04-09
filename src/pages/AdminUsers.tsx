@@ -429,7 +429,7 @@ export function AdminUsers() {
             <div className="flex items-center justify-between border-b border-neutral-800 px-6 py-5">
               <div>
                 <h3 className="text-xl font-semibold text-white">Create User</h3>
-                <p className="mt-1 text-sm text-neutral-500">Provision a local account with password, role, status, and storage limit.</p>
+                <p className="mt-1 text-sm text-neutral-500">Provision a new account. Password is optional for OAuth-only users.</p>
               </div>
               <button type="button" onClick={() => setIsCreateOpen(false)} className="rounded-xl border border-neutral-800 p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-white">
                 <X className="h-4 w-4" />
@@ -449,14 +449,14 @@ export function AdminUsers() {
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm text-neutral-400">Initial Password</span>
+                <span className="text-sm text-neutral-400">Initial Password <span className="text-neutral-600">(optional)</span></span>
                 <input
                   type="password"
                   minLength={8}
-                  required
                   value={createForm.password}
                   onChange={(e) => setCreateForm((current) => ({ ...current, password: e.target.value }))}
-                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
+                  placeholder="Leave empty for OAuth-only accounts"
+                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
                 />
               </label>
 

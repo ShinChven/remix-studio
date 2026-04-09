@@ -34,7 +34,7 @@ export class UserRepository {
       data: {
         id: user.sk,
         email: user.email,
-        passwordHash: user.passwordHash,
+        passwordHash: user.passwordHash ?? null,
         role: user.role ?? 'user',
         status: user.status ?? 'disabled',
         sessionVersion: user.sessionVersion ?? 0,

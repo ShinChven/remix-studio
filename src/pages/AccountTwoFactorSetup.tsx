@@ -163,21 +163,25 @@ export function AccountTwoFactorSetup() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white">Step 1: Generate authenticator secret</h3>
-                  <p className="text-sm text-neutral-400">Confirm your password before creating a new 2FA setup.</p>
+                  <p className="text-sm text-neutral-400">
+                    {user?.hasPassword ? 'Confirm your password before creating a new 2FA setup.' : 'Generate a new authenticator secret for your account.'}
+                  </p>
                 </div>
               </div>
 
               <form onSubmit={handleStartSetup} className="mt-6 space-y-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
-                  <input
-                    type="password"
-                    value={setupPassword}
-                    onChange={(event) => setSetupPassword(event.target.value)}
-                    className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
-                    required
-                  />
-                </div>
+                {user?.hasPassword && (
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
+                    <input
+                      type="password"
+                      value={setupPassword}
+                      onChange={(event) => setSetupPassword(event.target.value)}
+                      className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                      required
+                    />
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={settingUp}

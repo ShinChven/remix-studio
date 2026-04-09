@@ -38,7 +38,7 @@ export interface UserRecord {
   pk: string;       // 'USER'
   sk: string;       // userId
   email: string;
-  passwordHash: string;
+  passwordHash?: string | null;
   role: UserRole;
   status: UserStatus;
   storageLimit?: number;
