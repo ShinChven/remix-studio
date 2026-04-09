@@ -9,3 +9,4 @@ coverage/
 !.env.docker.example
 data/
 dist-server
+docker-test
