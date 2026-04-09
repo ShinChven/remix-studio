@@ -150,6 +150,17 @@ Providers are the AI image backends that Remix Studio uses to run generation job
 
 In practice, providers let you separate job routing from project content: prompts and assets stay in the project, while API credentials, endpoint details, and parallelism settings stay with the provider.
 
+## Third-party Proxies
+
+Remix Studio facilitates the use of affordable third-party API proxies (such as [LaoZhang API](https://api.laozhang.ai/register/?aff_code=nxSr)) for accessing Google Gemini and OpenAI models at a lower cost.
+
+To configure a proxy provider:
+1. Create a new Provider with the appropriate type (`GoogleAI` or `OpenAI`).
+2. Enter your proxy's API Key.
+3. In the **API URL** field, enter the proxy's base domain (e.g., `https://api.laozhang.ai`).
+   - The app automatically handles path construction (appending `/v1` for OpenAI or `/v1beta/models/...` for Google AI).
+   - Dynamic model replacement is supported, allowing you to switch between different models in your projects while using the same proxy endpoint.
+
 ## Libraries
 
 Libraries are reusable collections that keep common prompt fragments and image references out of individual projects.
@@ -233,7 +244,6 @@ npx prisma migrate deploy
 ### Breaking changes to be aware of
 
 - **All existing sessions are invalidated after upgrading.** The authentication system was hardened to use HttpOnly cookies exclusively and now includes a session version in each token. Existing JWTs will no longer be accepted. All users will need to sign in again.
-- **Provider API URLs are now validated against an allowlist.** Each provider type only accepts its official API host (e.g. `api.openai.com` for OpenAI, `generativelanguage.googleapis.com` for Google AI). If you use a custom or self-hosted endpoint, add its hostname to the `ALLOWED_PROVIDER_HOSTS` environment variable (comma-separated).
 - **Reference image URLs can use HTTP or HTTPS, but cannot point to private IPs.** Jobs that reference images via internal network addresses will be rejected.
 
 ## Notes
