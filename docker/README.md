@@ -27,6 +27,8 @@ These templates are intended to be copied into a separate deployment repository 
 2. In the deployment repository, pin `REMIX_STUDIO_IMAGE` to a specific tag such as `ghcr.io/owner/remix-studio:sha-<commit>`
 3. Copy one compose file and its matching env example
 4. Replace all placeholder secrets before deployment
+5. If you use passkeys, set `WEBAUTHN_RP_ID` to the public site domain only, without protocol or port. Example: `app.example.com` or `example.com`
+6. If TLS terminates at a reverse proxy or load balancer, set `WEBAUTHN_ORIGIN` to the exact external origin, including `https://`. Example: `https://app.example.com`
 
 ## Example commands
 

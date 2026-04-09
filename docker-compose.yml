@@ -21,6 +21,9 @@ services:
       DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-your_secure_password}
       PROVIDER_ENCRYPTION_KEY: ${PROVIDER_ENCRYPTION_KEY}
       JWT_SECRET: ${JWT_SECRET}
+      WEBAUTHN_ORIGIN: ${WEBAUTHN_ORIGIN:-}
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-}
+      WEBAUTHN_RP_NAME: ${WEBAUTHN_RP_NAME:-Remix Studio}
       NODE_ENV: production
       PORT: 3000
     depends_on:

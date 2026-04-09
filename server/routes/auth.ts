@@ -33,8 +33,52 @@ function serializeUser(user: NonNullable<Awaited<ReturnType<UserRepository['find
   };
 }
 
-function getRequestOrigin(url: string) {
-  return new URL(url).origin;
+function stripDefaultPort(proto: string, host: string) {
+  const lowerProto = proto.toLowerCase();
+  if ((lowerProto === 'https' && host.endsWith(':443')) || (lowerProto === 'http' && host.endsWith(':80'))) {
+    return host.replace(/:(443|80)$/, '');
+  }
+  return host;
+}
+
+function parseForwardedHeader(value: string | null) {
+  if (!value) return null;
+  const first = value.split(',')[0]?.trim();
+  if (!first) return null;
+
+  const parts = first.split(';').map((part) => part.trim());
+  let proto = '';
+  let host = '';
+
+  for (const part of parts) {
+    const [rawKey, rawValue] = part.split('=');
+    if (!rawKey || !rawValue) continue;
+    const key = rawKey.trim().toLowerCase();
+    const value = rawValue.trim().replace(/^"|"$/g, '');
+    if (key === 'proto') proto = value;
+    if (key === 'host') host = value;
+  }
+
+  if (!proto || !host) return null;
+  return `${proto.toLowerCase()}://${stripDefaultPort(proto, host)}`;
+}
+
+function getRequestOrigin(req: Request) {
+  const explicitOrigin = process.env.WEBAUTHN_ORIGIN?.trim();
+  if (explicitOrigin) {
+    return new URL(explicitOrigin).origin;
+  }
+
+  const forwarded = parseForwardedHeader(req.headers.get('forwarded'));
+  if (forwarded) return forwarded;
+
+  const forwardedProto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
+  const forwardedHost = req.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto.toLowerCase()}://${stripDefaultPort(forwardedProto, forwardedHost)}`;
+  }
+
+  return new URL(req.url).origin;
 }
 
 function getSessionCookieOptions(url: string) {
@@ -254,7 +298,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       const passkeys = await userRepository.listPasskeys(payload.userId);
       const challenge = crypto.randomBytes(32).toString('base64url');
       const options = buildRegistrationOptions({
-        origin: getRequestOrigin(c.req.url),
+        origin: getRequestOrigin(c.req.raw),
         userId: user.sk,
         userEmail: user.email,
         challenge,
@@ -292,7 +336,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       }
 
       const verified = verifyRegistrationResponse({
-        origin: getRequestOrigin(c.req.url),
+        origin: getRequestOrigin(c.req.raw),
         expectedChallenge: flow.challenge,
         credential,
       });
@@ -354,7 +398,7 @@ export function createAuthRouter(userRepository: UserRepository) {
 
       const challenge = crypto.randomBytes(32).toString('base64url');
       const options = buildAuthenticationOptions({
-        origin: getRequestOrigin(c.req.url),
+        origin: getRequestOrigin(c.req.raw),
         challenge,
         allowCredentialIds,
       });
@@ -400,7 +444,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       }
 
       const verified = verifyAuthenticationResponse({
-        origin: getRequestOrigin(c.req.url),
+        origin: getRequestOrigin(c.req.raw),
         expectedChallenge: flow.challenge,
         credential,
         storedCredentialId: passkey.credentialId,
