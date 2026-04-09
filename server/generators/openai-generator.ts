@@ -7,9 +7,15 @@ export class OpenAIGenerator extends ImageGenerator {
 
   constructor(apiKey: string, apiUrl?: string) {
     super();
+
+    let finalBaseUrl = apiUrl || undefined;
+    if (finalBaseUrl && !finalBaseUrl.includes('/v1') && !finalBaseUrl.includes('openai.azure.com') && !finalBaseUrl.includes('localhost') && !finalBaseUrl.includes('127.0.0.1')) {
+      finalBaseUrl = `${finalBaseUrl.endsWith('/') ? finalBaseUrl.slice(0, -1) : finalBaseUrl}/v1`;
+    }
+
     this.client = new OpenAI({
       apiKey,
-      baseURL: apiUrl || undefined,
+      baseURL: finalBaseUrl,
     });
   }
 
