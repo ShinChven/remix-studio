@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
-import { authMiddleware, adminOnly, hashPassword, verifyPassword, signToken, JwtPayload, signFlowToken, verifyFlowToken } from '../auth/auth';
+import { authMiddleware, adminOnly, hashPassword, verifyPassword, signToken, JwtPayload, signFlowToken, verifyFlowToken, AuthFlowPayload } from '../auth/auth';
 import { UserRepository } from '../auth/user-repository';
 import { checkRateLimit, getClientAddress } from '../utils/rate-limiter';
 import crypto from 'crypto';
@@ -847,7 +847,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
       if (!clientId || !clientSecret || !redirectUri) {
-        return c.redirect('/account?tab=security&error=Google+OAuth+is+not+configured');
+        return c.redirect('/exports?error=Google+OAuth+is+not+configured');
       }
 
       const driveRedirectUri = new URL(redirectUri);
@@ -859,26 +859,26 @@ export function createAuthRouter(userRepository: UserRepository) {
       const errorParam = c.req.query('error');
 
       if (errorParam) {
-        return c.redirect(`/account?tab=security&error=${encodeURIComponent(errorParam)}`);
+        return c.redirect(`/exports?error=${encodeURIComponent(errorParam)}`);
       }
 
       if (!code || !state) {
-        return c.redirect('/account?tab=security&error=Invalid+OAuth+callback');
+        return c.redirect('/exports?error=Invalid+OAuth+callback');
       }
 
       const stateCookie = getCookie(c, 'google_drive_state');
       if (!stateCookie) {
-        return c.redirect('/account?tab=security&error=OAuth+state+expired');
+        return c.redirect('/exports?error=OAuth+state+expired');
       }
 
       let flow;
       try {
         flow = verifyFlowToken(stateCookie) as AuthFlowPayload & { state?: string };
         if (flow.purpose !== 'google-drive-connect' || flow.state !== state || !flow.userId) {
-          return c.redirect('/account?tab=security&error=Invalid+OAuth+state');
+          return c.redirect('/exports?error=Invalid+OAuth+state');
         }
       } catch {
-        return c.redirect('/account?tab=security&error=Invalid+OAuth+state');
+        return c.redirect('/exports?error=Invalid+OAuth+state');
       }
 
       // Clear state cookie
@@ -902,20 +902,20 @@ export function createAuthRouter(userRepository: UserRepository) {
 
       if (!tokenRes.ok) {
         console.error('[Google Drive] Token exchange failed:', await tokenRes.text());
-        return c.redirect('/account?tab=security&error=Failed+to+connect+Google+Drive');
+        return c.redirect('/exports?error=Failed+to+connect+Google+Drive');
       }
 
       const tokenData = await tokenRes.json() as { refresh_token?: string; access_token?: string };
       if (!tokenData.refresh_token) {
-        return c.redirect('/account?tab=security&error=Failed+to+get+refresh+token.+Please+try+again.');
+        return c.redirect('/exports?error=Failed+to+get+refresh+token.+Please+try+again.');
       }
 
       await userRepository.setGoogleDriveRefreshToken(flow.userId, encrypt(tokenData.refresh_token));
 
-      return c.redirect('/account?tab=security&success=Google+Drive+connected');
+      return c.redirect('/exports?success=Google+Drive+connected');
     } catch (e) {
       console.error('[GET /api/auth/google-drive/callback]', e);
-      return c.redirect('/account?tab=security&error=Google+Drive+connection+failed');
+      return c.redirect('/exports?error=Google+Drive+connection+failed');
     }
   });
 

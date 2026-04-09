@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive, Link2Off } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ExportTask } from '../types';
-import { fetchAllExports, deleteProjectExport, uploadExportToDrive } from '../api';
+import { fetchAllExports, deleteProjectExport, uploadExportToDrive, disconnectGoogleDrive, fetchCurrentUser } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
 
 export function Exports() {
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [user, setUser] = useState(authUser);
   const [exports, setExports] = useState<ExportTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -16,6 +18,42 @@ export function Exports() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<{ projectId: string, taskId: string } | null>(null);
   const [uploadingToDrive, setUploadingToDrive] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  // Sync local user state when auth context updates
+  useEffect(() => { setUser(authUser); }, [authUser]);
+
+  // Handle OAuth callback result via URL params
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const error = searchParams.get('error');
+    if (success) {
+      toast.success(decodeURIComponent(success.replace(/\+/g, ' ')));
+      fetchCurrentUser().then(setUser).catch(() => {});
+      const next = new URLSearchParams(searchParams);
+      next.delete('success');
+      setSearchParams(next, { replace: true });
+    } else if (error) {
+      toast.error(decodeURIComponent(error.replace(/\+/g, ' ')));
+      const next = new URLSearchParams(searchParams);
+      next.delete('error');
+      setSearchParams(next, { replace: true });
+    }
+  }, []);
+
+  const handleDisconnectDrive = async () => {
+    setDisconnecting(true);
+    try {
+      await disconnectGoogleDrive();
+      const me = await fetchCurrentUser();
+      setUser(me);
+      toast.success('Google Drive disconnected');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to disconnect Google Drive');
+    } finally {
+      setDisconnecting(false);
+    }
+  };
 
   const loadExports = async (cursor?: string, append = false) => {
     try {
@@ -96,23 +134,52 @@ export function Exports() {
 
   return (
     <div className="p-4 md:p-8 w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <header className="mb-6 md:mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Archive</h2>
-        <p className="text-sm md:text-base text-neutral-400">Manage your generated ZIP archives across all projects.</p>
-      </header>
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-8 mt-2">
+        <header>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Archive</h2>
+          <p className="text-sm md:text-base text-neutral-400">Manage your generated ZIP archives across all projects.</p>
+        </header>
 
-      <div className="flex justify-end">
-        <div className="bg-neutral-900/50 border border-neutral-800/50 px-4 py-2 rounded-xl flex items-center gap-3">
-          <div className="flex flex-col items-end">
-            <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Database</p>
-            <p className="text-xs font-bold text-white">{exports.length} Total Records</p>
-          </div>
-          <div className="w-px h-6 bg-neutral-800" />
-          <div className="flex flex-col">
-            <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Active</p>
-            <p className="text-xs font-bold text-white">
-              {exports.filter(t => t.status === 'pending' || t.status === 'processing').length}
-            </p>
+        {/* Stats + Google Drive controls */}
+        <div className="flex flex-wrap items-stretch justify-end gap-3">
+          {/* Google Drive control */}
+          {user?.googleDriveConnected ? (
+            <div className="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/20 px-3 py-2 rounded-xl">
+              <HardDrive className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+              <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Drive</span>
+              <div className="w-px h-4 bg-emerald-500/20" />
+              <button
+                onClick={handleDisconnectDrive}
+                disabled={disconnecting}
+                className="flex items-center gap-1 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition disabled:opacity-50"
+              >
+                {disconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3 w-3" />}
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <a
+              href="/api/auth/google-drive/connect"
+              className="flex items-center gap-2 bg-neutral-900/50 border border-neutral-800/50 px-3 py-2 rounded-xl hover:border-neutral-700 transition"
+            >
+              <HardDrive className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />
+              <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Connect Drive</span>
+            </a>
+          )}
+
+          {/* Database stats */}
+          <div className="bg-neutral-900/50 border border-neutral-800/50 px-4 py-2 rounded-xl flex items-center gap-3">
+            <div className="flex flex-col items-end">
+              <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Database</p>
+              <p className="text-xs font-bold text-white">{exports.length} Total Records</p>
+            </div>
+            <div className="w-px h-6 bg-neutral-800" />
+            <div className="flex flex-col">
+              <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Active</p>
+              <p className="text-xs font-bold text-white">
+                {exports.filter(t => t.status === 'pending' || t.status === 'processing').length}
+              </p>
+            </div>
           </div>
         </div>
       </div>

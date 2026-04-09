@@ -682,7 +682,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         if (tokenRes.status === 400 || tokenRes.status === 401) {
           await userRepository.clearGoogleDriveRefreshToken(user.userId);
         }
-        return c.json({ error: 'Google Drive authorization expired. Please reconnect in Account settings.' }, 401);
+        return c.json({ error: 'Google Drive authorization expired. Please reconnect on the Exports page.' }, 401);
       }
 
       const { access_token } = await tokenRes.json() as { access_token: string };
