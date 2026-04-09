@@ -728,6 +728,32 @@ export async function deleteProjectExport(projectId: string, taskId: string): Pr
   return deleteExport(taskId);
 }
 
+// ========== Google Drive ==========
+
+export async function fetchGoogleDriveStatus(): Promise<{ connected: boolean }> {
+  const res = await fetch('/api/auth/google-drive/status', { headers: getHeaders(false) });
+  return handleResponse<{ connected: boolean }>(res, 'Failed to check Google Drive status');
+}
+
+export async function disconnectGoogleDrive(): Promise<void> {
+  const res = await fetch('/api/auth/google-drive/disconnect', {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to disconnect Google Drive');
+  }
+}
+
+export async function uploadExportToDrive(taskId: string): Promise<{ driveFileId: string; driveFileName: string; driveUrl: string }> {
+  const res = await fetch(`/api/exports/${taskId}/upload-to-drive`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  return handleResponse<{ driveFileId: string; driveFileName: string; driveUrl: string }>(res, 'Failed to upload to Google Drive');
+}
+
 // ========== Storage ==========
 
 export async function fetchStorageAnalysis(options?: { includeProjects?: boolean }): Promise<StorageAnalysis> {

@@ -21,6 +21,7 @@ model User {
   twoFactorSecret        String?
   twoFactorTempSecret    String?
   twoFactorTempExpiresAt DateTime?
+  googleDriveRefreshToken String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   lastLoginAt  DateTime?

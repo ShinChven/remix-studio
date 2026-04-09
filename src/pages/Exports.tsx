@@ -1,18 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ExportTask } from '../types';
-import { fetchAllExports, deleteProjectExport } from '../api';
+import { fetchAllExports, deleteProjectExport, uploadExportToDrive } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
 
 export function Exports() {
+  const { user } = useAuth();
   const [exports, setExports] = useState<ExportTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<{ projectId: string, taskId: string } | null>(null);
+  const [uploadingToDrive, setUploadingToDrive] = useState<string | null>(null);
 
   const loadExports = async (cursor?: string, append = false) => {
     try {
@@ -69,6 +72,25 @@ export function Exports() {
     } finally {
       setTaskToDelete(null);
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleUploadToDrive = async (taskId: string) => {
+    setUploadingToDrive(taskId);
+    try {
+      const result = await uploadExportToDrive(taskId);
+      toast.success(
+        <span>
+          Uploaded to Google Drive!{' '}
+          <a href={result.driveUrl} target="_blank" rel="noopener noreferrer" className="underline">
+            Open file
+          </a>
+        </span>
+      );
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload to Google Drive');
+    } finally {
+      setUploadingToDrive(null);
     }
   };
 
@@ -194,6 +216,20 @@ export function Exports() {
                     >
                       <Download className="w-4 h-4" />
                     </a>
+                  )}
+                  {task.status === 'completed' && user?.googleDriveConnected && (
+                    <button
+                      onClick={() => handleUploadToDrive(task.id)}
+                      disabled={uploadingToDrive === task.id}
+                      className="p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Upload to Google Drive"
+                    >
+                      {uploadingToDrive === task.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <HardDrive className="w-4 h-4" />
+                      )}
+                    </button>
                   )}
                   <button
                     onClick={() => handleDelete(task.projectId, task.id)}

@@ -29,6 +29,7 @@ function serializeUser(user: NonNullable<Awaited<ReturnType<UserRepository['find
     storageLimit: user.storageLimit,
     hasPassword: Boolean(user.passwordHash),
     twoFactorEnabled: Boolean(user.twoFactorEnabled),
+    googleDriveConnected: Boolean(user.googleDriveRefreshToken),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     lastLoginAt: user.lastLoginAt,
@@ -793,6 +794,139 @@ export function createAuthRouter(userRepository: UserRepository) {
     } catch (e) {
       console.error('[PUT /api/admin/users/:id/password]', e);
       return c.json({ error: 'Failed to reset password' }, 500);
+    }
+  });
+
+  // ========== Google Drive OAuth (connect/disconnect) ==========
+
+  router.get('/api/auth/google-drive/status', authMiddleware, async (c) => {
+    const payload = c.get('user') as JwtPayload;
+    const token = await userRepository.getGoogleDriveRefreshToken(payload.userId);
+    return c.json({ connected: Boolean(token) });
+  });
+
+  router.get('/api/auth/google-drive/connect', authMiddleware, async (c) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+
+    if (!clientId || !redirectUri) {
+      return c.json({ error: 'Google OAuth is not configured' }, 500);
+    }
+
+    // Build the Drive-specific redirect URI by replacing the path
+    const driveRedirectUri = new URL(redirectUri);
+    driveRedirectUri.pathname = '/api/auth/google-drive/callback';
+    const driveRedirectUriStr = driveRedirectUri.toString();
+
+    const state = crypto.randomBytes(32).toString('hex');
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: driveRedirectUriStr,
+      response_type: 'code',
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      access_type: 'offline',
+      state,
+      prompt: 'consent',
+    });
+
+    const stateToken = signFlowToken({ purpose: 'google-drive-connect', state, userId: c.get('user').userId } as any, '10m');
+    const cookieOpts = getSessionCookieOptions(c.req.url);
+    setCookie(c, 'google_drive_state', stateToken, {
+      ...cookieOpts,
+      sameSite: 'Lax',
+      maxAge: 600,
+    });
+
+    return c.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  });
+
+  router.get('/api/auth/google-drive/callback', authMiddleware, async (c) => {
+    try {
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+
+      if (!clientId || !clientSecret || !redirectUri) {
+        return c.redirect('/account?tab=security&error=Google+OAuth+is+not+configured');
+      }
+
+      const driveRedirectUri = new URL(redirectUri);
+      driveRedirectUri.pathname = '/api/auth/google-drive/callback';
+      const driveRedirectUriStr = driveRedirectUri.toString();
+
+      const code = c.req.query('code');
+      const state = c.req.query('state');
+      const errorParam = c.req.query('error');
+
+      if (errorParam) {
+        return c.redirect(`/account?tab=security&error=${encodeURIComponent(errorParam)}`);
+      }
+
+      if (!code || !state) {
+        return c.redirect('/account?tab=security&error=Invalid+OAuth+callback');
+      }
+
+      const stateCookie = getCookie(c, 'google_drive_state');
+      if (!stateCookie) {
+        return c.redirect('/account?tab=security&error=OAuth+state+expired');
+      }
+
+      try {
+        const flow = verifyFlowToken(stateCookie) as any;
+        if (flow.purpose !== 'google-drive-connect' || flow.state !== state) {
+          return c.redirect('/account?tab=security&error=Invalid+OAuth+state');
+        }
+      } catch {
+        return c.redirect('/account?tab=security&error=Invalid+OAuth+state');
+      }
+
+      // Clear state cookie
+      setCookie(c, 'google_drive_state', '', {
+        ...getSessionCookieOptions(c.req.url),
+        maxAge: 0,
+      });
+
+      // Exchange code for tokens (including refresh_token because access_type=offline)
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: driveRedirectUriStr,
+          grant_type: 'authorization_code',
+        }),
+      });
+
+      if (!tokenRes.ok) {
+        console.error('[Google Drive] Token exchange failed:', await tokenRes.text());
+        return c.redirect('/account?tab=security&error=Failed+to+connect+Google+Drive');
+      }
+
+      const tokenData = await tokenRes.json() as { refresh_token?: string; access_token?: string };
+      if (!tokenData.refresh_token) {
+        return c.redirect('/account?tab=security&error=Failed+to+get+refresh+token.+Please+try+again.');
+      }
+
+      const payload = c.get('user') as JwtPayload;
+      await userRepository.setGoogleDriveRefreshToken(payload.userId, encrypt(tokenData.refresh_token));
+
+      return c.redirect('/account?tab=security&success=Google+Drive+connected');
+    } catch (e) {
+      console.error('[GET /api/auth/google-drive/callback]', e);
+      return c.redirect('/account?tab=security&error=Google+Drive+connection+failed');
+    }
+  });
+
+  router.delete('/api/auth/google-drive/disconnect', authMiddleware, async (c) => {
+    try {
+      const payload = c.get('user') as JwtPayload;
+      await userRepository.clearGoogleDriveRefreshToken(payload.userId);
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/auth/google-drive/disconnect]', e);
+      return c.json({ error: 'Failed to disconnect Google Drive' }, 500);
     }
   });
 

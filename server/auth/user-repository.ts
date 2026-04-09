@@ -349,6 +349,28 @@ export class UserRepository {
     });
   }
 
+  async setGoogleDriveRefreshToken(userId: string, encryptedToken: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { googleDriveRefreshToken: encryptedToken },
+    });
+  }
+
+  async clearGoogleDriveRefreshToken(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { googleDriveRefreshToken: null },
+    });
+  }
+
+  async getGoogleDriveRefreshToken(userId: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { googleDriveRefreshToken: true },
+    });
+    return user?.googleDriveRefreshToken ?? null;
+  }
+
   async hasAnyUsers(): Promise<boolean> {
     const count = await this.prisma.user.count();
     return count > 0;
@@ -446,6 +468,7 @@ export class UserRepository {
       twoFactorSecret: u.twoFactorSecret ?? null,
       twoFactorTempSecret: u.twoFactorTempSecret ?? null,
       twoFactorTempExpiresAt: u.twoFactorTempExpiresAt instanceof Date ? u.twoFactorTempExpiresAt.getTime() : u.twoFactorTempExpiresAt ?? null,
+      googleDriveRefreshToken: u.googleDriveRefreshToken ?? null,
       createdAt: u.createdAt instanceof Date ? u.createdAt.getTime() : u.createdAt,
       updatedAt: u.updatedAt instanceof Date ? u.updatedAt.getTime() : u.updatedAt,
       lastLoginAt: u.lastLoginAt instanceof Date ? u.lastLoginAt.getTime() : undefined,

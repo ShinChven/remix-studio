@@ -46,6 +46,7 @@ export interface UserRecord {
   twoFactorSecret?: string | null;
   twoFactorTempSecret?: string | null;
   twoFactorTempExpiresAt?: number | null;
+  googleDriveRefreshToken?: string | null;
   createdAt: number;
   updatedAt?: number;
   lastLoginAt?: number;

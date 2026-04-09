@@ -205,6 +205,7 @@ export interface User {
   status: UserStatus;
   hasPassword?: boolean;
   twoFactorEnabled?: boolean;
+  googleDriveConnected?: boolean;
   createdAt: number;
   updatedAt?: number;
   lastLoginAt?: number;

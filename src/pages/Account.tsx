@@ -1,11 +1,12 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap } from 'lucide-react';
-import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, updatePassword } from '../api';
+import { beginPasskeyRegistration, disableTwoFactor, disconnectGoogleDrive, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, updatePassword } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { SecuritySettings, StorageAnalysis, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { isPasskeySupported, serializeAttestationCredential, toPublicKeyCreationOptions } from '../lib/passkey';
+import { toast } from 'sonner';
 
 type AccountTab = 'overview' | 'storage' | 'security';
 const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security'];
@@ -943,6 +944,52 @@ export function Account() {
                       </button>
                     </form>
                   )}
+                </section>
+
+                {/* Google Drive Integration */}
+                <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <HardDrive className="h-5 w-5 text-neutral-400" />
+                      <div>
+                        <h3 className="text-base font-semibold text-white">Google Drive</h3>
+                        <p className="mt-1 text-sm text-neutral-400">
+                          Connect Google Drive to upload exported archives directly.
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${user?.googleDriveConnected ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-neutral-700 bg-neutral-800 text-neutral-300'}`}>
+                      {user?.googleDriveConnected ? 'Connected' : 'Not connected'}
+                    </span>
+                  </div>
+
+                  <div className="mt-6">
+                    {user?.googleDriveConnected ? (
+                      <button
+                        onClick={async () => {
+                          try {
+                            await disconnectGoogleDrive();
+                            const me = await fetchCurrentUser();
+                            setUser(me);
+                            toast.success('Google Drive disconnected');
+                          } catch (err: any) {
+                            toast.error(err.message || 'Failed to disconnect');
+                          }
+                        }}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500/15"
+                      >
+                        Disconnect Google Drive
+                      </button>
+                    ) : (
+                      <a
+                        href="/api/auth/google-drive/connect"
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
+                      >
+                        <HardDrive className="h-4 w-4" />
+                        Connect Google Drive
+                      </a>
+                    )}
+                  </div>
                 </section>
               </>
             )}
