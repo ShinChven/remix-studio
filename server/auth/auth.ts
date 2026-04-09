@@ -25,6 +25,8 @@ export interface JwtPayload {
 export interface AuthFlowPayload {
   purpose:
     | 'login-2fa'
+    | 'google-drive-connect'
+    | 'google-oauth'
     | 'passkey-register'
     | 'passkey-login';
   userId?: string;

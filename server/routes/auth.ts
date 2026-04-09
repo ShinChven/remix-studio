@@ -840,7 +840,7 @@ export function createAuthRouter(userRepository: UserRepository) {
     return c.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
   });
 
-  router.get('/api/auth/google-drive/callback', authMiddleware, async (c) => {
+  router.get('/api/auth/google-drive/callback', async (c) => {
     try {
       const clientId = process.env.GOOGLE_CLIENT_ID;
       const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -871,9 +871,10 @@ export function createAuthRouter(userRepository: UserRepository) {
         return c.redirect('/account?tab=security&error=OAuth+state+expired');
       }
 
+      let flow;
       try {
-        const flow = verifyFlowToken(stateCookie) as any;
-        if (flow.purpose !== 'google-drive-connect' || flow.state !== state) {
+        flow = verifyFlowToken(stateCookie) as AuthFlowPayload & { state?: string };
+        if (flow.purpose !== 'google-drive-connect' || flow.state !== state || !flow.userId) {
           return c.redirect('/account?tab=security&error=Invalid+OAuth+state');
         }
       } catch {
@@ -909,8 +910,7 @@ export function createAuthRouter(userRepository: UserRepository) {
         return c.redirect('/account?tab=security&error=Failed+to+get+refresh+token.+Please+try+again.');
       }
 
-      const payload = c.get('user') as JwtPayload;
-      await userRepository.setGoogleDriveRefreshToken(payload.userId, encrypt(tokenData.refresh_token));
+      await userRepository.setGoogleDriveRefreshToken(flow.userId, encrypt(tokenData.refresh_token));
 
       return c.redirect('/account?tab=security&success=Google+Drive+connected');
     } catch (e) {
