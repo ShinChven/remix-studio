@@ -113,9 +113,13 @@ export function Login() {
   const isTwoFactorStep = Boolean(twoFactorToken);
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-black">
       <Starfield />
-      <div className="max-w-md w-full p-8 rounded-[2.5rem] bg-white/10 border border-white/20 shadow-2xl flex flex-col items-center backdrop-blur-2xl">
+
+      <div className="relative z-10 max-w-md w-full p-8 rounded-[2.5rem] bg-white/10 border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] flex flex-col items-center backdrop-blur-sm backdrop-saturate-150 ring-1 ring-inset ring-white/10">
+
+
+
 
 
         <img src="/favicon.svg" alt="Remix Studio Logo" className="w-16 h-16 mb-6" />
@@ -142,7 +146,8 @@ export function Login() {
                 maxLength={6}
                 value={twoFactorCode}
                 onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.3em]"
+                className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.3em] backdrop-blur-md"
+
                 required
               />
             </div>
@@ -171,7 +176,8 @@ export function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono"
+                  className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
+
                   required
                 />
               </div>
@@ -181,7 +187,8 @@ export function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono"
+                  className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
+
                   required
                 />
               </div>
@@ -206,7 +213,8 @@ export function Login() {
                 type="button"
                 onClick={handlePasskeyLogin}
                 disabled={passkeyLoading}
-                className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50 backdrop-blur-md"
+
               >
                 {passkeyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />}
                 Passkey
@@ -214,7 +222,8 @@ export function Login() {
 
               <a
                 href="/api/auth/google"
-                className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98]"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98] backdrop-blur-md"
+
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" aria-hidden="true">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />

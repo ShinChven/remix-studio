@@ -47,10 +47,10 @@ export const Starfield: React.FC = () => {
     };
 
     const draw = () => {
-      ctx.fillStyle = 'black';
-      ctx.fillRect(0, 0, w, h);
+      ctx.clearRect(0, 0, w, h);
 
       stars.forEach((s) => {
+
         s.z -= speed;
 
         if (s.z <= 0) {
@@ -99,7 +99,10 @@ export const Starfield: React.FC = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 -z-10 bg-black pointer-events-none"
+      className="absolute inset-0 z-0 pointer-events-none"
+      style={{ willChange: 'transform' }}
     />
+
+
   );
 };
