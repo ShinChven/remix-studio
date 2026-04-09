@@ -252,6 +252,7 @@ export interface ExportTask {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   current: number;
   total: number;
+  size?: number;
   downloadUrl?: string;
   error?: string;
   createdAt: number;

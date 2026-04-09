@@ -17,6 +17,7 @@ export interface ExportTask {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   current: number;
   total: number;
+  size?: number;
   /** S3 key in the export bucket — presigned URL is generated on read */
   s3Key?: string;
   /** Presigned download URL — only populated when returned to the client */
@@ -138,6 +139,7 @@ export class ExportManager {
       await this.updateTask(userId, taskId, {
         status: 'completed',
         current: items.length,
+        size: zipBuffer.length,
         s3Key,
         ttl: TTL_30D(),  // auto-expire in 30 days
       });

@@ -20,6 +20,14 @@ export function Exports() {
   const [uploadingToDrive, setUploadingToDrive] = useState<string | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
 
+  const formatSize = (bytes?: number) => {
+    if (!bytes || bytes <= 0) return null;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), sizes.length - 1);
+    const value = bytes / Math.pow(1024, index);
+    return `${parseFloat(value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2).replace(/\.0$/, ''))} ${sizes[index]}`;
+  };
+
   // Sync local user state when auth context updates
   useEffect(() => { setUser(authUser); }, [authUser]);
 
@@ -228,6 +236,18 @@ export function Exports() {
                       <Clock className="w-3 h-3" />
                       {new Date(task.createdAt).toLocaleString()}
                     </div>
+                    {task.status === 'completed' && task.size ? (
+                      <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
+                        <HardDrive className="w-3 h-3" />
+                        {formatSize(task.size)}
+                      </div>
+                    ) : null}
+                    {task.status === 'completed' ? (
+                      <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
+                        <List className="w-3 h-3" />
+                        {task.total} Files
+                      </div>
+                    ) : null}
                     {(task.status === 'processing' || task.status === 'pending') && (
                       <div className="flex items-center gap-2 group-hover/task:translate-x-1 transition-transform">
                         <div className="w-24 h-1 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800/50">
