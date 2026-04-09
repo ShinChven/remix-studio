@@ -288,22 +288,30 @@ export class QueueManager {
   private async prepareGenerateRequest(queued: QueuedJob, providerRecord: any) {
     const { job } = queued;
     let refImages: string[] | undefined;
+    let refImageUrls: string[] | undefined;
     if (job.imageContexts && job.imageContexts.length > 0) {
       refImages = [];
+      refImageUrls = [];
       for (const ctx of job.imageContexts) {
         if (ctx.startsWith('data:')) {
+          refImageUrls.push(ctx);
           refImages.push(ctx.replace(/^data:image\/\w+;base64,/, ''));
         } else if (ctx.startsWith('http')) {
           await assertSafeReferenceImageUrl(ctx);
+          refImageUrls.push(ctx);
           const response = await fetch(ctx);
           if (!response.ok) throw new Error(`Failed to download reference image: ${response.status}`);
           const buffer = Buffer.from(await response.arrayBuffer());
           refImages.push(buffer.toString('base64'));
         } else {
+          refImageUrls.push(await this.storage.getPresignedUrl(ctx));
           const buffer = await this.storage.read(ctx);
           refImages.push(buffer.toString('base64'));
         }
       }
+
+      if (refImages.length === 0) refImages = undefined;
+      if (refImageUrls.length === 0) refImageUrls = undefined;
     }
 
     const modelConfig = providerRecord.models?.find((m: any) => m.id === job.modelConfigId);
@@ -315,7 +323,8 @@ export class QueueManager {
       aspectRatio: job.aspectRatio || '1:1', 
       imageSize: job.quality || '1K',
       background: queued.background || job.background,
-      refImagesBase64: refImages
+      refImagesBase64: refImages,
+      refImageUrls
     };
   }
 

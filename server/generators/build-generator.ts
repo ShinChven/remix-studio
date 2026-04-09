@@ -4,6 +4,7 @@ import { GoogleAIGenerator } from './google-ai-generator';
 import { VertexAIGenerator } from './vertex-ai-generator';
 import { RunningHubGenerator } from './running-hub-generator';
 import { OpenAIGenerator } from './openai-generator';
+import { GrokGenerator } from './grok-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -27,6 +28,8 @@ export function buildGenerator(
       return new RunningHubGenerator(apiKey, safeApiUrl);
     case 'OpenAI':
       return new OpenAIGenerator(apiKey, safeApiUrl);
+    case 'Grok':
+      return new GrokGenerator(apiKey, safeApiUrl);
     default: {
       // Exhaustiveness check — TypeScript will error here if a new ProviderType is added
       const _never: never = type;

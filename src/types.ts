@@ -94,6 +94,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  Grok: [
+    {
+      id: 'grok-imagine-image',
+      name: 'Grok Imagine',
+      generatorId: 'Grok',
+      modelId: 'grok-imagine-image',
+      options: {
+        aspectRatios: ['1:1', '3:4', '4:3', '9:16', '16:9', '2:3', '3:2', '9:19.5', '19.5:9', '9:20', '20:9', '1:2', '2:1', 'auto'],
+        qualities: ['medium/2k', 'high/2k', 'medium/1k', 'high/1k', 'low/2k', 'low/1k'],
+      },
+    },
+  ],
 };
 
 export interface Job {
@@ -164,7 +176,7 @@ export interface Project {
   totalSize?: number;
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI' | 'Grok';
 
 export interface ProviderUsageSummary {
   projectCount: number;
