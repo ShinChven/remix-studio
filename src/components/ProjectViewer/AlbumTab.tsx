@@ -3,6 +3,7 @@ import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalL
 import { AlbumItem } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import { ExportTask } from '../../types';
+import { AlbumPromptModal } from './AlbumPromptModal';
 
 import { toast } from 'sonner';
 
@@ -35,6 +36,8 @@ export function AlbumTab({
   setLightboxData,
   onExportStarted
 }: AlbumTabProps) {
+  const [promptItem, setPromptItem] = useState<AlbumItem | null>(null);
+
   const handleExport = async (isAll: boolean) => {
     try {
       const itemIds = isAll ? undefined : Array.from(selectedAlbumIds);
@@ -199,9 +202,16 @@ export function AlbumTab({
                     )}
                   </div>
                   <div className="p-5 bg-neutral-900/60 backdrop-blur-sm relative border-t border-neutral-800/50 flex-1 flex flex-col justify-between">
-                    <p className="text-[11px] leading-relaxed text-neutral-400 line-clamp-3 font-medium mb-4 group-hover:text-neutral-200 transition-colors" title={item.prompt}>
-                      {item.prompt}
-                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setPromptItem(item)}
+                      className="mb-4 block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
+                      title="Click to view full prompt"
+                    >
+                      <p className="text-[11px] leading-relaxed text-neutral-400 line-clamp-3 font-medium group-hover:text-neutral-200 transition-colors cursor-pointer hover:text-white">
+                        {item.prompt}
+                      </p>
+                    </button>
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="flex items-center gap-1.5 p-1 bg-neutral-950/50 rounded-lg border border-neutral-800/50">
                         <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-neutral-900 rounded border border-neutral-800">
@@ -252,6 +262,7 @@ export function AlbumTab({
           </div>
         )}
       </div>
+      <AlbumPromptModal item={promptItem} onClose={() => setPromptItem(null)} />
     </section>
   );
 }
