@@ -40,7 +40,7 @@ ENV PORT=3000
 # Install dependencies needed at runtime.
 # Prisma CLI is currently used by the container startup command.
 COPY package*.json ./
-RUN npm ci && npm cache clean --force
+RUN npm ci --include=dev && npm cache clean --force
 
 # Copy generated Prisma client from builder
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
