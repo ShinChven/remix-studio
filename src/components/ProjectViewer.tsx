@@ -141,7 +141,15 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const getProviderName = (id?: string) => id ? providers.find(p => p.id === id)?.name || id : 'Unknown Provider';
   const getModelName = (providerId?: string, modelId?: string) => {
     if (!modelId) return 'Unknown Model';
-    return providers.find(p => p.id === providerId)?.models.find(m => m.id === modelId)?.name || modelId;
+    const providerModels = providerId
+      ? providers.find(p => p.id === providerId)?.models
+      : undefined;
+
+    const matchedModel =
+      providerModels?.find(m => m.id === modelId || m.modelId === modelId) ||
+      providers.flatMap(p => p.models).find(m => m.id === modelId || m.modelId === modelId);
+
+    return matchedModel?.name || modelId;
   };
 
   useEffect(() => {

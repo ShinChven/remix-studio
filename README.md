@@ -17,6 +17,14 @@ It combines a React frontend with a Hono server, PostgreSQL via Prisma, and S3-c
 - Export project outputs as ZIP archives
 - Support authenticated access with admin controls, 2FA, and passkeys
 
+## Documentation
+
+- Start with [design/README.md](design/README.md) for internal design notes used by AI agents and developers
+- See [design/system-overview.md](design/system-overview.md) for a high-level system map
+- See [docker/README.md](docker/README.md) for deployment templates and compose layouts
+- See [docker/STORAGE_PROVIDERS.md](docker/STORAGE_PROVIDERS.md) for S3-compatible storage provider configuration notes
+- See [UPGRADING.md](UPGRADING.md) for upgrade steps and breaking changes
+
 ## Local Development
 
 ### Requirements
@@ -178,177 +186,12 @@ docker compose --profile app --env-file .env.docker down
 
 If you prefer AWS S3 or another external S3-compatible service, point `S3_ENDPOINT`, `S3_PUBLIC_ENDPOINT`, bucket names, and credentials at that storage instead. Leave `S3_ENDPOINT` empty only when you want the AWS SDK to use its default AWS S3 endpoint behavior.
 
-## Image Publishing
+## At a Glance
 
-This repository now includes a GitHub Actions workflow at `.github/workflows/docker.yml` that:
-
-- builds the Docker image on pull requests
-- publishes multi-arch images to GHCR on `main`
-- publishes version tags when you push tags like `v1.0.0`
-
-The Docker image uses Debian-based Node images instead of Alpine to reduce `linux/arm64` build failures under GitHub Actions QEMU emulation during multi-arch `npm ci` steps.
-
-Published image tags include:
-
-- `ghcr.io/<owner>/<repo>:latest` on the default branch
-- `ghcr.io/<owner>/<repo>:main` on the default branch
-- `ghcr.io/<owner>/<repo>:sha-<commit>`
-- `ghcr.io/<owner>/<repo>:<tag>` for Git tags
-
-If you publish a release tag like `v1.2.3`, the workflow also publishes rolling tags like `1.2` and `1`.
-
-Images are stored in GitHub Container Registry (`ghcr.io`). Docker clients can pull them directly. If the package is private, log in first with a token that has `read:packages`.
-
-## Deployment Templates
-
-Deployment templates intended for a separate infra repository live in `docker/README.md`.
-
-The included templates are:
-
-- `docker/compose.aws-s3.yml`: app + PostgreSQL, with AWS S3 or another managed object store
-- `docker/compose.minio.yml`: app + PostgreSQL + MinIO
-- `docker/compose.app-only.yml`: app only, for environments with external PostgreSQL and object storage
-
-Each compose file has a matching env example in the same directory.
-
-## Current Stack
-
-- Frontend: React 19, Vite, React Router
-- Server: Hono on Node.js
-- Database: PostgreSQL with Prisma
-- Object storage: S3-compatible storage, including MinIO
-- Image processing: Sharp
-
-## Authentication and Access
-
-- Email/password authentication with JWT-based sessions
-- Admin and user roles
-- User status controls, including disabling accounts
-- TOTP-based two-factor authentication
-- Passkey/WebAuthn registration and sign-in
-- Admin user management, including password reset and per-user storage limits
-
-## Queue and Concurrency
-
-Remix Studio includes a server-side generation queue for image jobs.
-
-- Running a project enqueues only jobs marked as `pending`
-- The queue is global in-process and groups work by provider
-- Each provider has its own configurable concurrency limit, so you can control how many jobs run in parallel for that provider
-- Jobs are snapshotted into `processing` state before dispatch so the worker and poller operate on resolved metadata
-- Providers that return a remote task ID are handed off to a detached poller, which checks status every 30 seconds until completion or failure
-- On server startup, pending jobs are re-enqueued and interrupted processing jobs are recovered so work can continue after restarts
-- A storage limit check runs before enqueuing pending jobs for a project
-
-## Providers
-
-Providers are the AI image backends that Remix Studio uses to run generation jobs.
-
-- Each provider stores a name, type, encrypted API key, optional API URL override, and optional model configuration
-- Providers can represent different services or endpoints, such as OpenAI-compatible, Google, Vertex AI, or other supported generators in the server
-- A project can use a default provider, while individual jobs can override that provider when needed
-- Each provider has its own concurrency setting, which controls how many jobs can run in parallel for that provider
-- Model configuration is attached to the provider, so jobs can choose a saved model profile instead of repeating raw model settings
-- Provider credentials are managed inside the app rather than hardcoded into project files
-
-In practice, providers let you separate job routing from project content: prompts and assets stay in the project, while API credentials, endpoint details, and parallelism settings stay with the provider.
-
-## Third-party Proxies
-
-Remix Studio facilitates the use of affordable third-party API proxies (such as [LaoZhang API](https://api.laozhang.ai/register/?aff_code=nxSr)) for accessing Google Gemini and OpenAI models at a lower cost.
-
-To configure a proxy provider:
-1. Create a new Provider with the appropriate type (`GoogleAI` or `OpenAI`).
-2. Enter your proxy's API Key.
-3. In the **API URL** field, enter the proxy's base domain (e.g., `https://api.laozhang.ai`).
-   - The app automatically handles path construction (appending `/v1` for OpenAI or `/v1beta/models/...` for Google AI).
-   - Dynamic model replacement is supported, allowing you to switch between different models in your projects while using the same proxy endpoint.
-
-## Libraries
-
-Libraries are reusable collections that keep common prompt fragments and image references out of individual projects.
-
-- Remix Studio supports both text libraries and image libraries
-- Text libraries are useful for reusable prompt fragments, style blocks, subject ideas, and prompt building templates
-- Image libraries are useful for reference images, moodboards, style references, and reusable visual inputs
-- Each library contains ordered items, and items can include titles and tags for easier filtering and reuse
-- Libraries can be edited independently from projects, so you can improve shared prompt/image collections once and reuse them across multiple workflows
-- Text libraries support import and export as Markdown-style lists for bulk editing outside the app
-- Text library output can optionally preserve tags using a line format like `- Title: Content | tags: tag-a, tag-b`
-
-### Library Usage In Project View
-
-The project view treats libraries as workflow building blocks.
-
-- You can add a library directly into a project workflow with the `Lib` action in the workflow editor
-- Library items participate in workflow combination generation, so reusable library content can expand into multiple draft jobs
-- Library workflow items can be previewed in-place before generating jobs
-- Library previews support tag filtering, which lets you narrow a large library down to a smaller subset for a specific project
-- When selecting content for a workflow item, the project view can open a library picker and insert a chosen text or image item into that workflow step
-- Image libraries can be used as reusable reference sources for image workflow items
-- The workflow keeps library references separate from project-specific prompt text, which makes larger generation setups easier to maintain
-
-In practice, libraries give you a reusable layer between raw assets and finished projects: projects define the current workflow, while libraries hold the repeatable building blocks.
-
-## Exports
-
-Remix Studio can package generated album images into downloadable ZIP archives.
-
-- Exports are created from project album items, so finished outputs can be bundled and downloaded outside the app
-- Export tasks run in the background and move through `pending`, `processing`, `completed`, or `failed` states
-- Completed archives are stored in a separate export bucket, while the app stores the raw `s3Key` and generates a fresh presigned download URL when the archive is viewed
-- The Archive page shows export status across projects and lets users download completed ZIPs or delete export records
-- Export creation performs a runtime storage quota check before uploading the ZIP archive
-- Failed exports are retained for a shorter period, while completed exports are retained longer so users have time to download them
-
-In practice, exports give you a clean handoff step after generation: produce images in the project, collect the keepers in the album, then archive them as a ZIP.
-
-## Storage
-
-Remix Studio tracks storage usage across the main image bucket, libraries, exports, and recycle bin data.
-
-- Remix Studio uses S3-compatible object storage for generated images and archives
-- For local development, the recommended storage backend is MinIO running via Docker Compose
-- For deployment, you can point the app at AWS S3 or another S3-compatible storage service instead of local MinIO
-- The main storage bucket holds project images, workflow assets, library images, and related media
-- A separate export bucket is used for completed ZIP archives
-- Storage analysis reports total usage against the user's storage limit
-- The dashboard and account area show current usage and limit information
-- Usage is broken down into projects, libraries, archives, and recycle bin categories
-- Project storage includes album items, workflow assets, and orphaned files still present in project storage paths
-- Library storage is counted from saved library items, including derived image sizes where available
-- Archive storage is calculated from completed export ZIPs in the export bucket
-- Recycle bin storage is counted separately so deleted items are still visible in usage until permanently removed
-- Generation and export flows both check storage limits before committing more data
-
-The storage system is designed so the quota checks and the storage dashboard stay aligned: the same categories used for reporting are also used for enforcement. In short, use MinIO for local development, and use S3 or another compatible object store when running Remix Studio outside local dev.
-
-## Repository Structure
-
-```text
-remix-studio/
-├── docs/        # Design notes and implementation docs
-├── prisma/      # Prisma schema and migrations
-├── public/      # Static assets
-├── server/      # API, auth, storage, queue, and generator code
-├── src/         # React application
-├── .env.example # Example environment variables
-├── server.ts    # Local server entry point
-└── docker-compose.yml
-```
-
-## Upgrading
-
-When pulling new changes, always run database migrations before restarting the server:
-
-```bash
-npx prisma migrate deploy
-```
-
-### Breaking changes to be aware of
-
-- **All existing sessions are invalidated after upgrading.** The authentication system was hardened to use HttpOnly cookies exclusively and now includes a session version in each token. Existing JWTs will no longer be accepted. All users will need to sign in again.
-- **Reference image URLs can use HTTP or HTTPS, but cannot point to private IPs.** Jobs that reference images via internal network addresses will be rejected.
+- See [design/system-overview.md](design/system-overview.md) for the stack, auth model, queue behavior, providers, libraries, exports, storage model, and repository structure
+- See [docker/README.md](docker/README.md) for compose templates and deployment layouts
+- See [UPGRADING.md](UPGRADING.md) for migration and compatibility notes
+- Docker images are published to GHCR from `.github/workflows/docker.yml`
 
 ## Notes
 
