@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { setCookie } from 'hono/cookie';
+import { getCookie, setCookie } from 'hono/cookie';
 import { authMiddleware, adminOnly, hashPassword, verifyPassword, signToken, JwtPayload, signFlowToken, verifyFlowToken } from '../auth/auth';
 import { UserRepository } from '../auth/user-repository';
 import { checkRateLimit, getClientAddress } from '../utils/rate-limiter';
@@ -746,6 +746,143 @@ export function createAuthRouter(userRepository: UserRepository) {
     } catch (e) {
       console.error('[PUT /api/admin/users/:id/password]', e);
       return c.json({ error: 'Failed to reset password' }, 500);
+    }
+  });
+
+  // ========== Google OAuth ==========
+
+  router.get('/api/auth/google', (c) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+
+    if (!clientId || !redirectUri) {
+      return c.json({ error: 'Google OAuth is not configured' }, 500);
+    }
+
+    const state = crypto.randomBytes(32).toString('hex');
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'openid email profile',
+      access_type: 'online',
+      state,
+      prompt: 'select_account',
+    });
+
+    const stateToken = signFlowToken({ purpose: 'google-oauth', state } as any, '10m');
+    const cookieOpts = getSessionCookieOptions(c.req.url);
+    setCookie(c, 'google_oauth_state', stateToken, {
+      ...cookieOpts,
+      sameSite: 'Lax',
+      maxAge: 600,
+    });
+
+    return c.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  });
+
+  router.get('/api/auth/google/callback', async (c) => {
+    try {
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+
+      if (!clientId || !clientSecret || !redirectUri) {
+        return c.redirect('/login?error=Google+OAuth+is+not+configured');
+      }
+
+      const code = c.req.query('code');
+      const state = c.req.query('state');
+      const errorParam = c.req.query('error');
+
+      if (errorParam) {
+        return c.redirect(`/login?error=${encodeURIComponent(errorParam)}`);
+      }
+
+      if (!code || !state) {
+        return c.redirect('/login?error=Invalid+OAuth+callback');
+      }
+
+      // Verify state
+      const stateCookie = getCookie(c, 'google_oauth_state');
+      if (!stateCookie) {
+        return c.redirect('/login?error=OAuth+state+expired');
+      }
+
+      try {
+        const flow = verifyFlowToken(stateCookie) as any;
+        if (flow.purpose !== 'google-oauth' || flow.state !== state) {
+          return c.redirect('/login?error=Invalid+OAuth+state');
+        }
+      } catch {
+        return c.redirect('/login?error=Invalid+OAuth+state');
+      }
+
+      // Clear state cookie
+      setCookie(c, 'google_oauth_state', '', {
+        ...getSessionCookieOptions(c.req.url),
+        maxAge: 0,
+      });
+
+      // Exchange code for tokens
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+        }),
+      });
+
+      if (!tokenRes.ok) {
+        console.error('[Google OAuth] Token exchange failed:', await tokenRes.text());
+        return c.redirect('/login?error=Failed+to+authenticate+with+Google');
+      }
+
+      const tokenData = await tokenRes.json() as { id_token?: string };
+      if (!tokenData.id_token) {
+        return c.redirect('/login?error=Failed+to+get+identity+from+Google');
+      }
+
+      // Decode ID token to get email (the token is already verified by Google's token endpoint)
+      const [, payloadB64] = tokenData.id_token.split('.');
+      const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString()) as {
+        email?: string;
+        email_verified?: boolean;
+      };
+
+      if (!payload.email || !payload.email_verified) {
+        return c.redirect('/login?error=Google+account+email+is+not+verified');
+      }
+
+      const email = payload.email.toLowerCase();
+
+      // Only allow login for existing active users — no registration
+      const user = await userRepository.findByEmail(email);
+      if (!user) {
+        return c.redirect('/login?error=No+account+found+for+this+email.+Registration+is+disabled.');
+      }
+      if (user.status === 'disabled') {
+        return c.redirect('/login?error=This+account+has+been+disabled');
+      }
+
+      // Finalize login (set JWT cookie)
+      await userRepository.touchLastLogin(user.sk);
+      const token = signToken({
+        userId: user.sk,
+        email: user.email,
+        role: user.role,
+        sessionVersion: user.sessionVersion ?? 0,
+      });
+      setCookie(c, 'token', token, getSessionCookieOptions(c.req.url));
+
+      return c.redirect('/');
+    } catch (e) {
+      console.error('[GET /api/auth/google/callback]', e);
+      return c.redirect('/login?error=Google+login+failed');
     }
   });
 
