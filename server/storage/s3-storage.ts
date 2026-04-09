@@ -16,30 +16,35 @@ export class S3Storage implements IStorage {
   private bucket: string;
 
   constructor(opts: {
-    endpoint: string;
+    endpoint?: string;
     region: string;
-    accessKeyId: string;
-    secretAccessKey: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
     bucket: string;
     publicEndpoint?: string;
   }) {
     this.bucket = opts.bucket;
-    const credentials = {
-      accessKeyId: opts.accessKeyId,
-      secretAccessKey: opts.secretAccessKey,
-    };
-    const isProd = process.env.NODE_ENV === 'production';
+    const credentials = opts.accessKeyId && opts.secretAccessKey
+      ? {
+          accessKeyId: opts.accessKeyId,
+          secretAccessKey: opts.secretAccessKey,
+        }
+      : undefined;
+    const endpoint = opts.endpoint?.trim() || undefined;
+    const publicEndpoint = opts.publicEndpoint?.trim() || endpoint;
+    const usePathStyle = Boolean(endpoint);
+
     this.client = new S3Client({
-      endpoint: isProd ? undefined : opts.endpoint,
+      endpoint,
       region: opts.region,
       credentials,
-      forcePathStyle: !isProd, // true for Localstack/MinIO, false for real AWS S3
+      forcePathStyle: usePathStyle, // true for MinIO/custom S3 endpoints, false for AWS S3
     });
     this.publicClient = new S3Client({
-      endpoint: isProd ? undefined : (opts.publicEndpoint || opts.endpoint),
+      endpoint: publicEndpoint,
       region: opts.region,
       credentials,
-      forcePathStyle: !isProd,
+      forcePathStyle: usePathStyle,
     });
   }
 
@@ -51,11 +56,14 @@ export class S3Storage implements IStorage {
     return this.bucket;
   }
 
-  async ensureBucket(): Promise<void> {
+  async ensureBucket(autoCreate = true): Promise<void> {
     const { CreateBucketCommand, HeadBucketCommand } = await import('@aws-sdk/client-s3');
     try {
       await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }));
     } catch {
+      if (!autoCreate) {
+        throw new Error(`S3 bucket "${this.bucket}" does not exist or is not accessible`);
+      }
       await this.client.send(new CreateBucketCommand({ Bucket: this.bucket }));
     }
   }

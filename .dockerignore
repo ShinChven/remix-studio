@@ -21,5 +21,3 @@ scripts/
 README.md
 LICENSE
 GEMINI.md
-prisma/migrations/
-!prisma/schema.prisma
