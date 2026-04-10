@@ -17,30 +17,6 @@ It combines a React frontend with a Hono server, PostgreSQL via Prisma, and S3-c
 - Export project outputs as ZIP archives
 - Support authenticated access with admin controls, 2FA, and passkeys
 
-## MCP Support
-
-Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped access to a small set of tools. It currently covers prompt libraries, prompts, storage usage, and project album summaries, not the full app API.
-
-Clients can connect with OAuth 2.0 or a personal access token. Manage both in `Account -> MCP`. OAuth metadata is available at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`; related endpoints are `/register`, `/authorize`, and `/token`.
-
-Example:
-
-```json
-{
-  "mcpServers": {
-    "remix-studio": {
-      "type": "http",
-      "url": "http://localhost:3000/mcp",
-      "headers": {
-        "Authorization": "Bearer YOUR_MCP_TOKEN"
-      }
-    }
-  }
-}
-```
-
-Replace `http://localhost:3000` with your deployed origin. All tools are user-scoped, use the `mcp:tools` OAuth scope, and currently include `list_libraries`, `create_library`, `create_prompt`, `search_library_items`, `get_storage_usage`, and `list_albums`.
-
 ## Local Development
 
 ### Requirements
@@ -208,6 +184,30 @@ If you prefer AWS S3 or another external S3-compatible service, point `S3_ENDPOI
 - See [docker/README.md](docker/README.md) for compose templates and deployment layouts
 - See [UPGRADING.md](UPGRADING.md) for migration and compatibility notes
 - Docker images are published to GHCR from `.github/workflows/docker.yml`
+
+## MCP Support
+
+Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped access to a small set of tools. It currently covers prompt libraries, prompts, storage usage, and project album summaries, not the full app API.
+
+Clients can connect with OAuth 2.0 or a personal access token. Manage both in `Account -> MCP`. OAuth metadata is available at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`; related endpoints are `/register`, `/authorize`, and `/token`.
+
+Example:
+
+```json
+{
+  "mcpServers": {
+    "remix-studio": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_TOKEN"
+      }
+    }
+  }
+}
+```
+
+Replace `http://localhost:3000` with your deployed origin. All tools are user-scoped, use the `mcp:tools` OAuth scope, and currently include `list_libraries`, `create_library`, `create_prompt`, `search_library_items`, `get_storage_usage`, and `list_albums`.
 
 ## Notes
 
