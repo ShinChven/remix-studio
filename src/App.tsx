@@ -14,6 +14,7 @@ import { ProjectRoute } from './components/ProjectRoute';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Login } from './pages/Login';
 import { AdminUsers } from './pages/AdminUsers';
+import { AdminInvites } from './pages/AdminInvites';
 import { Libraries } from './pages/Libraries';
 import { Projects } from './pages/Projects';
 import { LibraryForm } from './pages/LibraryForm.tsx';
@@ -63,6 +64,7 @@ export default function App() {
               <Route path="library/:id/cleanup" element={<LibraryCleanup />} />
               <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
               <Route path="admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
+              <Route path="admin/invites" element={<ProtectedRoute adminOnly><AdminInvites /></ProtectedRoute>} />
               <Route path="providers" element={<Providers />} />
               <Route path="provider/new" element={<ProviderForm />} />
               <Route path="provider/:id/edit" element={<ProviderForm />} />

@@ -1,8 +1,11 @@
-import { PrismaClient } from '@prisma/client';
-import type { PaginatedResult, UserDetail, UserRole, UserStatus, UserSummary } from '../../src/types';
+import { Prisma, PrismaClient } from '@prisma/client';
+import crypto from 'crypto';
+import type { InviteCode, PaginatedResult, UserDetail, UserRole, UserStatus, UserSummary } from '../../src/types';
 import type { UserRecord } from './auth';
+import { decrypt, encrypt } from '../utils/crypto';
 
 const DEFAULT_STORAGE_LIMIT = 5 * 1024 * 1024 * 1024;
+const DEFAULT_INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
 type ListUsersParams = {
   q?: string;
@@ -37,6 +40,7 @@ export class UserRepository {
         passwordHash: user.passwordHash ?? null,
         role: user.role ?? 'user',
         status: user.status ?? 'disabled',
+        createdByUserId: user.createdByUserId ?? null,
         sessionVersion: user.sessionVersion ?? 0,
         storageLimit: BigInt(user.storageLimit ?? DEFAULT_STORAGE_LIMIT),
         twoFactorEnabled: user.twoFactorEnabled ?? false,
@@ -88,6 +92,12 @@ export class UserRepository {
         take: pageSize,
         orderBy,
         include: {
+          createdByUser: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
           _count: {
             select: {
               projects: true,
@@ -120,6 +130,12 @@ export class UserRepository {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
+        createdByUser: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
         _count: {
           select: {
             projects: true,
@@ -140,6 +156,8 @@ export class UserRepository {
       trash: 0,
     };
 
+    const inviteCode = await this.findInviteByUsedUserId(userId);
+
     return {
       ...this.toSafeUser(user),
       projectCount: user._count.projects,
@@ -153,6 +171,7 @@ export class UserRepository {
         exports: usage.exports,
         trash: usage.trash,
       },
+      inviteCode,
     };
   }
 
@@ -376,6 +395,172 @@ export class UserRepository {
     return count > 0;
   }
 
+  async createInviteCode(createdByUserId: string, expiresAt?: Date): Promise<InviteCode> {
+    const plainCode = this.generateInviteCode();
+    const invite = await this.prisma.inviteCode.create({
+      data: {
+        codeHash: this.hashInviteCode(plainCode),
+        codeEncrypted: encrypt(plainCode),
+        createdByUserId,
+        expiresAt: expiresAt ?? new Date(Date.now() + DEFAULT_INVITE_EXPIRY_MS),
+      },
+      include: {
+        createdByUser: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+        usedByUser: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return this.toInviteCode(invite);
+  }
+
+  async listInviteCodes(createdByUserId?: string): Promise<InviteCode[]> {
+    const invites = await this.prisma.inviteCode.findMany({
+      where: createdByUserId ? { createdByUserId } : undefined,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        createdByUser: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+        usedByUser: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return invites.map((invite) => this.toInviteCode(invite));
+  }
+
+  async redeemInviteCode(code: string, data: { email: string; role?: UserRole; status?: UserStatus }) {
+    const normalizedEmail = data.email.trim().toLowerCase();
+    const normalizedCode = code.trim().toUpperCase();
+    const codeHash = this.hashInviteCode(normalizedCode);
+    const now = new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.user.findUnique({ where: { email: normalizedEmail } });
+      if (existing) {
+        throw new Error('Email already exists');
+      }
+
+      const claimed = await tx.inviteCode.updateMany({
+        where: {
+          codeHash,
+          usedAt: null,
+          usedByUserId: null,
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: now } },
+          ],
+        },
+        data: {
+          usedAt: now,
+          usedByEmail: normalizedEmail,
+        },
+      });
+
+      if (claimed.count !== 1) {
+        throw new Error('Invite code is invalid or unavailable');
+      }
+
+      const invite = await tx.inviteCode.findUnique({
+        where: { codeHash },
+        include: {
+          createdByUser: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
+          usedByUser: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
+        },
+      });
+      if (!invite) {
+        throw new Error('Invite code is invalid or unavailable');
+      }
+
+      const user = await tx.user.create({
+        data: {
+          email: normalizedEmail,
+          role: data.role ?? 'user',
+          status: data.status ?? 'active',
+          createdByUserId: invite.createdByUserId,
+          storageLimit: BigInt(DEFAULT_STORAGE_LIMIT),
+        },
+      });
+
+      const updatedInvite = await tx.inviteCode.update({
+        where: { codeHash },
+        data: {
+          usedByUserId: user.id,
+        },
+        include: {
+          createdByUser: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
+          usedByUser: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return {
+        user: this.toRecord(user),
+        invite: this.toInviteCode(updatedInvite),
+      };
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
+  }
+
+  async findInviteByUsedUserId(userId: string): Promise<InviteCode | null> {
+    const invite = await this.prisma.inviteCode.findFirst({
+      where: { usedByUserId: userId },
+      include: {
+        createdByUser: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+        usedByUser: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return invite ? this.toInviteCode(invite) : null;
+  }
+
   async deleteUser(userId: string): Promise<void> {
     await this.prisma.user.delete({ where: { id: userId } });
   }
@@ -447,6 +632,12 @@ export class UserRepository {
       email: u.email,
       role: u.role as UserRole,
       status: u.status as UserStatus,
+      createdBy: u.createdByUser
+        ? {
+            id: u.createdByUser.id,
+            email: u.createdByUser.email,
+          }
+        : null,
       storageLimit: toNumber(u.storageLimit) || DEFAULT_STORAGE_LIMIT,
       twoFactorEnabled: Boolean(u.twoFactorEnabled),
       createdAt: u.createdAt instanceof Date ? u.createdAt.getTime() : u.createdAt,
@@ -463,6 +654,7 @@ export class UserRepository {
       passwordHash: u.passwordHash,
       role: u.role as UserRole,
       status: u.status as UserStatus,
+      createdByUserId: u.createdByUserId ?? null,
       storageLimit: toNumber(u.storageLimit) || DEFAULT_STORAGE_LIMIT,
       twoFactorEnabled: Boolean(u.twoFactorEnabled),
       twoFactorSecret: u.twoFactorSecret ?? null,
@@ -474,5 +666,35 @@ export class UserRepository {
       lastLoginAt: u.lastLoginAt instanceof Date ? u.lastLoginAt.getTime() : undefined,
       sessionVersion: u.sessionVersion ?? 0,
     };
+  }
+
+  private toInviteCode(invite: any): InviteCode {
+    return {
+      id: invite.id,
+      code: decrypt(invite.codeEncrypted),
+      createdAt: invite.createdAt instanceof Date ? invite.createdAt.getTime() : invite.createdAt,
+      usedAt: invite.usedAt instanceof Date ? invite.usedAt.getTime() : undefined,
+      expiresAt: invite.expiresAt instanceof Date ? invite.expiresAt.getTime() : undefined,
+      createdBy: {
+        id: invite.createdByUser.id,
+        email: invite.createdByUser.email,
+      },
+      usedBy: invite.usedByUser
+        ? {
+            id: invite.usedByUser.id,
+            email: invite.usedByUser.email,
+          }
+        : null,
+      usedByEmail: invite.usedByEmail ?? null,
+    };
+  }
+
+  private generateInviteCode(): string {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from({ length: 10 }, () => alphabet[crypto.randomInt(0, alphabet.length)]).join('');
+  }
+
+  private hashInviteCode(code: string): string {
+    return crypto.createHash('sha256').update(code).digest('hex');
   }
 }

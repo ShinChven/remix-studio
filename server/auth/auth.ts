@@ -34,6 +34,10 @@ export interface AuthFlowPayload {
   challenge?: string;
   name?: string;
   method?: 'password' | 'passkey';
+  state?: string;
+  nextUrl?: string;
+  inviteCode?: string;
+  googleSub?: string;
 }
 
 export interface UserRecord {
@@ -43,6 +47,7 @@ export interface UserRecord {
   passwordHash?: string | null;
   role: UserRole;
   status: UserStatus;
+  createdByUserId?: string | null;
   storageLimit?: number;
   twoFactorEnabled?: boolean;
   twoFactorSecret?: string | null;

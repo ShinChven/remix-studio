@@ -327,11 +327,17 @@ export interface Provider {
 export type UserRole = 'admin' | 'user';
 export type UserStatus = 'active' | 'disabled';
 
+export interface UserReference {
+  id: string;
+  email: string;
+}
+
 export interface User {
   id: string;
   email: string;
   role: UserRole;
   status: UserStatus;
+  createdBy?: UserReference | null;
   hasPassword?: boolean;
   twoFactorEnabled?: boolean;
   googleDriveConnected?: boolean;
@@ -372,6 +378,18 @@ export interface UserStorageBreakdown {
 export interface UserDetail extends UserSummary {
   exportCount: number;
   storageBreakdown: UserStorageBreakdown;
+  inviteCode?: InviteCode | null;
+}
+
+export interface InviteCode {
+  id: string;
+  code: string;
+  createdAt: number;
+  usedAt?: number;
+  expiresAt?: number;
+  createdBy: UserReference;
+  usedBy?: UserReference | null;
+  usedByEmail?: string | null;
 }
 
 export interface ExportTask {

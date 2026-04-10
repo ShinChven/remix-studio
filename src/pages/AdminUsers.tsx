@@ -1,5 +1,6 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Filter, HardDrive, KeyRound, Loader2, Mail, Search, Shield, UserPlus, Users, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { adminResetUserPassword, createUser, getUserDetail, getUsers, updateUserRole, updateUserStatus, updateUserStorageLimit } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -243,14 +244,23 @@ export function AdminUsers() {
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">User Management</h2>
             <p className="text-sm md:text-base text-neutral-400">Create users, control access, and inspect account usage without external systems.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-200 transition hover:bg-blue-500/25"
-          >
-            <UserPlus className="h-4 w-4" />
-            Create User
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link
+              to="/admin/invites"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25"
+            >
+              <Mail className="h-4 w-4" />
+              Invite Users
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-200 transition hover:bg-blue-500/25"
+            >
+              <UserPlus className="h-4 w-4" />
+              Create User
+            </button>
+          </div>
         </header>
 
         <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-4">
@@ -560,6 +570,8 @@ export function AdminUsers() {
                       <Stat label="Last Login" value={formatDate(activeUser.lastLoginAt)} icon={<CheckCircle2 className="h-4 w-4" />} />
                       <Stat label="Storage Tier" value={storageTierName(activeUser.storageLimit)} icon={<HardDrive className="h-4 w-4" />} />
                       <Stat label="Used / Limit" value={`${formatBytes(activeUser.usedStorage)} / ${formatBytes(activeUser.storageLimit || 0)}`} icon={<Shield className="h-4 w-4" />} />
+                      <Stat label="Created By" value={activeUser.createdBy?.email || 'Self-registered / system'} icon={<Users className="h-4 w-4" />} />
+                      <Stat label="Invite Code" value={activeUser.inviteCode?.code || 'Not invite-based'} icon={<Mail className="h-4 w-4" />} />
                     </div>
                   </section>
 

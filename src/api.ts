@@ -1,4 +1,4 @@
-import { AppData, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult } from './types';
+import { AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -144,6 +144,15 @@ export async function verifyTwoFactorLogin(tempToken: string, code: string): Pro
     body: JSON.stringify({ tempToken, code }),
   });
   return handleResponse<{ user: User }>(res, 'Failed to verify 2FA login');
+}
+
+export async function completeGoogleRegistration(inviteCode: string): Promise<{ user: User; nextUrl: string }> {
+  const res = await fetch('/api/auth/google/complete-registration', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ inviteCode }),
+  });
+  return handleResponse<{ user: User; nextUrl: string }>(res, 'Failed to complete Google registration');
 }
 
 // ========== Legacy bulk load (used for initial data fetch) ==========
@@ -512,6 +521,21 @@ export async function adminResetUserPassword(id: string, newPassword: string): P
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.error || 'Failed to reset password');
   }
+}
+
+export async function getAdminInvites(): Promise<InviteCode[]> {
+  const res = await fetch('/api/admin/invites', { headers: getHeaders(false) });
+  const data = await handleResponse<{ items: InviteCode[] }>(res, 'Failed to load invite codes');
+  return data.items;
+}
+
+export async function createAdminInvite(): Promise<InviteCode> {
+  const res = await fetch('/api/admin/invites', {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  const data = await handleResponse<{ invite: InviteCode }>(res, 'Failed to create invite code');
+  return data.invite;
 }
 
 // ========== Providers ==========

@@ -15,6 +15,7 @@ model User {
   passwordHash String?
   role         String   @default("user")
   status       String   @default("disabled")
+  createdByUserId String?
   sessionVersion Int    @default(0)
   storageLimit BigInt   @default(5368709120) // 5GB in bytes
   twoFactorEnabled       Boolean  @default(false)
@@ -35,6 +36,31 @@ model User {
   oauthAuthorizationCodes OAuthAuthorizationCode[]
   oauthAccessTokens       OAuthAccessToken[]
   personalAccessTokens    PersonalAccessToken[]
+  createdByUser User? @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdUsers  User[] @relation("UserCreation")
+  createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
+  usedInviteCodes    InviteCode[] @relation("InviteCodeUser")
+
+  @@index([createdByUserId])
+}
+
+model InviteCode {
+  id              String   @id @default(uuid())
+  codeHash        String   @unique
+  codeEncrypted   String
+  createdByUserId String
+  usedByUserId    String?
+  usedByEmail     String?
+  createdAt       DateTime @default(now())
+  usedAt          DateTime?
+  expiresAt       DateTime?
+
+  createdByUser User  @relation("InviteCodeCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  usedByUser    User? @relation("InviteCodeUser", fields: [usedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdByUserId])
+  @@index([usedByUserId])
+  @@index([codeHash])
 }
 
 model PasskeyCredential {

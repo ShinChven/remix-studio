@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Fingerprint, Loader2, ShieldCheck } from 'lucide-react';
+import { Fingerprint, Loader2, ShieldCheck, Ticket } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { beginPasskeyLogin, finishPasskeyLogin, verifyTwoFactorLogin } from '../api';
+import { beginPasskeyLogin, completeGoogleRegistration, finishPasskeyLogin, verifyTwoFactorLogin } from '../api';
 import { isPasskeySupported, serializeAssertionCredential, toPublicKeyRequestOptions } from '../lib/passkey';
 import { Starfield } from '../components/Starfield';
 import type { User } from '../types';
@@ -30,11 +30,14 @@ export function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
   const { user, login, isLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawNextUrl = searchParams.get('next') || '/';
   const nextUrl = rawNextUrl.startsWith('/') ? rawNextUrl : '/';
+  const registerMode = searchParams.get('register') === '1';
 
   const finishLogin = (nextUser: User) => {
     login(nextUser);
@@ -47,9 +50,20 @@ export function Login() {
 
   useEffect(() => {
     const oauthError = searchParams.get('error');
+    const inviteCodeParam = searchParams.get('inviteCode') || searchParams.get('invite') || '';
+
     if (oauthError) {
       setError(oauthError);
-      setSearchParams({}, { replace: true });
+    }
+    if (inviteCodeParam) {
+      setInviteCode(inviteCodeParam.toUpperCase());
+    }
+    if (oauthError || inviteCodeParam) {
+      const nextSearch = new URLSearchParams(searchParams);
+      nextSearch.delete('error');
+      nextSearch.delete('inviteCode');
+      nextSearch.delete('invite');
+      setSearchParams(nextSearch, { replace: true });
     }
   }, [searchParams, setSearchParams]);
 
@@ -143,6 +157,31 @@ export function Login() {
   };
 
   const isTwoFactorStep = Boolean(twoFactorToken);
+  const googleAuthUrl = `/api/auth/google?${new URLSearchParams({
+    next: nextUrl,
+    ...(inviteCode ? { inviteCode } : {}),
+  }).toString()}`;
+
+  const handleGoogleRegistration = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    setRegisterLoading(true);
+
+    try {
+      const data = await completeGoogleRegistration(inviteCode.trim().toUpperCase());
+      login(data.user);
+      const destination = data.nextUrl || nextUrl;
+      if (isClientRoutablePath(destination)) {
+        navigate(destination, { replace: true });
+      } else {
+        window.location.replace(destination);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to complete registration');
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-black">
@@ -156,10 +195,14 @@ export function Login() {
 
         <img src="/favicon.svg" alt="Remix Studio Logo" className="w-16 h-16 mb-6" />
         <h2 className="text-3xl font-bold text-center text-zinc-100 mb-2">
-          {isTwoFactorStep ? 'Two-Factor Verification' : 'Welcome Back'}
+          {isTwoFactorStep ? 'Two-Factor Verification' : registerMode ? 'Complete Registration' : 'Welcome Back'}
         </h2>
         <p className="mb-8 text-center text-sm text-zinc-400">
-          {isTwoFactorStep ? `Enter the 6-digit code for ${pendingEmail}.` : 'Sign in with your password or a saved passkey.'}
+          {isTwoFactorStep
+            ? `Enter the 6-digit code for ${pendingEmail}.`
+            : registerMode
+              ? 'Your Google identity is verified. Enter an invite code to finish creating your account.'
+              : 'Sign in with your password, a saved passkey, or Google.'}
         </p>
         {error && (
           <div className="mb-6 w-full p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
@@ -198,6 +241,41 @@ export function Login() {
             >
               Back
             </button>
+          </form>
+        ) : registerMode ? (
+          <form onSubmit={handleGoogleRegistration} className="w-full space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Google sign-in</label>
+              <div className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm text-zinc-400 backdrop-blur-md">
+                Verified successfully
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Invite code</label>
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={(event) => setInviteCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                placeholder="Enter invite code"
+                className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.2em] backdrop-blur-md"
+                required
+              />
+              <p className="mt-2 text-xs text-zinc-500">Invite codes can be prefilled from the `inviteCode` URL parameter.</p>
+            </div>
+            <button
+              type="submit"
+              disabled={registerLoading}
+              className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-semibold py-3.5 rounded-2xl transition-all active:scale-[0.98] shadow-lg disabled:opacity-50"
+            >
+              {registerLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Ticket className="w-5 h-5" />}
+              Finish Registration
+            </button>
+            <a
+              href={googleAuthUrl}
+              className="block w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-center text-sm text-zinc-100 transition-all hover:bg-white/10"
+            >
+              Restart Google Sign-In
+            </a>
           </form>
         ) : (
           <>
@@ -253,7 +331,7 @@ export function Login() {
               </button>
 
               <a
-                href="/api/auth/google"
+                href={googleAuthUrl}
                 className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98] backdrop-blur-md"
 
               >

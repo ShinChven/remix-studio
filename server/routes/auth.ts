@@ -17,6 +17,8 @@ const LOGIN_MAX_ATTEMPTS = 10;
 const LOGIN_WINDOW_MS = 60_000;
 const TWO_FACTOR_MAX_ATTEMPTS = 5;
 const TWO_FACTOR_WINDOW_MS = 5 * 60_000;
+const GOOGLE_REGISTER_MAX_ATTEMPTS = 10;
+const GOOGLE_REGISTER_WINDOW_MS = 5 * 60_000;
 
 type Variables = { user: JwtPayload };
 
@@ -26,6 +28,7 @@ function serializeUser(user: NonNullable<Awaited<ReturnType<UserRepository['find
     email: user.email,
     role: user.role,
     status: user.status,
+    createdBy: null,
     storageLimit: user.storageLimit,
     hasPassword: Boolean(user.passwordHash),
     twoFactorEnabled: Boolean(user.twoFactorEnabled),
@@ -33,6 +36,16 @@ function serializeUser(user: NonNullable<Awaited<ReturnType<UserRepository['find
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     lastLoginAt: user.lastLoginAt,
+  };
+}
+
+function toSerializedUser(
+  user: NonNullable<Awaited<ReturnType<UserRepository['findById']>>>,
+  createdBy?: { id: string; email: string } | null,
+) {
+  return {
+    ...serializeUser(user),
+    createdBy: createdBy ?? null,
   };
 }
 
@@ -105,6 +118,32 @@ function clearSessionCookie(c: any) {
   });
 }
 
+function clearCookie(c: any, name: string) {
+  setCookie(c, name, '', {
+    ...getSessionCookieOptions(c.req.url),
+    maxAge: 0,
+  });
+}
+
+function normalizeNextUrl(rawValue: string | null | undefined) {
+  if (!rawValue) return '/';
+  return rawValue.startsWith('/') ? rawValue : '/';
+}
+
+function buildLoginUrl(params: {
+  error?: string;
+  nextUrl?: string;
+  register?: boolean;
+  inviteCode?: string;
+}) {
+  const url = new URL('/login', 'http://local');
+  if (params.error) url.searchParams.set('error', params.error);
+  if (params.nextUrl && params.nextUrl !== '/') url.searchParams.set('next', params.nextUrl);
+  if (params.register) url.searchParams.set('register', '1');
+  if (params.inviteCode) url.searchParams.set('inviteCode', params.inviteCode);
+  return `${url.pathname}${url.search}`;
+}
+
 function hashRateLimitValue(value: string) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
@@ -122,7 +161,7 @@ async function finalizeLogin(c: any, userRepository: UserRepository, user: NonNu
 
   return c.json({
     user: {
-      ...serializeUser({ ...user, lastLoginAt: Date.now() }),
+      ...toSerializedUser({ ...user, lastLoginAt: Date.now() }),
     },
   });
 }
@@ -182,9 +221,9 @@ export function createAuthRouter(userRepository: UserRepository) {
 
   router.get('/api/auth/me', authMiddleware, async (c) => {
     const payload = c.get('user') as JwtPayload;
-    const user = await userRepository.findById(payload.userId);
-    if (!user) return c.json({ error: 'User not found' }, 404);
-    return c.json({ user: serializeUser(user) });
+      const user = await userRepository.findById(payload.userId);
+      if (!user) return c.json({ error: 'User not found' }, 404);
+    return c.json({ user: toSerializedUser(user) });
   });
 
   router.put('/api/auth/password', authMiddleware, async (c) => {
@@ -638,6 +677,7 @@ export function createAuthRouter(userRepository: UserRepository) {
 
   router.post('/api/admin/users', authMiddleware, adminOnly, async (c) => {
     try {
+      const currentUser = c.get('user') as JwtPayload;
       const body = await c.req.json();
       const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
       const password = typeof body?.password === 'string' && body.password ? body.password : '';
@@ -669,16 +709,39 @@ export function createAuthRouter(userRepository: UserRepository) {
         passwordHash,
         role,
         status,
+        createdByUserId: currentUser.userId,
         storageLimit,
         createdAt: Date.now(),
       });
 
       const created = await userRepository.findByEmail(email);
       if (!created) return c.json({ error: 'Failed to load created user' }, 500);
-      return c.json({ user: serializeUser(created) }, 201);
+      return c.json({ user: toSerializedUser(created, currentUser ? { id: currentUser.userId, email: currentUser.email } : null) }, 201);
     } catch (e: any) {
       console.error('[POST /api/admin/users]', e);
       return c.json({ error: e.message || 'Failed to create user' }, 500);
+    }
+  });
+
+  router.get('/api/admin/invites', authMiddleware, adminOnly, async (c) => {
+    try {
+      const currentUser = c.get('user') as JwtPayload;
+      const invites = await userRepository.listInviteCodes(currentUser.userId);
+      return c.json({ items: invites });
+    } catch (e) {
+      console.error('[GET /api/admin/invites]', e);
+      return c.json({ error: 'Failed to load invite codes' }, 500);
+    }
+  });
+
+  router.post('/api/admin/invites', authMiddleware, adminOnly, async (c) => {
+    try {
+      const currentUser = c.get('user') as JwtPayload;
+      const invite = await userRepository.createInviteCode(currentUser.userId);
+      return c.json({ invite }, 201);
+    } catch (e) {
+      console.error('[POST /api/admin/invites]', e);
+      return c.json({ error: 'Failed to create invite code' }, 500);
     }
   });
 
@@ -943,6 +1006,8 @@ export function createAuthRouter(userRepository: UserRepository) {
       return c.json({ error: 'Google OAuth is not configured' }, 500);
     }
 
+    const nextUrl = normalizeNextUrl(c.req.query('next'));
+    const inviteCode = c.req.query('inviteCode')?.trim().toUpperCase() || undefined;
     const state = crypto.randomBytes(32).toString('hex');
     const params = new URLSearchParams({
       client_id: clientId,
@@ -954,7 +1019,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       prompt: 'select_account',
     });
 
-    const stateToken = signFlowToken({ purpose: 'google-oauth', state } as any, '10m');
+    const stateToken = signFlowToken({ purpose: 'google-oauth', state, nextUrl, inviteCode }, '10m');
     const cookieOpts = getSessionCookieOptions(c.req.url);
     setCookie(c, 'google_oauth_state', stateToken, {
       ...cookieOpts,
@@ -972,7 +1037,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
       if (!clientId || !clientSecret || !redirectUri) {
-        return c.redirect('/login?error=Google+OAuth+is+not+configured');
+        return c.redirect(buildLoginUrl({ error: 'Google OAuth is not configured' }));
       }
 
       const code = c.req.query('code');
@@ -980,33 +1045,30 @@ export function createAuthRouter(userRepository: UserRepository) {
       const errorParam = c.req.query('error');
 
       if (errorParam) {
-        return c.redirect(`/login?error=${encodeURIComponent(errorParam)}`);
+        return c.redirect(buildLoginUrl({ error: errorParam }));
       }
 
       if (!code || !state) {
-        return c.redirect('/login?error=Invalid+OAuth+callback');
+        return c.redirect(buildLoginUrl({ error: 'Invalid OAuth callback' }));
       }
 
       // Verify state
       const stateCookie = getCookie(c, 'google_oauth_state');
       if (!stateCookie) {
-        return c.redirect('/login?error=OAuth+state+expired');
+        return c.redirect(buildLoginUrl({ error: 'OAuth state expired' }));
       }
 
+      let flow: AuthFlowPayload;
       try {
-        const flow = verifyFlowToken(stateCookie) as any;
+        flow = verifyFlowToken(stateCookie);
         if (flow.purpose !== 'google-oauth' || flow.state !== state) {
-          return c.redirect('/login?error=Invalid+OAuth+state');
+          return c.redirect(buildLoginUrl({ error: 'Invalid OAuth state' }));
         }
       } catch {
-        return c.redirect('/login?error=Invalid+OAuth+state');
+        return c.redirect(buildLoginUrl({ error: 'Invalid OAuth state' }));
       }
 
-      // Clear state cookie
-      setCookie(c, 'google_oauth_state', '', {
-        ...getSessionCookieOptions(c.req.url),
-        maxAge: 0,
-      });
+      clearCookie(c, 'google_oauth_state');
 
       // Exchange code for tokens
       const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -1023,12 +1085,12 @@ export function createAuthRouter(userRepository: UserRepository) {
 
       if (!tokenRes.ok) {
         console.error('[Google OAuth] Token exchange failed:', await tokenRes.text());
-        return c.redirect('/login?error=Failed+to+authenticate+with+Google');
+        return c.redirect(buildLoginUrl({ error: 'Failed to authenticate with Google', nextUrl: flow.nextUrl }));
       }
 
       const tokenData = await tokenRes.json() as { id_token?: string };
       if (!tokenData.id_token) {
-        return c.redirect('/login?error=Failed+to+get+identity+from+Google');
+        return c.redirect(buildLoginUrl({ error: 'Failed to get identity from Google', nextUrl: flow.nextUrl }));
       }
 
       // Verify ID token signature and claims using Google's public keys
@@ -1042,25 +1104,105 @@ export function createAuthRouter(userRepository: UserRepository) {
         payload = ticket.getPayload();
       } catch (e) {
         console.error('[Google OAuth] ID token verification failed:', e);
-        return c.redirect('/login?error=Failed+to+verify+Google+identity');
+        return c.redirect(buildLoginUrl({ error: 'Failed to verify Google identity', nextUrl: flow.nextUrl }));
       }
 
       if (!payload?.email || !payload.email_verified) {
-        return c.redirect('/login?error=Google+account+email+is+not+verified');
+        return c.redirect(buildLoginUrl({ error: 'Google account email is not verified', nextUrl: flow.nextUrl }));
       }
 
       const email = payload.email.toLowerCase();
-
-      // Only allow login for existing active users — no registration
       const user = await userRepository.findByEmail(email);
-      if (!user) {
-        return c.redirect('/login?error=No+account+found+for+this+email.+Registration+is+disabled.');
-      }
-      if (user.status === 'disabled') {
-        return c.redirect('/login?error=This+account+has+been+disabled');
+
+      if (user) {
+        if (user.status === 'disabled') {
+          return c.redirect(buildLoginUrl({ error: 'This account has been disabled', nextUrl: flow.nextUrl }));
+        }
+
+        clearCookie(c, 'google_register_flow');
+        await userRepository.touchLastLogin(user.sk);
+        const token = signToken({
+          userId: user.sk,
+          email: user.email,
+          role: user.role,
+          sessionVersion: user.sessionVersion ?? 0,
+        });
+        setCookie(c, 'token', token, getSessionCookieOptions(c.req.url));
+
+        return c.redirect(normalizeNextUrl(flow.nextUrl));
       }
 
-      // Finalize login (set JWT cookie)
+      const registerFlow = signFlowToken({
+        purpose: 'google-oauth',
+        email,
+        googleSub: payload.sub,
+        name: payload.name ?? undefined,
+        nextUrl: flow.nextUrl,
+        inviteCode: flow.inviteCode,
+      }, '20m');
+      setCookie(c, 'google_register_flow', registerFlow, {
+        ...getSessionCookieOptions(c.req.url),
+        sameSite: 'Lax',
+        maxAge: 20 * 60,
+      });
+      return c.redirect(buildLoginUrl({
+        register: true,
+        nextUrl: flow.nextUrl,
+        inviteCode: flow.inviteCode,
+      }));
+    } catch (e) {
+      console.error('[GET /api/auth/google/callback]', e);
+      return c.redirect(buildLoginUrl({ error: 'Google login failed' }));
+    }
+  });
+
+  router.post('/api/auth/google/complete-registration', async (c) => {
+    try {
+      const clientAddress = getClientAddress(c.req.raw);
+      if (!checkRateLimit({
+        bucket: 'auth-google-register',
+        keyParts: [clientAddress],
+        maxAttempts: GOOGLE_REGISTER_MAX_ATTEMPTS,
+        windowMs: GOOGLE_REGISTER_WINDOW_MS,
+      })) {
+        return c.json({ error: 'Too many attempts. Please try again later.' }, 429);
+      }
+
+      const registerCookie = getCookie(c, 'google_register_flow');
+      if (!registerCookie) {
+        return c.json({ error: 'Registration session expired. Please sign in with Google again.' }, 401);
+      }
+
+      let flow: AuthFlowPayload;
+      try {
+        flow = verifyFlowToken(registerCookie);
+      } catch {
+        clearCookie(c, 'google_register_flow');
+        return c.json({ error: 'Registration session expired. Please sign in with Google again.' }, 401);
+      }
+
+      if (flow.purpose !== 'google-oauth' || !flow.email) {
+        clearCookie(c, 'google_register_flow');
+        return c.json({ error: 'Invalid registration session' }, 401);
+      }
+
+      const body = await c.req.json().catch(() => ({}));
+      const inviteCode = typeof body?.inviteCode === 'string' && body.inviteCode.trim()
+        ? body.inviteCode.trim().toUpperCase()
+        : flow.inviteCode?.trim().toUpperCase();
+
+      if (!inviteCode) {
+        return c.json({ error: 'Invite code is required' }, 400);
+      }
+
+      const { user } = await userRepository.redeemInviteCode(inviteCode, {
+        email: flow.email,
+        role: 'user',
+        status: 'active',
+      });
+
+      clearCookie(c, 'google_register_flow');
+
       await userRepository.touchLastLogin(user.sk);
       const token = signToken({
         userId: user.sk,
@@ -1070,10 +1212,21 @@ export function createAuthRouter(userRepository: UserRepository) {
       });
       setCookie(c, 'token', token, getSessionCookieOptions(c.req.url));
 
-      return c.redirect('/');
-    } catch (e) {
-      console.error('[GET /api/auth/google/callback]', e);
-      return c.redirect('/login?error=Google+login+failed');
+      return c.json({
+        user: toSerializedUser(
+          { ...user, lastLoginAt: Date.now() },
+          user.createdByUserId ? (await userRepository.findById(user.createdByUserId).then((creator) => creator ? { id: creator.sk, email: creator.email } : null)) : null,
+        ),
+        nextUrl: normalizeNextUrl(flow.nextUrl),
+      });
+    } catch (e: any) {
+      console.error('[POST /api/auth/google/complete-registration]', e);
+      const message = e.message || 'Failed to complete registration';
+      const status = [
+        'Invite code is invalid or unavailable',
+        'Email already exists',
+      ].includes(message) ? 400 : 500;
+      return c.json({ error: message }, status);
     }
   });
 
