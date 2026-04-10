@@ -599,6 +599,7 @@ export interface ProviderModelInfo {
   name: string;
   description?: string;
   category: 'text' | 'image' | 'video';
+  supported: boolean;
 }
 
 export async function fetchProviderModels(providerId: string): Promise<{ models: ProviderModelInfo[]; error?: string }> {

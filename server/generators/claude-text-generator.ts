@@ -15,7 +15,7 @@ export class ClaudeTextGenerator extends TextGenerator {
   async generate(req: TextGenerateRequest): Promise<TextGenerateResult> {
     try {
       const { prompt, systemPrompt, modelId, temperature = 0.7, maxTokens = 2048, refImagesBase64 } = req;
-      const model = modelId || 'claude-sonnet-4-20250514';
+      const model = modelId || 'claude-sonnet-4-6';
 
       const contentParts: Anthropic.ContentBlockParam[] = [];
 

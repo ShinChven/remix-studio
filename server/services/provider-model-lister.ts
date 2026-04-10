@@ -1,10 +1,12 @@
 import type { ProviderType } from '../../src/types';
+import { PROVIDER_MODELS_MAP } from '../../src/types';
 
 export interface ProviderModel {
   id: string;
   name: string;
   description?: string;
   category: 'text' | 'image' | 'video';
+  supported: boolean;
 }
 
 export interface ProviderModelsResult {
@@ -12,31 +14,53 @@ export interface ProviderModelsResult {
   error?: string;
 }
 
+/** Returns the set of modelId strings we support for a given provider type. */
+function getSupportedModelIds(type: ProviderType): Set<string> {
+  const configs = PROVIDER_MODELS_MAP[type] || [];
+  return new Set(configs.map(c => c.modelId));
+}
+
 /**
  * Fetch the list of available models from a provider's API,
  * categorised into text / image / video generation.
+ * Only returns models that we have configured support for.
  */
 export async function listProviderModels(
   type: ProviderType,
   apiKey: string,
   apiUrl?: string | null,
 ): Promise<ProviderModelsResult> {
+  let result: ProviderModelsResult;
+
   switch (type) {
     case 'GoogleAI':
-      return listGoogleAIModels(apiKey, apiUrl);
+      result = await listGoogleAIModels(apiKey, apiUrl);
+      break;
     case 'VertexAI':
-      return listVertexAIModels(apiKey, apiUrl);
+      result = await listVertexAIModels(apiKey, apiUrl);
+      break;
     case 'Claude':
-      return listClaudeModels(apiKey, apiUrl);
+      result = await listClaudeModels(apiKey, apiUrl);
+      break;
     case 'OpenAI':
-      return listOpenAIModels(apiKey, apiUrl);
+      result = await listOpenAIModels(apiKey, apiUrl);
+      break;
     case 'Grok':
-      return listGrokModels(apiKey, apiUrl);
+      result = await listGrokModels(apiKey, apiUrl);
+      break;
     case 'RunningHub':
       return { models: [] }; // RunningHub doesn't expose a model listing API
     default:
       return { models: [], error: `Unsupported provider type: ${type}` };
   }
+
+  // Mark supported models and filter to only show supported ones
+  const supportedIds = getSupportedModelIds(type);
+  result.models = result.models
+    .map(m => ({ ...m, supported: supportedIds.has(m.id) }))
+    .filter(m => m.supported);
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -211,6 +235,7 @@ function categorizeOpenAIModel(id: string): 'text' | 'image' | 'video' {
   const lower = id.toLowerCase();
   if (lower.includes('dall-e') || lower.includes('image') || lower.includes('imagen')) return 'image';
   if (lower.includes('sora') || lower.includes('video')) return 'video';
+  if (lower.includes('tts') || lower.includes('whisper') || lower.includes('transcribe') || lower.includes('realtime')) return 'text'; // audio models, categorize as text for now
   return 'text';
 }
 
@@ -251,7 +276,7 @@ async function listGrokModels(
 
 function categorizeGrokModel(id: string): 'text' | 'image' | 'video' {
   const lower = id.toLowerCase();
-  if (lower.includes('imagine') || lower.includes('image') || lower.includes('aurora')) return 'image';
-  if (lower.includes('video')) return 'video';
+  if (lower.includes('imagine-image') || lower.includes('aurora')) return 'image';
+  if (lower.includes('imagine-video') || lower.includes('video')) return 'video';
   return 'text';
 }

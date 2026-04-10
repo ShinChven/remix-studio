@@ -37,7 +37,7 @@ export interface ModelConfig {
   id: string; // Local UUID
   name: string; // Display name e.g. "nano banana 2"
   generatorId: ProviderType; // Which generator type to use
-  modelId: string; // The actual API model string (e.g. 'gemini-3.1-flash-image')
+  modelId: string; // The actual API model string (e.g. 'gemini-3.1-flash-image-preview')
   category: ProjectType; // 'image' for image generation, 'text' for text generation
   apiUrl?: string; // Optional override
   options: {
@@ -56,7 +56,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       id: 'google-nano-banana-2',
       name: 'nano banana 2',
       generatorId: 'GoogleAI',
-      modelId: 'gemini-3.1-flash-image',
+      modelId: 'gemini-3.1-flash-image-preview',
       category: 'image',
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21'],
@@ -71,7 +71,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
     {
@@ -82,7 +82,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
     {
@@ -93,7 +93,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
   ],
@@ -102,7 +102,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       id: 'vertex-nano-banana-2',
       name: 'nano banana 2',
       generatorId: 'VertexAI',
-      modelId: 'gemini-3.1-flash-image',
+      modelId: 'gemini-3.1-flash-image-preview',
       category: 'image',
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21'],
@@ -117,7 +117,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
     {
@@ -128,7 +128,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
     {
@@ -139,7 +139,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
   ],
@@ -170,47 +170,48 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
-      id: 'openai-gpt-4.1-text',
-      name: 'GPT-4.1',
+      id: 'openai-gpt-image-1-mini',
+      name: 'GPT Image 1 Mini',
       generatorId: 'OpenAI',
-      modelId: 'gpt-4.1',
-      category: 'text',
+      modelId: 'gpt-image-1-mini',
+      category: 'image',
       options: {
-        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384],
+        aspectRatios: ['1024x1024', '1024x1536', '1536x1024', 'auto'],
+        qualities: ['low', 'medium', 'high', 'auto'],
+        backgrounds: ['transparent', 'opaque', 'auto'],
       },
     },
     {
-      id: 'openai-gpt-4.1-mini-text',
-      name: 'GPT-4.1 Mini',
+      id: 'openai-gpt-5.4-text',
+      name: 'GPT-5.4',
       generatorId: 'OpenAI',
-      modelId: 'gpt-4.1-mini',
+      modelId: 'gpt-5.4',
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
       },
     },
     {
-      id: 'openai-gpt-4.1-nano-text',
-      name: 'GPT-4.1 Nano',
+      id: 'openai-gpt-5.4-mini-text',
+      name: 'GPT-5.4 Mini',
       generatorId: 'OpenAI',
-      modelId: 'gpt-4.1-nano',
+      modelId: 'gpt-5.4-mini',
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
       },
     },
     {
-      id: 'openai-gpt-4o-text',
-      name: 'GPT-4o',
+      id: 'openai-gpt-5.4-nano-text',
+      name: 'GPT-5.4 Nano',
       generatorId: 'OpenAI',
-      modelId: 'gpt-4o',
+      modelId: 'gpt-5.4-nano',
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
       },
     },
   ],
@@ -226,39 +227,72 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         qualities: ['medium/2k', 'high/2k', 'medium/1k', 'high/1k', 'low/2k', 'low/1k'],
       },
     },
+    {
+      id: 'grok-imagine-image-pro',
+      name: 'Grok Imagine Pro',
+      generatorId: 'Grok',
+      modelId: 'grok-imagine-image-pro',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '3:4', '4:3', '9:16', '16:9', '2:3', '3:2', '9:19.5', '19.5:9', '9:20', '20:9', '1:2', '2:1', 'auto'],
+        qualities: ['medium/2k', 'high/2k', 'medium/1k', 'high/1k', 'low/2k', 'low/1k'],
+      },
+    },
+    {
+      id: 'grok-4.20-text',
+      name: 'Grok 4.20',
+      generatorId: 'Grok',
+      modelId: 'grok-4.20-0309-non-reasoning',
+      category: 'text',
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
+      },
+    },
+    {
+      id: 'grok-4.1-fast-text',
+      name: 'Grok 4.1 Fast',
+      generatorId: 'Grok',
+      modelId: 'grok-4-1-fast-non-reasoning',
+      category: 'text',
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
+      },
+    },
   ],
   Claude: [
     {
-      id: 'claude-opus-4-text',
-      name: 'Claude Opus 4',
+      id: 'claude-opus-4-6-text',
+      name: 'Claude Opus 4.6',
       generatorId: 'Claude',
-      modelId: 'claude-opus-4-20250514',
+      modelId: 'claude-opus-4-6',
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
       },
     },
     {
-      id: 'claude-sonnet-4-text',
-      name: 'Claude Sonnet 4',
+      id: 'claude-sonnet-4-6-text',
+      name: 'Claude Sonnet 4.6',
       generatorId: 'Claude',
-      modelId: 'claude-sonnet-4-20250514',
+      modelId: 'claude-sonnet-4-6',
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
     {
-      id: 'claude-haiku-3-5-text',
-      name: 'Claude 3.5 Haiku',
+      id: 'claude-haiku-4-5-text',
+      name: 'Claude Haiku 4.5',
       generatorId: 'Claude',
-      modelId: 'claude-3-5-haiku-20241022',
+      modelId: 'claude-haiku-4-5-20251001',
       category: 'text',
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
   ],
