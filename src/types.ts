@@ -385,6 +385,11 @@ export interface InviteCode {
   id: string;
   code: string;
   note?: string | null;
+  membershipTier: 'free' | 'professional' | 'premium';
+  maxUses: number;
+  usedCount: number;
+  lastUsedAt?: number;
+  lastUsedByEmail?: string | null;
   createdAt: number;
   usedAt?: number;
   expiresAt?: number;

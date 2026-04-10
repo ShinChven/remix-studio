@@ -40,6 +40,7 @@ model User {
   createdUsers  User[] @relation("UserCreation")
   createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
   usedInviteCodes    InviteCode[] @relation("InviteCodeUser")
+  inviteRedemptions  InviteRedemption[]
 
   @@index([createdByUserId])
 }
@@ -49,6 +50,8 @@ model InviteCode {
   codeHash        String   @unique
   codeEncrypted   String
   note            String?
+  membershipTier  String   @default("free")
+  maxUses         Int      @default(1)
   createdByUserId String
   usedByUserId    String?
   usedByEmail     String?
@@ -58,10 +61,24 @@ model InviteCode {
 
   createdByUser User  @relation("InviteCodeCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
   usedByUser    User? @relation("InviteCodeUser", fields: [usedByUserId], references: [id], onDelete: SetNull)
+  redemptions   InviteRedemption[]
 
   @@index([createdByUserId])
   @@index([usedByUserId])
   @@index([codeHash])
+}
+
+model InviteRedemption {
+  id           String   @id @default(uuid())
+  inviteCodeId String
+  userId       String   @unique
+  email        String
+  redeemedAt   DateTime @default(now())
+
+  inviteCode InviteCode @relation(fields: [inviteCodeId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([inviteCodeId, redeemedAt])
 }
 
 model PasskeyCredential {

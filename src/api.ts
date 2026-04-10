@@ -529,11 +529,11 @@ export async function getAdminInvites(): Promise<InviteCode[]> {
   return data.items;
 }
 
-export async function createAdminInvite(note?: string): Promise<InviteCode> {
+export async function createAdminInvite(input?: { note?: string; maxUses?: number; membershipTier?: 'free' | 'professional' | 'premium' }): Promise<InviteCode> {
   const res = await fetch('/api/admin/invites', {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify(note ? { note } : {}),
+    body: JSON.stringify(input ?? {}),
   });
   const data = await handleResponse<{ invite: InviteCode }>(res, 'Failed to create invite code');
   return data.invite;

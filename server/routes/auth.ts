@@ -739,7 +739,10 @@ export function createAuthRouter(userRepository: UserRepository) {
       const currentUser = c.get('user') as JwtPayload;
       const body = await c.req.json().catch(() => ({}));
       const note = typeof body?.note === 'string' && body.note.trim() ? body.note.trim().slice(0, 200) : undefined;
-      const invite = await userRepository.createInviteCode(currentUser.userId, undefined, note);
+      const maxUsesValue = Number(body?.maxUses);
+      const maxUses = Number.isInteger(maxUsesValue) && maxUsesValue > 0 ? Math.min(maxUsesValue, 1000) : 1;
+      const membershipTier = body?.membershipTier === 'professional' || body?.membershipTier === 'premium' ? body.membershipTier : 'free';
+      const invite = await userRepository.createInviteCode(currentUser.userId, undefined, note, maxUses, membershipTier);
       return c.json({ invite }, 201);
     } catch (e) {
       console.error('[POST /api/admin/invites]', e);

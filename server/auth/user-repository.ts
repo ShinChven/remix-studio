@@ -6,6 +6,11 @@ import { decrypt, encrypt } from '../utils/crypto';
 
 const DEFAULT_STORAGE_LIMIT = 5 * 1024 * 1024 * 1024;
 const DEFAULT_INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+const INVITE_TIER_STORAGE_LIMITS = {
+  free: 5 * 1024 * 1024 * 1024,
+  professional: 100 * 1024 * 1024 * 1024,
+  premium: 500 * 1024 * 1024 * 1024,
+} as const;
 
 type ListUsersParams = {
   q?: string;
@@ -395,13 +400,21 @@ export class UserRepository {
     return count > 0;
   }
 
-  async createInviteCode(createdByUserId: string, expiresAt?: Date, note?: string): Promise<InviteCode> {
+  async createInviteCode(
+    createdByUserId: string,
+    expiresAt?: Date,
+    note?: string,
+    maxUses: number = 1,
+    membershipTier: keyof typeof INVITE_TIER_STORAGE_LIMITS = 'free',
+  ): Promise<InviteCode> {
     const plainCode = this.generateInviteCode();
     const invite = await this.prisma.inviteCode.create({
       data: {
         codeHash: this.hashInviteCode(plainCode),
         codeEncrypted: encrypt(plainCode),
         note: note?.trim() || null,
+        membershipTier,
+        maxUses,
         createdByUserId,
         expiresAt: expiresAt ?? new Date(Date.now() + DEFAULT_INVITE_EXPIRY_MS),
       },
@@ -416,6 +429,19 @@ export class UserRepository {
           select: {
             id: true,
             email: true,
+          },
+        },
+        redemptions: {
+          orderBy: { redeemedAt: 'desc' },
+          take: 1,
+          select: {
+            email: true,
+            redeemedAt: true,
+          },
+        },
+        _count: {
+          select: {
+            redemptions: true,
           },
         },
       },
@@ -441,6 +467,19 @@ export class UserRepository {
             email: true,
           },
         },
+        redemptions: {
+          orderBy: { redeemedAt: 'desc' },
+          take: 1,
+          select: {
+            email: true,
+            redeemedAt: true,
+          },
+        },
+        _count: {
+          select: {
+            redemptions: true,
+          },
+        },
       },
     });
 
@@ -459,26 +498,6 @@ export class UserRepository {
         throw new Error('Email already exists');
       }
 
-      const claimed = await tx.inviteCode.updateMany({
-        where: {
-          codeHash,
-          usedAt: null,
-          usedByUserId: null,
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: now } },
-          ],
-        },
-        data: {
-          usedAt: now,
-          usedByEmail: normalizedEmail,
-        },
-      });
-
-      if (claimed.count !== 1) {
-        throw new Error('Invite code is invalid or unavailable');
-      }
-
       const invite = await tx.inviteCode.findUnique({
         where: { codeHash },
         include: {
@@ -494,9 +513,28 @@ export class UserRepository {
               email: true,
             },
           },
+          redemptions: {
+            orderBy: { redeemedAt: 'desc' },
+            take: 1,
+            select: {
+              email: true,
+              redeemedAt: true,
+            },
+          },
+          _count: {
+            select: {
+              redemptions: true,
+            },
+          },
         },
       });
       if (!invite) {
+        throw new Error('Invite code is invalid or unavailable');
+      }
+      if (invite.expiresAt && invite.expiresAt <= now) {
+        throw new Error('Invite code is invalid or unavailable');
+      }
+      if (invite._count.redemptions >= invite.maxUses) {
         throw new Error('Invite code is invalid or unavailable');
       }
 
@@ -506,14 +544,25 @@ export class UserRepository {
           role: data.role ?? 'user',
           status: data.status ?? 'active',
           createdByUserId: invite.createdByUserId,
-          storageLimit: BigInt(DEFAULT_STORAGE_LIMIT),
+          storageLimit: BigInt(INVITE_TIER_STORAGE_LIMITS[invite.membershipTier as keyof typeof INVITE_TIER_STORAGE_LIMITS] ?? DEFAULT_STORAGE_LIMIT),
+        },
+      });
+
+      await tx.inviteRedemption.create({
+        data: {
+          inviteCodeId: invite.id,
+          userId: user.id,
+          email: normalizedEmail,
+          redeemedAt: now,
         },
       });
 
       const updatedInvite = await tx.inviteCode.update({
         where: { codeHash },
         data: {
+          usedAt: now,
           usedByUserId: user.id,
+          usedByEmail: normalizedEmail,
         },
         include: {
           createdByUser: {
@@ -526,6 +575,19 @@ export class UserRepository {
             select: {
               id: true,
               email: true,
+            },
+          },
+          redemptions: {
+            orderBy: { redeemedAt: 'desc' },
+            take: 1,
+            select: {
+              email: true,
+              redeemedAt: true,
+            },
+          },
+          _count: {
+            select: {
+              redemptions: true,
             },
           },
         },
@@ -541,25 +603,42 @@ export class UserRepository {
   }
 
   async findInviteByUsedUserId(userId: string): Promise<InviteCode | null> {
-    const invite = await this.prisma.inviteCode.findFirst({
-      where: { usedByUserId: userId },
+    const redemption = await this.prisma.inviteRedemption.findUnique({
+      where: { userId },
       include: {
-        createdByUser: {
-          select: {
-            id: true,
-            email: true,
-          },
-        },
-        usedByUser: {
-          select: {
-            id: true,
-            email: true,
+        inviteCode: {
+          include: {
+            createdByUser: {
+              select: {
+                id: true,
+                email: true,
+              },
+            },
+            usedByUser: {
+              select: {
+                id: true,
+                email: true,
+              },
+            },
+            redemptions: {
+              orderBy: { redeemedAt: 'desc' },
+              take: 1,
+              select: {
+                email: true,
+                redeemedAt: true,
+              },
+            },
+            _count: {
+              select: {
+                redemptions: true,
+              },
+            },
           },
         },
       },
     });
 
-    return invite ? this.toInviteCode(invite) : null;
+    return redemption ? this.toInviteCode(redemption.inviteCode) : null;
   }
 
   async deleteUser(userId: string): Promise<void> {
@@ -670,10 +749,16 @@ export class UserRepository {
   }
 
   private toInviteCode(invite: any): InviteCode {
+    const lastRedemption = invite.redemptions?.[0] ?? null;
     return {
       id: invite.id,
       code: decrypt(invite.codeEncrypted),
       note: invite.note ?? null,
+      membershipTier: invite.membershipTier ?? 'free',
+      maxUses: invite.maxUses ?? 1,
+      usedCount: invite._count?.redemptions ?? 0,
+      lastUsedAt: lastRedemption?.redeemedAt instanceof Date ? lastRedemption.redeemedAt.getTime() : lastRedemption?.redeemedAt,
+      lastUsedByEmail: lastRedemption?.email ?? null,
       createdAt: invite.createdAt instanceof Date ? invite.createdAt.getTime() : invite.createdAt,
       usedAt: invite.usedAt instanceof Date ? invite.usedAt.getTime() : undefined,
       expiresAt: invite.expiresAt instanceof Date ? invite.expiresAt.getTime() : undefined,
