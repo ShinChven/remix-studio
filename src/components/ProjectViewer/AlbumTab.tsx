@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, Download, Loader2, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, Download, FileText } from 'lucide-react';
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
-import { ExportTask } from '../../types';
 import { AlbumPromptModal } from './AlbumPromptModal';
+import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
 
 import { toast } from 'sonner';
 
@@ -25,7 +25,6 @@ interface AlbumTabProps {
 
 export function AlbumTab({
   projectId,
-  projectName,
   albumItems,
   selectedAlbumIds,
   toggleSelectAllAlbum,
@@ -40,6 +39,7 @@ export function AlbumTab({
 }: AlbumTabProps) {
   const isTextProject = projectType === 'text';
   const [promptItem, setPromptItem] = useState<AlbumItem | null>(null);
+  const [detailItem, setDetailItem] = useState<AlbumItem | null>(null);
 
   const handleExport = async (isAll: boolean) => {
     try {
@@ -171,12 +171,20 @@ export function AlbumTab({
                     </button>
 
                     {item.textContent && (
-                      <div>
-                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1 mb-1 block">Generated Text</label>
-                        <div className="text-xs text-neutral-200 leading-relaxed bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/50 whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar">
-                          {item.textContent}
+                      <button
+                        type="button"
+                        onClick={() => setDetailItem(item)}
+                        className="block w-full text-left rounded-2xl border border-neutral-800/60 bg-neutral-950/40 p-4 hover:border-blue-500/40 hover:bg-neutral-950/70 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
+                        title="Click to view text details"
+                      >
+                        <div className="flex items-center justify-between gap-3 mb-2">
+                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 block">Generated Text</label>
+                          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-400/80">View Details</span>
                         </div>
-                      </div>
+                        <p className="text-xs text-neutral-200 leading-relaxed whitespace-pre-wrap line-clamp-4">
+                          {item.textContent}
+                        </p>
+                      </button>
                     )}
 
                     <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -334,6 +342,7 @@ export function AlbumTab({
         )}
       </div>
       <AlbumPromptModal item={promptItem} onClose={() => setPromptItem(null)} />
+      <TextAlbumDetailDialog item={detailItem} onClose={() => setDetailItem(null)} />
     </section>
   );
 }
