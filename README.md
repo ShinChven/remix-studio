@@ -25,6 +25,193 @@ It combines a React frontend with a Hono server, PostgreSQL via Prisma, and S3-c
 - See [docker/STORAGE_PROVIDERS.md](docker/STORAGE_PROVIDERS.md) for S3-compatible storage provider configuration notes
 - See [UPGRADING.md](UPGRADING.md) for upgrade steps and breaking changes
 
+## MCP Support
+
+Remix Studio exposes an MCP server over HTTP at `/mcp`.
+
+MCP stands for Model Context Protocol. In practice, this lets MCP-compatible clients connect to Remix Studio and call a small set of account-scoped tools. Those tools are authenticated, so the client only sees and modifies data for the user who authorized the connection or created the token.
+
+The current MCP server is aimed at prompt-library and project-management workflows. It does not expose the entire Remix Studio API.
+
+### Authentication
+
+Remix Studio supports two ways to authenticate MCP clients:
+
+- OAuth 2.0 for clients that can open a browser and complete an authorization flow
+- Personal access tokens for clients that only support a Bearer token
+
+Relevant endpoints:
+
+- MCP endpoint: `/mcp`
+- OAuth authorization server metadata: `/.well-known/oauth-authorization-server`
+- OAuth protected resource metadata: `/.well-known/oauth-protected-resource`
+- Dynamic client registration: `/register`
+- Authorization endpoint: `/authorize`
+- Token endpoint: `/token`
+
+In the UI, go to `Account -> MCP` to view the server URL, manage connected OAuth clients, and create or revoke personal access tokens.
+
+### Example MCP Config
+
+OAuth-capable client:
+
+```json
+{
+  "mcpServers": {
+    "remix-studio": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+Bearer-token client:
+
+```json
+{
+  "mcpServers": {
+    "remix-studio": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_TOKEN"
+      }
+    }
+  }
+}
+```
+
+Replace `http://localhost:3000` with your deployed app origin.
+
+### MCP Tools
+
+The current MCP server exposes these tools:
+
+#### `list_libraries`
+
+Lists the authenticated user's text libraries.
+
+Inputs:
+
+- `page`: page number, default `1`
+- `limit`: items per page, default `50`, max `100`
+
+Returns:
+
+- library `id`
+- library `name`
+- library `type`
+- `itemCount`
+- pagination metadata
+
+Use this when a client needs to discover which prompt libraries already exist before reading from or writing to them.
+
+#### `create_library`
+
+Creates a new text library for the authenticated user.
+
+Inputs:
+
+- `name`: library name
+
+Returns:
+
+- new library `id`
+- `name`
+- `type`
+- success message
+
+Use this when an MCP client wants to create a dedicated prompt collection, such as a library for marketing prompts, character prompts, or reusable generation templates.
+
+#### `create_prompt`
+
+Creates a prompt item inside an existing text library.
+
+Inputs:
+
+- `library_id`: target library ID
+- `content`: prompt text
+- `title`: optional short title
+- `tags`: optional tag list
+
+Returns:
+
+- new prompt `id`
+- `library_id`
+- `title`
+- `tags`
+- success message
+
+Use this when a client needs to save prompt text back into Remix Studio for later reuse.
+
+#### `search_library_items`
+
+Searches prompt items across text libraries by keyword and optional tags.
+
+Inputs:
+
+- `query`: keyword matched against prompt content and title
+- `library_id`: optional library filter
+- `tags`: optional tag filter; items must contain all provided tags
+- `page`: page number, default `1`
+- `limit`: items per page, default `20`, max `100`
+
+Returns:
+
+- matching prompt item `id`
+- `libraryId`
+- `libraryName`
+- `content`
+- `title`
+- `tags`
+- total and pagination metadata
+
+Use this when a client needs to find an existing saved prompt instead of creating a duplicate.
+
+#### `get_storage_usage`
+
+Returns a storage usage summary for the authenticated user.
+
+Inputs:
+
+- none
+
+Returns:
+
+- total usage in bytes and formatted text
+- storage limit in bytes and formatted text
+- usage percentage
+- category breakdown for `projects`, `libraries`, `archives`, and `trash`
+
+Use this when a client wants to report account capacity, warn about nearing limits, or summarize where storage is being consumed.
+
+#### `list_albums`
+
+Lists the authenticated user's projects with album statistics.
+
+Inputs:
+
+- `page`: page number, default `1`
+- `limit`: items per page, default `20`, max `100`
+
+Returns:
+
+- `projectId`
+- `projectName`
+- album `itemCount`
+- total album size in bytes and formatted text
+- pagination metadata
+
+Use this when a client needs a project-level overview of generated assets without traversing the full application UI.
+
+### Scope And Limits
+
+- All MCP tools are user-scoped. A client only accesses the account that authorized it.
+- The current OAuth scope is `mcp:tools`.
+- The server currently exposes six tools focused on libraries, prompts, storage, and album/project summaries.
+- If you need broader automation, extend `server/mcp/mcp-server.ts` and keep the README in sync with the tool definitions.
+
 ## Local Development
 
 ### Requirements
