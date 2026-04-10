@@ -384,6 +384,7 @@ export interface UserDetail extends UserSummary {
 export interface InviteCode {
   id: string;
   code: string;
+  note?: string | null;
   createdAt: number;
   usedAt?: number;
   expiresAt?: number;

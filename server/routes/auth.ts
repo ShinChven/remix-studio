@@ -737,7 +737,9 @@ export function createAuthRouter(userRepository: UserRepository) {
   router.post('/api/admin/invites', authMiddleware, adminOnly, async (c) => {
     try {
       const currentUser = c.get('user') as JwtPayload;
-      const invite = await userRepository.createInviteCode(currentUser.userId);
+      const body = await c.req.json().catch(() => ({}));
+      const note = typeof body?.note === 'string' && body.note.trim() ? body.note.trim().slice(0, 200) : undefined;
+      const invite = await userRepository.createInviteCode(currentUser.userId, undefined, note);
       return c.json({ invite }, 201);
     } catch (e) {
       console.error('[POST /api/admin/invites]', e);

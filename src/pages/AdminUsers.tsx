@@ -572,6 +572,7 @@ export function AdminUsers() {
                       <Stat label="Used / Limit" value={`${formatBytes(activeUser.usedStorage)} / ${formatBytes(activeUser.storageLimit || 0)}`} icon={<Shield className="h-4 w-4" />} />
                       <Stat label="Created By" value={activeUser.createdBy?.email || 'Self-registered / system'} icon={<Users className="h-4 w-4" />} />
                       <Stat label="Invite Code" value={activeUser.inviteCode?.code || 'Not invite-based'} icon={<Mail className="h-4 w-4" />} />
+                      <Stat label="Invite Note" value={activeUser.inviteCode?.note || 'No note'} icon={<Mail className="h-4 w-4" />} />
                     </div>
                   </section>
 

@@ -395,12 +395,13 @@ export class UserRepository {
     return count > 0;
   }
 
-  async createInviteCode(createdByUserId: string, expiresAt?: Date): Promise<InviteCode> {
+  async createInviteCode(createdByUserId: string, expiresAt?: Date, note?: string): Promise<InviteCode> {
     const plainCode = this.generateInviteCode();
     const invite = await this.prisma.inviteCode.create({
       data: {
         codeHash: this.hashInviteCode(plainCode),
         codeEncrypted: encrypt(plainCode),
+        note: note?.trim() || null,
         createdByUserId,
         expiresAt: expiresAt ?? new Date(Date.now() + DEFAULT_INVITE_EXPIRY_MS),
       },
@@ -672,6 +673,7 @@ export class UserRepository {
     return {
       id: invite.id,
       code: decrypt(invite.codeEncrypted),
+      note: invite.note ?? null,
       createdAt: invite.createdAt instanceof Date ? invite.createdAt.getTime() : invite.createdAt,
       usedAt: invite.usedAt instanceof Date ? invite.usedAt.getTime() : undefined,
       expiresAt: invite.expiresAt instanceof Date ? invite.expiresAt.getTime() : undefined,

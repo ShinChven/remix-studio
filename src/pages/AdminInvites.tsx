@@ -14,6 +14,7 @@ export function AdminInvites() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [note, setNote] = useState('');
 
   const loadInvites = async () => {
     setLoading(true);
@@ -37,8 +38,10 @@ export function AdminInvites() {
     setCreating(true);
     setError('');
     try {
-      const invite = await createAdminInvite();
+      const trimmedNote = note.trim();
+      const invite = await createAdminInvite(trimmedNote || undefined);
       setInvites((current) => [invite, ...current]);
+      setNote('');
       toast.success('Invite code created');
     } catch (err: any) {
       setError(err.message || 'Failed to create invite code');
@@ -65,15 +68,25 @@ export function AdminInvites() {
             <h2 className="text-2xl font-bold text-white font-display">Invite Codes</h2>
             <p className="mt-2 text-sm text-neutral-400">Create single-use invite codes for Google sign-up and track who redeemed them.</p>
           </div>
-          <button
-            type="button"
-            onClick={handleCreateInvite}
-            disabled={creating}
-            className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25 disabled:opacity-60"
-          >
-            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            Create Invite Code
-          </button>
+          <div className="flex w-full max-w-md flex-col gap-3 lg:items-end">
+            <input
+              type="text"
+              value={note}
+              maxLength={200}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder="Add note for this invite"
+              className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none placeholder:text-neutral-500"
+            />
+            <button
+              type="button"
+              onClick={handleCreateInvite}
+              disabled={creating}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25 disabled:opacity-60"
+            >
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Create Invite Code
+            </button>
+          </div>
         </header>
 
         {error && (
@@ -98,6 +111,7 @@ export function AdminInvites() {
                 <thead>
                   <tr className="text-left text-neutral-500">
                     <th className="px-4 py-3 font-medium">Code</th>
+                    <th className="px-4 py-3 font-medium">Note</th>
                     <th className="px-4 py-3 font-medium">Created</th>
                     <th className="px-4 py-3 font-medium">Used By</th>
                     <th className="px-4 py-3 font-medium">Used At</th>
@@ -121,6 +135,9 @@ export function AdminInvites() {
                               <Copy className="h-4 w-4" />
                             </button>
                           </div>
+                        </td>
+                        <td className="px-4 py-4 text-neutral-400">
+                          {invite.note || <span className="text-neutral-500">No note</span>}
                         </td>
                         <td className="px-4 py-4 text-neutral-400">{formatDate(invite.createdAt)}</td>
                         <td className="px-4 py-4">

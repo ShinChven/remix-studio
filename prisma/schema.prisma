@@ -48,6 +48,7 @@ model InviteCode {
   id              String   @id @default(uuid())
   codeHash        String   @unique
   codeEncrypted   String
+  note            String?
   createdByUserId String
   usedByUserId    String?
   usedByEmail     String?
