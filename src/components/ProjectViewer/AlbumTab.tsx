@@ -3,6 +3,7 @@ import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalL
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
+import { TextAlbumCompareDialog } from './TextAlbumCompareDialog';
 import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
 
 import { toast } from 'sonner';
@@ -39,7 +40,9 @@ export function AlbumTab({
 }: AlbumTabProps) {
   const isTextProject = projectType === 'text';
   const [promptItem, setPromptItem] = useState<AlbumItem | null>(null);
-  const [detailItem, setDetailItem] = useState<AlbumItem | null>(null);
+  const [detailIndex, setDetailIndex] = useState<number | null>(null);
+  const [showCompareDialog, setShowCompareDialog] = useState(false);
+  const selectedTextItems = albumItems.filter((item) => selectedAlbumIds.has(item.id));
 
   const handleExport = async (isAll: boolean) => {
     try {
@@ -91,6 +94,14 @@ export function AlbumTab({
                   >
                     <Download className="w-3 h-3" /> Export Selected
                   </button>
+                  {isTextProject && selectedAlbumIds.size > 1 && (
+                    <button
+                      onClick={() => setShowCompareDialog(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
+                    >
+                      <Layers className="w-3 h-3" /> Compare Selected
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       const itemsToDelete = albumItems.filter(item => selectedAlbumIds.has(item.id));
@@ -127,77 +138,50 @@ export function AlbumTab({
             </div>
           </div>
         ) : isTextProject ? (
-          <div className="space-y-4">
+          <div className="overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900/40">
             {albumItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               return (
-                <div key={item.id} className={`bg-neutral-900/50 border rounded-2xl overflow-hidden group transition-all duration-300 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/50 bg-blue-500/5 shadow-lg shadow-blue-500/20' : 'border-neutral-800 hover:border-blue-500/40'}`}>
-                  <div className="p-5 flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
-                          className={`flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500' : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'}`}
-                        >
-                          {isSelected ? <CheckSquare className="w-4 h-4 text-white" /> : <Square className="w-4 h-4 text-neutral-600" />}
-                        </button>
-                        <span className="text-[10px] font-mono text-neutral-600">#{(index + 1).toString().padStart(2, '0')}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAlbumItemsToDelete([item]);
-                            setShowDeleteAlbumModal(true);
-                          }}
-                          className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
+                <div
+                  key={item.id}
+                  className={`group flex items-center gap-3 border-b border-neutral-800/80 px-4 py-2.5 transition-colors last:border-b-0 ${isSelected ? 'bg-blue-500/10' : 'hover:bg-neutral-800/40'}`}
+                >
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
+                    className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500' : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'}`}
+                  >
+                    {isSelected ? <CheckSquare className="w-4 h-4 text-white" /> : <Square className="w-4 h-4 text-neutral-600" />}
+                  </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setPromptItem(item)}
-                      className="block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
-                      title="Click to view full prompt"
-                    >
-                      <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1 mb-1 block">Prompt</label>
-                      <p className="text-[11px] leading-relaxed text-neutral-500 line-clamp-2 font-medium">
-                        {item.prompt}
-                      </p>
-                    </button>
-
-                    {item.textContent && (
-                      <button
-                        type="button"
-                        onClick={() => setDetailItem(item)}
-                        className="block w-full text-left rounded-2xl border border-neutral-800/60 bg-neutral-950/40 p-4 hover:border-blue-500/40 hover:bg-neutral-950/70 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
-                        title="Click to view text details"
-                      >
-                        <div className="flex items-center justify-between gap-3 mb-2">
-                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 block">Generated Text</label>
-                          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-400/80">View Details</span>
-                        </div>
-                        <p className="text-xs text-neutral-200 leading-relaxed whitespace-pre-wrap line-clamp-4">
-                          {item.textContent}
-                        </p>
-                      </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailIndex(index)}
+                    className="min-w-0 flex-1 flex items-center gap-3 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
+                    title="Click to view text details"
+                  >
+                    <span className="flex-shrink-0 text-[10px] font-mono text-neutral-600">#{(index + 1).toString().padStart(2, '0')}</span>
+                    <p className="min-w-0 flex-1 truncate text-[12px] leading-none text-neutral-200">
+                      {item.textContent || item.prompt}
+                    </p>
+                    {(item.imageContexts?.length || 0) > 0 && (
+                      <span className="hidden sm:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-neutral-500">
+                        +{item.imageContexts?.length} img
+                      </span>
                     )}
+                    <span className="hidden sm:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-blue-400/80">View</span>
+                  </button>
 
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                      <div className="flex items-center gap-1.5 p-1 bg-neutral-950/50 rounded-lg border border-neutral-800/50">
-                        <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-neutral-900 rounded border border-neutral-800">
-                          {getProviderName(item.providerId)}
-                        </span>
-                        <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest px-1.5 py-0.5 bg-neutral-900 rounded border border-neutral-800">
-                          {getModelName(item.providerId, item.modelConfigId)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAlbumItemsToDelete([item]);
+                      setShowDeleteAlbumModal(true);
+                    }}
+                    className="flex-shrink-0 p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               );
             })}
@@ -342,7 +326,8 @@ export function AlbumTab({
         )}
       </div>
       <AlbumPromptModal item={promptItem} onClose={() => setPromptItem(null)} />
-      <TextAlbumDetailDialog item={detailItem} onClose={() => setDetailItem(null)} />
+      {showCompareDialog && <TextAlbumCompareDialog items={selectedTextItems} setLightboxData={setLightboxData} onClose={() => setShowCompareDialog(false)} />}
+      <TextAlbumDetailDialog items={albumItems} startIndex={detailIndex} setLightboxData={setLightboxData} onClose={() => setDetailIndex(null)} />
     </section>
   );
 }

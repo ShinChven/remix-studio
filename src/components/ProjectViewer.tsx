@@ -330,7 +330,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       return {
         id: crypto.randomUUID(),
         prompt: combo.prompt,
-        imageContexts: isTextProject ? undefined : combo.imageContexts,
+        imageContexts: combo.imageContexts,
         status: 'draft',
         providerId: selectedProviderId,
         modelConfigId: selectedModelId,

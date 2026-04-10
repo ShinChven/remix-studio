@@ -119,7 +119,8 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
       const imageUrl = await presignIfKey(item.imageUrl, storage);
       const thumbnailUrl = item.thumbnailUrl ? await presignIfKey(item.thumbnailUrl, storage) : item.thumbnailUrl;
       const optimizedUrl = item.optimizedUrl ? await presignIfKey(item.optimizedUrl, storage) : item.optimizedUrl;
-      return { ...item, imageUrl, thumbnailUrl, optimizedUrl, size, optimizedSize, thumbnailSize };
+      const imageContexts = item.imageContexts ? await Promise.all(item.imageContexts.map(ctx => presignIfKey(ctx, storage))) : item.imageContexts;
+      return { ...item, imageUrl, thumbnailUrl, optimizedUrl, imageContexts, size, optimizedSize, thumbnailSize };
     })
   );
   const workflow = await Promise.all(
@@ -170,19 +171,22 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const project = await repository.getProject(user.userId, newId);
       if (project) {
         const updatedJobs = project.jobs.map((job) => {
+          const imageContexts = job.imageContexts?.map((ctx) => ctx.startsWith(oldPrefix) ? ctx.replace(oldPrefix, newPrefix) : ctx);
           if (job.imageUrl && job.imageUrl.startsWith(oldPrefix)) {
-            return { ...job, imageUrl: job.imageUrl.replace(oldPrefix, newPrefix) };
+            return { ...job, imageUrl: job.imageUrl.replace(oldPrefix, newPrefix), imageContexts };
           }
-          return job;
+          return imageContexts ? { ...job, imageContexts } : job;
         });
         await repository.updateProject(user.userId, newId, { jobs: updatedJobs });
 
         // Update album item S3 keys
         for (const item of (project.album || [])) {
-          if (item.imageUrl && item.imageUrl.startsWith(oldPrefix)) {
+          const imageContexts = item.imageContexts?.map((ctx) => ctx.startsWith(oldPrefix) ? ctx.replace(oldPrefix, newPrefix) : ctx);
+          if ((item.imageUrl && item.imageUrl.startsWith(oldPrefix)) || imageContexts) {
             await repository.addAlbumItem(user.userId, newId, {
               ...item,
-              imageUrl: item.imageUrl.replace(oldPrefix, newPrefix),
+              imageContexts,
+              imageUrl: item.imageUrl?.startsWith(oldPrefix) ? item.imageUrl.replace(oldPrefix, newPrefix) : item.imageUrl,
             });
           }
         }

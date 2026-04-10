@@ -182,6 +182,7 @@ model AlbumItem {
   jobId         String?
   prompt        String?  @db.Text
   textContent   String?  @db.Text
+  imageContexts Json?    // String[]
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?
@@ -209,6 +210,7 @@ model TrashItem {
   jobId         String?
   prompt        String?  @db.Text
   textContent   String?  @db.Text
+  imageContexts Json?    // String[]
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?

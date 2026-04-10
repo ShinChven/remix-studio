@@ -1,15 +1,47 @@
-import React from 'react';
-import { Copy, FileText, Sparkles, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, Copy, FileImage, FileText, Sparkles, X } from 'lucide-react';
 import { AlbumItem } from '../../types';
+import { imageDisplayUrl } from '../../api';
 import { toast } from 'sonner';
 
 interface TextAlbumDetailDialogProps {
-  item: AlbumItem | null;
+  items: AlbumItem[];
+  startIndex: number | null;
+  setLightboxData: (data: { images: string[], index: number } | null) => void;
   onClose: () => void;
 }
 
-export function TextAlbumDetailDialog({ item, onClose }: TextAlbumDetailDialogProps) {
-  if (!item) return null;
+export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onClose }: TextAlbumDetailDialogProps) {
+  const [currentIndex, setCurrentIndex] = useState(startIndex ?? 0);
+
+  useEffect(() => {
+    if (startIndex !== null) {
+      setCurrentIndex(startIndex);
+    }
+  }, [startIndex]);
+
+  useEffect(() => {
+    if (startIndex === null || items.length === 0) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === 'ArrowLeft') {
+        setCurrentIndex((prev) => (prev > 0 ? prev - 1 : items.length - 1));
+      } else if (e.key === 'ArrowRight') {
+        setCurrentIndex((prev) => (prev < items.length - 1 ? prev + 1 : 0));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [items.length, onClose, startIndex]);
+
+  if (startIndex === null || items.length === 0) return null;
+
+  const item = items[currentIndex];
+  const hasMultipleItems = items.length > 1;
+  const referenceImages = item.imageContexts || [];
 
   const handleCopy = async (value: string, label: string) => {
     try {
@@ -20,92 +52,176 @@ export function TextAlbumDetailDialog({ item, onClose }: TextAlbumDetailDialogPr
     }
   };
 
+  const showPrev = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : items.length - 1));
+  };
+
+  const showNext = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setCurrentIndex((prev) => (prev < items.length - 1 ? prev + 1 : 0));
+  };
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose} />
+    <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
+      {hasMultipleItems && (
+        <button
+          onClick={showPrev}
+          className="absolute left-3 top-1/2 z-10 -translate-y-1/2 p-3 text-white/50 hover:text-white transition-colors bg-black/40 hover:bg-black/70 rounded-full"
+          aria-label="Previous text item"
+        >
+          <ChevronLeft className="w-7 h-7" />
+        </button>
+      )}
 
       <div
-        className="relative w-full max-w-5xl max-h-[85vh] bg-neutral-900 border border-neutral-800 rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300"
+        className="relative flex h-full w-full flex-col overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Text album details"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/20">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between border-b border-white/10 bg-black/30 px-4 py-4 md:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <div className="p-2.5 bg-blue-600/10 rounded-xl">
               <FileText className="w-5 h-5 text-blue-500" />
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Text Details</h3>
-              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Prompt and generated content</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
-            aria-label="Close text details dialog"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 space-y-6 bg-neutral-950/10">
-          <section className="rounded-[24px] border border-neutral-800 bg-neutral-950/40 overflow-hidden">
-            <div className="px-5 py-4 border-b border-neutral-800 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-neutral-300">
-                <Sparkles className="w-4 h-4 text-blue-400" />
-                <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">Prompt</span>
-              </div>
-              <button
-                onClick={() => handleCopy(item.prompt, 'Prompt')}
-                className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                Copy
-              </button>
-            </div>
-            <div className="p-5 md:p-6">
-              <p className="whitespace-pre-wrap break-words text-sm md:text-base text-neutral-200 leading-relaxed">
-                {item.prompt}
+            <div className="min-w-0">
+              <h3 className="text-lg font-bold text-white tracking-tight">Text View</h3>
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">
+                Item {(currentIndex + 1).toString().padStart(2, '0')}
+                {hasMultipleItems ? ` / ${items.length.toString().padStart(2, '0')}` : ''}
               </p>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {hasMultipleItems && (
+              <div className="hidden items-center gap-2 md:flex">
+                <button
+                  onClick={showPrev}
+                  className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                  aria-label="Previous text item"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={showNext}
+                  className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                  aria-label="Next text item"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 text-neutral-500 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+              aria-label="Close text details dialog"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid flex-1 min-h-0 grid-cols-1 lg:grid-cols-[minmax(280px,34vw)_1fr]">
+          <section className="min-h-0 border-b border-white/10 bg-neutral-950/60 lg:border-b-0 lg:border-r">
+            <div className="flex h-full flex-col">
+              <div className="px-5 py-4 border-b border-neutral-800 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-neutral-300">
+                  <Sparkles className="w-4 h-4 text-blue-400" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">Prompt</span>
+                </div>
+                <button
+                  onClick={() => handleCopy(item.prompt, 'Prompt')}
+                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copy
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-6">
+                {referenceImages.length > 0 && (
+                  <div className="mb-6">
+                    <div className="mb-3 flex items-center gap-2 text-neutral-300">
+                      <FileImage className="w-4 h-4 text-blue-400" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">
+                        Reference Images ({referenceImages.length})
+                      </span>
+                    </div>
+                    <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                      {referenceImages.map((src, idx) => (
+                        <button
+                          key={`${item.id}-ref-${idx}`}
+                          type="button"
+                          onClick={() => setLightboxData({ images: referenceImages.map(imageDisplayUrl), index: idx })}
+                          className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900"
+                        >
+                          <img
+                            src={imageDisplayUrl(src)}
+                            alt={`Reference ${idx + 1}`}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-left text-[9px] font-black uppercase tracking-[0.18em] text-white/80">
+                            Ref {idx + 1}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <p className="whitespace-pre-wrap break-words text-sm md:text-base text-neutral-200 leading-relaxed">
+                  {item.prompt}
+                </p>
+              </div>
+            </div>
           </section>
 
-          <section className="rounded-[24px] border border-neutral-800 bg-neutral-950/40 overflow-hidden">
-            <div className="px-5 py-4 border-b border-neutral-800 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-neutral-300">
-                <FileText className="w-4 h-4 text-blue-400" />
-                <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">Generated Text</span>
+          <section className="min-h-0 bg-black/20">
+            <div className="flex h-full flex-col">
+              <div className="px-5 py-4 border-b border-neutral-800 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-neutral-300">
+                  <FileText className="w-4 h-4 text-blue-400" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">Generated Text</span>
+                </div>
+                <button
+                  onClick={() => handleCopy(item.textContent || '', 'Generated text')}
+                  disabled={!item.textContent}
+                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copy
+                </button>
               </div>
-              <button
-                onClick={() => handleCopy(item.textContent || '', 'Generated text')}
-                disabled={!item.textContent}
-                className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                Copy
-              </button>
-            </div>
-            <div className="p-5 md:p-6">
-              <div className="whitespace-pre-wrap break-words text-sm md:text-base text-neutral-100 leading-relaxed">
-                {item.textContent || 'No generated text.'}
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-8">
+                <div className="mx-auto max-w-4xl whitespace-pre-wrap break-words text-base md:text-lg text-neutral-100 leading-relaxed">
+                  {item.textContent || 'No generated text.'}
+                </div>
               </div>
             </div>
           </section>
         </div>
 
-        <div className="p-6 border-t border-neutral-800 bg-neutral-950/40 flex items-center justify-between gap-4">
-          <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest pl-2">
+        <div className="flex items-center justify-between gap-4 border-t border-white/10 bg-black/30 px-4 py-3 md:px-6">
+          <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
             {(item.textContent || '').length} characters
           </div>
-          <button
-            onClick={onClose}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-blue-500/20 active:scale-95"
-          >
-            Close
-          </button>
+          <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+            Esc close · ← → navigate
+          </div>
         </div>
       </div>
+
+      {hasMultipleItems && (
+        <button
+          onClick={showNext}
+          className="absolute right-3 top-1/2 z-10 -translate-y-1/2 p-3 text-white/50 hover:text-white transition-colors bg-black/40 hover:bg-black/70 rounded-full"
+          aria-label="Next text item"
+        >
+          <ChevronRight className="w-7 h-7" />
+        </button>
+      )}
     </div>
   );
 }

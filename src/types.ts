@@ -258,6 +258,7 @@ export interface AlbumItem {
   jobId: string;
   prompt: string;
   textContent?: string; // Text generation output
+  imageContexts?: string[];
   imageUrl: string; // S3 key (presigned on read)
   thumbnailUrl?: string; // S3 key
   optimizedUrl?: string; // S3 key
