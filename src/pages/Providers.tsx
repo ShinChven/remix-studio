@@ -82,10 +82,10 @@ export function Providers() {
             </div>
           )}
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {isLoading ? (
               [1, 2, 3].map(i => (
-                <div key={i} className="h-16 rounded-xl bg-neutral-900/40 border border-neutral-800/60 animate-pulse" />
+                <div key={i} className="h-14 rounded-xl bg-neutral-900/40 border border-neutral-800/60 animate-pulse" />
               ))
             ) : providers.length === 0 ? (
               <div className="py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">
@@ -103,18 +103,18 @@ export function Providers() {
                 return (
                   <div
                     key={provider.id}
-                    className="w-full bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/60 hover:border-amber-500/30 hover:bg-neutral-900/60 p-3 md:p-4 rounded-xl text-left transition-all group flex items-center justify-between gap-4"
+                    className="w-full bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/60 hover:border-amber-500/30 hover:bg-neutral-900/60 px-3 py-2.5 md:px-3.5 md:py-2.5 rounded-xl text-left transition-all group flex items-center justify-between gap-3"
                   >
-                    <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                      <div className={`flex-shrink-0 p-2 md:p-2.5 rounded-lg ${colors.icon} group-hover:scale-110 transition-transform`}>
-                        <Key className="w-5 h-5" />
+                    <div className="flex items-center gap-2.5 md:gap-3 overflow-hidden min-w-0">
+                      <div className={`flex-shrink-0 p-1.5 md:p-2 rounded-lg ${colors.icon} group-hover:scale-110 transition-transform`}>
+                        <Key className="w-4 h-4" />
                       </div>
-                      <div className="overflow-hidden">
-                        <h4 className="font-semibold text-white text-sm md:text-base truncate">{provider.name}</h4>
-                        <div className="flex items-center gap-2 md:gap-3 mt-0.5 flex-wrap">
+                      <div className="overflow-hidden min-w-0">
+                        <h4 className="font-semibold text-white text-sm truncate">{provider.name}</h4>
+                        <div className="flex items-center gap-1.5 md:gap-2 mt-0.5 flex-wrap">
                           <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${colors.badge}`}>{provider.type}</span>
                           {provider.apiUrl && (
-                            <span className="flex items-center gap-1 text-[10px] text-neutral-500 truncate max-w-[160px]">
+                            <span className="flex items-center gap-1 text-[10px] text-neutral-500 truncate max-w-[140px] md:max-w-[180px]">
                               <Globe className="w-3 h-3 flex-shrink-0" />{provider.apiUrl}
                             </span>
                           )}
@@ -133,22 +133,22 @@ export function Providers() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
                       <button
                         onClick={() => navigate(`/provider/${provider.id}/edit`)}
-                        className="p-2 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors opacity-100"
+                        className="p-1.5 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors opacity-100"
                         title="Edit"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setDeleteTarget(provider)}
-                        className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-100"
+                        className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-100"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                      <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-amber-500 transition-colors ml-1" />
+                      <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-amber-500 transition-colors ml-0.5" />
                     </div>
                   </div>
                 );
