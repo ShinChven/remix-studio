@@ -103,7 +103,8 @@ export function Providers() {
                 return (
                   <div
                     key={provider.id}
-                    className="w-full bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/60 hover:border-amber-500/30 hover:bg-neutral-900/60 px-3 py-2.5 md:px-3.5 md:py-2.5 rounded-xl text-left transition-all group flex items-center justify-between gap-3"
+                    onClick={() => navigate(`/provider/${provider.id}`)}
+                    className="w-full bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/60 hover:border-amber-500/30 hover:bg-neutral-900/60 px-3 py-2.5 md:px-3.5 md:py-2.5 rounded-xl text-left transition-all group flex items-center justify-between gap-3 cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5 md:gap-3 overflow-hidden min-w-0">
                       <div className={`flex-shrink-0 p-1.5 md:p-2 rounded-lg ${colors.icon} group-hover:scale-110 transition-transform`}>
@@ -135,14 +136,14 @@ export function Providers() {
 
                     <div className="flex items-center gap-0.5 flex-shrink-0">
                       <button
-                        onClick={() => navigate(`/provider/${provider.id}/edit`)}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/provider/${provider.id}/edit`); }}
                         className="p-1.5 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors opacity-100"
                         title="Edit"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => setDeleteTarget(provider)}
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(provider); }}
                         className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-100"
                         title="Delete"
                       >

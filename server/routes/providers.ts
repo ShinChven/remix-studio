@@ -4,6 +4,7 @@ import { ProviderRepository } from '../db/provider-repository';
 import type { ProviderType } from '../../src/types';
 import crypto from 'crypto';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
+import { listProviderModels } from '../services/provider-model-lister';
 
 const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'OpenAI', 'Grok', 'Claude'];
 type Variables = { user: JwtPayload };
@@ -126,6 +127,25 @@ export function createProviderRouter(repo: ProviderRepository) {
       }
       console.error('[PUT /api/providers/:id]', e);
       return c.json({ error: e?.message || 'Failed to update provider' }, 500);
+    }
+  });
+
+  // List models available from a provider's API
+  router.get('/api/providers/:id/models', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const providerId = c.req.param('id');
+      const provider = await repo.getProvider(user.userId, providerId);
+      if (!provider) return c.json({ error: 'Provider not found' }, 404);
+
+      const apiKey = await repo.getDecryptedApiKey(user.userId, providerId);
+      if (!apiKey) return c.json({ error: 'No API key configured for this provider' }, 400);
+
+      const result = await listProviderModels(provider.type as ProviderType, apiKey, provider.apiUrl);
+      return c.json(result);
+    } catch (e) {
+      console.error('[GET /api/providers/:id/models]', e);
+      return c.json({ error: 'Failed to list provider models' }, 500);
     }
   });
 

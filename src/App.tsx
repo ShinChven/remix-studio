@@ -23,6 +23,7 @@ import { PromptEditor } from './pages/PromptEditor.tsx';
 import { LibraryCleanup } from './pages/LibraryCleanup.tsx';
 import { LibraryImportExport } from './pages/LibraryImportExport.tsx';
 import { Providers } from './pages/Providers.tsx';
+import { ProviderProfile } from './pages/ProviderProfile.tsx';
 import { ProviderForm } from './pages/ProviderForm.tsx';
 import { TrashView } from './components/TrashView.tsx';
 import { ProjectOrphans } from './pages/ProjectOrphans.tsx';
@@ -67,6 +68,7 @@ export default function App() {
               <Route path="admin/invites" element={<ProtectedRoute adminOnly><AdminInvites /></ProtectedRoute>} />
               <Route path="providers" element={<Providers />} />
               <Route path="provider/new" element={<ProviderForm />} />
+              <Route path="provider/:id" element={<ProviderProfile />} />
               <Route path="provider/:id/edit" element={<ProviderForm />} />
               <Route path="exports" element={<Exports />} />
               <Route path="trash" element={<TrashView />} />

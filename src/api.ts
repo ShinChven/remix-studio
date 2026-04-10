@@ -594,6 +594,18 @@ export async function deleteProvider(id: string): Promise<void> {
   }
 }
 
+export interface ProviderModelInfo {
+  id: string;
+  name: string;
+  description?: string;
+  category: 'text' | 'image' | 'video';
+}
+
+export async function fetchProviderModels(providerId: string): Promise<{ models: ProviderModelInfo[]; error?: string }> {
+  const res = await fetch(`/api/providers/${providerId}/models`, { headers: getHeaders(false) });
+  return handleResponse<{ models: ProviderModelInfo[]; error?: string }>(res, 'Failed to list provider models');
+}
+
 // ========== AI Generation ==========
 
 export async function generateImage(params: {
