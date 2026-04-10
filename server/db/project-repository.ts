@@ -44,6 +44,7 @@ export class ProjectRepository {
     const mappedProjects = projects.map((p) => ({
       id: p.id,
       name: p.name,
+      type: (p as any).type ?? 'image',
       createdAt: p.createdAt.getTime(),
       workflow: [],
       jobs: [],
@@ -89,6 +90,7 @@ export class ProjectRepository {
     return {
       id: p.id,
       name: p.name,
+      type: (p as any).type ?? 'image',
       createdAt: p.createdAt.getTime(),
       providerId: p.providerId ?? undefined,
       aspectRatio: p.aspectRatio ?? undefined,
@@ -98,6 +100,9 @@ export class ProjectRepository {
       modelConfigId: p.modelConfigId ?? undefined,
       prefix: p.prefix ?? undefined,
       background: (p as any).background ?? undefined,
+      systemPrompt: (p as any).systemPrompt ?? undefined,
+      temperature: (p as any).temperature ?? undefined,
+      maxTokens: (p as any).maxTokens ?? undefined,
       jobs: p.jobs.map((j) => this.mapJob(j)),
       workflow: p.workflowItems.map((w) => this.mapWorkflow(w)),
       album: p.albumItems.map((a) => this.mapAlbumItem(a)),
@@ -110,6 +115,7 @@ export class ProjectRepository {
         id: project.id,
         userId,
         name: project.name,
+        type: project.type ?? 'image',
         createdAt: project.createdAt ? new Date(project.createdAt) : new Date(),
         providerId: project.providerId ?? null,
         aspectRatio: project.aspectRatio ?? null,
@@ -119,6 +125,9 @@ export class ProjectRepository {
         modelConfigId: project.modelConfigId ?? null,
         prefix: project.prefix ?? null,
         background: (project as any).background ?? null,
+        systemPrompt: project.systemPrompt ?? null,
+        temperature: project.temperature ?? null,
+        maxTokens: project.maxTokens ?? null,
       },
     });
 
@@ -139,6 +148,9 @@ export class ProjectRepository {
     if (updates.modelConfigId !== undefined) data.modelConfigId = updates.modelConfigId ?? null;
     if (updates.prefix !== undefined) data.prefix = updates.prefix ?? null;
     if ((updates as any).background !== undefined) data.background = (updates as any).background ?? null;
+    if (updates.systemPrompt !== undefined) data.systemPrompt = updates.systemPrompt ?? null;
+    if (updates.temperature !== undefined) data.temperature = updates.temperature ?? null;
+    if (updates.maxTokens !== undefined) data.maxTokens = updates.maxTokens ?? null;
 
     if (Object.keys(data).length > 0) {
       await this.prisma.project.updateMany({ where: { id: projectId, userId }, data });
@@ -167,6 +179,7 @@ export class ProjectRepository {
     if (updates.thumbnailUrl !== undefined) data.thumbnailUrl = updates.thumbnailUrl ?? null;
     if (updates.optimizedUrl !== undefined) data.optimizedUrl = updates.optimizedUrl ?? null;
     if (updates.error !== undefined) data.error = updates.error ?? null;
+    if (updates.resultText !== undefined) data.resultText = updates.resultText ?? null;
     if (updates.taskId !== undefined) data.taskId = updates.taskId ?? null;
     if (updates.filename !== undefined) data.filename = updates.filename ?? null;
     if (updates.size !== undefined) data.size = updates.size != null ? BigInt(updates.size) : null;
@@ -184,6 +197,7 @@ export class ProjectRepository {
       userId,
       jobId: item.jobId ?? null,
       prompt: item.prompt ?? null,
+      textContent: item.textContent ?? null,
       imageUrl: item.imageUrl ?? null,
       thumbnailUrl: item.thumbnailUrl ?? null,
       optimizedUrl: item.optimizedUrl ?? null,
@@ -242,6 +256,7 @@ export class ProjectRepository {
         projectName: project.name,
         jobId: item.jobId ?? null,
         prompt: item.prompt ?? null,
+        textContent: item.textContent ?? null,
         imageUrl: item.imageUrl ?? null,
         thumbnailUrl: item.thumbnailUrl ?? null,
         optimizedUrl: item.optimizedUrl ?? null,
@@ -476,6 +491,7 @@ export class ProjectRepository {
         imageUrl: job.imageUrl ?? null,
         thumbnailUrl: job.thumbnailUrl ?? null,
         optimizedUrl: job.optimizedUrl ?? null,
+        resultText: job.resultText ?? null,
         error: job.error ?? null,
         providerId: job.providerId ?? null,
         modelConfigId: job.modelConfigId ?? null,
@@ -496,6 +512,7 @@ export class ProjectRepository {
         imageUrl: job.imageUrl ?? null,
         thumbnailUrl: job.thumbnailUrl ?? null,
         optimizedUrl: job.optimizedUrl ?? null,
+        resultText: job.resultText ?? null,
         error: job.error ?? null,
         providerId: job.providerId ?? null,
         modelConfigId: job.modelConfigId ?? null,
@@ -590,6 +607,7 @@ export class ProjectRepository {
       quality: j.quality ?? undefined,
       format: j.format as 'png' | 'jpeg' | 'webp' | undefined ?? undefined,
       background: j.background ?? undefined,
+      resultText: j.resultText ?? undefined,
       taskId: j.taskId ?? undefined,
       filename: j.filename ?? undefined,
       size: j.size != null ? Number(j.size) : undefined,
@@ -614,6 +632,7 @@ export class ProjectRepository {
       id: a.id,
       jobId: a.jobId ?? undefined,
       prompt: a.prompt ?? undefined,
+      textContent: a.textContent ?? undefined,
       imageUrl: a.imageUrl ?? undefined,
       thumbnailUrl: a.thumbnailUrl ?? undefined,
       optimizedUrl: a.optimizedUrl ?? undefined,

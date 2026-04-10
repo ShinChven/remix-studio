@@ -3,8 +3,10 @@ import { ProviderRepository } from '../db/provider-repository';
 import { ProjectRepository } from '../db/project-repository';
 import { S3Storage } from '../storage/s3-storage';
 import { buildGenerator } from '../generators/build-generator';
+import { buildTextGenerator } from '../generators/build-text-generator';
 import { Job, ProviderType } from '../../src/types';
 import { ImageProcessor } from './image-processor';
+import { TextProcessor } from './text-processor';
 import { DetachedPoller } from './detached-poller';
 import { ImageGenerator } from '../generators/image-generator';
 import { assertSafeReferenceImageUrl } from '../utils/url-safety';
@@ -13,11 +15,16 @@ export interface QueuedJob {
   userId: string;
   projectId: string;
   job: Job;
+  projectType?: 'image' | 'text';
   aspectRatio?: string;
   quality?: string;
   background?: string;
   format?: string;
   modelConfigId?: string;
+  // Text generation settings
+  systemPrompt?: string;
+  temperature?: number;
+  maxTokens?: number;
 }
 
 /**
@@ -36,6 +43,7 @@ export class QueueManager {
     private projectRepo: ProjectRepository,
     private storage: S3Storage,
     private imageProcessor: ImageProcessor,
+    private textProcessor: TextProcessor,
     private detachedPoller: DetachedPoller
   ) {
     this.detachedPoller.start();
@@ -68,25 +76,29 @@ export class QueueManager {
       if (!providerId) continue;
 
       this.enqueue(
-        userId, 
-        project.id, 
-        job, 
-        providerId, 
-        job.aspectRatio || project.aspectRatio, 
+        userId,
+        project.id,
+        job,
+        providerId,
+        job.aspectRatio || project.aspectRatio,
         job.quality || project.quality,
         (job as any).background || (project as any).background,
         job.format || project.format,
-        job.modelConfigId
+        job.modelConfigId,
+        (project as any).type || 'image',
+        (project as any).systemPrompt,
+        (project as any).temperature,
+        (project as any).maxTokens,
       );
     }
   }
 
-  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, background?: string, format?: string, modelConfigId?: string) {
+  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, background?: string, format?: string, modelConfigId?: string, projectType?: 'image' | 'text', systemPrompt?: string, temperature?: number, maxTokens?: number) {
     if (this.activeJobIds.has(job.id)) return;
 
     if (!this.queues.has(providerId)) this.queues.set(providerId, []);
     this.activeJobIds.add(job.id);
-    this.queues.get(providerId)!.push({ userId, projectId, job, aspectRatio, quality, background, format, modelConfigId });
+    this.queues.get(providerId)!.push({ userId, projectId, job, projectType, aspectRatio, quality, background, format, modelConfigId, systemPrompt, temperature, maxTokens });
     this.processNext(providerId);
   }
 
@@ -169,13 +181,18 @@ export class QueueManager {
       const apiKey = await this.providerRepo.getDecryptedApiKey(userId, providerRecord.id);
       if (!apiKey) throw new Error('Stored API key not found for provider');
 
-      const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
-
-      // Dispatch to specific execution path based on generator capabilities
-      if (generator.checkStatus) {
-        await this.executeAsyncHandoff(userId, projectId, job, queued, generator, providerRecord);
+      // Dispatch based on project type
+      if (queued.projectType === 'text') {
+        await this.executeTextJob(userId, projectId, job, queued, providerRecord, apiKey);
       } else {
-        await this.executeSyncJob(userId, projectId, job, queued, generator, providerRecord);
+        const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+
+        // Dispatch to specific execution path based on generator capabilities
+        if (generator.checkStatus) {
+          await this.executeAsyncHandoff(userId, projectId, job, queued, generator, providerRecord);
+        } else {
+          await this.executeSyncJob(userId, projectId, job, queued, generator, providerRecord);
+        }
       }
 
     } catch (e: any) {
@@ -281,6 +298,68 @@ export class QueueManager {
         status: 'failed',
         error: e.message || 'Sync generation failed',
         taskId: null as any
+      });
+    }
+  }
+
+  /**
+   * [Text Generation Pipeline]
+   * Calls text generation API and stores result text.
+   */
+  private async executeTextJob(userId: string, projectId: string, job: Job, queued: QueuedJob, providerRecord: any, apiKey: string) {
+    try {
+      const textGenerator = buildTextGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+      const modelConfig = providerRecord.models?.find((m: any) => m.id === job.modelConfigId);
+
+      // Prepare reference images if any
+      let refImages: string[] | undefined;
+      if (job.imageContexts && job.imageContexts.length > 0) {
+        refImages = [];
+        for (const ctx of job.imageContexts) {
+          if (ctx.startsWith('data:')) {
+            refImages.push(ctx.replace(/^data:image\/\w+;base64,/, ''));
+          } else if (ctx.startsWith('http')) {
+            await assertSafeReferenceImageUrl(ctx);
+            const response = await fetch(ctx);
+            if (!response.ok) throw new Error(`Failed to download reference image: ${response.status}`);
+            const buffer = Buffer.from(await response.arrayBuffer());
+            refImages.push(buffer.toString('base64'));
+          } else {
+            const buffer = await this.storage.read(ctx);
+            refImages.push(buffer.toString('base64'));
+          }
+        }
+        if (refImages.length === 0) refImages = undefined;
+      }
+
+      const result = await textGenerator.generate({
+        prompt: job.prompt,
+        systemPrompt: queued.systemPrompt,
+        modelId: modelConfig?.modelId,
+        apiUrl: modelConfig?.apiUrl,
+        temperature: queued.temperature ?? 0.7,
+        maxTokens: queued.maxTokens ?? 2048,
+        refImagesBase64: refImages,
+      });
+
+      if (result.ok === false) {
+        throw new Error(result.error);
+      }
+
+      await this.textProcessor.processCompletedText({
+        userId,
+        projectId,
+        job,
+        text: result.text,
+        modelConfigId: job.modelConfigId,
+        providerId: job.providerId,
+      });
+    } catch (e: any) {
+      console.error(`[QueueManager] Text job ${job.id} failed:`, e.message);
+      await this.updateJobStatus(userId, projectId, job.id, {
+        status: 'failed',
+        error: e.message || 'Text generation failed',
+        taskId: null as any,
       });
     }
   }

@@ -29,6 +29,7 @@ import { createMcpRouter } from './server/mcp/mcp-server';
 import { QueueManager } from './server/queue/queue-manager';
 import { ExportManager } from './server/queue/export-manager';
 import { ImageProcessor } from './server/queue/image-processor';
+import { TextProcessor } from './server/queue/text-processor';
 import { DetachedPoller } from './server/queue/detached-poller';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -94,8 +95,9 @@ async function startServer() {
   await exportStorage.ensureBucket(autoCreateBuckets);
 
   const imageProcessor = new ImageProcessor(projectRepository, storage, userRepository, exportStorage);
+  const textProcessor = new TextProcessor(projectRepository);
   const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor);
-  const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, detachedPoller);
+  const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, textProcessor, detachedPoller);
   // Important: Recover tasks before starting the server to resume background work
   await queueManager.recoverTasks();
 

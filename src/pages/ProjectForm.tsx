@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Layers, Terminal, Play } from 'lucide-react';
+import { Layers, Terminal, Play, ImageIcon, Type } from 'lucide-react';
 import { createProject, updateProject, fetchProject } from '../api';
+import type { ProjectType } from '../types';
 
 export function ProjectForm() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,7 @@ export function ProjectForm() {
   const [name, setName] = useState('');
   const [projectId, setProjectId] = useState('');
   const [prefix, setPrefix] = useState('');
+  const [projectType, setProjectType] = useState<ProjectType>('image');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -20,6 +22,7 @@ export function ProjectForm() {
         setName(proj.name);
         setProjectId(proj.id);
         setPrefix(proj.prefix || '');
+        setProjectType(proj.type || 'image');
       }).catch(() => navigate('/projects'));
     }
   }, [id, navigate]);
@@ -37,6 +40,7 @@ export function ProjectForm() {
         await createProject({
           id: targetId,
           name: name.trim(),
+          type: projectType,
           createdAt: Date.now(),
           workflow: [],
           jobs: [],
@@ -60,8 +64,8 @@ export function ProjectForm() {
     <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-950">
       <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-green-600/10 rounded-2xl">
-            <Layers className="w-6 h-6 text-green-500" />
+          <div className={`p-3 rounded-2xl ${projectType === 'text' ? 'bg-blue-600/10' : 'bg-green-600/10'}`}>
+            <Layers className={`w-6 h-6 ${projectType === 'text' ? 'text-blue-500' : 'text-green-500'}`} />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white tracking-tight">
@@ -72,6 +76,38 @@ export function ProjectForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {isNew && (
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Project Type</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setProjectType('image')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                    projectType === 'image'
+                      ? 'border-green-500 bg-green-500/10 text-green-400'
+                      : 'border-neutral-800 bg-neutral-950 text-neutral-500 hover:border-neutral-700'
+                  }`}
+                >
+                  <ImageIcon className="w-6 h-6" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Image</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProjectType('text')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                    projectType === 'text'
+                      ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                      : 'border-neutral-800 bg-neutral-950 text-neutral-500 hover:border-neutral-700'
+                  }`}
+                >
+                  <Type className="w-6 h-6" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Text</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Project Name</label>
             <input
@@ -79,7 +115,7 @@ export function ProjectForm() {
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Cyberpunk Character Series..."
+              placeholder={projectType === 'text' ? "e.g. Product Description Generator..." : "e.g. Cyberpunk Character Series..."}
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-700"
               required
             />
@@ -94,7 +130,7 @@ export function ProjectForm() {
               placeholder="e.g. PJ01"
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-700"
             />
-            <p className="text-[10px] text-neutral-600 ml-1 font-medium tracking-wide">Used for image filename generation</p>
+            <p className="text-[10px] text-neutral-600 ml-1 font-medium tracking-wide">{projectType === 'text' ? 'Used as prefix for output naming' : 'Used for image filename generation'}</p>
           </div>
 
           {isNew && (

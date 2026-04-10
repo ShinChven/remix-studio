@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckSquare, Square, Trash2, Play, ChevronDown, Plus } from 'lucide-react';
-import { Job, AlbumItem } from '../../types';
+import { Job, AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl } from '../../api';
 
 interface DraftsTabProps {
@@ -21,6 +21,7 @@ interface DraftsTabProps {
   setLightboxData: (data: { images: string[], index: number } | null) => void;
   albumItems?: AlbumItem[];
   onSwitchToAlbum?: () => void;
+  projectType?: ProjectType;
 }
 
 export function DraftsTab({
@@ -40,7 +41,8 @@ export function DraftsTab({
   setJobToDeleteId,
   setLightboxData,
   albumItems = [],
-  onSwitchToAlbum
+  onSwitchToAlbum,
+  projectType = 'image'
 }: DraftsTabProps) {
   const displayAlbumItems = albumItems.slice(0, 5);
 

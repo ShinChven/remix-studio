@@ -240,6 +240,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const project = {
         id,
         name,
+        type: body.type === 'text' ? 'text' as const : 'image' as const,
         createdAt: typeof body.createdAt === 'number' ? body.createdAt : Date.now(),
         workflow: Array.isArray(body.workflow) ? body.workflow : [],
         jobs: Array.isArray(body.jobs) ? body.jobs : [],
@@ -251,6 +252,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         format: typeof body.format === 'string' ? body.format : undefined,
         shuffle: typeof body.shuffle === 'boolean' ? body.shuffle : undefined,
         prefix: typeof body.prefix === 'string' ? body.prefix.trim() : undefined,
+        systemPrompt: typeof body.systemPrompt === 'string' ? body.systemPrompt : undefined,
+        temperature: typeof body.temperature === 'number' ? body.temperature : undefined,
+        maxTokens: typeof body.maxTokens === 'number' ? body.maxTokens : undefined,
       };
 
       await repository.createProject(user.userId, project);
@@ -269,7 +273,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (!currentProject) return c.json({ error: 'Not found' }, 404);
 
       const body = await c.req.json();
-      const updates: { name?: string; workflow?: WorkflowItem[]; jobs?: Job[]; providerId?: string; aspectRatio?: string; quality?: string; format?: 'png' | 'jpeg' | 'webp'; shuffle?: boolean; modelConfigId?: string; prefix?: string } = {};
+      const updates: Partial<Project> = {};
       if (typeof body?.name === 'string') updates.name = body.name.trim();
       if (Array.isArray(body?.workflow)) {
         // Strip presigned URLs back to bare S3 keys before storing
@@ -302,6 +306,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (typeof body?.shuffle === 'boolean') updates.shuffle = body.shuffle;
       if (typeof body?.modelConfigId === 'string') updates.modelConfigId = body.modelConfigId;
       if (typeof body?.prefix === 'string') updates.prefix = body.prefix.trim();
+      if (typeof body?.systemPrompt === 'string') updates.systemPrompt = body.systemPrompt;
+      if (typeof body?.temperature === 'number') updates.temperature = body.temperature;
+      if (typeof body?.maxTokens === 'number') updates.maxTokens = body.maxTokens;
       
       // Storage check for new jobs (Drafts)
       if (updates.jobs) {

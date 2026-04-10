@@ -105,6 +105,7 @@ model Project {
   id           String   @id @default(uuid())
   userId       String
   name         String
+  type         String   @default("image") // "image" or "text"
   providerId   String?
   aspectRatio  String?
   quality      String?
@@ -113,6 +114,9 @@ model Project {
   modelConfigId String?
   prefix       String?
   background   String?
+  systemPrompt String?  @db.Text
+  temperature  Float?
+  maxTokens    Int?
   createdAt    DateTime @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -141,6 +145,7 @@ model Job {
   quality       String?
   format        String?
   background    String?
+  resultText    String?  @db.Text
   taskId        String?
   filename      String?
   size          BigInt?
@@ -176,6 +181,7 @@ model AlbumItem {
   userId        String
   jobId         String?
   prompt        String?  @db.Text
+  textContent   String?  @db.Text
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?
@@ -202,6 +208,7 @@ model TrashItem {
   projectName   String
   jobId         String?
   prompt        String?  @db.Text
+  textContent   String?  @db.Text
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, Download, Loader2 } from 'lucide-react';
-import { AlbumItem } from '../../types';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, Download, Loader2, FileText } from 'lucide-react';
+import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import { ExportTask } from '../../types';
 import { AlbumPromptModal } from './AlbumPromptModal';
@@ -20,6 +20,7 @@ interface AlbumTabProps {
   getModelName: (providerId?: string, modelId?: string) => string;
   setLightboxData: (data: { images: string[], index: number } | null) => void;
   onExportStarted: () => void;
+  projectType?: ProjectType;
 }
 
 export function AlbumTab({
@@ -34,8 +35,10 @@ export function AlbumTab({
   getProviderName,
   getModelName,
   setLightboxData,
-  onExportStarted
+  onExportStarted,
+  projectType = 'image'
 }: AlbumTabProps) {
+  const isTextProject = projectType === 'text';
   const [promptItem, setPromptItem] = useState<AlbumItem | null>(null);
 
   const handleExport = async (isAll: boolean) => {
@@ -117,11 +120,79 @@ export function AlbumTab({
 
         {albumItems.length === 0 ? (
           <div className="bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-3xl p-12 md:p-24 text-center text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner">
-            <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />
+            {isTextProject ? <FileText className="w-16 h-16 text-neutral-800 animate-pulse" /> : <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />}
             <div>
-              <p className="text-sm font-bold text-neutral-400 tracking-wider uppercase">Gallery is empty</p>
-              <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">Start a generation to build your album</p>
+              <p className="text-sm font-bold text-neutral-400 tracking-wider uppercase">{isTextProject ? 'No texts yet' : 'Gallery is empty'}</p>
+              <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">Start a generation to build your {isTextProject ? 'collection' : 'album'}</p>
             </div>
+          </div>
+        ) : isTextProject ? (
+          <div className="space-y-4">
+            {albumItems.map((item, index) => {
+              const isSelected = selectedAlbumIds.has(item.id);
+              return (
+                <div key={item.id} className={`bg-neutral-900/50 border rounded-2xl overflow-hidden group transition-all duration-300 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/50 bg-blue-500/5 shadow-lg shadow-blue-500/20' : 'border-neutral-800 hover:border-blue-500/40'}`}>
+                  <div className="p-5 flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
+                          className={`flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500' : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'}`}
+                        >
+                          {isSelected ? <CheckSquare className="w-4 h-4 text-white" /> : <Square className="w-4 h-4 text-neutral-600" />}
+                        </button>
+                        <span className="text-[10px] font-mono text-neutral-600">#{(index + 1).toString().padStart(2, '0')}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAlbumItemsToDelete([item]);
+                            setShowDeleteAlbumModal(true);
+                          }}
+                          className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setPromptItem(item)}
+                      className="block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
+                      title="Click to view full prompt"
+                    >
+                      <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1 mb-1 block">Prompt</label>
+                      <p className="text-[11px] leading-relaxed text-neutral-500 line-clamp-2 font-medium">
+                        {item.prompt}
+                      </p>
+                    </button>
+
+                    {item.textContent && (
+                      <div>
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1 mb-1 block">Generated Text</label>
+                        <div className="text-xs text-neutral-200 leading-relaxed bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/50 whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar">
+                          {item.textContent}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <div className="flex items-center gap-1.5 p-1 bg-neutral-950/50 rounded-lg border border-neutral-800/50">
+                        <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-neutral-900 rounded border border-neutral-800">
+                          {getProviderName(item.providerId)}
+                        </span>
+                        <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest px-1.5 py-0.5 bg-neutral-900 rounded border border-neutral-800">
+                          {getModelName(item.providerId, item.modelConfigId)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
@@ -221,7 +292,7 @@ export function AlbumTab({
                           {getModelName(item.providerId, item.modelConfigId)}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center gap-1 px-1.5 py-1 bg-neutral-950/30 rounded-lg border border-neutral-800/30">
                         {[
                           { label: 'RAW', size: item.size },
@@ -233,8 +304,8 @@ export function AlbumTab({
                             <div className="flex items-center gap-1">
                               <span className="text-[7px] font-black text-neutral-600 uppercase tracking-tighter">{s.label}</span>
                               <span className="text-[8px] font-mono font-bold text-neutral-400">
-                                {s.size > 1024 * 1024 
-                                  ? `${(s.size / (1024 * 1024)).toFixed(1)}M` 
+                                {s.size > 1024 * 1024
+                                  ? `${(s.size / (1024 * 1024)).toFixed(1)}M`
                                   : `${(s.size / 1024).toFixed(0)}K`}
                               </span>
                             </div>

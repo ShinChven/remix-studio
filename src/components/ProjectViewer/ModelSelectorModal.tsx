@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Layers, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { Provider } from '../../types';
+import { Provider, ProjectType } from '../../types';
 
 interface ModelSelectorModalProps {
   isOpen: boolean;
@@ -9,6 +9,7 @@ interface ModelSelectorModalProps {
   selectedProviderId: string;
   selectedModelId: string;
   onSelect: (providerId: string, modelId: string) => void;
+  projectType?: ProjectType;
 }
 
 export function ModelSelectorModal({
@@ -17,7 +18,8 @@ export function ModelSelectorModal({
   providers,
   selectedProviderId,
   selectedModelId,
-  onSelect
+  onSelect,
+  projectType = 'image',
 }: ModelSelectorModalProps) {
   if (!isOpen) return null;
 
@@ -53,7 +55,12 @@ export function ModelSelectorModal({
               <p className="text-neutral-600 text-sm mt-2">Go to settings to add your first AI provider</p>
             </div>
           ) : (
-            providers.map((provider) => (
+            providers.filter(provider => {
+              const filteredModels = provider.models?.filter(m => !m.category || m.category === projectType);
+              return filteredModels && filteredModels.length > 0;
+            }).map((provider) => {
+              const filteredModels = provider.models?.filter(m => !m.category || m.category === projectType) || [];
+              return (
               <div key={provider.id} className="space-y-4">
                 <div className="flex items-center gap-3 px-2">
                   <div className="p-2 bg-blue-500/10 rounded-xl border border-blue-500/20">
@@ -66,7 +73,7 @@ export function ModelSelectorModal({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {provider.models?.map((model) => {
+                  {filteredModels.map((model) => {
                     const isSelected = provider.id === selectedProviderId && model.id === selectedModelId;
                     return (
                       <button
@@ -101,14 +108,15 @@ export function ModelSelectorModal({
                       </button>
                     );
                   })}
-                  {(!provider.models || provider.models.length === 0) && (
+                  {filteredModels.length === 0 && (
                     <div className="col-span-full py-4 text-center text-neutral-600 text-xs font-bold uppercase tracking-widest italic opacity-40">
-                      No models available for this provider
+                      No {projectType} models available for this provider
                     </div>
                   )}
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 

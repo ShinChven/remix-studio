@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle2, Trash2, ChevronDown, List, CheckSquare, Square } from 'lucide-react';
-import { Job } from '../../types';
+import { Job, ProjectType } from '../../types';
 
 interface CompletedTabProps {
   completedJobs: Job[];
@@ -14,6 +14,7 @@ interface CompletedTabProps {
   toggleCompletedSelection: (id: string) => void;
   toggleSelectAllCompleted: () => void;
   setShowDeleteSelectedModal: (show: boolean) => void;
+  projectType?: ProjectType;
 }
 
 export function CompletedTab({
@@ -27,7 +28,8 @@ export function CompletedTab({
   selectedCompletedIds,
   toggleCompletedSelection,
   toggleSelectAllCompleted,
-  setShowDeleteSelectedModal
+  setShowDeleteSelectedModal,
+  projectType = 'image'
 }: CompletedTabProps) {
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -134,6 +136,15 @@ export function CompletedTab({
                           {job.prompt}
                         </div>
                       </div>
+
+                      {projectType === 'text' && job.resultText && (
+                        <div className="space-y-2">
+                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">Generated Text</label>
+                          <div className="text-xs text-neutral-200 leading-relaxed bg-neutral-950/50 p-4 rounded-xl border border-emerald-500/20 select-all whitespace-pre-wrap">
+                            {job.resultText}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="flex flex-col gap-1">

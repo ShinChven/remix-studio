@@ -41,10 +41,11 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const selectedProvider = providers.find(p => p.id === selectedProviderId);
   const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
+  const isTextProject = localProject.type === 'text';
 
   return (
     <div className="p-4 border-t border-neutral-800 bg-neutral-900 shadow-2xl">
-      <button 
+      <button
         onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
         className="w-full p-3 bg-neutral-950/50 border border-neutral-800 rounded-xl mb-3 hover:bg-neutral-900/50 transition-all group flex flex-col gap-2.5"
       >
@@ -61,29 +62,41 @@ export function SettingsPanel({
           </div>
         </div>
 
-        {/* Row 2: Options + Input */}
+        {/* Row 2: Options */}
         <div className="w-full flex items-center justify-between pt-2 border-t border-neutral-800/50">
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-              {localProject.aspectRatio || '1:1'}
-            </span>
-            <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-              {localProject.quality || '1K'}
-            </span>
-            <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-              {localProject.format || 'png'}
-            </span>
+            {isTextProject ? (
+              <>
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  T={localProject.temperature ?? 0.7}
+                </span>
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  {localProject.maxTokens ?? 2048} tok
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  {localProject.aspectRatio || '1:1'}
+                </span>
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  {localProject.quality || '1K'}
+                </span>
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  {localProject.format || 'png'}
+                </span>
+              </>
+            )}
             {localProject.shuffle && (
               <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/30 uppercase tracking-widest flex items-center gap-1">
                 <Shuffle className="w-2.5 h-2.5" /> Shuffle
               </span>
             )}
           </div>
-
         </div>
       </button>
 
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSettingsCollapsed ? 'max-h-0 opacity-0 mb-0' : 'max-h-[600px] opacity-100 mb-4'}`}>
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSettingsCollapsed ? 'max-h-0 opacity-0 mb-0' : 'max-h-[800px] opacity-100 mb-4'}`}>
         <div className="space-y-4 pt-2">
           <div className="space-y-1.5">
             <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
@@ -92,8 +105,8 @@ export function SettingsPanel({
             <button
               onClick={() => setIsModelSelectorOpen(true)}
               className={`w-full border rounded-2xl p-4 text-left transition-all group/model-btn relative overflow-hidden shadow-inner ${
-                !selectedProviderId 
-                  ? 'bg-amber-500/5 border-amber-500/50 hover:bg-amber-500/10' 
+                !selectedProviderId
+                  ? 'bg-amber-500/5 border-amber-500/50 hover:bg-amber-500/10'
                   : 'bg-neutral-950 border-neutral-800 hover:bg-neutral-900'
               }`}
 
@@ -115,112 +128,189 @@ export function SettingsPanel({
             </button>
           </div>
 
-          <div className="space-y-2.5">
-            <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-              Aspect Ratio
-            </label>
-            <div className="grid grid-cols-4 gap-1.5">
-              {(selectedModel?.options.aspectRatios || ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2']).map((ratio) => (
-                <button
-                  key={ratio}
-                  onClick={() => {
-                    const updated = { ...localProject, aspectRatio: ratio };
+          {isTextProject ? (
+            <>
+              {/* System Prompt */}
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  System Prompt
+                </label>
+                <textarea
+                  value={localProject.systemPrompt || ''}
+                  onChange={(e) => {
+                    const updated = { ...localProject, systemPrompt: e.target.value };
                     setLocalProject(updated);
                     onUpdate(updated);
                   }}
-                  className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
-                    (localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1024x1024')) === ratio
-                      ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
-                      : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
-                  }`}
-                >
-                  <div className={`border-2 rounded-[2px] ${
-                    ratio === '1024x1024' || ratio === '1:1' ? 'w-3 h-3' :
-                    ratio === '1536x1024' || ratio === '16:9' ? 'w-5 h-3' :
-                    ratio === '1024x1536' || ratio === '9:16' ? 'w-3 h-5' : 'w-3 h-3'
-                  } ${(localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1024x1024')) === ratio ? 'border-white' : 'border-neutral-700'}`} />
-                  <span className="text-[8px] font-bold">{ratio}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2.5">
-            <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-              Quality
-            </label>
-            <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
-              {(selectedModel?.options.qualities || ['standard', 'hd']).map((q) => (
-                <button
-                  key={q}
-                  onClick={() => {
-                    const updated = { ...localProject, quality: q };
-                    setLocalProject(updated);
-                    onUpdate(updated);
-                  }}
-                  className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
-                    (localProject.quality || (selectedModel?.options.qualities[0] || 'standard')) === q
-                      ? 'bg-neutral-800 text-blue-400 shadow-sm'
-                      : 'text-neutral-600 hover:text-neutral-400'
-                  }`}
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {selectedModel?.options.backgrounds && selectedModel.options.backgrounds.length > 0 && (
-            <div className="space-y-2.5">
-              <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                Background
-              </label>
-              <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
-                {selectedModel.options.backgrounds.map((b) => (
-                  <button
-                    key={b}
-                    onClick={() => {
-                      const updated = { ...localProject, background: b };
-                      setLocalProject(updated);
-                      onUpdate(updated);
-                    }}
-                    className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
-                      (localProject.background || selectedModel.options.backgrounds![0]) === b
-                        ? 'bg-neutral-800 text-blue-400 shadow-sm'
-                        : 'text-neutral-600 hover:text-neutral-400'
-                    }`}
-                  >
-                    {b}
-                  </button>
-                ))}
+                  placeholder="Optional system instructions for the AI model..."
+                  rows={3}
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-300 focus:outline-none focus:ring-1 focus:ring-blue-500/30 resize-none placeholder:text-neutral-700"
+                />
               </div>
-            </div>
-          )}
 
-          <div className="space-y-2.5">
-            <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-              Format
-            </label>
-            <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
-              {['png', 'jpeg', 'webp'].map((f) => (
-                <button
-                  key={f}
-                  onClick={() => {
-                    const updated = { ...localProject, format: f as any };
-                    setLocalProject(updated);
-                    onUpdate(updated);
-                  }}
-                  className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
-                    (localProject.format || 'png') === f
-                      ? 'bg-neutral-800 text-blue-400 shadow-sm'
-                      : 'text-neutral-600 hover:text-neutral-400'
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-          </div>
+              {/* Temperature */}
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Temperature
+                </label>
+                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                  {(selectedModel?.options.temperatures || [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0]).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => {
+                        const updated = { ...localProject, temperature: t };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex-1 min-w-[40px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                        (localProject.temperature ?? 0.7) === t
+                          ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                          : 'text-neutral-600 hover:text-neutral-400'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Max Tokens */}
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Max Tokens
+                </label>
+                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                  {(selectedModel?.options.maxTokenOptions || [256, 512, 1024, 2048, 4096, 8192]).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => {
+                        const updated = { ...localProject, maxTokens: m };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex-1 min-w-[48px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                        (localProject.maxTokens ?? 2048) === m
+                          ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                          : 'text-neutral-600 hover:text-neutral-400'
+                      }`}
+                    >
+                      {m >= 1024 ? `${m/1024}K` : m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Image-specific settings */}
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Aspect Ratio
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(selectedModel?.options.aspectRatios || ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2']).map((ratio) => (
+                    <button
+                      key={ratio}
+                      onClick={() => {
+                        const updated = { ...localProject, aspectRatio: ratio };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
+                        (localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '1024x1024')) === ratio
+                          ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
+                          : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className={`border-2 rounded-[2px] ${
+                        ratio === '1024x1024' || ratio === '1:1' ? 'w-3 h-3' :
+                        ratio === '1536x1024' || ratio === '16:9' ? 'w-5 h-3' :
+                        ratio === '1024x1536' || ratio === '9:16' ? 'w-3 h-5' : 'w-3 h-3'
+                      } ${(localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '1024x1024')) === ratio ? 'border-white' : 'border-neutral-700'}`} />
+                      <span className="text-[8px] font-bold">{ratio}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Quality
+                </label>
+                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                  {(selectedModel?.options.qualities || ['standard', 'hd']).map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => {
+                        const updated = { ...localProject, quality: q };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                        (localProject.quality || (selectedModel?.options.qualities?.[0] || 'standard')) === q
+                          ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                          : 'text-neutral-600 hover:text-neutral-400'
+                      }`}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {selectedModel?.options.backgrounds && selectedModel.options.backgrounds.length > 0 && (
+                <div className="space-y-2.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                    Background
+                  </label>
+                  <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                    {selectedModel.options.backgrounds.map((b) => (
+                      <button
+                        key={b}
+                        onClick={() => {
+                          const updated = { ...localProject, background: b };
+                          setLocalProject(updated);
+                          onUpdate(updated);
+                        }}
+                        className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                          (localProject.background || selectedModel.options.backgrounds![0]) === b
+                            ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                            : 'text-neutral-600 hover:text-neutral-400'
+                        }`}
+                      >
+                        {b}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Format
+                </label>
+                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                  {['png', 'jpeg', 'webp'].map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => {
+                        const updated = { ...localProject, format: f as any };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                        (localProject.format || 'png') === f
+                          ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                          : 'text-neutral-600 hover:text-neutral-400'
+                      }`}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="space-y-2.5">
             <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
@@ -283,8 +373,8 @@ export function SettingsPanel({
 
       <div className={`transition-all duration-300 overflow-hidden ${workflowError || !selectedProviderId ? 'max-h-16 opacity-100 mb-3' : 'max-h-0 opacity-0 mb-0'}`}>
         <div className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-[10px] font-bold shadow-lg ${
-          !selectedProviderId 
-            ? 'bg-amber-500/10 border-amber-500/20 text-amber-500 shadow-amber-500/5' 
+          !selectedProviderId
+            ? 'bg-amber-500/10 border-amber-500/20 text-amber-500 shadow-amber-500/5'
             : 'bg-red-500/10 border-red-500/20 text-red-500 shadow-red-500/5'
         }`}>
           <AlertCircle className="w-4 h-4 flex-shrink-0" />

@@ -156,17 +156,30 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     if (selectedModel) {
       let needsUpdate = false;
       const updated = { ...localProject };
-      if (!selectedModel.options.aspectRatios.includes(localProject.aspectRatio || '')) {
-        updated.aspectRatio = selectedModel.options.aspectRatios[0];
-        needsUpdate = true;
-      }
-      if (!selectedModel.options.qualities.includes(localProject.quality || '')) {
-        updated.quality = selectedModel.options.qualities[0];
-        needsUpdate = true;
-      }
-      if (selectedModel.options.backgrounds && !selectedModel.options.backgrounds.includes(localProject.background || '')) {
-        updated.background = selectedModel.options.backgrounds[0];
-        needsUpdate = true;
+      if (selectedModel.category === 'text') {
+        // Sync text-specific defaults
+        if (selectedModel.options.temperatures && localProject.temperature === undefined) {
+          updated.temperature = 0.7;
+          needsUpdate = true;
+        }
+        if (selectedModel.options.maxTokenOptions && localProject.maxTokens === undefined) {
+          updated.maxTokens = 2048;
+          needsUpdate = true;
+        }
+      } else {
+        // Sync image-specific defaults
+        if (selectedModel.options.aspectRatios && !selectedModel.options.aspectRatios.includes(localProject.aspectRatio || '')) {
+          updated.aspectRatio = selectedModel.options.aspectRatios[0];
+          needsUpdate = true;
+        }
+        if (selectedModel.options.qualities && !selectedModel.options.qualities.includes(localProject.quality || '')) {
+          updated.quality = selectedModel.options.qualities[0];
+          needsUpdate = true;
+        }
+        if (selectedModel.options.backgrounds && !selectedModel.options.backgrounds.includes(localProject.background || '')) {
+          updated.background = selectedModel.options.backgrounds[0];
+          needsUpdate = true;
+        }
       }
       if (needsUpdate) {
         setLocalProject(updated);
@@ -313,24 +326,29 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       // Sanitize filename: remove invalid characters and truncate to 200 chars
       const filename = parts.join('_').replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 200);
 
+      const isTextProject = localProject.type === 'text';
       return {
         id: crypto.randomUUID(),
         prompt: combo.prompt,
-        imageContexts: combo.imageContexts,
+        imageContexts: isTextProject ? undefined : combo.imageContexts,
         status: 'draft',
         providerId: selectedProviderId,
         modelConfigId: selectedModelId,
-        aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios[0] || '1024x1024'),
-        quality: localProject.quality || (selectedModel?.options.qualities[0] || 'standard'),
-        background: localProject.background || (selectedModel?.options.backgrounds?.[0]),
-        format: localProject.format || 'png',
+        ...(isTextProject ? {} : {
+          aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '1024x1024'),
+          quality: localProject.quality || (selectedModel?.options.qualities?.[0] || 'standard'),
+          background: localProject.background || (selectedModel?.options.backgrounds?.[0]),
+          format: localProject.format || 'png',
+        }),
         filename: filename
       };
     });
     const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
     await apiUpdateProject(updatedProject.id, {
       jobs: updatedProject.jobs, workflow: updatedProject.workflow, providerId: selectedProviderId,
+      modelConfigId: selectedModelId,
       aspectRatio: localProject.aspectRatio, quality: localProject.quality, background: localProject.background, format: localProject.format || 'png', shuffle: localProject.shuffle,
+      systemPrompt: localProject.systemPrompt, temperature: localProject.temperature, maxTokens: localProject.maxTokens,
     });
     setLocalProject(updatedProject);
     setActiveTab('draft');
@@ -519,6 +537,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         providers={providers}
         selectedProviderId={selectedProviderId}
         selectedModelId={selectedModelId}
+        projectType={localProject.type || 'image'}
         onSelect={(providerId, modelId) => {
           setSelectedProviderId(providerId); setSelectedModelId(modelId); setIsModelSelectorOpen(false);
           const updated = { ...localProject, providerId }; setLocalProject(updated); onUpdate(updated);
@@ -640,7 +659,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               <button onClick={() => setActiveTab('album')} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg transition-all ${activeTab === 'album' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
                 <div className="flex items-center gap-1.5">
                   <Grid className="w-3 h-3" />
-                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">Album</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">{localProject.type === 'text' ? 'Texts' : 'Album'}</span>
                 </div>
                 <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({albumItems.length})</span>
               </button>
@@ -659,6 +678,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
               albumItems={albumItems}
               onSwitchToAlbum={() => setActiveTab('album')}
+              projectType={localProject.type || 'image'}
             />
           )}
           {activeTab === 'queue' && (
@@ -677,6 +697,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               toggleSelectAllCompleted={toggleSelectAllCompleted} setShowDeleteSelectedModal={setShowDeleteCompletedSelectedModal}
               getProviderName={getProviderName} getModelName={getModelName}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
+              projectType={localProject.type || 'image'}
             />
           )}
           {activeTab === 'album' && (
@@ -688,6 +709,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               setShowDeleteAlbumModal={setShowDeleteAlbumModal} getProviderName={getProviderName} getModelName={getModelName}
               setLightboxData={setLightboxData}
               onExportStarted={() => navigate('/exports')}
+              projectType={localProject.type || 'image'}
             />
           )}
         </div>
