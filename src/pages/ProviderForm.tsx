@@ -128,18 +128,18 @@ export function ProviderForm() {
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
                 Provider Type
               </label>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {PROVIDER_TYPES.map(t => (
                   <button
                     key={t}
                     type="button"
                     onClick={() => setType(t)}
-                    className={`flex items-center gap-3 p-3 rounded-2xl border transition-all text-left ${
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all text-left min-h-[68px] ${
                       type === t ? 'bg-amber-500/10 border-amber-500/50 text-amber-400' : 'bg-neutral-950 border-neutral-800 text-neutral-600 hover:border-neutral-700'
                     }`}
                   >
                     <div className="flex-1">
-                      <span className="text-sm font-bold block">{t}</span>
+                      <span className="text-sm font-bold block leading-tight">{t}</span>
                       <span className="text-[11px] opacity-60 font-normal">{TYPE_DESCRIPTIONS[t]}</span>
                     </div>
                     {type === t && <div className="w-2 h-2 rounded-full bg-current flex-shrink-0" />}

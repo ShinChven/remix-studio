@@ -82,7 +82,7 @@ export function Providers() {
             </div>
           )}
 
-          <div className="space-y-2.5">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5">
             {isLoading ? (
               [1, 2, 3].map(i => (
                 <div key={i} className="h-14 rounded-xl bg-neutral-900/40 border border-neutral-800/60 animate-pulse" />
