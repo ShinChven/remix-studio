@@ -227,6 +227,41 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  Claude: [
+    {
+      id: 'claude-opus-4-text',
+      name: 'Claude Opus 4',
+      generatorId: 'Claude',
+      modelId: 'claude-opus-4-20250514',
+      category: 'text',
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384],
+      },
+    },
+    {
+      id: 'claude-sonnet-4-text',
+      name: 'Claude Sonnet 4',
+      generatorId: 'Claude',
+      modelId: 'claude-sonnet-4-20250514',
+      category: 'text',
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384],
+      },
+    },
+    {
+      id: 'claude-haiku-3-5-text',
+      name: 'Claude 3.5 Haiku',
+      generatorId: 'Claude',
+      modelId: 'claude-3-5-haiku-20241022',
+      category: 'text',
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192],
+      },
+    },
+  ],
 };
 
 export interface Job {
@@ -305,7 +340,7 @@ export interface Project {
   maxTokens?: number;
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI' | 'Grok';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI' | 'Grok' | 'Claude';
 
 export interface ProviderUsageSummary {
   projectCount: number;

@@ -3,6 +3,7 @@ import { TextGenerator } from './text-generator';
 import { GoogleAITextGenerator } from './google-ai-text-generator';
 import { VertexAITextGenerator } from './vertex-ai-text-generator';
 import { OpenAITextGenerator } from './openai-text-generator';
+import { ClaudeTextGenerator } from './claude-text-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -23,6 +24,8 @@ export function buildTextGenerator(
       return new VertexAITextGenerator(apiKey, safeApiUrl);
     case 'OpenAI':
       return new OpenAITextGenerator(apiKey, safeApiUrl);
+    case 'Claude':
+      return new ClaudeTextGenerator(apiKey, safeApiUrl);
     default:
       throw new Error(`Provider type '${type}' does not support text generation`);
   }

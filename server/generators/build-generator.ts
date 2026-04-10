@@ -30,6 +30,8 @@ export function buildGenerator(
       return new OpenAIGenerator(apiKey, safeApiUrl);
     case 'Grok':
       return new GrokGenerator(apiKey, safeApiUrl);
+    case 'Claude':
+      throw new Error(`Provider type 'Claude' does not support image generation`);
     default: {
       // Exhaustiveness check — TypeScript will error here if a new ProviderType is added
       const _never: never = type;
