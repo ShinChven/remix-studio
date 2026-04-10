@@ -1,4 +1,6 @@
 ALTER TABLE "InviteCode"
+ADD COLUMN "note" TEXT,
+ADD COLUMN "membershipTier" TEXT NOT NULL DEFAULT 'free',
 ADD COLUMN "maxUses" INTEGER NOT NULL DEFAULT 1;
 
 CREATE TABLE "InviteRedemption" (
