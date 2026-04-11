@@ -568,6 +568,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const projectId = c.req.param('id');
       const body = await c.req.json();
       const itemIds = body.itemIds as string[];
+      const packageName = typeof body.packageName === 'string' ? body.packageName : undefined;
 
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
@@ -596,7 +597,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         }, 403);
       }
 
-      const taskId = await exportManager.startExport(user.userId, projectId, project.name, itemsToExport);
+      const taskId = await exportManager.startExport(user.userId, projectId, project.name, itemsToExport, packageName);
       return c.json({ taskId });
     } catch (e) {
       console.error('[POST /api/projects/:id/export]', e);

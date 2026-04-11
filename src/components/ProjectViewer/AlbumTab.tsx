@@ -3,6 +3,7 @@ import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalL
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
+import { ExportPackageDialog } from './ExportPackageDialog';
 import { TextAlbumCompareDialog } from './TextAlbumCompareDialog';
 import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
 
@@ -26,6 +27,7 @@ interface AlbumTabProps {
 
 export function AlbumTab({
   projectId,
+  projectName,
   albumItems,
   selectedAlbumIds,
   toggleSelectAllAlbum,
@@ -38,16 +40,27 @@ export function AlbumTab({
   onExportStarted,
   projectType = 'image'
 }: AlbumTabProps) {
+  const getDefaultExportPackageName = (name: string) => {
+    const safeName = (name || 'Album').replace(/[^a-zA-Z0-9-_]/g, '_');
+    return `${safeName}_Album.zip`;
+  };
+
   const isTextProject = projectType === 'text';
   const [promptItem, setPromptItem] = useState<AlbumItem | null>(null);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [showCompareDialog, setShowCompareDialog] = useState(false);
+  const [pendingExportItemIds, setPendingExportItemIds] = useState<string[] | undefined>();
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const selectedTextItems = albumItems.filter((item) => selectedAlbumIds.has(item.id));
 
-  const handleExport = async (isAll: boolean) => {
+  const openExportDialog = (isAll: boolean) => {
+    setPendingExportItemIds(isAll ? undefined : Array.from(selectedAlbumIds));
+    setIsExportDialogOpen(true);
+  };
+
+  const handleExport = async (packageName: string) => {
     try {
-      const itemIds = isAll ? undefined : Array.from(selectedAlbumIds);
-      await startAlbumExport(projectId, itemIds);
+      await startAlbumExport(projectId, pendingExportItemIds, packageName);
       onExportStarted();
       toast.success(
         <span>
@@ -57,6 +70,7 @@ export function AlbumTab({
       );
     } catch (err: any) {
       toast.error(`Export failed: ${err.message}`);
+      throw err;
     }
   };
 
@@ -95,7 +109,7 @@ export function AlbumTab({
                     {selectedAlbumIds.size} Selected
                   </span>
                   <button
-                    onClick={() => handleExport(false)}
+                    onClick={() => openExportDialog(false)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
                   >
                     <Download className="w-3 h-3" /> Export Selected
@@ -124,7 +138,7 @@ export function AlbumTab({
               {selectedAlbumIds.size === 0 && (
                 <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
                   <button
-                    onClick={() => handleExport(true)}
+                    onClick={() => openExportDialog(true)}
                     className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
                   >
                     <Download className="w-4 h-4" /> Export All
@@ -344,6 +358,13 @@ export function AlbumTab({
       <AlbumPromptModal item={promptItem} onClose={() => setPromptItem(null)} />
       {showCompareDialog && <TextAlbumCompareDialog items={selectedTextItems} setLightboxData={setLightboxData} onClose={() => setShowCompareDialog(false)} />}
       <TextAlbumDetailDialog items={albumItems} startIndex={detailIndex} setLightboxData={setLightboxData} onClose={() => setDetailIndex(null)} />
+      <ExportPackageDialog
+        isOpen={isExportDialogOpen}
+        defaultValue={getDefaultExportPackageName(projectName)}
+        itemCount={pendingExportItemIds?.length ?? albumItems.length}
+        onClose={() => setIsExportDialogOpen(false)}
+        onSubmit={handleExport}
+      />
     </section>
   );
 }

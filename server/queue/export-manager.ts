@@ -28,6 +28,7 @@ export interface ExportTask {
   id: string;
   projectId: string;
   projectName: string;
+  packageName?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   current: number;
   total: number;
@@ -60,18 +61,29 @@ export class ExportManager {
    * Insert a pending task row and return the taskId immediately.
    * The worker loop will pick it up and run it.
    */
+  private normalizePackageName(value?: string, fallbackProjectName?: string): string {
+    const raw = (value || '').trim() || `${fallbackProjectName || 'Album'}_Album.zip`;
+    const withoutZip = raw.replace(/\.zip$/i, '').trim();
+    const safeBase = (withoutZip || `${fallbackProjectName || 'Album'}_Album`).replace(/[^a-zA-Z0-9-_]/g, '_');
+    const compactBase = safeBase.replace(/_+/g, '_').replace(/^_+|_+$/g, '') || 'Album';
+    return `${compactBase}.zip`;
+  }
+
   async startExport(
     userId: string,
     projectId: string,
     projectName: string,
-    items: AlbumItem[]
+    items: AlbumItem[],
+    packageName?: string
   ): Promise<string> {
     const taskId = crypto.randomUUID();
     const now = Date.now();
+    const normalizedPackageName = this.normalizePackageName(packageName, projectName);
     const taskData: ExportTask = {
       id: taskId,
       projectId,
       projectName,
+      packageName: normalizedPackageName,
       status: 'pending',
       current: 0,
       total: items.length,
@@ -103,9 +115,9 @@ export class ExportManager {
   async presignTask(task: any): Promise<ExportTask> {
     if (task.status === 'completed' && task.s3Key) {
       try {
-        const safeProjectName = (task.projectName || 'Album').replace(/[^a-zA-Z0-9-_]/g, '_');
+        const packageName = this.normalizePackageName(task.packageName, task.projectName);
         const downloadUrl = await this.exportStorage.getPresignedUrl(task.s3Key, 86400, {
-          responseContentDisposition: `attachment; filename="${safeProjectName}_Album.zip"`,
+          responseContentDisposition: `attachment; filename="${packageName}"`,
           responseContentType: 'application/zip',
         });
         return { ...task, downloadUrl };
@@ -169,13 +181,13 @@ export class ExportManager {
   // ─── Pipeline ─────────────────────────────────────────────────────────────
 
   private async runExportTask(task: any): Promise<void> {
-    const { id: taskId, userId, projectName } = task;
+    const { id: taskId, userId, projectName, packageName } = task;
     const items: AlbumItem[] = task.items ?? [];
 
     console.log(`[ExportManager] Starting task ${taskId} (${items.length} items, user=${userId})`);
 
-    const safeProjectName = (projectName || 'Album').replace(/[^a-zA-Z0-9-_]/g, '_');
-    const s3Key = `${userId}/exports/${taskId}/${safeProjectName}_Album.zip`;
+    const normalizedPackageName = this.normalizePackageName(packageName, projectName);
+    const s3Key = `${userId}/exports/${taskId}/${normalizedPackageName}`;
 
     // Heartbeat timer
     const heartbeatInterval = setInterval(async () => {

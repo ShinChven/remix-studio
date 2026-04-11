@@ -471,6 +471,7 @@ export interface ExportTask {
   id: string;
   projectId: string;
   projectName: string;
+  packageName?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   current: number;
   total: number;

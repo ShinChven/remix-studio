@@ -722,11 +722,11 @@ export async function emptyTrash(): Promise<void> {
   }
 }
 
-export async function startAlbumExport(projectId: string, itemIds?: string[]): Promise<{ taskId: string }> {
+export async function startAlbumExport(projectId: string, itemIds?: string[], packageName?: string): Promise<{ taskId: string }> {
   const res = await fetch(`/api/projects/${projectId}/export`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ itemIds }),
+    body: JSON.stringify({ itemIds, packageName }),
   });
   return handleResponse<{ taskId: string }>(res, 'Failed to start export');
 }
