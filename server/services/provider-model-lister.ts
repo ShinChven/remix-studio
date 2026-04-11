@@ -48,8 +48,16 @@ export async function listProviderModels(
     case 'Grok':
       result = await listGrokModels(apiKey, apiUrl);
       break;
-    case 'RunningHub':
-      return { models: [] }; // RunningHub doesn't expose a model listing API
+    case 'RunningHub': {
+      // RunningHub has no model listing API — return our static supported models
+      const staticModels: ProviderModel[] = (PROVIDER_MODELS_MAP['RunningHub'] || []).map(c => ({
+        id: c.modelId,
+        name: c.name,
+        category: c.category,
+        supported: true,
+      }));
+      return { models: staticModels };
+    }
     default:
       return { models: [], error: `Unsupported provider type: ${type}` };
   }

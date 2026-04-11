@@ -62,7 +62,11 @@ export function ProviderProfile() {
   }, [id]);
 
   useEffect(() => { loadProvider(); }, [loadProvider]);
-  useEffect(() => { if (provider?.hasKey) loadModels(); }, [provider?.hasKey, loadModels]);
+  // RunningHub uses static models (no API key required); others require a key
+  useEffect(() => {
+    if (!provider) return;
+    if (provider.type === 'RunningHub' || provider.hasKey) loadModels();
+  }, [provider, loadModels]);
 
   const grouped = {
     text:  models.filter(m => m.category === 'text'),
@@ -143,23 +147,27 @@ export function ProviderProfile() {
           <InfoCard label="Concurrency" value={String(provider.concurrency)} />
           <InfoCard label="Projects" value={String(provider.usage?.projectCount ?? 0)} />
           <InfoCard label="Active Jobs" value={String(provider.usage?.activeJobCount ?? 0)} />
-          <InfoCard label="Total Models" value={isLoadingModels ? '...' : String(models.length)} />
+          <InfoCard label="Supported Models" value={isLoadingModels ? '...' : String(models.length)} />
         </section>
 
         {/* Models */}
         <section>
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-xl font-semibold text-white">Available Models</h3>
-            <button
-              onClick={loadModels}
-              disabled={isLoadingModels}
-              className="text-xs text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoadingModels ? 'animate-spin' : ''}`} /> Refresh
-            </button>
+            <h3 className="text-xl font-semibold text-white">
+              {provider.type === 'RunningHub' ? 'Supported Models' : 'Available Models'}
+            </h3>
+            {provider.type !== 'RunningHub' && (
+              <button
+                onClick={loadModels}
+                disabled={isLoadingModels}
+                className="text-xs text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingModels ? 'animate-spin' : ''}`} /> Refresh
+              </button>
+            )}
           </div>
 
-          {!provider.hasKey && (
+          {!provider.hasKey && provider.type !== 'RunningHub' && (
             <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               Add an API key to fetch available models from the provider.
@@ -177,7 +185,7 @@ export function ProviderProfile() {
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-6 h-6 text-neutral-500 animate-spin" />
             </div>
-          ) : provider.hasKey && models.length === 0 && !modelsError ? (
+          ) : (provider.hasKey || provider.type === 'RunningHub') && models.length === 0 && !modelsError ? (
             <div className="py-12 text-center text-neutral-500 text-sm">
               No models returned by the provider API.
             </div>
