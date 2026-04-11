@@ -49,6 +49,12 @@ export function AlbumTab({
       const itemIds = isAll ? undefined : Array.from(selectedAlbumIds);
       await startAlbumExport(projectId, itemIds);
       onExportStarted();
+      toast.success(
+        <span>
+          Export queued!{' '}
+          <a href="/exports" className="underline font-bold">View progress in Archive →</a>
+        </span>
+      );
     } catch (err: any) {
       toast.error(`Export failed: ${err.message}`);
     }

@@ -164,18 +164,19 @@ export function DraftsTab({
         <div className="space-y-3">
             {draftJobs.map(task => {
               const isExpanded = expandedJobId === task.id;
+              const isSelected = selectedDraftIds.has(task.id);
               return (
                 <div key={task.id} className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className={`bg-neutral-950/50 p-4 rounded-xl border flex justify-between items-center transition-all cursor-pointer group/task ${isExpanded ? 'border-blue-500/50 bg-neutral-900/50 rounded-b-none' : 'border-neutral-800 hover:border-neutral-700'}`}>
+                    <div className={`bg-neutral-950/50 p-4 rounded-xl border flex justify-between items-center transition-all cursor-pointer group/task ${isSelected ? 'border-blue-500/30 bg-blue-500/5' : isExpanded ? 'border-blue-500/50 bg-neutral-900/50 rounded-b-none' : 'border-neutral-800 hover:border-neutral-700'}`}>
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                          <button 
                            onClick={(e) => { e.stopPropagation(); toggleDraftSelection(task.id); }}
-                           className="flex-shrink-0 p-1 rounded-lg hover:bg-neutral-800 text-neutral-500 hover:text-white transition-colors"
+                           className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isSelected ? 'bg-blue-500/20 text-blue-400' : 'hover:bg-neutral-800 text-neutral-500 hover:text-white'}`}
                          >
-                           {selectedDraftIds.has(task.id) ? (
-                             <CheckSquare className="w-4 h-4 text-blue-500" />
+                           {isSelected ? (
+                             <CheckSquare className="w-4 h-4" />
                            ) : (
-                             <Square className="w-4 h-4 text-neutral-600" />
+                             <Square className="w-4 h-4" />
                            )}
                          </button>
                          <div 

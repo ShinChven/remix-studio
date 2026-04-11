@@ -36,6 +36,20 @@ export interface IRepository {
   getExportTask(userId: string, taskId: string): Promise<any | undefined>;
   saveExportTask(userId: string, taskId: string, data: any): Promise<void>;
   deleteExportTask(userId: string, taskId: string): Promise<void>;
+  // Queue operations
+  claimNextExportTask(workerId: string): Promise<any | null>;
+  heartbeatExportTask(taskId: string): Promise<void>;
+  reapStaleExportTasks(thresholdMinutes?: number): Promise<number>;
+
+  // === Delivery Task CRUD + Queue ===
+  saveDeliveryTask(userId: string, taskId: string, data: any): Promise<void>;
+  getDeliveryTask(userId: string, taskId: string): Promise<any | undefined>;
+  deleteDeliveryTask(userId: string, taskId: string): Promise<void>;
+  claimNextDeliveryTask(workerId: string): Promise<any | null>;
+  heartbeatDeliveryTask(taskId: string): Promise<void>;
+  reapStaleDeliveryTasks(thresholdMinutes?: number): Promise<number>;
+
+
 
   // === Trash CRUD ===
   getTrashItems(userId: string): Promise<TrashItem[]>;

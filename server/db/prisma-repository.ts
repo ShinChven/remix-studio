@@ -61,6 +61,18 @@ export class PrismaRepository implements IRepository {
   getExportTask(userId: string, taskId: string) { return this.projects.getExportTask(userId, taskId); }
   saveExportTask(userId: string, taskId: string, data: any) { return this.projects.saveExportTask(userId, taskId, data); }
   deleteExportTask(userId: string, taskId: string) { return this.projects.deleteExportTask(userId, taskId); }
+  // Queue operations
+  claimNextExportTask(workerId: string) { return this.projects.claimNextExportTask(workerId); }
+  heartbeatExportTask(taskId: string) { return this.projects.heartbeatExportTask(taskId); }
+  reapStaleExportTasks(thresholdMinutes?: number) { return this.projects.reapStaleExportTasks(thresholdMinutes); }
+
+  // === Delivery Task CRUD + Queue ===
+  saveDeliveryTask(userId: string, taskId: string, data: any) { return this.projects.saveDeliveryTask(userId, taskId, data); }
+  getDeliveryTask(userId: string, taskId: string) { return this.projects.getDeliveryTask(userId, taskId); }
+  deleteDeliveryTask(userId: string, taskId: string) { return this.projects.deleteDeliveryTask(userId, taskId); }
+  claimNextDeliveryTask(workerId: string) { return this.projects.claimNextDeliveryTask(workerId); }
+  heartbeatDeliveryTask(taskId: string) { return this.projects.heartbeatDeliveryTask(taskId); }
+  reapStaleDeliveryTasks(thresholdMinutes?: number) { return this.projects.reapStaleDeliveryTasks(thresholdMinutes); }
 
   // === Legacy / Migration ===
   getUserData(userId: string) { return this.data.getUserData(userId); }

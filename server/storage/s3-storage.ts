@@ -8,6 +8,8 @@ import {
   CopyObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Upload } from '@aws-sdk/lib-storage';
+import type { Readable } from 'node:stream';
 import { IStorage } from './storage';
 
 export class S3Storage implements IStorage {
@@ -88,6 +90,45 @@ export class S3Storage implements IStorage {
     return Buffer.from(bytes);
   }
 
+  /** Return the S3 object body as a Node.js Readable stream (no buffering). */
+  async readStream(key: string): Promise<Readable> {
+    const result = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key })
+    );
+    // AWS SDK v3 body is a web ReadableStream; cast to Node Readable
+    return result.Body as unknown as Readable;
+  }
+
+  /**
+   * Upload a stream to S3 using multipart upload (no Content-Length needed).
+   * Uses 5 MB parts, 2-part concurrency, and auto-aborts on error.
+   */
+  async uploadStream(
+    key: string,
+    stream: Readable,
+    contentType = 'application/octet-stream',
+    onProgress?: (loaded: number) => void,
+  ): Promise<void> {
+    const upload = new Upload({
+      client: this.client,
+      params: {
+        Bucket: this.bucket,
+        Key: key,
+        Body: stream,
+        ContentType: contentType,
+      },
+      partSize: 5 * 1024 * 1024,
+      queueSize: 2,
+      leavePartsOnError: false,
+    });
+    if (onProgress) {
+      upload.on('httpUploadProgress', (progress) => {
+        onProgress(progress.loaded ?? 0);
+      });
+    }
+    await upload.done();
+  }
+
   async getSize(key: string): Promise<number | undefined> {
     try {
       const result = await this.client.send(
@@ -139,8 +180,20 @@ export class S3Storage implements IStorage {
     })).filter((obj) => Boolean(obj.key));
   }
 
-  async getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {
-    const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
+  async getPresignedUrl(
+    key: string,
+    expiresIn = 3600,
+    opts?: {
+      responseContentDisposition?: string;
+      responseContentType?: string;
+    },
+  ): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ...(opts?.responseContentDisposition ? { ResponseContentDisposition: opts.responseContentDisposition } : {}),
+      ...(opts?.responseContentType ? { ResponseContentType: opts.responseContentType } : {}),
+    });
     return getSignedUrl(this.publicClient, command, { expiresIn });
   }
 

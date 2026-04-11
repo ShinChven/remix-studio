@@ -480,6 +480,19 @@ export interface ExportTask {
   createdAt: number;
 }
 
+export interface DeliveryStatus {
+  id: string;
+  exportTaskId: string;
+  destination: 'drive';
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  bytesTransferred: number;
+  totalBytes?: number;
+  externalId?: string;
+  externalUrl?: string;
+  error?: string;
+  createdAt: number;
+}
+
 export interface StorageSubCategory {
   id: string;
   name: string;

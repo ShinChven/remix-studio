@@ -27,12 +27,13 @@ model User {
   updatedAt    DateTime @updatedAt
   lastLoginAt  DateTime?
 
-  providers    Provider[]
-  libraries    Library[]
-  projects     Project[]
-  trashItems   TrashItem[]
-  exportTasks  ExportTask[]
-  passkeys     PasskeyCredential[]
+  providers     Provider[]
+  libraries     Library[]
+  projects      Project[]
+  trashItems    TrashItem[]
+  exportTasks   ExportTask[]
+  deliveryTasks DeliveryTask[]
+  passkeys      PasskeyCredential[]
   oauthAuthorizationCodes OAuthAuthorizationCode[]
   oauthAccessTokens       OAuthAccessToken[]
   personalAccessTokens    PersonalAccessToken[]
@@ -275,22 +276,55 @@ model TrashItem {
 }
 
 model ExportTask {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   userId      String
   projectId   String?
-  status      String   @default("pending")
+  status      String    @default("pending")
   downloadUrl String?
-  error       String?  @db.Text
+  error       String?   @db.Text
   size        BigInt?
-  data        Json?    // Flexible blob for any extra fields
-  createdAt   DateTime @default(now())
+  data        Json?     // Flexible blob for any extra fields
+  createdAt   DateTime  @default(now())
   expiresAt   DateTime?
+  // Queue fields
+  claimedAt   DateTime?
+  workerId    String?
+  heartbeatAt DateTime?
+  attempts    Int       @default(0)
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project       Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  deliveryTasks DeliveryTask[]
 
   @@index([userId])
   @@index([userId, projectId])
+  @@index([status, createdAt])
+}
+
+model DeliveryTask {
+  id               String    @id @default(uuid())
+  userId           String
+  exportTaskId     String
+  destination      String    @default("drive")
+  status           String    @default("pending")
+  bytesTransferred BigInt    @default(0)
+  totalBytes       BigInt?
+  externalId       String?
+  externalUrl      String?
+  error            String?   @db.Text
+  createdAt        DateTime  @default(now())
+  expiresAt        DateTime?
+  // Queue fields
+  claimedAt        DateTime?
+  workerId         String?
+  heartbeatAt      DateTime?
+  attempts         Int       @default(0)
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exportTask ExportTask @relation(fields: [exportTaskId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status, createdAt])
 }
 
 // === MCP OAuth 2.0 ===
