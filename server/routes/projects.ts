@@ -241,10 +241,12 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (!id || !name) return c.json({ error: 'id and name are required' }, 400);
       if (id.length > 128 || name.length > 256) return c.json({ error: 'Field too long' }, 400);
 
+      const projectType: 'image' | 'text' | 'video' =
+        body.type === 'text' ? 'text' : body.type === 'video' ? 'video' : 'image';
       const project = {
         id,
         name,
-        type: body.type === 'text' ? 'text' as const : 'image' as const,
+        type: projectType,
         createdAt: typeof body.createdAt === 'number' ? body.createdAt : Date.now(),
         workflow: Array.isArray(body.workflow) ? body.workflow : [],
         jobs: Array.isArray(body.jobs) ? body.jobs : [],
@@ -259,6 +261,8 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         systemPrompt: typeof body.systemPrompt === 'string' ? body.systemPrompt : undefined,
         temperature: typeof body.temperature === 'number' ? body.temperature : undefined,
         maxTokens: typeof body.maxTokens === 'number' ? body.maxTokens : undefined,
+        duration: typeof body.duration === 'number' ? body.duration : undefined,
+        resolution: typeof body.resolution === 'string' ? body.resolution : undefined,
       };
 
       await repository.createProject(user.userId, project);
@@ -306,13 +310,15 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (typeof body?.providerId === 'string') updates.providerId = body.providerId;
       if (typeof body?.aspectRatio === 'string') updates.aspectRatio = body.aspectRatio;
       if (typeof body?.quality === 'string') updates.quality = body.quality;
-      if (typeof body?.format === 'string') updates.format = body.format as 'png' | 'jpeg' | 'webp';
+      if (typeof body?.format === 'string') updates.format = body.format as 'png' | 'jpeg' | 'webp' | 'mp4';
       if (typeof body?.shuffle === 'boolean') updates.shuffle = body.shuffle;
       if (typeof body?.modelConfigId === 'string') updates.modelConfigId = body.modelConfigId;
       if (typeof body?.prefix === 'string') updates.prefix = body.prefix.trim();
       if (typeof body?.systemPrompt === 'string') updates.systemPrompt = body.systemPrompt;
       if (typeof body?.temperature === 'number') updates.temperature = body.temperature;
       if (typeof body?.maxTokens === 'number') updates.maxTokens = body.maxTokens;
+      if (typeof body?.duration === 'number') updates.duration = body.duration;
+      if (typeof body?.resolution === 'string') updates.resolution = body.resolution;
       
       // Storage check for new jobs (Drafts)
       if (updates.jobs) {

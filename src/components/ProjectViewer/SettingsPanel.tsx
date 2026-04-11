@@ -42,6 +42,7 @@ export function SettingsPanel({
   const selectedProvider = providers.find(p => p.id === selectedProviderId);
   const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
   const isTextProject = localProject.type === 'text';
+  const isVideoProject = localProject.type === 'video';
 
   return (
     <div className="p-4 border-t border-neutral-800 bg-neutral-900 shadow-2xl">
@@ -72,6 +73,18 @@ export function SettingsPanel({
                 </span>
                 <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
                   {localProject.maxTokens ?? 2048} tok
+                </span>
+              </>
+            ) : isVideoProject ? (
+              <>
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  {localProject.aspectRatio || '16:9'}
+                </span>
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  {localProject.resolution || '720p'}
+                </span>
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  {localProject.duration ?? 4}s
                 </span>
               </>
             ) : (
@@ -128,7 +141,92 @@ export function SettingsPanel({
             </button>
           </div>
 
-          {isTextProject ? (
+          {isVideoProject ? (
+            <>
+              {/* Aspect Ratio */}
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Aspect Ratio
+                </label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {(selectedModel?.options.aspectRatios || ['16:9', '9:16', '1:1']).map((ratio) => (
+                    <button
+                      key={ratio}
+                      onClick={() => {
+                        const updated = { ...localProject, aspectRatio: ratio };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
+                        (localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '16:9')) === ratio
+                          ? 'bg-purple-600 text-white border-purple-500 shadow-lg shadow-purple-500/20'
+                          : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className={`border-2 rounded-[2px] ${
+                        ratio === '1:1' ? 'w-3 h-3' :
+                        ratio === '16:9' ? 'w-5 h-3' :
+                        ratio === '9:16' ? 'w-3 h-5' : 'w-3 h-3'
+                      } ${(localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '16:9')) === ratio ? 'border-white' : 'border-neutral-700'}`} />
+                      <span className="text-[8px] font-bold">{ratio}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Resolution */}
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Resolution
+                </label>
+                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                  {(selectedModel?.options.resolutions || ['720p', '1080p']).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => {
+                        const updated = { ...localProject, resolution: r };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex-1 min-w-[48px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                        (localProject.resolution || (selectedModel?.options.resolutions?.[0] || '720p')) === r
+                          ? 'bg-neutral-800 text-purple-400 shadow-sm'
+                          : 'text-neutral-600 hover:text-neutral-400'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Duration (s)
+                </label>
+                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                  {(selectedModel?.options.durations || [4, 6, 8]).map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => {
+                        const updated = { ...localProject, duration: d };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex-1 min-w-[40px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                        (localProject.duration ?? (selectedModel?.options.durations?.[0] || 4)) === d
+                          ? 'bg-neutral-800 text-purple-400 shadow-sm'
+                          : 'text-neutral-600 hover:text-neutral-400'
+                      }`}
+                    >
+                      {d}s
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : isTextProject ? (
             <>
               {/* System Prompt */}
               <div className="space-y-2.5">

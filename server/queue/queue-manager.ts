@@ -4,18 +4,21 @@ import { ProjectRepository } from '../db/project-repository';
 import { S3Storage } from '../storage/s3-storage';
 import { buildGenerator } from '../generators/build-generator';
 import { buildTextGenerator } from '../generators/build-text-generator';
-import { Job, ProviderType } from '../../src/types';
+import { buildVideoGenerator } from '../generators/build-video-generator';
+import { Job, ProviderType, ProjectType } from '../../src/types';
 import { ImageProcessor } from './image-processor';
 import { TextProcessor } from './text-processor';
+import { VideoProcessor } from './video-processor';
 import { DetachedPoller } from './detached-poller';
 import { ImageGenerator } from '../generators/image-generator';
+import { VideoGenerator } from '../generators/video-generator';
 import { assertSafeReferenceImageUrl } from '../utils/url-safety';
 
 export interface QueuedJob {
   userId: string;
   projectId: string;
   job: Job;
-  projectType?: 'image' | 'text';
+  projectType?: ProjectType;
   aspectRatio?: string;
   quality?: string;
   background?: string;
@@ -25,6 +28,9 @@ export interface QueuedJob {
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
+  // Video generation settings
+  duration?: number;
+  resolution?: string;
 }
 
 /**
@@ -44,6 +50,7 @@ export class QueueManager {
     private storage: S3Storage,
     private imageProcessor: ImageProcessor,
     private textProcessor: TextProcessor,
+    private videoProcessor: VideoProcessor,
     private detachedPoller: DetachedPoller
   ) {
     this.detachedPoller.start();
@@ -89,16 +96,18 @@ export class QueueManager {
         (project as any).systemPrompt,
         (project as any).temperature,
         (project as any).maxTokens,
+        job.duration || project.duration,
+        job.resolution || project.resolution,
       );
     }
   }
 
-  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, background?: string, format?: string, modelConfigId?: string, projectType?: 'image' | 'text', systemPrompt?: string, temperature?: number, maxTokens?: number) {
+  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, background?: string, format?: string, modelConfigId?: string, projectType?: ProjectType, systemPrompt?: string, temperature?: number, maxTokens?: number, duration?: number, resolution?: string) {
     if (this.activeJobIds.has(job.id)) return;
 
     if (!this.queues.has(providerId)) this.queues.set(providerId, []);
     this.activeJobIds.add(job.id);
-    this.queues.get(providerId)!.push({ userId, projectId, job, projectType, aspectRatio, quality, background, format, modelConfigId, systemPrompt, temperature, maxTokens });
+    this.queues.get(providerId)!.push({ userId, projectId, job, projectType, aspectRatio, quality, background, format, modelConfigId, systemPrompt, temperature, maxTokens, duration, resolution });
     this.processNext(providerId);
   }
 
@@ -169,7 +178,9 @@ export class QueueManager {
         quality: queued.quality || job.quality,
         format: (queued.format || job.format) as any,
         modelConfigId: queued.modelConfigId || job.modelConfigId,
-        error: undefined 
+        duration: queued.duration ?? job.duration,
+        resolution: queued.resolution || job.resolution,
+        error: undefined
       };
 
       await this.updateJobStatus(userId, projectId, job.id, snapshottedJobData);
@@ -184,6 +195,9 @@ export class QueueManager {
       // Dispatch based on project type
       if (queued.projectType === 'text') {
         await this.executeTextJob(userId, projectId, job, queued, providerRecord, apiKey);
+      } else if (queued.projectType === 'video') {
+        const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+        await this.executeVideoJob(userId, projectId, job, queued, videoGenerator, providerRecord);
       } else {
         const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
 
@@ -364,6 +378,106 @@ export class QueueManager {
     }
   }
 
+  /**
+   * [Video Pipeline]
+   * All video providers are async: generate() returns a taskId, DetachedPoller
+   * later drains the operation and hands it to VideoProcessor.
+   */
+  private async executeVideoJob(userId: string, projectId: string, job: Job, queued: QueuedJob, generator: VideoGenerator, providerRecord: any) {
+    // Pre-check stale taskId so a recovered job doesn't re-submit on top of an active remote task
+    if (job.taskId) {
+      try {
+        console.log(`[QueueManager] Pre-checking stale video taskId ${job.taskId} for Job ${job.id}`);
+        const statusRes = await generator.checkStatus(job.taskId);
+        if (statusRes.status === 'processing' || statusRes.status === 'completed') {
+          console.log(`[QueueManager] Video job ${job.id} task is still active on remote. Handoff to poller.`);
+          return;
+        }
+        console.log(`[QueueManager] Video job ${job.id} remote task failed/expired. Clearing taskId for fresh request.`);
+        job.taskId = undefined;
+        await this.updateJobStatus(userId, projectId, job.id, { taskId: null as any });
+      } catch (e) {
+        console.warn(`[QueueManager] Failed to pre-check video taskId ${job.taskId}. Assuming stale.`, e);
+        job.taskId = undefined;
+        await this.updateJobStatus(userId, projectId, job.id, { taskId: null as any });
+      }
+    }
+
+    const req = await this.prepareVideoGenerateRequest(queued, providerRecord);
+    const result = await generator.generate(req);
+
+    if (result.ok === false) {
+      throw new Error(result.error);
+    }
+
+    if (result.status === 'processing' && result.taskId) {
+      console.log(`[QueueManager] Video job ${job.id} shifted to detached polling. TaskId: ${result.taskId}`);
+      await this.updateJobStatus(userId, projectId, job.id, { taskId: result.taskId });
+      return;
+    }
+
+    // Fallback if a video generator synchronously completes immediately
+    if (result.videoBytes) {
+      await this.videoProcessor.processCompletedVideo({
+        userId,
+        projectId,
+        job,
+        videoBytes: result.videoBytes,
+        mimeType: result.mimeType,
+        aspectRatio: queued.aspectRatio || job.aspectRatio,
+        resolution: queued.resolution || job.resolution,
+        duration: queued.duration ?? job.duration,
+        modelConfigId: job.modelConfigId,
+        providerId: job.providerId,
+      });
+      return;
+    }
+
+    throw new Error('Video generator returned no taskId and no video bytes');
+  }
+
+  private async prepareVideoGenerateRequest(queued: QueuedJob, providerRecord: any) {
+    const { job } = queued;
+    let refImages: string[] | undefined;
+    let refImageUrls: string[] | undefined;
+    if (job.imageContexts && job.imageContexts.length > 0) {
+      refImages = [];
+      refImageUrls = [];
+      for (const ctx of job.imageContexts) {
+        if (ctx.startsWith('data:')) {
+          refImageUrls.push(ctx);
+          refImages.push(ctx.replace(/^data:image\/\w+;base64,/, ''));
+        } else if (ctx.startsWith('http')) {
+          await assertSafeReferenceImageUrl(ctx);
+          refImageUrls.push(ctx);
+          const response = await fetch(ctx);
+          if (!response.ok) throw new Error(`Failed to download reference image: ${response.status}`);
+          const buffer = Buffer.from(await response.arrayBuffer());
+          refImages.push(buffer.toString('base64'));
+        } else {
+          refImageUrls.push(await this.storage.getPresignedUrl(ctx));
+          const buffer = await this.storage.read(ctx);
+          refImages.push(buffer.toString('base64'));
+        }
+      }
+      if (refImages.length === 0) refImages = undefined;
+      if (refImageUrls.length === 0) refImageUrls = undefined;
+    }
+
+    const modelConfig = providerRecord.models?.find((m: any) => m.id === job.modelConfigId);
+
+    return {
+      prompt: job.prompt,
+      modelId: modelConfig?.modelId,
+      apiUrl: modelConfig?.apiUrl,
+      aspectRatio: queued.aspectRatio || job.aspectRatio || '16:9',
+      resolution: queued.resolution || job.resolution || '720p',
+      duration: queued.duration ?? job.duration,
+      refImagesBase64: refImages,
+      refImageUrls,
+    };
+  }
+
   private async prepareGenerateRequest(queued: QueuedJob, providerRecord: any) {
     const { job } = queued;
     let refImages: string[] | undefined;
@@ -477,6 +591,8 @@ export class QueueManager {
       aspectRatio: item.aspectRatio ?? undefined,
       quality: item.quality ?? undefined,
       format: item.format ?? undefined,
+      duration: item.duration ?? undefined,
+      resolution: item.resolution ?? undefined,
       taskId: item.taskId ?? undefined,
       filename: item.filename ?? undefined,
       size: item.size != null ? Number(item.size) : undefined,

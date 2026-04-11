@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, Download, FileText } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, Download, FileText, Play, Video as VideoIcon } from 'lucide-react';
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
@@ -46,11 +46,13 @@ export function AlbumTab({
   };
 
   const isTextProject = projectType === 'text';
+  const isVideoProject = projectType === 'video';
   const [promptItem, setPromptItem] = useState<AlbumItem | null>(null);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [showCompareDialog, setShowCompareDialog] = useState(false);
   const [pendingExportItemIds, setPendingExportItemIds] = useState<string[] | undefined>();
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [videoPlayerItem, setVideoPlayerItem] = useState<AlbumItem | null>(null);
   const selectedTextItems = albumItems.filter((item) => selectedAlbumIds.has(item.id));
 
   const openExportDialog = (isAll: boolean) => {
@@ -151,10 +153,10 @@ export function AlbumTab({
 
         {albumItems.length === 0 ? (
           <div className="bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-3xl p-12 md:p-24 text-center text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner">
-            {isTextProject ? <FileText className="w-16 h-16 text-neutral-800 animate-pulse" /> : <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />}
+            {isTextProject ? <FileText className="w-16 h-16 text-neutral-800 animate-pulse" /> : isVideoProject ? <VideoIcon className="w-16 h-16 text-neutral-800 animate-pulse" /> : <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />}
             <div>
-              <p className="text-sm font-bold text-neutral-400 tracking-wider uppercase">{isTextProject ? 'No texts yet' : 'Gallery is empty'}</p>
-              <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">Start a generation to build your {isTextProject ? 'collection' : 'album'}</p>
+              <p className="text-sm font-bold text-neutral-400 tracking-wider uppercase">{isTextProject ? 'No texts yet' : isVideoProject ? 'No videos yet' : 'Gallery is empty'}</p>
+              <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">Start a generation to build your {isTextProject ? 'collection' : isVideoProject ? 'reel' : 'album'}</p>
             </div>
           </div>
         ) : isTextProject ? (
@@ -257,11 +259,15 @@ export function AlbumTab({
                       className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 shadow-lg cursor-pointer ${isSelected ? 'opacity-40' : ''}`}
                       referrerPolicy="no-referrer"
                       onClick={() => {
+                        if (isVideoProject) {
+                          setVideoPlayerItem(item);
+                          return;
+                        }
                         const validItems = albumItems.filter(a => a.imageUrl);
                         const imgUrls = validItems.map(a => imageDisplayUrl(a.optimizedUrl || a.imageUrl));
                         const idx = validItems.findIndex(a => a.id === item.id);
-                        setLightboxData({ 
-                          images: imgUrls, 
+                        setLightboxData({
+                          images: imgUrls,
                           index: idx >= 0 ? idx : 0,
                           onDelete: (deletedIndex) => {
                              const itemToDelete = validItems[deletedIndex];
@@ -273,6 +279,20 @@ export function AlbumTab({
                         });
                       }}
                     />
+
+                    {/* Play icon overlay for videos */}
+                    {isVideoProject && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setVideoPlayerItem(item); }}
+                        className="absolute inset-0 z-10 flex items-center justify-center pointer-events-auto group/play"
+                        title="Play video"
+                      >
+                        <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-2xl transition-all group-hover/play:scale-110 group-hover/play:bg-purple-600/70">
+                          <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+                        </div>
+                      </button>
+                    )}
 
                     {/* Sequential Identifier Overlay */}
                     <div className="absolute bottom-4 right-4 z-10 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-mono text-white/80 border border-white/10 opacity-100 transition-opacity pointer-events-none">
@@ -336,9 +356,19 @@ export function AlbumTab({
                       </div>
 
                       <div className="flex gap-1.5 h-6">
-                        {item.quality && (
+                        {item.resolution && (
+                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 bg-neutral-950/30 rounded-md border border-neutral-800 uppercase tracking-widest">
+                            {item.resolution}
+                          </span>
+                        )}
+                        {!item.resolution && item.quality && (
                           <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 bg-neutral-950/30 rounded-md border border-neutral-800 uppercase tracking-widest">
                             {item.quality}
+                          </span>
+                        )}
+                        {item.duration != null && (
+                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 bg-neutral-950/30 rounded-md border border-neutral-800 uppercase tracking-widest">
+                            {item.duration}s
                           </span>
                         )}
                         {item.format && (
@@ -355,6 +385,33 @@ export function AlbumTab({
           </div>
         )}
       </div>
+      {videoPlayerItem && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setVideoPlayerItem(null)}
+        >
+          <div
+            className="relative max-w-5xl w-full max-h-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <video
+              src={imageDisplayUrl(videoPlayerItem.imageUrl)}
+              poster={imageDisplayUrl(videoPlayerItem.optimizedUrl || videoPlayerItem.thumbnailUrl)}
+              controls
+              autoPlay
+              className="w-full max-h-[85vh] rounded-2xl bg-black shadow-2xl"
+            />
+            <button
+              type="button"
+              onClick={() => setVideoPlayerItem(null)}
+              className="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center hover:bg-neutral-800 transition-colors shadow-lg"
+              title="Close"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
       <AlbumPromptModal item={promptItem} onClose={() => setPromptItem(null)} />
       {showCompareDialog && <TextAlbumCompareDialog items={selectedTextItems} setLightboxData={setLightboxData} onClose={() => setShowCompareDialog(false)} />}
       <TextAlbumDetailDialog items={albumItems} startIndex={detailIndex} setLightboxData={setLightboxData} onClose={() => setDetailIndex(null)} />

@@ -179,11 +179,13 @@ async function listClaudeModels(
       }
     }
 
+    const supportedIds = getSupportedModelIds('Claude');
     const models: ProviderModel[] = allModels.map((m: any) => ({
       id: m.id,
       name: m.display_name || m.id,
       description: '',
       category: 'text' as const, // Claude models are text-only currently
+      supported: supportedIds.has(m.id),
     }));
     return { models };
   } catch (e: any) {

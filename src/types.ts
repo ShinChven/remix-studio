@@ -31,14 +31,14 @@ export interface Library {
   items: LibraryItem[];
 }
 
-export type ProjectType = 'image' | 'text';
+export type ProjectType = 'image' | 'text' | 'video';
 
 export interface ModelConfig {
   id: string; // Local UUID
   name: string; // Display name e.g. "nano banana 2"
   generatorId: ProviderType; // Which generator type to use
   modelId: string; // The actual API model string (e.g. 'gemini-3.1-flash-image-preview')
-  category: ProjectType; // 'image' for image generation, 'text' for text generation
+  category: ProjectType; // 'image' | 'text' | 'video'
   apiUrl?: string; // Optional override
   options: {
     aspectRatios?: string[];
@@ -47,6 +47,9 @@ export interface ModelConfig {
     // Text generation options
     temperatures?: number[];
     maxTokenOptions?: number[];
+    // Video generation options
+    durations?: number[]; // seconds
+    resolutions?: string[]; // e.g. '720p', '1080p', '4k'
   };
 }
 
@@ -96,6 +99,30 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
+    {
+      id: 'google-veo-3.1-video',
+      name: 'Veo 3.1',
+      generatorId: 'GoogleAI',
+      modelId: 'veo-3.1-generate-preview',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16'],
+        resolutions: ['720p', '1080p', '4k'],
+        durations: [4, 6, 8],
+      },
+    },
+    {
+      id: 'google-veo-3.1-lite-video',
+      name: 'Veo 3.1 Lite',
+      generatorId: 'GoogleAI',
+      modelId: 'veo-3.1-lite-generate-preview',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16'],
+        resolutions: ['720p', '1080p'],
+        durations: [4, 6, 8],
+      },
+    },
   ],
   VertexAI: [
     {
@@ -140,6 +167,30 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'vertex-veo-3.1-video',
+      name: 'Veo 3.1',
+      generatorId: 'VertexAI',
+      modelId: 'veo-3.1-generate-001',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16'],
+        resolutions: ['720p', '1080p', '4k'],
+        durations: [4, 6, 8],
+      },
+    },
+    {
+      id: 'vertex-veo-3.1-fast-video',
+      name: 'Veo 3.1 Fast',
+      generatorId: 'VertexAI',
+      modelId: 'veo-3.1-fast-generate-001',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16'],
+        resolutions: ['720p', '1080p'],
+        durations: [4, 6, 8],
       },
     },
   ],
@@ -214,6 +265,30 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
       },
     },
+    {
+      id: 'openai-sora-2-video',
+      name: 'Sora 2',
+      generatorId: 'OpenAI',
+      modelId: 'sora-2',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16', '1:1'],
+        resolutions: ['720p', '1080p'],
+        durations: [8, 16, 20],
+      },
+    },
+    {
+      id: 'openai-sora-2-pro-video',
+      name: 'Sora 2 Pro',
+      generatorId: 'OpenAI',
+      modelId: 'sora-2-pro',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16', '1:1'],
+        resolutions: ['720p', '1080p'],
+        durations: [8, 16, 20],
+      },
+    },
   ],
   Grok: [
     {
@@ -258,6 +333,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
+      },
+    },
+    {
+      id: 'grok-imagine-video',
+      name: 'Grok Imagine Video',
+      generatorId: 'Grok',
+      modelId: 'grok-imagine-video',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16'],
+        resolutions: ['720p'],
+        durations: [6, 10],
       },
     },
   ],
@@ -317,9 +404,12 @@ export interface Job {
   aspectRatio?: string;
   quality?: string;
   background?: string;
-  format?: 'png' | 'jpeg' | 'webp';
+  format?: 'png' | 'jpeg' | 'webp' | 'mp4';
   taskId?: string; // For long-running remote tasks (e.g. RunningHub)
   filename?: string; // Custom filename for S3 storage (ProjectPrefix_Tags_Title_shortuuid)
+  // Video generation
+  duration?: number; // seconds
+  resolution?: string; // e.g. '720p', '1080p', '4k'
 }
 
 export interface AlbumItem {
@@ -328,7 +418,7 @@ export interface AlbumItem {
   prompt: string;
   textContent?: string; // Text generation output
   imageContexts?: string[];
-  imageUrl: string; // S3 key (presigned on read)
+  imageUrl: string; // S3 key (presigned on read) — for video projects this is the .mp4 key
   thumbnailUrl?: string; // S3 key
   optimizedUrl?: string; // S3 key
   providerId?: string;
@@ -336,11 +426,14 @@ export interface AlbumItem {
   aspectRatio?: string;
   quality?: string;
   background?: string;
-  format?: 'png' | 'jpeg' | 'webp';
+  format?: 'png' | 'jpeg' | 'webp' | 'mp4';
   size?: number; // Size in bytes
   optimizedSize?: number; // Size in bytes
   thumbnailSize?: number; // Size in bytes
   createdAt: number;
+  // Video-specific
+  duration?: number; // seconds
+  resolution?: string; // e.g. '720p', '1080p'
 }
 
 export interface TrashItem extends AlbumItem {
@@ -352,7 +445,7 @@ export interface TrashItem extends AlbumItem {
 export interface Project {
   id: string;
   name: string;
-  type?: ProjectType; // 'image' (default) or 'text'
+  type?: ProjectType; // 'image' (default), 'text', or 'video'
   createdAt: number;
   workflow: WorkflowItem[];
   jobs: Job[];
@@ -363,7 +456,7 @@ export interface Project {
   aspectRatio?: string;
   quality?: string;
   background?: string;
-  format?: 'png' | 'jpeg' | 'webp';
+  format?: 'png' | 'jpeg' | 'webp' | 'mp4';
   shuffle?: boolean;
   modelConfigId?: string;
   prefix?: string; // Project prefix for file naming
@@ -372,6 +465,9 @@ export interface Project {
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
+  // Video generation settings
+  duration?: number; // seconds
+  resolution?: string; // '720p', '1080p', '4k'
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI' | 'Grok' | 'Claude';

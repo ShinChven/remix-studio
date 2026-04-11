@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Layers, Terminal, Play, ImageIcon, Type } from 'lucide-react';
+import { Layers, Terminal, Play, ImageIcon, Type, Video } from 'lucide-react';
 import { createProject, updateProject, fetchProject } from '../api';
 import type { ProjectType } from '../types';
 
@@ -64,8 +64,8 @@ export function ProjectForm() {
     <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-950">
       <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center gap-3 mb-8">
-          <div className={`p-3 rounded-2xl ${projectType === 'text' ? 'bg-blue-600/10' : 'bg-green-600/10'}`}>
-            <Layers className={`w-6 h-6 ${projectType === 'text' ? 'text-blue-500' : 'text-green-500'}`} />
+          <div className={`p-3 rounded-2xl ${projectType === 'text' ? 'bg-blue-600/10' : projectType === 'video' ? 'bg-purple-600/10' : 'bg-green-600/10'}`}>
+            <Layers className={`w-6 h-6 ${projectType === 'text' ? 'text-blue-500' : projectType === 'video' ? 'text-purple-500' : 'text-green-500'}`} />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white tracking-tight">
@@ -79,7 +79,7 @@ export function ProjectForm() {
           {isNew && (
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Project Type</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => setProjectType('image')}
@@ -103,6 +103,18 @@ export function ProjectForm() {
                 >
                   <Type className="w-6 h-6" />
                   <span className="text-xs font-bold uppercase tracking-wider">Text</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProjectType('video')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                    projectType === 'video'
+                      ? 'border-purple-500 bg-purple-500/10 text-purple-400'
+                      : 'border-neutral-800 bg-neutral-950 text-neutral-500 hover:border-neutral-700'
+                  }`}
+                >
+                  <Video className="w-6 h-6" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Video</span>
                 </button>
               </div>
             </div>

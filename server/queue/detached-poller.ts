@@ -2,8 +2,10 @@ import { PrismaClient } from '@prisma/client';
 import { ProviderRepository } from '../db/provider-repository';
 import { ProjectRepository } from '../db/project-repository';
 import { buildGenerator } from '../generators/build-generator';
+import { buildVideoGenerator } from '../generators/build-video-generator';
 import { Job, ProviderType } from '../../src/types';
 import { ImageProcessor } from './image-processor';
+import { VideoProcessor } from './video-processor';
 
 export class DetachedPoller {
   private isPollingDetached = false;
@@ -14,7 +16,8 @@ export class DetachedPoller {
     private prisma: PrismaClient,
     private providerRepo: ProviderRepository,
     private projectRepo: ProjectRepository,
-    private imageProcessor: ImageProcessor
+    private imageProcessor: ImageProcessor,
+    private videoProcessor: VideoProcessor
   ) {}
 
   public start() {
@@ -46,18 +49,22 @@ export class DetachedPoller {
           status: 'processing',
           taskId: { not: null },
         },
+        include: {
+          project: { select: { type: true } },
+        },
       });
 
       for (const item of jobs) {
         const job = this.prisma_jobToJob(item);
-        await this.checkJobStatus(item.userId, item.projectId, job);
+        const projectType = ((item as any).project?.type as string) || 'image';
+        await this.checkJobStatus(item.userId, item.projectId, job, projectType);
       }
     } finally {
       this.isPollingDetached = false;
     }
   }
 
-  private async checkJobStatus(userId: string, projectId: string, job: Job) {
+  private async checkJobStatus(userId: string, projectId: string, job: Job, projectType: string) {
     if (this.activePolls.has(job.id)) return;
     this.activePolls.add(job.id);
     try {
@@ -74,10 +81,39 @@ export class DetachedPoller {
       const apiKey = await this.providerRepo.getDecryptedApiKey(userId, providerRecord.id);
       if (!apiKey) return;
 
+      if (projectType === 'video') {
+        const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+
+        console.log(`[DetachedPoller] Checking video status for Job ${job.id} (TaskId: ${job.taskId})`);
+        const res = await videoGenerator.checkStatus(job.taskId!);
+        console.log(`[DetachedPoller] Video Job ${job.id} Status: ${res.status}`);
+
+        if (res.status === 'completed' && res.videoBytes) {
+          console.log(`[DetachedPoller] Video job ${job.id} completed. Dispatched to VideoProcessor.`);
+          await this.videoProcessor.processCompletedVideo({
+            userId,
+            projectId,
+            job,
+            videoBytes: res.videoBytes,
+            mimeType: res.mimeType,
+            aspectRatio: job.aspectRatio,
+            resolution: job.resolution,
+            duration: job.duration,
+            modelConfigId: job.modelConfigId,
+            providerId: job.providerId,
+          });
+        } else if (res.status === 'failed') {
+          const errorMsg = res.error || 'Video task failed on remote server.';
+          console.log(`[DetachedPoller] Video job ${job.id} failed (final): ${errorMsg}`);
+          await this.updateJobStatus(userId, projectId, job.id, { status: 'failed', error: errorMsg, taskId: null as any });
+        }
+        return;
+      }
+
       const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
       if (!generator.checkStatus) {
         console.warn(`[DetachedPoller] Generator for ${providerRecord.type} does not support checkStatus. Skipping Job ${job.id}`);
-        return; 
+        return;
       }
 
       console.log(`[DetachedPoller] Checking status for Job ${job.id} (TaskId: ${job.taskId})`);
@@ -130,6 +166,8 @@ export class DetachedPoller {
       aspectRatio: item.aspectRatio ?? undefined,
       quality: item.quality ?? undefined,
       format: item.format ?? undefined,
+      duration: item.duration ?? undefined,
+      resolution: item.resolution ?? undefined,
       taskId: item.taskId ?? undefined,
       filename: item.filename ?? undefined,
       size: item.size != null ? Number(item.size) : undefined,

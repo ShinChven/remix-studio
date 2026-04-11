@@ -95,7 +95,7 @@ export class ProjectRepository {
       providerId: p.providerId ?? undefined,
       aspectRatio: p.aspectRatio ?? undefined,
       quality: p.quality ?? undefined,
-      format: p.format as 'png' | 'jpeg' | 'webp' | undefined ?? undefined,
+      format: p.format as Project['format'] ?? undefined,
       shuffle: p.shuffle ?? undefined,
       modelConfigId: p.modelConfigId ?? undefined,
       prefix: p.prefix ?? undefined,
@@ -103,6 +103,8 @@ export class ProjectRepository {
       systemPrompt: (p as any).systemPrompt ?? undefined,
       temperature: (p as any).temperature ?? undefined,
       maxTokens: (p as any).maxTokens ?? undefined,
+      duration: (p as any).duration ?? undefined,
+      resolution: (p as any).resolution ?? undefined,
       jobs: p.jobs.map((j) => this.mapJob(j)),
       workflow: p.workflowItems.map((w) => this.mapWorkflow(w)),
       album: p.albumItems.map((a) => this.mapAlbumItem(a)),
@@ -128,6 +130,8 @@ export class ProjectRepository {
         systemPrompt: project.systemPrompt ?? null,
         temperature: project.temperature ?? null,
         maxTokens: project.maxTokens ?? null,
+        duration: project.duration ?? null,
+        resolution: project.resolution ?? null,
       },
     });
 
@@ -151,6 +155,8 @@ export class ProjectRepository {
     if (updates.systemPrompt !== undefined) data.systemPrompt = updates.systemPrompt ?? null;
     if (updates.temperature !== undefined) data.temperature = updates.temperature ?? null;
     if (updates.maxTokens !== undefined) data.maxTokens = updates.maxTokens ?? null;
+    if (updates.duration !== undefined) data.duration = updates.duration ?? null;
+    if (updates.resolution !== undefined) data.resolution = updates.resolution ?? null;
 
     if (Object.keys(data).length > 0) {
       await this.prisma.project.updateMany({ where: { id: projectId, userId }, data });
@@ -182,6 +188,9 @@ export class ProjectRepository {
     if (updates.resultText !== undefined) data.resultText = updates.resultText ?? null;
     if (updates.taskId !== undefined) data.taskId = updates.taskId ?? null;
     if (updates.filename !== undefined) data.filename = updates.filename ?? null;
+    if (updates.format !== undefined) data.format = updates.format ?? null;
+    if (updates.duration !== undefined) data.duration = updates.duration ?? null;
+    if (updates.resolution !== undefined) data.resolution = updates.resolution ?? null;
     if (updates.size !== undefined) data.size = updates.size != null ? BigInt(updates.size) : null;
     if ((updates as any).optimizedSize !== undefined) data.optimizedSize = (updates as any).optimizedSize != null ? BigInt((updates as any).optimizedSize) : null;
     if ((updates as any).thumbnailSize !== undefined) data.thumbnailSize = (updates as any).thumbnailSize != null ? BigInt((updates as any).thumbnailSize) : null;
@@ -207,6 +216,8 @@ export class ProjectRepository {
       aspectRatio: item.aspectRatio ?? null,
       quality: item.quality ?? null,
       format: item.format ?? null,
+      duration: item.duration ?? null,
+      resolution: item.resolution ?? null,
       size: item.size != null ? BigInt(item.size) : null,
       optimizedSize: (item as any).optimizedSize != null ? BigInt((item as any).optimizedSize) : null,
       thumbnailSize: (item as any).thumbnailSize != null ? BigInt((item as any).thumbnailSize) : null,
@@ -666,6 +677,8 @@ export class ProjectRepository {
         aspectRatio: job.aspectRatio ?? null,
         quality: job.quality ?? null,
         format: job.format ?? null,
+        duration: job.duration ?? null,
+        resolution: job.resolution ?? null,
         background: (job as any).background ?? null,
         taskId: job.taskId ?? null,
         filename: job.filename ?? null,
@@ -687,6 +700,8 @@ export class ProjectRepository {
         aspectRatio: job.aspectRatio ?? null,
         quality: job.quality ?? null,
         format: job.format ?? null,
+        duration: job.duration ?? null,
+        resolution: job.resolution ?? null,
         background: (job as any).background ?? null,
         taskId: job.taskId ?? null,
         filename: job.filename ?? null,
@@ -773,7 +788,9 @@ export class ProjectRepository {
       modelConfigId: j.modelConfigId ?? undefined,
       aspectRatio: j.aspectRatio ?? undefined,
       quality: j.quality ?? undefined,
-      format: j.format as 'png' | 'jpeg' | 'webp' | undefined ?? undefined,
+      format: j.format as 'png' | 'jpeg' | 'webp' | 'mp4' | undefined ?? undefined,
+      duration: j.duration ?? undefined,
+      resolution: j.resolution ?? undefined,
       background: j.background ?? undefined,
       resultText: j.resultText ?? undefined,
       taskId: j.taskId ?? undefined,
@@ -809,7 +826,9 @@ export class ProjectRepository {
       modelConfigId: a.modelConfigId ?? undefined,
       aspectRatio: a.aspectRatio ?? undefined,
       quality: a.quality ?? undefined,
-      format: a.format as 'png' | 'jpeg' | 'webp' | undefined ?? undefined,
+      format: a.format as 'png' | 'jpeg' | 'webp' | 'mp4' | undefined ?? undefined,
+      duration: a.duration ?? undefined,
+      resolution: a.resolution ?? undefined,
       size: a.size != null ? Number(a.size) : undefined,
       optimizedSize: a.optimizedSize != null ? Number(a.optimizedSize) : undefined,
       thumbnailSize: a.thumbnailSize != null ? Number(a.thumbnailSize) : undefined,

@@ -150,7 +150,7 @@ model Project {
   id           String   @id @default(uuid())
   userId       String
   name         String
-  type         String   @default("image") // "image" or "text"
+  type         String   @default("image") // "image", "text", or "video"
   providerId   String?
   aspectRatio  String?
   quality      String?
@@ -162,6 +162,9 @@ model Project {
   systemPrompt String?  @db.Text
   temperature  Float?
   maxTokens    Int?
+  // Video generation defaults
+  duration     Int?     // seconds
+  resolution   String?  // '720p' | '1080p' | '4k'
   createdAt    DateTime @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -196,6 +199,9 @@ model Job {
   size          BigInt?
   optimizedSize BigInt?
   thumbnailSize BigInt?
+  // Video generation
+  duration      Int?     // seconds
+  resolution    String?  // '720p' | '1080p' | '4k'
   createdAt     DateTime @default(now())
 
   project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -239,6 +245,9 @@ model AlbumItem {
   size          BigInt?
   optimizedSize BigInt?
   thumbnailSize BigInt?
+  // Video-specific
+  duration      Int?     // seconds
+  resolution    String?  // '720p' | '1080p' | '4k'
   createdAt     DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -267,6 +276,8 @@ model TrashItem {
   size          BigInt?
   optimizedSize BigInt?
   thumbnailSize BigInt?
+  duration      Int?
+  resolution    String?
   createdAt     DateTime @default(now())
   deletedAt     DateTime @default(now())
 
