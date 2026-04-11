@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { randomUUID } from 'node:crypto';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
@@ -8,6 +9,86 @@ import { formatError } from '../utils/error-handler';
 import type { LibraryItem, Library } from '../../src/types';
 
 type Variables = { user: JwtPayload };
+
+function toSafeStorageKeyPart(value: string): string {
+  return value.replace(/[^a-zA-Z0-9-_]/g, '_');
+}
+
+function getKeyBasename(key: string): string {
+  const parts = key.split('/');
+  return parts[parts.length - 1] || key;
+}
+
+async function estimateLibraryCopySize(library: Library, storage: S3Storage): Promise<number> {
+  let total = 0;
+
+  for (const item of library.items) {
+    total += item.size || 0;
+
+    if (library.type !== 'image') continue;
+
+    const contentKey = item.content && !item.content.startsWith('http') && !item.content.startsWith('data:')
+      ? item.content
+      : undefined;
+    const thumbnailKey = item.thumbnailUrl && !item.thumbnailUrl.startsWith('http') && !item.thumbnailUrl.startsWith('data:')
+      ? item.thumbnailUrl
+      : undefined;
+    const optimizedKey = item.optimizedUrl && !item.optimizedUrl.startsWith('http') && !item.optimizedUrl.startsWith('data:')
+      ? item.optimizedUrl
+      : undefined;
+
+    if (!item.size && contentKey) {
+      total += (await storage.getSize(contentKey)) || 0;
+    }
+
+    if (thumbnailKey) {
+      total += (await storage.getSize(thumbnailKey)) || 0;
+    }
+
+    if (optimizedKey) {
+      total += (await storage.getSize(optimizedKey)) || 0;
+    }
+  }
+
+  return total;
+}
+
+async function cloneLibraryItems(
+  userId: string,
+  sourceLibrary: Library,
+  destinationLibraryId: string,
+  storage: S3Storage
+): Promise<LibraryItem[]> {
+  if (sourceLibrary.type !== 'image') {
+    return sourceLibrary.items.map((item) => ({
+      ...item,
+      id: randomUUID(),
+    }));
+  }
+
+  const safeLibraryId = toSafeStorageKeyPart(destinationLibraryId);
+
+  return Promise.all(
+    sourceLibrary.items.map(async (item) => {
+      const clonedItem: LibraryItem = {
+        ...item,
+        id: randomUUID(),
+      };
+
+      const keyFields: Array<'content' | 'thumbnailUrl' | 'optimizedUrl'> = ['content', 'thumbnailUrl', 'optimizedUrl'];
+      for (const field of keyFields) {
+        const sourceKey = clonedItem[field];
+        if (!sourceKey || sourceKey.startsWith('http') || sourceKey.startsWith('data:')) continue;
+
+        const destinationKey = `${userId}/${safeLibraryId}/${getKeyBasename(sourceKey)}`;
+        await storage.copy(sourceKey, destinationKey);
+        clonedItem[field] = destinationKey;
+      }
+
+      return clonedItem;
+    })
+  );
+}
 
 /** Sign S3 keys in library item content fields */
 async function signLibraryImages(items: LibraryItem[], storage: S3Storage, libraryType: string): Promise<LibraryItem[]> {
@@ -171,6 +252,63 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
       console.error('[DELETE /api/libraries/:id]', e);
       return c.json({ error: 'Failed to delete library' }, 500);
+    }
+  });
+
+  router.post('/api/libraries/:id/duplicate', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const sourceLibraryId = c.req.param('id');
+      const body = await c.req.json().catch(() => ({}));
+      const name = typeof body?.name === 'string' ? body.name.trim() : '';
+
+      if (!name) return c.json({ error: 'name is required' }, 400);
+      if (name.length > 256) return c.json({ error: 'Field too long' }, 400);
+
+      const sourceLibrary = await repository.getLibrary(user.userId, sourceLibraryId);
+      if (!sourceLibrary) return c.json({ error: 'Not found' }, 404);
+
+      const copySize = await estimateLibraryCopySize(sourceLibrary, storage);
+      if (copySize > 0) {
+        const { allowed, currentUsage, limit } = await checkStorageLimit(
+          user.userId,
+          copySize,
+          userRepository,
+          storage,
+          exportStorage,
+          repository
+        );
+
+        if (!allowed) {
+          return c.json({
+            error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ${(copySize / (1024 * 1024)).toFixed(1)}MB.`
+          }, 403);
+        }
+      }
+
+      const duplicatedLibraryId = randomUUID();
+      const duplicatedItems = await cloneLibraryItems(user.userId, sourceLibrary, duplicatedLibraryId, storage);
+
+      await repository.createLibrary(user.userId, {
+        id: duplicatedLibraryId,
+        name,
+        type: sourceLibrary.type,
+      });
+
+      if (duplicatedItems.length > 0) {
+        await repository.createLibraryItemsBatch(user.userId, duplicatedLibraryId, duplicatedItems);
+      }
+
+      const duplicatedLibrary = await repository.getLibrary(user.userId, duplicatedLibraryId);
+      if (!duplicatedLibrary) {
+        return c.json({ error: 'Failed to duplicate library' }, 500);
+      }
+
+      return c.json(await signLibrary(duplicatedLibrary, storage), 201);
+    } catch (e: any) {
+      if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
+      console.error('[POST /api/libraries/:id/duplicate]', e);
+      return c.json({ error: formatError(e, 'Failed to duplicate library') }, 500);
     }
   });
 

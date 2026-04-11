@@ -213,6 +213,15 @@ export async function deleteLibrary(id: string): Promise<void> {
   }
 }
 
+export async function duplicateLibrary(id: string, name: string): Promise<Library> {
+  const res = await fetch(`/api/libraries/${id}/duplicate`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ name }),
+  });
+  return handleResponse<Library>(res, 'Failed to duplicate library');
+}
+
 export async function fetchLibraryReferences(libraryId: string): Promise<{ id: string; name: string }[]> {
   const res = await fetch(`/api/libraries/${libraryId}/references`, { headers: getHeaders(false) });
   return handleResponse<{ id: string; name: string }[]>(res, 'Failed to check library references');

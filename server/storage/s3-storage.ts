@@ -220,6 +220,16 @@ export class S3Storage implements IStorage {
     }
   }
 
+  async copy(sourceKey: string, destinationKey: string): Promise<void> {
+    await this.client.send(
+      new CopyObjectCommand({
+        Bucket: this.bucket,
+        CopySource: `${this.bucket}/${sourceKey}`,
+        Key: destinationKey,
+      })
+    );
+  }
+
   async getReadStream(key: string): Promise<any> {
     const result = await this.client.send(
       new GetObjectCommand({ Bucket: this.bucket, Key: key })

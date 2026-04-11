@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Library } from '../types';
-import { Plus, Folder, LayoutGrid, Layers, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
-import { fetchLibraries } from '../api';
+import { Plus, Folder, LayoutGrid, Layers, ChevronRight, ChevronLeft, Loader2, Copy } from 'lucide-react';
+import { duplicateLibrary, fetchLibraries } from '../api';
+import { DuplicateLibraryDialog } from '../components/DuplicateLibraryDialog';
+import { toast } from 'sonner';
 
 export function Libraries() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -12,6 +14,7 @@ export function Libraries() {
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [libraryToDuplicate, setLibraryToDuplicate] = useState<Library | null>(null);
 
   const navigate = useNavigate();
 
@@ -37,6 +40,23 @@ export function Libraries() {
   }, [page]);
 
   const addLibrary = () => navigate('/library/new');
+
+  const handleDuplicateLibrary = async (name: string) => {
+    if (!libraryToDuplicate) return;
+
+    try {
+      const duplicated = await duplicateLibrary(libraryToDuplicate.id, name);
+      const result = await fetchLibraries(page, 20);
+      setLibraries(result.items);
+      setTotal(result.total);
+      setPages(result.pages);
+      toast.success(`Copied "${libraryToDuplicate.name}"`);
+      navigate(`/library/${duplicated.id}`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to duplicate library');
+      throw error;
+    }
+  };
 
   const handlePageChange = (newPage: number) => {
     setSearchParams(prev => {
@@ -98,6 +118,17 @@ export function Libraries() {
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setLibraryToDuplicate(lib);
+                        }}
+                        className="p-2 text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-transparent hover:border-blue-500/20"
+                        title="Duplicate Library"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
                       <span className="hidden sm:inline text-sm font-medium text-blue-500 opacity-100 transition-opacity">Open Editor →</span>
                       <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-blue-500 transition-colors" />
                     </div>
@@ -138,6 +169,13 @@ export function Libraries() {
           )}
         </section>
       </div>
+
+      <DuplicateLibraryDialog
+        isOpen={libraryToDuplicate !== null}
+        currentName={libraryToDuplicate?.name || ''}
+        onClose={() => setLibraryToDuplicate(null)}
+        onConfirm={handleDuplicateLibrary}
+      />
     </div>
   );
 }

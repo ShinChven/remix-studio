@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Library } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { TagModal } from './TagModal';
-import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem } from '../api';
+import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary } from '../api';
+import { DuplicateLibraryDialog } from './DuplicateLibraryDialog';
 import { toast } from 'sonner';
 
 interface Props {
@@ -34,6 +35,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
   const [showTagFilterDropdown, setShowTagFilterDropdown] = useState(false);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
   const ITEMS_PER_PAGE = 24;
 
@@ -201,6 +203,17 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     }
   };
 
+  const handleDuplicateLibrary = async (name: string) => {
+    try {
+      const duplicated = await duplicateLibrary(library.id, name);
+      toast.success(`Copied "${library.name}"`);
+      navigate(`/library/${duplicated.id}`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to duplicate library');
+      throw error;
+    }
+  };
+
   const handleRemoveItem = (index: number) => {
     setItemToRemoveIndex(index);
   };
@@ -338,6 +351,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 <span className="text-xs font-bold uppercase tracking-widest">Add Fragment</span>
               </button>
             )}
+
+            <button
+              onClick={() => setShowDuplicateDialog(true)}
+              className="p-2.5 text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
+              title="Duplicate Library"
+            >
+              <Copy className="w-5 h-5" />
+            </button>
 
             <button
               onClick={() => navigate(`/library/${library.id}/edit`)}
@@ -813,6 +834,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         onSave={handleSingleTagSave}
         initialTags={tagModalItemId ? (library.items.find(i => i.id === tagModalItemId)?.tags || []) : []}
         title="Edit Item Tags"
+      />
+
+      <DuplicateLibraryDialog
+        isOpen={showDuplicateDialog}
+        currentName={library.name}
+        onClose={() => setShowDuplicateDialog(false)}
+        onConfirm={handleDuplicateLibrary}
       />
     </div>
   );
