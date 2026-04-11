@@ -268,7 +268,7 @@ export class DeliveryManager {
               'Content-Length': String(chunk.length),
               'Content-Range': `bytes ${rangeStart}-${rangeEnd}/${totalBytes}`,
             },
-            body: toFetchBody(chunk),
+            body: toFetchBody(chunk) as any,
           });
 
           if (response.status !== 308 && !response.ok) {
