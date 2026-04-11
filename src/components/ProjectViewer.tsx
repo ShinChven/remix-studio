@@ -767,7 +767,27 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         }}
       />
       {lightboxData && <ImageLightbox images={lightboxData.images} startIndex={lightboxData.index} onClose={() => setLightboxData(null)} onDelete={lightboxData.onDelete} />}
-      <ConfirmModal isOpen={showDeleteAlbumModal} onClose={() => { setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); }} onConfirm={async () => { if (albumItemsToDelete) { await deleteAlbumItems(albumItemsToDelete); setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); } }} title="Move to Recycle Bin" message={`Are you sure you want to move ${albumItemsToDelete?.length || 0} items to the Recycle Bin?`} confirmText="Move to Trash" type="danger" />
+      <ConfirmModal 
+        isOpen={showDeleteAlbumModal} 
+        onClose={() => { setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); }} 
+        onConfirm={async () => { 
+          if (albumItemsToDelete) { 
+            const urlsToRemove = albumItemsToDelete.map(i => apiImageDisplayUrl(i.optimizedUrl || i.imageUrl));
+            await deleteAlbumItems(albumItemsToDelete); 
+            if (lightboxData) {
+              const newImages = lightboxData.images.filter(img => !urlsToRemove.includes(img));
+              if (newImages.length === 0) setLightboxData(null);
+              else setLightboxData({ ...lightboxData, images: newImages });
+            }
+            setShowDeleteAlbumModal(false); 
+            setAlbumItemsToDelete(null); 
+          } 
+        }} 
+        title="Move to Recycle Bin" 
+        message={`Are you sure you want to move ${albumItemsToDelete?.length || 0} items to the Recycle Bin?`} 
+        confirmText="Move to Trash" 
+        type="danger" 
+      />
       <ConfirmModal isOpen={showDeleteCompletedSelectedModal} onClose={() => setShowDeleteCompletedSelectedModal(false)} onConfirm={deleteSelectedCompleted} title="Remove Selected Finished Records" message={`Are you sure you want to remove ${selectedCompletedIds.size} completed job records? (Album images will not be deleted)`} confirmText="Remove Selected" type="danger" />
       <ConfirmModal isOpen={showDeleteQueueSelectedModal} onClose={() => setShowDeleteQueueSelectedModal(false)} onConfirm={deleteSelectedQueue} title="Delete Selected Jobs" message={`Are you sure you want to delete ${selectedQueueIds.size} selected jobs?`} confirmText="Delete Selected" type="danger" />
       <ConfirmModal isOpen={showClearAllFailedModal} onClose={() => setShowClearAllFailedModal(false)} onConfirm={clearAllFailed} title="Clear All Failed Jobs" message="Are you sure you want to clear all failed jobs from the queue?" confirmText="Clear All Failed" type="danger" />

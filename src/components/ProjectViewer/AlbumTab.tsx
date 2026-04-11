@@ -250,7 +250,6 @@ export function AlbumTab({
                           images: imgUrls, 
                           index: idx >= 0 ? idx : 0,
                           onDelete: (deletedIndex) => {
-                             setLightboxData(null);
                              const itemToDelete = validItems[deletedIndex];
                              if (itemToDelete) {
                                setAlbumItemsToDelete([itemToDelete]);

@@ -21,6 +21,12 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete }: ImageLi
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [images.length, onClose]);
 
+  useEffect(() => {
+    if (currentIndex >= images.length && images.length > 0) {
+      setCurrentIndex(images.length - 1);
+    }
+  }, [images.length, currentIndex]);
+
   if (!images || images.length === 0) return null;
 
   const handlePrev = (e: React.MouseEvent) => {
