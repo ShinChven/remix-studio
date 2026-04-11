@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 interface TextAlbumDetailDialogProps {
   items: AlbumItem[];
   startIndex: number | null;
-  setLightboxData: (data: { images: string[], index: number } | null) => void;
+  setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void } | null) => void;
   onClose: () => void;
 }
 

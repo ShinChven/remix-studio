@@ -784,12 +784,31 @@ export async function disconnectGoogleDrive(): Promise<void> {
   }
 }
 
-export async function uploadExportToDrive(taskId: string): Promise<{ driveFileId: string; driveFileName: string; driveUrl: string }> {
+/** Submit a Drive upload job. Returns deliveryTaskId — poll fetchDeliveryStatus() for progress. */
+export async function uploadExportToDrive(taskId: string): Promise<{ deliveryTaskId: string }> {
   const res = await fetch(`/api/exports/${taskId}/upload-to-drive`, {
     method: 'POST',
     headers: getHeaders(),
   });
-  return handleResponse<{ driveFileId: string; driveFileName: string; driveUrl: string }>(res, 'Failed to upload to Google Drive');
+  return handleResponse<{ deliveryTaskId: string }>(res, 'Failed to submit Drive upload job');
+}
+
+export interface DeliveryStatus {
+  id: string;
+  exportTaskId: string;
+  destination: 'drive';
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  bytesTransferred: number;
+  totalBytes?: number;
+  externalId?: string;
+  externalUrl?: string;
+  error?: string;
+  createdAt: number;
+}
+
+export async function fetchDeliveryStatus(deliveryId: string): Promise<DeliveryStatus> {
+  const res = await fetch(`/api/deliveries/${deliveryId}`, { headers: getHeaders(false) });
+  return handleResponse<DeliveryStatus>(res, 'Failed to get delivery status');
 }
 
 // ========== MCP / OAuth Clients ==========

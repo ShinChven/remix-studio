@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive, Link2Off } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive, Link2Off, Upload } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ExportTask } from '../types';
-import { fetchAllExports, deleteProjectExport, uploadExportToDrive, disconnectGoogleDrive, fetchCurrentUser } from '../api';
+import { ExportTask, DeliveryStatus } from '../types';
+import { fetchAllExports, deleteProjectExport, uploadExportToDrive, fetchDeliveryStatus, disconnectGoogleDrive, fetchCurrentUser } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
@@ -17,8 +17,13 @@ export function Exports() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<{ projectId: string, taskId: string } | null>(null);
-  const [uploadingToDrive, setUploadingToDrive] = useState<string | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
+
+  // deliveryId → DeliveryStatus for in-progress Drive uploads
+  const [deliveries, setDeliveries] = useState<Record<string, DeliveryStatus>>({});
+  // exportTaskId → deliveryTaskId (to know which export has an in-flight delivery)
+  const [pendingDeliveries, setPendingDeliveries] = useState<Record<string, string>>({});
+  const deliveryPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const formatSize = (bytes?: number) => {
     if (!bytes || bytes <= 0) return null;
@@ -49,6 +54,55 @@ export function Exports() {
     }
   }, []);
 
+  // Poll delivery statuses
+  useEffect(() => {
+    const activeIds = Object.entries(pendingDeliveries)
+      .map(([, dId]) => dId)
+      .filter(dId => {
+        const d = deliveries[dId];
+        return !d || d.status === 'pending' || d.status === 'processing';
+      });
+
+    if (activeIds.length === 0) {
+      if (deliveryPollRef.current) clearInterval(deliveryPollRef.current);
+      return;
+    }
+
+    const poll = async () => {
+      for (const dId of activeIds) {
+        try {
+          const status = await fetchDeliveryStatus(dId);
+          setDeliveries(prev => ({ ...prev, [dId]: status }));
+          if (status.status === 'completed') {
+            toast.success(
+              <span>
+                Uploaded to Google Drive!{' '}
+                <a href={status.externalUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                  Open file
+                </a>
+              </span>
+            );
+          } else if (status.status === 'failed') {
+            toast.error(status.error || 'Drive upload failed');
+            // Remove from pending so the button resets
+            setPendingDeliveries(prev => {
+              const next = { ...prev };
+              const exportId = Object.entries(prev).find(([, v]) => v === dId)?.[0];
+              if (exportId) delete next[exportId];
+              return next;
+            });
+          }
+        } catch {
+          // ignore transient errors
+        }
+      }
+    };
+
+    poll();
+    deliveryPollRef.current = setInterval(poll, 3000);
+    return () => { if (deliveryPollRef.current) clearInterval(deliveryPollRef.current); };
+  }, [pendingDeliveries, deliveries]);
+
   const handleDisconnectDrive = async () => {
     setDisconnecting(true);
     try {
@@ -67,13 +121,9 @@ export function Exports() {
     try {
       if (append) setLoadingMore(true);
       const { items, nextCursor: newCursor } = await fetchAllExports(15, cursor);
-      
       if (append) {
         setExports(prev => [...prev, ...items]);
       } else {
-        // When polling or first load, we only update the top items
-        // but this is tricky with pagination. For now, let's just update the list
-        // and keep the same length if it's a refresh.
         setExports(items);
       }
       setNextCursor(newCursor || null);
@@ -87,13 +137,9 @@ export function Exports() {
 
   useEffect(() => {
     loadExports();
-    
-    // Poll for updates if there are pending/processing tasks
     const hasActiveTasks = exports.some(t => t.status === 'pending' || t.status === 'processing');
     let interval: any;
     if (hasActiveTasks) {
-      // For polling, we only refresh the current viewable items to see status changes
-      // Simplest is to just call loadExports() without cursor to refresh the first page
       interval = setInterval(() => loadExports(undefined, false), 3000);
     }
     return () => clearInterval(interval);
@@ -121,23 +167,21 @@ export function Exports() {
     }
   };
 
-  const handleUploadToDrive = async (taskId: string) => {
-    setUploadingToDrive(taskId);
+  const handleUploadToDrive = async (task: ExportTask) => {
+    // Disable if already uploading
+    if (pendingDeliveries[task.id]) return;
     try {
-      const result = await uploadExportToDrive(taskId);
-      toast.success(
-        <span>
-          Uploaded to Google Drive!{' '}
-          <a href={result.driveUrl} target="_blank" rel="noopener noreferrer" className="underline">
-            Open file
-          </a>
-        </span>
-      );
+      const { deliveryTaskId } = await uploadExportToDrive(task.id);
+      setPendingDeliveries(prev => ({ ...prev, [task.id]: deliveryTaskId }));
+      toast.success('Drive upload queued — watch the Drive icon for progress');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to upload to Google Drive');
-    } finally {
-      setUploadingToDrive(null);
+      toast.error(err.message || 'Failed to submit Drive upload');
     }
+  };
+
+  const getDriveDelivery = (exportId: string): DeliveryStatus | null => {
+    const dId = pendingDeliveries[exportId];
+    return dId ? (deliveries[dId] ?? null) : null;
   };
 
   return (
@@ -203,132 +247,152 @@ export function Exports() {
         </div>
       ) : (
         <div className="space-y-3">
-          {exports.map((task) => (
-            <div 
-              key={task.id} 
-              className={`bg-neutral-950/50 p-4 rounded-xl border flex justify-between items-center transition-all group/task ${task.status === 'failed' ? 'border-red-900/30 bg-red-950/5' : 'border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50'}`}
-            >
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                {/* Status Indicator Bar (like Queue) */}
-                <div className={`w-1 h-8 rounded-full flex-shrink-0 ${
-                  task.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
-                  task.status === 'failed' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
-                  'bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]'
-                }`} />
+          {exports.map((task) => {
+            const driveDelivery = getDriveDelivery(task.id);
+            const isDriveUploading = driveDelivery && (driveDelivery.status === 'pending' || driveDelivery.status === 'processing');
+            const driveProgress = driveDelivery && driveDelivery.totalBytes
+              ? Math.round((driveDelivery.bytesTransferred / driveDelivery.totalBytes) * 100)
+              : 0;
 
-                <div className="flex flex-col gap-1 min-w-0 flex-1">
-                  <div className="flex items-center gap-3">
-                    <Link 
-                      to={`/project/${task.projectId}`}
-                      className="text-[9px] font-black text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10 flex items-center gap-1 group/project"
-                    >
-                      {task.projectName}
-                      <ArrowRight className="w-2.5 h-2.5 group-hover/project:translate-x-0.5 transition-transform" />
-                    </Link>
-                    <span className="text-[10px] font-bold text-neutral-400 truncate tracking-tight">
-                      Archive #{task.id.slice(0, 8)}
-                    </span>
-                  </div>
+            return (
+              <div
+                key={task.id}
+                className={`bg-neutral-950/50 p-4 rounded-xl border flex justify-between items-center transition-all group/task ${task.status === 'failed' ? 'border-red-900/30 bg-red-950/5' : 'border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50'}`}
+              >
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  {/* Status Indicator Bar */}
+                  <div className={`w-1 h-8 rounded-full flex-shrink-0 ${
+                    task.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
+                    task.status === 'failed' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
+                    'bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]'
+                  }`} />
 
-                  {/* Context Info */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
-                      <Clock className="w-3 h-3" />
-                      {new Date(task.createdAt).toLocaleString()}
+                  <div className="flex flex-col gap-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-3">
+                      <Link
+                        to={`/project/${task.projectId}`}
+                        className="text-[9px] font-black text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10 flex items-center gap-1 group/project"
+                      >
+                        {task.projectName}
+                        <ArrowRight className="w-2.5 h-2.5 group-hover/project:translate-x-0.5 transition-transform" />
+                      </Link>
+                      <span className="text-[10px] font-bold text-neutral-400 truncate tracking-tight">
+                        Archive #{task.id.slice(0, 8)}
+                      </span>
                     </div>
-                    {task.status === 'completed' && task.size ? (
+
+                    {/* Context Info */}
+                    <div className="flex items-center gap-3 flex-wrap">
                       <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
-                        <HardDrive className="w-3 h-3" />
-                        {formatSize(task.size)}
+                        <Clock className="w-3 h-3" />
+                        {new Date(task.createdAt).toLocaleString()}
                       </div>
-                    ) : null}
-                    {task.status === 'completed' ? (
-                      <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
-                        <List className="w-3 h-3" />
-                        {task.total} Files
-                      </div>
-                    ) : null}
-                    {(task.status === 'processing' || task.status === 'pending') && (
-                      <div className="flex items-center gap-2 group-hover/task:translate-x-1 transition-transform">
-                        <div className="w-24 h-1 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800/50">
-                          <div 
-                            className="h-full bg-blue-500 transition-all duration-500" 
-                            style={{ width: `${(task.current / task.total) * 100}%` }} 
-                          />
+                      {task.status === 'completed' && task.size ? (
+                        <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
+                          <HardDrive className="w-3 h-3" />
+                          {formatSize(task.size)}
                         </div>
-                        <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
-                          {task.current}/{task.total} Files
-                        </span>
+                      ) : null}
+                      {task.status === 'completed' ? (
+                        <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
+                          <List className="w-3 h-3" />
+                          {task.total} Files
+                        </div>
+                      ) : null}
+                      {(task.status === 'processing' || task.status === 'pending') && (
+                        <div className="flex items-center gap-2 group-hover/task:translate-x-1 transition-transform">
+                          <div className="w-24 h-1 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800/50">
+                            <div
+                              className="h-full bg-blue-500 transition-all duration-500"
+                              style={{ width: task.status === 'pending' ? '0%' : `${(task.current / task.total) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
+                            {task.status === 'pending' ? 'Waiting in queue…' : `${task.current}/${task.total} Files`}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Drive upload progress */}
+                      {isDriveUploading && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 h-1 bg-neutral-900 rounded-full overflow-hidden border border-emerald-900/40">
+                            <div
+                              className="h-full bg-emerald-500 transition-all duration-500"
+                              style={{ width: driveDelivery?.status === 'pending' ? '5%' : `${driveProgress}%` }}
+                            />
+                          </div>
+                          <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter">
+                            {driveDelivery?.status === 'pending' ? 'Drive: Queued…' : `Drive: ${driveProgress}%`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status & Actions Column */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0 flex items-center gap-3">
+                    {task.status === 'completed' && (
+                      <div className="flex items-center gap-2 text-emerald-500 text-[9px] font-black uppercase tracking-widest bg-emerald-500/5 px-3 py-1.5 rounded-lg border border-emerald-500/10">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Ready
+                      </div>
+                    )}
+                    {task.status === 'processing' && (
+                      <div className="flex items-center gap-2 text-blue-400 text-[9px] font-black uppercase tracking-widest bg-blue-500/5 px-3 py-1.5 rounded-lg border border-blue-500/10">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Archiving
+                      </div>
+                    )}
+                    {task.status === 'pending' && (
+                      <div className="flex items-center gap-2 text-neutral-500 text-[9px] font-black uppercase tracking-widest bg-neutral-900 px-3 py-1.5 rounded-lg border border-neutral-800">
+                        <Loader2 className="w-3.5 h-3.5 animate-pulse" />
+                        Queued
+                      </div>
+                    )}
+                    {task.status === 'failed' && (
+                      <div className="flex items-center gap-2 text-red-500 text-[9px] font-black uppercase tracking-widest bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/20">
+                        <XCircle className="w-3.5 h-3.5" />
+                        Failed
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
 
-              {/* Status & Actions Column (Matching Queue design) */}
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 flex items-center gap-3">
-                  {task.status === 'completed' && (
-                    <div className="flex items-center gap-2 text-emerald-500 text-[9px] font-black uppercase tracking-widest bg-emerald-500/5 px-3 py-1.5 rounded-lg border border-emerald-500/10">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      Ready
-                    </div>
-                  )}
-                  {task.status === 'processing' && (
-                    <div className="flex items-center gap-2 text-blue-400 text-[9px] font-black uppercase tracking-widest bg-blue-500/5 px-3 py-1.5 rounded-lg border border-blue-500/10">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Archiving
-                    </div>
-                  )}
-                  {task.status === 'pending' && (
-                    <div className="flex items-center gap-2 text-neutral-500 text-[9px] font-black uppercase tracking-widest bg-neutral-900 px-3 py-1.5 rounded-lg border border-neutral-800">
-                      Queued
-                    </div>
-                  )}
-                  {task.status === 'failed' && (
-                    <div className="flex items-center gap-2 text-red-500 text-[9px] font-black uppercase tracking-widest bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/20">
-                      <XCircle className="w-3.5 h-3.5" />
-                      Failed
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5 border-l border-neutral-800 pl-4">
-                  {task.status === 'completed' && task.downloadUrl && (
-                    <a
-                      href={task.downloadUrl}
-                      download={`${task.projectName}_${task.id.slice(0,8)}.zip`}
-                      className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all active:scale-90"
-                      title="Download ZIP"
-                    >
-                      <Download className="w-4 h-4" />
-                    </a>
-                  )}
-                  {task.status === 'completed' && user?.googleDriveConnected && (
+                  <div className="flex items-center gap-1.5 border-l border-neutral-800 pl-4">
+                    {task.status === 'completed' && task.downloadUrl && (
+                      <a
+                        href={task.downloadUrl}
+                        download
+                        className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all active:scale-90"
+                        title="Download ZIP"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    )}
+                    {task.status === 'completed' && user?.googleDriveConnected && (
+                      <button
+                        onClick={() => handleUploadToDrive(task)}
+                        disabled={!!isDriveUploading}
+                        className="p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={isDriveUploading ? 'Uploading to Drive…' : 'Upload to Google Drive'}
+                      >
+                        {isDriveUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleUploadToDrive(task.id)}
-                      disabled={uploadingToDrive === task.id}
-                      className="p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Upload to Google Drive"
+                      onClick={() => handleDelete(task.projectId, task.id)}
+                      className="p-1.5 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90"
+                      title="Delete record"
                     >
-                      {uploadingToDrive === task.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <HardDrive className="w-4 h-4" />
-                      )}
+                      <Trash2 className="w-4 h-4" />
                     </button>
-                  )}
-                  <button
-                    onClick={() => handleDelete(task.projectId, task.id)}
-                    className="p-1.5 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90"
-                    title="Delete record"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {loading && (
              <div className="flex items-center justify-center py-12">
                <Loader2 className="w-6 h-6 text-neutral-800 animate-spin" />

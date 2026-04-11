@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
 interface ImageLightboxProps {
   images: string[];
   startIndex: number;
   onClose: () => void;
+  onDelete?: (index: number) => void;
 }
 
-export function ImageLightbox({ images, startIndex, onClose }: ImageLightboxProps) {
+export function ImageLightbox({ images, startIndex, onClose, onDelete }: ImageLightboxProps) {
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   
   useEffect(() => {
@@ -19,6 +20,12 @@ export function ImageLightbox({ images, startIndex, onClose }: ImageLightboxProp
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [images.length, onClose]);
+
+  useEffect(() => {
+    if (currentIndex >= images.length && images.length > 0) {
+      setCurrentIndex(images.length - 1);
+    }
+  }, [images.length, currentIndex]);
 
   if (!images || images.length === 0) return null;
 
@@ -34,9 +41,20 @@ export function ImageLightbox({ images, startIndex, onClose }: ImageLightboxProp
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer" onClick={onClose}>
-      <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full">
-        <X className="w-6 h-6" />
-      </button>
+      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+        {onDelete && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDelete(currentIndex); }} 
+            className="p-2 text-white/50 hover:text-red-500 transition-colors bg-black/50 hover:bg-black/80 rounded-full"
+            title="Delete Image"
+          >
+            <Trash2 className="w-6 h-6" />
+          </button>
+        )}
+        <button onClick={onClose} className="p-2 text-white/50 hover:text-white transition-colors bg-black/50 hover:bg-black/80 rounded-full">
+          <X className="w-6 h-6" />
+        </button>
+      </div>
       
       {images.length > 1 && (
         <button onClick={handlePrev} className="absolute left-2 md:left-8 p-3 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full">

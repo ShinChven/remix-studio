@@ -156,7 +156,7 @@ export function McpConnections() {
         <header className="mb-6 md:mb-8">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">MCP Connections</h2>
           <p className="text-sm md:text-base text-neutral-400">
-            Manage OAuth clients and personal access tokens for MCP integrations.
+            Connect consumer apps securely using sign-in or access tokens.
           </p>
         </header>
 
@@ -167,9 +167,9 @@ export function McpConnections() {
             </div>
             <div className="space-y-3">
               <div>
-                <h3 className="text-sm font-semibold text-white">This page manages access, it does not start the connection</h3>
+                <h3 className="text-sm font-semibold text-white">Use this page to share access details for your app connection</h3>
                 <p className="mt-1 text-sm text-neutral-400">
-                  If nothing is listed yet, that just means no client has connected yet. To let someone connect, send them the MCP server address below. If their client supports OAuth, they can authorize directly. If not, create a personal access token here and send them the MCP URL plus the token.
+                  If nothing is listed yet, that only means nothing has been connected yet. Start by sharing the app address below. If the app supports browser sign-in, it can connect on its own. If it does not, create an access token here and share the app address plus the token.
                 </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
@@ -186,7 +186,7 @@ export function McpConnections() {
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-neutral-500">
-                    Give this to clients that ask for a server URL or MCP endpoint.
+                    Share this with any app that asks for a server URL, endpoint, or MCP address.
                   </p>
                 </div>
                 <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
@@ -202,35 +202,35 @@ export function McpConnections() {
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-neutral-500">
-                    Use this when a client asks for OAuth discovery or authorization server metadata.
+                    Use this only if the app asks for sign-in setup details or OAuth discovery.
                   </p>
                 </div>
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">1. Share the URL</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">1. Share the app address</p>
                   <p className="mt-1 text-sm text-neutral-500">
-                    Send the MCP URL to the other person or client first. The page can stay empty until somebody actually connects.
+                    Send the MCP URL to the app or person setting things up. This page can stay empty until a connection is actually made.
                   </p>
                 </div>
                 <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">2. Choose auth mode</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">2. Pick how they sign in</p>
                   <p className="mt-1 text-sm text-neutral-500">
-                    OAuth is preferred if the client supports browser authorization. Otherwise create a token and send that token separately.
+                    Browser sign-in is the easiest option when the app supports it. Otherwise create an access token and share it separately.
                   </p>
                 </div>
                 <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">3. Review access here</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">3. Check connected apps here</p>
                   <p className="mt-1 text-sm text-neutral-500">
-                    After they finish authorization or start using a token, the client or token usage record will show up here. You can revoke it at any time.
+                    After sign-in or token use starts, the connection will appear here. You can remove access at any time.
                   </p>
                 </div>
               </div>
               <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-4 space-y-4">
                 <div>
-                  <h4 className="text-sm font-semibold text-white">Copyable JSON config examples</h4>
+                  <h4 className="text-sm font-semibold text-white">Copy-and-paste setup examples</h4>
                   <p className="mt-1 text-sm text-neutral-400">
-                    For clients that support `.mcp.json` or JSON-based MCP config. These examples are in the current Claude Code format. OAuth-capable clients should prefer the OAuth version. Token-only clients should use the Bearer version.
+                    Use these when the app accepts `.mcp.json` or another JSON setup block. Apps that support browser sign-in should use the OAuth version. Apps that only accept a token should use the Bearer version.
                   </p>
                 </div>
                 <div className="grid gap-4 lg:grid-cols-2">
@@ -246,7 +246,7 @@ export function McpConnections() {
                     </div>
                     <pre className="overflow-x-auto rounded-xl bg-neutral-900 p-3 text-xs text-sky-300"><code>{projectOAuthJson}</code></pre>
                     <p className="text-sm text-neutral-500">
-                      Share this when the client can open a browser and complete OAuth authorization itself.
+                      Use this when the app can open a browser window and let the customer sign in.
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -261,7 +261,7 @@ export function McpConnections() {
                     </div>
                     <pre className="overflow-x-auto rounded-xl bg-neutral-900 p-3 text-xs text-amber-300"><code>{projectTokenJson}</code></pre>
                     <p className="text-sm text-neutral-500">
-                      Replace <code>YOUR_MCP_TOKEN</code> with a token created below, then send the full JSON to the other person.
+                      Replace <code>YOUR_MCP_TOKEN</code> with a token created below, then paste or send the finished JSON where needed.
                     </p>
                   </div>
                 </div>
@@ -295,13 +295,13 @@ export function McpConnections() {
           </div>
 
           <p className="text-sm text-neutral-500 mb-4">
-            Use personal access tokens to authenticate MCP clients that don't support OAuth. Treat tokens like passwords.
+            Use personal access tokens for apps that cannot use browser sign-in. Treat tokens like passwords.
           </p>
 
           <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-            <p className="text-sm font-medium text-amber-300">Best for manual connection</p>
+            <p className="text-sm font-medium text-amber-300">Best for manual setup</p>
             <p className="mt-1 text-sm text-neutral-400">
-              Use this if the other side asks you for a bearer token, API key, or secret. They usually need two things: the MCP server URL and this token. If the token is exposed, revoke it and create a new one.
+              Use this if the app asks for a bearer token, API key, or secret. It will usually need two things: the MCP server URL and this token. If the token is exposed, revoke it and create a new one.
             </p>
           </div>
 
@@ -388,7 +388,7 @@ export function McpConnections() {
                 <Key className="w-10 h-10 text-neutral-700" />
                 <div>
                   <p className="text-base font-medium text-neutral-400">No personal access tokens</p>
-                  <p className="text-sm">Create a token to connect MCP clients manually.</p>
+                  <p className="text-sm">Create a token to connect an app manually.</p>
                 </div>
               </div>
             ) : (
@@ -445,13 +445,13 @@ export function McpConnections() {
           </div>
 
           <p className="text-sm text-neutral-500 mb-4">
-            These are MCP clients that authenticated via OAuth (e.g. Claude's MCP connector). They register automatically.
+            These are apps that connected using browser sign-in. They appear here automatically after approval.
           </p>
 
           <div className="mb-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-            <p className="text-sm font-medium text-blue-300">Best for one-click sign-in</p>
+            <p className="text-sm font-medium text-blue-300">Best for simple sign-in</p>
             <p className="mt-1 text-sm text-neutral-400">
-              Use this if the other side supports OAuth or asks for a discovery URL. They start from their MCP client, finish the browser authorization flow, and then the client will appear here automatically.
+              Use this when the app supports sign-in in a browser or asks for a discovery URL. The customer signs in, approves access, and the app will appear here automatically.
             </p>
           </div>
 
@@ -465,7 +465,7 @@ export function McpConnections() {
                 <Shield className="w-10 h-10 text-neutral-700" />
                 <div>
                   <p className="text-base font-medium text-neutral-400">No OAuth clients connected</p>
-                  <p className="text-sm">Clients will appear here after authenticating via OAuth.</p>
+                  <p className="text-sm">Apps will appear here after sign-in is completed.</p>
                 </div>
               </div>
             ) : (

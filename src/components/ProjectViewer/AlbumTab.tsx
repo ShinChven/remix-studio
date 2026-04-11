@@ -19,7 +19,7 @@ interface AlbumTabProps {
   setShowDeleteAlbumModal: (show: boolean) => void;
   getProviderName: (id?: string) => string;
   getModelName: (providerId?: string, modelId?: string) => string;
-  setLightboxData: (data: { images: string[], index: number } | null) => void;
+  setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void } | null) => void;
   onExportStarted: () => void;
   projectType?: ProjectType;
 }
@@ -49,6 +49,12 @@ export function AlbumTab({
       const itemIds = isAll ? undefined : Array.from(selectedAlbumIds);
       await startAlbumExport(projectId, itemIds);
       onExportStarted();
+      toast.success(
+        <span>
+          Export queued!{' '}
+          <a href="/exports" className="underline font-bold">View progress in Archive →</a>
+        </span>
+      );
     } catch (err: any) {
       toast.error(`Export failed: ${err.message}`);
     }
@@ -240,7 +246,17 @@ export function AlbumTab({
                         const validItems = albumItems.filter(a => a.imageUrl);
                         const imgUrls = validItems.map(a => imageDisplayUrl(a.optimizedUrl || a.imageUrl));
                         const idx = validItems.findIndex(a => a.id === item.id);
-                        setLightboxData({ images: imgUrls, index: idx >= 0 ? idx : 0 });
+                        setLightboxData({ 
+                          images: imgUrls, 
+                          index: idx >= 0 ? idx : 0,
+                          onDelete: (deletedIndex) => {
+                             const itemToDelete = validItems[deletedIndex];
+                             if (itemToDelete) {
+                               setAlbumItemsToDelete([itemToDelete]);
+                               setShowDeleteAlbumModal(true);
+                             }
+                          }
+                        });
                       }}
                     />
 

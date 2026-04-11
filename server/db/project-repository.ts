@@ -427,6 +427,157 @@ export class ProjectRepository {
     await this.prisma.exportTask.deleteMany({ where: { id: taskId, userId } });
   }
 
+  /**
+   * Atomically claim the next pending ExportTask from the global queue.
+   * Uses FOR UPDATE SKIP LOCKED so concurrent workers cannot double-claim.
+   */
+  async claimNextExportTask(workerId: string): Promise<any | null> {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      UPDATE "ExportTask"
+      SET    status        = 'processing',
+             "claimedAt"  = NOW(),
+             "workerId"   = ${workerId},
+             "heartbeatAt" = NOW(),
+             attempts     = attempts + 1
+      WHERE  id = (
+        SELECT id FROM "ExportTask"
+        WHERE  status = 'pending'
+        ORDER  BY "createdAt" ASC
+        FOR UPDATE SKIP LOCKED
+        LIMIT  1
+      )
+      RETURNING *
+    `;
+    if (!rows.length) return null;
+    return this.mapExportTask(rows[0]);
+  }
+
+  async heartbeatExportTask(taskId: string): Promise<void> {
+    await this.prisma.exportTask.updateMany({
+      where: { id: taskId },
+      data: { heartbeatAt: new Date() },
+    });
+  }
+
+  /**
+   * Requeue (or fail) ExportTasks whose heartbeat is older than thresholdMinutes.
+   * Returns the number of rows affected.
+   */
+  async reapStaleExportTasks(thresholdMinutes = 2): Promise<number> {
+    const result = await this.prisma.$executeRaw`
+      UPDATE "ExportTask"
+      SET    status      = CASE WHEN attempts >= 3 THEN 'failed' ELSE 'pending' END,
+             error       = CASE WHEN attempts >= 3 THEN 'worker timeout' ELSE error END,
+             "claimedAt"  = NULL,
+             "workerId"   = NULL
+      WHERE  status = 'processing'
+        AND  "heartbeatAt" < NOW() - (${thresholdMinutes} || ' minutes')::INTERVAL
+    `;
+    return result;
+  }
+
+  // === DeliveryTask CRUD + Queue ===
+
+  async saveDeliveryTask(userId: string, taskId: string, data: any): Promise<void> {
+    const { exportTaskId, destination, status, bytesTransferred, totalBytes, externalId, externalUrl, error, createdAt, expiresAt } = data;
+    await this.prisma.deliveryTask.upsert({
+      where: { id: taskId },
+      create: {
+        id: taskId,
+        userId,
+        exportTaskId,
+        destination: destination ?? 'drive',
+        status: status ?? 'pending',
+        bytesTransferred: bytesTransferred != null ? BigInt(bytesTransferred) : BigInt(0),
+        totalBytes: totalBytes != null ? BigInt(totalBytes) : null,
+        externalId: externalId ?? null,
+        externalUrl: externalUrl ?? null,
+        error: error ?? null,
+        createdAt: createdAt ? new Date(createdAt) : new Date(),
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      },
+      update: {
+        status: status ?? undefined,
+        bytesTransferred: bytesTransferred != null ? BigInt(bytesTransferred) : undefined,
+        totalBytes: totalBytes != null ? BigInt(totalBytes) : undefined,
+        externalId: externalId ?? null,
+        externalUrl: externalUrl ?? null,
+        error: error ?? null,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      },
+    });
+  }
+
+  async getDeliveryTask(userId: string, taskId: string): Promise<any | undefined> {
+    const t = await this.prisma.deliveryTask.findFirst({ where: { id: taskId, userId } });
+    if (!t) return undefined;
+    return this.mapDeliveryTask(t);
+  }
+
+  async deleteDeliveryTask(userId: string, taskId: string): Promise<void> {
+    await this.prisma.deliveryTask.deleteMany({ where: { id: taskId, userId } });
+  }
+
+  async claimNextDeliveryTask(workerId: string): Promise<any | null> {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      UPDATE "DeliveryTask"
+      SET    status        = 'processing',
+             "claimedAt"  = NOW(),
+             "workerId"   = ${workerId},
+             "heartbeatAt" = NOW(),
+             attempts     = attempts + 1
+      WHERE  id = (
+        SELECT id FROM "DeliveryTask"
+        WHERE  status = 'pending'
+        ORDER  BY "createdAt" ASC
+        FOR UPDATE SKIP LOCKED
+        LIMIT  1
+      )
+      RETURNING *
+    `;
+    if (!rows.length) return null;
+    return this.mapDeliveryTask(rows[0]);
+  }
+
+  async heartbeatDeliveryTask(taskId: string): Promise<void> {
+    await this.prisma.deliveryTask.updateMany({
+      where: { id: taskId },
+      data: { heartbeatAt: new Date() },
+    });
+  }
+
+  async reapStaleDeliveryTasks(thresholdMinutes = 2): Promise<number> {
+    const result = await this.prisma.$executeRaw`
+      UPDATE "DeliveryTask"
+      SET    status      = CASE WHEN attempts >= 3 THEN 'failed' ELSE 'pending' END,
+             error       = CASE WHEN attempts >= 3 THEN 'worker timeout' ELSE error END,
+             "claimedAt"  = NULL,
+             "workerId"   = NULL
+      WHERE  status = 'processing'
+        AND  "heartbeatAt" < NOW() - (${thresholdMinutes} || ' minutes')::INTERVAL
+    `;
+    return result;
+  }
+
+  private mapDeliveryTask(t: any): any {
+    return {
+      id: t.id,
+      userId: t.userId,
+      exportTaskId: t.exportTaskId,
+      destination: t.destination,
+      status: t.status,
+      bytesTransferred: t.bytesTransferred != null ? Number(t.bytesTransferred) : 0,
+      totalBytes: t.totalBytes != null ? Number(t.totalBytes) : undefined,
+      externalId: t.externalId ?? undefined,
+      externalUrl: t.externalUrl ?? undefined,
+      error: t.error ?? undefined,
+      createdAt: t.createdAt instanceof Date ? t.createdAt.getTime() : t.createdAt,
+      expiresAt: t.expiresAt ? (t.expiresAt instanceof Date ? t.expiresAt.getTime() : t.expiresAt) : undefined,
+    };
+  }
+
+
+
   async getAllUserItems(userId: string): Promise<any[]> {
     const [jobs, albumItems, trashItems, exportTasks, libraryItems, workflowItems] = await Promise.all([
       this.prisma.job.findMany({ where: { userId } }),

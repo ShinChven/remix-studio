@@ -28,6 +28,7 @@ import { createOAuthRouter } from './server/routes/oauth';
 import { createMcpRouter } from './server/mcp/mcp-server';
 import { QueueManager } from './server/queue/queue-manager';
 import { ExportManager } from './server/queue/export-manager';
+import { DeliveryManager } from './server/queue/delivery-manager';
 import { ImageProcessor } from './server/queue/image-processor';
 import { TextProcessor } from './server/queue/text-processor';
 import { DetachedPoller } from './server/queue/detached-poller';
@@ -102,6 +103,11 @@ async function startServer() {
   await queueManager.recoverTasks();
 
   const exportManager = new ExportManager(repository, storage, exportStorage, userRepository);
+  const deliveryManager = new DeliveryManager(repository, exportStorage, userRepository);
+
+  // Start background workers
+  exportManager.startWorkerLoop();
+  deliveryManager.startWorkerLoop();
 
   // === Auto-provision default admin ===
   const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
@@ -141,7 +147,7 @@ async function startServer() {
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
   app.route('/', createLibraryRouter(repository, storage, userRepository, exportStorage));
-  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager));
+  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager));
   app.route('/', createImageRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createProviderRouter(providerRepository));
   app.route('/', createGenerateRouter(providerRepository));

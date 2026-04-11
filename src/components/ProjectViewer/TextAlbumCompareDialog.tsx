@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 interface TextAlbumCompareDialogProps {
   items: AlbumItem[];
-  setLightboxData: (data: { images: string[], index: number } | null) => void;
+  setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void } | null) => void;
   onClose: () => void;
 }
 

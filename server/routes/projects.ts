@@ -4,9 +4,9 @@ import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
 import { QueueManager } from '../queue/queue-manager';
 import { ExportManager } from '../queue/export-manager';
+import { DeliveryManager } from '../queue/delivery-manager';
 import { checkStorageLimit } from '../utils/storage-check';
 import { UserRepository } from '../auth/user-repository';
-import { decrypt } from '../utils/crypto';
 import type { WorkflowItem, Job, Project } from '../../src/types';
 
 type Variables = { user: JwtPayload };
@@ -146,7 +146,7 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
   return { ...project, jobs, album, workflow };
 }
 
-export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager) {
+export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager) {
   const router = new Hono<{ Variables: Variables }>();
 
   // NOTE: /rename must be registered before /:id to avoid route shadowing
@@ -649,104 +649,58 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+  /**
+   * POST /api/exports/:taskId/upload-to-drive
+   *
+   * Submit a Drive upload job to the global delivery queue.
+   * Returns { deliveryTaskId } immediately — frontend polls GET /api/deliveries/:id.
+   */
   router.post('/api/exports/:taskId/upload-to-drive', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
       const taskId = c.req.param('taskId');
 
-      // Get the export task
       const task = await repository.getExportTask(user.userId, taskId);
       if (!task) return c.json({ error: 'Export task not found' }, 404);
       if (task.status !== 'completed' || !task.s3Key) {
         return c.json({ error: 'Export is not ready for upload' }, 400);
       }
 
-      // Check Google Drive is connected
+      // Verify Drive is connected before accepting the job
       const encryptedToken = await userRepository.getGoogleDriveRefreshToken(user.userId);
       if (!encryptedToken) {
         return c.json({ error: 'Google Drive is not connected. Please connect it in Account settings.' }, 400);
       }
-
-      const clientId = process.env.GOOGLE_CLIENT_ID;
-      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-      if (!clientId || !clientSecret) {
+      if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
         return c.json({ error: 'Google OAuth is not configured' }, 500);
       }
 
-      // Get a fresh access token using the refresh token
-      const refreshToken = decrypt(encryptedToken);
-      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: clientId,
-          client_secret: clientSecret,
-          refresh_token: refreshToken,
-          grant_type: 'refresh_token',
-        }),
-      });
-
-      if (!tokenRes.ok) {
-        const errText = await tokenRes.text();
-        console.error('[Google Drive] Token refresh failed:', errText);
-        // If refresh token is revoked, clear it
-        if (tokenRes.status === 400 || tokenRes.status === 401) {
-          await userRepository.clearGoogleDriveRefreshToken(user.userId);
-        }
-        return c.json({ error: 'Google Drive authorization expired. Please reconnect on the Exports page.' }, 401);
-      }
-
-      const { access_token } = await tokenRes.json() as { access_token: string };
-
-      // Download the ZIP from S3
-      const zipBuffer = await exportStorage.read(task.s3Key);
-      const fileName = task.s3Key.split('/').pop() || `export_${taskId}.zip`;
-
-      // Upload to Google Drive using multipart upload
-      const boundary = '---GoogleDriveUploadBoundary';
-      const metadata = JSON.stringify({
-        name: fileName,
-        mimeType: 'application/zip',
-      });
-
-      const metadataPart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n`;
-      const filePart = `--${boundary}\r\nContent-Type: application/zip\r\n\r\n`;
-      const closing = `\r\n--${boundary}--`;
-
-      const bodyParts = Buffer.concat([
-        Buffer.from(metadataPart),
-        Buffer.from(filePart),
-        zipBuffer,
-        Buffer.from(closing),
-      ]);
-
-      const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          'Content-Type': `multipart/related; boundary=${boundary}`,
-        },
-        body: bodyParts,
-      });
-
-      if (!uploadRes.ok) {
-        const errText = await uploadRes.text();
-        console.error('[Google Drive] Upload failed:', errText);
-        return c.json({ error: 'Failed to upload file to Google Drive' }, 500);
-      }
-
-      const driveFile = await uploadRes.json() as { id: string; name: string };
-      return c.json({
-        success: true,
-        driveFileId: driveFile.id,
-        driveFileName: driveFile.name,
-        driveUrl: `https://drive.google.com/file/d/${driveFile.id}/view`,
-      });
+      const deliveryTaskId = await deliveryManager.startDelivery(user.userId, taskId, 'drive');
+      return c.json({ deliveryTaskId }, 202);
     } catch (e) {
       console.error('[POST /api/exports/:taskId/upload-to-drive]', e);
-      return c.json({ error: 'Failed to upload to Google Drive' }, 500);
+      return c.json({ error: 'Failed to submit Drive upload job' }, 500);
     }
   });
+
+  /**
+   * GET /api/deliveries/:id
+   *
+   * Poll the status of a delivery task (Drive upload).
+   */
+  router.get('/api/deliveries/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const deliveryId = c.req.param('id');
+      const task = await deliveryManager.getTask(user.userId, deliveryId);
+      if (!task) return c.json({ error: 'Delivery task not found' }, 404);
+      return c.json(task);
+    } catch (e) {
+      console.error('[GET /api/deliveries/:id]', e);
+      return c.json({ error: 'Failed to get delivery status' }, 500);
+    }
+  });
+
 
   router.delete('/api/exports/:taskId', authMiddleware, async (c) => {
     try {
