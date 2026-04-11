@@ -98,9 +98,19 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ### 5. Run database migrations
 
+For a brand new local development database, run:
+
 ```bash
 npx prisma migrate dev
 ```
+
+If the database already exists and you only want to apply committed migrations safely, run:
+
+```bash
+npx prisma migrate deploy
+```
+
+Use `migrate deploy` when pulling new changes into an existing environment. `migrate dev` is intended for development workflows that create or reconcile migrations and may prompt for a reset when the database history has drifted.
 
 ### 6. Start the app
 
