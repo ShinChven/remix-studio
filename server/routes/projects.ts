@@ -701,6 +701,17 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+  router.get('/api/deliveries', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const tasks = await repository.listActiveDeliveryTasks(user.userId);
+      return c.json(tasks);
+    } catch (e) {
+      console.error('[GET /api/deliveries]', e);
+      return c.json({ error: 'Failed to list delivery tasks' }, 500);
+    }
+  });
+
 
   router.delete('/api/exports/:taskId', authMiddleware, async (c) => {
     try {

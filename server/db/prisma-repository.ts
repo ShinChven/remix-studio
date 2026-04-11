@@ -69,6 +69,7 @@ export class PrismaRepository implements IRepository {
   // === Delivery Task CRUD + Queue ===
   saveDeliveryTask(userId: string, taskId: string, data: any) { return this.projects.saveDeliveryTask(userId, taskId, data); }
   getDeliveryTask(userId: string, taskId: string) { return this.projects.getDeliveryTask(userId, taskId); }
+  listActiveDeliveryTasks(userId: string) { return this.projects.listActiveDeliveryTasks(userId); }
   deleteDeliveryTask(userId: string, taskId: string) { return this.projects.deleteDeliveryTask(userId, taskId); }
   claimNextDeliveryTask(workerId: string) { return this.projects.claimNextDeliveryTask(workerId); }
   heartbeatDeliveryTask(taskId: string) { return this.projects.heartbeatDeliveryTask(taskId); }

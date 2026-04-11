@@ -811,6 +811,11 @@ export async function fetchDeliveryStatus(deliveryId: string): Promise<DeliveryS
   return handleResponse<DeliveryStatus>(res, 'Failed to get delivery status');
 }
 
+export async function fetchActiveDeliveries(): Promise<DeliveryStatus[]> {
+  const res = await fetch('/api/deliveries', { headers: getHeaders(false) });
+  return handleResponse<DeliveryStatus[]>(res, 'Failed to list delivery tasks');
+}
+
 // ========== MCP / OAuth Clients ==========
 
 export interface OAuthClientSummary {

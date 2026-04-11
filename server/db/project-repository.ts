@@ -514,6 +514,17 @@ export class ProjectRepository {
     return this.mapDeliveryTask(t);
   }
 
+  async listActiveDeliveryTasks(userId: string): Promise<any[]> {
+    const tasks = await this.prisma.deliveryTask.findMany({
+      where: {
+        userId,
+        status: { in: ['pending', 'processing'] },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return tasks.map((t) => this.mapDeliveryTask(t));
+  }
+
   async deleteDeliveryTask(userId: string, taskId: string): Promise<void> {
     await this.prisma.deliveryTask.deleteMany({ where: { id: taskId, userId } });
   }

@@ -44,6 +44,7 @@ export interface IRepository {
   // === Delivery Task CRUD + Queue ===
   saveDeliveryTask(userId: string, taskId: string, data: any): Promise<void>;
   getDeliveryTask(userId: string, taskId: string): Promise<any | undefined>;
+  listActiveDeliveryTasks(userId: string): Promise<any[]>;
   deleteDeliveryTask(userId: string, taskId: string): Promise<void>;
   claimNextDeliveryTask(workerId: string): Promise<any | null>;
   heartbeatDeliveryTask(taskId: string): Promise<void>;

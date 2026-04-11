@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive, Link2Off, Upload } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ExportTask, DeliveryStatus } from '../types';
-import { fetchAllExports, deleteProjectExport, uploadExportToDrive, fetchDeliveryStatus, disconnectGoogleDrive, fetchCurrentUser } from '../api';
+import { fetchAllExports, deleteProjectExport, uploadExportToDrive, fetchDeliveryStatus, fetchActiveDeliveries, disconnectGoogleDrive, fetchCurrentUser } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
@@ -120,13 +120,26 @@ export function Exports() {
   const loadExports = async (cursor?: string, append = false) => {
     try {
       if (append) setLoadingMore(true);
-      const { items, nextCursor: newCursor } = await fetchAllExports(15, cursor);
+      const [{ items, nextCursor: newCursor }, activeDeliveries] = await Promise.all([
+        fetchAllExports(15, cursor),
+        fetchActiveDeliveries(),
+      ]);
       if (append) {
         setExports(prev => [...prev, ...items]);
       } else {
         setExports(items);
       }
       setNextCursor(newCursor || null);
+      setDeliveries(prev => {
+        const next = { ...prev };
+        for (const delivery of activeDeliveries) {
+          next[delivery.id] = delivery;
+        }
+        return next;
+      });
+      setPendingDeliveries(
+        Object.fromEntries(activeDeliveries.map((delivery) => [delivery.exportTaskId, delivery.id]))
+      );
     } catch (err) {
       console.error('Failed to load exports:', err);
     } finally {
