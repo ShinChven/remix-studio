@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import type { Readable } from 'node:stream';
 import { S3Storage } from '../storage/s3-storage';
 import { IRepository } from '../db/repository';
 import { UserRepository } from '../auth/user-repository';
@@ -9,9 +10,68 @@ const MAX_CONCURRENT_DELIVERIES = 1;
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
 const REAPER_INTERVAL_MS = 60_000;
+const DRIVE_UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024;
 
 // 48 h TTL on delivery tasks (success or failure)
 const TTL_48H = () => Math.floor(Date.now() / 1000) + 2 * 86400;
+
+function bufferFromChunk(chunk: Buffer | Uint8Array | string): Buffer {
+  if (Buffer.isBuffer(chunk)) return chunk;
+  return typeof chunk === 'string' ? Buffer.from(chunk) : Buffer.from(chunk);
+}
+
+function takeBufferedBytes(buffers: Buffer[], bytesToTake: number): Buffer {
+  const chunk = Buffer.allocUnsafe(bytesToTake);
+  let written = 0;
+
+  while (written < bytesToTake) {
+    const head = buffers[0];
+    if (!head) throw new Error('Buffered stream ended unexpectedly');
+
+    const bytes = Math.min(head.length, bytesToTake - written);
+    head.copy(chunk, written, 0, bytes);
+    written += bytes;
+
+    if (bytes === head.length) {
+      buffers.shift();
+    } else {
+      buffers[0] = head.subarray(bytes);
+    }
+  }
+
+  return chunk;
+}
+
+async function* chunkReadable(readable: Readable, chunkSize: number): AsyncGenerator<Buffer> {
+  const buffers: Buffer[] = [];
+  let bufferedBytes = 0;
+
+  for await (const rawChunk of readable) {
+    const chunk = bufferFromChunk(rawChunk as Buffer | Uint8Array | string);
+    buffers.push(chunk);
+    bufferedBytes += chunk.length;
+
+    while (bufferedBytes >= chunkSize) {
+      yield takeBufferedBytes(buffers, chunkSize);
+      bufferedBytes -= chunkSize;
+    }
+  }
+
+  if (bufferedBytes > 0) {
+    yield takeBufferedBytes(buffers, bufferedBytes);
+  }
+}
+
+function getDriveAckBytes(rangeHeader: string | null): number | null {
+  if (!rangeHeader) return null;
+  const match = /^bytes=0-(\d+)$/.exec(rangeHeader.trim());
+  if (!match) return null;
+  return Number(match[1]) + 1;
+}
+
+function toFetchBody(chunk: Buffer): Uint8Array {
+  return new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+}
 
 export interface DeliveryTask {
   id: string;
@@ -158,6 +218,9 @@ export class DeliveryManager {
       const { access_token } = await tokenRes.json() as { access_token: string };
       const fileName = exportTask.s3Key.split('/').pop() || `export_${exportTaskId}.zip`;
       const totalBytes = exportTask.size;
+      if (!Number.isFinite(totalBytes) || totalBytes <= 0) {
+        throw new Error('Source export is missing a valid size');
+      }
 
       // Update totalBytes so frontend can show progress
       await this.repository.saveDeliveryTask(userId, taskId, {
@@ -189,31 +252,68 @@ export class DeliveryManager {
       const resumableUri = initRes.headers.get('Location');
       if (!resumableUri) throw new Error('No resumable URI returned from Drive');
 
-      // 2. Stream the ZIP from S3 and upload to Drive in one pass
+      // 2. Stream the ZIP from S3 and upload it to Drive in bounded resumable chunks
       const zipStream = await this.exportStorage.readStream(exportTask.s3Key);
+      let bytesTransferred = 0;
+      let finalResponse: Response | null = null;
 
-      // Collect chunks for the upload body (resumable single-request upload)
-      // For large files this uses Node's pipe to avoid buffering the whole file;
-      // we read it as a stream and send it as a streaming body to fetch.
-      // Node fetch supports ReadableStream bodies.
-      const response = await fetch(resumableUri, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/zip',
-          ...(totalBytes ? { 'Content-Length': String(totalBytes) } : {}),
-        },
-        // @ts-ignore — Node 18+ fetch accepts Node Readable
-        body: zipStream,
-        // @ts-ignore
-        duplex: 'half',
-      });
+      try {
+        for await (const chunk of chunkReadable(zipStream, DRIVE_UPLOAD_CHUNK_SIZE)) {
+          const rangeStart = bytesTransferred;
+          const rangeEnd = rangeStart + chunk.length - 1;
+          const response = await fetch(resumableUri, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/zip',
+              'Content-Length': String(chunk.length),
+              'Content-Range': `bytes ${rangeStart}-${rangeEnd}/${totalBytes}`,
+            },
+            body: toFetchBody(chunk),
+          });
 
-      if (!response.ok && response.status !== 308) {
-        const errText = await response.text();
-        throw new Error(`Drive upload failed (${response.status}): ${errText}`);
+          if (response.status !== 308 && !response.ok) {
+            const errText = await response.text();
+            throw new Error(`Drive upload failed (${response.status}): ${errText}`);
+          }
+
+          if (response.status === 308) {
+            const ackBytes = getDriveAckBytes(response.headers.get('Range'));
+            if (ackBytes == null) {
+              throw new Error('Drive did not acknowledge the uploaded chunk');
+            }
+            if (ackBytes !== rangeEnd + 1) {
+              throw new Error(`Drive acknowledged ${ackBytes} bytes, expected ${rangeEnd + 1}`);
+            }
+            bytesTransferred = ackBytes;
+          } else {
+            bytesTransferred = rangeEnd + 1;
+          }
+
+          await this.repository.saveDeliveryTask(userId, taskId, {
+            ...task,
+            status: 'processing',
+            totalBytes,
+            bytesTransferred,
+          });
+
+          if (response.status !== 308) {
+            finalResponse = response;
+            break;
+          }
+        }
+      } finally {
+        zipStream.destroy();
       }
 
-      const driveFile = await response.json() as { id: string };
+      if (bytesTransferred !== totalBytes) {
+        throw new Error(`Drive upload ended early at ${bytesTransferred} of ${totalBytes} bytes`);
+      }
+
+      if (!finalResponse) {
+        throw new Error('Drive upload did not return a completion response');
+      }
+
+      const driveFile = await finalResponse.json() as { id: string };
       const externalUrl = `https://drive.google.com/file/d/${driveFile.id}/view`;
 
       await this.repository.saveDeliveryTask(userId, taskId, {
@@ -221,7 +321,7 @@ export class DeliveryManager {
         status: 'completed',
         externalId: driveFile.id,
         externalUrl,
-        bytesTransferred: totalBytes ?? 0,
+        bytesTransferred,
         expiresAt: TTL_48H(),
       });
       console.log(`[DeliveryManager] ${taskId} completed — Drive file ${driveFile.id}`);
