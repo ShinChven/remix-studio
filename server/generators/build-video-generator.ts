@@ -1,14 +1,13 @@
 import type { ProviderType } from '../../src/types';
 import { VideoGenerator } from './video-generator';
 import { GoogleAIVideoGenerator } from './google-ai-video-generator';
-import { VertexAIVideoGenerator } from './vertex-ai-video-generator';
 import { OpenAIVideoGenerator } from './openai-video-generator';
 import { GrokVideoGenerator } from './grok-video-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
  * Instantiate the correct video generator for a given provider type and credentials.
- * Only GoogleAI, VertexAI, OpenAI, and Grok support first-party video generation.
+ * Only GoogleAI, OpenAI, and Grok support first-party video generation.
  */
 export function buildVideoGenerator(
   type: ProviderType,
@@ -21,7 +20,7 @@ export function buildVideoGenerator(
     case 'GoogleAI':
       return new GoogleAIVideoGenerator(apiKey, safeApiUrl);
     case 'VertexAI':
-      return new VertexAIVideoGenerator(apiKey, safeApiUrl);
+      throw new Error(`Provider type 'VertexAI' does not support video generation`);
     case 'OpenAI':
       return new OpenAIVideoGenerator(apiKey, safeApiUrl);
     case 'Grok':

@@ -169,30 +169,6 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
-    {
-      id: 'vertex-veo-3.1-video',
-      name: 'Veo 3.1',
-      generatorId: 'VertexAI',
-      modelId: 'veo-3.1-generate-001',
-      category: 'video',
-      options: {
-        aspectRatios: ['16:9', '9:16'],
-        resolutions: ['720p', '1080p', '4k'],
-        durations: [4, 6, 8],
-      },
-    },
-    {
-      id: 'vertex-veo-3.1-fast-video',
-      name: 'Veo 3.1 Fast',
-      generatorId: 'VertexAI',
-      modelId: 'veo-3.1-fast-generate-001',
-      category: 'video',
-      options: {
-        aspectRatios: ['16:9', '9:16'],
-        resolutions: ['720p', '1080p'],
-        durations: [4, 6, 8],
-      },
-    },
   ],
   RunningHub: [
     {
