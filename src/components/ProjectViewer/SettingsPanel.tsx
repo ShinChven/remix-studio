@@ -207,7 +207,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   Aspect Ratio
                 </label>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-5 gap-1.5">
                   {(selectedModel?.options.aspectRatios || ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2']).map((ratio) => (
                     <button
                       key={ratio}

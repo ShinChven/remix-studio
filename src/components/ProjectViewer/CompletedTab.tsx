@@ -9,7 +9,7 @@ interface CompletedTabProps {
   getProviderName: (id?: string) => string;
   getModelName: (providerId?: string, modelId?: string) => string;
   setJobToDeleteId: (id: string) => void;
-  setLightboxData: (data: { images: string[], index: number } | null) => void;
+  setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void } | null) => void;
   selectedCompletedIds: Set<string>;
   toggleCompletedSelection: (id: string) => void;
   toggleSelectAllCompleted: () => void;
