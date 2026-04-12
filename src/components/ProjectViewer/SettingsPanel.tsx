@@ -2,6 +2,25 @@ import React from 'react';
 import { ChevronDown, Layers, Shuffle, AlertCircle, Plus, Loader2 } from 'lucide-react';
 import { Project, Provider } from '../../types';
 
+const getRatioDimensions = (ratioStr: string) => {
+  let w = 1, h = 1;
+  if (ratioStr.includes(':')) {
+    [w, h] = ratioStr.split(':').map(Number);
+  } else if (ratioStr.includes('x')) {
+    [w, h] = ratioStr.split('x').map(Number);
+  }
+  if (!w || !h || isNaN(w) || isNaN(h)) return { width: 14, height: 14 };
+  
+  const MAX_DIM = 22;
+  if (w === h) {
+    return { width: 14, height: 14 };
+  } else if (w > h) {
+    return { width: MAX_DIM, height: Math.max(6, MAX_DIM * (h / w)) };
+  } else {
+    return { height: MAX_DIM, width: Math.max(6, MAX_DIM * (w / h)) };
+  }
+};
+
 interface SettingsPanelProps {
   localProject: Project;
   setLocalProject: (project: Project) => void;
@@ -163,11 +182,12 @@ export function SettingsPanel({
                           : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
                       }`}
                     >
-                      <div className={`border-2 rounded-[2px] ${
-                        ratio === '1:1' ? 'w-3 h-3' :
-                        ratio === '16:9' ? 'w-5 h-3' :
-                        ratio === '9:16' ? 'w-3 h-5' : 'w-3 h-3'
-                      } ${(localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '16:9')) === ratio ? 'border-white' : 'border-neutral-700'}`} />
+                      <div className="h-6 flex items-center justify-center">
+                        <div 
+                          className={`border-2 rounded-[2px] transition-colors ${(localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '16:9')) === ratio ? 'border-white' : 'border-neutral-700'}`} 
+                          style={getRatioDimensions(ratio)}
+                        />
+                      </div>
                       <span className="text-[8px] font-bold">{ratio}</span>
                     </button>
                   ))}
@@ -320,11 +340,12 @@ export function SettingsPanel({
                           : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
                       }`}
                     >
-                      <div className={`border-2 rounded-[2px] ${
-                        ratio === '1024x1024' || ratio === '1:1' ? 'w-3 h-3' :
-                        ratio === '1536x1024' || ratio === '16:9' ? 'w-5 h-3' :
-                        ratio === '1024x1536' || ratio === '9:16' ? 'w-3 h-5' : 'w-3 h-3'
-                      } ${(localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '1024x1024')) === ratio ? 'border-white' : 'border-neutral-700'}`} />
+                      <div className="h-6 flex items-center justify-center">
+                        <div 
+                          className={`border-2 rounded-[2px] transition-colors ${(localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '1024x1024')) === ratio ? 'border-white' : 'border-neutral-700'}`} 
+                          style={getRatioDimensions(ratio)}
+                        />
+                      </div>
                       <span className="text-[8px] font-bold">{ratio}</span>
                     </button>
                   ))}
