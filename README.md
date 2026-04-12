@@ -1,21 +1,88 @@
 # Remix Studio
 
-Remix Studio is a self-hosted workspace for managing AI image generation projects.
-
-It combines a React frontend with a Hono server, PostgreSQL via Prisma, and S3-compatible storage. The project is built around a practical workflow: store provider credentials, organize prompts and libraries, run generation jobs, review results, and export finished assets.
+Remix Studio is a self-hosted multimodal AI workspace for managing text, image, and video generation workflows in one place, with reusable prompt and reference libraries, provider management, background job queues, asset storage, and export tools built into a single web app. It is ready for cloud hosting with S3-compatible storage support, and also includes MCP access for prompt and library operations, so clients like Claude and Codex can help batch-create and organize content around your generation workflows while generation itself continues to run through the app.
 
 ![Remix Studio screenshot](assets/screenshot.jpg)
 
-## What It Does
+## What Remix Studio Does
 
-- Manage image generation providers and their API credentials
-- Organize projects, prompt libraries, and related assets
-- Run image generation through multiple providers
-- Queue pending generation jobs for background processing
-- Control per-provider parallelism with configurable concurrency limits
-- Store generated images in S3 or MinIO
-- Export project outputs as ZIP archives
+- Manage text, image, and video generation projects in one workspace
+- Store AI provider credentials and model configurations
+- Build reusable text prompt libraries and image reference libraries
+- Queue generation jobs for background processing
+- Review outputs in-app and export finished assets as ZIP archives
+- Store generated assets in S3-compatible storage such as AWS S3 or MinIO
 - Support authenticated access with admin controls, 2FA, and passkeys
+- Expose MCP tools for prompt and library operations
+
+## Supported Workflows
+
+- Text to text
+- Text to image
+- Text to video
+- Image to text
+- Image to image
+- Image to video
+
+## Current Supported Models
+
+These are the built-in model profiles currently included in the app.
+
+- `Google AI`
+  `nano banana 2`, `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`, `Veo 3.1`, `Veo 3.1 Lite`
+- `Vertex AI`
+  `nano banana 2`, `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`
+- `OpenAI`
+  `GPT Image 1.5`, `GPT Image 1 Mini`, `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano`, `Sora 2`, `Sora 2 Pro`
+- `Grok`
+  `Grok Imagine`, `Grok Imagine Pro`, `Grok 4.20`, `Grok 4.1 Fast`, `Grok Imagine Video`
+- `Claude`
+  `Claude Opus 4.6`, `Claude Sonnet 4.6`, `Claude Haiku 4.5`
+- `RunningHub`
+  `nano banana 2`
+
+## MCP Support
+
+Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped access to prompt and library tooling. It currently supports operations around prompt libraries, prompts, storage usage, and album summaries. Generation is not currently available through MCP.
+
+Clients can connect with OAuth 2.0 or a personal access token. Manage both in `Account -> MCP`. OAuth metadata is available at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`; related endpoints are `/register`, `/authorize`, and `/token`.
+
+Example:
+
+```json
+{
+  "mcpServers": {
+    "remix-studio": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_TOKEN"
+      }
+    }
+  }
+}
+```
+
+Replace `http://localhost:3000` with your deployed origin. All tools are user-scoped, use the `mcp:tools` OAuth scope, and currently include `list_libraries`, `create_library`, `create_prompt`, `search_library_items`, `get_storage_usage`, and `list_albums`.
+
+## Architecture At a Glance
+
+- Frontend: React 19 + Vite
+- Server: Hono on Node.js
+- Database: PostgreSQL via Prisma
+- Storage: S3-compatible object storage, including MinIO
+- Media tooling: Sharp plus video processing dependencies
+- Auth: email/password, JWT sessions, admin roles, 2FA, and passkeys
+
+## Deployment
+
+Remix Studio is designed for self-hosted and cloud-hosted deployments. It works with S3-compatible object storage, so you can deploy it against AWS S3, MinIO, or another compatible provider.
+
+- For local development, Docker Compose can run PostgreSQL and MinIO
+- For cloud or production-style deployments, point the app at your own PostgreSQL database and S3-compatible storage
+- Docker images are published to GHCR from `.github/workflows/docker.yml`
+- See [docker/README.md](docker/README.md) for compose templates and deployment layouts
+- See [UPGRADING.md](UPGRADING.md) for migration and compatibility notes
 
 ## Local Development
 
@@ -38,9 +105,7 @@ cd remix-studio
 docker compose up -d postgres minio
 ```
 
-Use Docker Compose for local development to run only PostgreSQL and MinIO.
-
-This starts PostgreSQL on `5432` and MinIO on `9000` with the console on `9001` by default.
+This starts PostgreSQL on `5432` and MinIO on `9000` with the console on `9001`.
 
 ### 3. Install dependencies
 
@@ -90,7 +155,7 @@ Optional:
 
 - `S3_PUBLIC_ENDPOINT`, if stored objects need to be served through a different public base URL than the internal server-side endpoint
 
-Generate one with:
+Generate an encryption key with:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -193,39 +258,14 @@ If you prefer AWS S3 or another external S3-compatible service, point `S3_ENDPOI
 - See [design/system-overview.md](design/system-overview.md) for the stack, auth model, queue behavior, providers, libraries, exports, storage model, and repository structure
 - See [docker/README.md](docker/README.md) for compose templates and deployment layouts
 - See [UPGRADING.md](UPGRADING.md) for migration and compatibility notes
-- Docker images are published to GHCR from `.github/workflows/docker.yml`
-
-## MCP Support
-
-Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped access to a small set of tools. It currently covers prompt libraries, prompts, storage usage, and project album summaries, not the full app API.
-
-Clients can connect with OAuth 2.0 or a personal access token. Manage both in `Account -> MCP`. OAuth metadata is available at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`; related endpoints are `/register`, `/authorize`, and `/token`.
-
-Example:
-
-```json
-{
-  "mcpServers": {
-    "remix-studio": {
-      "type": "http",
-      "url": "http://localhost:3000/mcp",
-      "headers": {
-        "Authorization": "Bearer YOUR_MCP_TOKEN"
-      }
-    }
-  }
-}
-```
-
-Replace `http://localhost:3000` with your deployed origin. All tools are user-scoped, use the `mcp:tools` OAuth scope, and currently include `list_libraries`, `create_library`, `create_prompt`, `search_library_items`, `get_storage_usage`, and `list_albums`.
 
 ## Notes
 
-- This repository is aimed at local or self-hosted use. Production deployment is possible, but it still requires you to make your own decisions around secrets, storage, database operations, and infrastructure.
-- The app auto-creates a default admin user if `DEFAULT_ADMIN_EMAIL` and `DEFAULT_ADMIN_PASSWORD` are provided and the user does not already exist.
-- Storage is implemented against S3-compatible APIs, so MinIO works well for development.
-- For host-based local development with `docker compose up -d postgres minio` and `npm run dev`, MinIO should be reached at `http://localhost:9000`.
-- For Docker deployment, use `docker compose --profile app --env-file .env.docker up -d --build` so the app receives container-network addresses instead of your host-based `.env` values.
+- This repository is aimed at local, self-hosted, or cloud-hosted deployments under your own control
+- The app auto-creates a default admin user if `DEFAULT_ADMIN_EMAIL` and `DEFAULT_ADMIN_PASSWORD` are provided and the user does not already exist
+- Storage is implemented against S3-compatible APIs, so MinIO works well for development and AWS S3 works for deployment
+- For host-based local development with `docker compose up -d postgres minio` and `npm run dev`, MinIO should be reached at `http://localhost:9000`
+- For Docker deployment, use `docker compose --profile app --env-file .env.docker up -d --build` so the app receives container-network addresses instead of your host-based `.env` values
 
 ## Scripts
 
