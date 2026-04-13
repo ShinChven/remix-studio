@@ -413,6 +413,42 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],
       },
     },
+    {
+      id: 'byteplus-seedance-1-5-pro-video',
+      name: 'Seedance 1.5 Pro',
+      generatorId: 'BytePlus',
+      modelId: 'seedance-1-5-pro-251215',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+        resolutions: ['480p', '720p', '1080p'],
+        durations: [4, 5, 6, 8, 10, 12],
+      },
+    },
+    {
+      id: 'byteplus-seedance-1-0-pro-video',
+      name: 'Seedance 1.0 Pro',
+      generatorId: 'BytePlus',
+      modelId: 'seedance-1-0-pro-250528',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+        resolutions: ['480p', '720p', '1080p'],
+        durations: [2, 4, 5, 6, 8, 10, 12],
+      },
+    },
+    {
+      id: 'byteplus-seedance-1-0-pro-fast-video',
+      name: 'Seedance 1.0 Pro Fast',
+      generatorId: 'BytePlus',
+      modelId: 'seedance-1-0-pro-fast-251015',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+        resolutions: ['480p', '720p', '1080p'],
+        durations: [2, 4, 5, 6, 8, 10, 12],
+      },
+    },
   ],
 };
 
