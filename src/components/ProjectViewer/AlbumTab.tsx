@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, Download, FileText, Play, Video as VideoIcon } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, Download, FileText, Play, Video as VideoIcon, Copy } from 'lucide-react';
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
@@ -7,7 +7,6 @@ import { ExportPackageDialog } from './ExportPackageDialog';
 import { TextAlbumCompareDialog } from './TextAlbumCompareDialog';
 import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
 import { CopyToLibraryDialog } from './CopyToLibraryDialog';
-import { Copy } from 'lucide-react';
 
 import { toast } from 'sonner';
 
@@ -57,6 +56,7 @@ export function AlbumTab({
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [videoPlayerItem, setVideoPlayerItem] = useState<AlbumItem | null>(null);
   const selectedTextItems = albumItems.filter((item) => selectedAlbumIds.has(item.id));
+  const copyItemIds = selectedAlbumIds.size > 0 ? Array.from(selectedAlbumIds) : albumItems.map((item) => item.id);
 
   const openExportDialog = (isAll: boolean) => {
     setPendingExportItemIds(isAll ? undefined : Array.from(selectedAlbumIds));
@@ -119,14 +119,12 @@ export function AlbumTab({
                   >
                     <Download className="w-3 h-3" /> Export Selected
                   </button>
-                  {!isTextProject && (
-                    <button
-                      onClick={() => setShowCopyDialog(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
-                    >
-                      <Copy className="w-3 h-3" /> Copy to Library
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setShowCopyDialog(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
+                  >
+                    <Copy className="w-3 h-3" /> Copy to Library
+                  </button>
                   {isTextProject && selectedAlbumIds.size > 1 && (
                     <button
                       onClick={() => setShowCompareDialog(true)}
@@ -156,17 +154,12 @@ export function AlbumTab({
                   >
                     <Download className="w-4 h-4" /> Export All
                   </button>
-                  {!isTextProject && (
-                    <button
-                      onClick={() => {
-                        setPendingExportItemIds(undefined);
-                        setShowCopyDialog(true);
-                      }}
-                      className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
-                    >
-                      <Copy className="w-4 h-4" /> Copy All to Library
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setShowCopyDialog(true)}
+                    className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
+                  >
+                    <Copy className="w-4 h-4" /> Copy All to Library
+                  </button>
                 </div>
               )}
             </div>
@@ -448,7 +441,8 @@ export function AlbumTab({
         isOpen={showCopyDialog}
         projectId={projectId}
         projectName={projectName}
-        itemIds={pendingExportItemIds ?? Array.from(selectedAlbumIds).length > 0 ? Array.from(selectedAlbumIds) : albumItems.map(i => i.id)}
+        projectType={projectType}
+        itemIds={copyItemIds}
         onClose={() => setShowCopyDialog(false)}
         onSuccess={() => {}}
       />

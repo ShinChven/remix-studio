@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Copy, FolderPlus, Library as LibraryIcon, Loader2, X, CheckSquare, Square, Image as ImageIcon } from 'lucide-react';
-import { Library } from '../../types';
+import { Copy, FolderPlus, Library as LibraryIcon, Loader2, X, CheckSquare, Square, FileText } from 'lucide-react';
+import { Library, ProjectType } from '../../types';
 import { fetchLibraries, copyAlbumToLibrary } from '../../api';
 import { toast } from 'sonner';
 
@@ -8,6 +8,7 @@ interface CopyToLibraryDialogProps {
   isOpen: boolean;
   projectId: string;
   projectName: string;
+  projectType?: ProjectType;
   itemIds: string[];
   onClose: () => void;
   onSuccess: (libraryId: string) => void;
@@ -17,12 +18,20 @@ export function CopyToLibraryDialog({
   isOpen,
   projectId,
   projectName,
+  projectType = 'image',
   itemIds,
   onClose,
   onSuccess,
 }: CopyToLibraryDialogProps) {
+  const isTextProject = projectType === 'text';
+  const targetLibraryType = isTextProject ? 'text' : 'image';
+  const defaultLibraryName = `${projectName} ${isTextProject ? 'Texts' : 'Album'}`;
+  const itemLabel = isTextProject ? 'text item' : projectType === 'video' ? 'video' : 'image';
+  const itemSummary = `${itemIds.length} ${itemLabel}${itemIds.length === 1 ? '' : 's'}`;
+  const AccentIcon = isTextProject ? FileText : LibraryIcon;
+
   const [mode, setMode] = useState<'new' | 'existing'>('new');
-  const [newLibraryName, setNewLibraryName] = useState(`${projectName} Album`);
+  const [newLibraryName, setNewLibraryName] = useState(defaultLibraryName);
   const [existingLibraries, setExistingLibraries] = useState<Library[]>([]);
   const [selectedLibraryId, setSelectedLibraryId] = useState<string>('');
   const [version, setVersion] = useState<'raw' | 'optimized'>('optimized');
@@ -32,20 +41,25 @@ export function CopyToLibraryDialog({
   useEffect(() => {
     if (isOpen) {
       void loadLibraries();
-      setNewLibraryName(`${projectName} Album`);
+      setNewLibraryName(defaultLibraryName);
       setIsSubmitting(false);
     }
-  }, [isOpen, projectName]);
+  }, [defaultLibraryName, isOpen, targetLibraryType]);
 
   const loadLibraries = async () => {
     setIsLoading(true);
     try {
       const result = await fetchLibraries(1, 100);
-      const imageLibs = result.items.filter(lib => lib.type === 'image');
-      setExistingLibraries(imageLibs);
-      if (imageLibs.length > 0) {
-        setSelectedLibraryId(imageLibs[0].id);
+      const matchingLibraries = result.items.filter((lib) => lib.type === targetLibraryType);
+      setExistingLibraries(matchingLibraries);
+      if (matchingLibraries.length > 0) {
+        setSelectedLibraryId((current) =>
+          current && matchingLibraries.some((lib) => lib.id === current)
+            ? current
+            : matchingLibraries[0].id
+        );
       } else {
+        setSelectedLibraryId('');
         setMode('new');
       }
     } catch (err: any) {
@@ -72,12 +86,16 @@ export function CopyToLibraryDialog({
     try {
       const result = await copyAlbumToLibrary(projectId, {
         itemIds,
-        version,
+        version: isTextProject ? undefined : version,
         destinationLibraryId: mode === 'existing' ? selectedLibraryId : undefined,
         newLibraryName: mode === 'new' ? newLibraryName.trim() : undefined,
       });
 
-      toast.success(mode === 'new' ? 'Created new library and copied images' : 'Images copied to library');
+      toast.success(
+        mode === 'new'
+          ? `Created new ${targetLibraryType} library and copied ${itemSummary}`
+          : `Copied ${itemSummary} to library`
+      );
       onSuccess(result.libraryId);
       onClose();
     } catch (err: any) {
@@ -100,12 +118,12 @@ export function CopyToLibraryDialog({
         <div className="flex items-center justify-between border-b border-neutral-800 bg-neutral-950/30 p-6">
           <div className="flex items-center gap-4">
             <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-3 text-blue-400">
-              <LibraryIcon className="h-6 w-6" />
+              <AccentIcon className="h-6 w-6" />
             </div>
             <div>
               <h3 className="text-xl font-black tracking-tight text-white">Copy to Library</h3>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                Duplicating {itemIds.length} item{itemIds.length === 1 ? '' : 's'} to image library
+                Duplicating {itemSummary} to {targetLibraryType} library
               </p>
             </div>
           </div>
@@ -181,40 +199,41 @@ export function CopyToLibraryDialog({
             )}
           </div>
 
-          {/* Version Selection */}
-          <div className="space-y-4">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Version to Copy</label>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => setVersion('optimized')}
-                className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
-                  version === 'optimized'
-                    ? 'bg-neutral-800 border-neutral-600 text-white'
-                    : 'bg-neutral-950 border-neutral-800 text-neutral-500 hover:bg-neutral-800/50'
-                }`}
-              >
-                {version === 'optimized' ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4" />}
-                <div className="text-left">
-                  <p className="text-[10px] font-black uppercase tracking-widest leading-none">Optimized</p>
-                  <p className="text-[8px] text-neutral-500 mt-1 uppercase tracking-wider">Fast preview version</p>
-                </div>
-              </button>
-              <button
-                onClick={() => setVersion('raw')}
-                className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
-                  version === 'raw'
-                    ? 'bg-neutral-800 border-neutral-600 text-white'
-                    : 'bg-neutral-950 border-neutral-800 text-neutral-500 hover:bg-neutral-800/50'
-                }`}
-              >
-                {version === 'raw' ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4" />}
-                <div className="text-left">
-                  <p className="text-[10px] font-black uppercase tracking-widest leading-none">Raw</p>
-                  <p className="text-[8px] text-neutral-500 mt-1 uppercase tracking-wider">Original full quality</p>
-                </div>
-              </button>
+          {!isTextProject && (
+            <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Version to Copy</label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setVersion('optimized')}
+                  className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
+                    version === 'optimized'
+                      ? 'bg-neutral-800 border-neutral-600 text-white'
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-500 hover:bg-neutral-800/50'
+                  }`}
+                >
+                  {version === 'optimized' ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4" />}
+                  <div className="text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Optimized</p>
+                    <p className="text-[8px] text-neutral-500 mt-1 uppercase tracking-wider">Fast preview version</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setVersion('raw')}
+                  className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
+                    version === 'raw'
+                      ? 'bg-neutral-800 border-neutral-600 text-white'
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-500 hover:bg-neutral-800/50'
+                  }`}
+                >
+                  {version === 'raw' ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4" />}
+                  <div className="text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Raw</p>
+                    <p className="text-[8px] text-neutral-500 mt-1 uppercase tracking-wider">Original full quality</p>
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-neutral-800 bg-neutral-950/40 p-6">

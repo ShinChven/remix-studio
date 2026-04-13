@@ -418,7 +418,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   /**
    * POST /api/projects/:id/album/copy-to-library
    *
-   * Copy selected album items to an Image Library.
+   * Copy selected album items to a matching library.
    */
   router.post('/api/projects/:id/album/copy-to-library', authMiddleware, async (c) => {
     try {
@@ -440,37 +440,40 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
+      const targetLibraryType = project.type === 'text' ? 'text' : 'image';
 
       const itemsToCopy = (project.album || []).filter(item => itemIds.includes(item.id));
       if (itemsToCopy.length === 0) return c.json({ error: 'No matching items found' }, 400);
 
       const bucket = storage.getBucketName();
 
-      // Estimate required size based on the chosen version
       let requiredSize = 0;
-      for (const item of itemsToCopy) {
-        if (version === 'raw') {
-          requiredSize += Number(item.size) || 0;
-        } else {
-          requiredSize += Number(item.optimizedSize || item.size) || 0;
+      if (targetLibraryType === 'image') {
+        for (const item of itemsToCopy) {
+          if (version === 'raw') {
+            requiredSize += Number(item.size) || 0;
+          } else {
+            requiredSize += Number(item.optimizedSize || item.size) || 0;
+          }
+          requiredSize += Number(item.thumbnailSize) || 0;
         }
-        // Add thumbnail size
-        requiredSize += Number(item.thumbnailSize) || 0;
       }
 
-      const { allowed, currentUsage, limit } = await checkStorageLimit(
-        user.userId,
-        requiredSize,
-        userRepository,
-        storage,
-        exportStorage,
-        repository
-      );
+      if (requiredSize > 0) {
+        const { allowed, currentUsage, limit } = await checkStorageLimit(
+          user.userId,
+          requiredSize,
+          userRepository,
+          storage,
+          exportStorage,
+          repository
+        );
 
-      if (!allowed) {
-        return c.json({ 
-          error: `Storage limit exceeded. Cannot copy to library. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(requiredSize / (1024 * 1024)).toFixed(1)}MB.` 
-        }, 403);
+        if (!allowed) {
+          return c.json({
+            error: `Storage limit exceeded. Cannot copy to library. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(requiredSize / (1024 * 1024)).toFixed(1)}MB.`
+          }, 403);
+        }
       }
 
       let libraryId = destinationLibraryId;
@@ -480,53 +483,62 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         await repository.createLibrary(user.userId, {
           id: libraryId,
           name: newLibraryName!,
-          type: 'image'
+          type: targetLibraryType
         });
       } else {
         const lib = await repository.getLibrary(user.userId, libraryId);
         if (!lib) {
           return c.json({ error: 'Destination library not found' }, 404);
         }
-        if (lib.type !== 'image') {
-          return c.json({ error: 'Destination must be an image library' }, 400);
+        if (lib.type !== targetLibraryType) {
+          return c.json({ error: `Destination must be a ${targetLibraryType} library` }, 400);
         }
       }
 
       const safeLibraryId = libraryId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const newItems: LibraryItem[] = [];
 
-      for (const item of itemsToCopy) {
-        const sourceMainUrl = version === 'raw' ? item.imageUrl : (item.optimizedUrl || item.imageUrl);
-        const sourceMainKey = stripToKey(sourceMainUrl, bucket);
-        const sourceThumbKey = stripToKey(item.thumbnailUrl, bucket);
-
-        let destMainKey: string | undefined;
-        let destThumbKey: string | undefined;
-
-        if (sourceMainKey && !sourceMainKey.startsWith('http') && !sourceMainKey.startsWith('data:')) {
-          const basename = sourceMainKey.split('/').pop() || sourceMainKey;
-          destMainKey = `${user.userId}/${safeLibraryId}/${basename}`;
-          await storage.copy(sourceMainKey, destMainKey);
-        } else {
-          destMainKey = sourceMainKey; // maybe data URI
+      if (targetLibraryType === 'text') {
+        for (const item of itemsToCopy) {
+          newItems.push({
+            id: randomUUID(),
+            content: item.textContent || item.prompt || '',
+          });
         }
+      } else {
+        for (const item of itemsToCopy) {
+          const sourceMainUrl = version === 'raw' ? item.imageUrl : (item.optimizedUrl || item.imageUrl);
+          const sourceMainKey = stripToKey(sourceMainUrl, bucket);
+          const sourceThumbKey = stripToKey(item.thumbnailUrl, bucket);
 
-        if (sourceThumbKey && !sourceThumbKey.startsWith('http') && !sourceThumbKey.startsWith('data:')) {
-          const basename = sourceThumbKey.split('/').pop() || sourceThumbKey;
-          destThumbKey = `${user.userId}/${safeLibraryId}/${basename}`;
-          await storage.copy(sourceThumbKey, destThumbKey);
-        } else {
-          destThumbKey = sourceThumbKey;
+          let destMainKey: string | undefined;
+          let destThumbKey: string | undefined;
+
+          if (sourceMainKey && !sourceMainKey.startsWith('http') && !sourceMainKey.startsWith('data:')) {
+            const basename = sourceMainKey.split('/').pop() || sourceMainKey;
+            destMainKey = `${user.userId}/${safeLibraryId}/${basename}`;
+            await storage.copy(sourceMainKey, destMainKey);
+          } else {
+            destMainKey = sourceMainKey;
+          }
+
+          if (sourceThumbKey && !sourceThumbKey.startsWith('http') && !sourceThumbKey.startsWith('data:')) {
+            const basename = sourceThumbKey.split('/').pop() || sourceThumbKey;
+            destThumbKey = `${user.userId}/${safeLibraryId}/${basename}`;
+            await storage.copy(sourceThumbKey, destThumbKey);
+          } else {
+            destThumbKey = sourceThumbKey;
+          }
+
+          newItems.push({
+            id: randomUUID(),
+            title: item.prompt || undefined,
+            content: destMainKey || '',
+            thumbnailUrl: destThumbKey,
+            optimizedUrl: version === 'raw' ? destMainKey : undefined,
+            size: version === 'raw' ? item.size : (item.optimizedSize || item.size)
+          });
         }
-
-        newItems.push({
-          id: randomUUID(),
-          title: item.prompt || undefined,
-          content: destMainKey || '',
-          thumbnailUrl: destThumbKey,
-          optimizedUrl: version === 'raw' ? destMainKey : undefined, // If version is optimized, we don't necessarily have a distinct optimized URL
-          size: version === 'raw' ? item.size : (item.optimizedSize || item.size)
-        });
       }
 
       if (newItems.length > 0) {

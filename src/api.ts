@@ -745,7 +745,7 @@ export async function copyAlbumToLibrary(
   projectId: string,
   params: {
     itemIds: string[];
-    version: 'raw' | 'optimized';
+    version?: 'raw' | 'optimized';
     destinationLibraryId?: string;
     newLibraryName?: string;
   }
