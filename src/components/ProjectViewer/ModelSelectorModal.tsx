@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Layers, AlertCircle, CheckCircle2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, Layers, AlertCircle, CheckCircle2, Search } from 'lucide-react';
 import { Provider, ProjectType } from '../../types';
 
 interface ModelSelectorModalProps {
@@ -21,6 +21,23 @@ export function ModelSelectorModal({
   onSelect,
   projectType = 'image',
 }: ModelSelectorModalProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredProviders = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return providers.map(provider => {
+      const filteredModels = provider.models?.filter(m => {
+        const matchesCategory = !m.category || m.category === projectType;
+        const matchesSearch = query === '' 
+          || m.name.toLowerCase().includes(query) 
+          || m.generatorId.toLowerCase().includes(query) 
+          || provider.name.toLowerCase().includes(query);
+        return matchesCategory && matchesSearch;
+      }) || [];
+      return { ...provider, models: filteredModels };
+    }).filter(provider => provider.models.length > 0);
+  }, [providers, projectType, searchQuery]);
+
   if (!isOpen) return null;
 
   return (
@@ -29,99 +46,108 @@ export function ModelSelectorModal({
       onClick={onClose}
     >
       <div 
-        className="bg-neutral-900 border border-neutral-800/50 rounded-[40px] shadow-[0_50px_100px_rgba(0,0,0,0.9)] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
+        className="bg-neutral-900 border border-neutral-800/50 rounded-[32px] md:rounded-[40px] shadow-[0_50px_100px_rgba(0,0,0,0.9)] max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-8 border-b border-neutral-800/50 flex items-center justify-between bg-neutral-950/20 backdrop-blur-md">
-          <div>
-            <h3 className="text-3xl font-black text-white tracking-tight leading-none mb-2">Select Model</h3>
-            <p className="text-neutral-500 text-sm font-medium">Choose an AI provider and a specific model for your workflow</p>
+        <div className="p-6 md:p-8 border-b border-neutral-800/50 flex flex-col gap-5 bg-neutral-950/20 backdrop-blur-md">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-none mb-2">Select Model</h3>
+              <p className="text-neutral-500 text-xs md:text-sm font-medium">Choose an AI provider and a specific model for your workflow</p>
+            </div>
+            <button 
+              onClick={onClose}
+              className="p-2.5 md:p-3 bg-neutral-800/50 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl md:rounded-2xl transition-all active:scale-90 border border-neutral-700/30 shrink-0"
+            >
+              <X className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-3 bg-neutral-800/50 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-2xl transition-all active:scale-90 border border-neutral-700/30"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          {/* Search Input */}
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="w-5 h-5 text-neutral-500 group-focus-within:text-blue-500 transition-colors" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by model or provider name..."
+              className="w-full bg-neutral-950/50 border border-neutral-800 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 rounded-2xl py-3 pl-11 pr-4 text-sm text-white placeholder-neutral-500 outline-none transition-all"
+            />
+          </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
           {providers.length === 0 ? (
             <div className="text-center py-20 bg-neutral-950/30 rounded-[32px] border border-dashed border-neutral-800">
               <AlertCircle className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
               <p className="text-neutral-500 font-bold uppercase tracking-widest text-xs">No providers configured</p>
               <p className="text-neutral-600 text-sm mt-2">Go to settings to add your first AI provider</p>
             </div>
+          ) : filteredProviders.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-neutral-500 text-sm">No models found matching "{searchQuery}"</p>
+            </div>
           ) : (
-            providers.filter(provider => {
-              const filteredModels = provider.models?.filter(m => !m.category || m.category === projectType);
-              return filteredModels && filteredModels.length > 0;
-            }).map((provider) => {
-              const filteredModels = provider.models?.filter(m => !m.category || m.category === projectType) || [];
-              return (
-              <div key={provider.id} className="space-y-4">
-                <div className="flex items-center gap-3 px-2">
-                  <div className="p-2 bg-blue-500/10 rounded-xl border border-blue-500/20">
+            filteredProviders.map((provider) => (
+              <div key={provider.id} className="space-y-3">
+                <div className="flex items-center gap-3 px-1">
+                  <div className="p-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
                     <Layers className="w-4 h-4 text-blue-500" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-white uppercase tracking-wider">{provider.name}</h4>
+                    <h4 className="text-xs font-black text-white uppercase tracking-wider">{provider.name}</h4>
                     <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">{provider.type}</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {filteredModels.map((model) => {
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {provider.models.map((model) => {
                     const isSelected = provider.id === selectedProviderId && model.id === selectedModelId;
                     return (
                       <button
                         key={model.id}
                         onClick={() => onSelect(provider.id, model.id)}
-                        className={`group relative p-5 rounded-[24px] text-left transition-all border-2 active:scale-[0.98] overflow-hidden ${
+                        className={`group relative p-3 rounded-xl text-left transition-all border active:scale-[0.98] overflow-hidden ${
                           isSelected
-                            ? 'bg-blue-600 border-blue-500 shadow-[0_10px_30px_rgba(37,99,235,0.3)]'
-                            : 'bg-neutral-950/50 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900 shadow-inner'
+                            ? 'bg-blue-600/10 border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.15)] ring-1 ring-blue-500'
+                            : 'bg-neutral-950/40 border-neutral-800/80 hover:border-neutral-700 hover:bg-neutral-900 shadow-sm'
                         }`}
                       >
-                        <div className="relative z-10 flex items-center justify-between">
+                        <div className="relative z-10 flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className={`text-[10px] font-black uppercase tracking-widest mb-1 transition-colors ${isSelected ? 'text-blue-100' : 'text-neutral-500'}`}>
+                            <div className={`text-[9px] font-black uppercase tracking-widest mb-0.5 truncate transition-colors ${isSelected ? 'text-blue-400' : 'text-neutral-500'}`}>
                               {model.generatorId}
                             </div>
-                            <div className={`text-base font-black truncate tracking-tight transition-colors ${isSelected ? 'text-white' : 'text-neutral-200'}`}>
+                            <div className={`text-sm font-bold truncate tracking-tight transition-colors ${isSelected ? 'text-blue-50' : 'text-neutral-300'}`}>
                               {model.name}
                             </div>
                           </div>
                           {isSelected && (
-                            <div className="p-1.5 bg-white/20 backdrop-blur-md rounded-lg">
-                              <CheckCircle2 className="w-4 h-4 text-white" />
+                            <div className="shrink-0 p-1 bg-blue-500 rounded-full shadow-lg">
+                              <CheckCircle2 className="w-3 h-3 text-white" />
                             </div>
                           )}
                         </div>
                         
                         {/* Hover/Selected decorators */}
-                        <div className={`absolute inset-0 bg-gradient-to-br from-white/0 to-white/0 transition-all duration-500 ${
-                          isSelected ? 'from-white/10 to-transparent opacity-100' : 'from-white/5 opacity-100'
+                        <div className={`absolute inset-0 bg-gradient-to-br transition-all duration-500 pointer-events-none ${
+                          isSelected ? 'from-blue-500/5 to-transparent' : 'from-white/0 group-hover:from-white/[0.02]'
                         }`} />
                       </button>
                     );
                   })}
-                  {filteredModels.length === 0 && (
-                    <div className="col-span-full py-4 text-center text-neutral-600 text-xs font-bold uppercase tracking-widest italic opacity-40">
-                      No {projectType} models available for this provider
-                    </div>
-                  )}
                 </div>
               </div>
-              );
-            })
+            ))
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-6 bg-neutral-950/40 border-t border-neutral-800/50 flex items-center justify-center">
+        <div className="p-4 bg-neutral-950/40 border-t border-neutral-800/50 flex items-center justify-center">
            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
              Click a model card to select and continue
            </p>

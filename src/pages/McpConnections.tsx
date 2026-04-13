@@ -156,7 +156,7 @@ export function McpConnections() {
         <header className="mb-6 md:mb-8">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">MCP Connections</h2>
           <p className="text-sm md:text-base text-neutral-400">
-            Connect consumer apps securely using sign-in or access tokens.
+            Connect AI apps securely through MCP protocol
           </p>
         </header>
 
