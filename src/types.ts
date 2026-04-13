@@ -359,6 +359,61 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  BytePlus: [
+    {
+      id: 'byteplus-seedream-5-0-lite',
+      name: 'Seedream 5.0 Lite',
+      generatorId: 'BytePlus',
+      modelId: 'seedream-5-0-lite',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
+        qualities: ['2K', '3K'],
+      },
+    },
+    {
+      id: 'byteplus-seedream-4-5',
+      name: 'Seedream 4.5',
+      generatorId: 'BytePlus',
+      modelId: 'seedream-4-5',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
+        qualities: ['2K', '4K'],
+      },
+    },
+    {
+      id: 'byteplus-seedream-4-0',
+      name: 'Seedream 4.0',
+      generatorId: 'BytePlus',
+      modelId: 'seedream-4-0',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'byteplus-seedream-3-0-t2i',
+      name: 'Seedream 3.0 T2I',
+      generatorId: 'BytePlus',
+      modelId: 'seedream-3-0-t2i',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
+      },
+    },
+    {
+      id: 'byteplus-seededit-3-0-i2i',
+      name: 'Seededit 3.0 I2I',
+      generatorId: 'BytePlus',
+      modelId: 'seededit-3-0-i2i',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],
+      },
+    },
+  ],
 };
 
 export interface Job {
@@ -446,7 +501,7 @@ export interface Project {
   resolution?: string; // '720p', '1080p', '4k'
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI' | 'Grok' | 'Claude';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus';
 
 export interface ProviderUsageSummary {
   projectCount: number;

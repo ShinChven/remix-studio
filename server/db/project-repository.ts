@@ -195,7 +195,10 @@ export class ProjectRepository {
     if ((updates as any).optimizedSize !== undefined) data.optimizedSize = (updates as any).optimizedSize != null ? BigInt((updates as any).optimizedSize) : null;
     if ((updates as any).thumbnailSize !== undefined) data.thumbnailSize = (updates as any).thumbnailSize != null ? BigInt((updates as any).thumbnailSize) : null;
 
-    await this.prisma.job.updateMany({ where: { id: jobId, projectId, userId }, data });
+    const result = await this.prisma.job.updateMany({ where: { id: jobId, projectId, userId }, data });
+    if (result.count === 0) {
+      console.warn(`[ProjectRepository] updateJob matched 0 rows for job=${jobId} project=${projectId} user=${userId}. Data: ${JSON.stringify(data)}`);
+    }
   }
 
   async addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void> {

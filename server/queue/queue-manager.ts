@@ -273,6 +273,15 @@ export class QueueManager {
         modelConfigId: job.modelConfigId,
         providerId: job.providerId
       });
+
+      // Safety net: verify the job status was actually updated
+      const verifiedJob = await this.projectRepo.getJob(userId, projectId, job.id);
+      if (verifiedJob && verifiedJob.status === 'processing') {
+        console.warn(`[QueueManager] Job ${job.id} still 'processing' after async-fallback processCompletedImage. Forcing status to 'completed'.`);
+        await this.updateJobStatus(userId, projectId, job.id, {
+          status: 'completed',
+        });
+      }
     } else {
       throw new Error('Async generator returned no taskId and no image bytes');
     }
@@ -306,6 +315,18 @@ export class QueueManager {
         modelConfigId: job.modelConfigId,
         providerId: job.providerId
       });
+
+      // Safety net: verify the job status was actually updated.
+      // processCompletedImage swallows its own errors, so if the DB update
+      // silently failed (e.g. updateMany matched 0 rows), the job would be
+      // stuck in 'processing' forever while the album item was already created.
+      const verifiedJob = await this.projectRepo.getJob(userId, projectId, job.id);
+      if (verifiedJob && verifiedJob.status === 'processing') {
+        console.warn(`[QueueManager] Job ${job.id} still 'processing' after processCompletedImage completed. Forcing status to 'completed'.`);
+        await this.updateJobStatus(userId, projectId, job.id, {
+          status: 'completed',
+        });
+      }
     } catch (e: any) {
       console.error(`[QueueManager] Job ${job.id} sync execution failed:`, e.message);
       await this.updateJobStatus(userId, projectId, job.id, {

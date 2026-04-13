@@ -29,6 +29,8 @@ export function buildVideoGenerator(
       throw new Error(`Provider type 'RunningHub' does not support video generation`);
     case 'Claude':
       throw new Error(`Provider type 'Claude' does not support video generation`);
+    case 'BytePlus':
+      throw new Error(`Provider type 'BytePlus' does not support video generation`);
     default: {
       const _never: never = type;
       throw new Error(`Unknown provider type: ${_never}`);

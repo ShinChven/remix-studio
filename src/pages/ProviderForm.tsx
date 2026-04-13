@@ -4,7 +4,7 @@ import { fetchProvider, createProvider, updateProvider } from '../api';
 import { ProviderType } from '../types';
 import { Save, Key, Eye, EyeOff } from 'lucide-react';
 
-const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'OpenAI', 'Grok', 'Claude'];
+const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'OpenAI', 'Grok', 'Claude', 'BytePlus'];
 
 const TYPE_DESCRIPTIONS: Record<ProviderType, string> = {
   GoogleAI:   'Google AI Studio — x-goog-api-key header',
@@ -13,6 +13,7 @@ const TYPE_DESCRIPTIONS: Record<ProviderType, string> = {
   OpenAI:     'OpenAI GPT Image 1.5 — Bearer token',
   Grok:       'xAI Grok Imagine — Bearer token',
   Claude:     'Anthropic Claude — x-api-key header',
+  BytePlus:   'BytePlus ModelArk Seedream — Bearer token',
 };
 
 export function ProviderForm() {

@@ -48,9 +48,10 @@ export async function listProviderModels(
     case 'Grok':
       result = await listGrokModels(apiKey, apiUrl);
       break;
-    case 'RunningHub': {
-      // RunningHub has no model listing API — return our static supported models
-      const staticModels: ProviderModel[] = (PROVIDER_MODELS_MAP['RunningHub'] || []).map(c => ({
+    case 'RunningHub':
+    case 'BytePlus': {
+      // These providers have no model listing API — return our static supported models
+      const staticModels: ProviderModel[] = (PROVIDER_MODELS_MAP[type] || []).map(c => ({
         id: c.modelId,
         name: c.name,
         category: c.category,

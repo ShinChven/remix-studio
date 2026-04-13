@@ -5,6 +5,7 @@ import { VertexAIGenerator } from './vertex-ai-generator';
 import { RunningHubGenerator } from './running-hub-generator';
 import { OpenAIGenerator } from './openai-generator';
 import { GrokGenerator } from './grok-generator';
+import { BytePlusGenerator } from './byteplus-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -30,6 +31,8 @@ export function buildGenerator(
       return new OpenAIGenerator(apiKey, safeApiUrl);
     case 'Grok':
       return new GrokGenerator(apiKey, safeApiUrl);
+    case 'BytePlus':
+      return new BytePlusGenerator(apiKey, safeApiUrl);
     case 'Claude':
       throw new Error(`Provider type 'Claude' does not support image generation`);
     default: {

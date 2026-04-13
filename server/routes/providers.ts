@@ -6,7 +6,7 @@ import crypto from 'crypto';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 import { listProviderModels } from '../services/provider-model-lister';
 
-const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'OpenAI', 'Grok', 'Claude'];
+const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'OpenAI', 'Grok', 'Claude', 'BytePlus'];
 type Variables = { user: JwtPayload };
 
 export function createProviderRouter(repo: ProviderRepository) {
