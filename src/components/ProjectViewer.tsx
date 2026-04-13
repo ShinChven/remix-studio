@@ -285,7 +285,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     const newWorkflow = [...(localProject.workflow || [])];
     const [draggedItem] = newWorkflow.splice(draggedIndex, 1);
     newWorkflow.splice(dropIndex, 0, draggedItem);
-    const updated = { ...localProject, workflow: newWorkflow };
+    const reorderedWorkflow = newWorkflow.map((item, idx) => ({ ...item, order: idx }));
+    const updated = { ...localProject, workflow: reorderedWorkflow };
     setLocalProject(updated);
     onUpdate(updated);
     setDraggedIndex(null);
