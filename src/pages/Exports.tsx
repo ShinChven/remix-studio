@@ -199,50 +199,53 @@ export function Exports() {
 
   return (
     <div className="p-4 md:p-8 w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-8 mt-2">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8 mt-2">
         <header>
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Archive</h2>
-          <p className="text-sm md:text-base text-neutral-400">Manage your generated ZIP archives across all projects.</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-1 font-display">Archive</h2>
+          <p className="text-xs md:text-sm text-neutral-400">Manage your generated ZIP archives across all projects.</p>
         </header>
 
         {/* Stats + Google Drive controls */}
-        <div className="flex flex-wrap items-stretch justify-end gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           {/* Google Drive control */}
           {user?.googleDriveConnected ? (
-            <div className="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/20 px-3 py-2 rounded-xl">
-              <HardDrive className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-              <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Drive</span>
-              <div className="w-px h-4 bg-emerald-500/20" />
+            <div className="flex items-center justify-between sm:justify-start gap-3 bg-emerald-500/5 border border-emerald-500/20 px-4 py-2.5 rounded-xl">
+              <div className="flex items-center gap-2">
+                <HardDrive className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Drive Connected</span>
+              </div>
+              <div className="hidden sm:block w-px h-4 bg-emerald-500/20" />
               <button
                 onClick={handleDisconnectDrive}
                 disabled={disconnecting}
-                className="flex items-center gap-1 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition disabled:opacity-50"
+                className="flex items-center gap-1.5 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition disabled:opacity-50"
               >
-                {disconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3 w-3" />}
-                Disconnect
+                {disconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3.5 w-3.5" />}
+                <span className="sm:hidden">Disconnect</span>
+                <span className="hidden sm:inline">Disconnect</span>
               </button>
             </div>
           ) : (
             <a
               href="/api/auth/google-drive/connect"
-              className="flex items-center gap-2 bg-neutral-900/50 border border-neutral-800/50 px-3 py-2 rounded-xl hover:border-neutral-700 transition"
+              className="flex items-center justify-center gap-2 bg-neutral-900/50 border border-neutral-800/50 px-4 py-2.5 rounded-xl hover:border-neutral-700 transition"
             >
-              <HardDrive className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />
-              <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Connect Drive</span>
+              <HardDrive className="h-4 w-4 text-neutral-500 flex-shrink-0" />
+              <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest text-center">Connect Drive</span>
             </a>
           )}
 
           {/* Database stats */}
-          <div className="bg-neutral-900/50 border border-neutral-800/50 px-4 py-2 rounded-xl flex items-center gap-3">
-            <div className="flex flex-col items-end">
-              <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Database</p>
-              <p className="text-xs font-bold text-white">{exports.length} Total Records</p>
+          <div className="bg-neutral-900/50 border border-neutral-800/50 px-4 py-2.5 rounded-xl flex items-center justify-between sm:justify-start gap-4">
+            <div className="flex flex-col">
+              <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Database</p>
+              <p className="text-xs font-bold text-white">{exports.length} Total</p>
             </div>
             <div className="w-px h-6 bg-neutral-800" />
             <div className="flex flex-col">
-              <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Active</p>
+              <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest">In Progress</p>
               <p className="text-xs font-bold text-white">
-                {exports.filter(t => t.status === 'pending' || t.status === 'processing').length}
+                {exports.filter(t => t.status === 'pending' || t.status === 'processing').length} Active
               </p>
             </div>
           </div>
@@ -270,32 +273,32 @@ export function Exports() {
             return (
               <div
                 key={task.id}
-                className={`bg-neutral-950/50 p-4 rounded-xl border flex justify-between items-center transition-all group/task ${task.status === 'failed' ? 'border-red-900/30 bg-red-950/5' : 'border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50'}`}
+                className={`bg-neutral-950/50 p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all group/task ${task.status === 'failed' ? 'border-red-900/30 bg-red-950/5' : 'border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50'}`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   {/* Status Indicator Bar */}
-                  <div className={`w-1 h-8 rounded-full flex-shrink-0 ${
+                  <div className={`w-1 h-10 sm:h-8 rounded-full flex-shrink-0 ${
                     task.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
                     task.status === 'failed' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
                     'bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]'
                   }`} />
 
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
                       <Link
                         to={`/project/${task.projectId}`}
-                        className="text-[9px] font-black text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10 flex items-center gap-1 group/project"
+                        className="w-fit text-[9px] font-black text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10 flex items-center gap-1 group/project"
                       >
                         {task.projectName}
                         <ArrowRight className="w-2.5 h-2.5 group-hover/project:translate-x-0.5 transition-transform" />
                       </Link>
-                      <span className="text-[10px] font-bold text-neutral-400 truncate tracking-tight">
-                        Archive #{task.id.slice(0, 8)}
+                      <span className="text-[11px] sm:text-[10px] font-bold text-white sm:text-neutral-400 truncate tracking-tight">
+                        {task.packageName || `Archive #${task.id.slice(0, 8)}`}
                       </span>
                     </div>
 
                     {/* Context Info */}
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap mt-1">
                       <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
                         <Clock className="w-3 h-3" />
                         {new Date(task.createdAt).toLocaleString()}
@@ -314,14 +317,14 @@ export function Exports() {
                       ) : null}
                       {(task.status === 'processing' || task.status === 'pending') && (
                         <div className="flex items-center gap-2 group-hover/task:translate-x-1 transition-transform">
-                          <div className="w-24 h-1 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800/50">
+                          <div className="w-20 sm:w-24 h-1 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800/50">
                             <div
                               className="h-full bg-blue-500 transition-all duration-500"
                               style={{ width: task.status === 'pending' ? '0%' : `${(task.current / task.total) * 100}%` }}
                             />
                           </div>
                           <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
-                            {task.status === 'pending' ? 'Waiting in queue…' : `${task.current}/${task.total} Files`}
+                            {task.status === 'pending' ? 'Queued' : `${task.current}/${task.total}`}
                           </span>
                         </div>
                       )}
@@ -329,14 +332,14 @@ export function Exports() {
                       {/* Drive upload progress */}
                       {isDriveUploading && (
                         <div className="flex items-center gap-2">
-                          <div className="w-20 h-1 bg-neutral-900 rounded-full overflow-hidden border border-emerald-900/40">
+                          <div className="w-16 sm:w-20 h-1 bg-neutral-900 rounded-full overflow-hidden border border-emerald-900/40">
                             <div
                               className="h-full bg-emerald-500 transition-all duration-500"
                               style={{ width: driveDelivery?.status === 'pending' ? '5%' : `${driveProgress}%` }}
                             />
                           </div>
                           <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter">
-                            {driveDelivery?.status === 'pending' ? 'Drive: Queued…' : `Drive: ${driveProgress}%`}
+                            Drive: {driveProgress}%
                           </span>
                         </div>
                       )}
@@ -344,62 +347,62 @@ export function Exports() {
                   </div>
                 </div>
 
-                {/* Status & Actions Column */}
-                <div className="flex items-center gap-4">
-                  <div className="flex-shrink-0 flex items-center gap-3">
+                {/* Status & Actions Row */}
+                <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-neutral-900/50 sm:border-none">
+                  <div className="flex-shrink-0 flex items-center gap-2 sm:gap-3">
                     {task.status === 'completed' && (
-                      <div className="flex items-center gap-2 text-emerald-500 text-[9px] font-black uppercase tracking-widest bg-emerald-500/5 px-3 py-1.5 rounded-lg border border-emerald-500/10">
+                      <div className="flex items-center gap-1.5 text-emerald-500 text-[9px] font-black uppercase tracking-widest bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/10">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Ready
                       </div>
                     )}
                     {task.status === 'processing' && (
-                      <div className="flex items-center gap-2 text-blue-400 text-[9px] font-black uppercase tracking-widest bg-blue-500/5 px-3 py-1.5 rounded-lg border border-blue-500/10">
+                      <div className="flex items-center gap-1.5 text-blue-400 text-[9px] font-black uppercase tracking-widest bg-blue-500/5 px-2.5 py-1.5 rounded-lg border border-blue-500/10">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         Archiving
                       </div>
                     )}
                     {task.status === 'pending' && (
-                      <div className="flex items-center gap-2 text-neutral-500 text-[9px] font-black uppercase tracking-widest bg-neutral-900 px-3 py-1.5 rounded-lg border border-neutral-800">
+                      <div className="flex items-center gap-1.5 text-neutral-500 text-[9px] font-black uppercase tracking-widest bg-neutral-900 px-2.5 py-1.5 rounded-lg border border-neutral-800">
                         <Loader2 className="w-3.5 h-3.5 animate-pulse" />
                         Queued
                       </div>
                     )}
                     {task.status === 'failed' && (
-                      <div className="flex items-center gap-2 text-red-500 text-[9px] font-black uppercase tracking-widest bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/20">
+                      <div className="flex items-center gap-1.5 text-red-500 text-[9px] font-black uppercase tracking-widest bg-red-500/10 px-2.5 py-1.5 rounded-lg border border-red-500/20">
                         <XCircle className="w-3.5 h-3.5" />
                         Failed
                       </div>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1.5 border-l border-neutral-800 pl-4">
+                  <div className="flex items-center gap-2 sm:border-l sm:border-neutral-800 sm:pl-4">
                     {task.status === 'completed' && task.downloadUrl && (
                       <a
                         href={task.downloadUrl}
                         download
-                        className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all active:scale-90"
+                        className="p-2 sm:p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all active:scale-90 bg-blue-500/5 sm:bg-transparent"
                         title="Download ZIP"
                       >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-5 h-5 sm:w-4 sm:h-4" />
                       </a>
                     )}
                     {task.status === 'completed' && user?.googleDriveConnected && (
                       <button
                         onClick={() => handleUploadToDrive(task)}
                         disabled={!!isDriveUploading}
-                        className="p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 sm:p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500/5 sm:bg-transparent"
                         title={isDriveUploading ? 'Uploading to Drive…' : 'Upload to Google Drive'}
                       >
-                        {isDriveUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        {isDriveUploading ? <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 animate-spin" /> : <Upload className="w-5 h-5 sm:w-4 sm:h-4" />}
                       </button>
                     )}
                     <button
                       onClick={() => handleDelete(task.projectId, task.id)}
-                      className="p-1.5 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90"
+                      className="p-2 sm:p-1.5 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90 bg-neutral-800/50 sm:bg-transparent"
                       title="Delete record"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                     </button>
                   </div>
                 </div>
@@ -416,7 +419,7 @@ export function Exports() {
               <button
                 onClick={handleLoadMore}
                 disabled={loadingMore}
-                className="group flex items-center gap-3 px-8 py-3 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all border border-neutral-800 hover:border-neutral-700 active:scale-95 disabled:opacity-50"
+                className="group w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-3 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all border border-neutral-800 hover:border-neutral-700 active:scale-95 disabled:opacity-50"
               >
                 {loadingMore ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
