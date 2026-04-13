@@ -1,13 +1,49 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Project } from '../types';
-import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Project, ProjectType } from '../types';
+import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video } from 'lucide-react';
 import { fetchProjects } from '../api';
 
 type ProjectSort = 'createdAt' | 'totalSize';
 
 function isProjectSort(value: string | null): value is ProjectSort {
   return value === 'createdAt' || value === 'totalSize';
+}
+
+function getProjectTypeMeta(type: ProjectType | undefined) {
+  switch (type) {
+    case 'text':
+      return {
+        icon: Type,
+        iconClassName: 'bg-blue-500/10 text-blue-500 shadow-blue-500/5',
+        borderClassName: 'hover:border-blue-500/50',
+        accentClassName: 'text-blue-500',
+        glowClassName: 'via-blue-500/20',
+        assetIcon: Type,
+        assetLabel: 'texts',
+      };
+    case 'video':
+      return {
+        icon: Video,
+        iconClassName: 'bg-purple-500/10 text-purple-500 shadow-purple-500/5',
+        borderClassName: 'hover:border-purple-500/50',
+        accentClassName: 'text-purple-500/80',
+        glowClassName: 'via-purple-500/20',
+        assetIcon: Video,
+        assetLabel: 'videos',
+      };
+    case 'image':
+    default:
+      return {
+        icon: ImageIcon,
+        iconClassName: 'bg-green-500/10 text-green-500 shadow-green-500/5',
+        borderClassName: 'hover:border-green-500/50',
+        accentClassName: 'text-green-500/80',
+        glowClassName: 'via-green-500/20',
+        assetIcon: ImageIcon,
+        assetLabel: 'images',
+      };
+  }
 }
 
 export function Projects() {
@@ -128,15 +164,20 @@ export function Projects() {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {projects.map(project => (
+                {projects.map(project => {
+                  const typeMeta = getProjectTypeMeta(project.type);
+                  const ProjectIcon = typeMeta.icon;
+                  const AssetIcon = typeMeta.assetIcon;
+
+                  return (
                   <Link
                     key={project.id}
                     to={`/project/${project.id}`}
-                    className="bg-neutral-900/50 backdrop-blur-sm border border-neutral-800 hover:border-green-500/50 p-5 rounded-2xl text-left transition-all group relative overflow-hidden"
+                    className={`bg-neutral-900/50 backdrop-blur-sm border border-neutral-800 ${typeMeta.borderClassName} p-5 rounded-2xl text-left transition-all group relative overflow-hidden`}
                   >
                     <div className="flex items-start justify-between mb-4">
-                      <div className="p-3 bg-green-500/10 rounded-xl text-green-500 group-hover:scale-110 transition-transform shadow-lg shadow-green-500/5">
-                        <Play className="w-6 h-6" />
+                      <div className={`p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
+                        <ProjectIcon className="w-6 h-6" />
                       </div>
                       <span className="text-xs text-neutral-500 font-mono bg-neutral-800/50 px-2 py-1 rounded border border-neutral-700/50 truncate max-w-[140px]">
                         {project.id}
@@ -151,10 +192,10 @@ export function Projects() {
                         <span>{(project.jobCount ?? project.jobs?.length) || 0} jobs</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <ImageIcon className="w-4 h-4" />
-                        <span>{(project.albumCount ?? project.album?.length) || 0} images</span>
+                        <AssetIcon className="w-4 h-4" />
+                        <span>{(project.albumCount ?? project.album?.length) || 0} {typeMeta.assetLabel}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-blue-500/80 font-medium">
+                      <div className={`flex items-center gap-1.5 font-medium ${typeMeta.accentClassName}`}>
                         <HardDrive className="w-4 h-4" />
                         <span>{formatSize(project.totalSize || 0)}</span>
                       </div>
@@ -164,13 +205,13 @@ export function Projects() {
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-neutral-800/50 flex items-center justify-end text-xs text-green-500 font-medium opacity-100 transition-opacity">
+                    <div className={`pt-4 border-t border-neutral-800/50 flex items-center justify-end text-xs font-medium opacity-100 transition-opacity ${typeMeta.accentClassName}`}>
                       Open Project →
                     </div>
 
-                    <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-green-500/20 to-transparent opacity-100 transition-opacity" />
+                    <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
                   </Link>
-                ))}
+                )})}
 
                 {projects.length === 0 && (
                   <div className="col-span-full py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">

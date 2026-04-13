@@ -22,6 +22,7 @@ interface DraftsTabProps {
   albumItems?: AlbumItem[];
   onSwitchToAlbum?: () => void;
   projectType?: ProjectType;
+  projectName?: string;
 }
 
 export function DraftsTab({
@@ -42,7 +43,8 @@ export function DraftsTab({
   setLightboxData,
   albumItems = [],
   onSwitchToAlbum,
-  projectType = 'image'
+  projectType = 'image',
+  projectName = 'Untitled Project'
 }: DraftsTabProps) {
   const displayAlbumItems = albumItems.slice(0, 5);
 
@@ -81,11 +83,11 @@ export function DraftsTab({
         )}
       </div>
 
-      <div className="text-center space-y-4 max-w-sm px-6">
+      <div className="w-full max-w-xl mx-auto px-4 sm:px-6 text-center space-y-4 flex flex-col items-center">
         <h3 className="text-lg font-black text-white uppercase tracking-widest bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-          {displayAlbumItems.length > 0 ? "Your Collections" : "Empty Canvas"}
+          {displayAlbumItems.length > 0 ? projectName : "Empty Canvas"}
         </h3>
-        <p className="text-[11px] font-medium text-neutral-500 uppercase tracking-[0.2em] leading-relaxed">
+        <p className="max-w-md text-[11px] font-medium text-neutral-500 uppercase tracking-[0.2em] leading-relaxed">
           {displayAlbumItems.length > 0 
             ? "You have beautiful creations ready. Start a new draft or explore your gallery."
             : "Build your project workflow on the left to start generating images."}

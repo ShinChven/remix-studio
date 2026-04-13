@@ -72,10 +72,24 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [showClearAllFailedModal, setShowClearAllFailedModal] = useState(false);
   const [albumItemsToDelete, setAlbumItemsToDelete] = useState<AlbumItem[] | null>(null);
   const [selectedCompletedIds, setSelectedCompletedIds] = useState<Set<string>>(new Set());
+  const [isAddingDrafts, setIsAddingDrafts] = useState(false);
+  const [draftsProgress, setDraftsProgress] = useState<{ current: number; total: number; stage: 'composing' | 'saving' } | null>(null);
 
   const projectRef = useRef(localProject);
   const skipProjectSyncRef = useRef(false);
+  const workflowListRef = useRef<HTMLDivElement | null>(null);
   const isProcessing = localProject.jobs.some(j => j.status === 'pending' || j.status === 'processing');
+
+  const scrollWorkflowToBottom = () => {
+    requestAnimationFrame(() => {
+      const container = workflowListRef.current;
+      if (!container) return;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth',
+      });
+    });
+  };
 
   useEffect(() => {
     if (skipProjectSyncRef.current) {
@@ -205,6 +219,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     const updated = { ...localProject, workflow: [...(localProject.workflow || []), newItem] };
     setLocalProject(updated);
     onUpdate(updated);
+    scrollWorkflowToBottom();
   };
 
   const handleLibrarySelect = (libraryId: string) => {
@@ -217,6 +232,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     setLocalProject(updated);
     onUpdate(updated);
     setShowLibrarySelector(false);
+    scrollWorkflowToBottom();
   };
 
   const handleImageFromLibrarySelect = (libraryId: string, imageKey: string) => {
@@ -314,44 +330,77 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       setTimeout(() => setWorkflowError(null), 4000);
       return;
     }
-    const selectedCombinations = generateJobs(localProject.workflow || [], libraries, queueCount, !!localProject.shuffle);
-    if (selectedCombinations.length === 0) return;
-    const newJobs: Job[] = selectedCombinations.map(combo => {
-      const shortuuid = crypto.randomUUID().slice(0, 8);
-      const parts = [
-        localProject.prefix,
-        ...combo.filenameParts,
-        shortuuid
-      ].filter(Boolean);
-      // Sanitize filename: remove invalid characters and truncate to 200 chars
-      const filename = parts.join('_').replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 200);
+    setIsAddingDrafts(true);
+    setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
 
-      const isTextProject = localProject.type === 'text';
-      return {
-        id: crypto.randomUUID(),
-        prompt: combo.prompt,
-        imageContexts: combo.imageContexts,
-        status: 'draft',
-        providerId: selectedProviderId,
+    try {
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+      const selectedCombinations = generateJobs(localProject.workflow || [], libraries, queueCount, !!localProject.shuffle);
+      if (selectedCombinations.length === 0) return;
+
+      const newJobs: Job[] = [];
+      const total = selectedCombinations.length;
+      const chunkSize = 25;
+
+      setDraftsProgress({ current: 0, total, stage: 'composing' });
+
+      for (let index = 0; index < total; index += chunkSize) {
+        const chunk = selectedCombinations.slice(index, index + chunkSize);
+
+        for (const combo of chunk) {
+          const shortuuid = crypto.randomUUID().slice(0, 8);
+          const parts = [
+            localProject.prefix,
+            ...combo.filenameParts,
+            shortuuid
+          ].filter(Boolean);
+          const filename = parts.join('_').replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 200);
+
+          const isTextProject = localProject.type === 'text';
+          newJobs.push({
+            id: crypto.randomUUID(),
+            prompt: combo.prompt,
+            imageContexts: combo.imageContexts,
+            status: 'draft',
+            providerId: selectedProviderId,
+            modelConfigId: selectedModelId,
+            ...(isTextProject ? {} : {
+              aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '1024x1024'),
+              quality: localProject.quality || (selectedModel?.options.qualities?.[0] || 'standard'),
+              background: localProject.background || (selectedModel?.options.backgrounds?.[0]),
+              format: localProject.format || 'png',
+            }),
+            filename
+          });
+        }
+
+        setDraftsProgress({ current: Math.min(index + chunk.length, total), total, stage: 'composing' });
+        await new Promise<void>(resolve => setTimeout(resolve, 0));
+      }
+
+      const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
+      setDraftsProgress({ current: total, total, stage: 'saving' });
+
+      await apiUpdateProject(updatedProject.id, {
+        jobs: updatedProject.jobs, workflow: updatedProject.workflow, providerId: selectedProviderId,
         modelConfigId: selectedModelId,
-        ...(isTextProject ? {} : {
-          aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '1024x1024'),
-          quality: localProject.quality || (selectedModel?.options.qualities?.[0] || 'standard'),
-          background: localProject.background || (selectedModel?.options.backgrounds?.[0]),
-          format: localProject.format || 'png',
-        }),
-        filename: filename
-      };
-    });
-    const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
-    await apiUpdateProject(updatedProject.id, {
-      jobs: updatedProject.jobs, workflow: updatedProject.workflow, providerId: selectedProviderId,
-      modelConfigId: selectedModelId,
-      aspectRatio: localProject.aspectRatio, quality: localProject.quality, background: localProject.background, format: localProject.format || 'png', shuffle: localProject.shuffle,
-      systemPrompt: localProject.systemPrompt, temperature: localProject.temperature, maxTokens: localProject.maxTokens,
-    });
-    setLocalProject(updatedProject);
-    setActiveTab('draft');
+        aspectRatio: localProject.aspectRatio, quality: localProject.quality, background: localProject.background, format: localProject.format || 'png', shuffle: localProject.shuffle,
+        systemPrompt: localProject.systemPrompt, temperature: localProject.temperature, maxTokens: localProject.maxTokens,
+      });
+
+      setLocalProject(updatedProject);
+      setActiveTab('draft');
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        setMobileView('jobs');
+      }
+    } catch (error) {
+      console.error('Failed to add drafts:', error);
+      toast.error('Failed to add drafts. Please try again.');
+    } finally {
+      setIsAddingDrafts(false);
+      setDraftsProgress(null);
+    }
   };
 
   const toggleJobExpand = (jobId: string) => setExpandedJobId(prev => prev === jobId ? null : jobId);
@@ -555,7 +604,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       )}
 
       {/* Left Pane: Workflow Builder */}
-      <div className={`w-full lg:w-96 lg:h-full border-b lg:border-b-0 lg:border-r border-neutral-800 bg-neutral-900/30 flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
+      <div className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-800 bg-neutral-900/30 flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
         <div className="p-4 border-b border-neutral-800 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center justify-between gap-2 flex-1 group">
@@ -601,7 +650,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             <LibraryIcon className="w-3 h-3" /> Lib
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar lg:max-h-none">
+        <div ref={workflowListRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar lg:max-h-none">
           {(localProject.workflow || []).map((item, index) => (
             <WorkflowItem
               key={item.id} item={item} index={index} draggedIndex={draggedIndex} dragOverIndex={dragOverIndex}
@@ -628,6 +677,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           queueCount={queueCount} setQueueCount={setQueueCount} setHasManuallySetQueueCount={setHasManuallySetQueueCount}
           combinations={combinations} setIsModelSelectorOpen={setIsModelSelectorOpen}
           workflowError={workflowError} uploadingItemIds={uploadingItemIds} onAddDraftsToQueue={addDraftsToQueue}
+          isAddingDrafts={isAddingDrafts} draftsProgress={draftsProgress}
         />
       </div>
 
@@ -679,6 +729,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               albumItems={albumItems}
               onSwitchToAlbum={() => setActiveTab('album')}
               projectType={localProject.type || 'image'}
+              projectName={localProject.name}
             />
           )}
           {activeTab === 'queue' && (

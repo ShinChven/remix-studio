@@ -38,6 +38,8 @@ interface SettingsPanelProps {
   workflowError: string | null;
   uploadingItemIds: Set<string>;
   onAddDraftsToQueue: () => void;
+  isAddingDrafts: boolean;
+  draftsProgress: { current: number; total: number; stage: 'composing' | 'saving' } | null;
 }
 
 export function SettingsPanel({
@@ -56,7 +58,9 @@ export function SettingsPanel({
   setIsModelSelectorOpen,
   workflowError,
   uploadingItemIds,
-  onAddDraftsToQueue
+  onAddDraftsToQueue,
+  isAddingDrafts,
+  draftsProgress
 }: SettingsPanelProps) {
   const selectedProvider = providers.find(p => p.id === selectedProviderId);
   const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
@@ -65,7 +69,7 @@ export function SettingsPanel({
   const isVideoProject = localProject.type === 'video';
 
   return (
-    <div className="p-4 border-t border-neutral-800 bg-neutral-900 shadow-2xl">
+    <div className="shrink-0 overflow-hidden p-4 border-t border-neutral-800 bg-neutral-900 shadow-2xl">
       <button
         onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
         className="w-full p-3 bg-neutral-950/50 border border-neutral-800 rounded-xl mb-3 hover:bg-neutral-900/50 transition-all group flex flex-col gap-2.5"
@@ -133,8 +137,8 @@ export function SettingsPanel({
         </div>
       </button>
 
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSettingsCollapsed ? 'max-h-0 opacity-0 mb-0' : 'max-h-[800px] opacity-100 mb-4'}`}>
-        <div className="space-y-4 pt-2">
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSettingsCollapsed ? 'max-h-0 opacity-0 mb-0' : 'max-h-[min(60vh,820px)] md:max-h-[min(70vh,820px)] opacity-100 mb-4'}`}>
+        <div className="space-y-4 pt-2 overflow-y-auto pr-1 max-h-[min(60vh,820px)] md:max-h-[min(70vh,820px)] custom-scrollbar">
           <div className="space-y-1.5">
             <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
               AI Model
@@ -517,13 +521,20 @@ export function SettingsPanel({
 
       <button
         onClick={onAddDraftsToQueue}
-        disabled={localProject.workflow.length === 0 || uploadingItemIds.size > 0 || !hasSelectedModel}
+        disabled={localProject.workflow.length === 0 || uploadingItemIds.size > 0 || !hasSelectedModel || isAddingDrafts}
         className="w-full py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-all bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-[0.98]"
       >
         {uploadingItemIds.size > 0 ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
             Uploading Images...
+          </>
+        ) : isAddingDrafts ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {draftsProgress?.stage === 'saving'
+              ? 'Saving Drafts...'
+              : `Composing ${draftsProgress?.current ?? 0}/${draftsProgress?.total ?? 0}`}
           </>
         ) : (
           <>

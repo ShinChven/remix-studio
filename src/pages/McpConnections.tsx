@@ -167,14 +167,28 @@ export function McpConnections() {
             </div>
             <div className="space-y-3">
               <div>
-                <h3 className="text-sm font-semibold text-white">Use this page to share access details for your app connection</h3>
+                <h3 className="text-sm font-semibold text-white">Connect an AI app to your account</h3>
                 <p className="mt-1 text-sm text-neutral-400">
-                  If nothing is listed yet, that only means nothing has been connected yet. Start by sharing the app address below. If the app supports browser sign-in, it can connect on its own. If it does not, create an access token here and share the app address plus the token.
+                  This page helps you connect AI apps to your workspace. Start by copying the app address below into the app you want to connect. Then choose one of the two supported sign-in methods.
                 </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+                  <p className="text-sm font-medium text-blue-300">OAuth 2.1 connector</p>
+                  <p className="mt-1 text-sm text-neutral-400">
+                    Use this when the app can open a browser for sign-in. You sign in, approve access, and the app connects automatically. This is the best option for most users.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                  <p className="text-sm font-medium text-amber-300">Access token</p>
+                  <p className="mt-1 text-sm text-neutral-400">
+                    Use this only when the app asks you to paste a token, API key, or secret. You create the token here and paste it into the app yourself.
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
                 <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">MCP server URL</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">App address</p>
                   <div className="mt-2 flex items-center gap-2">
                     <code className="min-w-0 flex-1 break-all rounded-lg bg-neutral-900 px-3 py-2 text-xs text-sky-300">{mcpUrl}</code>
                     <button
@@ -186,11 +200,11 @@ export function McpConnections() {
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-neutral-500">
-                    Share this with any app that asks for a server URL, endpoint, or MCP address.
+                    Copy this into the AI app when it asks where to connect.
                   </p>
                 </div>
                 <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">OAuth metadata URL</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">Advanced sign-in URL</p>
                   <div className="mt-2 flex items-center gap-2">
                     <code className="min-w-0 flex-1 break-all rounded-lg bg-neutral-900 px-3 py-2 text-xs text-blue-300">{oauthMetadataUrl}</code>
                     <button
@@ -202,41 +216,41 @@ export function McpConnections() {
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-neutral-500">
-                    Use this only if the app asks for sign-in setup details or OAuth discovery.
+                    Only use this if the app specifically asks for a sign-in or discovery URL.
                   </p>
                 </div>
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">1. Share the app address</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">1. Copy the app address</p>
                   <p className="mt-1 text-sm text-neutral-500">
-                    Send the MCP URL to the app or person setting things up. This page can stay empty until a connection is actually made.
+                    Paste it into the AI app to start setup.
                   </p>
                 </div>
                 <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">2. Pick how they sign in</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">2. Choose the right sign-in method</p>
                   <p className="mt-1 text-sm text-neutral-500">
-                    Browser sign-in is the easiest option when the app supports it. Otherwise create an access token and share it separately.
+                    If the app opens a browser, use the OAuth 2.1 connector. If it asks for a token instead, use an access token.
                   </p>
                 </div>
                 <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">3. Check connected apps here</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">3. Come back here anytime</p>
                   <p className="mt-1 text-sm text-neutral-500">
-                    After sign-in or token use starts, the connection will appear here. You can remove access at any time.
+                    You can see connected apps, create new tokens, or remove access later.
                   </p>
                 </div>
               </div>
               <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-4 space-y-4">
                 <div>
-                  <h4 className="text-sm font-semibold text-white">Copy-and-paste setup examples</h4>
+                  <h4 className="text-sm font-semibold text-white">If the app asks for JSON setup</h4>
                   <p className="mt-1 text-sm text-neutral-400">
-                    Use these when the app accepts `.mcp.json` or another JSON setup block. Apps that support browser sign-in should use the OAuth version. Apps that only accept a token should use the Bearer version.
+                    Some apps ask you to paste a JSON setup block instead of filling out a form. Use the OAuth 2.1 version when the app supports browser sign-in. Use the access token version when the app asks for a token.
                   </p>
                 </div>
                 <div className="grid gap-4 lg:grid-cols-2">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">OAuth config</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">OAuth 2.1 JSON</p>
                       <button
                         onClick={() => copyText(projectOAuthJson, 'OAuth JSON')}
                         className="flex-shrink-0 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-700"
@@ -246,12 +260,12 @@ export function McpConnections() {
                     </div>
                     <pre className="overflow-x-auto rounded-xl bg-neutral-900 p-3 text-xs text-sky-300"><code>{projectOAuthJson}</code></pre>
                     <p className="text-sm text-neutral-500">
-                      Use this when the app can open a browser window and let the customer sign in.
+                      Use this when the app can open a browser and let you sign in.
                     </p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">Bearer token config</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">Access token JSON</p>
                       <button
                         onClick={() => copyText(projectTokenJson, 'Bearer token JSON')}
                         className="flex-shrink-0 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-700"
@@ -261,7 +275,7 @@ export function McpConnections() {
                     </div>
                     <pre className="overflow-x-auto rounded-xl bg-neutral-900 p-3 text-xs text-amber-300"><code>{projectTokenJson}</code></pre>
                     <p className="text-sm text-neutral-500">
-                      Replace <code>YOUR_MCP_TOKEN</code> with a token created below, then paste or send the finished JSON where needed.
+                      Replace <code>YOUR_MCP_TOKEN</code> with a token from this page, then paste the finished JSON into the app.
                     </p>
                   </div>
                 </div>
@@ -282,7 +296,7 @@ export function McpConnections() {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-white flex items-center gap-2">
               <Key className="w-5 h-5 text-amber-500" />
-              Personal Access Tokens
+              Access Tokens
             </h3>
             <button
               onClick={() => { setShowCreatePat(true); setNewToken(null); }}
@@ -295,13 +309,13 @@ export function McpConnections() {
           </div>
 
           <p className="text-sm text-neutral-500 mb-4">
-            Use personal access tokens for apps that cannot use browser sign-in. Treat tokens like passwords.
+            Use an access token only if the app does not support the OAuth 2.1 connector. Keep tokens private, like a password.
           </p>
 
           <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
             <p className="text-sm font-medium text-amber-300">Best for manual setup</p>
             <p className="mt-1 text-sm text-neutral-400">
-              Use this if the app asks for a bearer token, API key, or secret. It will usually need two things: the MCP server URL and this token. If the token is exposed, revoke it and create a new one.
+              Use this if the app asks for a token, API key, or secret. In most cases you will paste in two things: the app address above and the token you create here. If the app supports browser sign-in, use the OAuth 2.1 connector instead.
             </p>
           </div>
 
@@ -387,7 +401,7 @@ export function McpConnections() {
               <div className="py-12 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-3 bg-neutral-900/20">
                 <Key className="w-10 h-10 text-neutral-700" />
                 <div>
-                  <p className="text-base font-medium text-neutral-400">No personal access tokens</p>
+                  <p className="text-base font-medium text-neutral-400">No access tokens</p>
                   <p className="text-sm">Create a token to connect an app manually.</p>
                 </div>
               </div>
@@ -440,18 +454,18 @@ export function McpConnections() {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-white flex items-center gap-2">
               <Shield className="w-5 h-5 text-blue-500" />
-              Connected OAuth Clients
+              OAuth 2.1 Connections
             </h3>
           </div>
 
           <p className="text-sm text-neutral-500 mb-4">
-            These are apps that connected using browser sign-in. They appear here automatically after approval.
+            Apps that you connect with the OAuth 2.1 connector will appear here automatically.
           </p>
 
           <div className="mb-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
             <p className="text-sm font-medium text-blue-300">Best for simple sign-in</p>
             <p className="mt-1 text-sm text-neutral-400">
-              Use this when the app supports sign-in in a browser or asks for a discovery URL. The customer signs in, approves access, and the app will appear here automatically.
+              Use this when the app lets you sign in in a browser. After you approve access, the app will show up here automatically. This is the recommended option when the app supports it.
             </p>
           </div>
 

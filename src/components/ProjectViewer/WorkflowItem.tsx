@@ -145,13 +145,13 @@ export function WorkflowItem({
           <div className="flex gap-2">
             <label className="flex-1 block text-center py-2.5 border border-dashed border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-amber-500/50 transition-all group relative overflow-hidden">
               {uploadingItemIds.has(item.id) ? (
-                <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />
                   <span className="text-[8px] font-black uppercase tracking-widest text-amber-500/70">Wait</span>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center">
-                  <ImageIcon className="w-3.5 h-3.5 text-neutral-500 group-hover:text-amber-500 mb-0.5 mx-auto" />
+                <div className="flex items-center justify-center gap-2">
+                  <ImageIcon className="w-3.5 h-3.5 text-neutral-500 group-hover:text-amber-500" />
                   <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">Upload</span>
                   <input type="file" accept="image/*" onChange={(e) => onImageUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
                 </div>
@@ -159,9 +159,9 @@ export function WorkflowItem({
             </label>
             <button 
               onClick={() => onSelectFromLibrary(item.id)}
-              className="flex-1 flex flex-col items-center justify-center py-2.5 border border-dashed border-neutral-800 rounded-lg hover:bg-neutral-800/50 hover:border-emerald-500/50 transition-all group"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-dashed border-neutral-800 rounded-lg hover:bg-neutral-800/50 hover:border-emerald-500/50 transition-all group"
             >
-              <LibraryIcon className="w-4 h-4 text-neutral-500 group-hover:text-emerald-500 mb-0.5" />
+              <LibraryIcon className="w-4 h-4 text-neutral-500 group-hover:text-emerald-500" />
               <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">Library</span>
             </button>
           </div>
