@@ -183,6 +183,30 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  KlingAI: [
+    {
+      id: 'kling-omni-image-o1',
+      name: 'Kling Image O1',
+      generatorId: 'KlingAI',
+      modelId: 'kling-image-o1',
+      category: 'image',
+      options: {
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9', 'auto'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'kling-v3-omni-image',
+      name: 'Kling V3 Omni',
+      generatorId: 'KlingAI',
+      modelId: 'kling-v3-omni',
+      category: 'image',
+      options: {
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9', 'auto'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+  ],
   OpenAI: [
     {
       id: 'openai-gpt-image-1-5',
@@ -561,7 +585,7 @@ export interface Project {
   resolution?: string; // '720p', '1080p', '4k'
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus';
 
 /**
  * A custom model variant that inherits all options from a built-in base model

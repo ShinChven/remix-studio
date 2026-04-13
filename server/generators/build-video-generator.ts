@@ -28,13 +28,13 @@ export function buildVideoGenerator(
       return new GrokVideoGenerator(apiKey, safeApiUrl);
     case 'RunningHub':
       throw new Error(`Provider type 'RunningHub' does not support video generation`);
+    case 'KlingAI':
+      throw new Error(`Provider type 'KlingAI' does not support video generation`);
     case 'Claude':
       throw new Error(`Provider type 'Claude' does not support video generation`);
     case 'BytePlus':
       return new BytePlusVideoGenerator(apiKey, safeApiUrl);
-    default: {
-      const _never: never = type;
-      throw new Error(`Unknown provider type: ${_never}`);
-    }
+    default:
+      throw new Error(`Unknown provider type: ${type}`);
   }
 }

@@ -29,6 +29,10 @@ export function buildTextGenerator(
       return new ClaudeTextGenerator(apiKey, safeApiUrl);
     case 'Grok':
       return new GrokTextGenerator(apiKey, safeApiUrl);
+    case 'RunningHub':
+    case 'KlingAI':
+    case 'BytePlus':
+      throw new Error(`Provider type '${type}' does not support text generation`);
     default:
       throw new Error(`Provider type '${type}' does not support text generation`);
   }

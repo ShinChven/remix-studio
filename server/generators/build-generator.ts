@@ -3,6 +3,7 @@ import { ImageGenerator } from './image-generator';
 import { GoogleAIGenerator } from './google-ai-generator';
 import { VertexAIGenerator } from './vertex-ai-generator';
 import { RunningHubGenerator } from './running-hub-generator';
+import { KlingAIGenerator } from './kling-ai-generator';
 import { OpenAIGenerator } from './openai-generator';
 import { GrokGenerator } from './grok-generator';
 import { BytePlusGenerator } from './byteplus-generator';
@@ -27,6 +28,8 @@ export function buildGenerator(
       return new VertexAIGenerator(apiKey, safeApiUrl);
     case 'RunningHub':
       return new RunningHubGenerator(apiKey, safeApiUrl);
+    case 'KlingAI':
+      return new KlingAIGenerator(apiKey, safeApiUrl);
     case 'OpenAI':
       return new OpenAIGenerator(apiKey, safeApiUrl);
     case 'Grok':

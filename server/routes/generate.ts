@@ -7,7 +7,7 @@ import type { ProviderType } from '../../src/types';
 type Variables = { user: JwtPayload };
 
 const VALID_ASPECT_RATIOS = ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21'];
-const VALID_IMAGE_SIZES   = ['1K', '4K'];
+const VALID_IMAGE_SIZES   = ['1K', '2K', '4K'];
 
 export function createGenerateRouter(providerRepo: ProviderRepository) {
   const router = new Hono<{ Variables: Variables }>();

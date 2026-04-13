@@ -27,6 +27,12 @@ export function ProviderIcon({ type, className = "w-5 h-5" }: ProviderIconProps)
           <path d="M17.5 10L14.5 11L12 16H9.5L11.5 11.5L9.5 10.5L7 13.5H4.5L8.5 8L11 9L13.5 6H16.5L14.5 9.5L17.5 10Z" />
         </svg>
       );
+    case 'KlingAI':
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 4h3v7.1L14.28 4H18l-6.16 8.03L18.5 20H14.7L9.63 13.82 8 15.82V20H5V4Z" />
+        </svg>
+      );
     case 'OpenAI':
       return <SiOpenai className={className} />;
     case 'Grok':

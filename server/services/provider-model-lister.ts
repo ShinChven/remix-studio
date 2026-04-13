@@ -49,6 +49,7 @@ export async function listProviderModels(
       result = await listGrokModels(apiKey, apiUrl);
       break;
     case 'RunningHub':
+    case 'KlingAI':
     case 'BytePlus': {
       // These providers have no model listing API — return our static supported models
       const staticModels: ProviderModel[] = (PROVIDER_MODELS_MAP[type] || []).map(c => ({
