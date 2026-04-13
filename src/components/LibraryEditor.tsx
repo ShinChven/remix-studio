@@ -399,10 +399,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         {/* Batch Action Toolbar (Mirrors item style) */}
         {filteredItems.length > -1 && (
           <div className={`
-            flex items-center justify-between p-3.5 rounded-xl border transition-all duration-300
+            sticky top-0 z-20 flex items-center justify-between p-3.5 rounded-xl border transition-all duration-300 backdrop-blur-md shadow-lg shadow-black/20
             ${selectedItemIds.size > 0 
-              ? 'bg-blue-500/10 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]' 
-              : 'bg-neutral-900/40 border-neutral-800/60'}
+              ? 'bg-blue-500/20 border-blue-500/50' 
+              : 'bg-neutral-950/80 border-neutral-800/60'}
           `}>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
