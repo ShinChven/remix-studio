@@ -37,6 +37,7 @@ These are the built-in model profiles currently included in the app.
 | **Claude** | `Claude Opus 4.6`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` | - | - |
 | **RunningHub** | - | `nano banana 2` | - |
 | **BytePlus** | - | `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I` | `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` |
+| **Kling AI** | - | `Kling Image O1`, `Kling V3 Omni`, `Kling V3 Standard`, `Kling V2.1 Standard`, `Kling V2 Standard`, `Kling V1.5 Standard`, `Kling V1 Standard` | `Kling Video O1`, `Kling V3 Omni Video` |
 
 ## MCP Support
 
