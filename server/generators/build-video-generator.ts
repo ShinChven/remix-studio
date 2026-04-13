@@ -5,6 +5,7 @@ import { OpenAIVideoGenerator } from './openai-video-generator';
 import { GrokVideoGenerator } from './grok-video-generator';
 import { BytePlusVideoGenerator } from './byteplus-video-generator';
 import { KlingAIVideoGenerator } from './kling-ai-video-generator';
+import { RunningHubVideoGenerator } from './running-hub-video-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -29,7 +30,7 @@ export function buildVideoGenerator(
     case 'Grok':
       return new GrokVideoGenerator(apiKey, safeApiUrl);
     case 'RunningHub':
-      throw new Error(`Provider type 'RunningHub' does not support video generation`);
+      return new RunningHubVideoGenerator(apiKey, safeApiUrl);
     case 'KlingAI':
       return new KlingAIVideoGenerator(apiKey, apiSecret || '', safeApiUrl);
     case 'Claude':

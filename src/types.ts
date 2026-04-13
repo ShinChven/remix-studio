@@ -182,6 +182,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         qualities: ['1K', '2K', '4K'],
       },
     },
+    {
+      id: 'runninghub-seedance-2-0',
+      name: 'Seedance 2.0',
+      generatorId: 'RunningHub',
+      modelId: '2037063826180415490',
+      category: 'video',
+      options: {
+        aspectRatios: ['adaptive', '16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+        resolutions: ['480p', '720p', '1080p', '2k', '4k'],
+        durations: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+      },
+    },
   ],
   KlingAI: [
     {
