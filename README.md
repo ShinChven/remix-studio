@@ -40,6 +40,8 @@ These are the built-in model profiles currently included in the app.
   `Claude Opus 4.6`, `Claude Sonnet 4.6`, `Claude Haiku 4.5`
 - `RunningHub`
   `nano banana 2`
+- `BytePlus`
+  `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I`, `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast`
 
 ## MCP Support
 
