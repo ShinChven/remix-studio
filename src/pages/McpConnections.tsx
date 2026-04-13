@@ -323,156 +323,172 @@ export function McpConnections() {
         )}
 
         {/* ─── Personal Access Tokens ─── */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-              <Key className="w-5 h-5 text-amber-500" />
-              Access Tokens
-            </h3>
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <Key className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-bold text-white tracking-tight">Access Tokens</h3>
+            </div>
             <button
               onClick={() => { setShowCreatePat(true); setNewToken(null); }}
-              className="text-xs md:text-sm bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-amber-600/30 font-medium"
+              className="text-xs md:text-sm bg-amber-600 text-white hover:bg-amber-500 px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold shadow-lg shadow-amber-600/10 active:scale-95"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New Token</span>
-              <span className="sm:hidden">New</span>
+              <span>New Token</span>
             </button>
           </div>
 
-          <p className="text-sm text-neutral-500 mb-4">
-            Use an access token only if the app does not support the OAuth 2.1 connector. Keep tokens private, like a password.
-          </p>
-
-          <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-            <p className="text-sm font-medium text-amber-300">Best for manual setup</p>
-            <p className="mt-1 text-sm text-neutral-400">
-              Use this if the app asks for a token, API key, or secret. In most cases you will paste in two things: the app address above and the token you create here. If the app supports browser sign-in, use the OAuth 2.1 connector instead.
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 relative overflow-hidden group/tip">
+            <div className="absolute right-0 top-0 p-4 opacity-10 group-hover/tip:opacity-20 transition-opacity">
+              <Shield className="w-12 h-12 text-amber-500" />
+            </div>
+            <p className="text-sm font-bold text-amber-300 mb-1">When to use Access Tokens</p>
+            <p className="text-sm leading-relaxed text-neutral-400 max-w-2xl">
+              Use an access token only if the app does not support the OAuth 2.1 connector. Keep tokens private, like a password. In most cases, you will paste the app address and this token into the app.
             </p>
           </div>
 
           {/* Create PAT form */}
           {showCreatePat && (
-            <div className="mb-4 p-4 bg-neutral-900/60 border border-neutral-800/60 rounded-xl space-y-4">
+            <div className="p-5 md:p-6 bg-neutral-900/40 border border-neutral-800/60 rounded-2xl space-y-5 animate-in zoom-in-95 duration-200">
               {newToken ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2.5 text-emerald-400 text-sm font-bold bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-xl">
                     <CheckCircle className="w-4 h-4" />
                     Token created — copy it now. You won't see it again.
                   </div>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-neutral-800 text-amber-300 px-3 py-2 rounded-lg text-sm font-mono break-all select-all">
+                  <div className="flex items-center gap-3">
+                    <code className="flex-1 bg-neutral-950 text-amber-400 px-4 py-3 rounded-xl text-xs md:text-sm font-mono break-all select-all border border-neutral-800 shadow-inner">
                       {newToken}
                     </code>
                     <button
                       onClick={handleCopy}
-                      className="flex-shrink-0 p-2 bg-neutral-700 hover:bg-neutral-600 rounded-lg transition-colors"
+                      className="flex-shrink-0 p-3 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-700 shadow-sm"
                       title="Copy token"
                     >
-                      {copied ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-neutral-300" />}
+                      {copied ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5 text-neutral-300" />}
                     </button>
                   </div>
                   <button
                     onClick={handleCloseNewToken}
-                    className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
+                    className="text-sm font-bold text-neutral-400 hover:text-white transition-colors"
                   >
                     Done
                   </button>
                 </div>
               ) : (
-                <>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <input
-                      ref={patNameRef}
-                      type="text"
-                      value={patName}
-                      onChange={(e) => setPatName(e.target.value)}
-                      placeholder="Token name (e.g. Claude Desktop)"
-                      className="flex-1 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500/50"
-                      maxLength={128}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && patName.trim()) handleCreatePat(); }}
-                    />
-                    <select
-                      value={patExpiry}
-                      onChange={(e) => setPatExpiry(Number(e.target.value))}
-                      className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
-                    >
-                      {EXPIRY_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 ml-1">Token Name</label>
+                      <input
+                        ref={patNameRef}
+                        type="text"
+                        value={patName}
+                        onChange={(e) => setPatName(e.target.value)}
+                        placeholder="e.g. Claude Desktop"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all font-medium"
+                        maxLength={128}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && patName.trim()) handleCreatePat(); }}
+                      />
+                    </div>
+                    <div className="w-full sm:w-48 space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 ml-1">Expiration</label>
+                      <select
+                        value={patExpiry}
+                        onChange={(e) => setPatExpiry(Number(e.target.value))}
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all font-medium appearance-none cursor-pointer"
+                      >
+                        {EXPIRY_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-3 pt-2">
                     <button
                       onClick={handleCreatePat}
                       disabled={!patName.trim() || isCreating}
-                      className="text-sm bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-4 py-2 rounded-lg transition-all border border-amber-600/30 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="flex-1 sm:flex-none text-sm bg-amber-600 text-white hover:bg-amber-500 px-6 py-2.5 rounded-xl transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-amber-600/10 active:scale-95"
                     >
-                      {isCreating && <Loader2 className="w-3 h-3 animate-spin" />}
+                      {isCreating && <Loader2 className="w-4 h-4 animate-spin" />}
                       Create Token
                     </button>
                     <button
                       onClick={() => { setShowCreatePat(false); setPatName(''); setPatExpiry(0); }}
-                      className="text-sm text-neutral-400 hover:text-neutral-200 px-4 py-2 rounded-lg transition-colors"
+                      className="flex-1 sm:flex-none text-sm font-bold text-neutral-400 hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-neutral-900 border border-neutral-800"
                     >
                       Cancel
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </div>
           )}
 
           {/* Token list */}
-          <div className="space-y-3">
+          <div className="grid gap-4">
             {isLoading ? (
               [1, 2].map((i) => (
-                <div key={i} className="h-16 rounded-xl bg-neutral-900/40 border border-neutral-800/60 animate-pulse" />
+                <div key={i} className="h-24 rounded-2xl bg-neutral-900/40 border border-neutral-800/60 animate-pulse" />
               ))
             ) : tokens.length === 0 ? (
-              <div className="py-12 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-3 bg-neutral-900/20">
-                <Key className="w-10 h-10 text-neutral-700" />
+              <div className="py-16 border-2 border-dashed border-neutral-800/50 rounded-[2.5rem] text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/10 backdrop-blur-sm">
+                <div className="p-4 rounded-full bg-neutral-900 border border-neutral-800">
+                  <Key className="w-8 h-8 text-neutral-700" />
+                </div>
                 <div>
-                  <p className="text-base font-medium text-neutral-400">No access tokens</p>
-                  <p className="text-sm">Create a token to connect an app manually.</p>
+                  <p className="text-lg font-bold text-neutral-400 tracking-tight">No access tokens</p>
+                  <p className="text-sm max-w-xs mx-auto text-neutral-500 mt-1">Create a token to connect your first AI app manually.</p>
                 </div>
               </div>
             ) : (
               tokens.map((token) => (
                 <div
                   key={token.id}
-                  className="w-full bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/60 hover:border-amber-500/30 hover:bg-neutral-900/60 p-3 md:p-4 rounded-xl transition-all group flex items-center justify-between gap-4"
+                  className="w-full bg-neutral-900/20 backdrop-blur-md border border-neutral-800/60 hover:border-amber-500/30 hover:bg-neutral-900/40 p-4 md:p-5 rounded-2xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
-                  <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                    <div className="flex-shrink-0 p-2 md:p-2.5 rounded-lg bg-amber-500/10 text-amber-500">
+                  <div className="flex items-center gap-4 overflow-hidden">
+                    <div className="flex-shrink-0 p-3 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover/card:scale-110 transition-transform">
                       <Key className="w-5 h-5" />
                     </div>
-                    <div className="overflow-hidden">
-                      <h4 className="font-semibold text-white text-sm md:text-base truncate">{token.name}</h4>
-                      <div className="flex items-center gap-2 md:gap-3 mt-0.5 flex-wrap">
-                        <code className="text-[10px] font-mono text-neutral-500">{token.tokenPrefix}...</code>
+                    <div className="overflow-hidden space-y-1">
+                      <h4 className="font-bold text-white text-base truncate tracking-tight">{token.name}</h4>
+                      <div className="flex flex-wrap items-center gap-y-1 gap-x-3">
+                        <code className="text-[10px] font-mono text-neutral-400 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800">{token.tokenPrefix}...</code>
+                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
+                          <div className="w-1 h-1 rounded-full bg-neutral-700" />
+                          <span>Created {formatDate(token.createdAt)}</span>
+                        </div>
                         {token.lastUsedAt && (
-                          <span className="text-[10px] text-neutral-500">
-                            Used {formatRelative(token.lastUsedAt)}
-                          </span>
+                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-sky-400">
+                            <div className="w-1 h-1 rounded-full bg-sky-400" />
+                            <span>Used {formatRelative(token.lastUsedAt)}</span>
+                          </div>
                         )}
                         {token.expiresAt && (
-                          <span className={`text-[10px] font-medium ${token.expired ? 'text-red-400' : 'text-neutral-500'}`}>
-                            {token.expired ? 'Expired' : `Expires ${formatDate(token.expiresAt)}`}
-                          </span>
+                          <div className={`flex items-center gap-1.5 text-[10px] font-bold ${token.expired ? 'text-red-400' : 'text-neutral-500'}`}>
+                            <div className={`w-1 h-1 rounded-full ${token.expired ? 'bg-red-400' : 'bg-neutral-600'}`} />
+                            <span>{token.expired ? 'Expired' : `Expires ${formatDate(token.expiresAt)}`}</span>
+                          </div>
                         )}
                         {!token.expiresAt && (
-                          <span className="text-[10px] text-neutral-500">No expiration</span>
+                          <div className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-600">
+                            <div className="w-1 h-1 rounded-full bg-neutral-700" />
+                            <span>No expiration</span>
+                          </div>
                         )}
-                        <span className="text-[10px] text-neutral-600">Created {formatDate(token.createdAt)}</span>
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => setRevokeTarget({ type: 'token', id: token.id, name: token.name })}
-                    className="flex-shrink-0 p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    className="flex-shrink-0 self-end sm:self-center p-2.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hover:rotate-12"
                     title="Revoke token"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
               ))
@@ -481,71 +497,80 @@ export function McpConnections() {
         </section>
 
         {/* ─── OAuth Clients ─── */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-              <Shield className="w-5 h-5 text-blue-500" />
-              OAuth 2.1 Connections
-            </h3>
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                <Shield className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-bold text-white tracking-tight">OAuth 2.1 Connections</h3>
+            </div>
           </div>
 
-          <p className="text-sm text-neutral-500 mb-4">
-            Apps that you connect with the OAuth 2.1 connector will appear here automatically.
-          </p>
-
-          <div className="mb-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-            <p className="text-sm font-medium text-blue-300">Best for simple sign-in</p>
-            <p className="mt-1 text-sm text-neutral-400">
-              Use this when the app lets you sign in in a browser. After you approve access, the app will show up here automatically. This is the recommended option when the app supports it.
+          <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5 relative overflow-hidden group/tip">
+            <div className="absolute right-0 top-0 p-4 opacity-10 group-hover/tip:opacity-20 transition-opacity">
+              <CheckCircle className="w-12 h-12 text-blue-500" />
+            </div>
+            <p className="text-sm font-bold text-blue-300 mb-1">Recommended for simple sign-in</p>
+            <p className="text-sm leading-relaxed text-neutral-400 max-w-2xl">
+              Apps that you connect with the OAuth 2.1 connector will appear here automatically. After you approve access in the browser, the app will show up here.
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="grid gap-4">
             {isLoading ? (
               [1, 2].map((i) => (
-                <div key={i} className="h-16 rounded-xl bg-neutral-900/40 border border-neutral-800/60 animate-pulse" />
+                <div key={i} className="h-24 rounded-2xl bg-neutral-900/40 border border-neutral-800/60 animate-pulse" />
               ))
             ) : clients.length === 0 ? (
-              <div className="py-12 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-3 bg-neutral-900/20">
-                <Shield className="w-10 h-10 text-neutral-700" />
+              <div className="py-16 border-2 border-dashed border-neutral-800/50 rounded-[2.5rem] text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/10 backdrop-blur-sm">
+                <div className="p-4 rounded-full bg-neutral-900 border border-neutral-800">
+                  <Shield className="w-8 h-8 text-neutral-700" />
+                </div>
                 <div>
-                  <p className="text-base font-medium text-neutral-400">No OAuth clients connected</p>
-                  <p className="text-sm">Apps will appear here after sign-in is completed.</p>
+                  <p className="text-lg font-bold text-neutral-400 tracking-tight">No OAuth clients connected</p>
+                  <p className="text-sm max-w-xs mx-auto text-neutral-500 mt-1">Apps will appear here after sign-in is completed in your AI app.</p>
                 </div>
               </div>
             ) : (
               clients.map((client) => (
                 <div
                   key={client.id}
-                  className="w-full bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/60 hover:border-blue-500/30 hover:bg-neutral-900/60 p-3 md:p-4 rounded-xl transition-all group flex items-center justify-between gap-4"
+                  className="w-full bg-neutral-900/20 backdrop-blur-md border border-neutral-800/60 hover:border-blue-500/30 hover:bg-neutral-900/40 p-4 md:p-5 rounded-2xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
-                  <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                    <div className="flex-shrink-0 p-2 md:p-2.5 rounded-lg bg-blue-500/10 text-blue-500">
+                  <div className="flex items-center gap-4 overflow-hidden">
+                    <div className="flex-shrink-0 p-3 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 group-hover/card:scale-110 transition-transform">
                       <Shield className="w-5 h-5" />
                     </div>
-                    <div className="overflow-hidden">
-                      <h4 className="font-semibold text-white text-sm md:text-base truncate">
+                    <div className="overflow-hidden space-y-1">
+                      <h4 className="font-bold text-white text-base truncate tracking-tight">
                         {client.clientName || client.clientId}
                       </h4>
-                      <div className="flex items-center gap-2 md:gap-3 mt-0.5 flex-wrap">
+                      <div className="flex flex-wrap items-center gap-y-1 gap-x-3">
                         {client.clientName && (
-                          <code className="text-[10px] font-mono text-neutral-500">{client.clientId.slice(0, 12)}...</code>
+                          <code className="text-[10px] font-mono text-neutral-400 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800">{client.clientId.slice(0, 12)}...</code>
                         )}
-                        <span className={`flex items-center gap-1 text-[10px] font-medium ${client.activeTokens > 0 ? 'text-emerald-400' : 'text-neutral-500'}`}>
-                          {client.activeTokens > 0
-                            ? <><CheckCircle className="w-3 h-3" /> {client.activeTokens} active token{client.activeTokens === 1 ? '' : 's'}</>
-                            : 'No active tokens'}
-                        </span>
-                        <span className="text-[10px] text-neutral-600">Registered {formatDate(client.createdAt)}</span>
+                        <div className={`flex items-center gap-1.5 text-[10px] font-bold ${client.activeTokens > 0 ? 'text-emerald-400' : 'text-neutral-500'}`}>
+                          <div className={`w-1 h-1 rounded-full ${client.activeTokens > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`} />
+                          <span>
+                            {client.activeTokens > 0
+                              ? `${client.activeTokens} active token${client.activeTokens === 1 ? '' : 's'}`
+                              : 'No active tokens'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
+                          <div className="w-1 h-1 rounded-full bg-neutral-700" />
+                          <span>Registered {formatDate(client.createdAt)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => setRevokeTarget({ type: 'client', clientId: client.clientId, name: client.clientName || client.clientId })}
-                    className="flex-shrink-0 p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-1"
+                    className="flex-shrink-0 self-end sm:self-center p-2.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hover:-rotate-12"
                     title="Revoke all tokens"
                   >
-                    <Unplug className="w-4 h-4" />
+                    <Unplug className="w-5 h-5" />
                   </button>
                 </div>
               ))

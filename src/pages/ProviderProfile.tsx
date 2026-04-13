@@ -114,13 +114,14 @@ export function ProviderProfile() {
             <ArrowLeft className="w-4 h-4" /> Providers
           </button>
 
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl ${colors.icon}`}>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 sm:gap-4">
+            <div className="flex items-start gap-4">
+              <div className={`p-2.5 rounded-xl ${colors.icon} shrink-0`}>
                 <ProviderIcon type={provider.type} className="w-6 h-6" />
               </div>
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-white font-display">{provider.name}</h2>                <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <div className="min-w-0">
+                <h2 className="text-2xl md:text-3xl font-bold text-white font-display truncate">{provider.name}</h2>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${colors.badge}`}>
                     {provider.type}
                   </span>
@@ -138,7 +139,7 @@ export function ProviderProfile() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto sm:overflow-visible pb-1 sm:pb-0">
               {provider.type === 'BytePlus' && (
                 <button
                   onClick={() => navigate(`/provider/${id}/custom-models`)}
@@ -149,7 +150,7 @@ export function ProviderProfile() {
               )}
               <button
                 onClick={() => navigate(`/provider/${id}/edit`)}
-                className="text-xs md:text-sm bg-neutral-800 text-neutral-300 hover:bg-neutral-700 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-neutral-700 font-medium"
+                className="text-xs md:text-sm bg-neutral-800 text-neutral-300 hover:bg-neutral-700 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-neutral-700 font-medium shrink-0"
               >
                 <Pencil className="w-4 h-4" /> Edit
               </button>
@@ -161,8 +162,8 @@ export function ProviderProfile() {
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <InfoCard label="Concurrency" value={String(provider.concurrency)} />
           <InfoCard label="Projects" value={String(provider.usage?.projectCount ?? 0)} />
-          <InfoCard label="Active Jobs" value={String(provider.usage?.activeJobCount ?? 0)} />
-          <InfoCard label="Supported Models" value={isLoadingModels ? '...' : String(models.length)} />
+          <InfoCard label="Jobs" value={String(provider.usage?.activeJobCount ?? 0)} />
+          <InfoCard label="Models" value={isLoadingModels ? '...' : String(models.length)} />
         </section>
 
         {/* Models */}
