@@ -549,6 +549,7 @@ export interface Job {
   // Video generation
   duration?: number; // seconds
   resolution?: string; // e.g. '720p', '1080p', '4k'
+  sound?: 'on' | 'off';
 }
 
 export interface AlbumItem {
@@ -607,6 +608,7 @@ export interface Project {
   // Video generation settings
   duration?: number; // seconds
   resolution?: string; // '720p', '1080p', '4k'
+  sound?: 'on' | 'off';
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus';

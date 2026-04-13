@@ -1,0 +1,5 @@
+ALTER TABLE "Project"
+ADD COLUMN "sound" TEXT;
+
+ALTER TABLE "Job"
+ADD COLUMN "sound" TEXT;

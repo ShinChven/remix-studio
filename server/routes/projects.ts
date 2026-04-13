@@ -263,6 +263,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         maxTokens: typeof body.maxTokens === 'number' ? body.maxTokens : undefined,
         duration: typeof body.duration === 'number' ? body.duration : undefined,
         resolution: typeof body.resolution === 'string' ? body.resolution : undefined,
+        sound: body.sound === 'on' || body.sound === 'off' ? body.sound : undefined,
       };
 
       await repository.createProject(user.userId, project);
@@ -319,6 +320,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (typeof body?.maxTokens === 'number') updates.maxTokens = body.maxTokens;
       if (typeof body?.duration === 'number') updates.duration = body.duration;
       if (typeof body?.resolution === 'string') updates.resolution = body.resolution;
+      if (body?.sound === 'on' || body?.sound === 'off') updates.sound = body.sound;
       
       // Storage check for new jobs (Drafts)
       if (updates.jobs) {

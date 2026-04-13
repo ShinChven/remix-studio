@@ -31,6 +31,7 @@ export interface QueuedJob {
   // Video generation settings
   duration?: number;
   resolution?: string;
+  sound?: 'on' | 'off';
 }
 
 /**
@@ -108,16 +109,17 @@ export class QueueManager {
         (project as any).maxTokens,
         job.duration || project.duration,
         job.resolution || project.resolution,
+        job.sound || project.sound,
       );
     }
   }
 
-  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, background?: string, format?: string, modelConfigId?: string, projectType?: ProjectType, systemPrompt?: string, temperature?: number, maxTokens?: number, duration?: number, resolution?: string) {
+  private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, background?: string, format?: string, modelConfigId?: string, projectType?: ProjectType, systemPrompt?: string, temperature?: number, maxTokens?: number, duration?: number, resolution?: string, sound?: 'on' | 'off') {
     if (this.activeJobIds.has(job.id)) return;
 
     if (!this.queues.has(providerId)) this.queues.set(providerId, []);
     this.activeJobIds.add(job.id);
-    this.queues.get(providerId)!.push({ userId, projectId, job, projectType, aspectRatio, quality, background, format, modelConfigId, systemPrompt, temperature, maxTokens, duration, resolution });
+    this.queues.get(providerId)!.push({ userId, projectId, job, projectType, aspectRatio, quality, background, format, modelConfigId, systemPrompt, temperature, maxTokens, duration, resolution, sound });
     this.processNext(providerId);
   }
 
@@ -190,6 +192,7 @@ export class QueueManager {
         modelConfigId: queued.modelConfigId || job.modelConfigId,
         duration: queued.duration ?? job.duration,
         resolution: queued.resolution || job.resolution,
+        sound: queued.sound || job.sound,
         error: undefined
       };
 
@@ -510,6 +513,7 @@ export class QueueManager {
       aspectRatio: queued.aspectRatio || job.aspectRatio || '16:9',
       resolution: queued.resolution || job.resolution || '720p',
       duration: queued.duration ?? job.duration,
+      sound: queued.sound || job.sound || 'on',
       refImagesBase64: refImages,
       refImageUrls,
     };

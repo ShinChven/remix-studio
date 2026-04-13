@@ -5,6 +5,7 @@ export interface VideoGenerateRequest {
   aspectRatio?: string;     // e.g. '16:9', '9:16', '1:1'
   resolution?: string;      // e.g. '720p', '1080p', '4k'
   duration?: number;        // seconds
+  sound?: 'on' | 'off';
   refImagesBase64?: string[]; // base64-encoded PNGs (for providers that accept inline image input)
   refImageUrls?: string[];    // public/presigned URLs (for providers that require URL refs, e.g. Grok)
 }

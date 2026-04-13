@@ -114,6 +114,9 @@ export function SettingsPanel({
                 <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
                   {localProject.duration ?? 4}s
                 </span>
+                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  Sound {localProject.sound || 'on'}
+                </span>
               </>
             ) : (
               <>
@@ -259,6 +262,31 @@ export function SettingsPanel({
                       }`}
                     >
                       {d}s
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  Sound
+                </label>
+                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                  {(['on', 'off'] as const).map((sound) => (
+                    <button
+                      key={sound}
+                      onClick={() => {
+                        const updated = { ...localProject, sound };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                        (localProject.sound || 'on') === sound
+                          ? 'bg-neutral-800 text-purple-400 shadow-sm'
+                          : 'text-neutral-600 hover:text-neutral-400'
+                      }`}
+                    >
+                      {sound}
                     </button>
                   ))}
                 </div>

@@ -105,6 +105,7 @@ export class ProjectRepository {
       maxTokens: (p as any).maxTokens ?? undefined,
       duration: (p as any).duration ?? undefined,
       resolution: (p as any).resolution ?? undefined,
+      sound: (p as any).sound ?? undefined,
       jobs: p.jobs.map((j) => this.mapJob(j)),
       workflow: p.workflowItems.map((w) => this.mapWorkflow(w)),
       album: p.albumItems.map((a) => this.mapAlbumItem(a)),
@@ -132,7 +133,8 @@ export class ProjectRepository {
         maxTokens: project.maxTokens ?? null,
         duration: project.duration ?? null,
         resolution: project.resolution ?? null,
-      },
+        sound: project.sound ?? null,
+      } as any,
     });
 
     if (project.jobs?.length) await this.saveJobs(userId, project.id, project.jobs);
@@ -157,9 +159,10 @@ export class ProjectRepository {
     if (updates.maxTokens !== undefined) data.maxTokens = updates.maxTokens ?? null;
     if (updates.duration !== undefined) data.duration = updates.duration ?? null;
     if (updates.resolution !== undefined) data.resolution = updates.resolution ?? null;
+    if (updates.sound !== undefined) data.sound = updates.sound ?? null;
 
     if (Object.keys(data).length > 0) {
-      await this.prisma.project.updateMany({ where: { id: projectId, userId }, data });
+      await this.prisma.project.updateMany({ where: { id: projectId, userId }, data: data as any });
     }
 
     if (updates.jobs !== undefined) await this.saveJobs(userId, projectId, updates.jobs);
@@ -191,11 +194,12 @@ export class ProjectRepository {
     if (updates.format !== undefined) data.format = updates.format ?? null;
     if (updates.duration !== undefined) data.duration = updates.duration ?? null;
     if (updates.resolution !== undefined) data.resolution = updates.resolution ?? null;
+    if (updates.sound !== undefined) data.sound = updates.sound ?? null;
     if (updates.size !== undefined) data.size = updates.size != null ? BigInt(updates.size) : null;
     if ((updates as any).optimizedSize !== undefined) data.optimizedSize = (updates as any).optimizedSize != null ? BigInt((updates as any).optimizedSize) : null;
     if ((updates as any).thumbnailSize !== undefined) data.thumbnailSize = (updates as any).thumbnailSize != null ? BigInt((updates as any).thumbnailSize) : null;
 
-    const result = await this.prisma.job.updateMany({ where: { id: jobId, projectId, userId }, data });
+    const result = await this.prisma.job.updateMany({ where: { id: jobId, projectId, userId }, data: data as any });
     if (result.count === 0) {
       console.warn(`[ProjectRepository] updateJob matched 0 rows for job=${jobId} project=${projectId} user=${userId}. Data: ${JSON.stringify(data)}`);
     }
@@ -675,18 +679,19 @@ export class ProjectRepository {
         optimizedUrl: job.optimizedUrl ?? null,
         resultText: job.resultText ?? null,
         error: job.error ?? null,
-        providerId: job.providerId ?? null,
         modelConfigId: job.modelConfigId ?? null,
         aspectRatio: job.aspectRatio ?? null,
         quality: job.quality ?? null,
         format: job.format ?? null,
         duration: job.duration ?? null,
         resolution: job.resolution ?? null,
+        sound: job.sound ?? null,
         background: (job as any).background ?? null,
         taskId: job.taskId ?? null,
         filename: job.filename ?? null,
         size: job.size != null ? BigInt(job.size) : null,
         createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
+        providerId: job.providerId ?? null,
       };
 
       const updateData = {
@@ -698,17 +703,18 @@ export class ProjectRepository {
         optimizedUrl: job.optimizedUrl ?? null,
         resultText: job.resultText ?? null,
         error: job.error ?? null,
-        providerId: job.providerId ?? null,
         modelConfigId: job.modelConfigId ?? null,
         aspectRatio: job.aspectRatio ?? null,
         quality: job.quality ?? null,
         format: job.format ?? null,
         duration: job.duration ?? null,
         resolution: job.resolution ?? null,
+        sound: job.sound ?? null,
         background: (job as any).background ?? null,
         taskId: job.taskId ?? null,
         filename: job.filename ?? null,
         size: job.size != null ? BigInt(job.size) : null,
+        providerId: job.providerId ?? null,
       };
 
       const existing = await this.prisma.job.findUnique({
@@ -721,12 +727,12 @@ export class ProjectRepository {
       }
 
       if (existing) {
-        await this.prisma.job.updateMany({
-          where: { id: job.id, projectId, userId },
-          data: updateData,
+        await this.prisma.job.update({
+          where: { id: job.id },
+          data: updateData as any,
         });
       } else {
-        await this.prisma.job.create({ data: createData });
+        await this.prisma.job.create({ data: createData as any });
       }
     }
 
@@ -794,6 +800,7 @@ export class ProjectRepository {
       format: j.format as 'png' | 'jpeg' | 'webp' | 'mp4' | undefined ?? undefined,
       duration: j.duration ?? undefined,
       resolution: j.resolution ?? undefined,
+      sound: j.sound ?? undefined,
       background: j.background ?? undefined,
       resultText: j.resultText ?? undefined,
       taskId: j.taskId ?? undefined,

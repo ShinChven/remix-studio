@@ -371,6 +371,12 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               background: localProject.background || (selectedModel?.options.backgrounds?.[0]),
               format: localProject.format || 'png',
             }),
+            ...(localProject.type === 'video' ? {
+              duration: localProject.duration || selectedModel?.options.durations?.[0] || 4,
+              resolution: localProject.resolution || selectedModel?.options.resolutions?.[0] || '720p',
+              sound: localProject.sound || 'on',
+              format: 'mp4' as const,
+            } : {}),
             filename
           });
         }
@@ -387,6 +393,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         modelConfigId: selectedModelId,
         aspectRatio: localProject.aspectRatio, quality: localProject.quality, background: localProject.background, format: localProject.format || 'png', shuffle: localProject.shuffle,
         systemPrompt: localProject.systemPrompt, temperature: localProject.temperature, maxTokens: localProject.maxTokens,
+        duration: localProject.duration, resolution: localProject.resolution, sound: localProject.sound,
       });
 
       setLocalProject(updatedProject);

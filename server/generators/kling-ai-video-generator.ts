@@ -134,7 +134,7 @@ export class KlingAIVideoGenerator extends VideoGenerator {
       model_name: req.modelId || DEFAULT_MODEL,
       prompt,
       mode: 'pro',
-      sound: 'off',
+      sound: req.sound || 'on',
     };
 
     if (req.aspectRatio) {
