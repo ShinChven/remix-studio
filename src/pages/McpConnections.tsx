@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { AlertCircle, CheckCircle, Copy, Key, Loader2, Plus, Shield, Trash2, Unplug } from 'lucide-react';
+import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Copy, Key, Loader2, Plus, Shield, Trash2, Unplug } from 'lucide-react';
 import { fetchOAuthClients, fetchPersonalAccessTokens, revokeOAuthClient, revokePersonalAccessToken, createPersonalAccessToken, type OAuthClientSummary, type PersonalAccessTokenSummary } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
@@ -59,6 +59,7 @@ export function McpConnections() {
 
   // Create PAT state
   const [showCreatePat, setShowCreatePat] = useState(false);
+  const [showJsonSetup, setShowJsonSetup] = useState(false);
   const [patName, setPatName] = useState('');
   const [patExpiry, setPatExpiry] = useState(0);
   const [isCreating, setIsCreating] = useState(false);
@@ -151,134 +152,164 @@ export function McpConnections() {
   };
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
-      <div className="w-full space-y-8">
-        <header className="mb-6 md:mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">MCP Connections</h2>
-          <p className="text-sm md:text-base text-neutral-400">
+    <div className="h-full flex flex-col p-4 md:p-8 lg:p-10 overflow-y-auto bg-neutral-950/20">
+      <div className="w-full max-w-5xl mx-auto space-y-8 md:space-y-12">
+        <header>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 md:mb-3 tracking-tight font-display bg-gradient-to-br from-white via-white to-neutral-500 bg-clip-text text-transparent">MCP Connections</h2>
+          <p className="text-sm md:text-base text-neutral-400 max-w-2xl leading-relaxed">
             Connect AI apps securely through MCP protocol
           </p>
         </header>
 
-        <section className="rounded-2xl border border-neutral-800/70 bg-neutral-900/30 p-4 md:p-5">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex-shrink-0 rounded-lg bg-sky-500/10 p-2 text-sky-400">
-              <AlertCircle className="h-4 w-4" />
+        <section className="rounded-2xl border border-neutral-800/70 bg-neutral-900/20 backdrop-blur-md overflow-hidden relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-amber-500/5 opacity-50" />
+          <div className="relative p-5 md:p-8 flex flex-col md:flex-row items-start gap-4 md:gap-6">
+            <div className="flex-shrink-0 rounded-2xl bg-sky-500/10 p-3 text-sky-400 border border-sky-500/20 shadow-lg shadow-sky-500/5">
+              <AlertCircle className="h-5 w-5 md:h-6 md:w-6" />
             </div>
-            <div className="space-y-3">
+            <div className="flex-1 space-y-6 md:space-y-8">
               <div>
-                <h3 className="text-sm font-semibold text-white">Connect an AI app to your account</h3>
-                <p className="mt-1 text-sm text-neutral-400">
+                <h3 className="text-lg font-bold text-white tracking-tight">Connect an AI app to your account</h3>
+                <p className="mt-2 text-sm leading-relaxed text-neutral-400 max-w-3xl">
                   This page helps you connect AI apps to your workspace. Start by copying the app address below into the app you want to connect. Then choose one of the two supported sign-in methods.
                 </p>
               </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-                  <p className="text-sm font-medium text-blue-300">OAuth 2.1 connector</p>
-                  <p className="mt-1 text-sm text-neutral-400">
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4 md:p-5 transition-transform hover:scale-[1.01] duration-300">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    <p className="text-sm font-bold text-blue-300">OAuth 2.1 connector</p>
+                  </div>
+                  <p className="text-sm leading-relaxed text-neutral-400">
                     Use this when the app can open a browser for sign-in. You sign in, approve access, and the app connects automatically. This is the best option for most users.
                   </p>
                 </div>
-                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-                  <p className="text-sm font-medium text-amber-300">Access token</p>
-                  <p className="mt-1 text-sm text-neutral-400">
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 md:p-5 transition-transform hover:scale-[1.01] duration-300">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    <p className="text-sm font-bold text-amber-300">Access token</p>
+                  </div>
+                  <p className="text-sm leading-relaxed text-neutral-400">
                     Use this only when the app asks you to paste a token, API key, or secret. You create the token here and paste it into the app yourself.
                   </p>
                 </div>
               </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">App address</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <code className="min-w-0 flex-1 break-all rounded-lg bg-neutral-900 px-3 py-2 text-xs text-sky-300">{mcpUrl}</code>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4 md:p-5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">App address</p>
+                  <div className="flex items-center gap-2">
+                    <code className="min-w-0 flex-1 break-all rounded-xl bg-neutral-900/80 px-4 py-3 text-xs md:text-sm text-sky-300 font-mono border border-neutral-800">{mcpUrl}</code>
                     <button
                       onClick={() => copyText(mcpUrl, 'MCP URL')}
-                      className="flex-shrink-0 rounded-lg bg-neutral-800 p-2 text-neutral-300 transition-colors hover:bg-neutral-700"
+                      className="flex-shrink-0 rounded-xl bg-neutral-800 p-3 text-neutral-300 transition-all hover:bg-neutral-700 active:scale-95 border border-neutral-700 shadow-sm"
                       title="Copy MCP URL"
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-5 w-5" />
                     </button>
                   </div>
-                  <p className="mt-2 text-sm text-neutral-500">
+                  <p className="mt-3 text-sm text-neutral-500 italic">
                     Copy this into the AI app when it asks where to connect.
                   </p>
                 </div>
-                <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">Advanced sign-in URL</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <code className="min-w-0 flex-1 break-all rounded-lg bg-neutral-900 px-3 py-2 text-xs text-blue-300">{oauthMetadataUrl}</code>
+                <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4 md:p-5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">Advanced sign-in URL</p>
+                  <div className="flex items-center gap-2">
+                    <code className="min-w-0 flex-1 break-all rounded-xl bg-neutral-900/80 px-4 py-3 text-xs md:text-sm text-blue-300 font-mono border border-neutral-800">{oauthMetadataUrl}</code>
                     <button
                       onClick={() => copyText(oauthMetadataUrl, 'OAuth metadata URL')}
-                      className="flex-shrink-0 rounded-lg bg-neutral-800 p-2 text-neutral-300 transition-colors hover:bg-neutral-700"
+                      className="flex-shrink-0 rounded-xl bg-neutral-800 p-3 text-neutral-300 transition-all hover:bg-neutral-700 active:scale-95 border border-neutral-700 shadow-sm"
                       title="Copy OAuth metadata URL"
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-5 w-5" />
                     </button>
                   </div>
-                  <p className="mt-2 text-sm text-neutral-500">
+                  <p className="mt-3 text-sm text-neutral-500 italic">
                     Only use this if the app specifically asks for a sign-in or discovery URL.
                   </p>
                 </div>
               </div>
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">1. Copy the app address</p>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    Paste it into the AI app to start setup.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">2. Choose the right sign-in method</p>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    If the app opens a browser, use the OAuth 2.1 connector. If it asks for a token instead, use an access token.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">3. Come back here anytime</p>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    You can see connected apps, create new tokens, or remove access later.
-                  </p>
-                </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                {[
+                  { title: '1. Copy Address', desc: 'Paste it into the AI app to start setup.' },
+                  { title: '2. Choose Method', desc: 'Use OAuth if it opens a browser, otherwise use a token.' },
+                  { title: '3. Manage Here', desc: 'View connections or revoke access anytime.' }
+                ].map((step, i) => (
+                  <div key={i} className="rounded-2xl border border-neutral-800/70 bg-neutral-950/40 p-4 relative overflow-hidden group/step">
+                    <div className="absolute -right-2 -bottom-2 text-6xl font-display font-black text-neutral-800/10 select-none group-hover/step:text-sky-500/5 transition-colors">{i + 1}</div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1 relative z-10">{step.title}</p>
+                    <p className="text-sm text-neutral-500 relative z-10 leading-relaxed">{step.desc}</p>
+                  </div>
+                ))}
               </div>
-              <div className="rounded-xl border border-neutral-800/70 bg-neutral-950/40 p-4 space-y-4">
-                <div>
-                  <h4 className="text-sm font-semibold text-white">If the app asks for JSON setup</h4>
-                  <p className="mt-1 text-sm text-neutral-400">
-                    Some apps ask you to paste a JSON setup block instead of filling out a form. Use the OAuth 2.1 version when the app supports browser sign-in. Use the access token version when the app asks for a token.
-                  </p>
-                </div>
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">OAuth 2.1 JSON</p>
-                      <button
-                        onClick={() => copyText(projectOAuthJson, 'OAuth JSON')}
-                        className="flex-shrink-0 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-700"
-                      >
-                        Copy JSON
-                      </button>
+
+              <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/50 overflow-hidden">
+                <button
+                  onClick={() => setShowJsonSetup(!showJsonSetup)}
+                  className="w-full flex items-center justify-between p-4 md:p-5 text-left transition-colors hover:bg-neutral-900/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${showJsonSetup ? 'bg-sky-500/20 text-sky-400' : 'bg-neutral-800 text-neutral-500'} transition-colors`}>
+                      <Plus className={`h-4 w-4 transition-transform duration-300 ${showJsonSetup ? 'rotate-45' : ''}`} />
                     </div>
-                    <pre className="overflow-x-auto rounded-xl bg-neutral-900 p-3 text-xs text-sky-300"><code>{projectOAuthJson}</code></pre>
-                    <p className="text-sm text-neutral-500">
-                      Use this when the app can open a browser and let you sign in.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-300">Access token JSON</p>
-                      <button
-                        onClick={() => copyText(projectTokenJson, 'Bearer token JSON')}
-                        className="flex-shrink-0 rounded-lg bg-neutral-800 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-700"
-                      >
-                        Copy JSON
-                      </button>
+                    <div>
+                      <h4 className="text-sm font-bold text-white tracking-tight">Need to use a JSON configuration?</h4>
+                      <p className="text-xs text-neutral-500 mt-0.5">Click to show or hide JSON setup blocks</p>
                     </div>
-                    <pre className="overflow-x-auto rounded-xl bg-neutral-900 p-3 text-xs text-amber-300"><code>{projectTokenJson}</code></pre>
-                    <p className="text-sm text-neutral-500">
-                      Replace <code>YOUR_MCP_TOKEN</code> with a token from this page, then paste the finished JSON into the app.
-                    </p>
                   </div>
-                </div>
+                  {showJsonSetup ? <ChevronUp className="h-5 w-5 text-neutral-600" /> : <ChevronDown className="h-5 w-5 text-neutral-600" />}
+                </button>
+
+                {showJsonSetup && (
+                  <div className="p-4 md:p-6 pt-0 space-y-6 animate-in slide-in-from-top-4 duration-300">
+                    <div className="h-px bg-neutral-800 mb-6" />
+                    <p className="text-sm leading-relaxed text-neutral-400 italic mb-4">
+                      Some apps ask you to paste a JSON setup block instead of filling out a form. Use the OAuth 2.1 version when the app supports browser sign-in. Use the access token version when the app asks for a token.
+                    </p>
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">OAuth 2.1 JSON</p>
+                          <button
+                            onClick={() => copyText(projectOAuthJson, 'OAuth JSON')}
+                            className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                          >
+                            Copy JSON
+                          </button>
+                        </div>
+                        <div className="relative group/code">
+                          <pre className="overflow-x-auto rounded-xl bg-neutral-950 p-4 text-[11px] md:text-xs text-sky-300 border border-neutral-800 font-mono leading-relaxed shadow-inner">
+                            <code>{projectOAuthJson}</code>
+                          </pre>
+                        </div>
+                        <p className="text-xs text-neutral-500 leading-relaxed">
+                          Use this when the app can open a browser and let you sign in.
+                        </p>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">Access token JSON</p>
+                          <button
+                            onClick={() => copyText(projectTokenJson, 'Bearer token JSON')}
+                            className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                          >
+                            Copy JSON
+                          </button>
+                        </div>
+                        <div className="relative group/code">
+                          <pre className="overflow-x-auto rounded-xl bg-neutral-950 p-4 text-[11px] md:text-xs text-amber-300 border border-neutral-800 font-mono leading-relaxed shadow-inner">
+                            <code>{projectTokenJson}</code>
+                          </pre>
+                        </div>
+                        <p className="text-xs text-neutral-500 leading-relaxed">
+                          Replace <code className="text-amber-400">YOUR_MCP_TOKEN</code> with a token from this page, then paste the finished JSON into the app.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
