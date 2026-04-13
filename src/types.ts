@@ -50,6 +50,7 @@ export interface ModelConfig {
     // Video generation options
     durations?: number[]; // seconds
     resolutions?: string[]; // e.g. '720p', '1080p', '4k'
+    sounds?: ('on' | 'off')[];
   };
 }
 
@@ -283,6 +284,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         aspectRatios: ['16:9', '9:16', '1:1'],
         resolutions: ['720p'],
         durations: [3, 4, 5, 6, 7, 8, 9, 10],
+        sounds: ['on', 'off'],
       },
     },
     {
@@ -295,6 +297,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         aspectRatios: ['16:9', '9:16', '1:1'],
         resolutions: ['720p'],
         durations: [3, 4, 5, 6, 7, 8, 9, 10],
+        sounds: ['on', 'off'],
       },
     },
   ],
