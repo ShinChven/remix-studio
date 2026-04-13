@@ -308,13 +308,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   };
 
   return (
-    <div className="h-full flex flex-col px-4 md:px-10 py-6 md:py-12 w-full overflow-hidden animate-in fade-in duration-700">
+    <div className="h-full flex flex-col p-4 md:p-8 w-full overflow-hidden animate-in fade-in duration-700">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 md:mb-12 flex-shrink-0 gap-6">
         <div className="flex-1">
-          <div className="flex items-center gap-3">
-             <div className="w-1.5 h-6 md:h-8 bg-blue-600 rounded-full" />
-             <h2 className="text-2xl md:text-4xl font-black text-white tracking-tight">{library.name}</h2>
-          </div>
+          <h2 className="text-2xl md:text-4xl font-bold text-white mb-2 font-display tracking-tight">{library.name}</h2>
 
           <div className="flex items-center gap-4 mt-2 md:mt-3">
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 px-2.5 py-1 bg-neutral-900/50 border border-neutral-800 rounded-lg backdrop-blur-sm">

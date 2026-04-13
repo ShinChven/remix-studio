@@ -152,10 +152,10 @@ export function McpConnections() {
   };
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-8 lg:p-10 overflow-y-auto bg-neutral-950/20">
-      <div className="w-full max-w-5xl mx-auto space-y-8 md:space-y-12">
+    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto bg-neutral-950/20">
+      <div className="w-full space-y-8 md:space-y-12">
         <header>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 md:mb-3 tracking-tight font-display bg-gradient-to-br from-white via-white to-neutral-500 bg-clip-text text-transparent">MCP Connections</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">MCP Connections</h2>
           <p className="text-sm md:text-base text-neutral-400 max-w-2xl leading-relaxed">
             Connect AI apps securely through MCP protocol
           </p>

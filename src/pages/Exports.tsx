@@ -199,55 +199,55 @@ export function Exports() {
 
   return (
     <div className="p-4 md:p-8 w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8 mt-2">
-        <header>
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-1 font-display">Archive</h2>
-          <p className="text-xs md:text-sm text-neutral-400">Manage your generated ZIP archives across all projects.</p>
-        </header>
+      <header className="mb-6 md:mb-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Archive</h2>
+        <p className="text-sm md:text-base text-neutral-400 max-w-2xl leading-relaxed">
+          Manage your generated ZIP archives across all projects.
+        </p>
+      </header>
 
-        {/* Stats + Google Drive controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          {/* Google Drive control */}
-          {user?.googleDriveConnected ? (
-            <div className="flex items-center justify-between sm:justify-start gap-3 bg-emerald-500/5 border border-emerald-500/20 px-4 py-2.5 rounded-xl">
-              <div className="flex items-center gap-2">
-                <HardDrive className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Drive Connected</span>
-              </div>
-              <div className="hidden sm:block w-px h-4 bg-emerald-500/20" />
-              <button
-                onClick={handleDisconnectDrive}
-                disabled={disconnecting}
-                className="flex items-center gap-1.5 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition disabled:opacity-50"
-              >
-                {disconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3.5 w-3.5" />}
-                <span className="sm:hidden">Disconnect</span>
-                <span className="hidden sm:inline">Disconnect</span>
-              </button>
+      {/* Stats + Google Drive controls */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end gap-3 mb-8">
+        {/* Google Drive control */}
+        {user?.googleDriveConnected ? (
+          <div className="flex items-center justify-between sm:justify-start gap-3 bg-emerald-500/5 border border-emerald-500/20 px-4 py-2.5 rounded-xl">
+            <div className="flex items-center gap-2">
+              <HardDrive className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+              <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Drive Connected</span>
             </div>
-          ) : (
-            <a
-              href="/api/auth/google-drive/connect"
-              className="flex items-center justify-center gap-2 bg-neutral-900/50 border border-neutral-800/50 px-4 py-2.5 rounded-xl hover:border-neutral-700 transition"
+            <div className="hidden sm:block w-px h-4 bg-emerald-500/20" />
+            <button
+              onClick={handleDisconnectDrive}
+              disabled={disconnecting}
+              className="flex items-center gap-1.5 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition disabled:opacity-50"
             >
-              <HardDrive className="h-4 w-4 text-neutral-500 flex-shrink-0" />
-              <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest text-center">Connect Drive</span>
-            </a>
-          )}
+              {disconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3.5 w-3.5" />}
+              <span className="sm:hidden">Disconnect</span>
+              <span className="hidden sm:inline">Disconnect</span>
+            </button>
+          </div>
+        ) : (
+          <a
+            href="/api/auth/google-drive/connect"
+            className="flex items-center justify-center gap-2 bg-neutral-900/50 border border-neutral-800/50 px-4 py-2.5 rounded-xl hover:border-neutral-700 transition"
+          >
+            <HardDrive className="h-4 w-4 text-neutral-500 flex-shrink-0" />
+            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest text-center">Connect Drive</span>
+          </a>
+        )}
 
-          {/* Database stats */}
-          <div className="bg-neutral-900/50 border border-neutral-800/50 px-4 py-2.5 rounded-xl flex items-center justify-between sm:justify-start gap-4">
-            <div className="flex flex-col">
-              <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Database</p>
-              <p className="text-xs font-bold text-white">{exports.length} Total</p>
-            </div>
-            <div className="w-px h-6 bg-neutral-800" />
-            <div className="flex flex-col">
-              <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest">In Progress</p>
-              <p className="text-xs font-bold text-white">
-                {exports.filter(t => t.status === 'pending' || t.status === 'processing').length} Active
-              </p>
-            </div>
+        {/* Database stats */}
+        <div className="bg-neutral-900/50 border border-neutral-800/50 px-4 py-2.5 rounded-xl flex items-center justify-between sm:justify-start gap-4">
+          <div className="flex flex-col">
+            <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Database</p>
+            <p className="text-xs font-bold text-white">{exports.length} Total</p>
+          </div>
+          <div className="w-px h-6 bg-neutral-800" />
+          <div className="flex flex-col">
+            <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest">In Progress</p>
+            <p className="text-xs font-bold text-white">
+              {exports.filter(t => t.status === 'pending' || t.status === 'processing').length} Active
+            </p>
           </div>
         </div>
       </div>
