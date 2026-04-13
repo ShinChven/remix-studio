@@ -78,7 +78,7 @@ const SIZE_MAP_T2I: Record<string, string> = {
 };
 
 const DEFAULT_BASE_URL = 'https://ark.ap-southeast.bytepluses.com/api/v3';
-const DEFAULT_MODEL = 'seedream-5-0-lite';
+const DEFAULT_MODEL = 'seedream-5-0-260128';
 
 export class BytePlusGenerator extends ImageGenerator {
   private apiKey: string;
@@ -87,7 +87,29 @@ export class BytePlusGenerator extends ImageGenerator {
   constructor(apiKey: string, apiUrl?: string) {
     super();
     this.apiKey = apiKey;
-    this.baseUrl = (apiUrl || DEFAULT_BASE_URL).replace(/\/$/, '');
+    this.baseUrl = this.normalizeBaseUrl(apiUrl);
+  }
+
+  private normalizeBaseUrl(apiUrl?: string): string {
+    if (!apiUrl) return DEFAULT_BASE_URL;
+
+    const parsed = new URL(apiUrl);
+    let pathname = parsed.pathname.replace(/\/$/, '');
+
+    // Strip known API paths so we're left with the base
+    if (pathname.endsWith('/images/generations')) {
+      pathname = pathname.slice(0, -'/images/generations'.length);
+    }
+
+    // Ensure the /api/v3 suffix is present
+    if (!pathname.endsWith('/api/v3')) {
+      pathname = pathname.replace(/\/$/, '') + '/api/v3';
+    }
+
+    parsed.pathname = pathname;
+    parsed.search = '';
+    parsed.hash = '';
+    return parsed.toString().replace(/\/$/, '');
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
@@ -169,7 +191,7 @@ export class BytePlusGenerator extends ImageGenerator {
     const normalizedQuality = (quality || '').toUpperCase();
     if (['1K', '2K', '3K', '4K'].includes(normalizedQuality)) {
       // Check if the model supports this quality tier
-      if (model === 'seedream-5-0-lite' && ['2K', '3K'].includes(normalizedQuality)) {
+      if (model === 'seedream-5-0-260128' && ['2K', '3K'].includes(normalizedQuality)) {
         return SIZE_MAP[normalizedQuality]?.[ratio] || normalizedQuality;
       }
       if (model === 'seedream-4-5' && ['2K', '4K'].includes(normalizedQuality)) {

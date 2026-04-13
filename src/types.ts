@@ -364,7 +364,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       id: 'byteplus-seedream-5-0-lite',
       name: 'Seedream 5.0 Lite',
       generatorId: 'BytePlus',
-      modelId: 'seedream-5-0-lite',
+      modelId: 'seedream-5-0-260128',
       category: 'image',
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
