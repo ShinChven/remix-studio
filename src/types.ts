@@ -416,6 +416,30 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   ],
 };
 
+/**
+ * Resolve custom model variants into full ModelConfig entries.
+ * Each variant clones the base model's options but uses its own name and modelId.
+ */
+export function resolveCustomModels(
+  providerType: ProviderType,
+  aliases: CustomModelAlias[]
+): ModelConfig[] {
+  const baseModels = PROVIDER_MODELS_MAP[providerType] || [];
+  return aliases
+    .map((alias) => {
+      if (!alias.customModelId || !alias.customName || !alias.baseModelId) return null;
+      const base = baseModels.find((m) => m.id === alias.baseModelId);
+      if (!base) return null;
+      return {
+        ...base,
+        id: `custom-${alias.customModelId}`,
+        name: alias.customName,
+        modelId: alias.customModelId,
+      };
+    })
+    .filter((m): m is ModelConfig => m !== null);
+}
+
 export interface Job {
   id: string;
   prompt: string;
@@ -503,6 +527,16 @@ export interface Project {
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus';
 
+/**
+ * A custom model variant that inherits all options from a built-in base model
+ * but uses its own model name and model ID for API calls.
+ */
+export interface CustomModelAlias {
+  customName: string;    // display name for this variant
+  customModelId: string; // the actual API model ID to send in requests
+  baseModelId: string;   // references ModelConfig.id in PROVIDER_MODELS_MAP (for inheriting options)
+}
+
 export interface ProviderUsageSummary {
   projectCount: number;
   activeJobCount: number;
@@ -517,6 +551,7 @@ export interface Provider {
   hasKey: boolean; // raw apiKey is never sent to the client
   createdAt: number;
   models: ModelConfig[];
+  customModels?: CustomModelAlias[];
   usage?: ProviderUsageSummary;
 }
 

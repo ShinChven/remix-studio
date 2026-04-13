@@ -1,13 +1,34 @@
 import { Hono } from 'hono';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { ProviderRepository } from '../db/provider-repository';
-import type { ProviderType } from '../../src/types';
+import type { ProviderType, CustomModelAlias } from '../../src/types';
+import { PROVIDER_MODELS_MAP } from '../../src/types';
 import crypto from 'crypto';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 import { listProviderModels } from '../services/provider-model-lister';
 
 const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'OpenAI', 'Grok', 'Claude', 'BytePlus'];
 type Variables = { user: JwtPayload };
+
+function parseCustomModels(raw: unknown, providerType: ProviderType): CustomModelAlias[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const baseModelIds = new Set((PROVIDER_MODELS_MAP[providerType] || []).map((m) => m.id));
+  return raw
+    .filter(
+      (item: any) =>
+        typeof item?.customName === 'string' &&
+        item.customName.trim() &&
+        typeof item?.customModelId === 'string' &&
+        item.customModelId.trim() &&
+        typeof item?.baseModelId === 'string' &&
+        baseModelIds.has(item.baseModelId)
+    )
+    .map((item: any) => ({
+      customName: item.customName.trim(),
+      customModelId: item.customModelId.trim(),
+      baseModelId: item.baseModelId,
+    }));
+}
 
 export function createProviderRouter(repo: ProviderRepository) {
   const router = new Hono<{ Variables: Variables }>();
@@ -59,6 +80,8 @@ export function createProviderRouter(repo: ProviderRepository) {
       if (!VALID_TYPES.includes(type)) return c.json({ error: `type must be one of: ${VALID_TYPES.join(', ')}` }, 400);
       if (!apiKey) return c.json({ error: 'apiKey is required' }, 400);
 
+      const customModels = parseCustomModels(body?.customModels, type);
+
       const id = crypto.randomUUID();
       await repo.createProvider(user.userId, {
         id,
@@ -67,6 +90,7 @@ export function createProviderRouter(repo: ProviderRepository) {
         apiKey,
         apiUrl: assertSafeProviderApiUrl(type, apiUrl),
         concurrency,
+        customModels,
       });
       return c.json({ id }, 201);
     } catch (e: any) {
@@ -91,6 +115,7 @@ export function createProviderRouter(repo: ProviderRepository) {
         apiKey?: string;
         apiUrl?: string | null;
         concurrency?: number;
+        customModels?: CustomModelAlias[];
       } = {};
 
       if (typeof body?.name === 'string') updates.name = body.name.trim();
@@ -112,10 +137,14 @@ export function createProviderRouter(repo: ProviderRepository) {
         updates.concurrency = normalizeConcurrency(body.concurrency, 1);
       }
 
-      const effectiveType = updates.type ?? body?.type ?? (await repo.getProvider(user.userId, providerId))?.type;
+      const effectiveType = updates.type ?? body?.type ?? (await repo.getProvider(user.userId, providerId))?.type as ProviderType;
       if (!effectiveType) return c.json({ error: 'Provider not found' }, 404);
       if (updates.apiUrl !== undefined) {
         updates.apiUrl = assertSafeProviderApiUrl(effectiveType, updates.apiUrl);
+      }
+
+      if (body?.customModels !== undefined) {
+        updates.customModels = parseCustomModels(body.customModels, effectiveType);
       }
 
       await repo.updateProvider(user.userId, providerId, updates);

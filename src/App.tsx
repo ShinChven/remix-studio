@@ -25,6 +25,7 @@ import { LibraryImportExport } from './pages/LibraryImportExport.tsx';
 import { Providers } from './pages/Providers.tsx';
 import { ProviderProfile } from './pages/ProviderProfile.tsx';
 import { ProviderForm } from './pages/ProviderForm.tsx';
+import { ProviderCustomModels } from './pages/ProviderCustomModels.tsx';
 import { TrashView } from './components/TrashView.tsx';
 import { ProjectOrphans } from './pages/ProjectOrphans.tsx';
 import { Exports } from './pages/Exports.tsx';
@@ -70,6 +71,7 @@ export default function App() {
               <Route path="provider/new" element={<ProviderForm />} />
               <Route path="provider/:id" element={<ProviderProfile />} />
               <Route path="provider/:id/edit" element={<ProviderForm />} />
+              <Route path="provider/:id/custom-models" element={<ProviderCustomModels />} />
               <Route path="exports" element={<Exports />} />
               <Route path="trash" element={<TrashView />} />
               <Route path="storage" element={<Navigate to="/account?tab=storage" replace />} />

@@ -66,7 +66,7 @@ export function ProviderForm() {
         type,
         ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
         apiUrl: urlValue ?? null,
-        concurrency
+        concurrency,
       };
 
       if (isEditing) {

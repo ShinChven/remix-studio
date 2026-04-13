@@ -1,18 +1,24 @@
 import { PrismaClient } from '@prisma/client';
-import type { Provider, ProviderType, ProviderUsageSummary } from '../../src/types';
-import { PROVIDER_MODELS_MAP } from '../../src/types';
+import type { Provider, ProviderType, ProviderUsageSummary, CustomModelAlias } from '../../src/types';
+import { PROVIDER_MODELS_MAP, resolveCustomModels } from '../../src/types';
 import { encrypt, decrypt } from '../utils/crypto';
 
 function toPublic(record: any, usage?: ProviderUsageSummary): Provider {
+  const providerType = record.type as ProviderType;
+  const baseModels = PROVIDER_MODELS_MAP[providerType] || [];
+  const customAliases: CustomModelAlias[] = Array.isArray(record.models) ? record.models : [];
+  const resolved = resolveCustomModels(providerType, customAliases);
+
   return {
     id: record.id,
     name: record.name,
-    type: record.type as ProviderType,
+    type: providerType,
     apiUrl: record.apiUrl ?? undefined,
     concurrency: record.concurrency ?? 1,
     hasKey: !!record.apiKeyEncrypted,
     createdAt: record.createdAt instanceof Date ? record.createdAt.getTime() : record.createdAt,
-    models: PROVIDER_MODELS_MAP[record.type as ProviderType] || [],
+    models: [...baseModels, ...resolved],
+    customModels: customAliases.length > 0 ? customAliases : undefined,
     usage,
   };
 }
@@ -57,7 +63,7 @@ export class ProviderRepository {
 
   async createProvider(
     userId: string,
-    data: { id: string; name: string; type: ProviderType; apiKey: string; apiUrl?: string; concurrency?: number }
+    data: { id: string; name: string; type: ProviderType; apiKey: string; apiUrl?: string; concurrency?: number; customModels?: CustomModelAlias[] }
   ): Promise<void> {
     await this.prisma.provider.create({
       data: {
@@ -68,6 +74,7 @@ export class ProviderRepository {
         apiKeyEncrypted: encrypt(data.apiKey),
         apiUrl: data.apiUrl ?? null,
         concurrency: data.concurrency ?? 1,
+        models: data.customModels && data.customModels.length > 0 ? data.customModels as any : undefined,
       },
     });
   }
@@ -75,7 +82,7 @@ export class ProviderRepository {
   async updateProvider(
     userId: string,
     providerId: string,
-    updates: { name?: string; type?: ProviderType; apiKey?: string; apiUrl?: string | null; concurrency?: number }
+    updates: { name?: string; type?: ProviderType; apiKey?: string; apiUrl?: string | null; concurrency?: number; customModels?: CustomModelAlias[] }
   ): Promise<void> {
     const data: any = {};
     if (updates.name !== undefined) data.name = updates.name;
@@ -83,6 +90,7 @@ export class ProviderRepository {
     if (updates.apiKey) data.apiKeyEncrypted = encrypt(updates.apiKey);
     if (updates.apiUrl !== undefined) data.apiUrl = updates.apiUrl;
     if (updates.concurrency !== undefined) data.concurrency = updates.concurrency;
+    if (updates.customModels !== undefined) data.models = updates.customModels;
 
     const result = await this.prisma.provider.updateMany({ where: { id: providerId, userId }, data });
     if (result.count === 0) {

@@ -4,7 +4,7 @@ import { fetchProvider, fetchProviderModels, ProviderModelInfo } from '../api';
 import { Provider, ProviderType } from '../types';
 import {
   Key, Globe, CheckCircle, AlertCircle, Pencil, ArrowLeft,
-  MessageSquare, Image, Video, Loader2, RefreshCw,
+  MessageSquare, Image, Video, Loader2, RefreshCw, Layers,
 } from 'lucide-react';
 
 const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
@@ -134,12 +134,22 @@ export function ProviderProfile() {
               </div>
             </div>
 
-            <button
-              onClick={() => navigate(`/provider/${id}/edit`)}
-              className="text-xs md:text-sm bg-neutral-800 text-neutral-300 hover:bg-neutral-700 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-neutral-700 font-medium"
-            >
-              <Pencil className="w-4 h-4" /> Edit
-            </button>
+            <div className="flex items-center gap-2">
+              {provider.type === 'BytePlus' && (
+                <button
+                  onClick={() => navigate(`/provider/${id}/custom-models`)}
+                  className="text-xs md:text-sm bg-cyan-600/10 text-cyan-400 hover:bg-cyan-600/20 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-cyan-600/30 font-medium"
+                >
+                  <Layers className="w-4 h-4" /> Custom Models
+                </button>
+              )}
+              <button
+                onClick={() => navigate(`/provider/${id}/edit`)}
+                className="text-xs md:text-sm bg-neutral-800 text-neutral-300 hover:bg-neutral-700 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-neutral-700 font-medium"
+              >
+                <Pencil className="w-4 h-4" /> Edit
+              </button>
+            </div>
           </div>
         </header>
 

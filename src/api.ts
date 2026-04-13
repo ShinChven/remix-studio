@@ -1,4 +1,4 @@
-import { AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult } from './types';
+import { AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -566,7 +566,7 @@ export async function createProvider(data: {
   apiKey: string;
   apiUrl?: string;
   concurrency?: number;
-  models?: any[];
+  customModels?: CustomModelAlias[];
 }): Promise<string> {
   const res = await fetch('/api/providers', {
     method: 'POST',
@@ -579,7 +579,7 @@ export async function createProvider(data: {
 
 export async function updateProvider(
   id: string,
-  updates: { name?: string; type?: ProviderType; apiKey?: string; apiUrl?: string | null; concurrency?: number; models?: any[] }
+  updates: { name?: string; type?: ProviderType; apiKey?: string; apiUrl?: string | null; concurrency?: number; customModels?: CustomModelAlias[] }
 ): Promise<void> {
   const res = await fetch(`/api/providers/${id}`, {
     method: 'PUT',

@@ -5,7 +5,7 @@ import { S3Storage } from '../storage/s3-storage';
 import { buildGenerator } from '../generators/build-generator';
 import { buildTextGenerator } from '../generators/build-text-generator';
 import { buildVideoGenerator } from '../generators/build-video-generator';
-import { Job, ProviderType, ProjectType } from '../../src/types';
+import { Job, ProviderType, ProjectType, ModelConfig, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../src/types';
 import { ImageProcessor } from './image-processor';
 import { TextProcessor } from './text-processor';
 import { VideoProcessor } from './video-processor';
@@ -37,6 +37,16 @@ export interface QueuedJob {
  * QueueManager manages parallel AI generation tasks globally across all users.
  * It enforces per-provider concurrency limits and ensures task persistence.
  */
+/**
+ * Build the full model list for a provider record: built-in models + resolved custom variants.
+ */
+function getAllModels(providerRecord: any): ModelConfig[] {
+  const providerType = providerRecord.type as ProviderType;
+  const baseModels = PROVIDER_MODELS_MAP[providerType] || [];
+  const customAliases = Array.isArray(providerRecord.models) ? providerRecord.models : [];
+  return [...baseModels, ...resolveCustomModels(providerType, customAliases)];
+}
+
 export class QueueManager {
   private activeJobs: Map<string, number> = new Map(); // providerId -> active count
   private queues: Map<string, QueuedJob[]> = new Map(); // providerId -> pending jobs
@@ -344,7 +354,7 @@ export class QueueManager {
   private async executeTextJob(userId: string, projectId: string, job: Job, queued: QueuedJob, providerRecord: any, apiKey: string) {
     try {
       const textGenerator = buildTextGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
-      const modelConfig = providerRecord.models?.find((m: any) => m.id === job.modelConfigId);
+      const modelConfig = getAllModels(providerRecord).find((m) => m.id === job.modelConfigId);
 
       // Prepare reference images if any
       let refImages: string[] | undefined;
@@ -485,7 +495,7 @@ export class QueueManager {
       if (refImageUrls.length === 0) refImageUrls = undefined;
     }
 
-    const modelConfig = providerRecord.models?.find((m: any) => m.id === job.modelConfigId);
+    const modelConfig = getAllModels(providerRecord).find((m) => m.id === job.modelConfigId);
 
     return {
       prompt: job.prompt,
@@ -528,13 +538,13 @@ export class QueueManager {
       if (refImageUrls.length === 0) refImageUrls = undefined;
     }
 
-    const modelConfig = providerRecord.models?.find((m: any) => m.id === job.modelConfigId);
+    const modelConfig = getAllModels(providerRecord).find((m) => m.id === job.modelConfigId);
 
     return {
       prompt: job.prompt,
       modelId: modelConfig?.modelId,
       apiUrl: modelConfig?.apiUrl,
-      aspectRatio: job.aspectRatio || '1:1', 
+      aspectRatio: job.aspectRatio || '1:1',
       imageSize: job.quality || '1K',
       background: queued.background || job.background,
       refImagesBase64: refImages,
