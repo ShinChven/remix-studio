@@ -375,7 +375,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       id: 'byteplus-seedream-4-5',
       name: 'Seedream 4.5',
       generatorId: 'BytePlus',
-      modelId: 'seedream-4-5',
+      modelId: 'seedream-4-5-251128',
       category: 'image',
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
@@ -386,7 +386,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       id: 'byteplus-seedream-4-0',
       name: 'Seedream 4.0',
       generatorId: 'BytePlus',
-      modelId: 'seedream-4-0',
+      modelId: 'seedream-4-0-250828',
       category: 'image',
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
@@ -397,7 +397,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       id: 'byteplus-seedream-3-0-t2i',
       name: 'Seedream 3.0 T2I',
       generatorId: 'BytePlus',
-      modelId: 'seedream-3-0-t2i',
+      modelId: 'seedream-3-0-t2i-250415',
       category: 'image',
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
@@ -407,7 +407,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       id: 'byteplus-seededit-3-0-i2i',
       name: 'Seededit 3.0 I2I',
       generatorId: 'BytePlus',
-      modelId: 'seededit-3-0-i2i',
+      modelId: 'seededit-3-0-i2i-250628',
       category: 'image',
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],

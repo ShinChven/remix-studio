@@ -147,9 +147,9 @@ export class BytePlusGenerator extends ImageGenerator {
       }
 
       // seedream-3-0-t2i and seededit-3-0-i2i support guidance_scale
-      if (model === 'seedream-3-0-t2i') {
+      if (model === 'seedream-3-0-t2i-250415') {
         payload.guidance_scale = 2.5;
-      } else if (model === 'seededit-3-0-i2i') {
+      } else if (model === 'seededit-3-0-i2i-250628') {
         payload.guidance_scale = 5.5;
       }
 
@@ -177,12 +177,12 @@ export class BytePlusGenerator extends ImageGenerator {
     const ratio = aspectRatio || '1:1';
 
     // seedream-3-0-t2i has its own fixed size table
-    if (model === 'seedream-3-0-t2i') {
+    if (model === 'seedream-3-0-t2i-250415') {
       return SIZE_MAP_T2I[ratio] || '1024x1024';
     }
 
     // seededit-3-0-i2i uses adaptive sizing (server-side), so don't send size
-    if (model === 'seededit-3-0-i2i') {
+    if (model === 'seededit-3-0-i2i-250628') {
       return 'adaptive';
     }
 
@@ -194,10 +194,10 @@ export class BytePlusGenerator extends ImageGenerator {
       if (model === 'seedream-5-0-260128' && ['2K', '3K'].includes(normalizedQuality)) {
         return SIZE_MAP[normalizedQuality]?.[ratio] || normalizedQuality;
       }
-      if (model === 'seedream-4-5' && ['2K', '4K'].includes(normalizedQuality)) {
+      if (model === 'seedream-4-5-251128' && ['2K', '4K'].includes(normalizedQuality)) {
         return SIZE_MAP[normalizedQuality]?.[ratio] || normalizedQuality;
       }
-      if (model === 'seedream-4-0' && ['1K', '2K', '4K'].includes(normalizedQuality)) {
+      if (model === 'seedream-4-0-250828' && ['1K', '2K', '4K'].includes(normalizedQuality)) {
         return SIZE_MAP[normalizedQuality]?.[ratio] || normalizedQuality;
       }
     }
