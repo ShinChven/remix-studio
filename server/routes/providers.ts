@@ -167,10 +167,17 @@ export function createProviderRouter(repo: ProviderRepository) {
       const provider = await repo.getProvider(user.userId, providerId);
       if (!provider) return c.json({ error: 'Provider not found' }, 404);
 
+      const providerType = provider.type as ProviderType;
+
+      if (providerType === 'RunningHub' || providerType === 'BytePlus') {
+        const result = await listProviderModels(providerType, '', provider.apiUrl);
+        return c.json(result);
+      }
+
       const apiKey = await repo.getDecryptedApiKey(user.userId, providerId);
       if (!apiKey) return c.json({ error: 'No API key configured for this provider' }, 400);
 
-      const result = await listProviderModels(provider.type as ProviderType, apiKey, provider.apiUrl);
+      const result = await listProviderModels(providerType, apiKey, provider.apiUrl);
       return c.json(result);
     } catch (e) {
       console.error('[GET /api/providers/:id/models]', e);
