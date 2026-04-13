@@ -69,7 +69,7 @@ export function SettingsPanel({
   const isVideoProject = localProject.type === 'video';
 
   return (
-    <div className="shrink-0 overflow-hidden p-4 border-t border-neutral-800 bg-neutral-900 shadow-2xl">
+    <div className="shrink overflow-hidden flex flex-col p-4 border-t border-neutral-800 bg-neutral-900 shadow-2xl min-h-0">
       <button
         onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
         className="w-full p-3 bg-neutral-950/50 border border-neutral-800 rounded-xl mb-3 hover:bg-neutral-900/50 transition-all group flex flex-col gap-2.5"
@@ -137,8 +137,8 @@ export function SettingsPanel({
         </div>
       </button>
 
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSettingsCollapsed ? 'max-h-0 opacity-0 mb-0' : 'max-h-[min(60vh,820px)] md:max-h-[min(70vh,820px)] opacity-100 mb-4'}`}>
-        <div className="space-y-4 pt-2 overflow-y-auto pr-1 max-h-[min(60vh,820px)] md:max-h-[min(70vh,820px)] custom-scrollbar">
+      <div className={`transition-all duration-300 ease-in-out flex flex-col ${isSettingsCollapsed ? 'max-h-0 opacity-0 mb-0 overflow-hidden' : 'max-h-[2000px] opacity-100 mb-4 min-h-0 shrink'}`}>
+        <div className="space-y-4 pt-2 overflow-y-auto pr-1 min-h-0 shrink custom-scrollbar">
           <div className="space-y-1.5">
             <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
               AI Model
