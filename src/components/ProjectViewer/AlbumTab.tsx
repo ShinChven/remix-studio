@@ -83,7 +83,7 @@ export function AlbumTab({
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-6">
         {albumItems.length > 0 && (
-          <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 p-3 rounded-xl">
+          <div className="sticky top-0 z-20 flex items-center justify-between bg-neutral-950/80 backdrop-blur-md border border-neutral-800 p-3 rounded-xl shadow-lg shadow-black/20">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest transition-colors mr-2">
                 <Layers className="w-4 h-4 text-blue-500" />

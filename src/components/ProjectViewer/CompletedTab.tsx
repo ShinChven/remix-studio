@@ -36,7 +36,7 @@ export function CompletedTab({
       <div className="flex flex-col gap-4">
         {/* Completed Jobs Header/Toolbar */}
         {completedJobs.length > 0 && (
-          <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 px-4 py-3 rounded-xl flex-wrap gap-2">
+          <div className="sticky top-0 z-20 flex items-center justify-between bg-neutral-950/80 backdrop-blur-md border border-neutral-800 px-4 py-3 rounded-xl flex-wrap gap-2 shadow-lg shadow-black/20">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleSelectAllCompleted}

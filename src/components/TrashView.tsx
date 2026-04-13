@@ -132,7 +132,7 @@ export function TrashView() {
         <p className="text-sm md:text-base text-neutral-400">Review deleted items, restore what you need, or remove them permanently.</p>
       </header>
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="sticky top-0 z-20 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-neutral-950/80 backdrop-blur-md border border-neutral-800/50 p-4 rounded-2xl shadow-lg shadow-black/20">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
             {items.length} Items
