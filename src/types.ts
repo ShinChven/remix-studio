@@ -185,7 +185,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
     {
       id: 'runninghub-seedance-2-0',
-      name: 'Seedance 2.0',
+      name: 'Seedance 2.0 Ref',
       generatorId: 'RunningHub',
       modelId: '2037063826180415490',
       category: 'video',
