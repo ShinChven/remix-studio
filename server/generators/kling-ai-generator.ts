@@ -39,8 +39,11 @@ export class KlingAIGenerator extends ImageGenerator {
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
     try {
-      const payload = this.buildPayload(req);
-      const response = await this.request('/v1/images/omni-image', {
+      const isOmni = this.isOmniModel(req.modelId);
+      const urlPath = isOmni ? '/v1/images/omni-image' : '/v1/images/generations';
+      const payload = this.buildPayload(req, isOmni);
+      
+      const response = await this.request(urlPath, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -50,7 +53,10 @@ export class KlingAIGenerator extends ImageGenerator {
         return { ok: false, error: 'Kling AI did not return a task_id' };
       }
 
-      return { ok: true, status: 'processing', taskId };
+      // Add a transport-layer prefix so checkStatus knows which endpoint to pole
+      const prefixedTaskId = `${isOmni ? 'omni:' : 'std:'}${taskId}`;
+
+      return { ok: true, status: 'processing', taskId: prefixedTaskId };
     } catch (e: any) {
       console.error('[KlingAIGenerator] Error:', e);
       return { ok: false, error: e?.message || 'Kling AI image generation failed' };
@@ -59,7 +65,23 @@ export class KlingAIGenerator extends ImageGenerator {
 
   async checkStatus(taskId: string): Promise<CheckStatusResult> {
     try {
-      const response = await this.request(`/v1/images/omni-image/${encodeURIComponent(taskId)}`, {
+      const isOmni = taskId.startsWith('omni:');
+      const isStd = taskId.startsWith('std:');
+      let actualTaskId = taskId;
+      let urlPath = '/v1/images/omni-image/';
+      
+      if (isOmni) {
+         actualTaskId = taskId.slice(5);
+         urlPath = '/v1/images/omni-image/';
+      } else if (isStd) {
+         actualTaskId = taskId.slice(4);
+         urlPath = '/v1/images/generations/';
+      } else {
+         // Fallback for older existing tasks without prefixes
+         urlPath = '/v1/images/omni-image/';
+      }
+      
+      const response = await this.request(`${urlPath}${encodeURIComponent(actualTaskId)}`, {
         method: 'GET',
       });
 
@@ -109,25 +131,51 @@ export class KlingAIGenerator extends ImageGenerator {
     const parsed = new URL(apiUrl);
     let pathname = parsed.pathname.replace(/\/$/, '');
     pathname = pathname.replace(/\/v1\/images\/omni-image$/, '');
+    pathname = pathname.replace(/\/v1\/images\/generations$/, '');
     parsed.pathname = pathname;
     parsed.search = '';
     parsed.hash = '';
     return parsed.toString().replace(/\/$/, '');
   }
 
-  private buildPayload(req: GenerateRequest) {
+  private isOmniModel(modelId?: string): boolean {
+    if (!modelId) return true; // Default DEFAULT_MODEL is kling-image-o1
+    return modelId.includes('omni') || modelId === 'kling-image-o1';
+  }
+
+  private buildPayload(req: GenerateRequest, isOmni: boolean) {
     const payload: Record<string, unknown> = {
       model_name: req.modelId || DEFAULT_MODEL,
       prompt: req.prompt,
-      resolution: this.normalizeResolution(req.imageSize),
-      aspect_ratio: req.aspectRatio || 'auto',
       n: 1,
-      result_type: 'single',
     };
+
+    if (req.imageSize) {
+      payload.resolution = this.normalizeResolution(req.imageSize);
+    }
+    
+    if (req.aspectRatio) {
+      payload.aspect_ratio = req.aspectRatio;
+    }
+
+    if (isOmni) {
+      payload.result_type = 'single';
+      if (!payload.aspect_ratio) {
+        payload.aspect_ratio = 'auto'; // omni default
+      }
+    } else {
+      if (!payload.aspect_ratio) {
+        payload.aspect_ratio = '16:9'; // standard default fallback
+      }
+    }
 
     const images = this.normalizeReferenceImages(req);
     if (images.length > 0) {
-      payload.image_list = images.map((image) => ({ image }));
+      if (isOmni) {
+        payload.image_list = images.map((image) => ({ image }));
+      } else {
+        payload.image = images[0]; // standard takes a single image
+      }
     }
 
     return payload;

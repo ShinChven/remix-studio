@@ -207,6 +207,61 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'kling-v3-image',
+      name: 'Kling V3 Standard',
+      generatorId: 'KlingAI',
+      modelId: 'kling-v3',
+      category: 'image',
+      options: {
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'kling-v2-1-image',
+      name: 'Kling V2.1 Standard',
+      generatorId: 'KlingAI',
+      modelId: 'kling-v2-1',
+      category: 'image',
+      options: {
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'kling-v2-image',
+      name: 'Kling V2 Standard',
+      generatorId: 'KlingAI',
+      modelId: 'kling-v2',
+      category: 'image',
+      options: {
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'kling-v1-5-image',
+      name: 'Kling V1.5 Standard',
+      generatorId: 'KlingAI',
+      modelId: 'kling-v1-5',
+      category: 'image',
+      options: {
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'kling-v1-image',
+      name: 'Kling V1 Standard',
+      generatorId: 'KlingAI',
+      modelId: 'kling-v1',
+      category: 'image',
+      options: {
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
+        qualities: ['1K'],
+      },
+    },
+    {
       id: 'kling-video-o1-video',
       name: 'Kling Video O1',
       generatorId: 'KlingAI',
