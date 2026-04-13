@@ -80,6 +80,10 @@ export class DetachedPoller {
 
       const apiKey = await this.providerRepo.getDecryptedApiKey(userId, providerRecord.id);
       if (!apiKey) return;
+      const apiSecret = providerRecord.type === 'KlingAI'
+        ? await this.providerRepo.getDecryptedApiSecret(userId, providerRecord.id)
+        : null;
+      if (providerRecord.type === 'KlingAI' && !apiSecret) return;
 
       if (projectType === 'video') {
         const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
@@ -110,7 +114,7 @@ export class DetachedPoller {
         return;
       }
 
-      const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+      const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl, apiSecret);
       if (!generator.checkStatus) {
         console.warn(`[DetachedPoller] Generator for ${providerRecord.type} does not support checkStatus. Skipping Job ${job.id}`);
         return;

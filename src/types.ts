@@ -609,6 +609,7 @@ export interface Provider {
   apiUrl?: string;
   concurrency: number;
   hasKey: boolean; // raw apiKey is never sent to the client
+  hasSecret?: boolean;
   createdAt: number;
   models: ModelConfig[];
   customModels?: CustomModelAlias[];

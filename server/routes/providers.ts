@@ -73,12 +73,14 @@ export function createProviderRouter(repo: ProviderRepository) {
       const name = typeof body?.name === 'string' ? body.name.trim() : '';
       const type = body?.type as ProviderType;
       const apiKey = typeof body?.apiKey === 'string' ? body.apiKey.trim() : '';
+      const apiSecret = typeof body?.apiSecret === 'string' ? body.apiSecret.trim() : '';
       const apiUrl = typeof body?.apiUrl === 'string' ? body.apiUrl.trim() || undefined : undefined;
       const concurrency = normalizeConcurrency(body?.concurrency, 1);
 
       if (!name) return c.json({ error: 'name is required' }, 400);
       if (!VALID_TYPES.includes(type)) return c.json({ error: `type must be one of: ${VALID_TYPES.join(', ')}` }, 400);
       if (!apiKey) return c.json({ error: 'apiKey is required' }, 400);
+      if (type === 'KlingAI' && !apiSecret) return c.json({ error: 'apiSecret is required for KlingAI' }, 400);
 
       const customModels = parseCustomModels(body?.customModels, type);
 
@@ -88,6 +90,7 @@ export function createProviderRouter(repo: ProviderRepository) {
         name,
         type,
         apiKey,
+        apiSecret: apiSecret || undefined,
         apiUrl: assertSafeProviderApiUrl(type, apiUrl),
         concurrency,
         customModels,
@@ -113,6 +116,7 @@ export function createProviderRouter(repo: ProviderRepository) {
         name?: string;
         type?: ProviderType;
         apiKey?: string;
+        apiSecret?: string;
         apiUrl?: string | null;
         concurrency?: number;
         customModels?: CustomModelAlias[];
@@ -125,6 +129,9 @@ export function createProviderRouter(repo: ProviderRepository) {
       }
       if (typeof body?.apiKey === 'string' && body.apiKey.trim()) {
         updates.apiKey = body.apiKey.trim();
+      }
+      if (typeof body?.apiSecret === 'string' && body.apiSecret.trim()) {
+        updates.apiSecret = body.apiSecret.trim();
       }
       // null = clear; string = update; undefined = leave unchanged
       if (body?.apiUrl === null) {
@@ -139,6 +146,11 @@ export function createProviderRouter(repo: ProviderRepository) {
 
       const effectiveType = updates.type ?? body?.type ?? (await repo.getProvider(user.userId, providerId))?.type as ProviderType;
       if (!effectiveType) return c.json({ error: 'Provider not found' }, 404);
+      if (effectiveType === 'KlingAI') {
+        const currentProvider = await repo.getProvider(user.userId, providerId);
+        const hasSecretAfterUpdate = Boolean(updates.apiSecret) || Boolean(currentProvider?.apiSecretEncrypted);
+        if (!hasSecretAfterUpdate) return c.json({ error: 'apiSecret is required for KlingAI' }, 400);
+      }
       if (updates.apiUrl !== undefined) {
         updates.apiUrl = assertSafeProviderApiUrl(effectiveType, updates.apiUrl);
       }

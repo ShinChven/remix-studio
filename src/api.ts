@@ -564,6 +564,7 @@ export async function createProvider(data: {
   name: string;
   type: ProviderType;
   apiKey: string;
+  apiSecret?: string;
   apiUrl?: string;
   concurrency?: number;
   customModels?: CustomModelAlias[];
@@ -579,7 +580,7 @@ export async function createProvider(data: {
 
 export async function updateProvider(
   id: string,
-  updates: { name?: string; type?: ProviderType; apiKey?: string; apiUrl?: string | null; concurrency?: number; customModels?: CustomModelAlias[] }
+  updates: { name?: string; type?: ProviderType; apiKey?: string; apiSecret?: string; apiUrl?: string | null; concurrency?: number; customModels?: CustomModelAlias[] }
 ): Promise<void> {
   const res = await fetch(`/api/providers/${id}`, {
     method: 'PUT',

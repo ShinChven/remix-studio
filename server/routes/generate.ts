@@ -48,8 +48,14 @@ export function createGenerateRouter(providerRepo: ProviderRepository) {
 
       const apiKey = await providerRepo.getDecryptedApiKey(user.userId, providerId);
       if (!apiKey) return c.json({ error: 'Provider has no API key stored' }, 400);
+      const apiSecret = record.type === 'KlingAI'
+        ? await providerRepo.getDecryptedApiSecret(user.userId, providerId)
+        : null;
+      if (record.type === 'KlingAI' && !apiSecret) {
+        return c.json({ error: 'Provider has no API secret stored' }, 400);
+      }
 
-      const generator = buildGenerator(record.type as ProviderType, apiKey, record.apiUrl);
+      const generator = buildGenerator(record.type as ProviderType, apiKey, record.apiUrl, apiSecret);
       const result = await generator.generate({ prompt, aspectRatio, imageSize, refImagesBase64: refImage ? [refImage] : undefined });
 
       if (result.ok === false) {

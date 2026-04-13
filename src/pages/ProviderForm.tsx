@@ -11,7 +11,7 @@ const TYPE_DESCRIPTIONS: Record<ProviderType, string> = {
   GoogleAI:   'Google AI Studio — x-goog-api-key header',
   VertexAI:   'Google Cloud Vertex AI — API key in URL',
   RunningHub: 'RunningHub OpenAPI v2 — Bearer token',
-  KlingAI:    'Kling AI API — Bearer token',
+  KlingAI:    'Kling AI API — Access Key + Secret Key -> JWT Bearer',
   OpenAI:     'OpenAI GPT Image 1.5 — Bearer token',
   Grok:       'xAI Grok Imagine — Bearer token',
   Claude:     'Anthropic Claude — x-api-key header',
@@ -26,10 +26,13 @@ export function ProviderForm() {
   const [name, setName] = useState('');
   const [type, setType] = useState<ProviderType>('GoogleAI');
   const [apiKey, setApiKey] = useState('');
+  const [apiSecret, setApiSecret] = useState('');
   const [apiUrl, setApiUrl] = useState('');
   const [concurrency, setConcurrency] = useState(1);
   const [showKey, setShowKey] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
   const [hasExistingKey, setHasExistingKey] = useState(false);
+  const [hasExistingSecret, setHasExistingSecret] = useState(false);
   const [isLoading, setIsLoading] = useState(isEditing);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +49,7 @@ export function ProviderForm() {
         setApiUrl(p.apiUrl || '');
         setConcurrency(p.concurrency || 1);
         setHasExistingKey(p.hasKey);
+        setHasExistingSecret(Boolean(p.hasSecret));
       } catch {
         navigate('/providers');
       } finally {
@@ -57,7 +61,9 @@ export function ProviderForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    if (!isEditing && !apiKey.trim()) { setError('API Key is required.'); return; }
+    if (!isEditing && !apiKey.trim()) { setError(type === 'KlingAI' ? 'Access Key is required.' : 'API Key is required.'); return; }
+    if (type === 'KlingAI' && !isEditing && !apiSecret.trim()) { setError('Secret Key is required for KlingAI.'); return; }
+    if (type === 'KlingAI' && isEditing && !apiSecret.trim() && !hasExistingSecret) { setError('Secret Key is required for KlingAI.'); return; }
 
     setIsSubmitting(true);
     setError(null);
@@ -67,6 +73,7 @@ export function ProviderForm() {
         name: name.trim(),
         type,
         ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+        ...(type === 'KlingAI' && apiSecret.trim() ? { apiSecret: apiSecret.trim() } : {}),
         apiUrl: urlValue ?? null,
         concurrency,
       };
@@ -151,10 +158,10 @@ export function ProviderForm() {
               </div>
             </div>
 
-            {/* API Key */}
+            {/* API Key / Access Key */}
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
-                API Key{' '}
+                {type === 'KlingAI' ? 'Access Key' : 'API Key'}{' '}
                 {isEditing && hasExistingKey && (
                   <span className="normal-case font-normal tracking-normal">— leave blank to keep existing</span>
                 )}
@@ -164,7 +171,7 @@ export function ProviderForm() {
                   type={showKey ? 'text' : 'password'}
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
-                  placeholder={isEditing && hasExistingKey ? '•••••••• (stored)' : 'Paste your API key…'}
+                  placeholder={isEditing && hasExistingKey ? '•••••••• (stored)' : type === 'KlingAI' ? 'Paste your access key…' : 'Paste your API key…'}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
                 />
                 <button
@@ -176,6 +183,33 @@ export function ProviderForm() {
                 </button>
               </div>
             </div>
+
+            {type === 'KlingAI' && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
+                  Secret Key{' '}
+                  {isEditing && hasExistingSecret && (
+                    <span className="normal-case font-normal tracking-normal">— leave blank to keep existing</span>
+                  )}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showSecret ? 'text' : 'password'}
+                    value={apiSecret}
+                    onChange={e => setApiSecret(e.target.value)}
+                    placeholder={isEditing && hasExistingSecret ? '•••••••• (stored)' : 'Paste your secret key…'}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSecret(s => !s)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-neutral-300 transition-colors"
+                  >
+                    {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* API URL */}
             <div className="space-y-2">

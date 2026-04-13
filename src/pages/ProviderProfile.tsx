@@ -65,10 +65,10 @@ export function ProviderProfile() {
   }, [id]);
 
   useEffect(() => { loadProvider(); }, [loadProvider]);
-  // RunningHub uses static models (no API key required); others require a key
+  // RunningHub/KlingAI/BytePlus use static models; others require credentials.
   useEffect(() => {
     if (!provider) return;
-    if (provider.type === 'RunningHub' || provider.hasKey) loadModels();
+    if (provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.hasKey) loadModels();
   }, [provider, loadModels]);
 
   const grouped = {
@@ -98,6 +98,9 @@ export function ProviderProfile() {
   }
 
   const colors = TYPE_COLORS[provider.type];
+  const hasCredentials = provider.type === 'KlingAI'
+    ? provider.hasKey && provider.hasSecret
+    : provider.hasKey;
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
@@ -126,10 +129,10 @@ export function ProviderProfile() {
                       <Globe className="w-3.5 h-3.5" />{provider.apiUrl}
                     </span>
                   )}
-                  <span className={`flex items-center gap-1 text-xs font-medium ${provider.hasKey ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {provider.hasKey
-                      ? <><CheckCircle className="w-3.5 h-3.5" /> Key stored</>
-                      : <><AlertCircle className="w-3.5 h-3.5" /> No key</>}
+                  <span className={`flex items-center gap-1 text-xs font-medium ${hasCredentials ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    {hasCredentials
+                      ? <><CheckCircle className="w-3.5 h-3.5" /> {provider.type === 'KlingAI' ? 'Credentials stored' : 'Key stored'}</>
+                      : <><AlertCircle className="w-3.5 h-3.5" /> {provider.type === 'KlingAI' ? 'Missing credentials' : 'No key'}</>}
                   </span>
                 </div>
               </div>
@@ -166,9 +169,9 @@ export function ProviderProfile() {
         <section>
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-xl font-semibold text-white">
-              {provider.type === 'RunningHub' ? 'Supported Models' : 'Available Models'}
+              {provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' ? 'Supported Models' : 'Available Models'}
             </h3>
-            {provider.type !== 'RunningHub' && (
+            {provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && (
               <button
                 onClick={loadModels}
                 disabled={isLoadingModels}
@@ -179,7 +182,7 @@ export function ProviderProfile() {
             )}
           </div>
 
-          {!provider.hasKey && provider.type !== 'RunningHub' && (
+          {!provider.hasKey && provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && (
             <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               Add an API key to fetch available models from the provider.
@@ -197,7 +200,7 @@ export function ProviderProfile() {
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-6 h-6 text-neutral-500 animate-spin" />
             </div>
-          ) : (provider.hasKey || provider.type === 'RunningHub') && models.length === 0 && !modelsError ? (
+          ) : (provider.hasKey || provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus') && models.length === 0 && !modelsError ? (
             <div className="py-12 text-center text-neutral-500 text-sm">
               No models returned by the provider API.
             </div>

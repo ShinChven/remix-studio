@@ -201,6 +201,12 @@ export class QueueManager {
       // Build generator
       const apiKey = await this.providerRepo.getDecryptedApiKey(userId, providerRecord.id);
       if (!apiKey) throw new Error('Stored API key not found for provider');
+      const apiSecret = providerRecord.type === 'KlingAI'
+        ? await this.providerRepo.getDecryptedApiSecret(userId, providerRecord.id)
+        : null;
+      if (providerRecord.type === 'KlingAI' && !apiSecret) {
+        throw new Error('Stored API secret not found for KlingAI provider');
+      }
 
       // Dispatch based on project type
       if (queued.projectType === 'text') {
@@ -209,7 +215,7 @@ export class QueueManager {
         const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
         await this.executeVideoJob(userId, projectId, job, queued, videoGenerator, providerRecord);
       } else {
-        const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+        const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl, apiSecret);
 
         // Dispatch to specific execution path based on generator capabilities
         if (generator.checkStatus) {

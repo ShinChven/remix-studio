@@ -17,7 +17,8 @@ import { assertSafeProviderApiUrl } from '../utils/url-safety';
 export function buildGenerator(
   type: ProviderType,
   apiKey: string,
-  apiUrl?: string | null
+  apiUrl?: string | null,
+  apiSecret?: string | null
 ): ImageGenerator {
   const safeApiUrl = assertSafeProviderApiUrl(type, apiUrl);
 
@@ -29,7 +30,7 @@ export function buildGenerator(
     case 'RunningHub':
       return new RunningHubGenerator(apiKey, safeApiUrl);
     case 'KlingAI':
-      return new KlingAIGenerator(apiKey, safeApiUrl);
+      return new KlingAIGenerator(apiKey, apiSecret || '', safeApiUrl);
     case 'OpenAI':
       return new OpenAIGenerator(apiKey, safeApiUrl);
     case 'Grok':

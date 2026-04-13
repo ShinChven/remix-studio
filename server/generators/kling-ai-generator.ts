@@ -4,6 +4,7 @@ import {
   GenerateResult,
   ImageGenerator,
 } from './image-generator';
+import jwt from 'jsonwebtoken';
 
 type KlingTaskResponse = {
   code?: number;
@@ -25,12 +26,14 @@ const DEFAULT_BASE_URL = 'https://api-singapore.klingai.com';
 const DEFAULT_MODEL = 'kling-image-o1';
 
 export class KlingAIGenerator extends ImageGenerator {
-  private apiKey: string;
+  private accessKey: string;
+  private secretKey: string;
   private baseUrl: string;
 
-  constructor(apiKey: string, apiUrl?: string) {
+  constructor(accessKey: string, secretKey: string, apiUrl?: string) {
     super();
-    this.apiKey = apiKey;
+    this.accessKey = accessKey;
+    this.secretKey = secretKey;
     this.baseUrl = this.normalizeBaseUrl(apiUrl);
   }
 
@@ -162,7 +165,7 @@ export class KlingAIGenerator extends ImageGenerator {
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers: {
-        Authorization: `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.createApiToken()}`,
         'Content-Type': 'application/json',
         ...(init.headers || {}),
       },
@@ -190,5 +193,28 @@ export class KlingAIGenerator extends ImageGenerator {
     }
 
     return json;
+  }
+
+  private createApiToken() {
+    if (!this.accessKey || !this.secretKey) {
+      throw new Error('Kling AI requires both access key and secret key');
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    return jwt.sign(
+      {
+        iss: this.accessKey,
+        exp: now + 1800,
+        nbf: now - 5,
+      },
+      this.secretKey,
+      {
+        algorithm: 'HS256',
+        header: {
+          alg: 'HS256',
+          typ: 'JWT',
+        },
+      },
+    );
   }
 }

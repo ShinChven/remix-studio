@@ -105,6 +105,7 @@ model Provider {
   name            String
   type            String
   apiKeyEncrypted String?
+  apiSecretEncrypted String?
   apiUrl          String?
   concurrency     Int      @default(1)
   models          Json?

@@ -101,6 +101,9 @@ export function Providers() {
             ) : (
               providers.map(provider => {
                 const colors = TYPE_COLORS[provider.type];
+                const hasCredentials = provider.type === 'KlingAI'
+                  ? provider.hasKey && provider.hasSecret
+                  : provider.hasKey;
                 const projectCount = provider.usage?.projectCount ?? 0;
                 const activeJobCount = provider.usage?.activeJobCount ?? 0;
                 return (
@@ -122,10 +125,10 @@ export function Providers() {
                               <Globe className="w-3 h-3 flex-shrink-0" />{provider.apiUrl}
                             </span>
                           )}
-                          <span className={`flex items-center gap-1 text-[10px] font-medium ${provider.hasKey ? 'text-emerald-400' : 'text-amber-400'}`}>
-                            {provider.hasKey
-                              ? <><CheckCircle className="w-3 h-3" /> Key stored</>
-                              : <><AlertCircle className="w-3 h-3" /> No key</>}
+                          <span className={`flex items-center gap-1 text-[10px] font-medium ${hasCredentials ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            {hasCredentials
+                              ? <><CheckCircle className="w-3 h-3" /> {provider.type === 'KlingAI' ? 'Credentials stored' : 'Key stored'}</>
+                              : <><AlertCircle className="w-3 h-3" /> {provider.type === 'KlingAI' ? 'Missing credentials' : 'No key'}</>}
                           </span>
                           {(projectCount > 0 || activeJobCount > 0) && (
                             <span className="flex items-center gap-2 text-[10px] text-neutral-500">
