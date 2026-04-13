@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchProvider, fetchProviderModels, ProviderModelInfo } from '../api';
 import { Provider, ProviderType } from '../types';
+import { ProviderIcon } from '../components/ProviderIcon';
 import {
   Key, Globe, CheckCircle, AlertCircle, Pencil, ArrowLeft,
   MessageSquare, Image, Video, Loader2, RefreshCw, Layers,
@@ -112,11 +113,10 @@ export function ProviderProfile() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className={`p-2.5 rounded-xl ${colors.icon}`}>
-                <Key className="w-6 h-6" />
+                <ProviderIcon type={provider.type} className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-white font-display">{provider.name}</h2>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <h2 className="text-2xl md:text-3xl font-bold text-white font-display">{provider.name}</h2>                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${colors.badge}`}>
                     {provider.type}
                   </span>

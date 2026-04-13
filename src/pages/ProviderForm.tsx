@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { fetchProvider, createProvider, updateProvider } from '../api';
 import { ProviderType } from '../types';
 import { Save, Key, Eye, EyeOff } from 'lucide-react';
+import { ProviderIcon } from '../components/ProviderIcon';
 
 const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'OpenAI', 'Grok', 'Claude', 'BytePlus'];
 
@@ -96,7 +97,7 @@ export function ProviderForm() {
       <div className="w-full max-w-3xl mx-auto bg-neutral-900 border border-neutral-800 rounded-3xl p-5 md:p-8 shadow-2xl">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 bg-amber-600/10 rounded-2xl">
-            <Key className="w-6 h-6 text-amber-500" />
+            <ProviderIcon type={type} className="w-6 h-6 text-amber-500" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white tracking-tight">

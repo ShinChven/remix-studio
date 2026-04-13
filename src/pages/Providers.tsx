@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchProviders, deleteProvider } from '../api';
 import { Provider, ProviderType } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { ProviderIcon } from '../components/ProviderIcon';
 import { Plus, Key, Globe, Pencil, Trash2, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react';
 
 const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
@@ -109,7 +110,7 @@ export function Providers() {
                   >
                     <div className="flex items-center gap-2.5 md:gap-3 overflow-hidden min-w-0">
                       <div className={`flex-shrink-0 p-1.5 md:p-2 rounded-lg ${colors.icon} group-hover:scale-110 transition-transform`}>
-                        <Key className="w-4 h-4" />
+                        <ProviderIcon type={provider.type} className="w-4 h-4" />
                       </div>
                       <div className="overflow-hidden min-w-0">
                         <h4 className="font-semibold text-white text-sm truncate">{provider.name}</h4>
