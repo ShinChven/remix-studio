@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { randomUUID } from 'node:crypto';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
@@ -7,7 +8,7 @@ import { ExportManager } from '../queue/export-manager';
 import { DeliveryManager } from '../queue/delivery-manager';
 import { checkStorageLimit } from '../utils/storage-check';
 import { UserRepository } from '../auth/user-repository';
-import type { WorkflowItem, Job, Project } from '../../src/types';
+import type { WorkflowItem, Job, Project, LibraryItem } from '../../src/types';
 
 type Variables = { user: JwtPayload };
 
@@ -411,6 +412,131 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     } catch (e) {
       console.error('[DELETE /api/projects/:id/album/:itemId]', e);
       return c.json({ error: 'Failed to delete album item' }, 500);
+    }
+  });
+
+  /**
+   * POST /api/projects/:id/album/copy-to-library
+   *
+   * Copy selected album items to an Image Library.
+   */
+  router.post('/api/projects/:id/album/copy-to-library', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const body = await c.req.json();
+      
+      const itemIds: string[] = body.itemIds || [];
+      const version: 'raw' | 'optimized' = body.version || 'optimized';
+      const destinationLibraryId: string | undefined = body.destinationLibraryId;
+      const newLibraryName: string | undefined = body.newLibraryName;
+
+      if (!itemIds.length) {
+        return c.json({ error: 'No items selected' }, 400);
+      }
+      if (!destinationLibraryId && !newLibraryName) {
+        return c.json({ error: 'destinationLibraryId or newLibraryName is required' }, 400);
+      }
+
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Project not found' }, 404);
+
+      const itemsToCopy = (project.album || []).filter(item => itemIds.includes(item.id));
+      if (itemsToCopy.length === 0) return c.json({ error: 'No matching items found' }, 400);
+
+      const bucket = storage.getBucketName();
+
+      // Estimate required size based on the chosen version
+      let requiredSize = 0;
+      for (const item of itemsToCopy) {
+        if (version === 'raw') {
+          requiredSize += Number(item.size) || 0;
+        } else {
+          requiredSize += Number(item.optimizedSize || item.size) || 0;
+        }
+        // Add thumbnail size
+        requiredSize += Number(item.thumbnailSize) || 0;
+      }
+
+      const { allowed, currentUsage, limit } = await checkStorageLimit(
+        user.userId,
+        requiredSize,
+        userRepository,
+        storage,
+        exportStorage,
+        repository
+      );
+
+      if (!allowed) {
+        return c.json({ 
+          error: `Storage limit exceeded. Cannot copy to library. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(requiredSize / (1024 * 1024)).toFixed(1)}MB.` 
+        }, 403);
+      }
+
+      let libraryId = destinationLibraryId;
+
+      if (!libraryId) {
+        libraryId = randomUUID();
+        await repository.createLibrary(user.userId, {
+          id: libraryId,
+          name: newLibraryName!,
+          type: 'image'
+        });
+      } else {
+        const lib = await repository.getLibrary(user.userId, libraryId);
+        if (!lib) {
+          return c.json({ error: 'Destination library not found' }, 404);
+        }
+        if (lib.type !== 'image') {
+          return c.json({ error: 'Destination must be an image library' }, 400);
+        }
+      }
+
+      const safeLibraryId = libraryId.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const newItems: LibraryItem[] = [];
+
+      for (const item of itemsToCopy) {
+        const sourceMainUrl = version === 'raw' ? item.imageUrl : (item.optimizedUrl || item.imageUrl);
+        const sourceMainKey = stripToKey(sourceMainUrl, bucket);
+        const sourceThumbKey = stripToKey(item.thumbnailUrl, bucket);
+
+        let destMainKey: string | undefined;
+        let destThumbKey: string | undefined;
+
+        if (sourceMainKey && !sourceMainKey.startsWith('http') && !sourceMainKey.startsWith('data:')) {
+          const basename = sourceMainKey.split('/').pop() || sourceMainKey;
+          destMainKey = `${user.userId}/${safeLibraryId}/${basename}`;
+          await storage.copy(sourceMainKey, destMainKey);
+        } else {
+          destMainKey = sourceMainKey; // maybe data URI
+        }
+
+        if (sourceThumbKey && !sourceThumbKey.startsWith('http') && !sourceThumbKey.startsWith('data:')) {
+          const basename = sourceThumbKey.split('/').pop() || sourceThumbKey;
+          destThumbKey = `${user.userId}/${safeLibraryId}/${basename}`;
+          await storage.copy(sourceThumbKey, destThumbKey);
+        } else {
+          destThumbKey = sourceThumbKey;
+        }
+
+        newItems.push({
+          id: randomUUID(),
+          title: item.prompt || undefined,
+          content: destMainKey || '',
+          thumbnailUrl: destThumbKey,
+          optimizedUrl: version === 'raw' ? destMainKey : undefined, // If version is optimized, we don't necessarily have a distinct optimized URL
+          size: version === 'raw' ? item.size : (item.optimizedSize || item.size)
+        });
+      }
+
+      if (newItems.length > 0) {
+        await repository.createLibraryItemsBatch(user.userId, libraryId, newItems);
+      }
+
+      return c.json({ success: true, libraryId });
+    } catch (e) {
+      console.error('[POST /api/projects/:id/album/copy-to-library]', e);
+      return c.json({ error: 'Failed to copy to library' }, 500);
     }
   });
 

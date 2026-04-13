@@ -741,6 +741,23 @@ export async function startAlbumExport(projectId: string, itemIds?: string[], pa
   return handleResponse<{ taskId: string }>(res, 'Failed to start export');
 }
 
+export async function copyAlbumToLibrary(
+  projectId: string,
+  params: {
+    itemIds: string[];
+    version: 'raw' | 'optimized';
+    destinationLibraryId?: string;
+    newLibraryName?: string;
+  }
+): Promise<{ libraryId: string }> {
+  const res = await fetch(`/api/projects/${projectId}/album/copy-to-library`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(params),
+  });
+  return handleResponse<{ libraryId: string }>(res, 'Failed to copy to library');
+}
+
 export async function fetchExportStatus(projectId: string, taskId: string): Promise<ExportTask> {
   const res = await fetch(`/api/projects/${projectId}/export/${taskId}`, { headers: getHeaders(false) });
   return handleResponse<ExportTask>(res, 'Failed to get export status');
