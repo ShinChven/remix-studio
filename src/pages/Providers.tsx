@@ -4,6 +4,7 @@ import { fetchProviders, deleteProvider } from '../api';
 import { Provider, ProviderType } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ProviderIcon } from '../components/ProviderIcon';
+import { PageHeader } from '../components/PageHeader';
 import { Plus, Key, Globe, Pencil, Trash2, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react';
 
 const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
@@ -57,10 +58,10 @@ export function Providers() {
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full space-y-8">
-        <header className="mb-6 md:mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Providers</h2>
-          <p className="text-sm md:text-base text-neutral-400">Manage API credentials for image generation backends. Keys are encrypted at rest.</p>
-        </header>
+        <PageHeader
+          title="Providers"
+          description="Manage API credentials for image generation backends. Keys are encrypted at rest."
+        />
 
         <section>
           <div className="flex items-center justify-between mb-6">

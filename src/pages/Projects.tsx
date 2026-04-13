@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Project, ProjectType } from '../types';
 import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video } from 'lucide-react';
 import { fetchProjects } from '../api';
+import { PageHeader } from '../components/PageHeader';
 
 type ProjectSort = 'createdAt' | 'totalSize';
 
@@ -111,10 +112,10 @@ export function Projects() {
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
       <div className="w-full space-y-8 pb-20">
-        <header className="mb-6 md:mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Projects</h2>
-          <p className="text-sm md:text-base text-neutral-400">Manage and track your AI workflows and generation tasks.</p>
-        </header>
+        <PageHeader
+          title="Projects"
+          description="Manage and track your AI workflows and generation tasks."
+        />
 
         <section>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">

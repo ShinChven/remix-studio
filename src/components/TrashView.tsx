@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TrashItem } from '../types';
 import { fetchTrash, restoreTrashItem, restoreTrashBatch, deleteTrashPermanently, deleteTrashBatch, emptyTrash, imageDisplayUrl } from '../api';
 import { Trash2, RotateCcw, CheckSquare, Square, CheckCircle2, Calendar, Folder, HardDrive } from 'lucide-react';
+import { PageHeader } from './PageHeader';
 import { ConfirmModal } from './ConfirmModal';
 import { ImageLightbox } from './ProjectViewer/ImageLightbox';
 
@@ -127,10 +128,10 @@ export function TrashView() {
 
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-700">
-      <header className="mb-6 md:mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Recycle Bin</h2>
-        <p className="text-sm md:text-base text-neutral-400">Review deleted items, restore what you need, or remove them permanently.</p>
-      </header>
+        <PageHeader
+          title="Recycle Bin"
+          description="Review deleted items, restore what you need, or remove them permanently."
+        />
 
       <div className="sticky top-0 z-20 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-neutral-950/80 backdrop-blur-md border border-neutral-800/50 p-4 rounded-2xl shadow-lg shadow-black/20">
         <div className="flex items-center gap-2">

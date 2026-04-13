@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Project, Job, Library, WorkflowItem as WorkflowItemType, WorkflowItemType as WorkflowItemTypeKind, Provider, AlbumItem } from '../types';
 import { saveImage, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Type, ImageIcon, Library as LibraryIcon, Plus, Settings, Trash2, Eraser, FileArchive } from 'lucide-react';
+import { PageHeader } from './PageHeader';
 import { toast } from 'sonner';
 import { generateWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
@@ -613,39 +614,44 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
       {/* Left Pane: Workflow Builder */}
       <div className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-800 bg-neutral-900/30 flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
-        <div className="p-4 border-b border-neutral-800 flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center justify-between gap-2 flex-1 group">
-              <h2 className="text-xl font-bold text-white truncate tracking-tight">{localProject.name}</h2>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => navigate(`/project/${project.id}/edit`)}
-                  className="p-1.5 text-neutral-600 hover:text-green-400 opacity-100 transition-all hover:bg-green-400/10 rounded-lg"
-                  title="Edit Project Information"
-                ><Settings className="w-4 h-4" /></button>
-                <button
-                  onClick={() => navigate(`/project/${project.id}/orphans`)}
-                  className="p-1.5 text-neutral-600 hover:text-blue-400 opacity-100 transition-all hover:bg-blue-400/10 rounded-lg"
-                  title="Manage Orphan Files (Cleanup)"
-                ><Eraser className="w-4 h-4" /></button>
+        <PageHeader
+          title={localProject.name}
+          description={(
+            <div className="flex flex-col gap-2 mt-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-neutral-950 border border-neutral-800 rounded">ID: {project.id}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span title="All changes are auto-saved" className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold uppercase tracking-widest opacity-60">
+                  <CheckCircle2 className="w-3 h-3" /> Auto-saved
+                </span>
               </div>
             </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-neutral-950 border border-neutral-800 rounded">ID: {project.id}</span>
-            </div>
-            <div className="flex items-center gap-2 ml-2">
-              <span title="All changes are auto-saved" className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold uppercase tracking-widest opacity-60">
-                <CheckCircle2 className="w-3 h-3" /> Auto-saved
-              </span>
-              <button onClick={() => setShowDeleteProjectModal(true)} className="text-neutral-500 hover:text-red-400 p-1" title="Delete Project">
+          )}
+          className="p-4 border-b border-neutral-800 mb-0"
+          headerClassName="max-w-full"
+          actions={(
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => navigate(`/project/${project.id}/edit`)}
+                className="p-1.5 text-neutral-600 hover:text-green-400 transition-all hover:bg-green-400/10 rounded-lg"
+                title="Edit Project Information"
+              ><Settings className="w-4 h-4" /></button>
+              <button
+                onClick={() => navigate(`/project/${project.id}/orphans`)}
+                className="p-1.5 text-neutral-600 hover:text-blue-400 transition-all hover:bg-blue-400/10 rounded-lg"
+                title="Manage Orphan Files (Cleanup)"
+              ><Eraser className="w-4 h-4" /></button>
+              <button 
+                onClick={() => setShowDeleteProjectModal(true)} 
+                className="p-1.5 text-neutral-600 hover:text-red-400 transition-all hover:bg-red-400/10 rounded-lg" 
+                title="Delete Project"
+              >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
-          </div>
-        </div>
+          )}
+        />
 
         <div className="p-3 border-b border-neutral-800 flex gap-2 bg-neutral-900/50">
           <button onClick={() => addWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">

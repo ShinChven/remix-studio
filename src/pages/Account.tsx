@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap } from 'lucide-react';
 import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, updatePassword } from '../api';
+import { PageHeader } from '../components/PageHeader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { SecuritySettings, StorageAnalysis, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -382,10 +383,10 @@ export function Account() {
   return (
     <div className="p-6 lg:p-10">
       <div className="w-full space-y-8">
-        <header className="mb-6 md:mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Account</h2>
-          <p className="text-sm md:text-base text-neutral-400">Manage your identity, security, and workspace capacity.</p>
-        </header>
+        <PageHeader
+          title="Account"
+          description="Manage your identity, security, and workspace capacity."
+        />
 
         <div className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-3">
           <div className="grid gap-2 md:grid-cols-3">

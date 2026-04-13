@@ -5,6 +5,7 @@ import { adminResetUserPassword, createUser, getUserDetail, getUsers, updateUser
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../contexts/AuthContext';
 import { UserDetail, UserRole, UserStatus, UserSummary } from '../types';
+import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
 
 const STORAGE_TIERS = [
@@ -239,29 +240,29 @@ export function AdminUsers() {
   return (
     <div className="p-6 lg:p-10">
       <div className="w-full space-y-8">
-        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">User Management</h2>
-            <p className="text-sm md:text-base text-neutral-400">Create users, control access, and inspect account usage without external systems.</p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Link
-              to="/admin/invites"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25"
-            >
-              <Mail className="h-4 w-4" />
-              Invite Users
-            </Link>
-            <button
-              type="button"
-              onClick={() => setIsCreateOpen(true)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-200 transition hover:bg-blue-500/25"
-            >
-              <UserPlus className="h-4 w-4" />
-              Create User
-            </button>
-          </div>
-        </header>
+        <PageHeader
+          title="User Management"
+          description="Create users, control access, and inspect account usage without external systems."
+          actions={(
+            <>
+              <Link
+                to="/admin/invites"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25 shrink-0"
+              >
+                <Mail className="h-4 w-4" />
+                Invite Users
+              </Link>
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(true)}
+                className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-200 transition hover:bg-blue-500/25 shrink-0"
+              >
+                <UserPlus className="h-4 w-4" />
+                Create User
+              </button>
+            </>
+          )}
+        />
 
         <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-4">
           <form onSubmit={handleFilterSubmit} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_120px]">

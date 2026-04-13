@@ -23,6 +23,7 @@ import {
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ImageLightbox } from '../components/ProjectViewer/ImageLightbox';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/PageHeader';
 
 export function ProjectOrphans() {
   const { id } = useParams();
@@ -134,28 +135,22 @@ export function ProjectOrphans() {
   return (
     <div className="h-full flex flex-col bg-neutral-950 overflow-hidden">
       {/* Header */}
-      <header className="p-4 md:p-6 border-b border-neutral-800 bg-neutral-900/20 backdrop-blur-md sticky top-0 z-20">
-        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <button
-              onClick={() => navigate(`/project/${id}`)}
-              className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-xl transition-all active:scale-95"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                 <h2 className="text-xl font-bold text-white truncate font-display">Orphan Files Management</h2>
-                 <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[10px] font-black text-blue-500 uppercase tracking-widest whitespace-nowrap">
-                   Cleanup Tool
-                 </span>
-              </div>
-              <p className="text-xs text-neutral-500 truncate">
-                Project: <span className="text-neutral-300">{project?.name || id}</span>
-              </p>
+      <PageHeader
+        title="Orphan Files Management"
+        description={(
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+               <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[10px] font-black text-blue-500 uppercase tracking-widest whitespace-nowrap">
+                 Cleanup Tool
+               </span>
             </div>
+            <p className="text-xs text-neutral-500 truncate mt-1">
+              Project: <span className="text-neutral-300">{project?.name || id}</span>
+            </p>
           </div>
-
+        )}
+        backLink={{ to: `/project/${id}`, label: 'Back to Project' }}
+        actions={(
           <div className="flex items-center gap-3">
             <button
               onClick={loadData}
@@ -182,8 +177,9 @@ export function ProjectOrphans() {
               </button>
             )}
           </div>
-        </div>
-      </header>
+        )}
+        className="px-4 md:px-6 pt-6"
+      />
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">

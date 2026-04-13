@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Library, Project } from '../types';
 import { Plus, Play, Folder, LayoutGrid, Clock, Loader2 } from 'lucide-react';
+import { PageHeader } from './PageHeader';
 import { fetchProjects, fetchLibraries } from '../api';
 
 export function Dashboard() {
@@ -40,10 +41,10 @@ export function Dashboard() {
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full space-y-8">
-        <header className="mb-6 md:mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Welcome to Remix Studio</h2>
-          <p className="text-sm md:text-base text-neutral-400">Select a project or library from the sidebar, or create a new one to get started.</p>
-        </header>
+        <PageHeader
+          title="Welcome to Remix Studio"
+          description="Select a project or library from the sidebar, or create a new one to get started."
+        />
 
         {isLoading ? (
           <div className="flex items-center justify-center py-24">

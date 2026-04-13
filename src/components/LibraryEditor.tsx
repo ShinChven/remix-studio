@@ -4,6 +4,7 @@ import { Library } from '../types';
 import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { TagModal } from './TagModal';
+import { PageHeader } from './PageHeader';
 import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary } from '../api';
 import { DuplicateLibraryDialog } from './DuplicateLibraryDialog';
 import { toast } from 'sonner';
@@ -309,88 +310,84 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 w-full overflow-hidden animate-in fade-in duration-700">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 md:mb-12 flex-shrink-0 gap-6">
-        <div className="flex-1">
-          <h2 className="text-2xl md:text-4xl font-bold text-white mb-2 font-display tracking-tight">{library.name}</h2>
-
+      <PageHeader
+        title={library.name}
+        description={(
           <div className="flex items-center gap-4 mt-2 md:mt-3">
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 px-2.5 py-1 bg-neutral-900/50 border border-neutral-800 rounded-lg backdrop-blur-sm">
               {library.type || 'text'} Collection
             </div>
           </div>
-        </div>
+        )}
+        size="large"
+        actions={(
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 sm:flex-none">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Filter items..."
+                className="bg-neutral-900 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all w-full sm:w-48 lg:w-64"
+              />
+            </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 sm:flex-none">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Filter items..."
-              className="bg-neutral-900 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all w-full sm:w-48 lg:w-64"
-            />
-          </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {library.type === 'image' ? (
+                <label className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />}
+                  <span className="text-xs font-bold uppercase tracking-widest">{uploading ? 'Uploading...' : 'Upload'}</span>
+                  <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} disabled={uploading} />
+                </label>
+              ) : (
+                <button
+                  onClick={() => navigate(`/library/${library.id}/prompt/new`)}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm"
+                >
+                  <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
+                  <span className="text-xs font-bold uppercase tracking-widest">Add Fragment</span>
+                </button>
+              )}
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {library.type === 'image' ? (
-              <label className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
-                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />}
-                <span className="text-xs font-bold uppercase tracking-widest">{uploading ? 'Uploading...' : 'Upload'}</span>
-                <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} disabled={uploading} />
-              </label>
-            ) : (
               <button
-                onClick={() => navigate(`/library/${library.id}/prompt/new`)}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm"
-              >
-                <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-                <span className="text-xs font-bold uppercase tracking-widest">Add Fragment</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => setShowDuplicateDialog(true)}
-              className="p-2.5 text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
-              title="Duplicate Library"
-            >
-              <Copy className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={() => navigate(`/library/${library.id}/edit`)}
-              className="p-2.5 text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-800/50 hover:border-neutral-700 active:scale-95"
-              title="Edit Library Settings"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
- 
-            {library.type === 'text' && (
-              <button
-                onClick={() => navigate(`/library/${library.id}/import-export`)}
+                onClick={() => setShowDuplicateDialog(true)}
                 className="p-2.5 text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
-                title="Import / Output"
+                title="Duplicate Library"
               >
-                <UploadCloud className="w-5 h-5" />
+                <Copy className="w-5 h-5" />
               </button>
-            )}
 
-            <button
-              onClick={handleDeleteLibrary}
-              disabled={checkingReferences}
-              className="p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-red-400/20 active:scale-95 disabled:opacity-50"
-              title="Delete Library"
-            >
-              {checkingReferences ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
+              <button
+                onClick={() => navigate(`/library/${library.id}/edit`)}
+                className="p-2.5 text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-800/50 hover:border-neutral-700 active:scale-95"
+                title="Edit Library Settings"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+  
+              {library.type === 'text' && (
+                <button
+                  onClick={() => navigate(`/library/${library.id}/import-export`)}
+                  className="p-2.5 text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
+                  title="Import / Output"
+                >
+                  <UploadCloud className="w-5 h-5" />
+                </button>
+              )}
 
-        {availableTags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-4 px-1">
+              <button
+                onClick={handleDeleteLibrary}
+                disabled={checkingReferences}
+                className="p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-red-400/20 active:scale-95 disabled:opacity-50"
+                title="Delete Library"
+              >
+                {checkingReferences ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
         )}
-      </div>
+      />
 
       <div className="flex-1 overflow-y-auto pr-2 md:pr-4 -mr-2 md:-mr-4 custom-scrollbar space-y-4 md:space-y-6 pb-20">
         {/* Batch Action Toolbar (Mirrors item style) */}

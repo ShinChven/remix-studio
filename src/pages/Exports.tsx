@@ -3,6 +3,7 @@ import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, Li
 import { Link, useSearchParams } from 'react-router-dom';
 import { ExportTask, DeliveryStatus } from '../types';
 import { fetchAllExports, deleteProjectExport, uploadExportToDrive, fetchDeliveryStatus, fetchActiveDeliveries, disconnectGoogleDrive, fetchCurrentUser } from '../api';
+import { PageHeader } from '../components/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
@@ -199,12 +200,10 @@ export function Exports() {
 
   return (
     <div className="p-4 md:p-8 w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <header className="mb-6 md:mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Archive</h2>
-        <p className="text-sm md:text-base text-neutral-400 max-w-2xl leading-relaxed">
-          Manage your generated ZIP archives across all projects.
-        </p>
-      </header>
+      <PageHeader
+        title="Archive"
+        description="Manage your generated ZIP archives across all projects."
+      />
 
       {/* Stats + Google Drive controls */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end gap-3 mb-8">

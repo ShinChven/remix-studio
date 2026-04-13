@@ -4,6 +4,7 @@ import { Library } from '../types';
 import { Plus, Folder, LayoutGrid, Layers, ChevronRight, ChevronLeft, Loader2, Copy } from 'lucide-react';
 import { duplicateLibrary, fetchLibraries } from '../api';
 import { DuplicateLibraryDialog } from '../components/DuplicateLibraryDialog';
+import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
 
 export function Libraries() {
@@ -69,10 +70,10 @@ export function Libraries() {
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
       <div className="w-full space-y-8 pb-20">
-        <header className="mb-6 md:mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">Libraries</h2>
-          <p className="text-sm md:text-base text-neutral-400">Manage your reusable prompts and image collections.</p>
-        </header>
+        <PageHeader
+          title="Libraries"
+          description="Manage your reusable prompts and image collections."
+        />
 
         <section>
           <div className="flex items-center justify-between mb-6">

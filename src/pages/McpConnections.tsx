@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Copy, Key, Loader2, Plus, Shield, Trash2, Unplug } from 'lucide-react';
 import { fetchOAuthClients, fetchPersonalAccessTokens, revokeOAuthClient, revokePersonalAccessToken, createPersonalAccessToken, type OAuthClientSummary, type PersonalAccessTokenSummary } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
 
 function formatDate(ts: number) {
@@ -154,12 +155,10 @@ export function McpConnections() {
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto bg-neutral-950/20">
       <div className="w-full space-y-8 md:space-y-12">
-        <header>
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">MCP Connections</h2>
-          <p className="text-sm md:text-base text-neutral-400 max-w-2xl leading-relaxed">
-            Connect AI apps securely through MCP protocol
-          </p>
-        </header>
+        <PageHeader
+          title="MCP Connections"
+          description="Connect AI apps securely through MCP protocol"
+        />
 
         <section className="rounded-2xl border border-neutral-800/70 bg-neutral-900/20 backdrop-blur-md overflow-hidden relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-amber-500/5 opacity-50" />

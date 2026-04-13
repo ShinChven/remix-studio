@@ -8,6 +8,7 @@ import {
   deleteLibrary as apiDeleteLibrary,
 } from '../api';
 import { Loader2, Trash2, Unlink, AlertTriangle, Play, ArrowLeft } from 'lucide-react';
+import { PageHeader } from '../components/PageHeader';
 import { ConfirmModal } from '../components/ConfirmModal';
 
 interface ProjectRef {
@@ -106,21 +107,15 @@ export function LibraryCleanup() {
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full space-y-8">
         {/* Header */}
-        <header>
-          <button
-            onClick={() => navigate(`/library/${id}`)}
-            className="flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-200 transition-colors mb-4"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Library
-          </button>
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">
-            Clean Up References
-          </h2>
-          <p className="text-sm md:text-base text-neutral-400">
-            Remove references to "<span className="text-white font-medium">{library.name}</span>" from projects before deleting.
-          </p>
-        </header>
+        <PageHeader
+          title="Clean Up References"
+          description={(
+            <>
+              Remove references to "<span className="text-white font-medium">{library.name}</span>" from projects before deleting.
+            </>
+          )}
+          backLink={{ to: `/library/${id}`, label: 'Back to Library' }}
+        />
 
         {/* Warning banner */}
         {!allCleaned && (

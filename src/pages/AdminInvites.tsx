@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Copy, Link as LinkIcon, Loader2, Plus, Ticket } from 'lucide-react';
 import { createAdminInvite, getAdminInvites } from '../api';
 import type { InviteCode } from '../types';
+import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
 
 const MEMBERSHIP_TIERS = [
@@ -84,21 +85,21 @@ export function AdminInvites() {
   return (
     <div className="p-6 lg:p-10">
       <div className="mx-auto max-w-6xl space-y-8">
-        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-white font-display">Invite Codes</h2>
-            <p className="mt-2 text-sm text-neutral-400">Create invite codes for Google sign-up, set how many people can use each code, and track usage.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen(true)}
-            disabled={creating}
-            className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25 disabled:opacity-60"
-          >
-            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            Create Invite Code
-          </button>
-        </header>
+        <PageHeader
+          title="Invite Codes"
+          description="Create invite codes for Google sign-up, set how many people can use each code, and track usage."
+          actions={(
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              disabled={creating}
+              className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25 disabled:opacity-60 shrink-0"
+            >
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Create Invite Code
+            </button>
+          )}
+        />
 
         {error && (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
