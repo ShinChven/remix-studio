@@ -192,7 +192,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'image',
       options: {
         aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9', 'auto'],
-        qualities: ['1K', '2K', '4K'],
+        qualities: ['1K', '2K'],
       },
     },
     {
