@@ -4,6 +4,7 @@ import { GoogleAIVideoGenerator } from './google-ai-video-generator';
 import { OpenAIVideoGenerator } from './openai-video-generator';
 import { GrokVideoGenerator } from './grok-video-generator';
 import { BytePlusVideoGenerator } from './byteplus-video-generator';
+import { KlingAIVideoGenerator } from './kling-ai-video-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -13,7 +14,8 @@ import { assertSafeProviderApiUrl } from '../utils/url-safety';
 export function buildVideoGenerator(
   type: ProviderType,
   apiKey: string,
-  apiUrl?: string | null
+  apiUrl?: string | null,
+  apiSecret?: string | null
 ): VideoGenerator {
   const safeApiUrl = assertSafeProviderApiUrl(type, apiUrl);
 
@@ -29,7 +31,7 @@ export function buildVideoGenerator(
     case 'RunningHub':
       throw new Error(`Provider type 'RunningHub' does not support video generation`);
     case 'KlingAI':
-      throw new Error(`Provider type 'KlingAI' does not support video generation`);
+      return new KlingAIVideoGenerator(apiKey, apiSecret || '', safeApiUrl);
     case 'Claude':
       throw new Error(`Provider type 'Claude' does not support video generation`);
     case 'BytePlus':

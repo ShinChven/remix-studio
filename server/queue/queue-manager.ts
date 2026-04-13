@@ -212,7 +212,7 @@ export class QueueManager {
       if (queued.projectType === 'text') {
         await this.executeTextJob(userId, projectId, job, queued, providerRecord, apiKey);
       } else if (queued.projectType === 'video') {
-        const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+        const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl, apiSecret);
         await this.executeVideoJob(userId, projectId, job, queued, videoGenerator, providerRecord);
       } else {
         const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl, apiSecret);
@@ -368,7 +368,7 @@ export class QueueManager {
         refImages = [];
         for (const ctx of job.imageContexts) {
           if (ctx.startsWith('data:')) {
-            refImages.push(ctx.replace(/^data:image\/\w+;base64,/, ''));
+            refImages.push(ctx.replace(/^data:[^;]+;base64,/, ''));
           } else if (ctx.startsWith('http')) {
             await assertSafeReferenceImageUrl(ctx);
             const response = await fetch(ctx);
@@ -483,7 +483,7 @@ export class QueueManager {
       for (const ctx of job.imageContexts) {
         if (ctx.startsWith('data:')) {
           refImageUrls.push(ctx);
-          refImages.push(ctx.replace(/^data:image\/\w+;base64,/, ''));
+          refImages.push(ctx.replace(/^data:[^;]+;base64,/, ''));
         } else if (ctx.startsWith('http')) {
           await assertSafeReferenceImageUrl(ctx);
           refImageUrls.push(ctx);
@@ -525,7 +525,7 @@ export class QueueManager {
       for (const ctx of job.imageContexts) {
         if (ctx.startsWith('data:')) {
           refImageUrls.push(ctx);
-          refImages.push(ctx.replace(/^data:image\/\w+;base64,/, ''));
+          refImages.push(ctx.replace(/^data:[^;]+;base64,/, ''));
         } else if (ctx.startsWith('http')) {
           await assertSafeReferenceImageUrl(ctx);
           refImageUrls.push(ctx);

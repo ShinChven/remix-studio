@@ -86,7 +86,7 @@ export class DetachedPoller {
       if (providerRecord.type === 'KlingAI' && !apiSecret) return;
 
       if (projectType === 'video') {
-        const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+        const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl, apiSecret);
 
         console.log(`[DetachedPoller] Checking video status for Job ${job.id} (TaskId: ${job.taskId})`);
         const res = await videoGenerator.checkStatus(job.taskId!);

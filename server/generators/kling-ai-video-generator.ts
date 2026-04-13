@@ -1,12 +1,12 @@
-import {
-  CheckStatusResult,
-  GenerateRequest,
-  GenerateResult,
-  ImageGenerator,
-} from './image-generator';
 import jwt from 'jsonwebtoken';
+import {
+  VideoCheckStatusResult,
+  VideoGenerateRequest,
+  VideoGenerateResult,
+  VideoGenerator,
+} from './video-generator';
 
-type KlingTaskResponse = {
+type KlingVideoTaskResponse = {
   code?: number;
   message?: string;
   request_id?: string;
@@ -15,17 +15,20 @@ type KlingTaskResponse = {
     task_status?: string;
     task_status_msg?: string;
     task_result?: {
-      result_type?: 'single' | 'series';
-      images?: Array<{ index?: number; url?: string; watermark_url?: string }>;
-      series_images?: Array<{ index?: number; url?: string; watermark_url?: string }>;
+      videos?: Array<{
+        id?: string;
+        url?: string;
+        watermark_url?: string;
+        duration?: string;
+      }>;
     };
   };
 };
 
 const DEFAULT_BASE_URL = 'https://api-singapore.klingai.com';
-const DEFAULT_MODEL = 'kling-image-o1';
+const DEFAULT_MODEL = 'kling-video-o1';
 
-export class KlingAIGenerator extends ImageGenerator {
+export class KlingAIVideoGenerator extends VideoGenerator {
   private accessKey: string;
   private secretKey: string;
   private baseUrl: string;
@@ -37,10 +40,10 @@ export class KlingAIGenerator extends ImageGenerator {
     this.baseUrl = this.normalizeBaseUrl(apiUrl);
   }
 
-  async generate(req: GenerateRequest): Promise<GenerateResult> {
+  async generate(req: VideoGenerateRequest): Promise<VideoGenerateResult> {
     try {
       const payload = this.buildPayload(req);
-      const response = await this.request('/v1/images/omni-image', {
+      const response = await this.request('/v1/videos/omni-video', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -52,14 +55,14 @@ export class KlingAIGenerator extends ImageGenerator {
 
       return { ok: true, status: 'processing', taskId };
     } catch (e: any) {
-      console.error('[KlingAIGenerator] Error:', e);
-      return { ok: false, error: e?.message || 'Kling AI image generation failed' };
+      console.error('[KlingAIVideoGenerator] Error:', e);
+      return { ok: false, error: e?.message || 'Kling AI video generation failed' };
     }
   }
 
-  async checkStatus(taskId: string): Promise<CheckStatusResult> {
+  async checkStatus(taskId: string): Promise<VideoCheckStatusResult> {
     try {
-      const response = await this.request(`/v1/images/omni-image/${encodeURIComponent(taskId)}`, {
+      const response = await this.request(`/v1/videos/omni-video/${encodeURIComponent(taskId)}`, {
         method: 'GET',
       });
 
@@ -71,34 +74,34 @@ export class KlingAIGenerator extends ImageGenerator {
       if (status === 'failed') {
         return {
           status: 'failed',
-          error: response.data?.task_status_msg || response.message || 'Kling AI task failed',
+          error: response.data?.task_status_msg || response.message || 'Kling AI video task failed',
         };
       }
 
       if (status === 'succeed') {
-        const result = response.data?.task_result;
-        const url =
-          result?.images?.[0]?.url ||
-          result?.series_images?.[0]?.url;
-
+        const url = response.data?.task_result?.videos?.[0]?.url;
         if (!url) {
-          return { status: 'failed', error: 'Kling AI task succeeded but returned no image URL' };
+          return { status: 'failed', error: 'Kling AI task succeeded but returned no video URL' };
         }
 
-        const imageRes = await fetch(url);
-        if (!imageRes.ok) {
+        const videoRes = await fetch(url);
+        if (!videoRes.ok) {
           return {
             status: 'failed',
-            error: `Failed to download Kling AI image: HTTP ${imageRes.status}`,
+            error: `Failed to download Kling AI video: HTTP ${videoRes.status}`,
           };
         }
 
-        const arrayBuffer = await imageRes.arrayBuffer();
-        return { status: 'completed', imageBytes: Buffer.from(arrayBuffer) };
+        const arrayBuffer = await videoRes.arrayBuffer();
+        return {
+          status: 'completed',
+          videoBytes: Buffer.from(arrayBuffer),
+          mimeType: 'video/mp4',
+        };
       }
 
       return { status: 'processing' };
-    } catch (e: any) {
+    } catch {
       return { status: 'processing' };
     }
   }
@@ -106,67 +109,76 @@ export class KlingAIGenerator extends ImageGenerator {
   private normalizeBaseUrl(apiUrl?: string): string {
     if (!apiUrl) return DEFAULT_BASE_URL;
 
-    const parsed = new URL(apiUrl);
-    let pathname = parsed.pathname.replace(/\/$/, '');
-    pathname = pathname.replace(/\/v1\/images\/omni-image$/, '');
-    parsed.pathname = pathname;
-    parsed.search = '';
-    parsed.hash = '';
-    return parsed.toString().replace(/\/$/, '');
+    try {
+      const parsed = new URL(apiUrl);
+      let pathname = parsed.pathname.replace(/\/$/, '');
+      pathname = pathname.replace(/\/v1\/videos\/omni-video$/, '');
+      parsed.pathname = pathname;
+      parsed.search = '';
+      parsed.hash = '';
+      return parsed.toString().replace(/\/$/, '');
+    } catch {
+      return DEFAULT_BASE_URL;
+    }
   }
 
-  private buildPayload(req: GenerateRequest) {
+  private buildPayload(req: VideoGenerateRequest) {
+    const prompt = (req.prompt || '').trim();
+    const images = this.normalizeReferenceImages(req);
+
+    if (!prompt) {
+      throw new Error('Kling AI video generation requires a prompt');
+    }
+
     const payload: Record<string, unknown> = {
       model_name: req.modelId || DEFAULT_MODEL,
-      prompt: req.prompt,
-      resolution: this.normalizeResolution(req.imageSize),
-      aspect_ratio: req.aspectRatio || 'auto',
-      n: 1,
-      result_type: 'single',
+      prompt,
+      mode: 'pro',
+      sound: 'off',
     };
 
-    const images = this.normalizeReferenceImages(req);
+    if (req.aspectRatio) {
+      payload.aspect_ratio = req.aspectRatio;
+    }
+
+    if (typeof req.duration === 'number') {
+      payload.duration = String(req.duration);
+    }
+
     if (images.length > 0) {
-      payload.image_list = images.map((image) => ({ image }));
+      payload.image_list = images.map((imageUrl) => ({ image_url: imageUrl }));
     }
 
     return payload;
   }
 
-  private normalizeResolution(imageSize?: string) {
-    const normalized = (imageSize || '1K').toLowerCase();
-    if (normalized === '2k' || normalized === '4k') return normalized;
-    return '1k';
-  }
-
-  private normalizeReferenceImages(req: GenerateRequest): string[] {
+  private normalizeReferenceImages(req: VideoGenerateRequest): string[] {
     const result: string[] = [];
 
     for (const base64 of req.refImagesBase64 || []) {
-      const normalized = this.normalizeImageValue(base64);
+      const normalized = this.normalizeImageBase64Value(base64);
       if (normalized) {
         result.push(normalized);
       }
     }
 
-    // Prefer inline base64 for Kling. In this app, queue preparation already
-    // downloads storage/remote references and gives us stable base64 strings,
-    // which avoids failures from provider-side URL fetching.
+    // Prefer inline base64 for Kling video. Queue preparation already downloads
+    // remote/storage references, which avoids provider-side URL fetching issues.
     if (result.length > 0) {
-      return result;
+      return result.slice(0, 4);
     }
 
     for (const url of req.refImageUrls || []) {
-      const normalized = this.normalizeImageValue(url);
+      const normalized = this.normalizeImageUrlValue(url);
       if (normalized) {
         result.push(normalized);
       }
     }
 
-    return result;
+    return result.slice(0, 4);
   }
 
-  private normalizeImageValue(value: string | undefined): string | null {
+  private normalizeImageUrlValue(value: string | undefined): string | null {
     if (!value) return null;
 
     const trimmed = value.trim();
@@ -177,13 +189,28 @@ export class KlingAIGenerator extends ImageGenerator {
     }
 
     if (trimmed.startsWith('data:')) {
+      return trimmed.replace(/\s+/g, '');
+    }
+
+    return trimmed;
+  }
+
+  // Kling omni-video accepts either a URL or base64 in image_url. For the
+  // inline branch we must send raw base64 bytes, not a data URI wrapper.
+  private normalizeImageBase64Value(value: string | undefined): string | null {
+    if (!value) return null;
+
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    if (trimmed.startsWith('data:')) {
       return trimmed.replace(/^data:[^;]+;base64,/, '').replace(/\s+/g, '');
     }
 
     return trimmed.replace(/\s+/g, '');
   }
 
-  private async request(path: string, init: RequestInit): Promise<KlingTaskResponse> {
+  private async request(path: string, init: RequestInit): Promise<KlingVideoTaskResponse> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers: {
@@ -194,10 +221,10 @@ export class KlingAIGenerator extends ImageGenerator {
     });
 
     const text = await response.text();
-    let json: KlingTaskResponse;
+    let json: KlingVideoTaskResponse;
 
     try {
-      json = text ? (JSON.parse(text) as KlingTaskResponse) : {};
+      json = text ? (JSON.parse(text) as KlingVideoTaskResponse) : {};
     } catch {
       throw new Error(`Kling AI returned non-JSON response: HTTP ${response.status}`);
     }

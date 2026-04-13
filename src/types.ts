@@ -206,6 +206,30 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         qualities: ['1K', '2K', '4K'],
       },
     },
+    {
+      id: 'kling-video-o1-video',
+      name: 'Kling Video O1',
+      generatorId: 'KlingAI',
+      modelId: 'kling-video-o1',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16', '1:1'],
+        resolutions: ['720p'],
+        durations: [3, 4, 5, 6, 7, 8, 9, 10],
+      },
+    },
+    {
+      id: 'kling-v3-omni-video',
+      name: 'Kling V3 Omni Video',
+      generatorId: 'KlingAI',
+      modelId: 'kling-v3-omni',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16', '1:1'],
+        resolutions: ['720p'],
+        durations: [3, 4, 5, 6, 7, 8, 9, 10],
+      },
+    },
   ],
   OpenAI: [
     {
