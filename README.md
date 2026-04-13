@@ -28,20 +28,15 @@ Remix Studio is a self-hosted multimodal AI workspace for managing text, image, 
 
 These are the built-in model profiles currently included in the app.
 
-- `Google AI`
-  `nano banana 2`, `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`, `Veo 3.1`, `Veo 3.1 Lite`
-- `Vertex AI`
-  `nano banana 2`, `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`
-- `OpenAI`
-  `GPT Image 1.5`, `GPT Image 1 Mini`, `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano`, `Sora 2`, `Sora 2 Pro`
-- `Grok`
-  `Grok Imagine`, `Grok Imagine Pro`, `Grok 4.20`, `Grok 4.1 Fast`, `Grok Imagine Video`
-- `Claude`
-  `Claude Opus 4.6`, `Claude Sonnet 4.6`, `Claude Haiku 4.5`
-- `RunningHub`
-  `nano banana 2`
-- `BytePlus`
-  `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I`, `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast`
+| Provider | Text Models | Image Models | Video Models |
+| :--- | :--- | :--- | :--- |
+| **Google AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | `Veo 3.1`, `Veo 3.1 Lite` |
+| **Vertex AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | - |
+| **OpenAI** | `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` | `GPT Image 1.5`, `GPT Image 1 Mini` | `Sora 2`, `Sora 2 Pro` |
+| **Grok** | `Grok 4.20`, `Grok 4.1 Fast` | `Grok Imagine`, `Grok Imagine Pro` | `Grok Imagine Video` |
+| **Claude** | `Claude Opus 4.6`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` | - | - |
+| **RunningHub** | - | `nano banana 2` | - |
+| **BytePlus** | - | `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I` | `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` |
 
 ## MCP Support
 
