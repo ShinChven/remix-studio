@@ -29,6 +29,7 @@ export class ReplicateVideoGenerator extends VideoGenerator {
     const model = req.modelId || DEFAULT_MODEL;
 
     try {
+      const bodyInput = await this.buildInput(req);
       const response = await fetch(`${this.base}/predictions`, {
         method: 'POST',
         headers: {
@@ -37,7 +38,7 @@ export class ReplicateVideoGenerator extends VideoGenerator {
         },
         body: JSON.stringify({
           version: model,
-          input: this.buildInput(req),
+          input: bodyInput,
         }),
         // @ts-ignore
         timeout: 180_000,
@@ -137,7 +138,7 @@ export class ReplicateVideoGenerator extends VideoGenerator {
     }
   }
 
-  private buildInput(req: VideoGenerateRequest) {
+  private async buildInput(req: VideoGenerateRequest) {
     const input: Record<string, unknown> = {
       prompt: req.prompt,
       generate_audio: (req.sound || 'on') === 'on',
@@ -148,7 +149,7 @@ export class ReplicateVideoGenerator extends VideoGenerator {
     if (req.aspectRatio) input.aspect_ratio = req.aspectRatio;
     if (typeof req.seed === 'number') input.seed = req.seed;
 
-    const imageRefs = this.resolveImageReferences(req);
+    const imageRefs = await this.resolveImageReferences(req);
     if (imageRefs.length === 1) {
       input.image = imageRefs[0];
     } else if (imageRefs.length > 1) {
@@ -169,9 +170,12 @@ export class ReplicateVideoGenerator extends VideoGenerator {
     return input;
   }
 
-  private resolveImageReferences(req: VideoGenerateRequest): string[] {
+  private async resolveImageReferences(req: VideoGenerateRequest): Promise<string[]> {
     if (req.refImageUrls && req.refImageUrls.length > 0) {
-      return req.refImageUrls;
+      const resolved = await Promise.all(
+        req.refImageUrls.map((url) => this.ensurePublicUrl(url))
+      );
+      return resolved;
     }
 
     if (req.refImagesBase64 && req.refImagesBase64.length > 0) {
@@ -179,6 +183,23 @@ export class ReplicateVideoGenerator extends VideoGenerator {
     }
 
     return [];
+  }
+
+  private async ensurePublicUrl(url: string): Promise<string> {
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+        const response = await fetch(url);
+        if (response.ok) {
+          const buffer = await response.arrayBuffer();
+          const mimeType = response.headers.get('content-type') || 'image/jpeg';
+          return `data:${mimeType};base64,${Buffer.from(buffer).toString('base64')}`;
+        }
+      }
+    } catch {
+      // Fallback to original URL
+    }
+    return url;
   }
 
   private isSucceeded(status?: string) {

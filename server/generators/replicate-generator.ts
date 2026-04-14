@@ -29,6 +29,7 @@ export class ReplicateGenerator extends ImageGenerator {
     const model = req.modelId || DEFAULT_MODEL;
 
     try {
+      const bodyInput = await this.buildInput(req);
       const response = await fetch(`${this.base}/predictions`, {
         method: 'POST',
         headers: {
@@ -37,7 +38,7 @@ export class ReplicateGenerator extends ImageGenerator {
         },
         body: JSON.stringify({
           version: model,
-          input: this.buildInput(req),
+          input: bodyInput,
         }),
         // @ts-ignore
         timeout: 180_000,
@@ -136,7 +137,7 @@ export class ReplicateGenerator extends ImageGenerator {
     }
   }
 
-  private buildInput(req: GenerateRequest) {
+  private async buildInput(req: GenerateRequest) {
     const input: Record<string, unknown> = {
       prompt: req.prompt,
     };
@@ -148,7 +149,7 @@ export class ReplicateGenerator extends ImageGenerator {
     if (typeof req.guidance === 'number') input.guidance = req.guidance;
     if (typeof req.promptUpsampling === 'boolean') input.prompt_upsampling = req.promptUpsampling;
 
-    const imageRefs = this.resolveImageReferences(req);
+    const imageRefs = await this.resolveImageReferences(req);
     if (imageRefs.length > 0) {
       // Flux 2 Pro supports up to 8, Flex supports up to 10
       input.input_images = imageRefs.slice(0, 10);
@@ -161,9 +162,12 @@ export class ReplicateGenerator extends ImageGenerator {
     return input;
   }
 
-  private resolveImageReferences(req: GenerateRequest): string[] {
+  private async resolveImageReferences(req: GenerateRequest): Promise<string[]> {
     if (req.refImageUrls && req.refImageUrls.length > 0) {
-      return req.refImageUrls;
+      const resolved = await Promise.all(
+        req.refImageUrls.map((url) => this.ensurePublicUrl(url))
+      );
+      return resolved;
     }
 
     if (req.refImagesBase64 && req.refImagesBase64.length > 0) {
@@ -171,6 +175,23 @@ export class ReplicateGenerator extends ImageGenerator {
     }
 
     return [];
+  }
+
+  private async ensurePublicUrl(url: string): Promise<string> {
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+        const response = await fetch(url);
+        if (response.ok) {
+          const buffer = await response.arrayBuffer();
+          const mimeType = response.headers.get('content-type') || 'image/jpeg';
+          return `data:${mimeType};base64,${Buffer.from(buffer).toString('base64')}`;
+        }
+      }
+    } catch {
+      // Fallback to original URL
+    }
+    return url;
   }
 
   private isSucceeded(status?: string) {
