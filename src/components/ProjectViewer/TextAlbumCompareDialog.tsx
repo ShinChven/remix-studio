@@ -36,7 +36,7 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
   return (
     <div className="fixed inset-0 z-[210] bg-black/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
       <div className="relative flex h-full w-full flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between gap-4 border-b border-white/10 bg-black/30 px-4 py-4 md:px-6">
+        <div className="flex items-center justify-between gap-4 border-b border-white/10 bg-black/30 px-4 py-3 md:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="rounded-xl bg-blue-600/10 p-2.5">
               <Columns3 className="w-5 h-5 text-blue-500" />
@@ -57,34 +57,34 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
           </button>
         </div>
 
-        <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar px-4 py-4 md:px-6 md:py-6">
+        <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
           <div className="flex h-full gap-4 md:gap-6">
             {items.map((item, index) => (
               <article
                 key={item.id}
-                className="flex h-full w-[min(40rem,calc(100vw-4rem))] shrink-0 flex-col overflow-hidden rounded-[28px] border border-neutral-800 bg-neutral-900/90 shadow-2xl shadow-black/30 md:w-[min(42rem,calc(100vw-8rem))]"
+                className="flex h-full w-[min(40rem,calc(100vw-1.5rem))] sm:w-[min(40rem,calc(100vw-4rem))] shrink-0 flex-col overflow-hidden rounded-[24px] sm:rounded-[28px] border border-neutral-800 bg-neutral-900/90 shadow-2xl shadow-black/30 md:w-[min(42rem,calc(100vw-8rem))]"
               >
-                <header className="flex items-center justify-between gap-3 border-b border-neutral-800 bg-neutral-950/60 px-4 py-3">
+                <header className="flex items-start sm:items-center justify-between gap-3 border-b border-neutral-800 bg-neutral-950/60 px-4 py-3">
                   <div className="min-w-0">
                     <div className="text-[10px] font-mono text-neutral-600">#{(index + 1).toString().padStart(2, '0')}</div>
                     <div className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-neutral-500">
                       {item.providerId || t('projectViewer.common.provider')} · {item.modelConfigId || t('projectViewer.common.model')}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => handleCopy(item.prompt, t('projectViewer.common.prompt'))}
-                      className="flex items-center gap-1.5 rounded-xl bg-neutral-800 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-700"
+                      className="flex items-center gap-1.5 rounded-xl bg-neutral-800 px-2.5 sm:px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-700"
                     >
                       <Copy className="w-3.5 h-3.5" />
-                      {t('projectViewer.common.prompt')}
+                      <span className="hidden sm:inline">{t('projectViewer.common.prompt')}</span>
                     </button>
                     <button
                       onClick={() => handleCopy(item.textContent || '', t('projectViewer.common.generatedText'))}
-                      className="flex items-center gap-1.5 rounded-xl bg-blue-600/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-300 transition-all hover:bg-blue-600/30"
+                      className="flex items-center gap-1.5 rounded-xl bg-blue-600/20 px-2.5 sm:px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-300 transition-all hover:bg-blue-600/30"
                     >
                       <Copy className="w-3.5 h-3.5" />
-                      {t('projectViewer.common.text')}
+                      <span className="hidden sm:inline">{t('projectViewer.common.text')}</span>
                     </button>
                   </div>
                 </header>

@@ -116,20 +116,20 @@ export function CopyToLibraryDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-3 sm:p-4">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
 
       <div
-        className="relative w-full max-w-xl overflow-hidden rounded-[32px] border border-neutral-800 bg-neutral-900 shadow-[0_50px_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300"
+        className="relative w-full max-w-xl max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(820px,calc(100dvh-2rem))] overflow-hidden rounded-[24px] sm:rounded-[32px] border border-neutral-800 bg-neutral-900 shadow-[0_50px_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-neutral-800 bg-neutral-950/30 p-6">
-          <div className="flex items-center gap-4">
-            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-3 text-blue-400">
-              <AccentIcon className="h-6 w-6" />
+        <div className="flex items-center justify-between gap-3 border-b border-neutral-800 bg-neutral-950/30 p-4 sm:p-6">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="rounded-xl sm:rounded-2xl border border-blue-500/20 bg-blue-500/10 p-2.5 sm:p-3 text-blue-400">
+              <AccentIcon className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
-            <div>
-              <h3 className="text-xl font-black tracking-tight text-white">{t('projectViewer.common.copyToLibrary')}</h3>
+            <div className="min-w-0">
+              <h3 className="text-lg sm:text-xl font-black tracking-tight text-white">{t('projectViewer.common.copyToLibrary')}</h3>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                 {t('projectViewer.copyToLibrary.description', { itemSummary, type: targetLibraryType })}
               </p>
@@ -143,11 +143,11 @@ export function CopyToLibraryDialog({
           </button>
         </div>
 
-        <div className="p-8 space-y-8">
+        <div className="p-4 sm:p-8 space-y-5 sm:space-y-8 overflow-y-auto">
           {/* Target Selection */}
           <div className="space-y-4">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('projectViewer.copyToLibrary.destination')}</label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <button
                 onClick={() => setMode('new')}
                 className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all ${
@@ -179,7 +179,7 @@ export function CopyToLibraryDialog({
                   type="text"
                   value={newLibraryName}
                   onChange={(e) => setNewLibraryName(e.target.value)}
-                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-5 py-4 text-sm text-white outline-none transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 sm:px-5 py-3.5 sm:py-4 text-sm text-white outline-none transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
                   placeholder={t('projectViewer.copyToLibrary.newLibraryName')}
                   autoFocus
                 />
@@ -194,7 +194,7 @@ export function CopyToLibraryDialog({
                   <select
                     value={selectedLibraryId}
                     onChange={(e) => setSelectedLibraryId(e.target.value)}
-                    className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-5 py-4 text-sm text-white outline-none transition-all focus:border-blue-500/50"
+                    className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 sm:px-5 py-3.5 sm:py-4 text-sm text-white outline-none transition-all focus:border-blue-500/50"
                   >
                     {existingLibraries.map((lib) => (
                       <option key={lib.id} value={lib.id}>
@@ -210,7 +210,7 @@ export function CopyToLibraryDialog({
           {!isTextProject && (
             <div className="space-y-4">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('projectViewer.copyToLibrary.versionToCopy')}</label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <button
                   onClick={() => setVersion('optimized')}
                   className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
@@ -244,10 +244,10 @@ export function CopyToLibraryDialog({
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-neutral-800 bg-neutral-950/40 p-6">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 border-t border-neutral-800 bg-neutral-950/40 p-4 sm:p-6">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-neutral-400 transition-all hover:text-white"
+            className="w-full sm:w-auto px-6 py-3 sm:py-2.5 text-[10px] font-black uppercase tracking-widest text-neutral-400 transition-all hover:text-white border border-neutral-800/80 sm:border-transparent rounded-xl"
             disabled={isSubmitting}
           >
             {t('projectViewer.common.cancel')}
@@ -255,7 +255,7 @@ export function CopyToLibraryDialog({
           <button
             onClick={() => void handleSubmit()}
             disabled={isSubmitting || (mode === 'new' && !newLibraryName.trim()) || (mode === 'existing' && !selectedLibraryId)}
-            className="flex items-center gap-2 rounded-2xl bg-blue-600 px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-blue-600 px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? (
               <>
