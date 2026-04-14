@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckSquare, Square, Trash2, Play, ChevronDown, Loader2, List } from 'lucide-react';
+import { CheckSquare, Square, Trash2, Play, ChevronDown, Loader2, List, OctagonX } from 'lucide-react';
 import { Job } from '../../types';
 import { imageDisplayUrl } from '../../api';
 import { SelectionToolbar } from './SelectionToolbar';
@@ -48,33 +48,44 @@ export function QueueTab({
             totalCount={queueJobs.length}
             selectedCount={selectedQueueIds.size}
             onToggleSelectAll={toggleSelectAllQueue}
+            mobileSingleLine
+            mobileActionsRight
             selectionActions={
+              <button
+                onClick={deleteSelectedQueue}
+                title={t('projectViewer.common.delete')}
+                aria-label={t('projectViewer.common.delete')}
+                className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span className="hidden sm:inline">{t('projectViewer.common.delete')}</span>
+              </button>
+            }
+            rightActions={
               <>
                 {queueJobs.some(j => selectedQueueIds.has(j.id) && j.status === 'failed') && (
                   <button
                     onClick={retrySelectedQueue}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
+                    title={t('projectViewer.queue.retry')}
+                    aria-label={t('projectViewer.queue.retry')}
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
                   >
-                    <Play className="w-3 h-3 fill-current" /> {t('projectViewer.queue.retry')}
+                    <Play className="w-3 h-3 fill-current" />
+                    <span className="hidden sm:inline">{t('projectViewer.queue.retry')}</span>
                   </button>
                 )}
-                <button
-                  onClick={deleteSelectedQueue}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
-                >
-                  <Trash2 className="w-3 h-3" /> {t('projectViewer.common.delete')}
-                </button>
+                {queueJobs.some(j => j.status === 'failed') && (
+                  <button
+                    onClick={clearAllFailed}
+                    title={t('projectViewer.queue.clearAllFailed')}
+                    aria-label={t('projectViewer.queue.clearAllFailed')}
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                  >
+                    <OctagonX className="w-3 h-3" />
+                    <span className="hidden sm:inline">{t('projectViewer.queue.clearAllFailed')}</span>
+                  </button>
+                )}
               </>
-            }
-            rightActions={
-              queueJobs.some(j => j.status === 'failed') ? (
-                <button
-                  onClick={clearAllFailed}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
-                >
-                  <Trash2 className="w-3 h-3" /> {t('projectViewer.queue.clearAllFailed')}
-                </button>
-              ) : undefined
             }
           />
         )}

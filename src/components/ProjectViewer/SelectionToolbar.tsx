@@ -31,6 +31,15 @@ interface SelectionToolbarProps {
    * separated by a vertical divider (e.g. AlbumTab's item count + MB display).
    */
   prefix?: React.ReactNode;
+  /** Keep the mobile toolbar on a single row for compact icon-first action sets. */
+  mobileSingleLine?: boolean;
+  /** Push mobile action buttons to the right edge while keeping desktop layout unchanged. */
+  mobileActionsRight?: boolean;
+}
+
+/** A thin vertical divider — hidden on small screens so it never orphans on a wrapped line. */
+function Divider() {
+  return <div className="hidden lg:block h-4 w-px bg-neutral-800 flex-shrink-0" />;
 }
 
 export function SelectionToolbar({
@@ -42,6 +51,8 @@ export function SelectionToolbar({
   zeroSelectionActions,
   rightActions,
   prefix,
+  mobileSingleLine = false,
+  mobileActionsRight = false,
 }: SelectionToolbarProps) {
   const { t } = useTranslation();
 
@@ -49,45 +60,80 @@ export function SelectionToolbar({
     accentColor === 'emerald' ? 'text-emerald-500' : 'text-blue-500';
 
   return (
-    <div className="sticky top-0 z-20 flex items-center justify-between bg-neutral-950/80 backdrop-blur-md border border-neutral-800 px-4 py-3 rounded-xl flex-wrap gap-2 shadow-lg shadow-black/20">
-      <div className="flex items-center gap-3">
+    <div
+      className={`sticky top-0 z-20 flex justify-between bg-neutral-950/90 backdrop-blur-md border border-neutral-800 p-2.5 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl gap-2 sm:gap-3 shadow-lg shadow-black/20 ${
+        mobileSingleLine ? 'flex-row items-center lg:flex-row lg:items-center' : 'flex-col lg:flex-row lg:items-center'
+      }`}
+    >
+      <div
+        className={`flex items-center w-full lg:w-auto gap-1.5 sm:gap-x-3 sm:gap-y-2 ${
+          mobileSingleLine ? 'flex-nowrap min-w-0' : 'flex-wrap'
+        }`}
+      >
         {prefix && (
-          <>
+          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
             {prefix}
-            <div className="h-4 w-px bg-neutral-800 mx-1" />
-          </>
+            <Divider />
+          </div>
         )}
 
         <button
           onClick={onToggleSelectAll}
-          className="flex items-center gap-2 p-1 rounded-lg hover:bg-neutral-800 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
+          title={t('projectViewer.common.selectAll')}
+          aria-label={t('projectViewer.common.selectAll')}
+          className="flex items-center justify-center gap-1.5 sm:gap-2 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 sm:py-1 rounded-lg hover:bg-neutral-800 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors flex-shrink-0"
         >
           {selectedCount === totalCount && totalCount > 0 ? (
-            <CheckSquare className={`w-4 h-4 ${checkIconClass}`} />
+            <CheckSquare className={`w-4 h-4 sm:w-4 sm:h-4 ${checkIconClass}`} />
           ) : (
-            <Square className="w-4 h-4" />
+            <Square className="w-4 h-4 sm:w-4 sm:h-4" />
           )}
-          {t('projectViewer.common.selectAll')}
+          <span className="hidden sm:inline whitespace-nowrap">{t('projectViewer.common.selectAll')}</span>
         </button>
 
+        <span className="sm:hidden text-[10px] font-bold text-neutral-500 uppercase tracking-widest whitespace-nowrap flex-shrink-0">
+          {selectedCount > 0 ? `${selectedCount}/${totalCount}` : `${totalCount}`}
+        </span>
+
         {selectedCount > 0 && (
-          <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
+          <>
+            <Divider />
+            <span className="hidden sm:inline text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex-shrink-0 whitespace-nowrap">
               {t('projectViewer.common.selectedCount', { count: selectedCount })}
             </span>
-            {selectionActions}
-          </div>
+            <div
+              className={`flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ${
+                mobileActionsRight ? 'ml-auto sm:ml-0' : ''
+              }`}
+            >
+              {selectionActions}
+            </div>
+          </>
         )}
 
         {selectedCount === 0 && zeroSelectionActions && (
-          <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
-            {zeroSelectionActions}
-          </div>
+          <>
+            <Divider />
+            <div
+              className={`flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ${
+                mobileActionsRight ? 'ml-auto sm:ml-0' : ''
+              }`}
+            >
+              {zeroSelectionActions}
+            </div>
+          </>
         )}
       </div>
 
+      {/* Right group */}
       {rightActions && (
-        <div className="flex items-center gap-2">
+        <div
+          className={`flex items-center gap-1.5 sm:gap-2 lg:w-auto lg:justify-end flex-shrink-0 ${
+            mobileSingleLine
+              ? 'flex-nowrap w-auto pt-0 border-none'
+              : 'flex-wrap w-full pt-2 border-t border-neutral-800/50 lg:pt-0 lg:border-none'
+          }`}
+        >
           {rightActions}
         </div>
       )}

@@ -90,6 +90,7 @@ export function AlbumTab({
             totalCount={albumItems.length}
             selectedCount={selectedAlbumIds.size}
             onToggleSelectAll={toggleSelectAllAlbum}
+            mobileActionsRight
             prefix={
               <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                 <Layers className="w-4 h-4 text-blue-500" />
@@ -104,22 +105,31 @@ export function AlbumTab({
               <>
                 <button
                   onClick={() => openExportDialog(false)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
+                  title={t('projectViewer.album.exportSelected')}
+                  aria-label={t('projectViewer.album.exportSelected')}
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
                 >
-                  <Download className="w-3 h-3" /> {t('projectViewer.album.exportSelected')}
+                  <Download className="w-3 h-3" />
+                  <span className="hidden sm:inline">{t('projectViewer.album.exportSelected')}</span>
                 </button>
                 <button
                   onClick={() => setShowCopyDialog(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
+                  title={t('projectViewer.common.copyToLibrary')}
+                  aria-label={t('projectViewer.common.copyToLibrary')}
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
                 >
-                  <Copy className="w-3 h-3" /> {t('projectViewer.common.copyToLibrary')}
+                  <Copy className="w-3 h-3" />
+                  <span className="hidden sm:inline">{t('projectViewer.common.copyToLibrary')}</span>
                 </button>
                 {isTextProject && selectedAlbumIds.size > 1 && (
                   <button
                     onClick={() => setShowCompareDialog(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
+                    title={t('projectViewer.album.compareSelected')}
+                    aria-label={t('projectViewer.album.compareSelected')}
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
                   >
-                    <Layers className="w-3 h-3" /> {t('projectViewer.album.compareSelected')}
+                    <Layers className="w-3 h-3" />
+                    <span className="hidden sm:inline">{t('projectViewer.album.compareSelected')}</span>
                   </button>
                 )}
                 <button
@@ -128,9 +138,12 @@ export function AlbumTab({
                     setAlbumItemsToDelete(itemsToDelete);
                     setShowDeleteAlbumModal(true);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                  title={t('projectViewer.common.deleteSelected')}
+                  aria-label={t('projectViewer.common.deleteSelected')}
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                 >
-                  <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteSelected')}
+                  <Trash2 className="w-3 h-3" />
+                  <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
                 </button>
               </>
             }
@@ -138,15 +151,21 @@ export function AlbumTab({
               <>
                 <button
                   onClick={() => openExportDialog(true)}
-                  className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
+                  title={t('projectViewer.album.exportAll')}
+                  aria-label={t('projectViewer.album.exportAll')}
+                  className="flex items-center justify-center gap-2 min-h-8 min-w-8 px-2 sm:px-0 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
                 >
-                  <Download className="w-4 h-4" /> {t('projectViewer.album.exportAll')}
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t('projectViewer.album.exportAll')}</span>
                 </button>
                 <button
                   onClick={() => setShowCopyDialog(true)}
-                  className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
+                  title={t('projectViewer.album.copyAllToLibrary')}
+                  aria-label={t('projectViewer.album.copyAllToLibrary')}
+                  className="flex items-center justify-center gap-2 min-h-8 min-w-8 px-2 sm:px-0 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
                 >
-                  <Copy className="w-4 h-4" /> {t('projectViewer.album.copyAllToLibrary')}
+                  <Copy className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t('projectViewer.album.copyAllToLibrary')}</span>
                 </button>
               </>
             }

@@ -44,19 +44,18 @@ export function CompletedTab({
             selectedCount={selectedCompletedIds.size}
             accentColor="emerald"
             onToggleSelectAll={toggleSelectAllCompleted}
+            mobileSingleLine
+            mobileActionsRight
             selectionActions={
               <button
                 onClick={() => setShowDeleteSelectedModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                title={t('projectViewer.common.deleteSelected')}
+                aria-label={t('projectViewer.common.deleteSelected')}
+                className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
               >
-                <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteSelected')}
+                <Trash2 className="w-3 h-3" />
+                <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
               </button>
-            }
-            rightActions={
-              <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                {t('projectViewer.completed.finishedCount', { count: completedJobs.length })}
-              </div>
             }
           />
         )}
