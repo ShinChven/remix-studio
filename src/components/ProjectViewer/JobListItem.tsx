@@ -19,6 +19,8 @@ interface JobListItemProps {
   expandedContent?: React.ReactNode;
   onToggleExpand: (id: string) => void;
   onToggleSelect: (id: string) => void;
+  /** View mode: 'standard' (spaced/rounded) or 'compact' (edge-to-edge/sharp). */
+  viewMode?: 'standard' | 'compact';
 }
 
 const accentClasses: Record<AccentColor, string> = {
@@ -60,6 +62,7 @@ export function JobListItem({
   expandedContent,
   onToggleExpand,
   onToggleSelect,
+  viewMode = 'standard',
 }: JobListItemProps) {
   const headerClassName = isSelected
     ? accentClasses[accentColor]
@@ -68,9 +71,11 @@ export function JobListItem({
       : `border-neutral-800 hover:border-neutral-700 ${borderClassName}`.trim();
 
   return (
-    <div className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300">
+    <div className={`flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300 ${viewMode === 'compact' ? 'border-b border-neutral-800/50' : ''}`}>
       <div
-        className={`bg-neutral-950/50 p-4 rounded-xl border flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between transition-all cursor-pointer group/task ${headerClassName}`}
+        className={`bg-neutral-950/50 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between transition-all cursor-pointer group/task ${
+          viewMode === 'standard' ? 'p-4 rounded-xl border' : 'p-3 lg:py-2.5 rounded-none border-0'
+        } ${headerClassName}`}
         onClick={() => onToggleExpand(job.id)}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -141,7 +146,9 @@ export function JobListItem({
       </div>
 
       {isExpanded && expandedContent && (
-        <div className={`bg-neutral-900/30 border-x border-b rounded-b-xl p-4 space-y-4 animate-in slide-in-from-top-1 duration-200 ${expandedBorderClasses[accentColor]}`}>
+        <div className={`bg-neutral-900/30 border-b p-4 space-y-4 animate-in slide-in-from-top-1 duration-200 ${
+          viewMode === 'standard' ? 'border-x rounded-b-xl' : 'border-t border-neutral-800/50'
+        } ${expandedBorderClasses[accentColor]}`}>
           {expandedContent}
         </div>
       )}

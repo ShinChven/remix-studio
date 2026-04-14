@@ -27,6 +27,7 @@ interface DraftsTabProps {
   onSwitchToAlbum?: () => void;
   projectType?: ProjectType;
   projectName?: string;
+  viewMode?: 'standard' | 'compact';
 }
 
 export function DraftsTab({
@@ -48,7 +49,8 @@ export function DraftsTab({
   albumItems = [],
   onSwitchToAlbum,
   projectType = 'image',
-  projectName = 'Untitled Project'
+  projectName = 'Untitled Project',
+  viewMode = 'standard',
 }: DraftsTabProps) {
   const { t } = useTranslation();
   const displayAlbumItems = albumItems.slice(0, 5);
@@ -116,7 +118,7 @@ export function DraftsTab({
 
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col gap-4">
+      <div className={`flex flex-col ${viewMode === 'standard' ? 'gap-4' : 'gap-0'}`}>
         {draftJobs.length > 0 && (
           <SelectionToolbar
             totalCount={draftJobs.length}
@@ -124,6 +126,7 @@ export function DraftsTab({
             onToggleSelectAll={toggleSelectAllDrafts}
             mobileSingleLine
             mobileActionsRight
+            viewMode={viewMode}
             rightActions={
               <>
                 <button
@@ -152,7 +155,7 @@ export function DraftsTab({
             }
           />
         )}
-        <div className="space-y-3">
+        <div className={viewMode === 'standard' ? 'space-y-3' : 'space-y-0'}>
             {draftJobs.map(task => {
               const isExpanded = expandedJobId === task.id;
               const isSelected = selectedDraftIds.has(task.id);
@@ -167,6 +170,7 @@ export function DraftsTab({
                   modelName={getModelName(task.providerId, task.modelConfigId)}
                   onToggleExpand={toggleJobExpand}
                   onToggleSelect={toggleDraftSelection}
+                  viewMode={viewMode}
                   metaChips={
                     <>
                       {task.aspectRatio && (

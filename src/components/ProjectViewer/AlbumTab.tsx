@@ -26,6 +26,7 @@ interface AlbumTabProps {
   setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void } | null) => void;
   onExportStarted: () => void;
   projectType?: ProjectType;
+  viewMode?: 'standard' | 'compact';
 }
 
 export function AlbumTab({
@@ -41,7 +42,8 @@ export function AlbumTab({
   getModelName,
   setLightboxData,
   onExportStarted,
-  projectType = 'image'
+  projectType = 'image',
+  viewMode = 'standard'
 }: AlbumTabProps) {
   const { t } = useTranslation();
   const getDefaultExportPackageName = (name: string) => {
@@ -84,7 +86,7 @@ export function AlbumTab({
 
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col gap-4">
+      <div className={`flex flex-col ${viewMode === 'standard' ? 'gap-4' : 'gap-0'}`}>
         {albumItems.length > 0 && (
           <SelectionToolbar
             totalCount={albumItems.length}
@@ -92,6 +94,7 @@ export function AlbumTab({
             onToggleSelectAll={toggleSelectAllAlbum}
             mobileSingleLine
             mobileActionsRight
+            viewMode={viewMode}
             prefix={!isTextProject && (
               <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                 <Layers className="w-4 h-4 text-blue-500" />
@@ -164,7 +167,7 @@ export function AlbumTab({
             </div>
           </div>
         ) : isTextProject ? (
-          <div className="overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900/40">
+          <div className={`overflow-hidden border border-neutral-800 bg-neutral-900/40 ${viewMode === 'standard' ? 'rounded-2xl' : 'rounded-none border-x-0 border-t-0'}`}>
             {albumItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               return (
@@ -213,12 +216,16 @@ export function AlbumTab({
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 ${viewMode === 'standard' ? 'gap-6' : 'gap-0'}`}>
             {albumItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = item.aspectRatio?.replace(':', '/') || '1/1';
               return (
-                <div key={item.id} className={`bg-neutral-900/50 border rounded-2xl overflow-hidden flex flex-col group transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 active:scale-100 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/50 bg-blue-500/5 shadow-lg shadow-blue-500/20' : 'border-neutral-800 hover:border-blue-500/40'}`}>
+                <div key={item.id} className={`bg-neutral-950/50 border overflow-hidden flex flex-col group transition-all duration-300 active:scale-100 ${
+                  viewMode === 'standard' 
+                    ? `rounded-2xl hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/50 bg-blue-500/5 shadow-lg shadow-blue-500/20' : 'border-neutral-800 hover:border-blue-500/40'}`
+                    : `rounded-none border-neutral-800/10 ${isSelected ? 'ring-1 ring-inset ring-blue-500/50 bg-blue-500/5' : ''}`
+                }`}>
                   <div className="bg-neutral-950 relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: aspectRatioStr }}>
                     {/* Selection Overlay */}
                     <div className={`absolute top-4 left-4 z-20 transition-all opacity-100`}>

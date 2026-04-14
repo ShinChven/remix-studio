@@ -77,6 +77,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [selectedCompletedIds, setSelectedCompletedIds] = useState<Set<string>>(new Set());
   const [isAddingDrafts, setIsAddingDrafts] = useState(false);
   const [draftsProgress, setDraftsProgress] = useState<{ current: number; total: number; stage: 'composing' | 'saving' } | null>(null);
+  const [viewMode, setViewMode] = useState<'standard' | 'compact'>('standard');
 
   const projectRef = useRef(localProject);
   const skipProjectSyncRef = useRef(false);
@@ -693,10 +694,21 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
                 <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({albumItems.length})</span>
               </button>
             </div>
+            <button
+              onClick={() => setViewMode(prev => prev === 'standard' ? 'compact' : 'standard')}
+              className={`p-2 rounded-xl border transition-all flex items-center gap-2 ${viewMode === 'compact' ? 'bg-blue-600/10 text-blue-500 border-blue-500/30' : 'bg-neutral-950 border-neutral-800 text-neutral-500 hover:text-neutral-300'}`}
+              title={viewMode === 'standard' ? t('projectViewer.main.switchToCompact') : t('projectViewer.main.switchToStandard')}
+            >
+              <div className="flex flex-col gap-0.5 items-center justify-center h-4 w-4">
+                <div className={`h-1 w-4 bg-current rounded-full transition-all ${viewMode === 'compact' ? 'scale-y-50' : ''}`} />
+                <div className={`h-1 w-4 bg-current rounded-full transition-all ${viewMode === 'compact' ? 'scale-y-50' : ''}`} />
+                <div className={`h-1 w-4 bg-current rounded-full transition-all ${viewMode === 'compact' ? 'scale-y-50' : ''}`} />
+              </div>
+            </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 md:space-y-12 custom-scrollbar">
+        <div className={`flex-1 overflow-y-auto custom-scrollbar ${viewMode === 'standard' ? 'p-4 md:p-8 space-y-8 md:space-y-12' : 'p-0 space-y-0'}`}>
           {activeTab === 'draft' && (
             <DraftsTab
               draftJobs={draftJobs} selectedDraftIds={selectedDraftIds} toggleSelectAllDrafts={toggleSelectAllDrafts}
@@ -709,6 +721,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               onSwitchToAlbum={() => setActiveTab('album')}
               projectType={localProject.type || 'image'}
               projectName={localProject.name}
+              viewMode={viewMode}
             />
           )}
           {activeTab === 'queue' && (
@@ -718,6 +731,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               clearAllFailed={() => setShowClearAllFailedModal(true)} expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand}
               getProviderName={getProviderName} getModelName={getModelName} runJob={runJob}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
+              viewMode={viewMode}
             />
           )}
           {activeTab === 'completed' && (
@@ -728,6 +742,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               getProviderName={getProviderName} getModelName={getModelName}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
               projectType={localProject.type || 'image'}
+              viewMode={viewMode}
             />
           )}
           {activeTab === 'album' && (
@@ -740,6 +755,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               setLightboxData={setLightboxData}
               onExportStarted={() => navigate('/exports')}
               projectType={localProject.type || 'image'}
+              viewMode={viewMode}
             />
           )}
         </div>

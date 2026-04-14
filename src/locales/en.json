@@ -132,7 +132,9 @@
       "editProjectInfo": "Edit Project Information",
       "manageOrphans": "Manage Orphan Files (Cleanup)",
       "deleteProject": "Delete Project",
-      "buildWorkflow": "Build your workflow"
+      "buildWorkflow": "Build your workflow",
+      "switchToCompact": "Switch to Compact View",
+      "switchToStandard": "Switch to Standard View"
     },
     "drafts": {
       "emptyCanvas": "Empty Canvas",

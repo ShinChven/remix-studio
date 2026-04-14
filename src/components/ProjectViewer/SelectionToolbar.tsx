@@ -35,6 +35,8 @@ interface SelectionToolbarProps {
   mobileSingleLine?: boolean;
   /** Push mobile action buttons to the right edge while keeping desktop layout unchanged. */
   mobileActionsRight?: boolean;
+  /** View mode: 'standard' (spaced/rounded) or 'compact' (edge-to-edge/sharp). */
+  viewMode?: 'standard' | 'compact';
 }
 
 /** A thin vertical divider — hidden on small screens so it never orphans on a wrapped line. */
@@ -53,6 +55,7 @@ export function SelectionToolbar({
   prefix,
   mobileSingleLine = false,
   mobileActionsRight = false,
+  viewMode = 'standard',
 }: SelectionToolbarProps) {
   const { t } = useTranslation();
 
@@ -61,7 +64,9 @@ export function SelectionToolbar({
 
   return (
     <div
-      className={`sticky top-0 z-20 flex justify-between bg-neutral-950/90 backdrop-blur-md border border-neutral-800 p-2.5 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl gap-2 sm:gap-3 shadow-lg shadow-black/20 ${
+      className={`sticky top-0 z-20 flex justify-between bg-neutral-950/90 backdrop-blur-md border border-neutral-800 gap-2 sm:gap-3 shadow-lg shadow-black/20 ${
+        viewMode === 'standard' ? 'p-2.5 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl' : 'p-2 sm:px-4 rounded-none border-x-0 border-t-0'
+      } ${
         mobileSingleLine ? 'flex-row items-center' : 'flex-col lg:flex-row lg:items-center'
       }`}
     >

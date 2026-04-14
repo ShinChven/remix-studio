@@ -935,7 +935,9 @@
       "editProjectInfo": "编辑项目信息",
       "manageOrphans": "管理孤立文件（清理）",
       "deleteProject": "删除项目",
-      "buildWorkflow": "构建你的工作流"
+      "buildWorkflow": "构建你的工作流",
+      "switchToCompact": "切换到紧凑视图",
+      "switchToStandard": "切换到标准视图"
     },
     "drafts": {
       "emptyCanvas": "空白画布",

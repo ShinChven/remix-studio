@@ -1,3 +1,4 @@
 - Read what's in ./design folder for specific job.
 - all delete actions should have confirmation.
 - the app listens to port 3000.
+- `./agent` folder provide knowledge for agents to understand the system.
