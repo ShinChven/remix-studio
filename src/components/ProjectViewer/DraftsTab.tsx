@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CheckSquare, Square, Trash2, Play, ChevronDown, Plus } from 'lucide-react';
 import { Job, AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl } from '../../api';
+import { SelectionToolbar } from './SelectionToolbar';
 
 interface DraftsTabProps {
   draftJobs: Job[];
@@ -113,57 +114,44 @@ export function DraftsTab({
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-4">
         {draftJobs.length > 0 && (
-          <div className="sticky top-0 z-20 flex items-center justify-between bg-neutral-950/80 backdrop-blur-md border border-neutral-800 px-4 py-3 rounded-xl flex-wrap gap-2 shadow-lg shadow-black/20">
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={toggleSelectAllDrafts}
-                className="flex items-center gap-2 p-1 rounded-lg hover:bg-neutral-800 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
-              >
-                {selectedDraftIds.size === draftJobs.length ? (
-                  <CheckSquare className="w-4 h-4 text-blue-500" />
-                ) : (
-                  <Square className="w-4 h-4" />
-                )}
-                {t('projectViewer.common.selectAll')}
-              </button>
-              
-              {selectedDraftIds.size > 0 && (
-                <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                    {t('projectViewer.common.selectedCount', { count: selectedDraftIds.size })}
-                  </span>
-                  <button 
-                    onClick={() => setShowDeleteSelectedModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
-                  >
-                    <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteSelected')}
-                  </button>
-                  <button 
-                    onClick={runSelectedDrafts}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
-                  >
-                    <Play className="w-3 h-3 fill-current" /> {t('projectViewer.drafts.startSelected')}
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setShowDeleteAllDraftsModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-neutral-500 hover:text-red-400 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
-                title={t('projectViewer.drafts.deleteAllDrafts')}
-              >
-                <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteAll')}
-              </button>
-              <button 
-                onClick={runAllDrafts}
-                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
-              >
-                <Play className="w-3.5 h-3.5 fill-current" /> {t('projectViewer.drafts.startAllNow')}
-              </button>
-            </div>
-          </div>
+          <SelectionToolbar
+            totalCount={draftJobs.length}
+            selectedCount={selectedDraftIds.size}
+            onToggleSelectAll={toggleSelectAllDrafts}
+            selectionActions={
+              <>
+                <button
+                  onClick={() => setShowDeleteSelectedModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                >
+                  <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteSelected')}
+                </button>
+                <button
+                  onClick={runSelectedDrafts}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
+                >
+                  <Play className="w-3 h-3 fill-current" /> {t('projectViewer.drafts.startSelected')}
+                </button>
+              </>
+            }
+            rightActions={
+              <>
+                <button
+                  onClick={() => setShowDeleteAllDraftsModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-neutral-500 hover:text-red-400 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
+                  title={t('projectViewer.drafts.deleteAllDrafts')}
+                >
+                  <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteAll')}
+                </button>
+                <button
+                  onClick={runAllDrafts}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" /> {t('projectViewer.drafts.startAllNow')}
+                </button>
+              </>
+            }
+          />
         )}
         <div className="space-y-3">
             {draftJobs.map(task => {

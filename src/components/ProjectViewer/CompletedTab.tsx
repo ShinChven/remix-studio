@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Trash2, ChevronDown, List, CheckSquare, Square } from 'lucide-react';
 import { Job, ProjectType } from '../../types';
+import { SelectionToolbar } from './SelectionToolbar';
 
 interface CompletedTabProps {
   completedJobs: Job[];
@@ -38,40 +39,26 @@ export function CompletedTab({
       <div className="flex flex-col gap-4">
         {/* Completed Jobs Header/Toolbar */}
         {completedJobs.length > 0 && (
-          <div className="sticky top-0 z-20 flex items-center justify-between bg-neutral-950/80 backdrop-blur-md border border-neutral-800 px-4 py-3 rounded-xl flex-wrap gap-2 shadow-lg shadow-black/20">
-            <div className="flex items-center gap-3">
+          <SelectionToolbar
+            totalCount={completedJobs.length}
+            selectedCount={selectedCompletedIds.size}
+            accentColor="emerald"
+            onToggleSelectAll={toggleSelectAllCompleted}
+            selectionActions={
               <button
-                onClick={toggleSelectAllCompleted}
-                className="flex items-center gap-2 p-1 rounded-lg hover:bg-neutral-800 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
+                onClick={() => setShowDeleteSelectedModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
               >
-                {selectedCompletedIds.size === completedJobs.length ? (
-                  <CheckSquare className="w-4 h-4 text-emerald-500" />
-                ) : (
-                  <Square className="w-4 h-4" />
-                )}
-                {t('projectViewer.common.selectAll')}
+                <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteSelected')}
               </button>
-
-              {selectedCompletedIds.size > 0 && (
-                <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                    {t('projectViewer.common.selectedCount', { count: selectedCompletedIds.size })}
-                  </span>
-                  <button
-                    onClick={() => setShowDeleteSelectedModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
-                  >
-                    <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteSelected')}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest transition-colors">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              {t('projectViewer.completed.finishedCount', { count: completedJobs.length })}
-            </div>
-          </div>
+            }
+            rightActions={
+              <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                {t('projectViewer.completed.finishedCount', { count: completedJobs.length })}
+              </div>
+            }
+          />
         )}
 
         {/* Jobs List */}

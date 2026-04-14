@@ -8,6 +8,7 @@ import { ExportPackageDialog } from './ExportPackageDialog';
 import { TextAlbumCompareDialog } from './TextAlbumCompareDialog';
 import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
 import { CopyToLibraryDialog } from './CopyToLibraryDialog';
+import { SelectionToolbar } from './SelectionToolbar';
 
 import { toast } from 'sonner';
 
@@ -85,9 +86,12 @@ export function AlbumTab({
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-6">
         {albumItems.length > 0 && (
-          <div className="sticky top-0 z-20 flex items-center justify-between bg-neutral-950/80 backdrop-blur-md border border-neutral-800 p-3 rounded-xl shadow-lg shadow-black/20">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest transition-colors mr-2">
+          <SelectionToolbar
+            totalCount={albumItems.length}
+            selectedCount={selectedAlbumIds.size}
+            onToggleSelectAll={toggleSelectAllAlbum}
+            prefix={
+              <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                 <Layers className="w-4 h-4 text-blue-500" />
                 {t('projectViewer.album.itemsCount', { count: albumItems.length })}
                 <span className="mx-1 text-neutral-800">·</span>
@@ -95,77 +99,58 @@ export function AlbumTab({
                   {((albumItems || []).reduce((acc, item) => acc + (item.size || 0), 0) / (1024 * 1024)).toFixed(2)} MB
                 </span>
               </div>
-
-              <div className="h-4 w-px bg-neutral-800 mx-1" />
-
-              <button
-                onClick={toggleSelectAllAlbum}
-                className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
-              >
-                {selectedAlbumIds.size === albumItems.length ? (
-                  <CheckSquare className="w-4 h-4 text-blue-500" />
-                ) : (
-                  <Square className="w-4 h-4" />
+            }
+            selectionActions={
+              <>
+                <button
+                  onClick={() => openExportDialog(false)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
+                >
+                  <Download className="w-3 h-3" /> {t('projectViewer.album.exportSelected')}
+                </button>
+                <button
+                  onClick={() => setShowCopyDialog(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
+                >
+                  <Copy className="w-3 h-3" /> {t('projectViewer.common.copyToLibrary')}
+                </button>
+                {isTextProject && selectedAlbumIds.size > 1 && (
+                  <button
+                    onClick={() => setShowCompareDialog(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
+                  >
+                    <Layers className="w-3 h-3" /> {t('projectViewer.album.compareSelected')}
+                  </button>
                 )}
-                {t('projectViewer.common.selectAll')}
-              </button>
-
-              {selectedAlbumIds.size > 0 && (
-                <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                    {t('projectViewer.common.selectedCount', { count: selectedAlbumIds.size })}
-                  </span>
-                  <button
-                    onClick={() => openExportDialog(false)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
-                  >
-                    <Download className="w-3 h-3" /> {t('projectViewer.album.exportSelected')}
-                  </button>
-                  <button
-                    onClick={() => setShowCopyDialog(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
-                  >
-                    <Copy className="w-3 h-3" /> {t('projectViewer.common.copyToLibrary')}
-                  </button>
-                  {isTextProject && selectedAlbumIds.size > 1 && (
-                    <button
-                      onClick={() => setShowCompareDialog(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
-                    >
-                      <Layers className="w-3 h-3" /> {t('projectViewer.album.compareSelected')}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      const itemsToDelete = albumItems.filter(item => selectedAlbumIds.has(item.id));
-                      setAlbumItemsToDelete(itemsToDelete);
-                      setShowDeleteAlbumModal(true);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
-                  >
-                    <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteSelected')}
-                  </button>
-                </div>
-              )}
-
-              {selectedAlbumIds.size === 0 && (
-                <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
-                  <button
-                    onClick={() => openExportDialog(true)}
-                    className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
-                  >
-                    <Download className="w-4 h-4" /> {t('projectViewer.album.exportAll')}
-                  </button>
-                  <button
-                    onClick={() => setShowCopyDialog(true)}
-                    className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
-                  >
-                    <Copy className="w-4 h-4" /> {t('projectViewer.album.copyAllToLibrary')}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+                <button
+                  onClick={() => {
+                    const itemsToDelete = albumItems.filter(item => selectedAlbumIds.has(item.id));
+                    setAlbumItemsToDelete(itemsToDelete);
+                    setShowDeleteAlbumModal(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                >
+                  <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteSelected')}
+                </button>
+              </>
+            }
+            zeroSelectionActions={
+              <>
+                <button
+                  onClick={() => openExportDialog(true)}
+                  className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" /> {t('projectViewer.album.exportAll')}
+                </button>
+                <button
+                  onClick={() => setShowCopyDialog(true)}
+                  className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
+                >
+                  <Copy className="w-4 h-4" /> {t('projectViewer.album.copyAllToLibrary')}
+                </button>
+              </>
+            }
+          />
         )}
 
         {albumItems.length === 0 ? (

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CheckSquare, Square, Trash2, Play, ChevronDown, Loader2, List } from 'lucide-react';
 import { Job } from '../../types';
 import { imageDisplayUrl } from '../../api';
+import { SelectionToolbar } from './SelectionToolbar';
 
 interface QueueTabProps {
   queueJobs: Job[];
@@ -43,52 +44,39 @@ export function QueueTab({
       <div className="flex flex-col gap-8">
         {/* Queue Toolbar */}
         {queueJobs.length > 0 && (
-          <div className="sticky top-0 z-20 flex items-center justify-between bg-neutral-950/80 backdrop-blur-md border border-neutral-800 px-4 py-3 rounded-xl flex-wrap gap-2 shadow-lg shadow-black/20">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleSelectAllQueue}
-                className="flex items-center gap-2 p-1 rounded-lg hover:bg-neutral-800 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
-              >
-                {selectedQueueIds.size === queueJobs.length ? (
-                  <CheckSquare className="w-4 h-4 text-blue-500" />
-                ) : (
-                  <Square className="w-4 h-4" />
-                )}
-                {t('projectViewer.common.selectAll')}
-              </button>
-
-              {selectedQueueIds.size > 0 && (
-                <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                    {t('projectViewer.common.selectedCount', { count: selectedQueueIds.size })}
-                  </span>
-                  {queueJobs.some(j => selectedQueueIds.has(j.id) && j.status === 'failed') && (
-                    <button
-                      onClick={retrySelectedQueue}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
-                    >
-                      <Play className="w-3 h-3 fill-current" /> {t('projectViewer.queue.retry')}
-                    </button>
-                  )}
+          <SelectionToolbar
+            totalCount={queueJobs.length}
+            selectedCount={selectedQueueIds.size}
+            onToggleSelectAll={toggleSelectAllQueue}
+            selectionActions={
+              <>
+                {queueJobs.some(j => selectedQueueIds.has(j.id) && j.status === 'failed') && (
                   <button
-                    onClick={deleteSelectedQueue}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                    onClick={retrySelectedQueue}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
                   >
-                    <Trash2 className="w-3 h-3" /> {t('projectViewer.common.delete')}
+                    <Play className="w-3 h-3 fill-current" /> {t('projectViewer.queue.retry')}
                   </button>
-                </div>
-              )}
-            </div>
-
-            {queueJobs.some(j => j.status === 'failed') && (
-              <button
-                onClick={clearAllFailed}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
-              >
-                <Trash2 className="w-3 h-3" /> {t('projectViewer.queue.clearAllFailed')}
-              </button>
-            )}
-          </div>
+                )}
+                <button
+                  onClick={deleteSelectedQueue}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                >
+                  <Trash2 className="w-3 h-3" /> {t('projectViewer.common.delete')}
+                </button>
+              </>
+            }
+            rightActions={
+              queueJobs.some(j => j.status === 'failed') ? (
+                <button
+                  onClick={clearAllFailed}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                >
+                  <Trash2 className="w-3 h-3" /> {t('projectViewer.queue.clearAllFailed')}
+                </button>
+              ) : undefined
+            }
+          />
         )}
 
         {/* Active Jobs */}
