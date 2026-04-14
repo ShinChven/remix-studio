@@ -52,6 +52,9 @@ export interface ModelConfig {
     durations?: number[]; // seconds
     resolutions?: string[]; // e.g. '720p', '1080p', '4k'
     sounds?: ('on' | 'off')[];
+    // Advanced image generation options
+    stepsOptions?: number[];
+    guidanceOptions?: number[];
   };
 }
 
@@ -644,6 +647,41 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         sounds: ['on', 'off'],
       },
     },
+    {
+      id: 'replicate-flux-2-pro-image',
+      name: 'Flux 2 Pro',
+      generatorId: 'Replicate',
+      modelId: 'black-forest-labs/flux-2-pro',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', 'match_input_image'],
+        qualities: ['0.25 MP', '0.5 MP', '1 MP', '2 MP', '4 MP'],
+      },
+    },
+    {
+      id: 'replicate-flux-2-flex-image',
+      name: 'Flux 2 Flex',
+      generatorId: 'Replicate',
+      modelId: 'black-forest-labs/flux-2-flex',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', 'match_input_image'],
+        qualities: ['0.25 MP', '0.5 MP', '1 MP', '2 MP', '4 MP'],
+        stepsOptions: [10, 20, 30, 40, 50],
+        guidanceOptions: [2.0, 3.0, 3.5, 4.0, 5.0],
+      },
+    },
+    {
+      id: 'replicate-flux-2-max-image',
+      name: 'Flux 2 Max',
+      generatorId: 'Replicate',
+      modelId: 'black-forest-labs/flux-2-max',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', 'match_input_image'],
+        qualities: ['0.25 MP', '0.5 MP', '1 MP', '2 MP', '4 MP'],
+      },
+    },
   ],
 };
 
@@ -699,6 +737,8 @@ export interface Job {
   duration?: number; // seconds
   resolution?: string; // e.g. '720p', '1080p', '4k'
   sound?: 'on' | 'off';
+  steps?: number;
+  guidance?: number;
 }
 
 export interface AlbumItem {
@@ -760,6 +800,8 @@ export interface Project {
   duration?: number; // seconds
   resolution?: string; // '720p', '1080p', '4k'
   sound?: 'on' | 'off';
+  steps?: number;
+  guidance?: number;
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate';

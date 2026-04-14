@@ -8,6 +8,10 @@ export interface GenerateRequest {
   refImageUrls?: string[]; // remote or presigned URLs for providers that require URL references
   targetPath?: string;    // hint for async generators (RunningHub)
   background?: string;
+  seed?: number;
+  steps?: number;
+  guidance?: number;
+  promptUpsampling?: boolean;
 }
 
 export type GenerateResult =

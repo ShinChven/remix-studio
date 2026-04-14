@@ -7,6 +7,7 @@ import { KlingAIGenerator } from './kling-ai-generator';
 import { OpenAIGenerator } from './openai-generator';
 import { GrokGenerator } from './grok-generator';
 import { BytePlusGenerator } from './byteplus-generator';
+import { ReplicateGenerator } from './replicate-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -38,7 +39,7 @@ export function buildGenerator(
     case 'BytePlus':
       return new BytePlusGenerator(apiKey, safeApiUrl);
     case 'Replicate':
-      throw new Error(`Provider type 'Replicate' does not support image generation`);
+      return new ReplicateGenerator(apiKey, safeApiUrl);
     case 'Claude':
       throw new Error(`Provider type 'Claude' does not support image generation`);
     default: {

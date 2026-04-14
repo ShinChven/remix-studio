@@ -133,6 +133,16 @@ export function SettingsPanel({
                 <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
                   {localProject.format || 'png'}
                 </span>
+                {selectedModel?.options.stepsOptions && (
+                  <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                    S={localProject.steps ?? (selectedModel.options.stepsOptions[0] || 20)}
+                  </span>
+                )}
+                {selectedModel?.options.guidanceOptions && (
+                  <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                    G={localProject.guidance ?? (selectedModel.options.guidanceOptions[0] || 3.5)}
+                  </span>
+                )}
               </>
             )}
             {localProject.shuffle && (
@@ -480,6 +490,60 @@ export function SettingsPanel({
                   ))}
                 </div>
               </div>
+
+              {selectedModel?.options.stepsOptions && selectedModel.options.stepsOptions.length > 0 && (
+                <div className="space-y-2.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                    {t('projectViewer.settings.steps')}
+                  </label>
+                  <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                    {selectedModel.options.stepsOptions.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          const updated = { ...localProject, steps: s };
+                          setLocalProject(updated);
+                          onUpdate(updated);
+                        }}
+                        className={`flex-1 min-w-[32px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                          (localProject.steps ?? (selectedModel.options.stepsOptions?.[0] || 20)) === s
+                            ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                            : 'text-neutral-600 hover:text-neutral-400'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedModel?.options.guidanceOptions && selectedModel.options.guidanceOptions.length > 0 && (
+                <div className="space-y-2.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                    {t('projectViewer.settings.guidance')}
+                  </label>
+                  <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                    {selectedModel.options.guidanceOptions.map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => {
+                          const updated = { ...localProject, guidance: g };
+                          setLocalProject(updated);
+                          onUpdate(updated);
+                        }}
+                        className={`flex-1 min-w-[32px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                          (localProject.guidance ?? (selectedModel.options.guidanceOptions?.[0] || 3.5)) === g
+                            ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                            : 'text-neutral-600 hover:text-neutral-400'
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
 
