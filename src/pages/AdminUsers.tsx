@@ -35,14 +35,14 @@ function formatBytes(bytes: number) {
 
 function statusBadgeClass(status: UserStatus) {
   return status === 'active'
-    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-    : 'border-red-500/20 bg-red-500/10 text-red-300';
+    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-sm'
+    : 'border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-300 shadow-sm';
 }
 
 function roleBadgeClass(role: UserRole) {
   return role === 'admin'
-    ? 'border-amber-500/20 bg-amber-500/10 text-amber-300'
-    : 'border-neutral-700 bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300';
+    ? 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300 shadow-sm'
+    : 'border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 shadow-sm';
 }
 
 export function AdminUsers() {
@@ -250,7 +250,7 @@ export function AdminUsers() {
             <>
               <Link
                 to="/admin/invites"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25 shrink-0"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-600 dark:bg-emerald-500/15 px-5 py-3 text-sm font-black text-white dark:text-emerald-200 transition hover:bg-emerald-700 dark:hover:bg-emerald-500/25 shrink-0 shadow-lg shadow-emerald-600/10 active:scale-95 uppercase tracking-widest"
               >
                 <Mail className="h-4 w-4" />
                 {t('adminUsers.inviteUsers')}
@@ -258,7 +258,7 @@ export function AdminUsers() {
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(true)}
-                className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-200 transition hover:bg-blue-500/25 shrink-0"
+                className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-600 dark:bg-blue-500/15 px-5 py-3 text-sm font-black text-white dark:text-blue-200 transition hover:bg-blue-700 dark:hover:bg-blue-500/25 shrink-0 shadow-lg shadow-blue-600/10 active:scale-95 uppercase tracking-widest"
               >
                 <UserPlus className="h-4 w-4" />
                 {t('adminUsers.createUser')}
@@ -267,22 +267,22 @@ export function AdminUsers() {
           )}
         />
 
-        <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-4">
+        <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm">
           <form onSubmit={handleFilterSubmit} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_120px]">
-            <label className="flex items-center gap-3 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 px-4 py-3">
-              <Search className="h-4 w-4 text-neutral-500 dark:text-neutral-500" />
+            <label className="flex items-center gap-3 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-6 py-4">
+              <Search className="h-4 w-4 text-neutral-400 dark:text-neutral-500" />
               <input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('adminUsers.searchPlaceholder')}
-                className="w-full bg-transparent text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
+                className="w-full bg-transparent text-sm font-medium text-neutral-900 dark:text-neutral-100 outline-none placeholder:text-neutral-500"
               />
             </label>
 
             <select
               value={filters.role}
               onChange={(e) => setFilters((current) => ({ ...current, role: e.target.value as UserRole | 'all', page: 1 }))}
-              className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 px-4 py-3 text-sm text-neutral-200 outline-none"
+              className="border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-6 py-4 text-sm font-bold text-neutral-900 dark:text-neutral-200 outline-none appearance-none cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
             >
               <option value="all">{t('adminUsers.allRoles')}</option>
               <option value="admin">{t('adminUsers.admin')}</option>
@@ -292,7 +292,7 @@ export function AdminUsers() {
             <select
               value={filters.status}
               onChange={(e) => setFilters((current) => ({ ...current, status: e.target.value as UserStatus | 'all', page: 1 }))}
-              className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 px-4 py-3 text-sm text-neutral-200 outline-none"
+              className="border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-6 py-4 text-sm font-bold text-neutral-900 dark:text-neutral-200 outline-none appearance-none cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
             >
               <option value="all">{t('adminUsers.allStatuses')}</option>
               <option value="active">{t('adminUsers.active')}</option>
@@ -301,7 +301,7 @@ export function AdminUsers() {
 
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 px-4 py-3 text-sm font-medium text-neutral-200 transition hover:border-neutral-700 hover:bg-neutral-900"
+              className="inline-flex items-center justify-center gap-2 bg-neutral-900 dark:bg-neutral-800 px-6 py-4 text-xs font-black text-white transition hover:bg-black uppercase tracking-widest active:scale-95"
             >
               <Filter className="h-4 w-4" />
               {t('adminUsers.apply')}
@@ -316,7 +316,7 @@ export function AdminUsers() {
           </div>
         )}
 
-        <section className="overflow-hidden rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50">
+        <section className="overflow-hidden rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
           {loading ? (
             <div className="flex items-center justify-center py-24">
               <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
@@ -346,7 +346,7 @@ export function AdminUsers() {
                   <div
                     key={user.id}
                     onClick={() => setActiveUserId(user.id)}
-                    className="grid cursor-pointer gap-4 px-6 py-5 text-left transition hover:bg-neutral-800/30 xl:grid-cols-[minmax(240px,1.5fr)_110px_110px_170px_100px_100px_160px_120px]"
+                    className="grid cursor-pointer gap-4 px-6 py-5 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800/30 xl:grid-cols-[minmax(240px,1.5fr)_110px_110px_170px_100px_100px_160px_120px] group/row"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-3">
@@ -373,7 +373,7 @@ export function AdminUsers() {
                     </div>
 
                     <div className="space-y-1">
-                      <p className="text-sm text-neutral-200">{formatBytes(user.usedStorage)} / {formatBytes(user.storageLimit || 0)}</p>
+                      <p className="text-sm text-neutral-900 dark:text-neutral-200">{formatBytes(user.usedStorage)} / {formatBytes(user.storageLimit || 0)}</p>
                       <p className="text-xs text-neutral-500 dark:text-neutral-500">{storageTierName(user.storageLimit)}</p>
                     </div>
 
@@ -402,7 +402,7 @@ export function AdminUsers() {
           )}
         </section>
 
-        <div className="flex flex-col gap-3 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-900/40 px-4 py-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-6 py-4 md:flex-row md:items-center md:justify-between shadow-sm">
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
             {total > 0 ? t('adminUsers.showingUsers', { count: users.length, total }) : t('adminUsers.noUsersToShow')}
           </div>
@@ -420,7 +420,7 @@ export function AdminUsers() {
               type="button"
               disabled={filters.page <= 1}
               onClick={() => setFilters((current) => ({ ...current, page: Math.max(1, current.page - 1) }))}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-2 text-neutral-700 dark:text-neutral-300 transition hover:bg-neutral-900 disabled:opacity-30"
+              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-2 text-neutral-700 dark:text-neutral-300 transition hover:bg-white dark:hover:bg-neutral-800 hover:shadow-sm disabled:opacity-30"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -429,7 +429,7 @@ export function AdminUsers() {
               type="button"
               disabled={filters.page >= pages}
               onClick={() => setFilters((current) => ({ ...current, page: Math.min(pages, current.page + 1) }))}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-2 text-neutral-700 dark:text-neutral-300 transition hover:bg-neutral-900 disabled:opacity-30"
+              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-2 text-neutral-700 dark:text-neutral-300 transition hover:bg-white dark:hover:bg-neutral-800 hover:shadow-sm disabled:opacity-30"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -556,7 +556,7 @@ export function AdminUsers() {
                 </div>
               ) : activeUser ? (
                 <div className="space-y-6 p-6">
-                  <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-5">
+                  <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 p-6 shadow-sm">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.account')}</p>
@@ -587,7 +587,7 @@ export function AdminUsers() {
                     <MiniCard label={t('adminUsers.detail.exports')} value={activeUser.exportCount} />
                   </section>
 
-                  <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-5">
+                  <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 p-6 shadow-sm">
                     <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.storageBreakdown')}</p>
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
                       <StorageRow label={t('adminUsers.detail.projects')} value={activeUser.storageBreakdown.projects} />
@@ -597,7 +597,7 @@ export function AdminUsers() {
                     </div>
                   </section>
 
-                  <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-5">
+                  <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 p-6 shadow-sm">
                     <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.adminControls')}</p>
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
                       <label className="space-y-2">
@@ -647,7 +647,7 @@ export function AdminUsers() {
                     </div>
                   </section>
 
-                  <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-5">
+                  <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 p-6 shadow-sm">
                     <div className="flex items-center gap-2">
                       <KeyRound className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
                       <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.passwordReset')}</p>
@@ -705,7 +705,7 @@ function Stat({ label, value, icon }: { label: string; value: string; icon: Reac
         {icon}
         <span>{label}</span>
       </div>
-      <p className="mt-3 text-sm text-neutral-200">{value}</p>
+      <p className="mt-3 text-sm text-neutral-900 dark:text-neutral-200">{value}</p>
     </div>
   );
 }
@@ -723,7 +723,7 @@ function StorageRow({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center justify-between rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 px-4 py-3">
       <span className="text-sm text-neutral-600 dark:text-neutral-400">{label}</span>
-      <span className="text-sm font-medium text-neutral-100">{formatBytes(value)}</span>
+      <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{formatBytes(value)}</span>
     </div>
   );
 }

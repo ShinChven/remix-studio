@@ -211,16 +211,16 @@ export function Exports() {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end gap-3 mb-8">
         {/* Google Drive control */}
         {user?.googleDriveConnected ? (
-          <div className="flex items-center justify-between sm:justify-start gap-3 bg-emerald-500/5 border border-emerald-500/20 px-4 py-2.5 rounded-xl">
+          <div className="flex items-center justify-between sm:justify-start gap-3 bg-emerald-100 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 px-4 py-2.5 rounded-xl shadow-sm">
             <div className="flex items-center gap-2">
-              <HardDrive className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-              <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">{t('exports.drive.connected')}</span>
+              <HardDrive className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest">{t('exports.drive.connected')}</span>
             </div>
             <div className="hidden sm:block w-px h-4 bg-emerald-500/20" />
             <button
               onClick={handleDisconnectDrive}
               disabled={disconnecting}
-              className="flex items-center gap-1.5 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition disabled:opacity-50"
+              className="flex items-center gap-1.5 text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest hover:text-red-500 transition disabled:opacity-50"
             >
               {disconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3.5 w-3.5" />}
               <span className="sm:hidden">{t('exports.drive.disconnect')}</span>
@@ -230,15 +230,15 @@ export function Exports() {
         ) : (
           <a
             href="/api/auth/google-drive/connect"
-            className="flex items-center justify-center gap-2 bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-neutral-800/50 px-4 py-2.5 rounded-xl hover:border-neutral-700 transition"
+            className="flex items-center justify-center gap-2 bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 px-4 py-2.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition shadow-sm"
           >
-            <HardDrive className="h-4 w-4 text-neutral-500 dark:text-neutral-500 flex-shrink-0" />
-            <span className="text-[10px] font-black text-neutral-600 dark:text-neutral-400 uppercase tracking-widest text-center">{t('exports.drive.connect')}</span>
+            <HardDrive className="h-4 w-4 text-neutral-600 dark:text-neutral-500 flex-shrink-0" />
+            <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest text-center">{t('exports.drive.connect')}</span>
           </a>
         )}
 
         {/* Database stats */}
-        <div className="bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-neutral-800/50 px-4 py-2.5 rounded-xl flex items-center justify-between sm:justify-start gap-4">
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-4 py-2.5 rounded-xl flex items-center justify-between sm:justify-start gap-4 shadow-sm">
           <div className="flex flex-col">
             <p className="text-[8px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">{t('exports.stats.database')}</p>
             <p className="text-xs font-bold text-neutral-900 dark:text-white">{exports.length} {t('exports.stats.total')}</p>
@@ -254,7 +254,7 @@ export function Exports() {
       </div>
 
       {!loading && exports.length === 0 ? (
-        <div className="py-32 text-center text-neutral-600 border border-dashed border-neutral-900 rounded-[32px] bg-neutral-50/20 dark:bg-neutral-950/20">
+        <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-[32px] bg-white dark:bg-neutral-950/20 shadow-sm">
           <List className="w-12 h-12 mx-auto opacity-10 mb-4" />
           <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">{t('exports.empty.title')}</div>
           <div className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-8 max-w-[200px] mx-auto leading-relaxed">{t('exports.empty.description')}</div>
@@ -274,7 +274,7 @@ export function Exports() {
             return (
               <div
                 key={task.id}
-                className={`bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all group/task ${task.status === 'failed' ? 'border-red-900/30 bg-red-950/5' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50'}`}
+                className={`bg-white dark:bg-neutral-950 p-4 md:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all group/task shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5 ${task.status === 'failed' ? 'border-red-500/30 bg-red-50 dark:bg-red-500/5' : 'border-neutral-200 dark:border-neutral-800 hover:border-blue-500/50'}`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   {/* Status Indicator Bar */}
@@ -288,7 +288,7 @@ export function Exports() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
                       <Link
                         to={`/project/${task.projectId}`}
-                        className="w-fit text-[9px] font-black text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10 flex items-center gap-1 group/project"
+                        className="w-fit text-[9px] font-black text-blue-600 dark:text-blue-500 hover:text-blue-500 transition-colors uppercase tracking-widest bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-500/20 flex items-center gap-1 group/project shadow-sm"
                       >
                         {task.projectName}
                         <ArrowRight className="w-2.5 h-2.5 group-hover/project:translate-x-0.5 transition-transform" />
@@ -318,7 +318,7 @@ export function Exports() {
                       ) : null}
                       {(task.status === 'processing' || task.status === 'pending') && (
                         <div className="flex items-center gap-2 group-hover/task:translate-x-1 transition-transform">
-                          <div className="w-20 sm:w-24 h-1 bg-white dark:bg-neutral-900 rounded-full overflow-hidden border border-neutral-200/50 dark:border-neutral-800/50">
+                          <div className="w-20 sm:w-24 h-1.5 bg-neutral-100 dark:bg-neutral-900 rounded-full overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-inner">
                             <div
                               className="h-full bg-blue-500 transition-all duration-500"
                               style={{ width: task.status === 'pending' ? '0%' : `${(task.current / task.total) * 100}%` }}
@@ -333,7 +333,7 @@ export function Exports() {
                       {/* Drive upload progress */}
                       {isDriveUploading && (
                         <div className="flex items-center gap-2">
-                          <div className="w-16 sm:w-20 h-1 bg-white dark:bg-neutral-900 rounded-full overflow-hidden border border-emerald-900/40">
+                          <div className="w-16 sm:w-20 h-1.5 bg-white dark:bg-neutral-900 rounded-full overflow-hidden border border-emerald-200 dark:border-emerald-900/40 shadow-inner">
                             <div
                               className="h-full bg-emerald-500 transition-all duration-500"
                               style={{ width: driveDelivery?.status === 'pending' ? '5%' : `${driveProgress}%` }}
@@ -349,7 +349,7 @@ export function Exports() {
                 </div>
 
                 {/* Status & Actions Row */}
-                <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-neutral-900/50 sm:border-none">
+                <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-neutral-200 dark:border-neutral-800 sm:border-none">
                   <div className="flex-shrink-0 flex items-center gap-2 sm:gap-3">
                     {task.status === 'completed' && (
                       <div className="flex items-center gap-1.5 text-emerald-500 text-[9px] font-black uppercase tracking-widest bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/10">
@@ -363,12 +363,12 @@ export function Exports() {
                         {t('exports.status.archiving')}
                       </div>
                     )}
-                    {task.status === 'pending' && (
-                      <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-500 text-[9px] font-black uppercase tracking-widest bg-white dark:bg-neutral-900 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800">
-                        <Loader2 className="w-3.5 h-3.5 animate-pulse" />
-                        {t('exports.status.queued')}
-                      </div>
-                    )}
+                     {task.status === 'pending' && (
+                       <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-500 text-[9px] font-black uppercase tracking-widest bg-neutral-50 dark:bg-neutral-900 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 shadow-sm">
+                         <Loader2 className="w-3.5 h-3.5 animate-pulse" />
+                         {t('exports.status.queued')}
+                       </div>
+                     )}
                     {task.status === 'failed' && (
                       <div className="flex items-center gap-1.5 text-red-500 text-[9px] font-black uppercase tracking-widest bg-red-500/10 px-2.5 py-1.5 rounded-lg border border-red-500/20">
                         <XCircle className="w-3.5 h-3.5" />
@@ -400,7 +400,7 @@ export function Exports() {
                     )}
                     <button
                       onClick={() => handleDelete(task.projectId, task.id)}
-                      className="p-2 sm:p-1.5 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90 bg-neutral-200/50 dark:bg-neutral-800/50 sm:bg-transparent"
+                      className="p-2 sm:p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all active:scale-90 border border-transparent hover:border-red-100"
                       title={t('exports.card.delete')}
                     >
                       <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />

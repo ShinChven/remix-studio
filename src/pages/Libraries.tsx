@@ -109,22 +109,22 @@ export function Libraries() {
               {/* Search Input */}
               <div className="relative flex-1 sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500" />
-                <input
-                  type="text"
-                  value={searchInput}
-                  onChange={handleSearchChange}
-                  onKeyDown={handleSearchKeyDown}
-                  placeholder={t('libraries.searchPlaceholder')}
-                  className="w-full bg-neutral-50/70 dark:bg-neutral-950/70 border border-neutral-200 dark:border-neutral-800 rounded-xl py-2 pl-10 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
-                />
+                  <input
+                    type="text"
+                    value={searchInput}
+                    onChange={handleSearchChange}
+                    onKeyDown={handleSearchKeyDown}
+                    placeholder={t('libraries.searchPlaceholder')}
+                    className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all shadow-sm"
+                  />
               </div>
 
               <div className="flex gap-2">
                 <button
                   onClick={addLibrary}
-                  className="text-xs md:text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-blue-600/30 font-medium"
+                  className="text-xs md:text-sm bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-blue-700 font-black uppercase tracking-widest shadow-lg shadow-blue-600/10 active:scale-95"
                 >
-                  <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t('libraries.newLibrary')}</span><span className="sm:hidden">{t('libraries.new')}</span>
+                  <Plus className="w-4 h-4" /> <span>{t('libraries.newLibrary')}</span>
                 </button>
               </div>
             </div>
@@ -143,7 +143,7 @@ export function Libraries() {
                   <Link
                     key={lib.id}
                     to={`/library/${lib.id}`}
-                    className={`bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm border border-neutral-200 dark:border-neutral-800 ${isImage ? 'hover:border-indigo-500/50' : 'hover:border-blue-500/50'} p-4 md:p-5 rounded-2xl text-left transition-all group relative overflow-hidden`}
+                    className={`bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 ${isImage ? 'hover:border-indigo-500/50' : 'hover:border-blue-500/50'} p-5 md:p-6 rounded-[32px] text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300`}
                   >
                     <div className="flex items-start justify-between mb-3 md:mb-4">
                       <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${isImage ? 'bg-indigo-500/10 text-indigo-500 shadow-indigo-500/5' : 'bg-blue-500/10 text-blue-500 shadow-blue-500/5'}`}>
@@ -155,7 +155,7 @@ export function Libraries() {
                           e.stopPropagation();
                           setLibraryToDuplicate(lib);
                         }}
-                        className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-neutral-700/50 bg-neutral-200/30 dark:bg-neutral-800/30"
+                        className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30"
                         title={t('libraries.libraryCard.duplicate')}
                       >
                         <Copy className="w-3.5 h-3.5" />
@@ -184,11 +184,13 @@ export function Libraries() {
                 )})}
 
                 {libraries.length === 0 && (
-                  <div className="col-span-full py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/20 dark:bg-neutral-900/20">
-                    <Folder className="w-12 h-12 text-neutral-700" />
+                  <div className="col-span-full py-20 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/20 shadow-sm">
+                    <div className="p-4 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
+                      <Folder className="w-8 h-8 text-neutral-700" />
+                    </div>
                     <div>
-                      <p className="text-lg font-medium text-neutral-600 dark:text-neutral-400">{t('libraries.noLibraries.title')}</p>
-                      <p className="text-sm">{q ? t('libraries.noResultsFound') : t('libraries.noLibraries.description')}</p>
+                      <p className="text-lg font-bold text-neutral-600 dark:text-neutral-400 tracking-tight">{t('libraries.noLibraries.title')}</p>
+                      <p className="text-sm mt-1">{q ? t('libraries.noResultsFound') : t('libraries.noLibraries.description')}</p>
                     </div>
                   </div>
                 )}
@@ -199,15 +201,15 @@ export function Libraries() {
                   <button
                     onClick={() => handlePageChange(Math.max(1, page - 1))}
                     disabled={page === 1}
-                    className="p-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-400 transition-colors"
+                    className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">{t('projects.pagination', { current: page, total: pages })}</span>
+                  <span className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('projects.pagination', { current: page, total: pages })}</span>
                   <button
                     onClick={() => handlePageChange(Math.min(pages, page + 1))}
                     disabled={page === pages}
-                    className="p-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-400 transition-colors"
+                    className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>

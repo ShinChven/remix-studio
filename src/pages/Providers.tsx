@@ -9,15 +9,15 @@ import { PageHeader } from '../components/PageHeader';
 import { Plus, Key, Globe, Pencil, Trash2, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react';
 
 const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
-  GoogleAI:   { icon: 'bg-blue-500/10 text-blue-500',   badge: 'bg-blue-600/10 text-blue-400 border-blue-600/30' },
-  VertexAI:   { icon: 'bg-purple-500/10 text-purple-500', badge: 'bg-purple-600/10 text-purple-400 border-purple-600/30' },
-  RunningHub: { icon: 'bg-emerald-500/10 text-emerald-500', badge: 'bg-emerald-600/10 text-emerald-400 border-emerald-600/30' },
-  KlingAI:    { icon: 'bg-lime-500/10 text-lime-400', badge: 'bg-lime-600/10 text-lime-300 border-lime-600/30' },
-  OpenAI:     { icon: 'bg-orange-500/10 text-orange-500', badge: 'bg-orange-600/10 text-orange-400 border-orange-600/30' },
-  Grok:       { icon: 'bg-rose-500/10 text-rose-500', badge: 'bg-rose-600/10 text-rose-400 border-rose-600/30' },
-  Claude:     { icon: 'bg-amber-500/10 text-amber-500', badge: 'bg-amber-600/10 text-amber-400 border-amber-600/30' },
-  BytePlus:   { icon: 'bg-cyan-500/10 text-cyan-500', badge: 'bg-cyan-600/10 text-cyan-400 border-cyan-600/30' },
-  Replicate:  { icon: 'bg-fuchsia-500/10 text-fuchsia-400', badge: 'bg-fuchsia-600/10 text-fuchsia-300 border-fuchsia-600/30' },
+  GoogleAI:   { icon: 'bg-blue-500/10 text-blue-600 dark:text-blue-500',   badge: 'bg-blue-600/10 text-blue-700 dark:text-blue-400 border-blue-600/20 dark:border-blue-600/30' },
+  VertexAI:   { icon: 'bg-purple-500/10 text-purple-600 dark:text-purple-500', badge: 'bg-purple-600/10 text-purple-700 dark:text-purple-400 border-purple-600/20 dark:border-purple-600/30' },
+  RunningHub: { icon: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500', badge: 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-400 border-emerald-600/20 dark:border-emerald-600/30' },
+  KlingAI:    { icon: 'bg-lime-500/15 text-lime-700 dark:text-lime-400', badge: 'bg-lime-600/10 text-lime-700 dark:text-lime-300 border-lime-600/20 dark:border-lime-600/30' },
+  OpenAI:     { icon: 'bg-orange-500/10 text-orange-600 dark:text-orange-500', badge: 'bg-orange-600/10 text-orange-700 dark:text-orange-400 border-orange-600/20 dark:border-orange-600/30' },
+  Grok:       { icon: 'bg-rose-500/10 text-rose-600 dark:text-rose-500', badge: 'bg-rose-600/10 text-rose-700 dark:text-rose-400 border-rose-600/20 dark:border-rose-600/30' },
+  Claude:     { icon: 'bg-amber-500/10 text-amber-600 dark:text-amber-500', badge: 'bg-amber-600/10 text-amber-700 dark:text-amber-400 border-amber-600/20 dark:border-amber-600/30' },
+  BytePlus:   { icon: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-500', badge: 'bg-cyan-600/10 text-cyan-700 dark:text-cyan-400 border-cyan-600/20 dark:border-cyan-600/30' },
+  Replicate:  { icon: 'bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400', badge: 'bg-fuchsia-600/10 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-600/20 dark:border-fuchsia-600/30' },
 };
 
 export function Providers() {
@@ -85,7 +85,7 @@ export function Providers() {
             </h3>
             <button
               onClick={() => navigate('/provider/new')}
-              className="text-xs md:text-sm bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-amber-600/30 font-medium"
+              className="text-xs md:text-sm bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 px-4 md:px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-amber-600/30 font-black shadow-lg shadow-amber-600/10 active:scale-95 uppercase tracking-widest"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">{t('providers.newProvider')}</span>
@@ -106,11 +106,13 @@ export function Providers() {
                 <div key={i} className="h-14 rounded-xl bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 animate-pulse" />
               ))
             ) : providers.length === 0 ? (
-              <div className="py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/20 dark:bg-neutral-900/20">
-                <Key className="w-12 h-12 text-neutral-700" />
+              <div className="py-20 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/20 shadow-sm">
+                <div className="p-4 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
+                  <Key className="w-8 h-8 text-neutral-700" />
+                </div>
                 <div>
-                  <p className="text-lg font-medium text-neutral-600 dark:text-neutral-400">{t('providers.noProviders.title')}</p>
-                  <p className="text-sm">{t('providers.noProviders.description')}</p>
+                  <p className="text-lg font-bold text-neutral-600 dark:text-neutral-400 tracking-tight">{t('providers.noProviders.title')}</p>
+                  <p className="text-sm mt-1">{t('providers.noProviders.description')}</p>
                 </div>
               </div>
             ) : (
@@ -125,7 +127,7 @@ export function Providers() {
                   <div
                     key={provider.id}
                     onClick={() => navigate(`/provider/${provider.id}`)}
-                    className="w-full bg-white/40 dark:bg-neutral-900/40 backdrop-blur-sm border border-neutral-200/60 dark:border-neutral-800/60 hover:border-amber-500/30 hover:bg-neutral-900/60 px-3 py-2.5 md:px-3.5 md:py-2.5 rounded-xl text-left transition-all group flex items-center justify-between gap-3 cursor-pointer"
+                    className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-blue-500/50 hover:bg-neutral-50 dark:hover:bg-neutral-800/40 px-4 py-4 rounded-2xl text-left transition-all group flex items-center justify-between gap-3 cursor-pointer shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5"
                   >
                     <div className="flex items-center gap-2.5 md:gap-3 overflow-hidden min-w-0">
                       <div className={`flex-shrink-0 p-1.5 md:p-2 rounded-lg ${colors.icon} group-hover:scale-110 transition-transform`}>
@@ -136,17 +138,17 @@ export function Providers() {
                         <div className="flex items-center gap-1.5 md:gap-2 mt-0.5 flex-wrap">
                           <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${colors.badge}`}>{provider.type}</span>
                           {provider.apiUrl && (
-                            <span className="flex items-center gap-1 text-[10px] text-neutral-500 dark:text-neutral-500 truncate max-w-[140px] md:max-w-[180px]">
+                            <span className="flex items-center gap-1 text-[10px] text-neutral-600 dark:text-neutral-500 truncate max-w-[140px] md:max-w-[180px]">
                               <Globe className="w-3 h-3 flex-shrink-0" />{provider.apiUrl}
                             </span>
                           )}
-                          <span className={`flex items-center gap-1 text-[10px] font-medium ${hasCredentials ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          <span className={`flex items-center gap-1 text-[10px] font-medium ${hasCredentials ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
                             {hasCredentials
                               ? <><CheckCircle className="w-3 h-3" /> {provider.type === 'KlingAI' ? t('providers.providerCard.credentialsStored') : t('providers.providerCard.keyStored')}</>
                               : <><AlertCircle className="w-3 h-3" /> {provider.type === 'KlingAI' ? t('providers.providerCard.missingCredentials') : t('providers.providerCard.noKey')}</>}
                           </span>
                           {(projectCount > 0 || activeJobCount > 0) && (
-                            <span className="flex items-center gap-2 text-[10px] text-neutral-500 dark:text-neutral-500">
+                            <span className="flex items-center gap-2 text-[10px] text-neutral-500 dark:text-neutral-500 font-bold bg-neutral-100 dark:bg-neutral-800/50 px-2 py-0.5 rounded shadow-inner">
                               {projectCount > 0 && <span>{t('providers.providerCard.projects', { count: projectCount })}</span>}
                               {activeJobCount > 0 && <span>{t('providers.providerCard.activeJobs', { count: activeJobCount })}</span>}
                             </span>
@@ -156,16 +158,16 @@ export function Providers() {
                     </div>
 
                     <div className="flex items-center gap-0.5 flex-shrink-0">
-                      <button
+                       <button
                         onClick={(e) => { e.stopPropagation(); navigate(`/provider/${provider.id}/edit`); }}
-                        className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors opacity-100"
+                        className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-all active:scale-90 border border-transparent hover:border-blue-100"
                         title={t('providerCustomModels.edit')}
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); setDeleteTarget(provider); }}
-                        className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-100"
+                        className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all active:scale-90 border border-transparent hover:border-red-100"
                         title={t('providerCustomModels.delete')}
                       >
                         <Trash2 className="w-4 h-4" />

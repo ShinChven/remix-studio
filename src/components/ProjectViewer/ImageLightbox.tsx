@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
@@ -41,8 +42,8 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete }: ImageLi
     setCurrentIndex(prev => prev < images.length - 1 ? prev + 1 : 0);
   };
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer" onClick={onClose}>
       <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
         {onDelete && (
           <button 
@@ -82,6 +83,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete }: ImageLi
           {currentIndex + 1} / {images.length}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

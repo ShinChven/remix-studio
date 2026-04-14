@@ -11,15 +11,15 @@ import {
 } from 'lucide-react';
 
 const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
-  GoogleAI:   { icon: 'bg-blue-500/10 text-blue-500',   badge: 'bg-blue-600/10 text-blue-400 border-blue-600/30' },
-  VertexAI:   { icon: 'bg-purple-500/10 text-purple-500', badge: 'bg-purple-600/10 text-purple-400 border-purple-600/30' },
-  RunningHub: { icon: 'bg-emerald-500/10 text-emerald-500', badge: 'bg-emerald-600/10 text-emerald-400 border-emerald-600/30' },
-  KlingAI:    { icon: 'bg-lime-500/10 text-lime-400', badge: 'bg-lime-600/10 text-lime-300 border-lime-600/30' },
-  OpenAI:     { icon: 'bg-orange-500/10 text-orange-500', badge: 'bg-orange-600/10 text-orange-400 border-orange-600/30' },
-  Grok:       { icon: 'bg-rose-500/10 text-rose-500', badge: 'bg-rose-600/10 text-rose-400 border-rose-600/30' },
-  Claude:     { icon: 'bg-amber-500/10 text-amber-500', badge: 'bg-amber-600/10 text-amber-400 border-amber-600/30' },
-  BytePlus:   { icon: 'bg-cyan-500/10 text-cyan-500', badge: 'bg-cyan-600/10 text-cyan-400 border-cyan-600/30' },
-  Replicate:  { icon: 'bg-fuchsia-500/10 text-fuchsia-400', badge: 'bg-fuchsia-600/10 text-fuchsia-300 border-fuchsia-600/30' },
+  GoogleAI:   { icon: 'bg-blue-500/10 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500',   badge: 'bg-blue-50 dark:bg-blue-600/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-600/30' },
+  VertexAI:   { icon: 'bg-purple-500/10 dark:bg-purple-500/10 text-purple-600 dark:text-purple-500', badge: 'bg-purple-50 dark:bg-purple-600/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-600/30' },
+  RunningHub: { icon: 'bg-emerald-500/10 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500', badge: 'bg-emerald-50 dark:bg-emerald-600/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-600/30' },
+  KlingAI:    { icon: 'bg-lime-500/10 dark:bg-lime-500/10 text-lime-600 dark:text-lime-400', badge: 'bg-lime-50 dark:bg-lime-600/10 text-lime-700 dark:text-lime-300 border-lime-200 dark:border-lime-600/30' },
+  OpenAI:     { icon: 'bg-orange-500/10 dark:bg-orange-500/10 text-orange-600 dark:text-orange-500', badge: 'bg-orange-50 dark:bg-orange-600/10 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-600/30' },
+  Grok:       { icon: 'bg-rose-500/10 dark:bg-rose-500/10 text-rose-600 dark:text-rose-500', badge: 'bg-rose-50 dark:bg-rose-600/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-600/30' },
+  Claude:     { icon: 'bg-amber-500/10 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500', badge: 'bg-amber-50 dark:bg-amber-600/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-600/30' },
+  BytePlus:   { icon: 'bg-cyan-500/10 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-500', badge: 'bg-cyan-50 dark:bg-cyan-600/10 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-600/30' },
+  Replicate:  { icon: 'bg-fuchsia-500/10 dark:bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400', badge: 'bg-fuchsia-50 dark:bg-fuchsia-600/10 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-200 dark:border-fuchsia-600/30' },
 };
 
 export function ProviderProfile() {
@@ -101,9 +101,9 @@ export function ProviderProfile() {
     : provider.hasKey;
 
   const CATEGORY_META: Record<string, { label: string; icon: typeof MessageSquare; color: string }> = {
-    text:  { label: t('providerProfile.categories.text'),  icon: MessageSquare, color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
-    image: { label: t('providerProfile.categories.image'), icon: Image,         color: 'text-pink-400 bg-pink-500/10 border-pink-500/20' },
-    video: { label: t('providerProfile.categories.video'), icon: Video,         color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+    text:  { label: t('providerProfile.categories.text'),  icon: MessageSquare, color: 'text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-500/10 border-sky-200 dark:border-sky-500/20' },
+    image: { label: t('providerProfile.categories.image'), icon: Image,         color: 'text-pink-700 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 border-pink-200 dark:border-pink-500/20' },
+    video: { label: t('providerProfile.categories.video'), icon: Video,         color: 'text-violet-700 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 border-violet-200 dark:border-violet-500/20' },
   };
 
   return (
@@ -129,7 +129,7 @@ export function ProviderProfile() {
                   <Globe className="w-3.5 h-3.5" />{provider.apiUrl}
                 </span>
               )}
-              <span className={`flex items-center gap-1 text-xs font-medium ${hasCredentials ? 'text-emerald-400' : 'text-amber-400'}`}>
+              <span className={`flex items-center gap-1 text-xs font-bold ${hasCredentials ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
                 {hasCredentials
                   ? <><CheckCircle className="w-3.5 h-3.5" /> {provider.type === 'KlingAI' ? t('providerProfile.credentialsStored') : t('providerProfile.keyStored')}</>
                   : <><AlertCircle className="w-3.5 h-3.5" /> {provider.type === 'KlingAI' ? t('providerProfile.missingCredentials') : t('providerProfile.noKey')}</>}
@@ -149,7 +149,7 @@ export function ProviderProfile() {
               )}
               <button
                 onClick={() => navigate(`/provider/${id}/edit`)}
-                className="text-xs md:text-sm bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-700 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-neutral-700 font-medium shrink-0"
+                className="text-xs md:text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-neutral-200 dark:border-neutral-700 font-black uppercase tracking-widest shadow-sm active:scale-95 shrink-0"
               >
                 <Pencil className="w-4 h-4" /> {t('providerProfile.edit')}
               </button>
@@ -183,7 +183,7 @@ export function ProviderProfile() {
           </div>
 
           {!provider.hasKey && provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && provider.type !== 'Replicate' && (
-            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 text-sm flex items-center gap-2">
+            <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400 text-sm flex items-center gap-2 shadow-sm font-medium">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {t('providerProfile.addKeyToFetch')}
             </div>
@@ -224,12 +224,12 @@ export function ProviderProfile() {
                       {items.map(m => (
                         <div
                           key={m.id}
-                          className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 rounded-xl px-3.5 py-2.5 hover:border-neutral-700 transition-colors"
+                          className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl px-5 py-4 hover:border-neutral-400 dark:hover:border-neutral-700 transition-all shadow-sm hover:shadow-md group/card"
                         >
-                          <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{m.name}</p>
-                          <p className="text-[11px] text-neutral-500 dark:text-neutral-500 truncate font-mono mt-0.5">{m.id}</p>
+                          <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{m.name}</p>
+                          <p className="text-[10px] text-neutral-500 dark:text-neutral-500 truncate font-mono mt-0.5 uppercase tracking-wider">{m.id}</p>
                           {m.description && (
-                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 line-clamp-2">{m.description}</p>
+                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-2 line-clamp-2 leading-relaxed">{m.description}</p>
                           )}
                         </div>
                       ))}
@@ -247,9 +247,9 @@ export function ProviderProfile() {
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 rounded-xl px-3.5 py-3 text-center">
-      <p className="text-xs text-neutral-500 dark:text-neutral-500 mb-1">{label}</p>
-      <p className="text-lg font-bold text-neutral-900 dark:text-white">{value}</p>
+    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl px-5 py-4 text-center shadow-sm">
+      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-1">{label}</p>
+      <p className="text-xl font-bold text-neutral-900 dark:text-white">{value}</p>
     </div>
   );
 }

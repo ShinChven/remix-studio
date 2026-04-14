@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
@@ -346,7 +347,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         title={library.name}
         description={(
           <div className="flex items-center gap-4 mt-2 md:mt-3">
-            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600 dark:text-neutral-400 px-2.5 py-1 bg-white/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg backdrop-blur-sm">
+            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600 dark:text-neutral-400 px-3 py-1.5 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
               {t('libraryEditor.collectionType', { type: library.type || 'text' })}
             </div>
           </div>
@@ -361,7 +362,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder={t('libraryEditor.filterItems')}
-                className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all w-full sm:w-48 lg:w-64"
+                className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all w-full sm:w-48 lg:w-64 font-medium shadow-sm"
               />
             </div>
 
@@ -369,13 +370,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               {library.type === 'text' ? (
                 <button
                   onClick={() => navigate(`/library/${library.id}/prompt/new`)}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-xl transition-all border border-blue-700 active:scale-95 group shadow-lg shadow-blue-600/10"
                 >
                   <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
                   <span className="text-xs font-bold uppercase tracking-widest">{t('libraryEditor.addFragment')}</span>
                 </button>
               ) : (
-                <label className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+                <label className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-xl transition-all border border-blue-700 active:scale-95 group shadow-lg shadow-blue-600/10 ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
                   {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 
                    library.type === 'audio' ? <Music className="w-4 h-4 transition-transform group-hover:scale-110" /> :
                    library.type === 'video' ? <Video className="w-4 h-4 transition-transform group-hover:scale-110" /> :
@@ -442,10 +443,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         {/* Batch Action Toolbar (Mirrors item style) */}
         {filteredItems.length > -1 && (
           <div className={`
-            sticky top-0 z-20 flex items-center justify-between p-3.5 rounded-xl border transition-all duration-300 backdrop-blur-md shadow-lg shadow-black/20
+            sticky top-0 z-20 flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 shadow-xl
             ${selectedItemIds.size > 0 
-              ? 'bg-blue-500/20 border-blue-500/50' 
-              : 'bg-neutral-50/80 dark:bg-neutral-950/80 border-neutral-200/60 dark:border-neutral-800/60'}
+              ? 'bg-blue-600 text-white border-blue-700' 
+              : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800'}
           `}>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
@@ -463,7 +464,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                     <Square className="w-4.5 h-4.5 text-neutral-600" />
                   )}
                 </div>
-                <span className={`text-[10px] font-black uppercase tracking-widest ${selectedItemIds.size > 0 ? 'text-blue-400' : 'text-neutral-500 dark:text-neutral-500'}`}>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${selectedItemIds.size > 0 ? 'text-white' : 'text-neutral-500 dark:text-neutral-500'}`}>
                   {selectedItemIds.size > 0 ? t('libraryEditor.selectedCount', { count: selectedItemIds.size }) : t('libraryEditor.selectAll')}
                 </span>
               </div>
@@ -518,13 +519,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
                 <button 
                   onClick={() => setShowBatchTagModal(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded-lg transition-all font-bold text-[10px] uppercase tracking-[0.15em] border border-blue-500/30"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all font-bold text-[10px] uppercase tracking-[0.15em] border border-white/20"
                 >
                   <TagIcon className="w-3.5 h-3.5" /> {t('libraryEditor.batchTag')}
                 </button>
                 <button 
                   onClick={() => setShowDeleteSelectedModal(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-lg transition-all font-bold text-[10px] uppercase tracking-[0.15em] border border-red-500/30"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-all font-bold text-[10px] uppercase tracking-[0.15em] border border-red-700 shadow-sm"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> {t('libraryEditor.delete')}
                 </button>
@@ -559,11 +560,11 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 <div className={`
                   group/item flex flex-col transition-all duration-300 border overflow-hidden
                   ${isSelected 
-                    ? 'border-blue-500 bg-blue-500/5 shadow-[0_0_20px_rgba(59,130,246,0.1)] z-10' 
-                    : 'bg-white/40 dark:bg-neutral-900/40 border-neutral-200/60 dark:border-neutral-800/60 hover:bg-neutral-800/40 hover:border-neutral-700/80'}
+                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900 shadow-[0_0_20px_rgba(59,130,246,0.15)] z-10' 
+                    : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-400 dark:hover:border-neutral-700 shadow-sm'}
                   ${library.type === 'image' 
-                    ? 'rounded-2xl aspect-square p-2' 
-                    : 'rounded-xl cursor-pointer'}
+                    ? 'rounded-3xl aspect-square p-3' 
+                    : 'rounded-2xl cursor-pointer'}
                 `}>
                   {library.type !== 'text' ? (
                     <div className={`relative flex-1 rounded-xl overflow-hidden cursor-pointer transition-all ${isSelected ? 'ring-4 ring-blue-500/50 scale-95' : ''}`} onClick={(e) => { 
@@ -652,7 +653,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   ) : (
                     <>
                       <div 
-                        className={`p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 ${isExpanded ? 'border-b border-neutral-200/50 dark:border-neutral-800/50 bg-neutral-200/20 dark:bg-neutral-800/20' : ''}`}
+                        className={`p-4 md:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 ${isExpanded ? 'border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800/40' : ''}`}
                         onClick={(e) => { 
                           if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, originalIndex, e); 
                           else toggleItemExpand(item.id, e);
@@ -720,7 +721,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                         </div>
                       </div>
                       {isExpanded && (
-                        <div className="p-4 sm:p-5 space-y-4 animate-in slide-in-from-top-1 duration-200 border-t border-neutral-200/50 dark:border-neutral-800/50 bg-white/30 dark:bg-neutral-900/30">
+                        <div className="p-6 md:p-8 space-y-4 animate-in slide-in-from-top-1 duration-200 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/20">
                           <div className="space-y-2">
                              <div className="flex items-center justify-between">
                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('libraryEditor.fullSource')}</label>
@@ -810,9 +811,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       />
 
       {/* References warning modal */}
-      {showReferencesModal && (
+      {showReferencesModal && createPortal(
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
+          className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
           onClick={() => setShowReferencesModal(false)}
         >
           <div
@@ -858,7 +859,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <ConfirmModal
@@ -871,8 +873,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         type="danger"
       />
 
-      {lightboxIndex !== null && library.items[lightboxIndex] && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={() => setLightboxIndex(null)}>
+      {lightboxIndex !== null && library.items[lightboxIndex] && createPortal(
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={() => setLightboxIndex(null)}>
           <button 
             onClick={() => setLightboxIndex(null)}
             className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 text-neutral-900 dark:text-white rounded-full transition-all"
@@ -898,7 +900,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               {lightboxIndex + 1} / {library.items.length}
             </div>
           </div>
-
+ 
           <button 
             onClick={(e) => { e.stopPropagation(); setLightboxIndex(prev => prev! < library.items.length - 1 ? prev! + 1 : prev); }}
             disabled={lightboxIndex === library.items.length - 1}
@@ -906,7 +908,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           >
             <ChevronRight className="w-8 h-8" />
           </button>
-        </div>
+        </div>,
+        document.body
       )}
 
       <ConfirmModal

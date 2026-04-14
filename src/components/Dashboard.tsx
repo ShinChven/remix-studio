@@ -60,8 +60,8 @@ export function Dashboard() {
                   <Clock className="w-5 h-5 text-green-500" />
                   {t('dashboard.recentProjects')}
                 </h3>
-                <button onClick={addProject} className="text-xs md:text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
-                  <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t('dashboard.newProject')}</span><span className="sm:hidden">{t('dashboard.new')}</span>
+                <button onClick={addProject} className="text-xs md:text-sm bg-green-600 text-white hover:bg-green-700 px-5 md:px-6 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-green-700 font-black uppercase tracking-widest shadow-lg shadow-green-600/10 active:scale-95">
+                  <Plus className="w-4 h-4" /> <span>{t('dashboard.newProject')}</span>
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -69,7 +69,7 @@ export function Dashboard() {
                   <Link
                     key={project.id}
                     to={`/project/${project.id}`}
-                    className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-green-500/50 p-4 rounded-xl text-left transition-all group"
+                    className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-green-500/50 p-6 rounded-2xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 relative overflow-hidden"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="p-2 bg-green-500/10 rounded-lg text-green-500 group-hover:scale-110 transition-transform">
@@ -102,8 +102,8 @@ export function Dashboard() {
                   {t('dashboard.libraries')}
                 </h3>
                 <div className="flex gap-2">
-                  <button onClick={addLibrary} className="text-xs md:text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
-                    <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t('dashboard.newLibrary')}</span><span className="sm:hidden">{t('dashboard.new')}</span>
+                  <button onClick={addLibrary} className="text-xs md:text-sm bg-blue-600 text-white hover:bg-blue-700 px-5 md:px-6 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-blue-700 font-black uppercase tracking-widest shadow-lg shadow-blue-600/10 active:scale-95">
+                    <Plus className="w-4 h-4" /> <span>{t('dashboard.newLibrary')}</span>
                   </button>
                 </div>
               </div>
@@ -112,7 +112,7 @@ export function Dashboard() {
                   <Link
                     key={lib.id}
                     to={`/library/${lib.id}`}
-                    className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-blue-500/50 p-4 rounded-xl text-left transition-all group"
+                    className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-blue-500/50 p-6 rounded-2xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300"
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500 group-hover:scale-110 transition-transform">

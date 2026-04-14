@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { X, ChevronDown, Library as LibraryIcon, Video as VideoIcon, Volume2 } from 'lucide-react';
 import { Library, LibraryItem } from '../../types';
@@ -101,11 +102,11 @@ export function LibraryPreviewModal({
   
   if (!library) return null;
 
-  return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-8">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={onClose} />
+  return createPortal(
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8">
+      <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={onClose} />
       
-      <div className="relative w-full max-w-5xl h-[80vh] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="relative w-full max-w-5xl h-[85vh] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
         <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/20 dark:bg-neutral-950/20">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-emerald-600/10 rounded-xl">
@@ -297,6 +298,7 @@ export function LibraryPreviewModal({
           onClose={() => setPreviewLightbox(null)}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -420,7 +420,7 @@ export function Account() {
                   className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition-colors ${
                     isActive
                       ? 'border-blue-500/30 bg-blue-500/10 text-neutral-900 dark:text-white'
-                      : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 text-neutral-600 dark:text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+                      : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-neutral-200'
                   }`}
                 >
                   <Icon className={`h-4 w-4 ${isActive ? 'text-blue-300' : 'text-neutral-500 dark:text-neutral-500'}`} />
@@ -719,7 +719,7 @@ export function Account() {
                           type="password"
                           value={currentPassword}
                           onChange={(event) => setCurrentPassword(event.target.value)}
-                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-blue-500/50"
                           required
                         />
                       </div>
@@ -732,7 +732,7 @@ export function Account() {
                           type="password"
                           value={newPassword}
                           onChange={(event) => setNewPassword(event.target.value)}
-                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-blue-500/50"
                           minLength={8}
                           required
                         />
@@ -744,7 +744,7 @@ export function Account() {
                           type="password"
                           value={confirmPassword}
                           onChange={(event) => setConfirmPassword(event.target.value)}
-                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-blue-500/50"
                           minLength={8}
                           required
                         />
@@ -816,7 +816,7 @@ export function Account() {
                       value={passkeyName}
                       onChange={(event) => setPasskeyName(event.target.value)}
                       placeholder={t('account.security.placeholder')}
-                      className="flex-1 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                      className="flex-1 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-blue-500/50"
                     />
                     <button
                       type="button"
@@ -931,7 +931,7 @@ export function Account() {
                               type="password"
                               value={twoFactorDisablePassword}
                               onChange={(event) => setTwoFactorDisablePassword(event.target.value)}
-                              className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                              className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-blue-500/50"
                               required
                             />
                           </div>
@@ -944,7 +944,7 @@ export function Account() {
                             maxLength={6}
                             value={twoFactorDisableCode}
                             onChange={(event) => setTwoFactorDisableCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                            className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50 font-mono tracking-[0.3em]"
+                            className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-blue-500/50 font-mono tracking-[0.3em]"
                             required
                           />
                         </div>
@@ -985,7 +985,7 @@ export function Account() {
                   <select
                     value={i18n.language}
                     onChange={(e) => void i18n.changeLanguage(e.target.value)}
-                    className="w-full appearance-none rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                    className="w-full appearance-none rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-blue-500/50"
                   >
                     {LANGUAGES.map((lang) => (
                       <option key={lang.code} value={lang.code}>
@@ -1018,7 +1018,7 @@ export function Account() {
                   <select
                     value={theme}
                     onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
-                    className="w-full appearance-none rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-indigo-500/50"
+                    className="w-full appearance-none rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-indigo-500/50"
                   >
                     <option value="light">{t('account.preferences.light')}</option>
                     <option value="dark">{t('account.preferences.dark')}</option>
@@ -1067,7 +1067,7 @@ export function Account() {
                       value={removePasswordInput}
                       onChange={(e) => setRemovePasswordInput(e.target.value)}
                       placeholder={t('account.confirm.removePasswordPlaceholder')}
-                      className="mt-4 w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-red-500/50"
+                      className="mt-4 w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-red-500/50"
                       autoFocus
                     />
                     {passwordError && (
