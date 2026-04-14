@@ -92,14 +92,14 @@ export function AlbumTab({
             onToggleSelectAll={toggleSelectAllAlbum}
             mobileSingleLine
             mobileActionsRight
-            prefix={
+            prefix={!isTextProject && (
               <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                 <Layers className="w-4 h-4 text-blue-500" />
                 <span className="text-blue-500/80">
                   {((albumItems || []).reduce((acc, item) => acc + (item.size || 0), 0) / (1024 * 1024)).toFixed(2)} MB
                 </span>
               </div>
-            }
+            )}
             rightActions={
               <>
                 <button

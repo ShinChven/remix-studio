@@ -55,38 +55,40 @@ export function DraftsTab({
 
   const StackedGallery = () => (
     <div className="py-12 md:py-20 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-1000">
-      <div className="relative w-64 h-64 md:w-80 md:h-80 mb-12 group cursor-pointer" onClick={onSwitchToAlbum}>
-        {displayAlbumItems.map((item, idx) => {
-          const rotations = [-6, 4, -2, 5, -3];
-          const xOffsets = [-20, 15, -5, 25, -10];
-          const yOffsets = [10, -5, 0, 15, -8];
-          
-          return (
-            <div 
-              key={item.id}
-              className="absolute inset-0 transition-all duration-500 ease-out group-hover:scale-105"
-              style={{
-                transform: `rotate(${rotations[idx % rotations.length]}deg) translate(${xOffsets[idx % xOffsets.length]}px, ${yOffsets[idx % yOffsets.length]}px)`,
-                zIndex: displayAlbumItems.length - idx
-              }}
-            >
-              <div className="w-full h-full p-2 bg-white rounded-sm shadow-2xl border border-neutral-200 overflow-hidden">
-                <img 
-                  src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)} 
-                  alt={item.prompt}
-                  className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700"
-                />
+      {projectType !== 'text' && (
+        <div className="relative w-64 h-64 md:w-80 md:h-80 mb-12 group cursor-pointer" onClick={onSwitchToAlbum}>
+          {displayAlbumItems.map((item, idx) => {
+            const rotations = [-6, 4, -2, 5, -3];
+            const xOffsets = [-20, 15, -5, 25, -10];
+            const yOffsets = [10, -5, 0, 15, -8];
+            
+            return (
+              <div 
+                key={item.id}
+                className="absolute inset-0 transition-all duration-500 ease-out group-hover:scale-105"
+                style={{
+                  transform: `rotate(${rotations[idx % rotations.length]}deg) translate(${xOffsets[idx % xOffsets.length]}px, ${yOffsets[idx % yOffsets.length]}px)`,
+                  zIndex: displayAlbumItems.length - idx
+                }}
+              >
+                <div className="w-full h-full p-2 bg-white rounded-sm shadow-2xl border border-neutral-200 overflow-hidden">
+                  <img 
+                    src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)} 
+                    alt={item.prompt}
+                    className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700"
+                  />
+                </div>
               </div>
+            );
+          })}
+          
+          {displayAlbumItems.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-neutral-800 rounded-3xl opacity-20">
+              <Plus className="w-12 h-12 text-neutral-500" />
             </div>
-          );
-        })}
-        
-        {displayAlbumItems.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-neutral-800 rounded-3xl opacity-20">
-             <Plus className="w-12 h-12 text-neutral-500" />
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       <div className="w-full max-w-xl mx-auto px-4 sm:px-6 text-center space-y-4 flex flex-col items-center">
         <h3 className="text-lg font-black text-white uppercase tracking-widest bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
