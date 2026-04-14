@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
 import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Unplug } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 
 export function MainLayout() {
+  const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [storageSize, setStorageSize] = useState<number | null>(null);
   const [storageLimit, setStorageLimit] = useState<number | null>(null);
@@ -134,10 +136,10 @@ export function MainLayout() {
                 ? 'bg-blue-600/10 text-blue-400 border-blue-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title="Dashboard"
+            title={t('sidebar.dashboard')}
           >
             <LayoutGrid className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Dashboard</span>
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.dashboard')}</span>
           </Link>
 
           <Link
@@ -147,10 +149,10 @@ export function MainLayout() {
                 ? 'bg-green-600/10 text-green-400 border-green-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title="Projects"
+            title={t('sidebar.projects')}
           >
             <Play className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Projects</span>
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.projects')}</span>
           </Link>
 
           <Link
@@ -160,10 +162,10 @@ export function MainLayout() {
                 ? 'bg-blue-600/10 text-blue-400 border-blue-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title="Libraries"
+            title={t('sidebar.libraries')}
           >
             <Folder className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Libraries</span>
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.libraries')}</span>
           </Link>
 
           <Link
@@ -173,10 +175,10 @@ export function MainLayout() {
                 ? 'bg-amber-600/10 text-amber-400 border-amber-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title="Providers"
+            title={t('sidebar.providers')}
           >
             <Key className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Providers</span>
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.providers')}</span>
           </Link>
 
           <Link
@@ -186,10 +188,10 @@ export function MainLayout() {
                 ? 'bg-violet-600/10 text-violet-400 border-violet-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title="MCP Connections"
+            title={t('sidebar.mcp')}
           >
             <Unplug className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>MCP</span>
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.mcp')}</span>
           </Link>
 
           <Link
@@ -199,10 +201,10 @@ export function MainLayout() {
                 ? 'bg-blue-600/10 text-blue-400 border-blue-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title="Archive"
+            title={t('sidebar.archive')}
           >
             <FileArchive className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Archive</span>
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.archive')}</span>
           </Link>
 
           <Link
@@ -212,10 +214,10 @@ export function MainLayout() {
                 ? 'bg-red-600/10 text-red-400 border-red-600/20'
                 : 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title="Recycle Bin"
+            title={t('sidebar.recycleBin')}
           >
             <Trash2 className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>Recycle Bin</span>
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.recycleBin')}</span>
           </Link>
         </div>
 
@@ -238,7 +240,7 @@ export function MainLayout() {
             </div>
             {!isCollapsed && (
               <div className="ml-auto min-w-0 flex-1 text-right">
-                <p className={`text-[10px] uppercase tracking-wider ${location.pathname === '/account' ? 'text-cyan-200/70' : 'text-neutral-500'}`}>Storage</p>
+                <p className={`text-[10px] uppercase tracking-wider ${location.pathname === '/account' ? 'text-cyan-200/70' : 'text-neutral-500'}`}>{t('sidebar.storage')}</p>
                 <p className={`text-xs font-medium truncate ${location.pathname === '/account' ? 'text-cyan-50' : 'text-neutral-300'}`} title={storageText}>
                   {storageText}
                 </p>
@@ -258,10 +260,10 @@ export function MainLayout() {
               onClick={() => setIsMobileMenuOpen(false)}
               className={`mt-3 flex items-center rounded-xl border border-neutral-700/50 bg-neutral-800/40 p-3 text-sm text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-800/70 ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
                 }`}
-              title="User Management"
+              title={t('sidebar.userManagement')}
             >
               <Shield className="w-5 h-5 text-blue-400 flex-shrink-0" />
-              <span className={`overflow-hidden whitespace-nowrap font-medium transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline'}`}>User Management</span>
+              <span className={`overflow-hidden whitespace-nowrap font-medium transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline'}`}>{t('sidebar.userManagement')}</span>
             </Link>
           )}
         </div>

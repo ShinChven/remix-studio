@@ -1,0 +1,36 @@
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "libraries": "Libraries",
+    "providers": "Providers",
+    "mcp": "MCP",
+    "archive": "Archive",
+    "recycleBin": "Recycle Bin",
+    "storage": "Storage",
+    "userManagement": "User Management"
+  },
+  "account": {
+    "title": "Account",
+    "description": "Manage your identity, security, and workspace capacity.",
+    "tabs": {
+      "overview": "Overview",
+      "storage": "Storage",
+      "security": "Security",
+      "preferences": "Preferences"
+    },
+    "overview": {
+      "profile": "Profile",
+      "administrator": "Administrator",
+      "user": "User",
+      "plan": "{{tier}} plan",
+      "memberSince": "Member since {{date}}",
+      "signOut": "Sign out"
+    },
+    "preferences": {
+      "language": "Language",
+      "languageDescription": "Choose your preferred application language.",
+      "selectLanguage": "Select Language"
+    }
+  }
+}

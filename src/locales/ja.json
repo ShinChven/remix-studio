@@ -1,0 +1,36 @@
+{
+  "sidebar": {
+    "dashboard": "ダッシュボード",
+    "projects": "プロジェクト",
+    "libraries": "ライブラリ",
+    "providers": "プロバイダー",
+    "mcp": "MCP",
+    "archive": "アーカイブ",
+    "recycleBin": "ゴミ箱",
+    "storage": "ストレージ",
+    "userManagement": "ユーザー管理"
+  },
+  "account": {
+    "title": "アカウント",
+    "description": "ID、セキュリティ、ワークスペースの容量を管理します。",
+    "tabs": {
+      "overview": "概要",
+      "storage": "ストレージ",
+      "security": "セキュリティ",
+      "preferences": "設定"
+    },
+    "overview": {
+      "profile": "プロフィール",
+      "administrator": "管理者",
+      "user": "ユーザー",
+      "plan": "{{tier}} プラン",
+      "memberSince": "{{date}} からのメンバー",
+      "signOut": "サインアウト"
+    },
+    "preferences": {
+      "language": "言語",
+      "languageDescription": "希望するアプリケーションの言語を選択してください。",
+      "selectLanguage": "言語を選択"
+    }
+  }
+}

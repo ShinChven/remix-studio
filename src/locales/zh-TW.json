@@ -1,0 +1,36 @@
+{
+  "sidebar": {
+    "dashboard": "儀表板",
+    "projects": "專案",
+    "libraries": "庫",
+    "providers": "供應商",
+    "mcp": "MCP",
+    "archive": "封存",
+    "recycleBin": "資源回收筒",
+    "storage": "存儲",
+    "userManagement": "用戶管理"
+  },
+  "account": {
+    "title": "帳戶",
+    "description": "管理您的身份、安全和工作空間容量。",
+    "tabs": {
+      "overview": "概覽",
+      "storage": "存儲",
+      "security": "安全",
+      "preferences": "偏好設置"
+    },
+    "overview": {
+      "profile": "個人資料",
+      "administrator": "管理員",
+      "user": "用戶",
+      "plan": "{{tier}} 計劃",
+      "memberSince": "註冊日期 {{date}}",
+      "signOut": "登出"
+    },
+    "preferences": {
+      "language": "語言",
+      "languageDescription": "選擇您首選的應用語言。",
+      "selectLanguage": "選擇語言"
+    }
+  }
+}

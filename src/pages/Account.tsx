@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, updatePassword } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -9,8 +10,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { isPasskeySupported, serializeAttestationCredential, toPublicKeyCreationOptions } from '../lib/passkey';
 import { toast } from 'sonner';
 
-type AccountTab = 'overview' | 'storage' | 'security';
-const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security'];
+type AccountTab = 'overview' | 'storage' | 'security' | 'preferences';
+const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security', 'preferences'];
+
+const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'zh-CN', label: '简体中文' },
+  { code: 'zh-TW', label: '繁體中文' },
+  { code: 'ja', label: '日本語' },
+  { code: 'ko', label: '한국어' },
+  { code: 'fr', label: 'Français' },
+];
 const STORAGE_COLORS: Record<string, string> = {
   projects: '#3b82f6',
   album: '#60a5fa',
@@ -48,6 +58,7 @@ function formatTier(limit?: number) {
 }
 
 export function Account() {
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { logout } = useAuth();
   const [user, setUser] = useState<User | null>(null);
@@ -384,16 +395,17 @@ export function Account() {
     <div className="p-6 lg:p-10">
       <div className="w-full space-y-8">
         <PageHeader
-          title="Account"
-          description="Manage your identity, security, and workspace capacity."
+          title={t('account.title')}
+          description={t('account.description')}
         />
 
         <div className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-3">
-          <div className="grid gap-2 md:grid-cols-3">
+          <div className="grid gap-2 md:grid-cols-4">
             {[
-              { id: 'overview' as const, label: 'Overview', icon: UserIcon },
-              { id: 'storage' as const, label: 'Storage', icon: HardDrive },
-              { id: 'security' as const, label: 'Security', icon: Shield },
+              { id: 'overview' as const, label: t('account.tabs.overview'), icon: UserIcon },
+              { id: 'storage' as const, label: t('account.tabs.storage'), icon: HardDrive },
+              { id: 'security' as const, label: t('account.tabs.security'), icon: Shield },
+              { id: 'preferences' as const, label: t('account.tabs.preferences'), icon: Globe },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -425,19 +437,19 @@ export function Account() {
                 </div>
                 <div className="space-y-2">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">Profile</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">{t('account.overview.profile')}</p>
                     <h2 className="mt-1 text-xl font-bold text-white">{user.email}</h2>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                      {user.role === 'admin' ? 'Administrator' : 'User'}
+                      {user.role === 'admin' ? t('account.overview.administrator') : t('account.overview.user')}
                     </span>
                     <span className="rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-300">
-                      {formatTier(user.storageLimit)} plan
+                      {t('account.overview.plan', { tier: formatTier(user.storageLimit) })}
                     </span>
                   </div>
                   <p className="text-sm text-neutral-500">
-                    Member since {new Date(user.createdAt).toLocaleDateString()}
+                    {t('account.overview.memberSince', { date: new Date(user.createdAt).toLocaleDateString() })}
                   </p>
                 </div>
               </div>
@@ -447,7 +459,7 @@ export function Account() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/15"
               >
                 <LogOut className="h-4 w-4" />
-                Sign out
+                {t('account.overview.signOut')}
               </button>
             </div>
 
@@ -948,6 +960,42 @@ export function Account() {
                 </section>
               </>
             )}
+          </div>
+        )}
+
+        {activeTab === 'preferences' && (
+          <div className="space-y-6">
+            <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-300">
+                  <Globe className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">{t('account.preferences.language')}</h2>
+                  <p className="text-sm text-neutral-400">{t('account.preferences.languageDescription')}</p>
+                </div>
+              </div>
+
+              <div className="mt-8 max-w-sm">
+                <label className="mb-2 block text-sm font-medium text-neutral-400">{t('account.preferences.selectLanguage')}</label>
+                <div className="relative group">
+                  <select
+                    value={i18n.language}
+                    onChange={(e) => void i18n.changeLanguage(e.target.value)}
+                    className="w-full appearance-none rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                  >
+                    {LANGUAGES.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-neutral-500 group-hover:text-neutral-300 transition-colors">
+                    <ChevronRight className="h-4 w-4 rotate-90" />
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         )}
 

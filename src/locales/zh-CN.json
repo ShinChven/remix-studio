@@ -1,0 +1,36 @@
+{
+  "sidebar": {
+    "dashboard": "仪表盘",
+    "projects": "项目",
+    "libraries": "库",
+    "providers": "供应商",
+    "mcp": "MCP",
+    "archive": "归档",
+    "recycleBin": "回收站",
+    "storage": "存储",
+    "userManagement": "用户管理"
+  },
+  "account": {
+    "title": "账户",
+    "description": "管理您的身份、安全和工作空间容量。",
+    "tabs": {
+      "overview": "概览",
+      "storage": "存储",
+      "security": "安全",
+      "preferences": "偏好设置"
+    },
+    "overview": {
+      "profile": "个人资料",
+      "administrator": "管理员",
+      "user": "用户",
+      "plan": "{{tier}} 计划",
+      "memberSince": "注册日期 {{date}}",
+      "signOut": "退出登录"
+    },
+    "preferences": {
+      "language": "语言",
+      "languageDescription": "选择您首选的应用语言。",
+      "selectLanguage": "选择语言"
+    }
+  }
+}

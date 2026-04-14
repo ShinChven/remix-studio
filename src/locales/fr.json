@@ -1,0 +1,36 @@
+{
+  "sidebar": {
+    "dashboard": "Tableau de bord",
+    "projects": "Projets",
+    "libraries": "Bibliothèques",
+    "providers": "Fournisseurs",
+    "mcp": "MCP",
+    "archive": "Archives",
+    "recycleBin": "Corbeille",
+    "storage": "Stockage",
+    "userManagement": "Gestion des utilisateurs"
+  },
+  "account": {
+    "title": "Compte",
+    "description": "Gérez votre identité, votre sécurité et la capacité de votre espace de travail.",
+    "tabs": {
+      "overview": "Aperçu",
+      "storage": "Stockage",
+      "security": "Sécurité",
+      "preferences": "Préférences"
+    },
+    "overview": {
+      "profile": "Profil",
+      "administrator": "Administrateur",
+      "user": "Utilisateur",
+      "plan": "Plan {{tier}}",
+      "memberSince": "Membre depuis {{date}}",
+      "signOut": "Se déconnecter"
+    },
+    "preferences": {
+      "language": "Langue",
+      "languageDescription": "Choisissez votre langue d'application préférée.",
+      "selectLanguage": "Choisir la langue"
+    }
+  }
+}
