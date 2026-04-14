@@ -130,8 +130,8 @@ export function SelectionToolbar({
         <div
           className={`flex items-center gap-1.5 sm:gap-2 lg:w-auto lg:justify-end flex-shrink-0 ${
             mobileSingleLine
-              ? 'flex-nowrap w-auto pt-0 border-none'
-              : 'flex-wrap w-full pt-2 border-t border-neutral-800/50 lg:pt-0 lg:border-none'
+              ? 'ml-auto flex-nowrap w-auto pt-0 border-none'
+              : 'ml-auto flex-wrap w-full pt-2 border-t border-neutral-800/50 lg:w-auto lg:pt-0 lg:border-none'
           }`}
         >
           {rightActions}

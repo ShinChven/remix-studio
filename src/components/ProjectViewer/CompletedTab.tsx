@@ -46,16 +46,18 @@ export function CompletedTab({
             onToggleSelectAll={toggleSelectAllCompleted}
             mobileSingleLine
             mobileActionsRight
-            selectionActions={
-              <button
-                onClick={() => setShowDeleteSelectedModal(true)}
-                title={t('projectViewer.common.deleteSelected')}
-                aria-label={t('projectViewer.common.deleteSelected')}
-                className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
-              >
-                <Trash2 className="w-3 h-3" />
-                <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
-              </button>
+            rightActions={
+              selectedCompletedIds.size > 0 ? (
+                <button
+                  onClick={() => setShowDeleteSelectedModal(true)}
+                  title={t('projectViewer.common.deleteSelected')}
+                  aria-label={t('projectViewer.common.deleteSelected')}
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
+                </button>
+              ) : undefined
             }
           />
         )}
