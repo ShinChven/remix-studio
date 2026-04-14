@@ -34,9 +34,11 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = (searchParams.get('tab') as 'draft' | 'queue' | 'completed' | 'album') || 'draft';
+  const rawTab = searchParams.get('tab');
+  const activeTab = (rawTab as 'draft' | 'queue' | 'completed' | 'album') || 'draft';
   const setActiveTab = (tab: 'draft' | 'queue' | 'completed' | 'album') => {
     setSearchParams({ tab }, { replace: true });
+    setMobileView('jobs');
   };
 
   const [localProject, setLocalProject] = useState<Project>(project);
@@ -105,6 +107,12 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   useEffect(() => {
     projectRef.current = localProject;
   }, [localProject]);
+
+  useEffect(() => {
+    if (rawTab) {
+      setMobileView('jobs');
+    }
+  }, [rawTab]);
 
   useEffect(() => {
     let interval: any;
