@@ -79,9 +79,10 @@ export function SettingsPanel({
         {/* Row 1: Provider Name + Chevron */}
         <div className="w-full flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[9px] font-black uppercase tracking-widest text-neutral-600">{t('projectViewer.settings.providerLabel')}</span>
-            <span className="text-[10px] font-bold text-neutral-300 truncate capitalize">
-              {selectedProvider?.name || t('projectViewer.settings.none')}
+            <span className="text-[9px] font-black uppercase tracking-widest text-neutral-600 shrink-0">{selectedProvider?.name || t('projectViewer.settings.none')}</span>
+            <div className="w-1 h-1 rounded-full bg-neutral-800 shrink-0" />
+            <span className="text-[10px] font-bold text-neutral-300 truncate">
+              {selectedModel?.name || t('projectViewer.settings.none')}
             </span>
           </div>
           <div className={`p-1 rounded-md bg-neutral-800/50 group-hover:bg-neutral-800 transition-all ${isSettingsCollapsed ? 'rotate-180' : ''}`}>

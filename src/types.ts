@@ -52,9 +52,12 @@ export interface ModelConfig {
     durations?: number[]; // seconds
     resolutions?: string[]; // e.g. '720p', '1080p', '4k'
     sounds?: ('on' | 'off')[];
-    // Advanced image generation options
+     // Advanced image generation options
     stepsOptions?: number[];
     guidanceOptions?: number[];
+    // Capability flags
+    supportsReferenceVideo?: boolean;
+    supportsReferenceAudio?: boolean;
   };
 }
 
@@ -632,6 +635,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         resolutions: ['480p', '720p'],
         durations: [5, 7, 8],
         sounds: ['on', 'off'],
+        supportsReferenceVideo: true,
+        supportsReferenceAudio: true,
       },
     },
     {
@@ -645,6 +650,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         resolutions: ['480p', '720p'],
         durations: [5, 7, 8, 10, 15, -1],
         sounds: ['on', 'off'],
+        supportsReferenceVideo: true,
+        supportsReferenceAudio: true,
       },
     },
     {

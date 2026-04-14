@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Eraser, ImageIcon, Library as LibraryIcon, Settings, Trash2, Type, Video as VideoIcon, Volume2 } from 'lucide-react';
-import { Library, Project, Provider, WorkflowItem as WorkflowItemType } from '../../types';
+import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
 
@@ -143,12 +143,29 @@ export function WorkflowPanel({
         </button>
         {localProject.type === 'video' && (
           <>
-            <button onClick={() => onAddWorkflowItem('video')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
-              <VideoIcon className="w-3 h-3" /> Video
-            </button>
-            <button onClick={() => onAddWorkflowItem('audio')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
-              <Volume2 className="w-3 h-3" /> Audio
-            </button>
+            {(() => {
+              const provider = providers.find((p) => p.id === selectedProviderId);
+              const providerType = provider?.type as ProviderType;
+              const baseModels = PROVIDER_MODELS_MAP[providerType] || [];
+              const customAliases = Array.isArray(provider?.customModels) ? provider.customModels : [];
+              const allModels = [...baseModels, ...resolveCustomModels(providerType, customAliases)];
+              const selectedModel = allModels.find((m) => m.id === selectedModelId);
+
+              return (
+                <>
+                  {selectedModel?.options.supportsReferenceVideo && (
+                    <button onClick={() => onAddWorkflowItem('video')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
+                      <VideoIcon className="w-3 h-3" /> Video
+                    </button>
+                  )}
+                  {selectedModel?.options.supportsReferenceAudio && (
+                    <button onClick={() => onAddWorkflowItem('audio')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
+                      <Volume2 className="w-3 h-3" /> Audio
+                    </button>
+                  )}
+                </>
+              );
+            })()}
           </>
         )}
         <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
