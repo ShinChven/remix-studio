@@ -18,6 +18,8 @@ import { createAuthRouter } from './server/routes/auth';
 import { createLibraryRouter } from './server/routes/libraries';
 import { createProjectRouter } from './server/routes/projects';
 import { createImageRouter } from './server/routes/images';
+import { createVideoRouter } from './server/routes/videos';
+import { createAudioRouter } from './server/routes/audios';
 import { createProviderRouter } from './server/routes/providers';
 import { createGenerateRouter } from './server/routes/generate';
 import { createTrashRouter } from './server/routes/trash';
@@ -164,6 +166,8 @@ async function startServer() {
   app.route('/', createLibraryRouter(repository, storage, userRepository, exportStorage));
   app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager));
   app.route('/', createImageRouter(storage, exportStorage, repository, userRepository));
+  app.route('/', createVideoRouter(storage, exportStorage, repository, userRepository));
+  app.route('/', createAudioRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createProviderRouter(providerRepository));
   app.route('/', createGenerateRouter(providerRepository));
   app.route('/', createTrashRouter(repository, storage));

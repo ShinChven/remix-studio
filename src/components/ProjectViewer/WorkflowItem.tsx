@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Type, Library as LibraryIcon, ImageIcon, Trash2, GripVertical, Maximize2, Loader2 } from 'lucide-react';
+import { Type, Library as LibraryIcon, ImageIcon, Trash2, GripVertical, Maximize2, Loader2, Video as VideoIcon, Volume2 } from 'lucide-react';
 import { WorkflowItem as WorkflowItemType, Library } from '../../types';
 import { imageDisplayUrl } from '../../api';
 
@@ -17,6 +17,8 @@ interface WorkflowItemProps {
   onEdit: (item: WorkflowItemType) => void;
   onPreviewLibrary: (library: Library) => void;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>, id: string) => void;
+  onVideoUpload: (e: React.ChangeEvent<HTMLInputElement>, id: string) => void;
+  onAudioUpload: (e: React.ChangeEvent<HTMLInputElement>, id: string) => void;
   uploadingItemIds: Set<string>;
   onLightbox: (images: string[], index: number) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
@@ -37,6 +39,8 @@ export function WorkflowItem({
   onEdit,
   onPreviewLibrary,
   onImageUpload,
+  onVideoUpload,
+  onAudioUpload,
   uploadingItemIds,
   onLightbox,
   onUpdateTags,
@@ -69,6 +73,8 @@ export function WorkflowItem({
             {item.type === 'text' && <Type className="w-3 h-3 text-blue-500" />}
             {item.type === 'library' && <LibraryIcon className="w-3 h-3 text-emerald-500" />}
             {item.type === 'image' && <ImageIcon className="w-3 h-3 text-amber-500" />}
+            {item.type === 'video' && <VideoIcon className="w-3 h-3 text-violet-400" />}
+            {item.type === 'audio' && <Volume2 className="w-3 h-3 text-cyan-400" />}
             {item.type}
           </span>
         </div>
@@ -178,6 +184,59 @@ export function WorkflowItem({
                  className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
                  onClick={() => onLightbox([imageDisplayUrl(item.optimizedUrl || item.value)], 0)} 
                />
+            </div>
+          )}
+        </div>
+      )}
+
+      {item.type === 'video' && (
+        <div className="space-y-2">
+          <label className="flex-1 block text-center py-2.5 border border-dashed border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-violet-500/50 transition-all group relative overflow-hidden">
+            {uploadingItemIds.has(item.id) ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
+                <span className="text-[8px] font-black uppercase tracking-widest text-violet-300/70">{t('projectViewer.workflow.wait')}</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <VideoIcon className="w-3.5 h-3.5 text-neutral-500 group-hover:text-violet-400" />
+                <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">Upload Video</span>
+                <input type="file" accept="video/*" onChange={(e) => onVideoUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
+              </div>
+            )}
+          </label>
+          {item.value && !uploadingItemIds.has(item.id) && (
+            <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-800 mt-2 bg-black">
+              <video
+                src={imageDisplayUrl(item.value)}
+                poster={item.thumbnailUrl ? imageDisplayUrl(item.thumbnailUrl) : undefined}
+                controls
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {item.type === 'audio' && (
+        <div className="space-y-2">
+          <label className="flex-1 block text-center py-2.5 border border-dashed border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-cyan-500/50 transition-all group relative overflow-hidden">
+            {uploadingItemIds.has(item.id) ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
+                <span className="text-[8px] font-black uppercase tracking-widest text-cyan-300/70">{t('projectViewer.workflow.wait')}</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <Volume2 className="w-3.5 h-3.5 text-neutral-500 group-hover:text-cyan-400" />
+                <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">Upload Audio</span>
+                <input type="file" accept="audio/*" onChange={(e) => onAudioUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
+              </div>
+            )}
+          </label>
+          {item.value && !uploadingItemIds.has(item.id) && (
+            <div className="rounded-lg border border-neutral-800 bg-neutral-950 p-3 mt-2">
+              <audio src={imageDisplayUrl(item.value)} controls className="w-full" />
             </div>
           )}
         </div>

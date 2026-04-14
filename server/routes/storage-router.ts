@@ -63,16 +63,20 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
               markKey(item.imageUrl);
               markKey(item.thumbnailUrl);
               markKey(item.optimizedUrl);
+              (item.videoContexts || []).forEach(markKey);
+              (item.audioContexts || []).forEach(markKey);
             } else if (type === 'JOB') {
               // Jobs are transient execution records and do not count against storage usage.
               markKey(item.imageUrl);
               markKey(item.thumbnailUrl);
               markKey(item.optimizedUrl);
+              (item.videoContexts || []).forEach(markKey);
+              (item.audioContexts || []).forEach(markKey);
             } else if (type === 'WORKFLOW_ITEM') {
               // Workflow items currently don't have size fields in schema, but URLs exist
               projectBreakdown[projectId].workflow += itemSize;
               projectBreakdown[projectId].total += itemSize;
-              if (item.type === 'image' && item.value) markKey(item.value);
+              if ((item.type === 'image' || item.type === 'video' || item.type === 'audio') && item.value) markKey(item.value);
               markKey(item.thumbnailUrl);
               markKey(item.optimizedUrl);
             }
@@ -87,6 +91,8 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
           markKey(item.imageUrl);
           markKey(item.thumbnailUrl);
           markKey(item.optimizedUrl);
+          (item.videoContexts || []).forEach(markKey);
+          (item.audioContexts || []).forEach(markKey);
         } else if (type === 'EXPORT') {
           // Export tasks are handled in a separate loop for size (via lookup) or via size field
           // but we still want to mark the key to avoid orphan detection

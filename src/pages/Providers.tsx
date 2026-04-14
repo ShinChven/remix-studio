@@ -17,6 +17,7 @@ const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
   Grok:       { icon: 'bg-rose-500/10 text-rose-500', badge: 'bg-rose-600/10 text-rose-400 border-rose-600/30' },
   Claude:     { icon: 'bg-amber-500/10 text-amber-500', badge: 'bg-amber-600/10 text-amber-400 border-amber-600/30' },
   BytePlus:   { icon: 'bg-cyan-500/10 text-cyan-500', badge: 'bg-cyan-600/10 text-cyan-400 border-cyan-600/30' },
+  Replicate:  { icon: 'bg-fuchsia-500/10 text-fuchsia-400', badge: 'bg-fuchsia-600/10 text-fuchsia-300 border-fuchsia-600/30' },
 };
 
 export function Providers() {

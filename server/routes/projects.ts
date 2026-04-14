@@ -83,7 +83,9 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
       const thumbnailUrl = job.thumbnailUrl ? await presignIfKey(job.thumbnailUrl, storage) : job.thumbnailUrl;
       const optimizedUrl = job.optimizedUrl ? await presignIfKey(job.optimizedUrl, storage) : job.optimizedUrl;
       const imageContexts = job.imageContexts ? await Promise.all(job.imageContexts.map(ctx => presignIfKey(ctx, storage))) : job.imageContexts;
-      return { ...job, imageUrl, thumbnailUrl, optimizedUrl, imageContexts, size, optimizedSize, thumbnailSize };
+      const videoContexts = (job as any).videoContexts ? await Promise.all((job as any).videoContexts.map((ctx: string) => presignIfKey(ctx, storage))) : (job as any).videoContexts;
+      const audioContexts = (job as any).audioContexts ? await Promise.all((job as any).audioContexts.map((ctx: string) => presignIfKey(ctx, storage))) : (job as any).audioContexts;
+      return { ...job, imageUrl, thumbnailUrl, optimizedUrl, imageContexts, videoContexts, audioContexts, size, optimizedSize, thumbnailSize };
     })
   );
   const album = await Promise.all(
@@ -127,7 +129,7 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
   const workflow = await Promise.all(
     (project.workflow || []).map(async (item) => {
       let size = item.size;
-      if (!size && item.type === 'image' && item.value && !item.value.startsWith('data:')) {
+      if (!size && (item.type === 'image' || item.type === 'video' || item.type === 'audio') && item.value && !item.value.startsWith('data:')) {
         try {
           const s3Size = await storage.getSize(item.value);
           if (s3Size) size = s3Size;
@@ -135,7 +137,7 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
           console.warn(`Failed to recover size for workflow item ${item.id}:`, e);
         }
       }
-      if (item.type === 'image') {
+      if (item.type === 'image' || item.type === 'video' || item.type === 'audio') {
         const value = await presignIfKey(item.value, storage);
         const thumbnailUrl = item.thumbnailUrl ? await presignIfKey(item.thumbnailUrl, storage) : item.thumbnailUrl;
         const optimizedUrl = item.optimizedUrl ? await presignIfKey(item.optimizedUrl, storage) : item.optimizedUrl;
@@ -289,7 +291,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         // Strip presigned URLs back to bare S3 keys before storing
         const bucket = storage.getBucketName();
         updates.workflow = body.workflow.map((item: WorkflowItem) => {
-          if (item.type === 'image') {
+          if (item.type === 'image' || item.type === 'video' || item.type === 'audio') {
             return {
               ...item,
               value: stripToKey(item.value, bucket) || item.value,
@@ -306,7 +308,13 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
           const imageContexts = job.imageContexts 
             ? job.imageContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
             : job.imageContexts;
-          return { ...job, imageContexts };
+          const videoContexts = job.videoContexts
+            ? job.videoContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
+            : job.videoContexts;
+          const audioContexts = job.audioContexts
+            ? job.audioContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
+            : job.audioContexts;
+          return { ...job, imageContexts, videoContexts, audioContexts };
         });
       }
       if (typeof body?.providerId === 'string') updates.providerId = body.providerId;
@@ -575,7 +583,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       // From Workflow
       project.workflow.forEach(item => {
-        if (item.type === 'image' && item.value && !item.value.startsWith('http') && !item.value.startsWith('data:')) {
+        if ((item.type === 'image' || item.type === 'video' || item.type === 'audio') && item.value && !item.value.startsWith('http') && !item.value.startsWith('data:')) {
           referencedKeys.add(item.value);
           if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.add(item.thumbnailUrl);
           if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.add(item.optimizedUrl);
@@ -587,6 +595,12 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         if (job.imageUrl && !job.imageUrl.startsWith('http')) referencedKeys.add(job.imageUrl);
         if (job.thumbnailUrl && !job.thumbnailUrl.startsWith('http')) referencedKeys.add(job.thumbnailUrl);
         if (job.optimizedUrl && !job.optimizedUrl.startsWith('http')) referencedKeys.add(job.optimizedUrl);
+        (job.videoContexts || []).forEach((ctx) => {
+          if (!ctx.startsWith('http') && !ctx.startsWith('data:')) referencedKeys.add(ctx);
+        });
+        (job.audioContexts || []).forEach((ctx) => {
+          if (!ctx.startsWith('http') && !ctx.startsWith('data:')) referencedKeys.add(ctx);
+        });
       });
 
       // From Album

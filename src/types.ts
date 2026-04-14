@@ -1,4 +1,4 @@
-export type WorkflowItemType = 'text' | 'library' | 'image';
+export type WorkflowItemType = 'text' | 'library' | 'image' | 'video' | 'audio';
 
 export interface WorkflowItem {
   id: string;
@@ -617,6 +617,21 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  Replicate: [
+    {
+      id: 'replicate-seedance-2-0-fast-video',
+      name: 'Seedance 2.0 Fast',
+      generatorId: 'Replicate',
+      modelId: 'bytedance/seedance-2.0-fast',
+      category: 'video',
+      options: {
+        aspectRatios: ['adaptive', '16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+        resolutions: ['480p', '720p'],
+        durations: [5, 7, 8],
+        sounds: ['on', 'off'],
+      },
+    },
+  ],
 };
 
 /**
@@ -647,6 +662,8 @@ export interface Job {
   id: string;
   prompt: string;
   imageContexts?: string[];
+  videoContexts?: string[];
+  audioContexts?: string[];
   status: 'draft' | 'pending' | 'processing' | 'completed' | 'failed';
   imageUrl?: string;
   thumbnailUrl?: string;
@@ -677,6 +694,8 @@ export interface AlbumItem {
   prompt: string;
   textContent?: string; // Text generation output
   imageContexts?: string[];
+  videoContexts?: string[];
+  audioContexts?: string[];
   imageUrl: string; // S3 key (presigned on read) — for video projects this is the .mp4 key
   thumbnailUrl?: string; // S3 key
   optimizedUrl?: string; // S3 key
@@ -730,7 +749,7 @@ export interface Project {
   sound?: 'on' | 'off';
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate';
 
 /**
  * A custom model variant that inherits all options from a built-in base model

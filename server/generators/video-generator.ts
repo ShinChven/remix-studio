@@ -8,6 +8,8 @@ export interface VideoGenerateRequest {
   sound?: 'on' | 'off';
   refImagesBase64?: string[]; // base64-encoded PNGs (for providers that accept inline image input)
   refImageUrls?: string[];    // public/presigned URLs (for providers that require URL refs, e.g. Grok)
+  refVideoUrls?: string[];
+  refAudioUrls?: string[];
 }
 
 export type VideoGenerateResult =

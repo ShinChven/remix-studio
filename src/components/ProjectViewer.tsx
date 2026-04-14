@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Project, Job, Library, WorkflowItem as WorkflowItemType, WorkflowItemType as WorkflowItemTypeKind, Provider, AlbumItem, estimatePromptLength, formatPromptLimit, isPromptOverLimit, truncatePromptToLimit } from '../types';
-import { saveImage, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -314,17 +314,19 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     setDragOverIndex(null);
   };
 
+  const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target?.result as string);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
     const file = e.target.files?.[0];
     if (file) {
       setUploadingItemIds(prev => new Set(prev).add(id));
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>(resolve => {
-        reader.onload = (e) => resolve(e.target?.result as string);
-      });
-      reader.readAsDataURL(file);
       try {
-        const base64 = await base64Promise;
+        const base64 = await readFileAsDataUrl(file);
         const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveImage(base64, localProject.id);
         // Persist bare keys to DB (server will presign on GET)
         const dbProject = { ...localProject, workflow: localProject.workflow.map(item => item.id === id ? { ...item, value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size } : item) };
@@ -342,6 +344,78 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           return next;
         });
       }
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingItemIds(prev => new Set(prev).add(id));
+    try {
+      const base64 = await readFileAsDataUrl(file);
+      const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveVideo(base64, localProject.id);
+      const dbProject = {
+        ...localProject,
+        workflow: localProject.workflow.map((item) => item.id === id ? {
+          ...item,
+          value: key,
+          thumbnailUrl: thumbnailKey,
+          optimizedUrl: optimizedKey,
+          size,
+        } : item),
+      };
+      skipProjectSyncRef.current = true;
+      onUpdate(dbProject);
+      setLocalProject((prev) => ({
+        ...prev,
+        workflow: prev.workflow.map((item) => item.id === id ? {
+          ...item,
+          value: url,
+          thumbnailUrl,
+          optimizedUrl,
+          size,
+        } : item),
+      }));
+    } catch (err: any) {
+      console.error('Failed to upload video:', err);
+      toast.error(err.message || 'Failed to upload video');
+    } finally {
+      setUploadingItemIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingItemIds(prev => new Set(prev).add(id));
+    try {
+      const base64 = await readFileAsDataUrl(file);
+      const { key, url, size } = await saveAudio(base64, localProject.id);
+      const dbProject = {
+        ...localProject,
+        workflow: localProject.workflow.map((item) => item.id === id ? { ...item, value: key, size } : item),
+      };
+      skipProjectSyncRef.current = true;
+      onUpdate(dbProject);
+      setLocalProject((prev) => ({
+        ...prev,
+        workflow: prev.workflow.map((item) => item.id === id ? { ...item, value: url, size } : item),
+      }));
+    } catch (err: any) {
+      console.error('Failed to upload audio:', err);
+      toast.error(err.message || 'Failed to upload audio');
+    } finally {
+      setUploadingItemIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -384,6 +458,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             id: crypto.randomUUID(),
             prompt: combo.prompt,
             imageContexts: combo.imageContexts,
+            videoContexts: combo.videoContexts,
+            audioContexts: combo.audioContexts,
             status: 'draft',
             providerId: selectedProviderId,
             modelConfigId: selectedModelId,
@@ -701,6 +777,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           setPreviewingWorkflowItemId(workflowItemId);
         }}
         onImageUpload={handleImageUpload}
+        onVideoUpload={handleVideoUpload}
+        onAudioUpload={handleAudioUpload}
         onLightbox={(images, index) => setLightboxData({ images, index })}
         onUpdateTags={updateWorkflowItemTags}
         onSelectFromLibrary={setSelectingLibraryForItemId}

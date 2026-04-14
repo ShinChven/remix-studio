@@ -6,6 +6,7 @@ import { GrokVideoGenerator } from './grok-video-generator';
 import { BytePlusVideoGenerator } from './byteplus-video-generator';
 import { KlingAIVideoGenerator } from './kling-ai-video-generator';
 import { RunningHubVideoGenerator } from './running-hub-video-generator';
+import { ReplicateVideoGenerator } from './replicate-video-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -37,6 +38,8 @@ export function buildVideoGenerator(
       throw new Error(`Provider type 'Claude' does not support video generation`);
     case 'BytePlus':
       return new BytePlusVideoGenerator(apiKey, safeApiUrl);
+    case 'Replicate':
+      return new ReplicateVideoGenerator(apiKey, safeApiUrl);
     default:
       throw new Error(`Unknown provider type: ${type}`);
   }

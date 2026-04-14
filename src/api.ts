@@ -460,6 +460,48 @@ export async function saveImage(base64: string, projectId: string): Promise<{
   }>(res, 'Failed to save image');
 }
 
+export async function saveVideo(base64: string, projectId: string): Promise<{
+  key: string;
+  url: string;
+  thumbnailKey: string;
+  thumbnailUrl: string;
+  optimizedKey: string;
+  optimizedUrl: string;
+  size: number;
+}> {
+  const res = await apiFetch('/api/videos', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ base64, projectId }),
+  });
+  return handleResponse<{
+    key: string;
+    url: string;
+    thumbnailKey: string;
+    thumbnailUrl: string;
+    optimizedKey: string;
+    optimizedUrl: string;
+    size: number;
+  }>(res, 'Failed to save video');
+}
+
+export async function saveAudio(base64: string, projectId: string): Promise<{
+  key: string;
+  url: string;
+  size: number;
+}> {
+  const res = await apiFetch('/api/audios', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ base64, projectId }),
+  });
+  return handleResponse<{
+    key: string;
+    url: string;
+    size: number;
+  }>(res, 'Failed to save audio');
+}
+
 /**
  * Returns an image URL safe for use in <img> tags.
  * All image URLs from the API are already presigned MinIO URLs (starting with 'http').

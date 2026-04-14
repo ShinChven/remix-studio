@@ -184,6 +184,16 @@ export function DraftsTab({
                           {task.format}
                         </InfoChip>
                       )}
+                      {(task.videoContexts?.length || 0) > 0 && (
+                        <InfoChip className="text-violet-300">
+                          {task.videoContexts?.length} vid
+                        </InfoChip>
+                      )}
+                      {(task.audioContexts?.length || 0) > 0 && (
+                        <InfoChip className="text-cyan-300">
+                          {task.audioContexts?.length} aud
+                        </InfoChip>
+                      )}
                     </>
                   }
                   statusBadge={
@@ -239,6 +249,26 @@ export function DraftsTab({
                                 </div>
                               ))}
                             </div>
+                        </div>
+                      )}
+                      {task.videoContexts && task.videoContexts.length > 0 && (
+                        <div className="space-y-3">
+                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-violet-300/70">Reference Videos</label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {task.videoContexts.map((ctx, idx) => (
+                              <video key={idx} src={imageDisplayUrl(ctx)} controls className="w-full rounded-lg border border-neutral-800 bg-black" />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {task.audioContexts && task.audioContexts.length > 0 && (
+                        <div className="space-y-3">
+                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-300/70">Reference Audio</label>
+                          <div className="space-y-2">
+                            {task.audioContexts.map((ctx, idx) => (
+                              <audio key={idx} src={imageDisplayUrl(ctx)} controls className="w-full" />
+                            ))}
+                          </div>
                         </div>
                       )}
                     </>

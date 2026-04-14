@@ -19,6 +19,7 @@ const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
   Grok:       { icon: 'bg-rose-500/10 text-rose-500', badge: 'bg-rose-600/10 text-rose-400 border-rose-600/30' },
   Claude:     { icon: 'bg-amber-500/10 text-amber-500', badge: 'bg-amber-600/10 text-amber-400 border-amber-600/30' },
   BytePlus:   { icon: 'bg-cyan-500/10 text-cyan-500', badge: 'bg-cyan-600/10 text-cyan-400 border-cyan-600/30' },
+  Replicate:  { icon: 'bg-fuchsia-500/10 text-fuchsia-400', badge: 'bg-fuchsia-600/10 text-fuchsia-300 border-fuchsia-600/30' },
 };
 
 export function ProviderProfile() {
@@ -62,10 +63,10 @@ export function ProviderProfile() {
   }, [id, t]);
 
   useEffect(() => { loadProvider(); }, [loadProvider]);
-  // RunningHub/KlingAI/BytePlus use static models; others require credentials.
+  // RunningHub/KlingAI/BytePlus/Replicate use static models; others require credentials.
   useEffect(() => {
     if (!provider) return;
-    if (provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.hasKey) loadModels();
+    if (provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.type === 'Replicate' || provider.hasKey) loadModels();
   }, [provider, loadModels]);
 
   const grouped = {
@@ -168,9 +169,9 @@ export function ProviderProfile() {
         <section>
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-xl font-semibold text-white">
-              {provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' ? t('providerProfile.supportedModels') : t('providerProfile.availableModels')}
+              {provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.type === 'Replicate' ? t('providerProfile.supportedModels') : t('providerProfile.availableModels')}
             </h3>
-            {provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && (
+            {provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && provider.type !== 'Replicate' && (
               <button
                 onClick={loadModels}
                 disabled={isLoadingModels}
@@ -181,7 +182,7 @@ export function ProviderProfile() {
             )}
           </div>
 
-          {!provider.hasKey && provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && (
+          {!provider.hasKey && provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && provider.type !== 'Replicate' && (
             <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {t('providerProfile.addKeyToFetch')}
@@ -199,7 +200,7 @@ export function ProviderProfile() {
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-6 h-6 text-neutral-500 animate-spin" />
             </div>
-          ) : (provider.hasKey || provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus') && models.length === 0 && !modelsError ? (
+          ) : (provider.hasKey || provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.type === 'Replicate') && models.length === 0 && !modelsError ? (
             <div className="py-12 text-center text-neutral-500 text-sm">
               {t('providerProfile.noModels')}
             </div>

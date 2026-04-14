@@ -37,6 +37,8 @@ export function buildGenerator(
       return new GrokGenerator(apiKey, safeApiUrl);
     case 'BytePlus':
       return new BytePlusGenerator(apiKey, safeApiUrl);
+    case 'Replicate':
+      throw new Error(`Provider type 'Replicate' does not support image generation`);
     case 'Claude':
       throw new Error(`Provider type 'Claude' does not support image generation`);
     default: {

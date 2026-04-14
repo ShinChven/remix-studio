@@ -480,6 +480,8 @@ export class QueueManager {
     const { job } = queued;
     let refImages: string[] | undefined;
     let refImageUrls: string[] | undefined;
+    let refVideoUrls: string[] | undefined;
+    let refAudioUrls: string[] | undefined;
     if (job.imageContexts && job.imageContexts.length > 0) {
       refImages = [];
       refImageUrls = [];
@@ -504,6 +506,30 @@ export class QueueManager {
       if (refImageUrls.length === 0) refImageUrls = undefined;
     }
 
+    if (job.videoContexts && job.videoContexts.length > 0) {
+      refVideoUrls = [];
+      for (const ctx of job.videoContexts) {
+        if (ctx.startsWith('http')) {
+          refVideoUrls.push(ctx);
+        } else {
+          refVideoUrls.push(await this.storage.getPresignedUrl(ctx));
+        }
+      }
+      if (refVideoUrls.length === 0) refVideoUrls = undefined;
+    }
+
+    if (job.audioContexts && job.audioContexts.length > 0) {
+      refAudioUrls = [];
+      for (const ctx of job.audioContexts) {
+        if (ctx.startsWith('http')) {
+          refAudioUrls.push(ctx);
+        } else {
+          refAudioUrls.push(await this.storage.getPresignedUrl(ctx));
+        }
+      }
+      if (refAudioUrls.length === 0) refAudioUrls = undefined;
+    }
+
     const modelConfig = getAllModels(providerRecord).find((m) => m.id === job.modelConfigId);
 
     return {
@@ -516,6 +542,8 @@ export class QueueManager {
       sound: queued.sound || job.sound || 'on',
       refImagesBase64: refImages,
       refImageUrls,
+      refVideoUrls,
+      refAudioUrls,
     };
   }
 

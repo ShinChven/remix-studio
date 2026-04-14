@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, Eraser, ImageIcon, Library as LibraryIcon, Settings, Trash2, Type } from 'lucide-react';
+import { CheckCircle2, Eraser, ImageIcon, Library as LibraryIcon, Settings, Trash2, Type, Video as VideoIcon, Volume2 } from 'lucide-react';
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
@@ -26,7 +26,7 @@ interface WorkflowPanelProps {
   onNavigateToEdit: () => void;
   onNavigateToOrphans: () => void;
   onShowDeleteProject: () => void;
-  onAddWorkflowItem: (type: 'text' | 'image' | 'library') => void;
+  onAddWorkflowItem: (type: 'text' | 'image' | 'video' | 'audio' | 'library') => void;
   onDragStart: (e: React.DragEvent, index: number) => void;
   onDragOver: (e: React.DragEvent, index: number) => void;
   onDrop: (e: React.DragEvent, index: number) => void;
@@ -35,6 +35,8 @@ interface WorkflowPanelProps {
   onEditItem: (item: WorkflowItemType) => void;
   onPreviewLibrary: (library: Library, workflowItemId: string) => void;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>, id: string) => void;
+  onVideoUpload: (e: React.ChangeEvent<HTMLInputElement>, id: string) => void;
+  onAudioUpload: (e: React.ChangeEvent<HTMLInputElement>, id: string) => void;
   onLightbox: (images: string[], index: number) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onSelectFromLibrary: (id: string) => void;
@@ -77,6 +79,8 @@ export function WorkflowPanel({
   onEditItem,
   onPreviewLibrary,
   onImageUpload,
+  onVideoUpload,
+  onAudioUpload,
   onLightbox,
   onUpdateTags,
   onSelectFromLibrary,
@@ -137,6 +141,16 @@ export function WorkflowPanel({
         <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
           <ImageIcon className="w-3 h-3" /> {t('projectViewer.common.imageShort')}
         </button>
+        {localProject.type === 'video' && (
+          <>
+            <button onClick={() => onAddWorkflowItem('video')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
+              <VideoIcon className="w-3 h-3" /> Video
+            </button>
+            <button onClick={() => onAddWorkflowItem('audio')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
+              <Volume2 className="w-3 h-3" /> Audio
+            </button>
+          </>
+        )}
         <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
           <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
         </button>
@@ -158,6 +172,8 @@ export function WorkflowPanel({
             onEdit={onEditItem}
             onPreviewLibrary={(lib) => onPreviewLibrary(lib, item.id)}
             onImageUpload={onImageUpload}
+            onVideoUpload={onVideoUpload}
+            onAudioUpload={onAudioUpload}
             uploadingItemIds={uploadingItemIds}
             libraries={libraries}
             onLightbox={onLightbox}

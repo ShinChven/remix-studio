@@ -201,6 +201,8 @@ model Job {
   prompt        String   @db.Text
   status        String   @default("pending")
   imageContexts Json?    // String[]
+  videoContexts Json?    // String[]
+  audioContexts Json?    // String[]
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?
@@ -253,6 +255,8 @@ model AlbumItem {
   prompt        String?  @db.Text
   textContent   String?  @db.Text
   imageContexts Json?    // String[]
+  videoContexts Json?    // String[]
+  audioContexts Json?    // String[]
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?
@@ -284,6 +288,8 @@ model TrashItem {
   prompt        String?  @db.Text
   textContent   String?  @db.Text
   imageContexts Json?    // String[]
+  videoContexts Json?    // String[]
+  audioContexts Json?    // String[]
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?

@@ -7,7 +7,7 @@ import crypto from 'crypto';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 import { listProviderModels } from '../services/provider-model-lister';
 
-const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'KlingAI', 'OpenAI', 'Grok', 'Claude', 'BytePlus'];
+const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'KlingAI', 'OpenAI', 'Grok', 'Claude', 'BytePlus', 'Replicate'];
 type Variables = { user: JwtPayload };
 
 function parseCustomModels(raw: unknown, providerType: ProviderType): CustomModelAlias[] | undefined {
@@ -181,7 +181,7 @@ export function createProviderRouter(repo: ProviderRepository) {
 
       const providerType = provider.type as ProviderType;
 
-      if (providerType === 'RunningHub' || providerType === 'KlingAI' || providerType === 'BytePlus') {
+      if (providerType === 'RunningHub' || providerType === 'KlingAI' || providerType === 'BytePlus' || providerType === 'Replicate') {
         const result = await listProviderModels(providerType, '', provider.apiUrl);
         return c.json(result);
       }

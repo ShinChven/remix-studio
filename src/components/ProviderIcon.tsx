@@ -41,6 +41,12 @@ export function ProviderIcon({ type, className = "w-5 h-5" }: ProviderIconProps)
       return <SiAnthropic className={className} />;
     case 'BytePlus':
       return <SiBytedance className={className} />;
+    case 'Replicate':
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 4.5A2.5 2.5 0 0 0 3.5 7v10A2.5 2.5 0 0 0 6 19.5h12A2.5 2.5 0 0 0 20.5 17V7A2.5 2.5 0 0 0 18 4.5H6Zm.5 3h4.7a3.9 3.9 0 1 1 0 7.8H9.6V17H6.5V7.5Zm3.1 5.1h1.2a1.2 1.2 0 0 0 0-2.4H9.6v2.4Z" />
+        </svg>
+      );
     default:
       // Fallback key icon
       return (
