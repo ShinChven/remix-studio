@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import type { Context, Next } from 'hono';
 import { getCookie } from 'hono/cookie';
@@ -75,7 +76,15 @@ export function configureAuth(userRepository: UserRepository) {
 }
 
 export function signToken(payload: JwtPayload): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '2h' });
+}
+
+export function generateRefreshToken(): string {
+  return crypto.randomBytes(32).toString('base64url');
+}
+
+export function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 export function verifyToken(token: string): JwtPayload {
@@ -120,7 +129,10 @@ export async function authMiddleware(c: Context, next: Next): Promise<Response |
       c.set('user', payload);
     }
     return next();
-  } catch {
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      c.set('tokenExpired', true); // useful if we want to signal the client
+    }
     return c.json({ error: 'Invalid token' }, 401);
   }
 }

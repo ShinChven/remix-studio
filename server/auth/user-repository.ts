@@ -272,6 +272,84 @@ export class UserRepository {
     await this.prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
   }
 
+  async createSession(userId: string, tokenHash: string, expiresAt: Date, userAgent?: string, ipAddress?: string): Promise<void> {
+    await this.prisma.userSession.create({
+      data: {
+        userId,
+        tokenHash,
+        expiresAt,
+        userAgent,
+        ipAddress,
+      },
+    });
+  }
+
+  async findSessionByTokenHash(tokenHash: string) {
+    return this.prisma.userSession.findUnique({
+      where: { tokenHash },
+      include: {
+        user: true,
+      },
+    });
+  }
+
+  async deleteSession(tokenHash: string): Promise<void> {
+    await this.prisma.userSession.deleteMany({
+      where: { tokenHash },
+    });
+  }
+
+  /**
+   * Atomically rotates a refresh token: deletes the old session and creates a new one in a
+   * single transaction. This prevents race conditions under concurrent refresh requests,
+   * ensuring the old token can only be consumed once.
+   * Returns false if the session was already consumed (concurrent request won the race).
+   */
+  async rotateSession(
+    oldTokenHash: string,
+    newTokenHash: string,
+    userId: string,
+    expiresAt: Date,
+    userAgent?: string,
+    ipAddress?: string,
+  ): Promise<boolean> {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        // Delete old session — will throw if it no longer exists (already consumed)
+        const deleted = await tx.userSession.deleteMany({
+          where: { tokenHash: oldTokenHash },
+        });
+        if (deleted.count === 0) {
+          throw new Error('SESSION_ALREADY_CONSUMED');
+        }
+        await tx.userSession.create({
+          data: { userId, tokenHash: newTokenHash, expiresAt, userAgent, ipAddress },
+        });
+      });
+      return true;
+    } catch (e: any) {
+      if (e.message === 'SESSION_ALREADY_CONSUMED') return false;
+      throw e;
+    }
+  }
+
+  async deleteAllSessionsForUser(userId: string): Promise<void> {
+    await this.prisma.userSession.deleteMany({
+      where: { userId },
+    });
+  }
+
+  /**
+   * Deletes all sessions whose expiresAt is in the past.
+   * Safe to call periodically (e.g. every hour) as a background housekeeping task.
+   */
+  async cleanExpiredSessions(): Promise<number> {
+    const result = await this.prisma.userSession.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    });
+    return result.count;
+  }
+
   async listPasskeys(userId: string) {
     const passkeys = await this.prisma.passkeyCredential.findMany({
       where: { userId },

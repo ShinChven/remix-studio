@@ -6,6 +6,55 @@ function getHeaders(isJson = true): HeadersInit {
   return headers;
 }
 
+// ─── Token Refresh Interceptor ───────────────────────────────────────────────
+// Prevents "refresh storm": all concurrent 401s share a single refresh attempt.
+let refreshPromise: Promise<boolean> | null = null;
+
+async function attemptRefresh(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
+    .then((res) => res.ok)
+    .catch(() => false)
+    .finally(() => { refreshPromise = null; });
+  return refreshPromise;
+}
+
+/**
+ * Wraps fetch with an automatic silent refresh on 401.
+ * If the token has expired, it calls /api/auth/refresh once, then retries.
+ * If refresh fails, it redirects to login.
+ */
+// Core auth flow endpoints that must never trigger a refresh (would cause loops)
+const AUTH_FLOW_PREFIXES = [
+  '/api/auth/login',
+  '/api/auth/logout',
+  '/api/auth/refresh',
+  '/api/auth/2fa',
+  '/api/auth/passkeys',
+  '/api/auth/google/',      // OAuth login flow
+];
+
+async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
+  const res = await fetch(url, { ...options, credentials: 'include' });
+
+  if (res.status === 401) {
+    // Only skip refresh for core auth flow endpoints, not business endpoints like google-drive
+    if (AUTH_FLOW_PREFIXES.some(p => url.startsWith(p))) return res;
+
+    const refreshed = await attemptRefresh();
+    if (refreshed) {
+      // Retry the original request with fresh token (cookie is now updated)
+      return fetch(url, { ...options, credentials: 'include' });
+    } else {
+      // Refresh failed — redirect to login
+      window.location.href = '/login';
+      return res;
+    }
+  }
+
+  return res;
+}
+
 async function handleResponse<T>(res: Response, defaultError: string): Promise<T> {
   if (!res.ok) {
     let errorMsg = defaultError;
@@ -158,7 +207,7 @@ export async function completeGoogleRegistration(inviteCode: string): Promise<{ 
 // ========== Legacy bulk load (used for initial data fetch) ==========
 
 export async function loadData(): Promise<AppData> {
-  const res = await fetch('/api/data', { headers: getHeaders(false) });
+  const res = await apiFetch('/api/data', { headers: getHeaders(false) });
   return handleResponse<AppData>(res, 'Failed to load data');
 }
 
@@ -169,17 +218,17 @@ export async function fetchLibraries(page: number = 1, limit: number = 50): Prom
   if (page) params.set('page', page.toString());
   if (limit) params.set('limit', limit.toString());
   
-  const res = await fetch(`/api/libraries?${params.toString()}`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/libraries?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Library>>(res, 'Failed to list libraries');
 }
 
 export async function fetchLibrary(id: string): Promise<Library> {
-  const res = await fetch(`/api/libraries/${id}`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/libraries/${id}`, { headers: getHeaders(false) });
   return handleResponse<Library>(res, 'Failed to get library');
 }
 
 export async function createLibrary(library: { id: string; name: string; type: string }): Promise<void> {
-  const res = await fetch('/api/libraries', {
+  const res = await apiFetch('/api/libraries', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(library),
@@ -191,7 +240,7 @@ export async function createLibrary(library: { id: string; name: string; type: s
 }
 
 export async function updateLibrary(id: string, updates: { name?: string; type?: string }): Promise<void> {
-  const res = await fetch(`/api/libraries/${id}`, {
+  const res = await apiFetch(`/api/libraries/${id}`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify(updates),
@@ -203,7 +252,7 @@ export async function updateLibrary(id: string, updates: { name?: string; type?:
 }
 
 export async function deleteLibrary(id: string): Promise<void> {
-  const res = await fetch(`/api/libraries/${id}`, {
+  const res = await apiFetch(`/api/libraries/${id}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -214,7 +263,7 @@ export async function deleteLibrary(id: string): Promise<void> {
 }
 
 export async function duplicateLibrary(id: string, name: string): Promise<Library> {
-  const res = await fetch(`/api/libraries/${id}/duplicate`, {
+  const res = await apiFetch(`/api/libraries/${id}/duplicate`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ name }),
@@ -223,12 +272,12 @@ export async function duplicateLibrary(id: string, name: string): Promise<Librar
 }
 
 export async function fetchLibraryReferences(libraryId: string): Promise<{ id: string; name: string }[]> {
-  const res = await fetch(`/api/libraries/${libraryId}/references`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/libraries/${libraryId}/references`, { headers: getHeaders(false) });
   return handleResponse<{ id: string; name: string }[]>(res, 'Failed to check library references');
 }
 
 export async function removeLibraryReferences(libraryId: string, projectIds?: string[]): Promise<void> {
-  const res = await fetch(`/api/libraries/${libraryId}/remove-references`, {
+  const res = await apiFetch(`/api/libraries/${libraryId}/remove-references`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ projectIds }),
@@ -242,12 +291,12 @@ export async function removeLibraryReferences(libraryId: string, projectIds?: st
 // ========== Library Item CRUD ==========
 
 export async function fetchLibraryItems(libraryId: string): Promise<LibraryItem[]> {
-  const res = await fetch(`/api/libraries/${libraryId}/items`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/libraries/${libraryId}/items`, { headers: getHeaders(false) });
   return handleResponse<LibraryItem[]>(res, 'Failed to list items');
 }
 
 export async function createLibraryItem(libraryId: string, item: LibraryItem): Promise<void> {
-  const res = await fetch(`/api/libraries/${libraryId}/items`, {
+  const res = await apiFetch(`/api/libraries/${libraryId}/items`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(item),
@@ -259,7 +308,7 @@ export async function createLibraryItem(libraryId: string, item: LibraryItem): P
 }
 
 export async function createLibraryItemsBatch(libraryId: string, items: LibraryItem[]): Promise<void> {
-  const res = await fetch(`/api/libraries/${libraryId}/items/batch`, {
+  const res = await apiFetch(`/api/libraries/${libraryId}/items/batch`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(items),
@@ -271,7 +320,7 @@ export async function createLibraryItemsBatch(libraryId: string, items: LibraryI
 }
 
 export async function updateLibraryItem(libraryId: string, itemId: string, updates: Partial<LibraryItem>): Promise<void> {
-  const res = await fetch(`/api/libraries/${libraryId}/items/${itemId}`, {
+  const res = await apiFetch(`/api/libraries/${libraryId}/items/${itemId}`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify(updates),
@@ -283,7 +332,7 @@ export async function updateLibraryItem(libraryId: string, itemId: string, updat
 }
 
 export async function updateLibraryItemOrders(libraryId: string, updates: { id: string; order: number }[]): Promise<void> {
-  const res = await fetch(`/api/libraries/${libraryId}/items/reorder`, {
+  const res = await apiFetch(`/api/libraries/${libraryId}/items/reorder`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify(updates),
@@ -295,7 +344,7 @@ export async function updateLibraryItemOrders(libraryId: string, updates: { id: 
 }
 
 export async function deleteLibraryItem(libraryId: string, itemId: string): Promise<void> {
-  const res = await fetch(`/api/libraries/${libraryId}/items/${itemId}`, {
+  const res = await apiFetch(`/api/libraries/${libraryId}/items/${itemId}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -317,17 +366,17 @@ export async function fetchProjects(
   if (limit) params.set('limit', limit.toString());
   if (sort) params.set('sort', sort);
 
-  const res = await fetch(`/api/projects?${params.toString()}`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/projects?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Project>>(res, 'Failed to list projects');
 }
 
 export async function fetchProject(id: string): Promise<Project> {
-  const res = await fetch(`/api/projects/${id}`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/projects/${id}`, { headers: getHeaders(false) });
   return handleResponse<Project>(res, 'Failed to get project');
 }
 
 export async function createProject(project: Project): Promise<void> {
-  const res = await fetch('/api/projects', {
+  const res = await apiFetch('/api/projects', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(project),
@@ -339,7 +388,7 @@ export async function createProject(project: Project): Promise<void> {
 }
 
 export async function updateProject(id: string, updates: Partial<Project>): Promise<void> {
-  const res = await fetch(`/api/projects/${id}`, {
+  const res = await apiFetch(`/api/projects/${id}`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify(updates),
@@ -351,7 +400,7 @@ export async function updateProject(id: string, updates: Partial<Project>): Prom
 }
 
 export async function deleteProject(id: string): Promise<void> {
-  const res = await fetch(`/api/projects/${id}`, {
+  const res = await apiFetch(`/api/projects/${id}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -368,12 +417,12 @@ export interface OrphanFile {
 }
 
 export async function fetchProjectOrphans(projectId: string): Promise<OrphanFile[]> {
-  const res = await fetch(`/api/projects/${projectId}/orphans`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/projects/${projectId}/orphans`, { headers: getHeaders(false) });
   return handleResponse<OrphanFile[]>(res, 'Failed to fetch orphan files');
 }
 
 export async function deleteProjectOrphansBatch(projectId: string, keys: string[]): Promise<void> {
-  const res = await fetch(`/api/projects/${projectId}/orphans/batch`, {
+  const res = await apiFetch(`/api/projects/${projectId}/orphans/batch`, {
     method: 'DELETE',
     headers: getHeaders(),
     body: JSON.stringify({ keys }),
@@ -395,7 +444,7 @@ export async function saveImage(base64: string, projectId: string): Promise<{
   optimizedUrl: string;
   size: number;
 }> {
-  const res = await fetch('/api/images', {
+  const res = await apiFetch('/api/images', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ base64, projectId }),
@@ -429,7 +478,7 @@ export function imageDisplayUrl(value: string): string {
 }
 
 export async function renameProjectFolder(oldId: string, newId: string): Promise<void> {
-  const res = await fetch('/api/projects/rename', {
+  const res = await apiFetch('/api/projects/rename', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ oldId, newId }),
@@ -460,7 +509,7 @@ export async function getUsers(params: {
   if (params.sortBy) search.set('sortBy', params.sortBy);
   if (params.sortOrder) search.set('sortOrder', params.sortOrder);
 
-  const res = await fetch(`/api/admin/users?${search.toString()}`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/admin/users?${search.toString()}`, { headers: getHeaders(false) });
   return handleResponse<PaginatedResult<UserSummary>>(res, 'Failed to load users');
 }
 
@@ -471,7 +520,7 @@ export async function createUser(data: {
   status: UserStatus;
   storageLimit: number;
 }): Promise<{ user: User }> {
-  const res = await fetch('/api/admin/users', {
+  const res = await apiFetch('/api/admin/users', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(data),
@@ -480,12 +529,12 @@ export async function createUser(data: {
 }
 
 export async function getUserDetail(id: string): Promise<UserDetail> {
-  const res = await fetch(`/api/admin/users/${id}`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/admin/users/${id}`, { headers: getHeaders(false) });
   return handleResponse<UserDetail>(res, 'Failed to load user detail');
 }
 
 export async function updateUserRole(id: string, role: UserRole): Promise<void> {
-  const res = await fetch(`/api/admin/users/${id}/role`, {
+  const res = await apiFetch(`/api/admin/users/${id}/role`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify({ role }),
@@ -497,7 +546,7 @@ export async function updateUserRole(id: string, role: UserRole): Promise<void> 
 }
 
 export async function updateUserStorageLimit(id: string, limit: number): Promise<void> {
-  const res = await fetch(`/api/admin/users/${id}/storage-limit`, {
+  const res = await apiFetch(`/api/admin/users/${id}/storage-limit`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify({ limit }),
@@ -509,7 +558,7 @@ export async function updateUserStorageLimit(id: string, limit: number): Promise
 }
 
 export async function updateUserStatus(id: string, status: UserStatus): Promise<void> {
-  const res = await fetch(`/api/admin/users/${id}/status`, {
+  const res = await apiFetch(`/api/admin/users/${id}/status`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify({ status }),
@@ -521,7 +570,7 @@ export async function updateUserStatus(id: string, status: UserStatus): Promise<
 }
 
 export async function adminResetUserPassword(id: string, newPassword: string): Promise<void> {
-  const res = await fetch(`/api/admin/users/${id}/password`, {
+  const res = await apiFetch(`/api/admin/users/${id}/password`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify({ newPassword }),
@@ -533,13 +582,13 @@ export async function adminResetUserPassword(id: string, newPassword: string): P
 }
 
 export async function getAdminInvites(): Promise<InviteCode[]> {
-  const res = await fetch('/api/admin/invites', { headers: getHeaders(false) });
+  const res = await apiFetch('/api/admin/invites', { headers: getHeaders(false) });
   const data = await handleResponse<{ items: InviteCode[] }>(res, 'Failed to load invite codes');
   return data.items;
 }
 
 export async function createAdminInvite(input?: { note?: string; maxUses?: number; membershipTier?: 'free' | 'professional' | 'premium' }): Promise<InviteCode> {
-  const res = await fetch('/api/admin/invites', {
+  const res = await apiFetch('/api/admin/invites', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(input ?? {}),
@@ -551,12 +600,12 @@ export async function createAdminInvite(input?: { note?: string; maxUses?: numbe
 // ========== Providers ==========
 
 export async function fetchProviders(): Promise<Provider[]> {
-  const res = await fetch('/api/providers', { headers: getHeaders(false) });
+  const res = await apiFetch('/api/providers', { headers: getHeaders(false) });
   return handleResponse<Provider[]>(res, 'Failed to list providers');
 }
 
 export async function fetchProvider(id: string): Promise<Provider> {
-  const res = await fetch(`/api/providers/${id}`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/providers/${id}`, { headers: getHeaders(false) });
   return handleResponse<Provider>(res, 'Failed to load provider');
 }
 
@@ -569,7 +618,7 @@ export async function createProvider(data: {
   concurrency?: number;
   customModels?: CustomModelAlias[];
 }): Promise<string> {
-  const res = await fetch('/api/providers', {
+  const res = await apiFetch('/api/providers', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(data),
@@ -582,7 +631,7 @@ export async function updateProvider(
   id: string,
   updates: { name?: string; type?: ProviderType; apiKey?: string; apiSecret?: string; apiUrl?: string | null; concurrency?: number; customModels?: CustomModelAlias[] }
 ): Promise<void> {
-  const res = await fetch(`/api/providers/${id}`, {
+  const res = await apiFetch(`/api/providers/${id}`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify(updates),
@@ -594,7 +643,7 @@ export async function updateProvider(
 }
 
 export async function deleteProvider(id: string): Promise<void> {
-  const res = await fetch(`/api/providers/${id}`, {
+  const res = await apiFetch(`/api/providers/${id}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -613,7 +662,7 @@ export interface ProviderModelInfo {
 }
 
 export async function fetchProviderModels(providerId: string): Promise<{ models: ProviderModelInfo[]; error?: string }> {
-  const res = await fetch(`/api/providers/${providerId}/models`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/providers/${providerId}/models`, { headers: getHeaders(false) });
   return handleResponse<{ models: ProviderModelInfo[]; error?: string }>(res, 'Failed to list provider models');
 }
 
@@ -626,7 +675,7 @@ export async function generateImage(params: {
   imageSize?: string;
   refImage?: string;
 }): Promise<{ image: string }> {
-  const res = await fetch('/api/generate', {
+  const res = await apiFetch('/api/generate', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(params),
@@ -635,7 +684,7 @@ export async function generateImage(params: {
 }
 
 export async function runProjectWorkflow(projectId: string): Promise<void> {
-  const res = await fetch(`/api/projects/${projectId}/run`, {
+  const res = await apiFetch(`/api/projects/${projectId}/run`, {
     method: 'POST',
     headers: getHeaders(),
   });
@@ -648,12 +697,12 @@ export async function runProjectWorkflow(projectId: string): Promise<void> {
 // ========== Trash CRUD ==========
 
 export async function fetchTrash(): Promise<TrashItem[]> {
-  const res = await fetch('/api/trash', { headers: getHeaders(false) });
+  const res = await apiFetch('/api/trash', { headers: getHeaders(false) });
   return handleResponse<TrashItem[]>(res, 'Failed to fetch trash');
 }
 
 export async function moveToTrash(projectId: string, itemId: string): Promise<void> {
-  const res = await fetch(`/api/projects/${projectId}/album/${itemId}/trash`, {
+  const res = await apiFetch(`/api/projects/${projectId}/album/${itemId}/trash`, {
     method: 'POST',
     headers: getHeaders(),
   });
@@ -664,7 +713,7 @@ export async function moveToTrash(projectId: string, itemId: string): Promise<vo
 }
 
 export async function moveToTrashBatch(projectId: string, ids: string[]): Promise<void> {
-  const res = await fetch(`/api/projects/${projectId}/album/trash-batch`, {
+  const res = await apiFetch(`/api/projects/${projectId}/album/trash-batch`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ ids }),
@@ -676,7 +725,7 @@ export async function moveToTrashBatch(projectId: string, ids: string[]): Promis
 }
 
 export async function restoreTrashItem(id: string): Promise<void> {
-  const res = await fetch(`/api/trash/${id}/restore`, {
+  const res = await apiFetch(`/api/trash/${id}/restore`, {
     method: 'POST',
     headers: getHeaders(),
   });
@@ -687,7 +736,7 @@ export async function restoreTrashItem(id: string): Promise<void> {
 }
 
 export async function restoreTrashBatch(ids: string[]): Promise<void> {
-  const res = await fetch('/api/trash/restore-batch', {
+  const res = await apiFetch('/api/trash/restore-batch', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ ids }),
@@ -699,7 +748,7 @@ export async function restoreTrashBatch(ids: string[]): Promise<void> {
 }
 
 export async function deleteTrashPermanently(id: string): Promise<void> {
-  const res = await fetch(`/api/trash/${id}`, {
+  const res = await apiFetch(`/api/trash/${id}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -710,7 +759,7 @@ export async function deleteTrashPermanently(id: string): Promise<void> {
 }
 
 export async function deleteTrashBatch(ids: string[]): Promise<void> {
-  const res = await fetch('/api/trash/batch', {
+  const res = await apiFetch('/api/trash/batch', {
     method: 'DELETE',
     headers: getHeaders(),
     body: JSON.stringify({ ids }),
@@ -722,7 +771,7 @@ export async function deleteTrashBatch(ids: string[]): Promise<void> {
 }
 
 export async function emptyTrash(): Promise<void> {
-  const res = await fetch('/api/trash/empty', {
+  const res = await apiFetch('/api/trash/empty', {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -733,7 +782,7 @@ export async function emptyTrash(): Promise<void> {
 }
 
 export async function startAlbumExport(projectId: string, itemIds?: string[], packageName?: string): Promise<{ taskId: string }> {
-  const res = await fetch(`/api/projects/${projectId}/export`, {
+  const res = await apiFetch(`/api/projects/${projectId}/export`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ itemIds, packageName }),
@@ -750,7 +799,7 @@ export async function copyAlbumToLibrary(
     newLibraryName?: string;
   }
 ): Promise<{ libraryId: string }> {
-  const res = await fetch(`/api/projects/${projectId}/album/copy-to-library`, {
+  const res = await apiFetch(`/api/projects/${projectId}/album/copy-to-library`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(params),
@@ -759,12 +808,12 @@ export async function copyAlbumToLibrary(
 }
 
 export async function fetchExportStatus(projectId: string, taskId: string): Promise<ExportTask> {
-  const res = await fetch(`/api/projects/${projectId}/export/${taskId}`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/projects/${projectId}/export/${taskId}`, { headers: getHeaders(false) });
   return handleResponse<ExportTask>(res, 'Failed to get export status');
 }
 
 export async function fetchProjectExports(projectId: string): Promise<ExportTask[]> {
-  const res = await fetch(`/api/projects/${projectId}/exports`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/projects/${projectId}/exports`, { headers: getHeaders(false) });
   return handleResponse<ExportTask[]>(res, 'Failed to list exports');
 }
 
@@ -773,12 +822,12 @@ export async function fetchAllExports(limit?: number, cursor?: string): Promise<
   if (limit) url.searchParams.set('limit', limit.toString());
   if (cursor) url.searchParams.set('cursor', cursor);
 
-  const res = await fetch(url.toString(), { headers: getHeaders(false) });
+  const res = await apiFetch(url.toString(), { headers: getHeaders(false) });
   return handleResponse<{ items: ExportTask[]; nextCursor?: string }>(res, 'Failed to list all exports');
 }
 
 export async function deleteExport(taskId: string): Promise<void> {
-  const res = await fetch(`/api/exports/${taskId}`, {
+  const res = await apiFetch(`/api/exports/${taskId}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -796,12 +845,12 @@ export async function deleteProjectExport(projectId: string, taskId: string): Pr
 // ========== Google Drive ==========
 
 export async function fetchGoogleDriveStatus(): Promise<{ connected: boolean }> {
-  const res = await fetch('/api/auth/google-drive/status', { headers: getHeaders(false) });
+  const res = await apiFetch('/api/auth/google-drive/status', { headers: getHeaders(false) });
   return handleResponse<{ connected: boolean }>(res, 'Failed to check Google Drive status');
 }
 
 export async function disconnectGoogleDrive(): Promise<void> {
-  const res = await fetch('/api/auth/google-drive/disconnect', {
+  const res = await apiFetch('/api/auth/google-drive/disconnect', {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -813,7 +862,7 @@ export async function disconnectGoogleDrive(): Promise<void> {
 
 /** Submit a Drive upload job. Returns deliveryTaskId — poll fetchDeliveryStatus() for progress. */
 export async function uploadExportToDrive(taskId: string): Promise<{ deliveryTaskId: string }> {
-  const res = await fetch(`/api/exports/${taskId}/upload-to-drive`, {
+  const res = await apiFetch(`/api/exports/${taskId}/upload-to-drive`, {
     method: 'POST',
     headers: getHeaders(),
   });
@@ -834,12 +883,12 @@ export interface DeliveryStatus {
 }
 
 export async function fetchDeliveryStatus(deliveryId: string): Promise<DeliveryStatus> {
-  const res = await fetch(`/api/deliveries/${deliveryId}`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/deliveries/${deliveryId}`, { headers: getHeaders(false) });
   return handleResponse<DeliveryStatus>(res, 'Failed to get delivery status');
 }
 
 export async function fetchActiveDeliveries(): Promise<DeliveryStatus[]> {
-  const res = await fetch('/api/deliveries', { headers: getHeaders(false) });
+  const res = await apiFetch('/api/deliveries', { headers: getHeaders(false) });
   return handleResponse<DeliveryStatus[]>(res, 'Failed to list delivery tasks');
 }
 
@@ -867,12 +916,12 @@ export interface PersonalAccessTokenSummary {
 }
 
 export async function fetchOAuthClients(): Promise<OAuthClientSummary[]> {
-  const res = await fetch('/api/oauth/clients', { headers: getHeaders(false) });
+  const res = await apiFetch('/api/oauth/clients', { headers: getHeaders(false) });
   return handleResponse<OAuthClientSummary[]>(res, 'Failed to load OAuth clients');
 }
 
 export async function revokeOAuthClient(clientId: string): Promise<void> {
-  const res = await fetch(`/api/oauth/clients/${encodeURIComponent(clientId)}/revoke`, {
+  const res = await apiFetch(`/api/oauth/clients/${encodeURIComponent(clientId)}/revoke`, {
     method: 'DELETE',
     headers: getHeaders(false),
   });
@@ -880,12 +929,12 @@ export async function revokeOAuthClient(clientId: string): Promise<void> {
 }
 
 export async function fetchPersonalAccessTokens(): Promise<PersonalAccessTokenSummary[]> {
-  const res = await fetch('/api/oauth/tokens', { headers: getHeaders(false) });
+  const res = await apiFetch('/api/oauth/tokens', { headers: getHeaders(false) });
   return handleResponse<PersonalAccessTokenSummary[]>(res, 'Failed to load tokens');
 }
 
 export async function createPersonalAccessToken(name: string, expiresInDays?: number): Promise<{ token: string; name: string; tokenPrefix: string }> {
-  const res = await fetch('/api/oauth/tokens', {
+  const res = await apiFetch('/api/oauth/tokens', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ name, expiresInDays: expiresInDays ?? null }),
@@ -894,7 +943,7 @@ export async function createPersonalAccessToken(name: string, expiresInDays?: nu
 }
 
 export async function revokePersonalAccessToken(id: string): Promise<void> {
-  const res = await fetch(`/api/oauth/tokens/${encodeURIComponent(id)}`, {
+  const res = await apiFetch(`/api/oauth/tokens/${encodeURIComponent(id)}`, {
     method: 'DELETE',
     headers: getHeaders(false),
   });
@@ -908,6 +957,6 @@ export async function fetchStorageAnalysis(options?: { includeProjects?: boolean
   if (options?.includeProjects === false) params.set('includeProjects', 'false');
 
   const query = params.toString();
-  const res = await fetch(`/api/storage/analysis${query ? `?${query}` : ''}`, { headers: getHeaders(false) });
+  const res = await apiFetch(`/api/storage/analysis${query ? `?${query}` : ''}`, { headers: getHeaders(false) });
   return handleResponse<StorageAnalysis>(res, 'Failed to analyze storage');
 }

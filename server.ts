@@ -111,6 +111,19 @@ async function startServer() {
   exportManager.startWorkerLoop();
   deliveryManager.startWorkerLoop();
 
+  // Purge expired refresh token sessions every hour
+  const SESSION_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+  const runSessionCleanup = async () => {
+    try {
+      const deleted = await userRepository.cleanExpiredSessions();
+      if (deleted > 0) console.log(`[SessionCleanup] Removed ${deleted} expired session(s).`);
+    } catch (e) {
+      console.error('[SessionCleanup] Failed to clean expired sessions:', e);
+    }
+  };
+  runSessionCleanup(); // run once immediately on startup
+  setInterval(runSessionCleanup, SESSION_CLEANUP_INTERVAL_MS);
+
   // === Auto-provision default admin ===
   const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
   const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;

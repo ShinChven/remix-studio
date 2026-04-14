@@ -37,6 +37,7 @@ model User {
   oauthAuthorizationCodes OAuthAuthorizationCode[]
   oauthAccessTokens       OAuthAccessToken[]
   personalAccessTokens    PersonalAccessToken[]
+  sessions              UserSession[]
   createdByUser User? @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdUsers  User[] @relation("UserCreation")
   createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
@@ -44,6 +45,21 @@ model User {
   inviteRedemptions  InviteRedemption[]
 
   @@index([createdByUserId])
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String
+  tokenHash    String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
 }
 
 model InviteCode {

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
-import { authMiddleware, adminOnly, hashPassword, verifyPassword, signToken, JwtPayload, signFlowToken, verifyFlowToken, AuthFlowPayload } from '../auth/auth';
+import { authMiddleware, adminOnly, hashPassword, verifyPassword, signToken, JwtPayload, signFlowToken, verifyFlowToken, AuthFlowPayload, generateRefreshToken, hashToken } from '../auth/auth';
 import { UserRepository } from '../auth/user-repository';
 import { checkRateLimit, getClientAddress } from '../utils/rate-limiter';
 import crypto from 'crypto';
@@ -99,23 +99,31 @@ function getRequestOrigin(req: Request) {
 
 function getSessionCookieOptions(url: string) {
   const requestUrl = new URL(url);
+  const isSecure = requestUrl.protocol === 'https:' || process.env.NODE_ENV === 'production';
   return {
     httpOnly: true,
-    secure: requestUrl.protocol === 'https:' || process.env.NODE_ENV === 'production',
-    // OAuth approval starts with a top-level navigation from another app/client.
-    // Lax keeps the cookie on those navigations so logged-in users don't need
-    // to enter credentials again on /authorize.
+    secure: isSecure,
     sameSite: 'Lax' as const,
-    maxAge: 24 * 60 * 60,
+    maxAge: 2 * 60 * 60, // 2 hours (matches access token)
+    path: '/',
+  };
+}
+
+function getRefreshCookieOptions(url: string) {
+  const requestUrl = new URL(url);
+  const isSecure = requestUrl.protocol === 'https:' || process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isSecure,
+    sameSite: 'Lax' as const,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
     path: '/',
   };
 }
 
 function clearSessionCookie(c: any) {
-  setCookie(c, 'token', '', {
-    ...getSessionCookieOptions(c.req.url),
-    maxAge: 0,
-  });
+  setCookie(c, 'token', '', { ...getSessionCookieOptions(c.req.url), maxAge: 0 });
+  setCookie(c, 'refreshToken', '', { ...getRefreshCookieOptions(c.req.url), maxAge: 0 });
 }
 
 function clearCookie(c: any, name: string) {
@@ -157,7 +165,17 @@ async function finalizeLogin(c: any, userRepository: UserRepository, user: NonNu
     role: user.role,
     sessionVersion: user.sessionVersion ?? 0,
   });
+
+  // Generate & persist refresh token
+  const refreshToken = generateRefreshToken();
+  const tokenHash = hashToken(refreshToken);
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+  const userAgent = c.req.header('user-agent') ?? undefined;
+  const ipAddress = getClientAddress(c.req.raw) ?? undefined;
+  await userRepository.createSession(user.sk, tokenHash, expiresAt, userAgent, ipAddress);
+
   setCookie(c, 'token', token, getSessionCookieOptions(c.req.url));
+  setCookie(c, 'refreshToken', refreshToken, getRefreshCookieOptions(c.req.url));
 
   return c.json({
     user: {
@@ -300,8 +318,69 @@ export function createAuthRouter(userRepository: UserRepository) {
   });
 
   router.post('/api/auth/logout', async (c) => {
+    const refreshToken = getCookie(c, 'refreshToken');
+    if (refreshToken) {
+      const tokenHash = hashToken(refreshToken);
+      await userRepository.deleteSession(tokenHash).catch(() => {}); // best-effort
+    }
     clearSessionCookie(c);
     return c.json({ success: true });
+  });
+
+  router.post('/api/auth/refresh', async (c) => {
+    const refreshToken = getCookie(c, 'refreshToken');
+    if (!refreshToken) {
+      return c.json({ error: 'No refresh token' }, 401);
+    }
+
+    try {
+      const tokenHash = hashToken(refreshToken);
+      const session = await userRepository.findSessionByTokenHash(tokenHash);
+
+      if (!session || session.expiresAt < new Date()) {
+        clearSessionCookie(c);
+        return c.json({ error: 'Refresh token expired or invalid' }, 401);
+      }
+
+      const user = session.user;
+      if (!user || user.status === 'disabled') {
+        clearSessionCookie(c);
+        return c.json({ error: 'Account not found or disabled' }, 401);
+      }
+
+      // Prepare new rotation values
+      const newRefreshToken = generateRefreshToken();
+      const newTokenHash = hashToken(newRefreshToken);
+      const newExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+      // Atomically rotate: if concurrent request already consumed this token, return 409
+      const rotated = await userRepository.rotateSession(
+        tokenHash, newTokenHash, user.id, newExpiresAt,
+        c.req.header('user-agent') ?? undefined,
+        getClientAddress(c.req.raw) ?? undefined,
+      );
+
+      if (!rotated) {
+        // Another concurrent request already refreshed this token — tell client to retry
+        return c.json({ error: 'Concurrent refresh detected, please retry' }, 409);
+      }
+
+      // Issue new access token
+      const newAccessToken = signToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role as any,
+        sessionVersion: user.sessionVersion ?? 0,
+      });
+
+      setCookie(c, 'token', newAccessToken, getSessionCookieOptions(c.req.url));
+      setCookie(c, 'refreshToken', newRefreshToken, getRefreshCookieOptions(c.req.url));
+
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[POST /api/auth/refresh]', e);
+      return c.json({ error: 'Failed to refresh token' }, 500);
+    }
   });
 
   router.post('/api/auth/2fa/verify-login', async (c) => {
