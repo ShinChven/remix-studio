@@ -93,7 +93,7 @@ export function WorkflowPanel({
   return (
     <div className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-800 bg-neutral-900/30 flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
       <div className="p-3 border-b border-neutral-800 bg-neutral-900/20 backdrop-blur-md shadow-sm">
-        <div className="min-h-[84px] flex items-center justify-between gap-3">
+        <div className="min-h-[40px] flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="text-[10px] font-black text-white truncate tracking-widest leading-none uppercase">
               {localProject.name}
