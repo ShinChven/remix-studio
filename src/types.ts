@@ -22,7 +22,7 @@ export interface LibraryItem {
   tags?: string[];
 }
 
-export type LibraryType = 'text' | 'image';
+export type LibraryType = 'text' | 'image' | 'video' | 'audio';
 
 export interface Library {
   id: string;

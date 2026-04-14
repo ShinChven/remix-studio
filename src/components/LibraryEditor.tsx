@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileText } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { TagModal } from './TagModal';
 import { PageHeader } from './PageHeader';
-import { saveImage, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary } from '../api';
+import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary } from '../api';
 import { DuplicateLibraryDialog } from './DuplicateLibraryDialog';
 import { toast } from 'sonner';
 
@@ -39,6 +39,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
   const [showTagFilterDropdown, setShowTagFilterDropdown] = useState(false);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
+  const [tempTitle, setTempTitle] = useState('');
 
   const ITEMS_PER_PAGE = 24;
 
@@ -267,7 +269,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     setDragOverIndex(null);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
 
@@ -282,32 +284,60 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           reader.readAsDataURL(file);
         });
 
-        const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveImage(base64, library.id);
+        let result;
+        if (library.type === 'image') {
+          result = await saveImage(base64, library.id);
+        } else if (library.type === 'video') {
+          result = await saveVideo(base64, library.id);
+        } else if (library.type === 'audio') {
+          result = await saveAudio(base64, library.id);
+        } else {
+          throw new Error('Unsupported library type for upload');
+        }
+
         const newItem = { 
           id: crypto.randomUUID(), 
-          content: key, 
+          content: result.key, 
+          title: file.name, // Use original filename as default title
           order: newItems.length,
-          thumbnailUrl: thumbnailKey,
-          optimizedUrl: optimizedKey,
-          size: size
+          thumbnailUrl: 'thumbnailKey' in result ? result.thumbnailKey : undefined,
+          optimizedUrl: 'optimizedKey' in result ? result.optimizedKey : undefined,
+          size: result.size
         };
         await createLibraryItem(library.id, newItem);
         // Use signed URLs for immediate display, DB stores the S3 keys
         newItems.push({ 
           ...newItem, 
-          content: url,
-          thumbnailUrl: thumbnailUrl,
-          optimizedUrl: optimizedUrl
+          content: result.url,
+          thumbnailUrl: 'thumbnailUrl' in result ? result.thumbnailUrl : undefined,
+          optimizedUrl: 'optimizedUrl' in result ? result.optimizedUrl : undefined
         });
       }
 
       onUpdate({ ...library, items: newItems });
     } catch (err: any) {
-      console.error('Failed to upload images:', err);
+      console.error('Failed to upload files:', err);
       toast.error(err.message || t('libraryEditor.toasts.uploadFailed'));
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleUpdateTitle = async (itemId: string) => {
+    const newItems = [...library.items];
+    const index = newItems.findIndex(i => i.id === itemId);
+    if (index !== -1) {
+      const updatedTitle = tempTitle.trim();
+      newItems[index] = { ...newItems[index], title: updatedTitle };
+      try {
+        await updateLibraryItem(library.id, itemId, { title: updatedTitle });
+        onUpdate({ ...library, items: newItems });
+      } catch (err) {
+        console.error('Failed to update title', err);
+        toast.error('Failed to update title');
+      }
+    }
+    setEditingTitleId(null);
   };
 
   return (
@@ -336,13 +366,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              {library.type === 'image' ? (
-                <label className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />}
-                  <span className="text-xs font-bold uppercase tracking-widest">{uploading ? t('libraryEditor.uploading') : t('libraryEditor.upload')}</span>
-                  <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} disabled={uploading} />
-                </label>
-              ) : (
+              {library.type === 'text' ? (
                 <button
                   onClick={() => navigate(`/library/${library.id}/prompt/new`)}
                   className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm"
@@ -350,6 +374,29 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
                   <span className="text-xs font-bold uppercase tracking-widest">{t('libraryEditor.addFragment')}</span>
                 </button>
+              ) : (
+                <label className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 
+                   library.type === 'audio' ? <Music className="w-4 h-4 transition-transform group-hover:scale-110" /> :
+                   library.type === 'video' ? <Video className="w-4 h-4 transition-transform group-hover:scale-110" /> :
+                   <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />}
+                  <span className="text-xs font-bold uppercase tracking-widest">
+                    {uploading ? t('libraryEditor.uploading') : t('libraryEditor.upload')}
+                  </span>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    multiple 
+                    accept={
+                      library.type === 'image' ? 'image/*' : 
+                      library.type === 'video' ? 'video/*' : 
+                      library.type === 'audio' ? 'audio/*' : 
+                      '*/*'
+                    } 
+                    onChange={handleFileUpload} 
+                    disabled={uploading} 
+                  />
+                </label>
               )}
 
               <button
@@ -493,7 +540,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           </div>
         )}
 
-        <div className={library.type === 'image' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8" : "space-y-2.5"}>
+        <div className={library.type !== 'text' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8" : "space-y-2.5"}>
           {paginatedItems.map(({ item, originalIndex }) => {
             const isExpanded = expandedItemId === item.id;
             const isSelected = selectedItemIds.has(item.id);
@@ -518,29 +565,86 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                     ? 'rounded-2xl aspect-square p-2' 
                     : 'rounded-xl cursor-pointer'}
                 `}>
-                  {library.type === 'image' ? (
+                  {library.type !== 'text' ? (
                     <div className={`relative flex-1 rounded-xl overflow-hidden cursor-pointer transition-all ${isSelected ? 'ring-4 ring-blue-500/50 scale-95' : ''}`} onClick={(e) => { 
                       if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, originalIndex, e); 
-                      else setLightboxIndex(originalIndex); 
+                      else {
+                        if (library.type === 'image') setLightboxIndex(originalIndex);
+                        // For video/audio, expansion or separate player could be used, but for now let's just use the grid
+                      }
                     }}>
-                      <img src={item.thumbnailUrl || item.content} alt={`${originalIndex}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">{t('libraryEditor.imageLabel', { index: originalIndex + 1 })}</span>
-                          <div className="flex items-center gap-2">
-                             <button
-                               onClick={(e) => { e.stopPropagation(); setTagModalItemId(item.id); }}
-                               className="p-2.5 bg-neutral-950/80 text-neutral-400 hover:text-blue-400 rounded-xl backdrop-blur-md border border-white/5 hover:border-blue-400/20 transition-all active:scale-90"
-                               title={t('libraryEditor.editTags')}
-                             >
-                               <TagIcon className="w-4 h-4" />
-                             </button>
-                             <button
-                               onClick={(e) => { e.stopPropagation(); handleRemoveItem(originalIndex); }}
-                               className="p-2.5 bg-neutral-950/80 text-neutral-400 hover:text-red-500 rounded-xl backdrop-blur-md border border-white/5 hover:border-red-500/20 transition-all active:scale-90"
-                             >
-                               <Trash2 className="w-4 h-4" />
-                             </button>
+                      {library.type === 'image' ? (
+                        <img src={item.thumbnailUrl || item.content} alt={`${originalIndex}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
+                      ) : library.type === 'video' ? (
+                        <div className="w-full h-full flex items-center justify-center bg-neutral-800">
+                          {item.thumbnailUrl ? (
+                            <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <Video className="w-12 h-12 text-neutral-600" />
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/item:bg-black/40 transition-colors">
+                            <Play className="w-10 h-10 text-white opacity-80" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-neutral-800">
+                          <Music className="w-12 h-12 text-neutral-600" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3">
+                        <div className="flex flex-col gap-1.5">
+                          {editingTitleId === item.id ? (
+                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                              <input 
+                                type="text"
+                                value={tempTitle}
+                                onChange={e => setTempTitle(e.target.value)}
+                                onBlur={() => handleUpdateTitle(item.id)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') handleUpdateTitle(item.id);
+                                  if (e.key === 'Escape') setEditingTitleId(null);
+                                }}
+                                autoFocus
+                                className="flex-1 bg-neutral-900/80 border border-blue-500/50 rounded px-2 py-1 text-[10px] text-white focus:outline-none"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between group/title">
+                              <span className="text-[10px] font-bold text-white/90 truncate max-w-[120px]">
+                                {item.title || (library.type === 'image' ? t('libraryEditor.imageLabel', { index: originalIndex + 1 }) : 
+                                 library.type === 'video' ? 'Video ' + (originalIndex + 1) : 'Audio ' + (originalIndex + 1))}
+                              </span>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingTitleId(item.id);
+                                  setTempTitle(item.title || '');
+                                }}
+                                className="opacity-0 group-hover/title:opacity-100 p-1 hover:text-blue-400 transition-all"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center mt-1">
+                            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest truncate max-w-[60px]">
+                              {library.type.toUpperCase()}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                               <button
+                                 onClick={(e) => { e.stopPropagation(); setTagModalItemId(item.id); }}
+                                 className="p-1.5 bg-neutral-950/80 text-neutral-400 hover:text-blue-400 rounded-lg backdrop-blur-md border border-white/5 hover:border-blue-400/20 transition-all active:scale-90"
+                                 title={t('libraryEditor.editTags')}
+                               >
+                                 <TagIcon className="w-3.5 h-3.5" />
+                               </button>
+                               <button
+                                 onClick={(e) => { e.stopPropagation(); handleRemoveItem(originalIndex); }}
+                                 className="p-1.5 bg-neutral-950/80 text-neutral-400 hover:text-red-500 rounded-lg backdrop-blur-md border border-white/5 hover:border-red-500/20 transition-all active:scale-90"
+                               >
+                                 <Trash2 className="w-3.5 h-3.5" />
+                               </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -599,12 +703,12 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                               <TagIcon className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={(e) => { e.stopPropagation(); navigate(`/library/${library.id}/prompt/${originalIndex}`); }}
-                              className="p-1.5 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-lg transition-all border border-transparent hover:border-neutral-700 active:scale-95"
-                              title={t('libraryEditor.refineInFullEditor')}
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
+                               onClick={(e) => { e.stopPropagation(); navigate(`/library/${library.id}/prompt/${originalIndex}`); }}
+                               className="p-1.5 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-lg transition-all border border-transparent hover:border-neutral-700 active:scale-95"
+                               title={library.type === 'text' ? t('libraryEditor.refineInFullEditor') : t('libraryEditor.editDetails', 'Edit Details')}
+                             >
+                               {library.type === 'text' ? <Edit3 className="w-3.5 h-3.5" /> : <Settings className="w-3.5 h-3.5" />}
+                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleRemoveItem(originalIndex); }}
                               className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all border border-transparent hover:border-red-500/20 active:scale-95"

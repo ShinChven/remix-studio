@@ -131,8 +131,12 @@ function generateRandomCombination(workflow: WorkflowItem[], libraries: Library[
           const itemType = lib.type || 'text'; // Fallback
           if (itemType === 'text') {
             texts.push(randomItem.content);
-          } else {
+          } else if (itemType === 'image') {
             images.push(randomItem.content);
+          } else if (itemType === 'video') {
+            videos.push(randomItem.content);
+          } else if (itemType === 'audio') {
+            audios.push(randomItem.content);
           }
           if (randomItem.tags) stepParts.push(...randomItem.tags);
           if (randomItem.title) stepParts.push(randomItem.title);

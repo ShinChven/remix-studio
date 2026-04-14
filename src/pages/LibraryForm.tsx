@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, Folder, Type, Image as ImageIcon } from 'lucide-react';
+import { Save, Folder, Type, Image as ImageIcon, Video, Music } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createLibrary, updateLibrary, fetchLibrary } from '../api';
+import { LibraryType } from '../types';
 
 export function LibraryForm() {
   const { t } = useTranslation();
@@ -12,7 +13,7 @@ export function LibraryForm() {
   const isNew = !id;
 
   const [name, setName] = useState('');
-  const [type, setType] = useState<'text' | 'image'>('text');
+  const [type, setType] = useState<LibraryType>('text');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -105,13 +106,48 @@ export function LibraryForm() {
                   <ImageIcon className="w-5 h-5" />
                   <span className="text-sm font-bold">{t('libraryForm.typeImage')}</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setType('video')}
+                  className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
+                    type === 'video'
+                      ? 'bg-purple-600/10 border-purple-500/50 text-purple-400'
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                  }`}
+                >
+                  <Video className="w-5 h-5" />
+                  <span className="text-sm font-bold">{t('libraryForm.typeVideo', 'Video')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType('audio')}
+                  className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
+                    type === 'audio'
+                      ? 'bg-amber-600/10 border-amber-500/50 text-amber-400'
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                  }`}
+                >
+                  <Music className="w-5 h-5" />
+                  <span className="text-sm font-bold">{t('libraryForm.typeAudio', 'Audio')}</span>
+                </button>
               </div>
             ) : (
               <div className={`flex items-center gap-3 p-4 rounded-2xl border ${
-                type === 'image' ? 'bg-emerald-600/5 border-emerald-500/20 text-emerald-400' : 'bg-blue-600/5 border-blue-500/20 text-blue-400'
+                type === 'image' ? 'bg-emerald-600/5 border-emerald-500/20 text-emerald-400' : 
+                type === 'video' ? 'bg-purple-600/5 border-purple-500/20 text-purple-400' :
+                type === 'audio' ? 'bg-amber-600/5 border-amber-500/20 text-amber-400' :
+                'bg-blue-600/5 border-blue-500/20 text-blue-400'
               }`}>
-                {type === 'image' ? <ImageIcon className="w-5 h-5" /> : <Type className="w-5 h-5" />}
-                <span className="text-sm font-bold capitalize">{t('libraryForm.contentType', { type: type === 'image' ? t('libraryForm.typeImage') : t('libraryForm.typeText') })}</span>
+                {type === 'image' ? <ImageIcon className="w-5 h-5" /> : 
+                 type === 'video' ? <Video className="w-5 h-5" /> :
+                 type === 'audio' ? <Music className="w-5 h-5" /> :
+                 <Type className="w-5 h-5" />}
+                <span className="text-sm font-bold capitalize">{t('libraryForm.contentType', { type: 
+                  type === 'image' ? t('libraryForm.typeImage') : 
+                  type === 'video' ? t('libraryForm.typeVideo', 'Video') :
+                  type === 'audio' ? t('libraryForm.typeAudio', 'Audio') :
+                  t('libraryForm.typeText') 
+                })}</span>
                 <span className="ml-auto text-[10px] font-black uppercase tracking-[0.1em] opacity-50">{t('libraryForm.permanent')}</span>
               </div>
             )}
