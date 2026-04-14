@@ -112,17 +112,17 @@ export function QueueTab({
                   metaChips={
                     <>
                       {task.aspectRatio && (
-                        <InfoChip className="text-neutral-500">
+                        <InfoChip className="text-neutral-500 dark:text-neutral-500">
                           {task.aspectRatio}
                         </InfoChip>
                       )}
                       {task.quality && (
-                        <InfoChip className="text-neutral-500">
+                        <InfoChip className="text-neutral-500 dark:text-neutral-500">
                           {task.quality}
                         </InfoChip>
                       )}
                       {task.format && (
-                        <InfoChip className="text-neutral-500">
+                        <InfoChip className="text-neutral-500 dark:text-neutral-500">
                           {task.format}
                         </InfoChip>
                       )}
@@ -146,7 +146,7 @@ export function QueueTab({
                           {t('projectViewer.queue.running')}
                         </InfoChip>
                       )}
-                      {task.status === 'pending' && <InfoChip className="text-neutral-500 shadow-sm">{t('projectViewer.queue.queued')}</InfoChip>}
+                      {task.status === 'pending' && <InfoChip className="text-neutral-500 dark:text-neutral-500 shadow-sm">{t('projectViewer.queue.queued')}</InfoChip>}
                       {task.status === 'failed' && <InfoChip className="text-red-500 bg-red-500/10 border-red-500/20">{t('projectViewer.queue.failed')}</InfoChip>}
                     </>
                   }
@@ -163,7 +163,7 @@ export function QueueTab({
                       )}
                       <button 
                         onClick={(e) => { e.stopPropagation(); setJobToDeleteId(task.id); }}
-                        className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                        className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                         title={t('projectViewer.common.deleteJob')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -174,7 +174,7 @@ export function QueueTab({
                     <>
                       <div className="space-y-2">
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('projectViewer.common.fullPrompt')}</label>
-                          <div className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/50 p-3 rounded-lg border border-neutral-800 select-all whitespace-pre-wrap font-mono">
+                          <div className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 select-all whitespace-pre-wrap font-mono">
                             {task.prompt}
                           </div>
                       </div>
@@ -183,7 +183,7 @@ export function QueueTab({
                             <label className="text-[9px] font-black uppercase tracking-[0.1em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>
                             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                               {task.imageContexts.map((ctx, idx) => (
-                                <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-blue-500/50">
+                                <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-blue-500/50">
                                   <img 
                                     src={imageDisplayUrl(ctx)}
                                     alt={`Context ${idx + 1}`} 
@@ -207,7 +207,7 @@ export function QueueTab({
                           <label className="text-[9px] font-black uppercase tracking-[0.1em] text-violet-300/70 px-1">Reference Videos</label>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {task.videoContexts.map((ctx, idx) => (
-                              <video key={idx} src={imageDisplayUrl(ctx)} controls className="w-full rounded-lg border border-neutral-800 bg-black" />
+                              <video key={idx} src={imageDisplayUrl(ctx)} controls className="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-black" />
                             ))}
                           </div>
                         </div>

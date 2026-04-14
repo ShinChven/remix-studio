@@ -83,18 +83,18 @@ export function DraftsTab({
           })}
           
           {displayAlbumItems.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-neutral-800 rounded-3xl opacity-20">
-              <Plus className="w-12 h-12 text-neutral-500" />
+            <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl opacity-20">
+              <Plus className="w-12 h-12 text-neutral-500 dark:text-neutral-500" />
             </div>
           )}
         </div>
       )}
 
       <div className="w-full max-w-xl mx-auto px-4 sm:px-6 text-center space-y-4 flex flex-col items-center">
-        <h3 className="text-lg font-black text-white uppercase tracking-widest bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+        <h3 className="text-lg font-black text-neutral-900 dark:text-white uppercase tracking-widest bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
           {displayAlbumItems.length > 0 ? projectName : t('projectViewer.drafts.emptyCanvas')}
         </h3>
-        <p className="max-w-md text-[11px] font-medium text-neutral-500 uppercase tracking-[0.2em] leading-relaxed">
+        <p className="max-w-md text-[11px] font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-[0.2em] leading-relaxed">
           {displayAlbumItems.length > 0 
             ? t('projectViewer.drafts.galleryReady')
             : t('projectViewer.drafts.buildWorkflowHint')}
@@ -104,7 +104,7 @@ export function DraftsTab({
           {displayAlbumItems.length > 0 && (
             <button 
               onClick={onSwitchToAlbum}
-              className="px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl border border-neutral-800 transition-all active:scale-95 flex items-center gap-2"
+              className="px-6 py-2.5 bg-white dark:bg-neutral-900 hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl border border-neutral-200 dark:border-neutral-800 transition-all active:scale-95 flex items-center gap-2"
             >
               {t('projectViewer.drafts.openAlbum')}
             </button>
@@ -170,17 +170,17 @@ export function DraftsTab({
                   metaChips={
                     <>
                       {task.aspectRatio && (
-                        <InfoChip className="text-neutral-500">
+                        <InfoChip className="text-neutral-500 dark:text-neutral-500">
                           {task.aspectRatio}
                         </InfoChip>
                       )}
                       {task.quality && (
-                        <InfoChip className="text-neutral-500">
+                        <InfoChip className="text-neutral-500 dark:text-neutral-500">
                           {task.quality}
                         </InfoChip>
                       )}
                       {task.format && (
-                        <InfoChip className="text-neutral-500">
+                        <InfoChip className="text-neutral-500 dark:text-neutral-500">
                           {task.format}
                         </InfoChip>
                       )}
@@ -212,7 +212,7 @@ export function DraftsTab({
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); setJobToDeleteId(task.id); }}
-                        className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                        className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                         title={t('projectViewer.common.deleteJob')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -223,7 +223,7 @@ export function DraftsTab({
                     <>
                       <div className="space-y-2">
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('projectViewer.common.fullPrompt')}</label>
-                          <div className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/50 p-3 rounded-lg border border-neutral-800 select-all whitespace-pre-wrap">
+                          <div className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 select-all whitespace-pre-wrap">
                             {task.prompt}
                           </div>
                       </div>
@@ -232,7 +232,7 @@ export function DraftsTab({
                             <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>
                             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                               {task.imageContexts.map((ctx, idx) => (
-                                <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-blue-500/50">
+                                <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-blue-500/50">
                                   <img 
                                     src={imageDisplayUrl(ctx)}
                                     alt={t('projectViewer.queue.contextAlt', { index: idx + 1 })} 
@@ -256,7 +256,7 @@ export function DraftsTab({
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-violet-300/70">Reference Videos</label>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {task.videoContexts.map((ctx, idx) => (
-                              <video key={idx} src={imageDisplayUrl(ctx)} controls className="w-full rounded-lg border border-neutral-800 bg-black" />
+                              <video key={idx} src={imageDisplayUrl(ctx)} controls className="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-black" />
                             ))}
                           </div>
                         </div>

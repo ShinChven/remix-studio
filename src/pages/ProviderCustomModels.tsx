@@ -125,7 +125,7 @@ export function ProviderCustomModels() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-4">
         <AlertCircle className="w-10 h-10 text-red-400" />
-        <p className="text-neutral-400">{error || t('providerCustomModels.errorNotFound')}</p>
+        <p className="text-neutral-600 dark:text-neutral-400">{error || t('providerCustomModels.errorNotFound')}</p>
         <button onClick={() => navigate('/providers')} className="text-sm text-amber-400 hover:underline">
           {t('providerCustomModels.backToProviders')}
         </button>
@@ -139,7 +139,7 @@ export function ProviderCustomModels() {
         {/* Back */}
         <button
           onClick={() => navigate(`/provider/${id}`)}
-          className="text-sm text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors"
+          className="text-sm text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> {t('providerCustomModels.backToProvider', { name: provider.name })}
         </button>
@@ -147,11 +147,11 @@ export function ProviderCustomModels() {
         {/* Header */}
         <header className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-white font-display flex items-center gap-3">
+            <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 dark:text-white font-display flex items-center gap-3">
               <Layers className="w-7 h-7 text-cyan-500" />
               {t('providerCustomModels.title')}
             </h2>
-            <p className="text-sm text-neutral-400 mt-1">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
               {t('providerCustomModels.description')}
             </p>
           </div>
@@ -175,14 +175,14 @@ export function ProviderCustomModels() {
 
         {/* Editor panel (create / edit) */}
         {editor && (
-          <div className="bg-neutral-900 border border-cyan-600/30 rounded-2xl p-5 space-y-4">
+          <div className="bg-white dark:bg-neutral-900 border border-cyan-600/30 rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
                 {editor.mode === 'create' ? t('providerCustomModels.newVariant') : t('providerCustomModels.editVariant')}
               </h3>
               <button
                 onClick={() => setEditor(null)}
-                className="p-1.5 text-neutral-500 hover:text-neutral-200 rounded-lg transition-colors"
+                className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-neutral-200 rounded-lg transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -190,13 +190,13 @@ export function ProviderCustomModels() {
 
             {/* Base model */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-0.5">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-0.5">
                 {t('providerCustomModels.baseModelLabel')}
               </label>
               <select
                 value={editor.baseModelId}
                 onChange={(e) => setEditor({ ...editor, baseModelId: e.target.value })}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all"
+                className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all"
               >
                 <option value="">{t('providerCustomModels.selectBaseModel')}</option>
                 {baseModels.map((m) => (
@@ -220,7 +220,7 @@ export function ProviderCustomModels() {
             {/* Name + ID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-0.5">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-0.5">
                   {t('providerCustomModels.modelNameLabel')} <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -229,11 +229,11 @@ export function ProviderCustomModels() {
                   value={editor.customName}
                   onChange={(e) => setEditor({ ...editor, customName: e.target.value })}
                   placeholder={t('providerCustomModels.namePlaceholder')}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all placeholder:text-neutral-700"
+                  className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all placeholder:text-neutral-700"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-0.5">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-0.5">
                   {t('providerCustomModels.modelIdLabel')} <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -242,7 +242,7 @@ export function ProviderCustomModels() {
                   value={editor.customModelId}
                   onChange={(e) => setEditor({ ...editor, customModelId: e.target.value })}
                   placeholder={t('providerCustomModels.idPlaceholder')}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
+                  className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
                 />
               </div>
             </div>
@@ -252,14 +252,14 @@ export function ProviderCustomModels() {
               <button
                 onClick={handleEditorSave}
                 disabled={isSaving || !editor.customName.trim() || !(editor.customModelId || '').trim() || !editor.baseModelId}
-                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all disabled:opacity-30 flex items-center gap-2"
+                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-neutral-900 dark:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all disabled:opacity-30 flex items-center gap-2"
               >
                 <Save className="w-3.5 h-3.5" />
                 {isSaving ? t('providerCustomModels.saving') : editor.mode === 'create' ? t('providerCustomModels.create') : t('providerCustomModels.update')}
               </button>
               <button
                 onClick={() => setEditor(null)}
-                className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                className="px-4 py-2 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
               >
                 {t('providerCustomModels.cancel')}
               </button>
@@ -269,10 +269,10 @@ export function ProviderCustomModels() {
 
         {/* List */}
         {customModels.length === 0 && !editor ? (
-          <div className="py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">
+          <div className="py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/20 dark:bg-neutral-900/20">
             <Layers className="w-12 h-12 text-neutral-700" />
             <div>
-              <p className="text-lg font-medium text-neutral-400">{t('providerCustomModels.noVariants')}</p>
+              <p className="text-lg font-medium text-neutral-600 dark:text-neutral-400">{t('providerCustomModels.noVariants')}</p>
               <p className="text-sm">{t('providerCustomModels.noVariantsDesc')}</p>
             </div>
           </div>
@@ -284,17 +284,17 @@ export function ProviderCustomModels() {
               return (
                 <div
                   key={idx}
-                  className="bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/60 hover:border-neutral-700 px-4 py-3 rounded-xl transition-all flex items-center justify-between gap-4"
+                  className="bg-white/40 dark:bg-neutral-900/40 backdrop-blur-sm border border-neutral-200/60 dark:border-neutral-800/60 hover:border-neutral-700 px-4 py-3 rounded-xl transition-all flex items-center justify-between gap-4"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-semibold text-white text-sm truncate">{alias.customName}</h4>
+                      <h4 className="font-semibold text-neutral-900 dark:text-white text-sm truncate">{alias.customName}</h4>
                       <code className="text-[11px] text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md font-mono border border-cyan-500/20">
                         {alias.customModelId}
                       </code>
                     </div>
-                    <div className="flex items-center gap-2 mt-1 text-[11px] text-neutral-500">
-                      <span>{t('providerCustomModels.baseModelLabel')}: <span className="text-neutral-400">{base?.name ?? alias.baseModelId}</span></span>
+                    <div className="flex items-center gap-2 mt-1 text-[11px] text-neutral-500 dark:text-neutral-500">
+                      <span>{t('providerCustomModels.baseModelLabel')}: <span className="text-neutral-600 dark:text-neutral-400">{base?.name ?? alias.baseModelId}</span></span>
                       {base && (
                         <>
                           <span className="text-neutral-700">·</span>
@@ -322,7 +322,7 @@ export function ProviderCustomModels() {
                         </button>
                         <button
                           onClick={() => setDeleteTarget(null)}
-                          className="px-2.5 py-1.5 text-xs font-bold text-neutral-400 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors"
+                          className="px-2.5 py-1.5 text-xs font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors"
                         >
                           {t('providerCustomModels.cancel')}
                         </button>
@@ -332,7 +332,7 @@ export function ProviderCustomModels() {
                         <button
                           onClick={() => openEdit(idx)}
                           disabled={!!editor}
-                          className="p-1.5 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors disabled:opacity-30"
+                          className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors disabled:opacity-30"
                           title={t('providerCustomModels.edit')}
                         >
                           <Pencil className="w-4 h-4" />
@@ -340,7 +340,7 @@ export function ProviderCustomModels() {
                         <button
                           onClick={() => setDeleteTarget(idx)}
                           disabled={!!editor}
-                          className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-30"
+                          className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-30"
                           title={t('providerCustomModels.delete')}
                         >
                           <Trash2 className="w-4 h-4" />

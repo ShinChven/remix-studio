@@ -26,13 +26,13 @@ export function ApiKeyCheck({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (hasKey === null) return <div className="min-h-screen bg-neutral-900 flex items-center justify-center text-white">{t('apiKeyCheck.loading')}</div>;
+  if (hasKey === null) return <div className="min-h-screen bg-white dark:bg-neutral-900 flex items-center justify-center text-neutral-900 dark:text-white">{t('apiKeyCheck.loading')}</div>;
 
   if (!hasKey) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-900 text-white p-6">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white p-6">
         <h1 className="text-3xl font-bold mb-4">{t('apiKeyCheck.title')}</h1>
-        <p className="mb-8 text-neutral-400 max-w-md text-center">
+        <p className="mb-8 text-neutral-600 dark:text-neutral-400 max-w-md text-center">
           {t('apiKeyCheck.description')}
           <br/><br/>
           <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline">{t('apiKeyCheck.learnMore')}</a>

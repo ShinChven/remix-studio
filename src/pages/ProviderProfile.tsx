@@ -78,7 +78,7 @@ export function ProviderProfile() {
   if (isLoadingProvider) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-neutral-500 animate-spin" />
+        <Loader2 className="w-6 h-6 text-neutral-500 dark:text-neutral-500 animate-spin" />
       </div>
     );
   }
@@ -87,7 +87,7 @@ export function ProviderProfile() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-4">
         <AlertCircle className="w-10 h-10 text-red-400" />
-        <p className="text-neutral-400">{error || t('providerProfile.errorNotFound')}</p>
+        <p className="text-neutral-600 dark:text-neutral-400">{error || t('providerProfile.errorNotFound')}</p>
         <button onClick={() => navigate('/providers')} className="text-sm text-amber-400 hover:underline">
           {t('providerProfile.backToProviders')}
         </button>
@@ -125,7 +125,7 @@ export function ProviderProfile() {
                 {provider.type}
               </span>
               {provider.apiUrl && (
-                <span className="flex items-center gap-1 text-xs text-neutral-500">
+                <span className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-500">
                   <Globe className="w-3.5 h-3.5" />{provider.apiUrl}
                 </span>
               )}
@@ -149,7 +149,7 @@ export function ProviderProfile() {
               )}
               <button
                 onClick={() => navigate(`/provider/${id}/edit`)}
-                className="text-xs md:text-sm bg-neutral-800 text-neutral-300 hover:bg-neutral-700 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-neutral-700 font-medium shrink-0"
+                className="text-xs md:text-sm bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-700 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-neutral-700 font-medium shrink-0"
               >
                 <Pencil className="w-4 h-4" /> {t('providerProfile.edit')}
               </button>
@@ -168,14 +168,14 @@ export function ProviderProfile() {
         {/* Models */}
         <section>
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-xl font-semibold text-white">
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">
               {provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.type === 'Replicate' ? t('providerProfile.supportedModels') : t('providerProfile.availableModels')}
             </h3>
             {provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && provider.type !== 'Replicate' && (
               <button
                 onClick={loadModels}
                 disabled={isLoadingModels}
-                className="text-xs text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors disabled:opacity-50"
+                className="text-xs text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isLoadingModels ? 'animate-spin' : ''}`} /> {t('providerProfile.refresh')}
               </button>
@@ -198,10 +198,10 @@ export function ProviderProfile() {
 
           {isLoadingModels ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 text-neutral-500 animate-spin" />
+              <Loader2 className="w-6 h-6 text-neutral-500 dark:text-neutral-500 animate-spin" />
             </div>
           ) : (provider.hasKey || provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.type === 'Replicate') && models.length === 0 && !modelsError ? (
-            <div className="py-12 text-center text-neutral-500 text-sm">
+            <div className="py-12 text-center text-neutral-500 dark:text-neutral-500 text-sm">
               {t('providerProfile.noModels')}
             </div>
           ) : (
@@ -218,18 +218,18 @@ export function ProviderProfile() {
                         <Icon className="w-4 h-4" />
                         {meta.label}
                       </span>
-                      <span className="text-xs text-neutral-500">{t('providerProfile.modelCount', { count: items.length })}</span>
+                      <span className="text-xs text-neutral-500 dark:text-neutral-500">{t('providerProfile.modelCount', { count: items.length })}</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                       {items.map(m => (
                         <div
                           key={m.id}
-                          className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl px-3.5 py-2.5 hover:border-neutral-700 transition-colors"
+                          className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 rounded-xl px-3.5 py-2.5 hover:border-neutral-700 transition-colors"
                         >
-                          <p className="text-sm font-medium text-white truncate">{m.name}</p>
-                          <p className="text-[11px] text-neutral-500 truncate font-mono mt-0.5">{m.id}</p>
+                          <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{m.name}</p>
+                          <p className="text-[11px] text-neutral-500 dark:text-neutral-500 truncate font-mono mt-0.5">{m.id}</p>
                           {m.description && (
-                            <p className="text-xs text-neutral-400 mt-1 line-clamp-2">{m.description}</p>
+                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 line-clamp-2">{m.description}</p>
                           )}
                         </div>
                       ))}
@@ -247,9 +247,9 @@ export function ProviderProfile() {
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl px-3.5 py-3 text-center">
-      <p className="text-xs text-neutral-500 mb-1">{label}</p>
-      <p className="text-lg font-bold text-white">{value}</p>
+    <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 rounded-xl px-3.5 py-3 text-center">
+      <p className="text-xs text-neutral-500 dark:text-neutral-500 mb-1">{label}</p>
+      <p className="text-lg font-bold text-neutral-900 dark:text-white">{value}</p>
     </div>
   );
 }

@@ -717,7 +717,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const albumItems = localProject.album || [];
 
   return (
-    <div className="flex flex-col lg:flex-row h-full bg-neutral-950 overflow-hidden lg:overflow-visible">
+    <div className="flex flex-col lg:flex-row h-full bg-neutral-50 dark:bg-neutral-950 overflow-hidden lg:overflow-visible">
       <ModelSelectorModal
         isOpen={isModelSelectorOpen}
         onClose={() => setIsModelSelectorOpen(false)}
@@ -792,25 +792,25 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       />
 
       <div className={`flex-1 flex-col overflow-hidden min-h-0 ${mobileView === 'jobs' ? 'flex h-full' : 'hidden lg:flex'}`}>
-        <div className="p-3 border-b border-neutral-800 bg-neutral-900/20 backdrop-blur-md shadow-sm flex flex-col gap-3">
+        <div className="p-3 border-b border-neutral-200 dark:border-neutral-800 bg-white/20 dark:bg-neutral-900/20 backdrop-blur-md shadow-sm flex flex-col gap-3">
           <div className="min-h-[40px] flex items-center justify-center gap-4">
-            <div className="flex bg-neutral-950 border border-neutral-800 rounded-xl p-1 flex-1 max-w-lg">
-              <button onClick={() => setActiveTab('draft')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'draft' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
+            <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-1 flex-1 max-w-lg">
+              <button onClick={() => setActiveTab('draft')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'draft' ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
                 <Plus className="w-3 h-3" />
                 <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.tabs.draft')}</span>
                 <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({draftJobs.length})</span>
               </button>
-              <button onClick={() => setActiveTab('queue')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'queue' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
+              <button onClick={() => setActiveTab('queue')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'queue' ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
                 <List className="w-3 h-3" />
                 <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.tabs.queue')}</span>
                 <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({queueJobs.length})</span>
               </button>
-              <button onClick={() => setActiveTab('completed')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'completed' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
+              <button onClick={() => setActiveTab('completed')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'completed' ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
                 <CheckCircle2 className="w-3 h-3" />
                 <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.tabs.done')}</span>
                 <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({completedJobs.length})</span>
               </button>
-              <button onClick={() => setActiveTab('album')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'album' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
+              <button onClick={() => setActiveTab('album')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'album' ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
                 <Grid className="w-3 h-3" />
                 <span className="text-[10px] font-black uppercase tracking-widest leading-none">{localProject.type === 'text' ? t('projectViewer.tabs.texts') : t('projectViewer.tabs.album')}</span>
                 <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({albumItems.length})</span>

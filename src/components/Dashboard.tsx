@@ -50,13 +50,13 @@ export function Dashboard() {
 
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-neutral-500 dark:text-neutral-500 animate-spin" />
           </div>
         ) : (
           <>
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg md:text-xl font-semibold text-white flex items-center gap-2">
+                <h3 className="text-lg md:text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                   <Clock className="w-5 h-5 text-green-500" />
                   {t('dashboard.recentProjects')}
                 </h3>
@@ -69,16 +69,16 @@ export function Dashboard() {
                   <Link
                     key={project.id}
                     to={`/project/${project.id}`}
-                    className="bg-neutral-900 border border-neutral-800 hover:border-green-500/50 p-4 rounded-xl text-left transition-all group"
+                    className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-green-500/50 p-4 rounded-xl text-left transition-all group"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="p-2 bg-green-500/10 rounded-lg text-green-500 group-hover:scale-110 transition-transform">
                         <Play className="w-5 h-5" />
                       </div>
-                      <span className="text-xs text-neutral-500 font-mono truncate max-w-[120px]">{project.id}</span>
+                      <span className="text-xs text-neutral-500 dark:text-neutral-500 font-mono truncate max-w-[120px]">{project.id}</span>
                     </div>
-                    <h4 className="font-medium text-white truncate">{project.name}</h4>
-                    <p className="text-xs text-neutral-500 mt-1">
+                    <h4 className="font-medium text-neutral-900 dark:text-white truncate">{project.name}</h4>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
                       {t('dashboard.projectStats', { 
                         jobCount: (project.jobCount ?? project.jobs?.length) || 0,
                         imageCount: (project.albumCount ?? project.album?.length) || 0,
@@ -88,7 +88,7 @@ export function Dashboard() {
                   </Link>
                 ))}
                 {projects.length === 0 && (
-                  <div className="col-span-full p-8 border border-neutral-800 border-dashed rounded-xl text-center text-neutral-500">
+                  <div className="col-span-full p-8 border border-neutral-200 dark:border-neutral-800 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500">
                     {t('dashboard.noProjects')}
                   </div>
                 )}
@@ -97,7 +97,7 @@ export function Dashboard() {
 
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg md:text-xl font-semibold text-white flex items-center gap-2">
+                <h3 className="text-lg md:text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                   <LayoutGrid className="w-5 h-5 text-blue-500" />
                   {t('dashboard.libraries')}
                 </h3>
@@ -112,19 +112,19 @@ export function Dashboard() {
                   <Link
                     key={lib.id}
                     to={`/library/${lib.id}`}
-                    className="bg-neutral-900 border border-neutral-800 hover:border-blue-500/50 p-4 rounded-xl text-left transition-all group"
+                    className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-blue-500/50 p-4 rounded-xl text-left transition-all group"
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500 group-hover:scale-110 transition-transform">
                         <Folder className="w-5 h-5" />
                       </div>
-                      <h4 className="font-medium text-white truncate flex-1">{lib.name}</h4>
+                      <h4 className="font-medium text-neutral-900 dark:text-white truncate flex-1">{lib.name}</h4>
                     </div>
-                    <p className="text-xs text-neutral-500">{lib.items?.length || 0} items</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-500">{lib.items?.length || 0} items</p>
                   </Link>
                 ))}
                 {libraries.length === 0 && (
-                  <div className="col-span-full p-8 border border-neutral-800 border-dashed rounded-xl text-center text-neutral-500">
+                  <div className="col-span-full p-8 border border-neutral-200 dark:border-neutral-800 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500">
                     {t('dashboard.noLibraries')}
                   </div>
                 )}

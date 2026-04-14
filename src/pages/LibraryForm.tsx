@@ -50,36 +50,36 @@ export function LibraryForm() {
   };
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-950">
-      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-50 dark:bg-neutral-950">
+      <div className="w-full max-w-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 bg-blue-600/10 rounded-2xl">
             <Folder className="w-6 h-6 text-blue-500" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">
+            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">
               {isNew ? t('libraryForm.newTitle') : t('libraryForm.editTitle')}
             </h2>
-            <p className="text-sm text-neutral-500">{t('libraryForm.description')}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-500">{t('libraryForm.description')}</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('libraryForm.nameLabel')}</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">{t('libraryForm.nameLabel')}</label>
             <input
               type="text"
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t('libraryForm.namePlaceholder')}
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-neutral-700"
+              className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-neutral-700"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('libraryForm.typeLabel')}</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">{t('libraryForm.typeLabel')}</label>
             {isNew ? (
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -88,7 +88,7 @@ export function LibraryForm() {
                   className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
                     type === 'text'
                       ? 'bg-blue-600/10 border-blue-500/50 text-blue-400'
-                      : 'bg-neutral-950 border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:border-neutral-700'
                   }`}
                 >
                   <Type className="w-5 h-5" />
@@ -100,7 +100,7 @@ export function LibraryForm() {
                   className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
                     type === 'image'
                       ? 'bg-emerald-600/10 border-emerald-500/50 text-emerald-400'
-                      : 'bg-neutral-950 border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:border-neutral-700'
                   }`}
                 >
                   <ImageIcon className="w-5 h-5" />
@@ -112,7 +112,7 @@ export function LibraryForm() {
                   className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
                     type === 'video'
                       ? 'bg-purple-600/10 border-purple-500/50 text-purple-400'
-                      : 'bg-neutral-950 border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:border-neutral-700'
                   }`}
                 >
                   <Video className="w-5 h-5" />
@@ -124,7 +124,7 @@ export function LibraryForm() {
                   className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
                     type === 'audio'
                       ? 'bg-amber-600/10 border-amber-500/50 text-amber-400'
-                      : 'bg-neutral-950 border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:border-neutral-700'
                   }`}
                 >
                   <Music className="w-5 h-5" />
@@ -157,14 +157,14 @@ export function LibraryForm() {
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="flex-1 px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
+              className="flex-1 px-4 py-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
             >
               {t('libraryForm.cancel')}
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !name.trim()}
-              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-neutral-900 dark:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
               {isNew ? t('libraryForm.submitCreate') : t('libraryForm.submitSave')}

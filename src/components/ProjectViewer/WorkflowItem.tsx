@@ -58,10 +58,10 @@ export function WorkflowItem({
       onDragOver={(e) => onDragOver(e, index)}
       onDrop={(e) => onDrop(e, index)}
       onDragEnd={onDragEnd}
-      className={`bg-neutral-900/50 border rounded-xl p-3 group transition-all ${
+      className={`bg-white/50 dark:bg-neutral-900/50 border rounded-xl p-3 group transition-all ${
         draggedIndex === index ? 'opacity-50 border-blue-500' : 
-        dragOverIndex === index ? 'border-blue-400 border-dashed bg-neutral-800' : 
-        'border-neutral-800 hover:border-neutral-700 shadow-sm'
+        dragOverIndex === index ? 'border-blue-400 border-dashed bg-neutral-200 dark:bg-neutral-800' : 
+        'border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 shadow-sm'
       }`}
     >
       <div className="flex justify-between items-center mb-3">
@@ -69,7 +69,7 @@ export function WorkflowItem({
           <div className="cursor-grab active:cursor-grabbing text-neutral-600 hover:text-neutral-400 transition-colors">
             <GripVertical className="w-4 h-4" />
           </div>
-          <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
             {item.type === 'audio' && <Volume2 className="w-3 h-3 text-cyan-400" />}
             {item.type === 'text' ? t('projectViewer.common.text') :
              item.type === 'image' ? t('projectViewer.common.imageShort') :
@@ -89,19 +89,19 @@ export function WorkflowItem({
             onClick={() => onEdit(item)}
             className="group/text relative cursor-pointer"
           >
-            <div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 pb-8 text-xs text-neutral-400 line-clamp-4 min-h-[96px] transition-all hover:border-blue-500/30 hover:bg-neutral-900/50">
+            <div className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 pb-8 text-xs text-neutral-600 dark:text-neutral-400 line-clamp-4 min-h-[96px] transition-all hover:border-blue-500/30 hover:bg-neutral-900/50">
               {item.value || <span className="opacity-30 italic">{t('projectViewer.workflow.noTextContent')}</span>}
-              <div className="absolute bottom-2 left-2 rounded-md border border-neutral-800 bg-neutral-900/90 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-neutral-500">
+              <div className="absolute bottom-2 left-2 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-neutral-500 dark:text-neutral-500">
                 {t('projectViewer.workflow.characterCount', { count: item.value.length })}
               </div>
-              <div className="absolute top-2 right-2 p-1.5 bg-neutral-900/80 rounded-md border border-neutral-800 opacity-100 transition-all hover:text-blue-400">
+              <div className="absolute top-2 right-2 p-1.5 bg-white/80 dark:bg-neutral-900/80 rounded-md border border-neutral-200 dark:border-neutral-800 opacity-100 transition-all hover:text-blue-400">
                 <Maximize2 className="w-3.5 h-3.5" />
               </div>
             </div>
           </div>
           <button 
             onClick={() => onSelectFromLibrary(item.id)}
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 border border-dashed border-neutral-800 rounded-lg bg-neutral-900/20 hover:bg-neutral-800/40 hover:border-blue-500/30 text-[9px] font-black text-neutral-500 hover:text-neutral-300 transition-all group uppercase tracking-[0.1em]"
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-lg bg-white/20 dark:bg-neutral-900/20 hover:bg-neutral-800/40 hover:border-blue-500/30 text-[9px] font-black text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 transition-all group uppercase tracking-[0.1em]"
           >
             <LibraryIcon className="w-3 h-3 text-neutral-600 group-hover:text-blue-500" />
             {t('projectViewer.workflow.pickFromLibrary')}
@@ -116,12 +116,12 @@ export function WorkflowItem({
           }}
           className="group/library relative cursor-pointer"
         >
-          <div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-xs flex items-center justify-between transition-all hover:border-emerald-500/30 hover:bg-neutral-900/50">
+          <div className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-xs flex items-center justify-between transition-all hover:border-emerald-500/30 hover:bg-neutral-900/50">
             <div className="flex items-center gap-3">
               {(() => {
                 const firstImage = library?.type === 'image' && library.items[0]?.content;
                 return firstImage ? (
-                  <div className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-800 flex-shrink-0">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 flex-shrink-0">
                     <img src={firstImage} alt="Thumbnail" className="w-full h-full object-cover" />
                   </div>
                 ) : (
@@ -134,7 +134,7 @@ export function WorkflowItem({
                 <div className="text-neutral-200 font-bold truncate">
                   {library?.name || t('projectViewer.workflow.unknownLibrary')}
                 </div>
-                <div className="text-[10px] text-neutral-500 font-medium mt-0.5 flex items-center gap-2">
+                <div className="text-[10px] text-neutral-500 dark:text-neutral-500 font-medium mt-0.5 flex items-center gap-2">
                   {t('projectViewer.workflow.itemsCount', { count: library?.items.length || 0 })}
                   {(item.selectedTags || []).length > 0 && (
                     <span className="text-[9px] font-black text-blue-500/80 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 uppercase tracking-widest">
@@ -144,7 +144,7 @@ export function WorkflowItem({
                 </div>
               </div>
             </div>
-            <div className="p-1.5 bg-neutral-900/80 rounded-md border border-neutral-800 opacity-100 transition-all hover:text-emerald-400">
+            <div className="p-1.5 bg-white/80 dark:bg-neutral-900/80 rounded-md border border-neutral-200 dark:border-neutral-800 opacity-100 transition-all hover:text-emerald-400">
               <Maximize2 className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -154,7 +154,7 @@ export function WorkflowItem({
       {item.type === 'image' && (
         <div className="space-y-2">
           <div className="flex gap-2">
-            <label className="flex-1 block text-center py-2.5 border border-dashed border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-amber-500/50 transition-all group relative overflow-hidden">
+            <label className="flex-1 block text-center py-2.5 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-amber-500/50 transition-all group relative overflow-hidden">
               {uploadingItemIds.has(item.id) ? (
                 <div className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />
@@ -162,22 +162,22 @@ export function WorkflowItem({
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2">
-                  <ImageIcon className="w-3.5 h-3.5 text-neutral-500 group-hover:text-amber-500" />
-                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">{t('projectViewer.common.upload')}</span>
+                  <ImageIcon className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-500 group-hover:text-amber-500" />
+                  <span className="text-[9px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">{t('projectViewer.common.upload')}</span>
                   <input type="file" accept="image/*" onChange={(e) => onImageUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
                 </div>
               )}
             </label>
             <button 
               onClick={() => onSelectFromLibrary(item.id)}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-dashed border-neutral-800 rounded-lg hover:bg-neutral-800/50 hover:border-emerald-500/50 transition-all group"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-lg hover:bg-neutral-800/50 hover:border-emerald-500/50 transition-all group"
             >
-              <LibraryIcon className="w-4 h-4 text-neutral-500 group-hover:text-emerald-500" />
-              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">{t('projectViewer.common.library')}</span>
+              <LibraryIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-500 group-hover:text-emerald-500" />
+              <span className="text-[9px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">{t('projectViewer.common.library')}</span>
             </button>
           </div>
           {item.value && !uploadingItemIds.has(item.id) && (
-            <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-800 mt-2">
+            <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 mt-2">
                <img 
                  src={imageDisplayUrl(item.thumbnailUrl || item.value)} 
                  alt="Reference" 
@@ -192,7 +192,7 @@ export function WorkflowItem({
       {item.type === 'video' && (
         <div className="space-y-2">
           <div className="flex gap-2">
-            <label className="flex-1 block text-center py-2.5 border border-dashed border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-violet-500/50 transition-all group relative overflow-hidden">
+            <label className="flex-1 block text-center py-2.5 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-violet-500/50 transition-all group relative overflow-hidden">
               {uploadingItemIds.has(item.id) ? (
                 <div className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
@@ -200,8 +200,8 @@ export function WorkflowItem({
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2">
-                  <VideoIcon className="w-3.5 h-3.5 text-neutral-500 group-hover:text-violet-400" />
-                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">
+                  <VideoIcon className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-500 group-hover:text-violet-400" />
+                  <span className="text-[9px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">
                     {t('projectViewer.common.upload')} {t('projectViewer.common.video')}
                   </span>
                   <input type="file" accept="video/*" onChange={(e) => onVideoUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
@@ -210,14 +210,14 @@ export function WorkflowItem({
             </label>
             <button 
               onClick={() => onSelectFromLibrary(item.id)}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-dashed border-neutral-800 rounded-lg hover:bg-neutral-800/50 hover:border-emerald-500/50 transition-all group"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-lg hover:bg-neutral-800/50 hover:border-emerald-500/50 transition-all group"
             >
-              <LibraryIcon className="w-4 h-4 text-neutral-500 group-hover:text-emerald-500" />
-              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">{t('projectViewer.common.library')}</span>
+              <LibraryIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-500 group-hover:text-emerald-500" />
+              <span className="text-[9px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">{t('projectViewer.common.library')}</span>
             </button>
           </div>
           {item.value && !uploadingItemIds.has(item.id) && (
-            <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-800 mt-2 bg-black">
+            <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 mt-2 bg-black">
               <video
                 src={imageDisplayUrl(item.value)}
                 poster={item.thumbnailUrl ? imageDisplayUrl(item.thumbnailUrl) : undefined}
@@ -232,7 +232,7 @@ export function WorkflowItem({
       {item.type === 'audio' && (
         <div className="space-y-2">
           <div className="flex gap-2">
-            <label className="flex-1 block text-center py-2.5 border border-dashed border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-cyan-500/50 transition-all group relative overflow-hidden">
+            <label className="flex-1 block text-center py-2.5 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-800/50 hover:border-cyan-500/50 transition-all group relative overflow-hidden">
               {uploadingItemIds.has(item.id) ? (
                 <div className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
@@ -240,8 +240,8 @@ export function WorkflowItem({
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2">
-                  <Volume2 className="w-3.5 h-3.5 text-neutral-500 group-hover:text-cyan-400" />
-                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">
+                  <Volume2 className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-500 group-hover:text-cyan-400" />
+                  <span className="text-[9px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">
                     {t('projectViewer.common.upload')} {t('projectViewer.common.audio')}
                   </span>
                   <input type="file" accept="audio/*" onChange={(e) => onAudioUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
@@ -250,14 +250,14 @@ export function WorkflowItem({
             </label>
             <button 
               onClick={() => onSelectFromLibrary(item.id)}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-dashed border-neutral-800 rounded-lg hover:bg-neutral-800/50 hover:border-emerald-500/50 transition-all group"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-lg hover:bg-neutral-800/50 hover:border-emerald-500/50 transition-all group"
             >
-              <LibraryIcon className="w-4 h-4 text-neutral-500 group-hover:text-emerald-500" />
-              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">{t('projectViewer.common.library')}</span>
+              <LibraryIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-500 group-hover:text-emerald-500" />
+              <span className="text-[9px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">{t('projectViewer.common.library')}</span>
             </button>
           </div>
           {item.value && !uploadingItemIds.has(item.id) && (
-            <div className="rounded-lg border border-neutral-800 bg-neutral-950 p-3 mt-2">
+            <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-3 mt-2">
               <audio src={imageDisplayUrl(item.value)} controls className="w-full" />
             </div>
           )}

@@ -42,15 +42,15 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
               <Columns3 className="w-5 h-5 text-blue-500" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-bold text-white tracking-tight">{t('projectViewer.compare.title')}</h3>
-              <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+              <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">{t('projectViewer.compare.title')}</h3>
+              <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
                 {t('projectViewer.compare.subtitle', { count: items.length })}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl p-2 text-neutral-500 transition-all hover:bg-white/10 hover:text-white"
+            className="rounded-xl p-2 text-neutral-500 dark:text-neutral-500 transition-all hover:bg-white/10 hover:text-white"
             aria-label={t('projectViewer.compare.closeAria')}
           >
             <X className="w-5 h-5" />
@@ -62,19 +62,19 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
             {items.map((item, index) => (
               <article
                 key={item.id}
-                className="flex h-full w-[min(40rem,calc(100vw-1.5rem))] sm:w-[min(40rem,calc(100vw-4rem))] shrink-0 flex-col overflow-hidden rounded-[24px] sm:rounded-[28px] border border-neutral-800 bg-neutral-900/90 shadow-2xl shadow-black/30 md:w-[min(42rem,calc(100vw-8rem))]"
+                className="flex h-full w-[min(40rem,calc(100vw-1.5rem))] sm:w-[min(40rem,calc(100vw-4rem))] shrink-0 flex-col overflow-hidden rounded-[24px] sm:rounded-[28px] border border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 shadow-2xl shadow-black/30 md:w-[min(42rem,calc(100vw-8rem))]"
               >
-                <header className="flex items-start sm:items-center justify-between gap-3 border-b border-neutral-800 bg-neutral-950/60 px-4 py-3">
+                <header className="flex items-start sm:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/60 px-4 py-3">
                   <div className="min-w-0">
                     <div className="text-[10px] font-mono text-neutral-600">#{(index + 1).toString().padStart(2, '0')}</div>
-                    <div className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-neutral-500">
+                    <div className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-500">
                       {item.providerId || t('projectViewer.common.provider')} · {item.modelConfigId || t('projectViewer.common.model')}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => handleCopy(item.prompt, t('projectViewer.common.prompt'))}
-                      className="flex items-center gap-1.5 rounded-xl bg-neutral-800 px-2.5 sm:px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-700"
+                      className="flex items-center gap-1.5 rounded-xl bg-neutral-200 dark:bg-neutral-800 px-2.5 sm:px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-900 dark:text-white transition-all hover:bg-neutral-700"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">{t('projectViewer.common.prompt')}</span>
@@ -91,10 +91,10 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-4 md:px-5 md:py-5">
                   {(item.imageContexts || []).length > 0 && (
-                    <section className="mb-4 rounded-2xl border border-neutral-800 bg-neutral-950/50 p-4">
+                    <section className="mb-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/50 p-4">
                       <div className="mb-3 flex items-center gap-2">
                         <FileImage className="w-4 h-4 text-blue-400" />
-                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
+                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">
                           {t('projectViewer.compare.referenceImages', { count: item.imageContexts?.length || 0 })}
                         </div>
                       </div>
@@ -104,7 +104,7 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
                             key={`${item.id}-compare-ref-${refIndex}`}
                             type="button"
                             onClick={() => setLightboxData({ images: (item.imageContexts || []).map(imageDisplayUrl), index: refIndex })}
-                            className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900"
+                            className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
                           >
                             <img
                               src={imageDisplayUrl(src)}
@@ -118,15 +118,15 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
                     </section>
                   )}
 
-                  <section className="mb-4 rounded-2xl border border-neutral-800 bg-neutral-950/50 p-4">
-                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('projectViewer.common.prompt')}</div>
-                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-neutral-300">
+                  <section className="mb-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/50 p-4">
+                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('projectViewer.common.prompt')}</div>
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
                       {item.prompt}
                     </p>
                   </section>
 
-                  <section className="rounded-2xl border border-neutral-800 bg-black/20 p-4">
-                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('projectViewer.common.generatedText')}</div>
+                  <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-black/20 p-4">
+                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('projectViewer.common.generatedText')}</div>
                     <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-neutral-100">
                       {item.textContent || t('projectViewer.compare.noGeneratedText')}
                     </div>

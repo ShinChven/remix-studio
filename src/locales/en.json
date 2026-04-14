@@ -1154,9 +1154,18 @@
         "instruction": "Only use this if the app specifically asks for a sign-in or discovery URL."
       },
       "steps": {
-        "1": { "title": "1. Copy Address", "desc": "Paste it into the AI app to start setup." },
-        "2": { "title": "2. Choose Method", "desc": "Use OAuth if it opens a browser, otherwise use a token." },
-        "3": { "title": "3. Manage Here", "desc": "View connections or revoke access anytime." }
+        "1": {
+          "title": "1. Copy Address",
+          "desc": "Paste it into the AI app to start setup."
+        },
+        "2": {
+          "title": "2. Choose Method",
+          "desc": "Use OAuth if it opens a browser, otherwise use a token."
+        },
+        "3": {
+          "title": "3. Manage Here",
+          "desc": "View connections or revoke access anytime."
+        }
       },
       "jsonSetup": {
         "title": "Need to use a JSON configuration?",
@@ -1280,12 +1289,12 @@
       "goPasswordlessDesc": "Remove your password and sign in with passkeys only.",
       "removePassword": "Remove password",
       "passkeysTitle": "Passkeys",
-    "passkeysDesc": "Use Face ID, Touch ID, Windows Hello, or a hardware key to sign in.",
-    "registered": "{{count}} registered",
-    "placeholder": "This MacBook",
-    "defaultPasskeyName": "This device",
-    "addPasskey": "Add passkey",
-    "noPasskeys": "No passkeys registered yet.",
+      "passkeysDesc": "Use Face ID, Touch ID, Windows Hello, or a hardware key to sign in.",
+      "registered": "{{count}} registered",
+      "placeholder": "This MacBook",
+      "defaultPasskeyName": "This device",
+      "addPasskey": "Add passkey",
+      "noPasskeys": "No passkeys registered yet.",
       "added": "Added {{date}}",
       "lastUsed": "Last used {{date}}",
       "remove": "Remove",
@@ -1296,10 +1305,10 @@
       "twoFactorSetupDesc": "Start the authenticator setup in a dedicated page so the verification flow has more room.",
       "twoFactorSetupPending": "A setup is already in progress. Opening the page will let you continue and verify it.",
       "openTwoFactor": "Open 2FA Setup",
-    "authCode": "Authenticator code",
-    "disableTwoFactor": "Disable 2FA",
-    "cancel": "Cancel",
-    "errors": {
+      "authCode": "Authenticator code",
+      "disableTwoFactor": "Disable 2FA",
+      "cancel": "Cancel",
+      "errors": {
         "passwordLength": "New password must be at least 8 characters long.",
         "passwordMatch": "New password and confirmation do not match.",
         "passwordUpdateFailed": "Failed to update password.",
@@ -1321,7 +1330,13 @@
     "preferences": {
       "language": "Language",
       "languageDescription": "Choose your preferred language for the interface.",
-      "selectLanguage": "Select language"
+      "selectLanguage": "Select language",
+      "theme": "Theme",
+      "themeDescription": "Choose your preferred color theme.",
+      "selectTheme": "Select theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System Settings"
     },
     "confirm": {
       "signOutTitle": "Sign out",

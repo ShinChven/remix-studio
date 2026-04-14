@@ -218,7 +218,7 @@ export function Login() {
                 maxLength={6}
                 value={twoFactorCode}
                 onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.3em] backdrop-blur-md"
+                className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.3em] backdrop-blur-md"
                 required
               />
             </div>
@@ -253,7 +253,7 @@ export function Login() {
                 value={inviteCode}
                 onChange={(event) => setInviteCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                 placeholder={t('login.enterInviteCode')}
-                className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.2em] backdrop-blur-md"
+                className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.2em] backdrop-blur-md"
                 required
               />
               <p className="mt-2 text-xs text-zinc-500">{t('login.inviteCodeDescription')}</p>
@@ -282,7 +282,7 @@ export function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
+                  className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
                   required
                 />
               </div>
@@ -292,7 +292,7 @@ export function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
+                  className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
                   required
                 />
               </div>

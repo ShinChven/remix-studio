@@ -49,13 +49,13 @@ export function ProjectRoute() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-neutral-500 animate-spin" />
+        <Loader2 className="w-6 h-6 text-neutral-500 dark:text-neutral-500 animate-spin" />
       </div>
     );
   }
 
   if (!project) {
-    return <div className="p-8 text-neutral-500">{t('projectRoute.notFound')}</div>;
+    return <div className="p-8 text-neutral-500 dark:text-neutral-500">{t('projectRoute.notFound')}</div>;
   }
 
   const onUpdate = async (updatedProject: Project) => {

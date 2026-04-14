@@ -123,10 +123,10 @@ export function ProjectOrphans() {
 
   if (loading && !project) {
     return (
-      <div className="h-full flex items-center justify-center bg-neutral-950">
+      <div className="h-full flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-          <p className="text-neutral-500 text-sm font-medium uppercase tracking-widest">{t('projectOrphans.scanning')}</p>
+          <p className="text-neutral-500 dark:text-neutral-500 text-sm font-medium uppercase tracking-widest">{t('projectOrphans.scanning')}</p>
         </div>
       </div>
     );
@@ -135,7 +135,7 @@ export function ProjectOrphans() {
   const totalSize = orphans.reduce((acc, current) => acc + (current.size || 0), 0);
 
   return (
-    <div className="h-full flex flex-col bg-neutral-950 overflow-hidden">
+    <div className="h-full flex flex-col bg-neutral-50 dark:bg-neutral-950 overflow-hidden">
       {/* Header */}
       <PageHeader
         title={t('projectOrphans.title')}
@@ -146,7 +146,7 @@ export function ProjectOrphans() {
                  {t('projectOrphans.cleanupTool')}
                </span>
             </div>
-            <p className="text-xs text-neutral-500 truncate mt-1">
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 truncate mt-1">
               {t('projectOrphans.projectLabel', { name: project?.name || id })}
             </p>
           </div>
@@ -157,7 +157,7 @@ export function ProjectOrphans() {
             <button
               onClick={loadData}
               disabled={loading}
-              className="p-2.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-xl transition-all disabled:opacity-50"
+              className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-xl transition-all disabled:opacity-50"
               title={t('projectOrphans.refresh')}
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
@@ -172,7 +172,7 @@ export function ProjectOrphans() {
                   setShowDeleteModal(true);
                 }}
                 disabled={deleting}
-                className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-red-600/20 transition-all active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-500 text-neutral-900 dark:text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-red-600/20 transition-all active:scale-95 disabled:opacity-50"
               >
                 {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 {selectedKeys.size > 0 ? t('projectOrphans.deleteSelected', { count: selectedKeys.size }) : t('projectOrphans.clearAll')}
@@ -189,22 +189,22 @@ export function ProjectOrphans() {
           
           {/* Legend / Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             <div className="bg-neutral-900/40 border border-neutral-800 p-4 rounded-2xl flex items-center gap-4">
+             <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 p-4 rounded-2xl flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
                    <Layers className="w-5 h-5 text-blue-500" />
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{t('projectOrphans.orphanedFiles')}</p>
-                   <p className="text-lg font-bold text-white">{orphans.length}</p>
+                   <p className="text-[10px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">{t('projectOrphans.orphanedFiles')}</p>
+                   <p className="text-lg font-bold text-neutral-900 dark:text-white">{orphans.length}</p>
                 </div>
              </div>
-             <div className="bg-neutral-900/40 border border-neutral-800 p-4 rounded-2xl flex items-center gap-4">
+             <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 p-4 rounded-2xl flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
                    <ImageIcon className="w-5 h-5 text-purple-500" />
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{t('projectOrphans.totalWaste')}</p>
-                   <p className="text-lg font-bold text-white">{formatSize(totalSize)}</p>
+                   <p className="text-[10px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">{t('projectOrphans.totalWaste')}</p>
+                   <p className="text-lg font-bold text-neutral-900 dark:text-white">{formatSize(totalSize)}</p>
                 </div>
              </div>
              <div className="bg-amber-500/5 border border-amber-500/20 p-4 rounded-2xl flex items-center gap-4">
@@ -213,7 +213,7 @@ export function ProjectOrphans() {
                 </div>
                 <div className="flex-1">
                    <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">{t('projectOrphans.warning')}</p>
-                   <p className="text-[10px] text-neutral-400 font-medium leading-tight">{t('projectOrphans.warningDesc')}</p>
+                   <p className="text-[10px] text-neutral-600 dark:text-neutral-400 font-medium leading-tight">{t('projectOrphans.warningDesc')}</p>
                 </div>
              </div>
           </div>
@@ -222,7 +222,7 @@ export function ProjectOrphans() {
             <div className="flex items-center justify-between">
               <button 
                 onClick={toggleSelectAll}
-                className="flex items-center gap-2 text-[10px] font-black text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
+                className="flex items-center gap-2 text-[10px] font-black text-neutral-600 dark:text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
               >
                 {selectedKeys.size === orphans.length ? (
                   <CheckSquare className="w-4 h-4 text-blue-500" />
@@ -240,12 +240,12 @@ export function ProjectOrphans() {
           )}
 
           {orphans.length === 0 ? (
-            <div className="py-24 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center gap-6 bg-neutral-900/10">
-               <div className="w-20 h-20 rounded-full bg-neutral-900 flex items-center justify-center">
+            <div className="py-24 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center gap-6 bg-white/10 dark:bg-neutral-900/10">
+               <div className="w-20 h-20 rounded-full bg-white dark:bg-neutral-900 flex items-center justify-center">
                   <CheckSquare className="w-10 h-10 text-emerald-500/40" />
                </div>
                <div>
-                  <p className="text-sm font-bold text-neutral-300 tracking-wider uppercase">{t('projectOrphans.cleanTitle')}</p>
+                  <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300 tracking-wider uppercase">{t('projectOrphans.cleanTitle')}</p>
                   <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">{t('projectOrphans.cleanDesc')}</p>
                </div>
             </div>
@@ -262,7 +262,7 @@ export function ProjectOrphans() {
                    <div 
                     key={file.key} 
                     onClick={(e) => toggleSelection(file.key, e.shiftKey)}
-                    className={`group relative aspect-square w-full rounded-xl overflow-hidden border transition-all cursor-pointer hover:scale-[1.02] ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-neutral-800 hover:border-neutral-700'}`}
+                    className={`group relative aspect-square w-full rounded-xl overflow-hidden border transition-all cursor-pointer hover:scale-[1.02] ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'}`}
                    >
                      {/* Overlay Actions */}
                      <div className="absolute inset-0 bg-black/60 opacity-100 transition-opacity z-10 flex flex-col justify-between p-1.5">
@@ -270,14 +270,14 @@ export function ProjectOrphans() {
                            <div 
                             className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20'}`}
                            >
-                             {isSelected ? <CheckSquare className="w-3 h-3 text-white" /> : <Square className="w-3 h-3 text-white/40" />}
+                             {isSelected ? <CheckSquare className="w-3 h-3 text-neutral-900 dark:text-white" /> : <Square className="w-3 h-3 text-white/40" />}
                            </div>
                            <a 
                             href={file.url} 
                             target="_blank" 
                             rel="noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="w-5 h-5 rounded bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20"
+                            className="w-5 h-5 rounded bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/20"
                            >
                              <ExternalLink className="w-3 h-3" />
                            </a>
@@ -288,7 +288,7 @@ export function ProjectOrphans() {
                               e.stopPropagation();
                               setLightboxData({ images: orphans.map(o => o.url), index: idx });
                             }}
-                            className="px-2 py-0.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded text-[7px] font-black uppercase tracking-widest text-white transition-all whitespace-nowrap"
+                            className="px-2 py-0.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded text-[7px] font-black uppercase tracking-widest text-neutral-900 dark:text-white transition-all whitespace-nowrap"
                            >
                              {t('projectOrphans.preview')}
                            </button>
@@ -304,8 +304,8 @@ export function ProjectOrphans() {
 
                      {/* Info Bar */}
                      <div className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
-                        <p className="text-[8px] font-bold text-white truncate mb-0.5">{fileName}</p>
-                        <p className="text-[7px] font-black text-neutral-400 uppercase tracking-tighter">{formatSize(file.size)}</p>
+                        <p className="text-[8px] font-bold text-neutral-900 dark:text-white truncate mb-0.5">{fileName}</p>
+                        <p className="text-[7px] font-black text-neutral-600 dark:text-neutral-400 uppercase tracking-tighter">{formatSize(file.size)}</p>
                      </div>
                    </div>
                  );

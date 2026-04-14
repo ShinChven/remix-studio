@@ -110,13 +110,13 @@ export function AdminInvites() {
           </div>
         )}
 
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-4 lg:p-6">
+        <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-4 lg:p-6">
           {loading ? (
-            <div className="flex min-h-48 items-center justify-center text-neutral-400">
+            <div className="flex min-h-48 items-center justify-center text-neutral-600 dark:text-neutral-400">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : invites.length === 0 ? (
-            <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center text-neutral-400">
+            <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center text-neutral-600 dark:text-neutral-400">
               <Ticket className="h-8 w-8 text-neutral-600" />
               <p>{t('adminInvites.noInvites')}</p>
             </div>
@@ -124,7 +124,7 @@ export function AdminInvites() {
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-800 text-sm">
                 <thead>
-                  <tr className="text-left text-neutral-500">
+                  <tr className="text-left text-neutral-500 dark:text-neutral-500">
                     <th className="px-4 py-3 font-medium">{t('adminInvites.table.code')}</th>
                     <th className="px-4 py-3 font-medium">{t('adminInvites.table.tier')}</th>
                     <th className="px-4 py-3 font-medium">{t('adminInvites.table.note')}</th>
@@ -142,34 +142,34 @@ export function AdminInvites() {
                       <tr key={invite.id} className="text-neutral-200">
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
-                            <span className="font-mono tracking-[0.2em] text-white">{invite.code}</span>
+                            <span className="font-mono tracking-[0.2em] text-neutral-900 dark:text-white">{invite.code}</span>
                             <button
                               type="button"
                               onClick={() => void copyText(invite.code, t('adminInvites.codeCopied'))}
-                              className="text-neutral-500 transition hover:text-white"
+                              className="text-neutral-500 dark:text-neutral-500 transition hover:text-white"
                               title={t('adminInvites.copyCode')}
                             >
                               <Copy className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-neutral-300">{membershipTierLabel(invite.membershipTier)}</td>
-                        <td className="px-4 py-4 text-neutral-400">
-                          {invite.note || <span className="text-neutral-500">{t('adminInvites.noNote')}</span>}
+                        <td className="px-4 py-4 text-neutral-700 dark:text-neutral-300">{membershipTierLabel(invite.membershipTier)}</td>
+                        <td className="px-4 py-4 text-neutral-600 dark:text-neutral-400">
+                          {invite.note || <span className="text-neutral-500 dark:text-neutral-500">{t('adminInvites.noNote')}</span>}
                         </td>
-                        <td className="px-4 py-4 text-neutral-400">
+                        <td className="px-4 py-4 text-neutral-600 dark:text-neutral-400">
                           {invite.usedCount} / {invite.maxUses}
                         </td>
-                        <td className="px-4 py-4 text-neutral-400">{formatDate(invite.createdAt)}</td>
+                        <td className="px-4 py-4 text-neutral-600 dark:text-neutral-400">{formatDate(invite.createdAt)}</td>
                         <td className="px-4 py-4">
-                          {invite.lastUsedByEmail || <span className="text-neutral-500">{t('adminInvites.unused')}</span>}
+                          {invite.lastUsedByEmail || <span className="text-neutral-500 dark:text-neutral-500">{t('adminInvites.unused')}</span>}
                         </td>
-                        <td className="px-4 py-4 text-neutral-400">{formatDate(invite.lastUsedAt)}</td>
+                        <td className="px-4 py-4 text-neutral-600 dark:text-neutral-400">{formatDate(invite.lastUsedAt)}</td>
                         <td className="px-4 py-4">
                           <button
                             type="button"
                             onClick={() => void copyText(inviteLink, t('adminInvites.linkCopied'))}
-                            className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-800 px-3 py-2 text-xs text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-700"
+                            className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-200 dark:bg-neutral-800 px-3 py-2 text-xs text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-700"
                           >
                             <LinkIcon className="h-3.5 w-3.5" />
                             {t('adminInvites.copyLink')}
@@ -195,18 +195,18 @@ export function AdminInvites() {
           }}
         >
           <div
-            className="w-full max-w-lg rounded-[28px] border border-neutral-800 bg-neutral-900 p-6 shadow-[0_40px_120px_rgba(0,0,0,0.75)]"
+            className="w-full max-w-lg rounded-[28px] border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-[0_40px_120px_rgba(0,0,0,0.75)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <h3 className="text-xl font-semibold text-white">{t('adminInvites.createModal.title')}</h3>
-            <p className="mt-2 text-sm text-neutral-400">{t('adminInvites.createModal.description')}</p>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('adminInvites.createModal.title')}</h3>
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">{t('adminInvites.createModal.description')}</p>
 
             <label className="mt-5 block">
-              <span className="mb-2 block text-sm text-neutral-300">{t('adminInvites.createModal.tier')}</span>
+              <span className="mb-2 block text-sm text-neutral-700 dark:text-neutral-300">{t('adminInvites.createModal.tier')}</span>
               <select
                 value={membershipTier}
                 onChange={(event) => setMembershipTier(event.target.value as InviteCode['membershipTier'])}
-                className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
+                className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
               >
                 {MEMBERSHIP_TIERS.map((tier) => (
                   <option key={tier.value} value={tier.value}>{tier.label}</option>
@@ -215,28 +215,28 @@ export function AdminInvites() {
             </label>
 
             <label className="mt-5 block">
-              <span className="mb-2 block text-sm text-neutral-300">{t('adminInvites.createModal.uses')}</span>
+              <span className="mb-2 block text-sm text-neutral-700 dark:text-neutral-300">{t('adminInvites.createModal.uses')}</span>
               <input
                 type="number"
                 min={1}
                 max={1000}
                 value={maxUses}
                 onChange={(event) => setMaxUses(event.target.value)}
-                className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
+                className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
               />
             </label>
 
             <label className="mt-5 block">
-              <span className="mb-2 block text-sm text-neutral-300">{t('adminInvites.createModal.note')}</span>
+              <span className="mb-2 block text-sm text-neutral-700 dark:text-neutral-300">{t('adminInvites.createModal.note')}</span>
               <textarea
                 value={note}
                 maxLength={200}
                 rows={4}
                 onChange={(event) => setNote(event.target.value)}
                 placeholder={t('adminInvites.createModal.notePlaceholder')}
-                className="w-full resize-none rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none placeholder:text-neutral-500"
+                className="w-full resize-none rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none placeholder:text-neutral-500"
               />
-              <p className="mt-2 text-xs text-neutral-500">{note.length}/200</p>
+              <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-500">{note.length}/200</p>
             </label>
 
             <div className="mt-6 flex items-center justify-end gap-3">
@@ -249,7 +249,7 @@ export function AdminInvites() {
                   setMembershipTier('free');
                 }}
                 disabled={creating}
-                className="rounded-2xl border border-neutral-800 px-4 py-3 text-sm text-neutral-300 transition hover:bg-neutral-800 disabled:opacity-60"
+                className="rounded-2xl border border-neutral-200 dark:border-neutral-800 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 transition hover:bg-neutral-800 disabled:opacity-60"
               >
                 {t('adminInvites.createModal.cancel')}
               </button>

@@ -112,7 +112,13 @@
     "preferences": {
       "language": "語言",
       "languageDescription": "選擇您首選的應用語言。",
-      "selectLanguage": "選擇語言"
+      "selectLanguage": "選擇語言",
+      "theme": "主題",
+      "themeDescription": "選擇您偏好的顏色主題。",
+      "selectTheme": "選擇主題",
+      "light": "淺色",
+      "dark": "深色",
+      "system": "跟隨系統"
     },
     "confirm": {
       "signOutTitle": "登出",
@@ -825,9 +831,18 @@
         "instruction": "只有在應用明確要求登入 URL 或探索 URL 時才使用。"
       },
       "steps": {
-        "1": { "title": "1. 複製位址", "desc": "貼到 AI 應用中開始設定。" },
-        "2": { "title": "2. 選擇方式", "desc": "若會開啟瀏覽器就使用 OAuth，否則使用權杖。" },
-        "3": { "title": "3. 在此管理", "desc": "您可以隨時檢視連線或撤銷存取權限。" }
+        "1": {
+          "title": "1. 複製位址",
+          "desc": "貼到 AI 應用中開始設定。"
+        },
+        "2": {
+          "title": "2. 選擇方式",
+          "desc": "若會開啟瀏覽器就使用 OAuth，否則使用權杖。"
+        },
+        "3": {
+          "title": "3. 在此管理",
+          "desc": "您可以隨時檢視連線或撤銷存取權限。"
+        }
       },
       "jsonSetup": {
         "title": "需要使用 JSON 設定嗎？",

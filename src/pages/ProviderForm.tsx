@@ -97,24 +97,24 @@ export function ProviderForm() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-neutral-950">
+      <div className="h-full flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
         <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-full flex flex-col py-12 md:py-16 px-4 md:px-8 bg-neutral-950">
-      <div className="w-full max-w-3xl mx-auto bg-neutral-900 border border-neutral-800 rounded-3xl p-5 md:p-8 shadow-2xl">
+    <div className="min-h-full flex flex-col py-12 md:py-16 px-4 md:px-8 bg-neutral-50 dark:bg-neutral-950">
+      <div className="w-full max-w-3xl mx-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-5 md:p-8 shadow-2xl">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 bg-amber-600/10 rounded-2xl">
             <ProviderIcon type={type} className="w-6 h-6 text-amber-500" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">
+            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">
               {isEditing ? t('providerForm.editTitle') : t('providerForm.newTitle')}
             </h2>
-            <p className="text-sm text-neutral-500">{t('providerForm.securityNote')}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-500">{t('providerForm.securityNote')}</p>
           </div>
         </div>
 
@@ -122,7 +122,7 @@ export function ProviderForm() {
           <div className="space-y-6">
             {/* Name */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">
                 {t('providerForm.nameLabel')}
               </label>
               <input
@@ -131,14 +131,14 @@ export function ProviderForm() {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder={t('providerForm.namePlaceholder')}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700"
+                className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700"
                 required
               />
             </div>
 
             {/* Type */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">
                 {t('providerForm.typeLabel')}
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -148,7 +148,7 @@ export function ProviderForm() {
                     type="button"
                     onClick={() => setType(t)}
                     className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all text-left min-h-[68px] ${
-                      type === t ? 'bg-amber-500/10 border-amber-500/50 text-amber-400' : 'bg-neutral-950 border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                      type === t ? 'bg-amber-500/10 border-amber-500/50 text-amber-400' : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:border-neutral-700'
                     }`}
                   >
                     <div className="flex-1">
@@ -163,7 +163,7 @@ export function ProviderForm() {
 
             {/* API Key / Access Key */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">
                 {type === 'KlingAI' ? t('providerForm.accessKeyLabel') : t('providerForm.apiKeyLabel')}{' '}
                 {isEditing && hasExistingKey && (
                   <span className="normal-case font-normal tracking-normal">{t('providerForm.leaveBlankToKeep')}</span>
@@ -175,7 +175,7 @@ export function ProviderForm() {
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
                   placeholder={isEditing && hasExistingKey ? t('providerForm.stored') : type === 'KlingAI' ? t('providerForm.accessKeyPlaceholder') : t('providerForm.apiKeyPlaceholder')}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
+                  className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
                 />
                 <button
                   type="button"
@@ -189,7 +189,7 @@ export function ProviderForm() {
 
             {type === 'KlingAI' && (
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">
                   {t('providerForm.secretKeyLabel')}{' '}
                   {isEditing && hasExistingSecret && (
                     <span className="normal-case font-normal tracking-normal">{t('providerForm.leaveBlankToKeep')}</span>
@@ -201,7 +201,7 @@ export function ProviderForm() {
                     value={apiSecret}
                     onChange={e => setApiSecret(e.target.value)}
                     placeholder={isEditing && hasExistingSecret ? t('providerForm.stored') : t('providerForm.secretKeyPlaceholder')}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
+                    className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
                   />
                   <button
                     type="button"
@@ -216,7 +216,7 @@ export function ProviderForm() {
 
             {/* API URL */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">
                 {t('providerForm.apiUrlLabel')} <span className="normal-case font-normal tracking-normal">{t('providerForm.apiUrlOptional')}</span>
               </label>
               <input
@@ -224,13 +224,13 @@ export function ProviderForm() {
                 value={apiUrl}
                 onChange={e => setApiUrl(e.target.value)}
                 placeholder={t('providerForm.apiUrlPlaceholder')}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
+                className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
               />
             </div>
 
             {/* Concurrency */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">
                 {t('providerForm.parallelTasksLabel')} <span className="normal-case font-normal tracking-normal">{t('providerForm.concurrencyLimit')}</span>
               </label>
               <div className="flex items-center gap-4">
@@ -240,7 +240,7 @@ export function ProviderForm() {
                 max="1000"
                 value={concurrency}
                 onChange={e => setConcurrency(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-24 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all"
+                className="w-24 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all"
               />
                 <span className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">
                   {t('providerForm.maxRequests')}
@@ -259,7 +259,7 @@ export function ProviderForm() {
             <button
               type="button"
               onClick={() => navigate('/providers')}
-              className="w-full sm:flex-1 px-4 py-3.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
+              className="w-full sm:flex-1 px-4 py-3.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
             >
               {t('providerForm.cancel')}
             </button>

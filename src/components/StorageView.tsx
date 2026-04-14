@@ -53,10 +53,10 @@ export function StorageView() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-neutral-950 p-8">
+      <div className="flex-1 flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 p-8">
         <div className="flex flex-col items-center gap-4">
           <Database className="w-12 h-12 text-blue-500 animate-pulse" />
-          <p className="text-neutral-400 font-medium">{t('storageView.analyzing')}</p>
+          <p className="text-neutral-600 dark:text-neutral-400 font-medium">{t('storageView.analyzing')}</p>
         </div>
       </div>
     );
@@ -90,7 +90,7 @@ export function StorageView() {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto bg-neutral-950 p-6 lg:p-12 custom-scrollbar">
+    <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-950 p-6 lg:p-12 custom-scrollbar">
       {/* Header */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -101,9 +101,9 @@ export function StorageView() {
           <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center">
             <HardDrive className="w-6 h-6 text-blue-400" />
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight">{t('storageView.title')}</h1>
+          <h1 className="text-3xl font-black text-neutral-900 dark:text-white tracking-tight">{t('storageView.title')}</h1>
         </div>
-        <p className="text-neutral-400 text-lg">{t('storageView.description')}</p>
+        <p className="text-neutral-600 dark:text-neutral-400 text-lg">{t('storageView.description')}</p>
       </motion.div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start">
@@ -112,32 +112,32 @@ export function StorageView() {
           {/* Main 3x2 (or adaptive) Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 1. Capacity & Consumption Overview Card */}
-            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-md border-blue-500/10 h-full min-h-[220px]">
+            <div className="bg-white/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-md border-blue-500/10 h-full min-h-[220px]">
               <div>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-black mb-4 block">{t('storageView.capacityOverview')}</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 font-black mb-4 block">{t('storageView.capacityOverview')}</span>
                 <div className="space-y-4">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-neutral-500 uppercase font-black tracking-tight mb-1">{t('storageView.consumption')}</span>
-                    <span className="text-2xl font-black text-white leading-none">{formatSize(analysis.totalSize)}</span>
+                    <span className="text-[10px] text-neutral-500 dark:text-neutral-500 uppercase font-black tracking-tight mb-1">{t('storageView.consumption')}</span>
+                    <span className="text-2xl font-black text-neutral-900 dark:text-white leading-none">{formatSize(analysis.totalSize)}</span>
                   </div>
-                  <div className="flex flex-col border-t border-neutral-800/50 pt-3">
-                    <span className="text-[10px] text-neutral-500 uppercase font-black tracking-tight mb-1">{t('storageView.totalLimit')}</span>
+                  <div className="flex flex-col border-t border-neutral-200/50 dark:border-neutral-800/50 pt-3">
+                    <span className="text-[10px] text-neutral-500 dark:text-neutral-500 uppercase font-black tracking-tight mb-1">{t('storageView.totalLimit')}</span>
                     <div className="flex items-baseline gap-2">
-                       <span className="text-xl font-black text-neutral-300">{formatSize(analysis.limit)}</span>
+                       <span className="text-xl font-black text-neutral-700 dark:text-neutral-300">{formatSize(analysis.limit)}</span>
                        <span className="text-[10px] font-bold text-blue-500 uppercase">{TIER_NAMES[analysis.limit] || t('storageView.tiers.custom')}</span>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="w-full mt-6">
-                <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(100, (analysis.totalSize / analysis.limit) * 100)}%` }}
                     className={`h-full rounded-full ${ (analysis.totalSize / analysis.limit) > 0.9 ? 'bg-red-500' : 'bg-blue-500' }`}
                   />
                 </div>
-                <div className="text-[10px] text-neutral-500 font-bold mt-2">
+                <div className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold mt-2">
                   {t('storageView.percentConsumed', { percent: ((analysis.totalSize / analysis.limit) * 100).toFixed(1) })}
                 </div>
               </div>
@@ -157,13 +157,13 @@ export function StorageView() {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[cat.id] || COLORS.other }} />
-                        <h3 className="text-[10px] uppercase tracking-widest font-black text-neutral-500">{cat.name}</h3>
+                        <h3 className="text-[10px] uppercase tracking-widest font-black text-neutral-500 dark:text-neutral-500">{cat.name}</h3>
                       </div>
-                      <span className="text-lg font-black text-white">{formatSize(cat.size)}</span>
+                      <span className="text-lg font-black text-neutral-900 dark:text-white">{formatSize(cat.size)}</span>
                     </div>
                     
                     {/* Progress Bar for each category relative to total */}
-                    <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden mb-4">
+                    <div className="w-full h-1 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden mb-4">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${(cat.size / totalSize) * 100}%` }}
@@ -177,8 +177,8 @@ export function StorageView() {
                       <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-2">
                          {visibleSubCategories.map(sub => (
                            <div key={sub.id} className="flex flex-col">
-                              <span className="text-[9px] text-neutral-500 uppercase font-black tracking-tight mb-0.5">{sub.name}</span>
-                              <span className="text-xs font-bold text-neutral-300">{formatSize(sub.size)}</span>
+                              <span className="text-[9px] text-neutral-500 dark:text-neutral-500 uppercase font-black tracking-tight mb-0.5">{sub.name}</span>
+                              <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">{formatSize(sub.size)}</span>
                            </div>
                          ))}
                       </div>
@@ -186,7 +186,7 @@ export function StorageView() {
                   </div>
                   {href && (
                     <div className="mt-4 flex justify-end opacity-100 transition-opacity">
-                      <ChevronRight className="w-4 h-4 text-neutral-500" />
+                      <ChevronRight className="w-4 h-4 text-neutral-500 dark:text-neutral-500" />
                     </div>
                   )}
                 </>
@@ -194,7 +194,7 @@ export function StorageView() {
 
               const cardClasses = `
                 p-5 rounded-2xl transition-all duration-300 group flex flex-col justify-between h-full min-h-[220px]
-                ${hoveredCategory === cat.id ? 'bg-neutral-800 border-neutral-600' : 'bg-neutral-900/50 border-neutral-800'}
+                ${hoveredCategory === cat.id ? 'bg-neutral-200 dark:bg-neutral-800 border-neutral-600' : 'bg-white/50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800'}
                 border backdrop-blur-md ${href ? 'cursor-pointer' : 'cursor-default'}
               `;
 
@@ -234,7 +234,7 @@ export function StorageView() {
 
           {/* Quick Stats Panel (Storage Optimization) */}
           <div className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-3xl p-8 backdrop-blur-xl">
-            <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
+            <h2 className="text-xl font-black text-neutral-900 dark:text-white mb-6 flex items-center gap-2">
               <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
               {t('storageView.optimizationTitle')}
             </h2>
@@ -244,8 +244,8 @@ export function StorageView() {
                      <AlertCircle className="w-6 h-6 text-orange-400" />
                   </div>
                   <div>
-                     <p className="text-white font-bold mb-1">{t('storageView.cleanOrphansTitle')}</p>
-                     <p className="text-sm text-neutral-400">{t('storageView.cleanOrphansDescription')}</p>
+                     <p className="text-neutral-900 dark:text-white font-bold mb-1">{t('storageView.cleanOrphansTitle')}</p>
+                     <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('storageView.cleanOrphansDescription')}</p>
                   </div>
                </div>
                 <Link to="/trash" className="flex gap-4 group cursor-pointer">
@@ -253,8 +253,8 @@ export function StorageView() {
                      <Trash2 className="w-6 h-6 text-red-400" />
                   </div>
                   <div>
-                     <p className="text-white font-bold mb-1 group-hover:text-red-400 transition-colors">{t('storageView.recycleBinTitle')}</p>
-                     <p className="text-sm text-neutral-400">{t('storageView.recycleBinDescription', { size: formatSize(analysis.categories.find(c => c.id === 'trash')?.size || 0) })}</p>
+                     <p className="text-neutral-900 dark:text-white font-bold mb-1 group-hover:text-red-400 transition-colors">{t('storageView.recycleBinTitle')}</p>
+                     <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('storageView.recycleBinDescription', { size: formatSize(analysis.categories.find(c => c.id === 'trash')?.size || 0) })}</p>
                   </div>
                </Link>
             </div>
@@ -297,10 +297,10 @@ export function StorageView() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
                     >
-                      <span className="text-sm font-bold text-neutral-500 uppercase tracking-widest block mb-1">
+                      <span className="text-sm font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest block mb-1">
                         {categories.find(c => c.id === hoveredCategory)?.name}
                       </span>
-                      <span className="text-3xl font-black text-white leading-none block">
+                      <span className="text-3xl font-black text-neutral-900 dark:text-white leading-none block">
                         {Math.round((categories.find(c => c.id === hoveredCategory)?.size || 0) / totalSize * 100)}%
                       </span>
                     </motion.div>
@@ -311,7 +311,7 @@ export function StorageView() {
                       animate={{ opacity: 1 }}
                     >
                       <IconPieChart className="w-8 h-8 text-neutral-700 mb-2 mx-auto" />
-                      <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest block">{t('storageView.completeScan')}</span>
+                      <span className="text-xs font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest block">{t('storageView.completeScan')}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -327,8 +327,8 @@ export function StorageView() {
         transition={{ delay: 0.5 }}
         className="mt-16"
       >
-        <h2 className="text-2xl font-black text-white mb-8 flex items-center gap-3">
-          <Folder className="w-6 h-6 text-neutral-500" />
+        <h2 className="text-2xl font-black text-neutral-900 dark:text-white mb-8 flex items-center gap-3">
+          <Folder className="w-6 h-6 text-neutral-500 dark:text-neutral-500" />
           {t('storageView.projectRankings')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
@@ -336,7 +336,7 @@ export function StorageView() {
             <Link 
               key={proj.id} 
               to={`/project/${proj.id}`}
-              className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 hover:border-blue-500/50 hover:bg-neutral-800/50 transition-all group flex flex-col justify-between h-full min-h-[160px]"
+              className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 hover:border-blue-500/50 hover:bg-neutral-800/50 transition-all group flex flex-col justify-between h-full min-h-[160px]"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -344,11 +344,11 @@ export function StorageView() {
                   <span className="text-sm font-black text-blue-400 whitespace-nowrap">{formatSize(proj.total)}</span>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-widest text-neutral-500">
+                  <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-widest text-neutral-500 dark:text-neutral-500">
                     <span>{t('storageView.album')}</span>
                     <span>{formatSize(proj.album)}</span>
                   </div>
-                  <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden">
+                  <div className="w-full h-1 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
                     <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(proj.album / proj.total) * 100}%` }} />
                   </div>
                   {proj.orphans > 0 && (

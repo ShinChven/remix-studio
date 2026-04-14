@@ -116,7 +116,7 @@ export function AccountTwoFactorSetup() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-neutral-500 dark:text-neutral-500" />
       </div>
     );
   }
@@ -126,12 +126,12 @@ export function AccountTwoFactorSetup() {
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <Link to="/account?tab=security" className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-neutral-200">
+            <Link to="/account?tab=security" className="inline-flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-200">
               <ArrowLeft className="h-4 w-4" />
               {t('accountTwoFactorSetup.backToSecurity')}
             </Link>
-            <h2 className="mt-3 text-2xl font-bold text-white">{t('accountTwoFactorSetup.title')}</h2>
-            <p className="mt-2 text-sm text-neutral-400">
+            <h2 className="mt-3 text-2xl font-bold text-neutral-900 dark:text-white">{t('accountTwoFactorSetup.title')}</h2>
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
               {t('accountTwoFactorSetup.description', { email: user?.email || t('accountTwoFactorSetup.thisAccount') })}
             </p>
           </div>
@@ -158,14 +158,14 @@ export function AccountTwoFactorSetup() {
 
         {!user?.twoFactorEnabled && (
           <>
-            <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-6">
+            <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-300">
                   <Shield className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">{t('accountTwoFactorSetup.step1.title')}</h3>
-                  <p className="text-sm text-neutral-400">
+                  <h3 className="text-lg font-bold text-neutral-900 dark:text-white">{t('accountTwoFactorSetup.step1.title')}</h3>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
                     {user?.hasPassword ? t('accountTwoFactorSetup.step1.withPassword') : t('accountTwoFactorSetup.step1.noPassword')}
                   </p>
                 </div>
@@ -174,12 +174,12 @@ export function AccountTwoFactorSetup() {
               <form onSubmit={handleStartSetup} className="mt-6 space-y-4">
                 {user?.hasPassword && (
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-neutral-400">{t('accountTwoFactorSetup.currentPassword')}</label>
+                    <label className="mb-2 block text-sm font-medium text-neutral-600 dark:text-neutral-400">{t('accountTwoFactorSetup.currentPassword')}</label>
                     <input
                       type="password"
                       value={setupPassword}
                       onChange={(event) => setSetupPassword(event.target.value)}
-                      className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                      className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
                       required
                     />
                   </div>
@@ -198,30 +198,30 @@ export function AccountTwoFactorSetup() {
             {pendingSetup && (
               <section className="rounded-3xl border border-blue-500/20 bg-blue-500/5 p-6">
                 <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-                  <div className="flex flex-col items-center rounded-2xl border border-neutral-800 bg-neutral-950/80 p-4">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">{t('accountTwoFactorSetup.scanQr')}</p>
+                  <div className="flex flex-col items-center rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-950/80 p-4">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-500">{t('accountTwoFactorSetup.scanQr')}</p>
                     {qrCode ? (
                       <img
                         src={qrCode}
                         alt={t('accountTwoFactorSetup.qrAlt')}
-                        className="h-[220px] w-[220px] rounded-xl border border-neutral-800 bg-black p-2"
+                        className="h-[220px] w-[220px] rounded-xl border border-neutral-200 dark:border-neutral-800 bg-black p-2"
                       />
                     ) : (
-                      <div className="flex h-[220px] w-[220px] items-center justify-center rounded-xl border border-neutral-800 bg-neutral-950 text-sm text-neutral-500">
+                      <div className="flex h-[220px] w-[220px] items-center justify-center rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-sm text-neutral-500 dark:text-neutral-500">
                         {t('accountTwoFactorSetup.qrUnavailable')}
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-bold text-white">{t('accountTwoFactorSetup.step2.title')}</h3>
-                    <p className="mt-2 text-sm text-neutral-400">
+                    <h3 className="text-lg font-bold text-neutral-900 dark:text-white">{t('accountTwoFactorSetup.step2.title')}</h3>
+                    <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
                       {t('accountTwoFactorSetup.step2.description')}
                     </p>
-                    <p className="mt-4 break-all rounded-xl border border-neutral-800 bg-neutral-950 px-4 py-3 font-mono text-sm text-blue-200">
+                    <p className="mt-4 break-all rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 font-mono text-sm text-blue-200">
                       {pendingSetup.secret}
                     </p>
-                    <p className="mt-2 text-xs text-neutral-500">
+                    <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-500">
                       {t('accountTwoFactorSetup.expiresAt', { time: new Date(pendingSetup.expiresAt).toLocaleTimeString() })}
                     </p>
                     <a
@@ -233,14 +233,14 @@ export function AccountTwoFactorSetup() {
 
                     <form onSubmit={handleEnable} className="mt-6 space-y-4">
                       <div>
-                        <label className="mb-2 block text-sm font-medium text-neutral-400">{t('accountTwoFactorSetup.verificationCode')}</label>
+                        <label className="mb-2 block text-sm font-medium text-neutral-600 dark:text-neutral-400">{t('accountTwoFactorSetup.verificationCode')}</label>
                         <input
                           type="text"
                           inputMode="numeric"
                           maxLength={6}
                           value={verificationCode}
                           onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50 font-mono tracking-[0.3em]"
+                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50 font-mono tracking-[0.3em]"
                           required
                         />
                       </div>

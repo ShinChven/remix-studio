@@ -71,76 +71,76 @@ export function SettingsPanel({
   const isVideoProject = localProject.type === 'video';
 
   return (
-    <div className="shrink overflow-hidden flex flex-col p-4 border-t border-neutral-800 bg-neutral-900 shadow-2xl min-h-0">
+    <div className="shrink overflow-hidden flex flex-col p-4 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl min-h-0">
       <button
         onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
-        className="w-full p-3 bg-neutral-950/50 border border-neutral-800 rounded-xl mb-3 hover:bg-neutral-900/50 transition-all group flex flex-col gap-2.5"
+        className="w-full p-3 bg-neutral-50/50 dark:bg-neutral-950/50 border border-neutral-200 dark:border-neutral-800 rounded-xl mb-3 hover:bg-neutral-900/50 transition-all group flex flex-col gap-2.5"
       >
         {/* Row 1: Provider Name + Chevron */}
         <div className="w-full flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-[9px] font-black uppercase tracking-widest text-neutral-600 shrink-0">{selectedProvider?.name || t('projectViewer.settings.none')}</span>
-            <div className="w-1 h-1 rounded-full bg-neutral-800 shrink-0" />
-            <span className="text-[10px] font-bold text-neutral-300 truncate">
+            <div className="w-1 h-1 rounded-full bg-neutral-200 dark:bg-neutral-800 shrink-0" />
+            <span className="text-[10px] font-bold text-neutral-700 dark:text-neutral-300 truncate">
               {selectedModel?.name || t('projectViewer.settings.none')}
             </span>
           </div>
-          <div className={`p-1 rounded-md bg-neutral-800/50 group-hover:bg-neutral-800 transition-all ${isSettingsCollapsed ? 'rotate-180' : ''}`}>
-            <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
+          <div className={`p-1 rounded-md bg-neutral-200/50 dark:bg-neutral-800/50 group-hover:bg-neutral-800 transition-all ${isSettingsCollapsed ? 'rotate-180' : ''}`}>
+            <ChevronDown className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-500" />
           </div>
         </div>
 
         {/* Row 2: Options */}
-        <div className="w-full flex items-center justify-between pt-2 border-t border-neutral-800/50">
+        <div className="w-full flex items-center justify-between pt-2 border-t border-neutral-200/50 dark:border-neutral-800/50">
           <div className="flex items-center gap-2">
             {!hasSelectedModel ? (
-              <span className="text-[9px] font-bold text-neutral-600 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+              <span className="text-[9px] font-bold text-neutral-600 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                 {t('projectViewer.settings.selectModelToConfigure')}
               </span>
             ) : isTextProject ? (
               <>
-                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                   T={localProject.temperature ?? 0.7}
                 </span>
-                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                   {localProject.maxTokens ?? 2048} tok
                 </span>
               </>
             ) : isVideoProject ? (
               <>
-                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                   {localProject.aspectRatio || '16:9'}
                 </span>
-                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                   {localProject.resolution || '720p'}
                 </span>
-                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                   {localProject.duration ?? 4}s
                 </span>
                 {selectedModel?.options.sounds && selectedModel.options.sounds.length > 0 && (
-                  <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                     {t('projectViewer.settings.soundValue', { value: localProject.sound || 'on' })}
                   </span>
                 )}
               </>
             ) : (
               <>
-                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                   {localProject.aspectRatio || '1:1'}
                 </span>
-                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                   {localProject.quality || '1K'}
                 </span>
-                <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                   {localProject.format || 'png'}
                 </span>
                 {selectedModel?.options.stepsOptions && (
-                  <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                     S={localProject.steps ?? (selectedModel.options.stepsOptions[0] || 20)}
                   </span>
                 )}
                 {selectedModel?.options.guidanceOptions && (
-                  <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                  <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                     G={localProject.guidance ?? (selectedModel.options.guidanceOptions[0] || 3.5)}
                   </span>
                 )}
@@ -166,20 +166,20 @@ export function SettingsPanel({
               className={`w-full border rounded-2xl p-4 text-left transition-all group/model-btn relative overflow-hidden shadow-inner ${
                 !hasSelectedModel
                   ? 'bg-amber-500/5 border-amber-500/50 hover:bg-amber-500/10'
-                  : 'bg-neutral-950 border-neutral-800 hover:bg-neutral-900'
+                  : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-900'
               }`}
 
             >
               <div className="flex items-center justify-between relative z-10">
                 <div className="min-w-0">
-                  <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-1">
+                  <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-1">
                     {selectedProvider?.name || t('projectViewer.settings.selectProvider')}
                   </div>
-                  <div className="text-sm font-black text-white truncate tracking-tight">
+                  <div className="text-sm font-black text-neutral-900 dark:text-white truncate tracking-tight">
                     {selectedModel?.name || t('projectViewer.settings.selectModel')}
                   </div>
                 </div>
-                <div className="p-2 bg-neutral-800 rounded-xl group-hover/model-btn:bg-blue-600 group-hover/model-btn:text-white transition-all">
+                <div className="p-2 bg-neutral-200 dark:bg-neutral-800 rounded-xl group-hover/model-btn:bg-blue-600 group-hover/model-btn:text-white transition-all">
                   <Layers className="w-4 h-4" />
                 </div>
               </div>
@@ -188,8 +188,8 @@ export function SettingsPanel({
           </div>
 
           {!hasSelectedModel ? (
-            <div className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-950/50 px-4 py-5 text-center">
-              <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+            <div className="rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/50 px-4 py-5 text-center">
+              <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
                 {t('projectViewer.settings.modelOptionsHidden')}
               </p>
               <p className="mt-1 text-xs text-neutral-600">
@@ -214,8 +214,8 @@ export function SettingsPanel({
                       }}
                       className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
                         (localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '16:9')) === ratio
-                          ? 'bg-purple-600 text-white border-purple-500 shadow-lg shadow-purple-500/20'
-                          : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
+                          ? 'bg-purple-600 text-neutral-900 dark:text-white border-purple-500 shadow-lg shadow-purple-500/20'
+                          : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
                       }`}
                     >
                       <div className="h-6 flex items-center justify-center">
@@ -235,7 +235,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   {t('projectViewer.settings.resolution')}
                 </label>
-                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
                   {(selectedModel?.options.resolutions || ['720p', '1080p']).map((r) => (
                     <button
                       key={r}
@@ -246,7 +246,7 @@ export function SettingsPanel({
                       }}
                       className={`flex-1 min-w-[48px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
                         (localProject.resolution || (selectedModel?.options.resolutions?.[0] || '720p')) === r
-                          ? 'bg-neutral-800 text-purple-400 shadow-sm'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-purple-400 shadow-sm'
                           : 'text-neutral-600 hover:text-neutral-400'
                       }`}
                     >
@@ -261,7 +261,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   {t('projectViewer.settings.durationSeconds')}
                 </label>
-                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
                   {(selectedModel?.options.durations || [4, 6, 8]).map((d) => (
                     <button
                       key={d}
@@ -272,7 +272,7 @@ export function SettingsPanel({
                       }}
                       className={`flex-1 min-w-[40px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
                         (localProject.duration ?? (selectedModel?.options.durations?.[0] || 4)) === d
-                          ? 'bg-neutral-800 text-purple-400 shadow-sm'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-purple-400 shadow-sm'
                           : 'text-neutral-600 hover:text-neutral-400'
                       }`}
                     >
@@ -287,7 +287,7 @@ export function SettingsPanel({
                   <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                     {t('projectViewer.settings.sound')}
                   </label>
-                  <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                  <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1">
                     {selectedModel.options.sounds.map((sound) => (
                       <button
                         key={sound}
@@ -298,7 +298,7 @@ export function SettingsPanel({
                         }}
                         className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
                           (localProject.sound || 'on') === sound
-                            ? 'bg-neutral-800 text-purple-400 shadow-sm'
+                            ? 'bg-neutral-200 dark:bg-neutral-800 text-purple-400 shadow-sm'
                             : 'text-neutral-600 hover:text-neutral-400'
                         }`}
                       >
@@ -325,7 +325,7 @@ export function SettingsPanel({
                   }}
                   placeholder={t('projectViewer.settings.systemPromptPlaceholder')}
                   rows={3}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-300 focus:outline-none focus:ring-1 focus:ring-blue-500/30 resize-none placeholder:text-neutral-700"
+                  className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 focus:outline-none focus:ring-1 focus:ring-blue-500/30 resize-none placeholder:text-neutral-700"
                 />
               </div>
 
@@ -334,7 +334,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   {t('projectViewer.settings.temperature')}
                 </label>
-                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
                   {(selectedModel?.options.temperatures || [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0]).map((t) => (
                     <button
                       key={t}
@@ -345,7 +345,7 @@ export function SettingsPanel({
                       }}
                       className={`flex-1 min-w-[40px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
                         (localProject.temperature ?? 0.7) === t
-                          ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-blue-400 shadow-sm'
                           : 'text-neutral-600 hover:text-neutral-400'
                       }`}
                     >
@@ -360,7 +360,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   {t('projectViewer.settings.maxTokens')}
                 </label>
-                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
                   {(selectedModel?.options.maxTokenOptions || [256, 512, 1024, 2048, 4096, 8192]).map((m) => (
                     <button
                       key={m}
@@ -371,7 +371,7 @@ export function SettingsPanel({
                       }}
                       className={`flex-1 min-w-[48px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
                         (localProject.maxTokens ?? 2048) === m
-                          ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-blue-400 shadow-sm'
                           : 'text-neutral-600 hover:text-neutral-400'
                       }`}
                     >
@@ -399,8 +399,8 @@ export function SettingsPanel({
                       }}
                       className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
                         (localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '1024x1024')) === ratio
-                          ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
-                          : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
+                          ? 'bg-blue-600 text-neutral-900 dark:text-white border-blue-500 shadow-lg shadow-blue-500/20'
+                          : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
                       }`}
                     >
                       <div className="h-6 flex items-center justify-center">
@@ -419,7 +419,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   {t('projectViewer.settings.quality')}
                 </label>
-                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1">
                   {(selectedModel?.options.qualities || ['standard', 'hd']).map((q) => (
                     <button
                       key={q}
@@ -430,7 +430,7 @@ export function SettingsPanel({
                       }}
                       className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
                         (localProject.quality || (selectedModel?.options.qualities?.[0] || 'standard')) === q
-                          ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-blue-400 shadow-sm'
                           : 'text-neutral-600 hover:text-neutral-400'
                       }`}
                     >
@@ -445,7 +445,7 @@ export function SettingsPanel({
                   <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                     {t('projectViewer.settings.background')}
                   </label>
-                  <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                  <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1">
                     {selectedModel.options.backgrounds.map((b) => (
                       <button
                         key={b}
@@ -456,7 +456,7 @@ export function SettingsPanel({
                         }}
                         className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
                           (localProject.background || selectedModel.options.backgrounds![0]) === b
-                            ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                            ? 'bg-neutral-200 dark:bg-neutral-800 text-blue-400 shadow-sm'
                             : 'text-neutral-600 hover:text-neutral-400'
                         }`}
                       >
@@ -471,7 +471,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   {t('projectViewer.settings.format')}
                 </label>
-                <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
+                <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1">
                   {['png', 'jpeg', 'webp'].map((f) => (
                     <button
                       key={f}
@@ -482,7 +482,7 @@ export function SettingsPanel({
                       }}
                       className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
                         (localProject.format || 'png') === f
-                          ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-blue-400 shadow-sm'
                           : 'text-neutral-600 hover:text-neutral-400'
                       }`}
                     >
@@ -497,7 +497,7 @@ export function SettingsPanel({
                   <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                     {t('projectViewer.settings.steps')}
                   </label>
-                  <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                  <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
                     {selectedModel.options.stepsOptions.map((s) => (
                       <button
                         key={s}
@@ -508,7 +508,7 @@ export function SettingsPanel({
                         }}
                         className={`flex-1 min-w-[32px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
                           (localProject.steps ?? (selectedModel.options.stepsOptions?.[0] || 20)) === s
-                            ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                            ? 'bg-neutral-200 dark:bg-neutral-800 text-blue-400 shadow-sm'
                             : 'text-neutral-600 hover:text-neutral-400'
                         }`}
                       >
@@ -524,7 +524,7 @@ export function SettingsPanel({
                   <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                     {t('projectViewer.settings.guidance')}
                   </label>
-                  <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
+                  <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
                     {selectedModel.options.guidanceOptions.map((g) => (
                       <button
                         key={g}
@@ -535,7 +535,7 @@ export function SettingsPanel({
                         }}
                         className={`flex-1 min-w-[32px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
                           (localProject.guidance ?? (selectedModel.options.guidanceOptions?.[0] || 3.5)) === g
-                            ? 'bg-neutral-800 text-blue-400 shadow-sm'
+                            ? 'bg-neutral-200 dark:bg-neutral-800 text-blue-400 shadow-sm'
                             : 'text-neutral-600 hover:text-neutral-400'
                         }`}
                       >
@@ -561,21 +561,21 @@ export function SettingsPanel({
               className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
                 localProject.shuffle
                   ? 'bg-blue-600/10 border-blue-500/50 text-blue-400 shadow-lg shadow-blue-500/10'
-                  : 'bg-neutral-950 border-neutral-800 text-neutral-500 hover:border-neutral-700'
+                  : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${localProject.shuffle ? 'bg-blue-500 text-white' : 'bg-neutral-900 text-neutral-600'}`}>
+                <div className={`p-2 rounded-lg ${localProject.shuffle ? 'bg-blue-500 text-neutral-900 dark:text-white' : 'bg-white dark:bg-neutral-900 text-neutral-600'}`}>
                   <Shuffle className="w-3.5 h-3.5" />
                 </div>
                 <div className="text-left">
-                  <div className={`text-[10px] font-bold uppercase tracking-wider ${localProject.shuffle ? 'text-blue-400' : 'text-neutral-400'}`}>
+                  <div className={`text-[10px] font-bold uppercase tracking-wider ${localProject.shuffle ? 'text-blue-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
                     {t('projectViewer.settings.shuffleWorkflow')}
                   </div>
                   <div className="text-[9px] opacity-60 font-medium">{t('projectViewer.settings.randomizeOrder')}</div>
                 </div>
               </div>
-              <div className={`w-8 h-4 rounded-full relative transition-all duration-300 ${localProject.shuffle ? 'bg-blue-500' : 'bg-neutral-800'}`}>
+              <div className={`w-8 h-4 rounded-full relative transition-all duration-300 ${localProject.shuffle ? 'bg-blue-500' : 'bg-neutral-200 dark:bg-neutral-800'}`}>
                 <div className={`absolute top-1 w-2 h-2 rounded-full bg-white transition-all duration-300 ${localProject.shuffle ? 'left-5' : 'left-1'}`} />
               </div>
             </button>
@@ -587,7 +587,7 @@ export function SettingsPanel({
         <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600">
           {t('projectViewer.settings.jobQuantity')}
         </label>
-        <div className="flex items-center gap-2 bg-neutral-950 px-3 py-1.5 rounded-xl border border-neutral-800 shadow-inner">
+        <div className="flex items-center gap-2 bg-neutral-50 dark:bg-neutral-950 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-inner">
           <input
             type="number"
             min="1"
@@ -621,7 +621,7 @@ export function SettingsPanel({
       <button
         onClick={onAddDraftsToQueue}
         disabled={localProject.workflow.length === 0 || uploadingItemIds.size > 0 || !hasSelectedModel || isAddingDrafts}
-        className="w-full py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-all bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-[0.98]"
+        className="w-full py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-all bg-blue-600 hover:bg-blue-700 text-neutral-900 dark:text-white disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-[0.98]"
       >
         {uploadingItemIds.size > 0 ? (
           <>

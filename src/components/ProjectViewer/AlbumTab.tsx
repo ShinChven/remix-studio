@@ -93,7 +93,7 @@ export function AlbumTab({
             mobileSingleLine
             mobileActionsRight
             prefix={!isTextProject && (
-              <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest">
                 <Layers className="w-4 h-4 text-blue-500" />
                 <span className="text-blue-500/80">
                   {((albumItems || []).reduce((acc, item) => acc + (item.size || 0), 0) / (1024 * 1024)).toFixed(2)} MB
@@ -156,25 +156,25 @@ export function AlbumTab({
         )}
 
         {albumItems.length === 0 ? (
-          <div className="bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-3xl p-12 md:p-24 text-center text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner">
+          <div className="bg-white/20 dark:bg-neutral-900/20 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl p-12 md:p-24 text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner">
             {isTextProject ? <FileText className="w-16 h-16 text-neutral-800 animate-pulse" /> : isVideoProject ? <VideoIcon className="w-16 h-16 text-neutral-800 animate-pulse" /> : <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />}
             <div>
-              <p className="text-sm font-bold text-neutral-400 tracking-wider uppercase">{isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : t('projectViewer.album.galleryEmpty')}</p>
+              <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400 tracking-wider uppercase">{isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : t('projectViewer.album.galleryEmpty')}</p>
               <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">{t('projectViewer.album.emptyDescription', { target: isTextProject ? t('projectViewer.album.collection') : isVideoProject ? t('projectViewer.album.reel') : t('projectViewer.tabs.album').toLowerCase() })}</p>
             </div>
           </div>
         ) : isTextProject ? (
-          <div className="overflow-hidden border border-neutral-800 bg-neutral-900/40 rounded-none border-x-0 border-t-0">
+          <div className="overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-900/40 rounded-none border-x-0 border-t-0">
             {albumItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               return (
                 <div
                   key={item.id}
-                  className={`group flex items-center gap-3 border-b border-neutral-800/80 px-4 py-2.5 transition-colors last:border-b-0 ${isSelected ? 'bg-blue-500/10' : 'hover:bg-neutral-800/40'}`}
+                  className={`group flex items-center gap-3 border-b border-neutral-200/80 dark:border-neutral-800/80 px-4 py-2.5 transition-colors last:border-b-0 ${isSelected ? 'bg-blue-500/10' : 'hover:bg-neutral-800/40'}`}
                 >
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
-                    className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-blue-500 text-blue-400' : 'border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700'}`}
+                    className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-blue-500 text-blue-400' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700'}`}
                   >
                     {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                   </button>
@@ -190,7 +190,7 @@ export function AlbumTab({
                       {item.textContent || item.prompt}
                     </p>
                     {(item.imageContexts?.length || 0) > 0 && (
-                      <span className="hidden sm:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-neutral-500">
+                      <span className="hidden sm:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-500">
                         {t('projectViewer.album.imageContexts', { count: item.imageContexts?.length || 0 })}
                       </span>
                     )}
@@ -203,7 +203,7 @@ export function AlbumTab({
                       setAlbumItemsToDelete([item]);
                       setShowDeleteAlbumModal(true);
                     }}
-                    className="flex-shrink-0 p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                    className="flex-shrink-0 p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                     title={t('projectViewer.common.delete')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -218,15 +218,15 @@ export function AlbumTab({
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = item.aspectRatio?.replace(':', '/') || '1/1';
               return (
-                <div key={item.id} className={`bg-neutral-950/50 border overflow-hidden flex flex-col group transition-all duration-300 active:scale-100 rounded-none border-neutral-800/10 ${isSelected ? 'ring-1 ring-inset ring-blue-500/50 bg-blue-500/5' : ''}`}>
-                  <div className="bg-neutral-950 relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: aspectRatioStr }}>
+                <div key={item.id} className={`bg-neutral-50/50 dark:bg-neutral-950/50 border overflow-hidden flex flex-col group transition-all duration-300 active:scale-100 rounded-none border-neutral-200/10 dark:border-neutral-800/10 ${isSelected ? 'ring-1 ring-inset ring-blue-500/50 bg-blue-500/5' : ''}`}>
+                  <div className="bg-neutral-50 dark:bg-neutral-950 relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: aspectRatioStr }}>
                     {/* Selection Overlay */}
                     <div className={`absolute top-4 left-4 z-20 transition-all opacity-100`}>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
                         className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20 hover:border-white/40'}`}
                       >
-                        {isSelected && <CheckSquare className="w-4 h-4 text-white" />}
+                        {isSelected && <CheckSquare className="w-4 h-4 text-neutral-900 dark:text-white" />}
                         {!isSelected && <Square className="w-4 h-4 text-white/40" />}
                       </button>
                     </div>
@@ -239,7 +239,7 @@ export function AlbumTab({
                           setAlbumItemsToDelete([item]);
                           setShowDeleteAlbumModal(true);
                         }}
-                        className="w-7 h-7 rounded-xl bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-lg"
+                        className="w-7 h-7 rounded-xl bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-red-600 transition-all shadow-lg"
                         title={t('projectViewer.common.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -250,7 +250,7 @@ export function AlbumTab({
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="w-7 h-7 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all shadow-lg"
+                        className="w-7 h-7 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/20 transition-all shadow-lg"
                         title={t('projectViewer.album.openOriginal')}
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -293,7 +293,7 @@ export function AlbumTab({
                         title={t('projectViewer.album.playVideo')}
                       >
                         <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-2xl transition-all group-hover/play:scale-110 group-hover/play:bg-purple-600/70">
-                          <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+                          <Play className="w-6 h-6 text-neutral-900 dark:text-white fill-white ml-0.5" />
                         </div>
                       </button>
                     )}
@@ -318,7 +318,7 @@ export function AlbumTab({
                       </div>
                     )}
                   </div>
-                  <div className="mt-auto min-h-[150px] flex flex-col bg-neutral-900/60 backdrop-blur-sm relative border-t border-neutral-800/50">
+                  <div className="mt-auto min-h-[150px] flex flex-col bg-white/60 dark:bg-neutral-900/60 backdrop-blur-sm relative border-t border-neutral-200/50 dark:border-neutral-800/50">
                     <div className="p-5 flex-1 flex flex-col justify-start">
                     <button
                       type="button"
@@ -326,21 +326,21 @@ export function AlbumTab({
                       className="mb-4 block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
                       title={t('projectViewer.album.viewFullPrompt')}
                     >
-                      <p className="text-[11px] leading-relaxed text-neutral-400 line-clamp-3 font-medium group-hover:text-neutral-200 transition-colors cursor-pointer hover:text-white">
+                      <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400 line-clamp-3 font-medium group-hover:text-neutral-200 transition-colors cursor-pointer hover:text-white">
                         {item.prompt}
                       </p>
                     </button>
                     <div className="mt-auto flex flex-wrap items-center gap-2">
-                      <div className="flex items-center gap-1.5 p-1 bg-neutral-950/50 rounded-lg border border-neutral-800/50">
-                        <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-neutral-900 rounded border border-neutral-800">
+                      <div className="flex items-center gap-1.5 p-1 bg-neutral-50/50 dark:bg-neutral-950/50 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50">
+                        <span className="text-[8px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-800">
                           {getProviderName(item.providerId)}
                         </span>
-                        <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest px-1.5 py-0.5 bg-neutral-900 rounded border border-neutral-800">
+                        <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest px-1.5 py-0.5 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-800">
                           {getModelName(item.providerId, item.modelConfigId)}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1 px-1.5 py-1 bg-neutral-950/30 rounded-lg border border-neutral-800/30">
+                      <div className="flex items-center gap-1 px-1.5 py-1 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-lg border border-neutral-200/30 dark:border-neutral-800/30">
                         {[
                           { label: t('projectViewer.album.raw'), size: item.size },
                           { label: t('projectViewer.album.optimized'), size: item.optimizedSize },
@@ -350,7 +350,7 @@ export function AlbumTab({
                             {i > 0 && <span className="text-[8px] text-neutral-800 font-bold mx-0.5">|</span>}
                             <div className="flex items-center gap-1">
                               <span className="text-[7px] font-black text-neutral-600 uppercase tracking-tighter">{s.label}</span>
-                              <span className="text-[8px] font-mono font-bold text-neutral-400">
+                              <span className="text-[8px] font-mono font-bold text-neutral-600 dark:text-neutral-400">
                                 {s.size > 1024 * 1024
                                   ? `${(s.size / (1024 * 1024)).toFixed(1)}M`
                                   : `${(s.size / 1024).toFixed(0)}K`}
@@ -362,22 +362,22 @@ export function AlbumTab({
 
                       <div className="flex gap-1.5 h-6">
                         {item.resolution && (
-                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 bg-neutral-950/30 rounded-md border border-neutral-800 uppercase tracking-widest">
+                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                             {item.resolution}
                           </span>
                         )}
                         {!item.resolution && item.quality && (
-                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 bg-neutral-950/30 rounded-md border border-neutral-800 uppercase tracking-widest">
+                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                             {item.quality}
                           </span>
                         )}
                         {item.duration != null && (
-                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 bg-neutral-950/30 rounded-md border border-neutral-800 uppercase tracking-widest">
+                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                             {item.duration}s
                           </span>
                         )}
                         {item.format && (
-                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 bg-neutral-950/30 rounded-md border border-neutral-800 uppercase tracking-widest">
+                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                             {item.format}
                           </span>
                         )}
@@ -410,7 +410,7 @@ export function AlbumTab({
             <button
               type="button"
               onClick={() => setVideoPlayerItem(null)}
-              className="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center hover:bg-neutral-800 transition-colors shadow-lg"
+              className="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-white dark:bg-neutral-900 border border-neutral-700 text-neutral-900 dark:text-white flex items-center justify-center hover:bg-neutral-800 transition-colors shadow-lg"
               title={t('projectViewer.common.close')}
             >
               ×

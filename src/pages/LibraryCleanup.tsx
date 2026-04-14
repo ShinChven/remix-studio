@@ -94,13 +94,13 @@ export function LibraryCleanup() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-neutral-500 animate-spin" />
+        <Loader2 className="w-6 h-6 text-neutral-500 dark:text-neutral-500 animate-spin" />
       </div>
     );
   }
 
   if (!library) {
-    return <div className="p-8 text-neutral-500">{t('libraryCleanup.errorNotFound')}</div>;
+    return <div className="p-8 text-neutral-500 dark:text-neutral-500">{t('libraryCleanup.errorNotFound')}</div>;
   }
 
   const allCleaned = references.length === 0;
@@ -115,7 +115,7 @@ export function LibraryCleanup() {
             <Trans
               i18nKey="libraryCleanup.description"
               values={{ name: library.name }}
-              components={{ span: <span className="text-white font-medium" /> }}
+              components={{ span: <span className="text-neutral-900 dark:text-white font-medium" /> }}
             />
           )}
           backLink={{ to: `/library/${id}`, label: t('libraryCleanup.backToLibrary') }}
@@ -129,7 +129,7 @@ export function LibraryCleanup() {
               <p className="text-sm font-semibold text-amber-400">
                 {t('libraryCleanup.warning', { count: references.length })}
               </p>
-              <p className="text-xs text-neutral-400 mt-1">
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
                 {t('libraryCleanup.warningDesc')}
               </p>
             </div>
@@ -143,7 +143,7 @@ export function LibraryCleanup() {
             return (
               <div
                 key={project.id}
-                className="flex items-center justify-between bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-4 transition-all"
+                className="flex items-center justify-between bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 rounded-xl p-4 transition-all"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Play className="w-4 h-4 text-green-500 flex-shrink-0" />
@@ -152,7 +152,7 @@ export function LibraryCleanup() {
                 <button
                   onClick={() => handleRemoveSingle(project.id)}
                   disabled={isRemoving || cleaningAll}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all border border-neutral-800 hover:border-red-500/20 disabled:opacity-50 flex-shrink-0"
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all border border-neutral-200 dark:border-neutral-800 hover:border-red-500/20 disabled:opacity-50 flex-shrink-0"
                 >
                   {isRemoving ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -166,10 +166,10 @@ export function LibraryCleanup() {
           })}
 
           {allCleaned && (
-            <div className="py-12 border-2 border-dashed border-neutral-800 rounded-2xl text-center text-neutral-500 flex flex-col items-center justify-center gap-3 bg-neutral-900/20">
+            <div className="py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-3 bg-white/20 dark:bg-neutral-900/20">
               <Unlink className="w-10 h-10 text-neutral-700" />
               <div>
-                <p className="text-base font-medium text-neutral-400">{t('libraryCleanup.allCleared')}</p>
+                <p className="text-base font-medium text-neutral-600 dark:text-neutral-400">{t('libraryCleanup.allCleared')}</p>
                 <p className="text-sm text-neutral-600 mt-1">{t('libraryCleanup.allClearedDesc')}</p>
               </div>
             </div>
@@ -177,12 +177,12 @@ export function LibraryCleanup() {
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4 border-t border-neutral-800/50">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
           {!allCleaned ? (
             <button
               onClick={() => setShowDeleteModal(true)}
               disabled={cleaningAll}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-neutral-900 dark:text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {cleaningAll ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -195,7 +195,7 @@ export function LibraryCleanup() {
             <button
               onClick={handleDeleteAfterClean}
               disabled={cleaningAll}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-neutral-900 dark:text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {cleaningAll ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

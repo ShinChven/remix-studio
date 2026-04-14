@@ -52,7 +52,7 @@ export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
       onClick={() => navigate('/account?tab=storage')}
       className={`
         mx-3 mb-2 p-2 rounded-xl cursor-pointer transition-all duration-300
-        bg-neutral-800/40 border border-neutral-700/50 hover:bg-neutral-800/60 hover:border-neutral-600
+        bg-neutral-200/40 dark:bg-neutral-800/40 border border-neutral-700/50 hover:bg-neutral-800/60 hover:border-neutral-600
         flex items-center gap-3 overflow-hidden
         ${isCollapsed ? 'justify-center' : ''}
       `}
@@ -69,17 +69,17 @@ export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
       {!isCollapsed && (
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">{t('storageIndicator.storage')}</span>
-            <span className="text-[10px] font-bold text-neutral-400">{usagePercent.toFixed(0)}%</span>
+            <span className="text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-500 font-bold">{t('storageIndicator.storage')}</span>
+            <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400">{usagePercent.toFixed(0)}%</span>
           </div>
-          <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden">
+          <div className="w-full h-1 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${usagePercent}%` }}
               className={`h-full rounded-full ${usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-amber-500' : 'bg-blue-500'}`}
             />
           </div>
-          <span className="text-[10px] font-semibold text-neutral-400 mt-1 truncate">{t('storageIndicator.usedOfLimit', { used: formatSize(size), limit: formatSize(limit) })}</span>
+          <span className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 mt-1 truncate">{t('storageIndicator.usedOfLimit', { used: formatSize(size), limit: formatSize(limit) })}</span>
         </div>
       )}
     </motion.div>

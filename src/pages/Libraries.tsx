@@ -100,22 +100,22 @@ export function Libraries() {
 
         <section>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 md:mb-8">
-            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
               <LayoutGrid className="w-5 h-5 text-blue-500" />
-              {t('libraries.allLibraries')} {total > 0 && <span className="text-sm text-neutral-500 font-normal">({total})</span>}
+              {t('libraries.allLibraries')} {total > 0 && <span className="text-sm text-neutral-500 dark:text-neutral-500 font-normal">({total})</span>}
             </h3>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Search Input */}
               <div className="relative flex-1 sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500" />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={handleSearchChange}
                   onKeyDown={handleSearchKeyDown}
                   placeholder={t('libraries.searchPlaceholder')}
-                  className="w-full bg-neutral-950/70 border border-neutral-800 rounded-xl py-2 pl-10 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                  className="w-full bg-neutral-50/70 dark:bg-neutral-950/70 border border-neutral-200 dark:border-neutral-800 rounded-xl py-2 pl-10 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
                 />
               </div>
 
@@ -143,7 +143,7 @@ export function Libraries() {
                   <Link
                     key={lib.id}
                     to={`/library/${lib.id}`}
-                    className={`bg-neutral-900/50 backdrop-blur-sm border border-neutral-800 ${isImage ? 'hover:border-indigo-500/50' : 'hover:border-blue-500/50'} p-4 md:p-5 rounded-2xl text-left transition-all group relative overflow-hidden`}
+                    className={`bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm border border-neutral-200 dark:border-neutral-800 ${isImage ? 'hover:border-indigo-500/50' : 'hover:border-blue-500/50'} p-4 md:p-5 rounded-2xl text-left transition-all group relative overflow-hidden`}
                   >
                     <div className="flex items-start justify-between mb-3 md:mb-4">
                       <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${isImage ? 'bg-indigo-500/10 text-indigo-500 shadow-indigo-500/5' : 'bg-blue-500/10 text-blue-500 shadow-blue-500/5'}`}>
@@ -155,16 +155,16 @@ export function Libraries() {
                           e.stopPropagation();
                           setLibraryToDuplicate(lib);
                         }}
-                        className="p-2 text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-neutral-700/50 bg-neutral-800/30"
+                        className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-neutral-700/50 bg-neutral-200/30 dark:bg-neutral-800/30"
                         title={t('libraries.libraryCard.duplicate')}
                       >
                         <Copy className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    <h4 className="text-base md:text-lg font-semibold text-white truncate mb-2">{lib.name}</h4>
+                    <h4 className="text-base md:text-lg font-semibold text-neutral-900 dark:text-white truncate mb-2">{lib.name}</h4>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 mb-4">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 dark:text-neutral-500 mb-4">
                       <div className="flex items-center gap-1.5 capitalize">
                         <Folder className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         <span>{lib.type || 'text'}</span>
@@ -175,7 +175,7 @@ export function Libraries() {
                       </div>
                     </div>
 
-                    <div className={`pt-3 md:pt-4 border-t border-neutral-800/50 flex items-center justify-end text-[10px] md:text-xs font-black uppercase tracking-widest opacity-100 transition-opacity ${isImage ? 'text-indigo-500' : 'text-blue-500'}`}>
+                    <div className={`pt-3 md:pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50 flex items-center justify-end text-[10px] md:text-xs font-black uppercase tracking-widest opacity-100 transition-opacity ${isImage ? 'text-indigo-500' : 'text-blue-500'}`}>
                       {t('libraries.libraryCard.openEditor')}
                     </div>
 
@@ -184,10 +184,10 @@ export function Libraries() {
                 )})}
 
                 {libraries.length === 0 && (
-                  <div className="col-span-full py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">
+                  <div className="col-span-full py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/20 dark:bg-neutral-900/20">
                     <Folder className="w-12 h-12 text-neutral-700" />
                     <div>
-                      <p className="text-lg font-medium text-neutral-400">{t('libraries.noLibraries.title')}</p>
+                      <p className="text-lg font-medium text-neutral-600 dark:text-neutral-400">{t('libraries.noLibraries.title')}</p>
                       <p className="text-sm">{q ? t('libraries.noResultsFound') : t('libraries.noLibraries.description')}</p>
                     </div>
                   </div>
@@ -199,15 +199,15 @@ export function Libraries() {
                   <button
                     onClick={() => handlePageChange(Math.max(1, page - 1))}
                     disabled={page === 1}
-                    className="p-2 bg-neutral-900 border border-neutral-800 rounded-lg text-neutral-400 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-400 transition-colors"
+                    className="p-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-400 transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <span className="text-sm text-neutral-400 font-medium">{t('projects.pagination', { current: page, total: pages })}</span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">{t('projects.pagination', { current: page, total: pages })}</span>
                   <button
                     onClick={() => handlePageChange(Math.min(pages, page + 1))}
                     disabled={page === pages}
-                    className="p-2 bg-neutral-900 border border-neutral-800 rounded-lg text-neutral-400 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-400 transition-colors"
+                    className="p-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-400 transition-colors"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>

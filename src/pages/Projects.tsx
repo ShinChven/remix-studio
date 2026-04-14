@@ -141,34 +141,34 @@ export function Projects() {
 
         <section>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 md:mb-8">
-            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
               {sort === 'totalSize' ? <HardDrive className="w-5 h-5 text-blue-500" /> : <Clock className="w-5 h-5 text-green-500" />}
-              {t('projects.allProjects')} {total > 0 && <span className="text-sm text-neutral-500 font-normal">({total})</span>}
+              {t('projects.allProjects')} {total > 0 && <span className="text-sm text-neutral-500 dark:text-neutral-500 font-normal">({total})</span>}
             </h3>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Search Input */}
               <div className="relative flex-1 sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500" />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={handleSearchChange}
                   onKeyDown={handleSearchKeyDown}
                   placeholder={t('projects.searchPlaceholder')}
-                  className="w-full bg-neutral-950/70 border border-neutral-800 rounded-xl py-2 pl-10 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all"
+                  className="w-full bg-neutral-50/70 dark:bg-neutral-950/70 border border-neutral-200 dark:border-neutral-800 rounded-xl py-2 pl-10 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all"
                 />
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="flex flex-1 sm:flex-none rounded-xl border border-neutral-800 bg-neutral-950/70 p-1">
+                <div className="flex flex-1 sm:flex-none rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 p-1">
                   <button
                     type="button"
                     onClick={() => handleSortChange('createdAt')}
                     className={`flex-1 sm:flex-none rounded-lg px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${
                       sort === 'createdAt'
                         ? 'bg-green-600/15 text-green-300 shadow-sm'
-                        : 'text-neutral-500 hover:text-neutral-200'
+                        : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
                     }`}
                   >
                     {t('projects.sort.newest')}
@@ -179,7 +179,7 @@ export function Projects() {
                     className={`flex-1 sm:flex-none rounded-lg px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${
                       sort === 'totalSize'
                         ? 'bg-blue-600/15 text-blue-300 shadow-sm'
-                        : 'text-neutral-500 hover:text-neutral-200'
+                        : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
                     }`}
                   >
                     {t('projects.sort.largest')}
@@ -213,20 +213,20 @@ export function Projects() {
                   <Link
                     key={project.id}
                     to={`/project/${project.id}`}
-                    className={`bg-neutral-900/50 backdrop-blur-sm border border-neutral-800 ${typeMeta.borderClassName} p-4 md:p-5 rounded-2xl text-left transition-all group relative overflow-hidden`}
+                    className={`bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm border border-neutral-200 dark:border-neutral-800 ${typeMeta.borderClassName} p-4 md:p-5 rounded-2xl text-left transition-all group relative overflow-hidden`}
                   >
                     <div className="flex items-start justify-between mb-3 md:mb-4">
                       <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
                         <ProjectIcon className="w-5 h-5 md:w-6 md:h-6" />
                       </div>
-                      <span className="hidden sm:block text-[10px] text-neutral-500 font-mono bg-neutral-800/50 px-2 py-1 rounded border border-neutral-700/50 truncate max-w-[140px]">
+                      <span className="hidden sm:block text-[10px] text-neutral-500 dark:text-neutral-500 font-mono bg-neutral-200/50 dark:bg-neutral-800/50 px-2 py-1 rounded border border-neutral-700/50 truncate max-w-[140px]">
                         {project.id}
                       </span>
                     </div>
 
-                    <h4 className="text-base md:text-lg font-semibold text-white truncate mb-2">{project.name}</h4>
+                    <h4 className="text-base md:text-lg font-semibold text-neutral-900 dark:text-white truncate mb-2">{project.name}</h4>
 
-                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 mb-4">
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 dark:text-neutral-500 mb-4">
                       <div className="flex items-center gap-1.5">
                         <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         <span>{t('projects.projectCard.jobs', { count: (project.jobCount ?? project.jobs?.length) || 0 })}</span>
@@ -245,7 +245,7 @@ export function Projects() {
                       </div>
                     </div>
 
-                    <div className={`pt-3 md:pt-4 border-t border-neutral-800/50 flex items-center justify-end text-[10px] md:text-xs font-black uppercase tracking-widest opacity-100 transition-opacity ${typeMeta.accentClassName}`}>
+                    <div className={`pt-3 md:pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50 flex items-center justify-end text-[10px] md:text-xs font-black uppercase tracking-widest opacity-100 transition-opacity ${typeMeta.accentClassName}`}>
                       {t('projects.projectCard.openProject')}
                     </div>
 
@@ -254,10 +254,10 @@ export function Projects() {
                 )})}
 
                 {projects.length === 0 && (
-                  <div className="col-span-full py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">
+                  <div className="col-span-full py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/20 dark:bg-neutral-900/20">
                     <Play className="w-12 h-12 text-neutral-700" />
                     <div>
-                      <p className="text-lg font-medium text-neutral-400">{t('projects.noProjects.title')}</p>
+                      <p className="text-lg font-medium text-neutral-600 dark:text-neutral-400">{t('projects.noProjects.title')}</p>
                       <p className="text-sm">{q ? t('projects.noResultsFound') : t('projects.noProjects.description')}</p>
                     </div>
                   </div>
@@ -269,15 +269,15 @@ export function Projects() {
                   <button
                     onClick={() => handlePageChange(Math.max(1, page - 1))}
                     disabled={page === 1}
-                    className="p-2 bg-neutral-900 border border-neutral-800 rounded-lg text-neutral-400 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-400 transition-colors"
+                    className="p-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-400 transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <span className="text-sm text-neutral-400 font-medium">{t('projects.pagination', { current: page, total: pages })}</span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">{t('projects.pagination', { current: page, total: pages })}</span>
                   <button
                     onClick={() => handlePageChange(Math.min(pages, page + 1))}
                     disabled={page === pages}
-                    className="p-2 bg-neutral-900 border border-neutral-800 rounded-lg text-neutral-400 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-400 transition-colors"
+                    className="p-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-white disabled:opacity-30 disabled:hover:text-neutral-400 transition-colors"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -290,7 +290,7 @@ export function Projects() {
       {/* Mobile Floating Action Button */}
       <button
         onClick={addProject}
-        className="fixed bottom-8 right-8 sm:hidden w-14 h-14 bg-green-500 text-white rounded-full shadow-[0_8px_32px_rgba(34,197,94,0.3)] hover:bg-green-400 transition-all active:scale-90 flex items-center justify-center z-50 border border-green-400/20"
+        className="fixed bottom-8 right-8 sm:hidden w-14 h-14 bg-green-500 text-neutral-900 dark:text-white rounded-full shadow-[0_8px_32px_rgba(34,197,94,0.3)] hover:bg-green-400 transition-all active:scale-90 flex items-center justify-center z-50 border border-green-400/20"
       >
         <Plus className="w-8 h-8" />
       </button>

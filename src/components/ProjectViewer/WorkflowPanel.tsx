@@ -95,15 +95,15 @@ export function WorkflowPanel({
   const { t } = useTranslation();
 
   return (
-    <div className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-800 bg-neutral-900/30 flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
-      <div className="p-3 border-b border-neutral-800 bg-neutral-900/20 backdrop-blur-md shadow-sm">
+    <div className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-neutral-800 bg-white/30 dark:bg-neutral-900/30 flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
+      <div className="p-3 border-b border-neutral-200 dark:border-neutral-800 bg-white/20 dark:bg-neutral-900/20 backdrop-blur-md shadow-sm">
         <div className="min-h-[40px] flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-black text-white truncate tracking-widest leading-none uppercase">
+            <div className="text-[10px] font-black text-neutral-900 dark:text-white truncate tracking-widest leading-none uppercase">
               {localProject.name}
             </div>
             <div className="mt-0.5 flex items-center gap-2 min-w-0">
-              <span className="text-[8px] text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-neutral-950 border border-neutral-800 rounded truncate leading-none">
+              <span className="text-[8px] text-neutral-500 dark:text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded truncate leading-none">
                 {t('projectViewer.main.projectId', { id: project.id })}
               </span>
               <span title={t('projectViewer.main.autoSavedTitle')} className="flex items-center gap-1 text-[8px] text-emerald-500 font-bold uppercase tracking-widest opacity-60 whitespace-nowrap leading-none">
@@ -134,11 +134,11 @@ export function WorkflowPanel({
         </div>
       </div>
 
-      <div className="h-[57px] p-3 border-b border-neutral-800 flex gap-2 bg-neutral-900/50 items-center">
-        <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
+      <div className="h-[57px] p-3 border-b border-neutral-200 dark:border-neutral-800 flex gap-2 bg-white/50 dark:bg-neutral-900/50 items-center">
+        <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-white transition-colors">
           <Type className="w-3 h-3" /> {t('projectViewer.common.text')}
         </button>
-        <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
+        <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-white transition-colors">
           <ImageIcon className="w-3 h-3" /> {t('projectViewer.common.imageShort')}
         </button>
         {localProject.type === 'video' && (
@@ -154,12 +154,12 @@ export function WorkflowPanel({
               return (
                 <>
                   {selectedModel?.options.supportsReferenceVideo && (
-                    <button onClick={() => onAddWorkflowItem('video')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
+                    <button onClick={() => onAddWorkflowItem('video')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-white transition-colors">
                       <VideoIcon className="w-3 h-3" /> Video
                     </button>
                   )}
                   {selectedModel?.options.supportsReferenceAudio && (
-                    <button onClick={() => onAddWorkflowItem('audio')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
+                    <button onClick={() => onAddWorkflowItem('audio')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-white transition-colors">
                       <Volume2 className="w-3 h-3" /> Audio
                     </button>
                   )}
@@ -168,7 +168,7 @@ export function WorkflowPanel({
             })()}
           </>
         )}
-        <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
+        <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-white transition-colors">
           <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
         </button>
       </div>
@@ -199,7 +199,7 @@ export function WorkflowPanel({
           />
         ))}
         {(localProject.workflow || []).length === 0 && (
-          <div className="text-center text-neutral-600 text-[10px] font-bold uppercase tracking-widest py-12 border border-dashed border-neutral-800 rounded-2xl bg-neutral-900/20">{t('projectViewer.main.buildWorkflow')}</div>
+          <div className="text-center text-neutral-600 text-[10px] font-bold uppercase tracking-widest py-12 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white/20 dark:bg-neutral-900/20">{t('projectViewer.main.buildWorkflow')}</div>
         )}
       </div>
 

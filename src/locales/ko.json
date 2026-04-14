@@ -112,7 +112,13 @@
     "preferences": {
       "language": "언어",
       "languageDescription": "선호하는 애플리케이션 언어를 선택하세요.",
-      "selectLanguage": "언어 선택"
+      "selectLanguage": "언어 선택",
+      "theme": "테마",
+      "themeDescription": "선호하는 색상 테마를 선택하세요.",
+      "selectTheme": "테마 선택",
+      "light": "라이트",
+      "dark": "다크",
+      "system": "시스템 설정"
     },
     "confirm": {
       "signOutTitle": "로그아웃",
@@ -825,9 +831,18 @@
         "instruction": "앱이 로그인 URL 또는 디스커버리 URL을 명시적으로 요구할 때만 사용하세요."
       },
       "steps": {
-        "1": { "title": "1. 주소 복사", "desc": "AI 앱에 붙여넣어 설정을 시작하세요." },
-        "2": { "title": "2. 방식 선택", "desc": "브라우저가 열리면 OAuth를, 아니면 토큰을 사용하세요." },
-        "3": { "title": "3. 여기서 관리", "desc": "연결을 확인하거나 접근을 언제든 취소할 수 있습니다." }
+        "1": {
+          "title": "1. 주소 복사",
+          "desc": "AI 앱에 붙여넣어 설정을 시작하세요."
+        },
+        "2": {
+          "title": "2. 방식 선택",
+          "desc": "브라우저가 열리면 OAuth를, 아니면 토큰을 사용하세요."
+        },
+        "3": {
+          "title": "3. 여기서 관리",
+          "desc": "연결을 확인하거나 접근을 언제든 취소할 수 있습니다."
+        }
       },
       "jsonSetup": {
         "title": "JSON 구성이 필요한가요?",

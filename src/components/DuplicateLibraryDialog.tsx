@@ -46,7 +46,7 @@ export function DuplicateLibraryDialog({
       onClick={() => !submitting && onClose()}
     >
       <div
-        className="bg-neutral-900 border border-neutral-800/50 rounded-[32px] shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-300"
+        className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/50 rounded-[32px] shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-8">
@@ -56,15 +56,15 @@ export function DuplicateLibraryDialog({
                 <Copy className="w-7 h-7" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-2xl font-black text-white tracking-tight">{t('libraries.duplicateDialog.title')}</h3>
-                <p className="mt-3 text-sm text-neutral-400 leading-relaxed">
+                <h3 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight">{t('libraries.duplicateDialog.title')}</h3>
+                <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
                   {t('libraries.duplicateDialog.description')}
                 </p>
               </div>
             </div>
             <button
               onClick={() => !submitting && onClose()}
-              className="p-2 rounded-xl text-neutral-500 hover:text-white hover:bg-neutral-800/70 transition-colors"
+              className="p-2 rounded-xl text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800/70 transition-colors"
               aria-label={t('libraries.duplicateDialog.cancel')}
             >
               <X className="w-5 h-5" />
@@ -72,7 +72,7 @@ export function DuplicateLibraryDialog({
           </div>
 
           <div className="mt-8">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('libraries.duplicateDialog.placeholder')}</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">{t('libraries.duplicateDialog.placeholder')}</label>
             <input
               type="text"
               value={name}
@@ -84,16 +84,16 @@ export function DuplicateLibraryDialog({
                 }
               }}
               autoFocus
-              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
+              className="mt-2 w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-white outline-none transition-colors focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
               placeholder={t('libraries.duplicateDialog.placeholder')}
             />
           </div>
         </div>
 
-        <div className="px-8 py-6 bg-neutral-950/40 flex items-center justify-end gap-4 border-t border-neutral-800/50">
+        <div className="px-8 py-6 bg-neutral-50/40 dark:bg-neutral-950/40 flex items-center justify-end gap-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
           <button
             onClick={() => !submitting && onClose()}
-            className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
+            className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
             disabled={submitting}
           >
             {t('libraries.duplicateDialog.cancel')}
@@ -102,7 +102,7 @@ export function DuplicateLibraryDialog({
           <button
             onClick={() => void handleConfirm()}
             disabled={submitting || !name.trim()}
-            className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-[0.98] bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-[0.98] bg-blue-600 hover:bg-blue-500 text-neutral-900 dark:text-white shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <span className="flex items-center gap-2">

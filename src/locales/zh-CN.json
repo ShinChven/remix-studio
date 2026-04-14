@@ -712,9 +712,18 @@
         "instruction": "仅当应用特别要求登录或发现 URL 时才使用此地址。"
       },
       "steps": {
-        "1": { "title": "1. 复制地址", "desc": "将其粘贴到 AI 应用中开始设置。" },
-        "2": { "title": "2. 选择方式", "desc": "如果支持浏览器登录则使用 OAuth，否则使用令牌。" },
-        "3": { "title": "3. 在此管理", "desc": "随时查看连接或撤销访问权限。" }
+        "1": {
+          "title": "1. 复制地址",
+          "desc": "将其粘贴到 AI 应用中开始设置。"
+        },
+        "2": {
+          "title": "2. 选择方式",
+          "desc": "如果支持浏览器登录则使用 OAuth，否则使用令牌。"
+        },
+        "3": {
+          "title": "3. 在此管理",
+          "desc": "随时查看连接或撤销访问权限。"
+        }
       },
       "jsonSetup": {
         "title": "需要使用 JSON 配置？",
@@ -838,12 +847,12 @@
       "goPasswordlessDesc": "移除密码，仅使用通行密钥登录。",
       "removePassword": "移除密码",
       "passkeysTitle": "通行密钥",
-    "passkeysDesc": "使用面容 ID、指纹、Windows Hello 或硬件密钥登录。",
-    "registered": "已注册 {{count}} 个",
-    "placeholder": "例如：这台 MacBook",
-    "defaultPasskeyName": "这台设备",
-    "addPasskey": "添加通行密钥",
-    "noPasskeys": "尚未注册通行密钥。",
+      "passkeysDesc": "使用面容 ID、指纹、Windows Hello 或硬件密钥登录。",
+      "registered": "已注册 {{count}} 个",
+      "placeholder": "例如：这台 MacBook",
+      "defaultPasskeyName": "这台设备",
+      "addPasskey": "添加通行密钥",
+      "noPasskeys": "尚未注册通行密钥。",
       "added": "添加于 {{date}}",
       "lastUsed": "上次使用于 {{date}}",
       "remove": "移除",
@@ -854,10 +863,10 @@
       "twoFactorSetupDesc": "在专用页面中开始身份验证器设置，以便验证流程有更多操作空间。",
       "twoFactorSetupPending": "设置已在进行中。打开页面将允许您继续并进行验证。",
       "openTwoFactor": "打开 2FA 设置",
-    "authCode": "身份验证器代码",
-    "disableTwoFactor": "禁用 2FA",
-    "cancel": "取消",
-    "errors": {
+      "authCode": "身份验证器代码",
+      "disableTwoFactor": "禁用 2FA",
+      "cancel": "取消",
+      "errors": {
         "passwordLength": "新密码长度必须至少为 8 个字符。",
         "passwordMatch": "新密码与确认密码不匹配。",
         "passwordUpdateFailed": "更新密码失败。",
@@ -879,7 +888,13 @@
     "preferences": {
       "language": "语言",
       "languageDescription": "选择您偏好的界面语言。",
-      "selectLanguage": "选择语言"
+      "selectLanguage": "选择语言",
+      "theme": "主题",
+      "themeDescription": "选择您偏好的颜色主题。",
+      "selectTheme": "选择主题",
+      "light": "浅色",
+      "dark": "深色",
+      "system": "跟随系统"
     },
     "confirm": {
       "signOutTitle": "退出登录",

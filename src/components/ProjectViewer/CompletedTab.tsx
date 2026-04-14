@@ -89,7 +89,7 @@ export function CompletedTab({
                 actionButtons={
                   <button
                     onClick={(e) => { e.stopPropagation(); setJobToDeleteId(job.id); }}
-                    className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                    className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                     title={t('projectViewer.completed.deleteJobRecord')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -99,7 +99,7 @@ export function CompletedTab({
                   <div className="flex flex-col gap-4">
                       <div className="space-y-2">
                         <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.common.fullPrompt')}</label>
-                        <div className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/50 select-all whitespace-pre-wrap font-mono">
+                        <div className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 select-all whitespace-pre-wrap font-mono">
                           {job.prompt}
                         </div>
                       </div>
@@ -107,7 +107,7 @@ export function CompletedTab({
                       {projectType === 'text' && job.resultText && (
                         <div className="space-y-2">
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.common.generatedText')}</label>
-                          <div className="text-xs text-neutral-200 leading-relaxed bg-neutral-950/50 p-4 rounded-xl border border-emerald-500/20 select-all whitespace-pre-wrap">
+                          <div className="text-xs text-neutral-200 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border border-emerald-500/20 select-all whitespace-pre-wrap">
                             {job.resultText}
                           </div>
                         </div>
@@ -118,16 +118,16 @@ export function CompletedTab({
                           <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">{t('projectViewer.completed.metadata')}</span>
                           <div className="flex flex-wrap gap-2">
                             {job.aspectRatio && (
-                              <span className="text-[8px] font-bold text-neutral-400 bg-neutral-950 px-2 py-1 rounded border border-neutral-800 uppercase tracking-widest">{job.aspectRatio}</span>
+                              <span className="text-[8px] font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-950 px-2 py-1 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">{job.aspectRatio}</span>
                             )}
                             {job.quality && (
-                              <span className="text-[8px] font-bold text-neutral-400 bg-neutral-950 px-2 py-1 rounded border border-neutral-800 uppercase tracking-widest">{job.quality}</span>
+                              <span className="text-[8px] font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-950 px-2 py-1 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">{job.quality}</span>
                             )}
                             {job.format && (
-                              <span className="text-[8px] font-bold text-neutral-400 bg-neutral-950 px-2 py-1 rounded border border-neutral-800 uppercase tracking-widest">{job.format}</span>
+                              <span className="text-[8px] font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-950 px-2 py-1 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">{job.format}</span>
                             )}
                             {job.size && (
-                              <span className="text-[8px] font-bold text-neutral-400 bg-neutral-950 px-2 py-1 rounded border border-neutral-800 uppercase tracking-widest">{(job.size / 1024).toFixed(1)} KB</span>
+                              <span className="text-[8px] font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-950 px-2 py-1 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">{(job.size / 1024).toFixed(1)} KB</span>
                             )}
                           </div>
                         </div>
@@ -139,7 +139,7 @@ export function CompletedTab({
           })}
 
           {completedJobs.length === 0 && (
-            <div className="py-24 text-center text-neutral-600 bg-neutral-900/10 border-2 border-dashed border-neutral-900 rounded-3xl flex flex-col items-center gap-4">
+            <div className="py-24 text-center text-neutral-600 bg-white/10 dark:bg-neutral-900/10 border-2 border-dashed border-neutral-900 rounded-3xl flex flex-col items-center gap-4">
               <CheckCircle2 className="w-12 h-12 opacity-10" />
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-[0.2em]">{t('projectViewer.completed.emptyTitle')}</div>

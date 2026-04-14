@@ -112,7 +112,13 @@
     "preferences": {
       "language": "Langue",
       "languageDescription": "Choisissez votre langue d'application préférée.",
-      "selectLanguage": "Choisir la langue"
+      "selectLanguage": "Choisir la langue",
+      "theme": "Thème",
+      "themeDescription": "Choisissez votre thème de couleur préféré.",
+      "selectTheme": "Sélectionner le thème",
+      "light": "Clair",
+      "dark": "Sombre",
+      "system": "Paramètres système"
     },
     "confirm": {
       "signOutTitle": "Se déconnecter",
@@ -825,9 +831,18 @@
         "instruction": "Utilisez-la uniquement si l'application demande explicitement une URL de connexion ou de découverte."
       },
       "steps": {
-        "1": { "title": "1. Copier l'adresse", "desc": "Collez-la dans l'application IA pour commencer la configuration." },
-        "2": { "title": "2. Choisir la méthode", "desc": "Utilisez OAuth si un navigateur s'ouvre, sinon utilisez un jeton." },
-        "3": { "title": "3. Gérer ici", "desc": "Consultez les connexions ou révoquez l'accès à tout moment." }
+        "1": {
+          "title": "1. Copier l'adresse",
+          "desc": "Collez-la dans l'application IA pour commencer la configuration."
+        },
+        "2": {
+          "title": "2. Choisir la méthode",
+          "desc": "Utilisez OAuth si un navigateur s'ouvre, sinon utilisez un jeton."
+        },
+        "3": {
+          "title": "3. Gérer ici",
+          "desc": "Consultez les connexions ou révoquez l'accès à tout moment."
+        }
       },
       "jsonSetup": {
         "title": "Besoin d'utiliser une configuration JSON ?",

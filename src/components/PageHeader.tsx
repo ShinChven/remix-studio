@@ -31,7 +31,7 @@ export function PageHeader({
 
   const titleEl = (
     <h2 className={`
-      font-bold text-white mb-2 font-display tracking-tight
+      font-bold text-neutral-900 dark:text-white mb-2 font-display tracking-tight
       ${isLarge ? 'text-2xl md:text-4xl' : 'text-2xl md:text-3xl'}
     `}>
       {title}
@@ -43,14 +43,14 @@ export function PageHeader({
       {backLink.to ? (
         <Link
           to={backLink.to}
-          className="text-sm text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors"
+          className="text-sm text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> {backLink.label}
         </Link>
       ) : (
         <button
           onClick={backLink.onClick}
-          className="text-sm text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors"
+          className="text-sm text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> {backLink.label}
         </button>
@@ -64,7 +64,7 @@ export function PageHeader({
         {backEl}
         {titleEl}
         {description && (
-          <div className={`text-sm md:text-base text-neutral-400 leading-relaxed ${!isLarge ? 'max-w-2xl' : ''}`}>
+          <div className={`text-sm md:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed ${!isLarge ? 'max-w-2xl' : ''}`}>
             {description}
           </div>
         )}

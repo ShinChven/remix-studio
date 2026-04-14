@@ -135,9 +135,9 @@ export function TrashView() {
           description={t('trash.description')}
         />
 
-      <div className="sticky top-0 z-20 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-neutral-950/80 backdrop-blur-md border border-neutral-800/50 p-4 rounded-2xl shadow-lg shadow-black/20">
+      <div className="sticky top-0 z-20 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-neutral-50/80 dark:bg-neutral-950/80 backdrop-blur-md border border-neutral-200/50 dark:border-neutral-800/50 p-4 rounded-2xl shadow-lg shadow-black/20">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
+          <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">
             {t('trash.stats.items', { count: items.length })}
           </span>
           <span className="text-neutral-800">·</span>
@@ -167,7 +167,7 @@ export function TrashView() {
           {items.length > 0 && (
             <button
               onClick={() => setShowEmptyConfirm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-red-900/20 text-neutral-400 hover:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-neutral-800 hover:border-red-500/30 transition-all ml-2"
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-900 hover:bg-red-900/20 text-neutral-600 dark:text-neutral-400 hover:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-neutral-200 dark:border-neutral-800 hover:border-red-500/30 transition-all ml-2"
             >
               {t('trash.actions.emptyTrash')}
             </button>
@@ -176,12 +176,12 @@ export function TrashView() {
       </div>
 
       {!loading && items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-[40px] text-center space-y-6 transition-colors hover:border-neutral-700">
-          <div className="p-6 bg-neutral-900/50 rounded-full border border-neutral-800">
+        <div className="flex flex-col items-center justify-center py-24 bg-white/20 dark:bg-neutral-900/20 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-[40px] text-center space-y-6 transition-colors hover:border-neutral-700">
+          <div className="p-6 bg-white/50 dark:bg-neutral-900/50 rounded-full border border-neutral-200 dark:border-neutral-800">
             <Trash2 className="w-12 h-12 text-neutral-800" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-widest">{t('trash.empty.title')}</h3>
+            <h3 className="text-sm font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest">{t('trash.empty.title')}</h3>
             <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">{t('trash.empty.description')}</p>
           </div>
         </div>
@@ -192,11 +192,11 @@ export function TrashView() {
             return (
               <div 
                 key={item.id} 
-                className={`group relative bg-neutral-900/50 border rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 
-                  ${isSelected ? 'border-blue-500 ring-4 ring-blue-500/10 bg-blue-500/5' : 'border-neutral-800 hover:border-blue-500/30'}`}
+                className={`group relative bg-white/50 dark:bg-neutral-900/50 border rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 
+                  ${isSelected ? 'border-blue-500 ring-4 ring-blue-500/10 bg-blue-500/5' : 'border-neutral-200 dark:border-neutral-800 hover:border-blue-500/30'}`}
               >
                 {/* Image Section */}
-                <div className="aspect-square relative overflow-hidden bg-neutral-950">
+                <div className="aspect-square relative overflow-hidden bg-neutral-50 dark:bg-neutral-950">
                   <img
                     src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)}
                     alt={item.prompt}
@@ -216,13 +216,13 @@ export function TrashView() {
                       onClick={() => toggleSelection(item.id, false)}
                       className={`w-8 h-8 rounded-xl flex items-center justify-center border shadow-xl transition-all ${isSelected ? 'bg-blue-600 border-blue-500' : 'bg-black/40 backdrop-blur-xl border-white/20 hover:border-white/40'}`}
                     >
-                      {isSelected ? <CheckSquare className="w-5 h-5 text-white" /> : <Square className="w-5 h-5 text-white/40" />}
+                      {isSelected ? <CheckSquare className="w-5 h-5 text-neutral-900 dark:text-white" /> : <Square className="w-5 h-5 text-white/40" />}
                     </button>
                   </div>
 
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
                     <p className="text-[9px] leading-relaxed text-blue-100/90 font-medium line-clamp-3 mb-2">{item.prompt}</p>
-                    <div className="flex items-center gap-2 text-[8px] font-bold text-neutral-400 uppercase tracking-widest">
+                    <div className="flex items-center gap-2 text-[8px] font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest">
                        <HardDrive className="w-3 h-3" /> {formatSize(item.size)}
                     </div>
                   </div>
@@ -236,7 +236,7 @@ export function TrashView() {
 
                 {/* Info Section */}
                 <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-neutral-500">
+                  <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
                     <Folder className="w-3.5 h-3.5 text-blue-400" />
                     <span className="truncate flex-1" title={item.projectName}>{item.projectName}</span>
                   </div>

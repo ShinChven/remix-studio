@@ -79,7 +79,7 @@ export function Providers() {
 
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
               <Key className="w-5 h-5 text-amber-500" />
               {t('providers.allProviders')}
             </h3>
@@ -103,13 +103,13 @@ export function Providers() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5">
             {isLoading ? (
               [1, 2, 3].map(i => (
-                <div key={i} className="h-14 rounded-xl bg-neutral-900/40 border border-neutral-800/60 animate-pulse" />
+                <div key={i} className="h-14 rounded-xl bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 animate-pulse" />
               ))
             ) : providers.length === 0 ? (
-              <div className="py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">
+              <div className="py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/20 dark:bg-neutral-900/20">
                 <Key className="w-12 h-12 text-neutral-700" />
                 <div>
-                  <p className="text-lg font-medium text-neutral-400">{t('providers.noProviders.title')}</p>
+                  <p className="text-lg font-medium text-neutral-600 dark:text-neutral-400">{t('providers.noProviders.title')}</p>
                   <p className="text-sm">{t('providers.noProviders.description')}</p>
                 </div>
               </div>
@@ -125,18 +125,18 @@ export function Providers() {
                   <div
                     key={provider.id}
                     onClick={() => navigate(`/provider/${provider.id}`)}
-                    className="w-full bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/60 hover:border-amber-500/30 hover:bg-neutral-900/60 px-3 py-2.5 md:px-3.5 md:py-2.5 rounded-xl text-left transition-all group flex items-center justify-between gap-3 cursor-pointer"
+                    className="w-full bg-white/40 dark:bg-neutral-900/40 backdrop-blur-sm border border-neutral-200/60 dark:border-neutral-800/60 hover:border-amber-500/30 hover:bg-neutral-900/60 px-3 py-2.5 md:px-3.5 md:py-2.5 rounded-xl text-left transition-all group flex items-center justify-between gap-3 cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5 md:gap-3 overflow-hidden min-w-0">
                       <div className={`flex-shrink-0 p-1.5 md:p-2 rounded-lg ${colors.icon} group-hover:scale-110 transition-transform`}>
                         <ProviderIcon type={provider.type} className="w-4 h-4" />
                       </div>
                       <div className="overflow-hidden min-w-0">
-                        <h4 className="font-semibold text-white text-sm truncate">{provider.name}</h4>
+                        <h4 className="font-semibold text-neutral-900 dark:text-white text-sm truncate">{provider.name}</h4>
                         <div className="flex items-center gap-1.5 md:gap-2 mt-0.5 flex-wrap">
                           <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${colors.badge}`}>{provider.type}</span>
                           {provider.apiUrl && (
-                            <span className="flex items-center gap-1 text-[10px] text-neutral-500 truncate max-w-[140px] md:max-w-[180px]">
+                            <span className="flex items-center gap-1 text-[10px] text-neutral-500 dark:text-neutral-500 truncate max-w-[140px] md:max-w-[180px]">
                               <Globe className="w-3 h-3 flex-shrink-0" />{provider.apiUrl}
                             </span>
                           )}
@@ -146,7 +146,7 @@ export function Providers() {
                               : <><AlertCircle className="w-3 h-3" /> {provider.type === 'KlingAI' ? t('providers.providerCard.missingCredentials') : t('providers.providerCard.noKey')}</>}
                           </span>
                           {(projectCount > 0 || activeJobCount > 0) && (
-                            <span className="flex items-center gap-2 text-[10px] text-neutral-500">
+                            <span className="flex items-center gap-2 text-[10px] text-neutral-500 dark:text-neutral-500">
                               {projectCount > 0 && <span>{t('providers.providerCard.projects', { count: projectCount })}</span>}
                               {activeJobCount > 0 && <span>{t('providers.providerCard.activeJobs', { count: activeJobCount })}</span>}
                             </span>
@@ -158,14 +158,14 @@ export function Providers() {
                     <div className="flex items-center gap-0.5 flex-shrink-0">
                       <button
                         onClick={(e) => { e.stopPropagation(); navigate(`/provider/${provider.id}/edit`); }}
-                        className="p-1.5 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors opacity-100"
+                        className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors opacity-100"
                         title={t('providerCustomModels.edit')}
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); setDeleteTarget(provider); }}
-                        className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-100"
+                        className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-100"
                         title={t('providerCustomModels.delete')}
                       >
                         <Trash2 className="w-4 h-4" />

@@ -156,14 +156,14 @@ export function McpConnections() {
   };
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto bg-neutral-950/20">
+    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto bg-neutral-50/20 dark:bg-neutral-950/20">
       <div className="w-full space-y-8 md:space-y-12">
         <PageHeader
           title={t('mcpConnections.title')}
           description={t('mcpConnections.description')}
         />
 
-        <section className="rounded-2xl border border-neutral-800/70 bg-neutral-900/20 backdrop-blur-md overflow-hidden relative group">
+        <section className="rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-white/20 dark:bg-neutral-900/20 backdrop-blur-md overflow-hidden relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-amber-500/5 opacity-50" />
           <div className="relative p-5 md:p-8 flex flex-col md:flex-row items-start gap-4 md:gap-6">
             <div className="flex-shrink-0 rounded-2xl bg-sky-500/10 p-3 text-sky-400 border border-sky-500/20 shadow-lg shadow-sky-500/5">
@@ -171,8 +171,8 @@ export function McpConnections() {
             </div>
             <div className="flex-1 space-y-6 md:space-y-8">
               <div>
-                <h3 className="text-lg font-bold text-white tracking-tight">{t('mcpConnections.connectSection.title')}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-neutral-400 max-w-3xl">
+                <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">{t('mcpConnections.connectSection.title')}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 max-w-3xl">
                   {t('mcpConnections.connectSection.description')}
                 </p>
               </div>
@@ -183,7 +183,7 @@ export function McpConnections() {
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                     <p className="text-sm font-bold text-blue-300">{t('mcpConnections.connectSection.oauthMethod.title')}</p>
                   </div>
-                  <p className="text-sm leading-relaxed text-neutral-400">
+                  <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
                     {t('mcpConnections.connectSection.oauthMethod.description')}
                   </p>
                 </div>
@@ -192,42 +192,42 @@ export function McpConnections() {
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                     <p className="text-sm font-bold text-amber-300">{t('mcpConnections.connectSection.tokenMethod.title')}</p>
                   </div>
-                  <p className="text-sm leading-relaxed text-neutral-400">
+                  <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
                     {t('mcpConnections.connectSection.tokenMethod.description')}
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4 md:p-5">
-                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">{t('mcpConnections.connectSection.appAddress.label')}</p>
+                <div className="rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-neutral-50/60 dark:bg-neutral-950/60 p-4 md:p-5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-3">{t('mcpConnections.connectSection.appAddress.label')}</p>
                   <div className="flex items-center gap-2">
-                    <code className="min-w-0 flex-1 break-all rounded-xl bg-neutral-900/80 px-4 py-3 text-xs md:text-sm text-sky-300 font-mono border border-neutral-800">{mcpUrl}</code>
+                    <code className="min-w-0 flex-1 break-all rounded-xl bg-white/80 dark:bg-neutral-900/80 px-4 py-3 text-xs md:text-sm text-sky-300 font-mono border border-neutral-200 dark:border-neutral-800">{mcpUrl}</code>
                     <button
                       onClick={() => copyText(mcpUrl, 'MCP URL')}
-                      className="flex-shrink-0 rounded-xl bg-neutral-800 p-3 text-neutral-300 transition-all hover:bg-neutral-700 active:scale-95 border border-neutral-700 shadow-sm"
+                      className="flex-shrink-0 rounded-xl bg-neutral-200 dark:bg-neutral-800 p-3 text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 active:scale-95 border border-neutral-700 shadow-sm"
                       title={t('mcpConnections.connectSection.appAddress.copyTitle')}
                     >
                       <Copy className="h-5 w-5" />
                     </button>
                   </div>
-                  <p className="mt-3 text-sm text-neutral-500 italic">
+                  <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-500 italic">
                     {t('mcpConnections.connectSection.appAddress.instruction')}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4 md:p-5">
-                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">{t('mcpConnections.connectSection.advancedUrl.label')}</p>
+                <div className="rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-neutral-50/60 dark:bg-neutral-950/60 p-4 md:p-5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-3">{t('mcpConnections.connectSection.advancedUrl.label')}</p>
                   <div className="flex items-center gap-2">
-                    <code className="min-w-0 flex-1 break-all rounded-xl bg-neutral-900/80 px-4 py-3 text-xs md:text-sm text-blue-300 font-mono border border-neutral-800">{oauthMetadataUrl}</code>
+                    <code className="min-w-0 flex-1 break-all rounded-xl bg-white/80 dark:bg-neutral-900/80 px-4 py-3 text-xs md:text-sm text-blue-300 font-mono border border-neutral-200 dark:border-neutral-800">{oauthMetadataUrl}</code>
                     <button
                       onClick={() => copyText(oauthMetadataUrl, 'OAuth metadata URL')}
-                      className="flex-shrink-0 rounded-xl bg-neutral-800 p-3 text-neutral-300 transition-all hover:bg-neutral-700 active:scale-95 border border-neutral-700 shadow-sm"
+                      className="flex-shrink-0 rounded-xl bg-neutral-200 dark:bg-neutral-800 p-3 text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 active:scale-95 border border-neutral-700 shadow-sm"
                       title={t('mcpConnections.connectSection.advancedUrl.copyTitle')}
                     >
                       <Copy className="h-5 w-5" />
                     </button>
                   </div>
-                  <p className="mt-3 text-sm text-neutral-500 italic">
+                  <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-500 italic">
                     {t('mcpConnections.connectSection.advancedUrl.instruction')}
                   </p>
                 </div>
@@ -239,26 +239,26 @@ export function McpConnections() {
                   { title: t('mcpConnections.connectSection.steps.2.title'), desc: t('mcpConnections.connectSection.steps.2.desc') },
                   { title: t('mcpConnections.connectSection.steps.3.title'), desc: t('mcpConnections.connectSection.steps.3.desc') }
                 ].map((step, i) => (
-                  <div key={i} className="rounded-2xl border border-neutral-800/70 bg-neutral-950/40 p-4 relative overflow-hidden group/step">
+                  <div key={i} className="rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-neutral-50/40 dark:bg-neutral-950/40 p-4 relative overflow-hidden group/step">
                     <div className="absolute -right-2 -bottom-2 text-6xl font-display font-black text-neutral-800/10 select-none group-hover/step:text-sky-500/5 transition-colors">{i + 1}</div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1 relative z-10">{step.title}</p>
-                    <p className="text-sm text-neutral-500 relative z-10 leading-relaxed">{step.desc}</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-400 mb-1 relative z-10">{step.title}</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-500 relative z-10 leading-relaxed">{step.desc}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/50 overflow-hidden">
+              <div className="rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 bg-neutral-50/50 dark:bg-neutral-950/50 overflow-hidden">
                 <button
                   onClick={() => setShowJsonSetup(!showJsonSetup)}
                   className="w-full flex items-center justify-between p-4 md:p-5 text-left transition-colors hover:bg-neutral-900/50"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${showJsonSetup ? 'bg-sky-500/20 text-sky-400' : 'bg-neutral-800 text-neutral-500'} transition-colors`}>
+                    <div className={`p-2 rounded-lg ${showJsonSetup ? 'bg-sky-500/20 text-sky-400' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-500'} transition-colors`}>
                       <Plus className={`h-4 w-4 transition-transform duration-300 ${showJsonSetup ? 'rotate-45' : ''}`} />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white tracking-tight">{t('mcpConnections.connectSection.jsonSetup.title')}</h4>
-                      <p className="text-xs text-neutral-500 mt-0.5">{t('mcpConnections.connectSection.jsonSetup.subtitle')}</p>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">{t('mcpConnections.connectSection.jsonSetup.title')}</h4>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-0.5">{t('mcpConnections.connectSection.jsonSetup.subtitle')}</p>
                     </div>
                   </div>
                   {showJsonSetup ? <ChevronUp className="h-5 w-5 text-neutral-600" /> : <ChevronDown className="h-5 w-5 text-neutral-600" />}
@@ -266,46 +266,46 @@ export function McpConnections() {
 
                 {showJsonSetup && (
                   <div className="p-4 md:p-6 pt-0 space-y-6 animate-in slide-in-from-top-4 duration-300">
-                    <div className="h-px bg-neutral-800 mb-6" />
-                    <p className="text-sm leading-relaxed text-neutral-400 italic mb-4">
+                    <div className="h-px bg-neutral-200 dark:bg-neutral-800 mb-6" />
+                    <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 italic mb-4">
                       {t('mcpConnections.connectSection.jsonSetup.instruction')}
                     </p>
                     <div className="grid gap-6 lg:grid-cols-2">
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">{t('mcpConnections.connectSection.jsonSetup.oauthJson')}</p>
+                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.jsonSetup.oauthJson')}</p>
                           <button
                             onClick={() => copyText(projectOAuthJson, 'OAuth JSON')}
-                            className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                            className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
                           >
                             {t('mcpConnections.connectSection.jsonSetup.copyJson')}
                           </button>
                         </div>
                         <div className="relative group/code">
-                          <pre className="overflow-x-auto rounded-xl bg-neutral-950 p-4 text-[11px] md:text-xs text-sky-300 border border-neutral-800 font-mono leading-relaxed shadow-inner">
+                          <pre className="overflow-x-auto rounded-xl bg-neutral-50 dark:bg-neutral-950 p-4 text-[11px] md:text-xs text-sky-300 border border-neutral-200 dark:border-neutral-800 font-mono leading-relaxed shadow-inner">
                             <code>{projectOAuthJson}</code>
                           </pre>
                         </div>
-                        <p className="text-xs text-neutral-500 leading-relaxed">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-500 leading-relaxed">
                           {t('mcpConnections.connectSection.oauthMethod.description')}
                         </p>
                       </div>
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">{t('mcpConnections.connectSection.jsonSetup.tokenJson')}</p>
+                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.jsonSetup.tokenJson')}</p>
                           <button
                             onClick={() => copyText(projectTokenJson, 'Bearer token JSON')}
-                            className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                            className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
                           >
                             {t('mcpConnections.connectSection.jsonSetup.copyJson')}
                           </button>
                         </div>
                         <div className="relative group/code">
-                          <pre className="overflow-x-auto rounded-xl bg-neutral-950 p-4 text-[11px] md:text-xs text-amber-300 border border-neutral-800 font-mono leading-relaxed shadow-inner">
+                          <pre className="overflow-x-auto rounded-xl bg-neutral-50 dark:bg-neutral-950 p-4 text-[11px] md:text-xs text-amber-300 border border-neutral-200 dark:border-neutral-800 font-mono leading-relaxed shadow-inner">
                             <code>{projectTokenJson}</code>
                           </pre>
                         </div>
-                        <p className="text-xs text-neutral-500 leading-relaxed">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-500 leading-relaxed">
                           {t('mcpConnections.connectSection.jsonSetup.tokenInstruction')}
                         </p>
                       </div>
@@ -331,11 +331,11 @@ export function McpConnections() {
               <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
                 <Key className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-bold text-white tracking-tight">{t('mcpConnections.tokens.title')}</h3>
+              <h3 className="text-xl font-bold text-neutral-900 dark:text-white tracking-tight">{t('mcpConnections.tokens.title')}</h3>
             </div>
             <button
               onClick={() => { setShowCreatePat(true); setNewToken(null); }}
-              className="text-xs md:text-sm bg-amber-600 text-white hover:bg-amber-500 px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold shadow-lg shadow-amber-600/10 active:scale-95"
+              className="text-xs md:text-sm bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold shadow-lg shadow-amber-600/10 active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>{t('mcpConnections.tokens.newToken')}</span>
@@ -347,14 +347,14 @@ export function McpConnections() {
               <Shield className="w-12 h-12 text-amber-500" />
             </div>
             <p className="text-sm font-bold text-amber-300 mb-1">{t('mcpConnections.tokens.whenToUse')}</p>
-            <p className="text-sm leading-relaxed text-neutral-400 max-w-2xl">
+            <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 max-w-2xl">
               {t('mcpConnections.tokens.tip')}
             </p>
           </div>
 
           {/* Create PAT form */}
           {showCreatePat && (
-            <div className="p-5 md:p-6 bg-neutral-900/40 border border-neutral-800/60 rounded-2xl space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="p-5 md:p-6 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl space-y-5 animate-in zoom-in-95 duration-200">
               {newToken ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2.5 text-emerald-400 text-sm font-bold bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-xl">
@@ -362,20 +362,20 @@ export function McpConnections() {
                     {t('mcpConnections.toasts.tokenCreated')}
                   </div>
                   <div className="flex items-center gap-3">
-                    <code className="flex-1 bg-neutral-950 text-amber-400 px-4 py-3 rounded-xl text-xs md:text-sm font-mono break-all select-all border border-neutral-800 shadow-inner">
+                    <code className="flex-1 bg-neutral-50 dark:bg-neutral-950 text-amber-400 px-4 py-3 rounded-xl text-xs md:text-sm font-mono break-all select-all border border-neutral-200 dark:border-neutral-800 shadow-inner">
                       {newToken}
                     </code>
                     <button
                       onClick={handleCopy}
-                      className="flex-shrink-0 p-3 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-700 shadow-sm"
+                      className="flex-shrink-0 p-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-700 shadow-sm"
                       title={t('mcpConnections.tokens.card.revokeTitle')}
                     >
-                      {copied ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5 text-neutral-300" />}
+                      {copied ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />}
                     </button>
                   </div>
                   <button
                     onClick={handleCloseNewToken}
-                    className="text-sm font-bold text-neutral-400 hover:text-white transition-colors"
+                    className="text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-white transition-colors"
                   >
                     {t('mcpConnections.tokens.form.done')}
                   </button>
@@ -384,24 +384,24 @@ export function McpConnections() {
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 ml-1">{t('mcpConnections.tokens.form.tokenName')}</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 ml-1">{t('mcpConnections.tokens.form.tokenName')}</label>
                       <input
                         ref={patNameRef}
                         type="text"
                         value={patName}
                         onChange={(e) => setPatName(e.target.value)}
                         placeholder={t('mcpConnections.tokens.form.placeholder')}
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all font-medium"
+                        className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-neutral-900 dark:text-white placeholder-neutral-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all font-medium"
                         maxLength={128}
                         onKeyDown={(e) => { if (e.key === 'Enter' && patName.trim()) handleCreatePat(); }}
                       />
                     </div>
                     <div className="w-full sm:w-48 space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 ml-1">{t('mcpConnections.tokens.form.expiration')}</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 ml-1">{t('mcpConnections.tokens.form.expiration')}</label>
                       <select
                         value={patExpiry}
                         onChange={(e) => setPatExpiry(Number(e.target.value))}
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all font-medium appearance-none cursor-pointer"
+                        className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all font-medium appearance-none cursor-pointer"
                       >
                         {EXPIRY_OPTIONS.map((opt) => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -413,14 +413,14 @@ export function McpConnections() {
                     <button
                       onClick={handleCreatePat}
                       disabled={!patName.trim() || isCreating}
-                      className="flex-1 sm:flex-none text-sm bg-amber-600 text-white hover:bg-amber-500 px-6 py-2.5 rounded-xl transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-amber-600/10 active:scale-95"
+                      className="flex-1 sm:flex-none text-sm bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 px-6 py-2.5 rounded-xl transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-amber-600/10 active:scale-95"
                     >
                       {isCreating && <Loader2 className="w-4 h-4 animate-spin" />}
                       {t('mcpConnections.tokens.form.create')}
                     </button>
                     <button
                       onClick={() => { setShowCreatePat(false); setPatName(''); setPatExpiry(0); }}
-                      className="flex-1 sm:flex-none text-sm font-bold text-neutral-400 hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-neutral-900 border border-neutral-800"
+                      className="flex-1 sm:flex-none text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
                     >
                       {t('mcpConnections.tokens.form.cancel')}
                     </button>
@@ -434,33 +434,33 @@ export function McpConnections() {
           <div className="grid gap-4">
             {isLoading ? (
               [1, 2].map((i) => (
-                <div key={i} className="h-24 rounded-2xl bg-neutral-900/40 border border-neutral-800/60 animate-pulse" />
+                <div key={i} className="h-24 rounded-2xl bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 animate-pulse" />
               ))
             ) : tokens.length === 0 ? (
-              <div className="py-16 border-2 border-dashed border-neutral-800/50 rounded-[2.5rem] text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/10 backdrop-blur-sm">
-                <div className="p-4 rounded-full bg-neutral-900 border border-neutral-800">
+              <div className="py-16 border-2 border-dashed border-neutral-200/50 dark:border-neutral-800/50 rounded-[2.5rem] text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/10 dark:bg-neutral-900/10 backdrop-blur-sm">
+                <div className="p-4 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                   <Key className="w-8 h-8 text-neutral-700" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-neutral-400 tracking-tight">{t('mcpConnections.tokens.empty.title')}</p>
-                  <p className="text-sm max-w-xs mx-auto text-neutral-500 mt-1">{t('mcpConnections.tokens.empty.desc')}</p>
+                  <p className="text-lg font-bold text-neutral-600 dark:text-neutral-400 tracking-tight">{t('mcpConnections.tokens.empty.title')}</p>
+                  <p className="text-sm max-w-xs mx-auto text-neutral-500 dark:text-neutral-500 mt-1">{t('mcpConnections.tokens.empty.desc')}</p>
                 </div>
               </div>
             ) : (
               tokens.map((token) => (
                 <div
                   key={token.id}
-                  className="w-full bg-neutral-900/20 backdrop-blur-md border border-neutral-800/60 hover:border-amber-500/30 hover:bg-neutral-900/40 p-4 md:p-5 rounded-2xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="w-full bg-white/20 dark:bg-neutral-900/20 backdrop-blur-md border border-neutral-200/60 dark:border-neutral-800/60 hover:border-amber-500/30 hover:bg-neutral-900/40 p-4 md:p-5 rounded-2xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-4 overflow-hidden">
                     <div className="flex-shrink-0 p-3 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover/card:scale-110 transition-transform">
                       <Key className="w-5 h-5" />
                     </div>
                     <div className="overflow-hidden space-y-1">
-                      <h4 className="font-bold text-white text-base truncate tracking-tight">{token.name}</h4>
+                      <h4 className="font-bold text-neutral-900 dark:text-white text-base truncate tracking-tight">{token.name}</h4>
                       <div className="flex flex-wrap items-center gap-y-1 gap-x-3">
-                        <code className="text-[10px] font-mono text-neutral-400 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800">{token.tokenPrefix}...</code>
-                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
+                        <code className="text-[10px] font-mono text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800">{token.tokenPrefix}...</code>
+                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500 dark:text-neutral-500">
                           <div className="w-1 h-1 rounded-full bg-neutral-700" />
                           <span>{t('mcpConnections.tokens.card.created', { date: formatDate(token.createdAt) })}</span>
                         </div>
@@ -471,7 +471,7 @@ export function McpConnections() {
                           </div>
                         )}
                         {token.expiresAt && (
-                          <div className={`flex items-center gap-1.5 text-[10px] font-bold ${token.expired ? 'text-red-400' : 'text-neutral-500'}`}>
+                          <div className={`flex items-center gap-1.5 text-[10px] font-bold ${token.expired ? 'text-red-400' : 'text-neutral-500 dark:text-neutral-500'}`}>
                             <div className={`w-1 h-1 rounded-full ${token.expired ? 'bg-red-400' : 'bg-neutral-600'}`} />
                             <span>{token.expired ? t('mcpConnections.tokens.card.expired') : t('mcpConnections.tokens.card.expires', { date: formatDate(token.expiresAt) })}</span>
                           </div>
@@ -487,7 +487,7 @@ export function McpConnections() {
                   </div>
                   <button
                     onClick={() => setRevokeTarget({ type: 'token', id: token.id, name: token.name })}
-                    className="flex-shrink-0 self-end sm:self-center p-2.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hover:rotate-12"
+                    className="flex-shrink-0 self-end sm:self-center p-2.5 text-neutral-500 dark:text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hover:rotate-12"
                     title={t('mcpConnections.tokens.card.revokeTitle')}
                   >
                     <Trash2 className="w-5 h-5" />
@@ -505,7 +505,7 @@ export function McpConnections() {
               <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20">
                 <Shield className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-bold text-white tracking-tight">{t('mcpConnections.oauth.title')}</h3>
+              <h3 className="text-xl font-bold text-neutral-900 dark:text-white tracking-tight">{t('mcpConnections.oauth.title')}</h3>
             </div>
           </div>
 
@@ -514,7 +514,7 @@ export function McpConnections() {
               <CheckCircle className="w-12 h-12 text-blue-500" />
             </div>
             <p className="text-sm font-bold text-blue-300 mb-1">{t('mcpConnections.oauth.recommended')}</p>
-            <p className="text-sm leading-relaxed text-neutral-400 max-w-2xl">
+            <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 max-w-2xl">
               {t('mcpConnections.oauth.tip')}
             </p>
           </div>
@@ -522,37 +522,37 @@ export function McpConnections() {
           <div className="grid gap-4">
             {isLoading ? (
               [1, 2].map((i) => (
-                <div key={i} className="h-24 rounded-2xl bg-neutral-900/40 border border-neutral-800/60 animate-pulse" />
+                <div key={i} className="h-24 rounded-2xl bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 animate-pulse" />
               ))
             ) : clients.length === 0 ? (
-              <div className="py-16 border-2 border-dashed border-neutral-800/50 rounded-[2.5rem] text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/10 backdrop-blur-sm">
-                <div className="p-4 rounded-full bg-neutral-900 border border-neutral-800">
+              <div className="py-16 border-2 border-dashed border-neutral-200/50 dark:border-neutral-800/50 rounded-[2.5rem] text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/10 dark:bg-neutral-900/10 backdrop-blur-sm">
+                <div className="p-4 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                   <Shield className="w-8 h-8 text-neutral-700" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-neutral-400 tracking-tight">{t('mcpConnections.oauth.empty.title')}</p>
-                  <p className="text-sm max-w-xs mx-auto text-neutral-500 mt-1">{t('mcpConnections.oauth.empty.desc')}</p>
+                  <p className="text-lg font-bold text-neutral-600 dark:text-neutral-400 tracking-tight">{t('mcpConnections.oauth.empty.title')}</p>
+                  <p className="text-sm max-w-xs mx-auto text-neutral-500 dark:text-neutral-500 mt-1">{t('mcpConnections.oauth.empty.desc')}</p>
                 </div>
               </div>
             ) : (
               clients.map((client) => (
                 <div
                   key={client.id}
-                  className="w-full bg-neutral-900/20 backdrop-blur-md border border-neutral-800/60 hover:border-blue-500/30 hover:bg-neutral-900/40 p-4 md:p-5 rounded-2xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="w-full bg-white/20 dark:bg-neutral-900/20 backdrop-blur-md border border-neutral-200/60 dark:border-neutral-800/60 hover:border-blue-500/30 hover:bg-neutral-900/40 p-4 md:p-5 rounded-2xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-4 overflow-hidden">
                     <div className="flex-shrink-0 p-3 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 group-hover/card:scale-110 transition-transform">
                       <Shield className="w-5 h-5" />
                     </div>
                     <div className="overflow-hidden space-y-1">
-                      <h4 className="font-bold text-white text-base truncate tracking-tight">
+                      <h4 className="font-bold text-neutral-900 dark:text-white text-base truncate tracking-tight">
                         {client.clientName || client.clientId}
                       </h4>
                       <div className="flex flex-wrap items-center gap-y-1 gap-x-3">
                         {client.clientName && (
-                          <code className="text-[10px] font-mono text-neutral-400 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800">{client.clientId.slice(0, 12)}...</code>
+                          <code className="text-[10px] font-mono text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800">{client.clientId.slice(0, 12)}...</code>
                         )}
-                        <div className={`flex items-center gap-1.5 text-[10px] font-bold ${client.activeTokens > 0 ? 'text-emerald-400' : 'text-neutral-500'}`}>
+                        <div className={`flex items-center gap-1.5 text-[10px] font-bold ${client.activeTokens > 0 ? 'text-emerald-400' : 'text-neutral-500 dark:text-neutral-500'}`}>
                           <div className={`w-1 h-1 rounded-full ${client.activeTokens > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`} />
                           <span>
                             {client.activeTokens > 0
@@ -560,7 +560,7 @@ export function McpConnections() {
                               : t('mcpConnections.oauth.card.noTokens')}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
+                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500 dark:text-neutral-500">
                           <div className="w-1 h-1 rounded-full bg-neutral-700" />
                           <span>{t('mcpConnections.oauth.card.registered', { date: formatDate(client.createdAt) })}</span>
                         </div>
@@ -569,7 +569,7 @@ export function McpConnections() {
                   </div>
                   <button
                     onClick={() => setRevokeTarget({ type: 'client', clientId: client.clientId, name: client.clientName || client.clientId })}
-                    className="flex-shrink-0 self-end sm:self-center p-2.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hover:-rotate-12"
+                    className="flex-shrink-0 self-end sm:self-center p-2.5 text-neutral-500 dark:text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hover:-rotate-12"
                     title={t('mcpConnections.oauth.card.revokeTitle')}
                   >
                     <Unplug className="w-5 h-5" />

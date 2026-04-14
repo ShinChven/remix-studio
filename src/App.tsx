@@ -12,6 +12,7 @@ import { Dashboard } from './components/Dashboard';
 import { LibraryRoute } from './components/LibraryRoute';
 import { ProjectRoute } from './components/ProjectRoute';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useTheme } from './contexts/ThemeContext';
 import { Login } from './pages/Login';
 import { AdminUsers } from './pages/AdminUsers';
 import { AdminInvites } from './pages/AdminInvites';
@@ -36,7 +37,7 @@ import { McpConnections } from './pages/McpConnections.tsx';
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
   
-  if (isLoading) return <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-500">Loading...</div>;
+  if (isLoading) return <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center text-zinc-500">Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
   if (adminOnly && user.role !== 'admin') return <Navigate to="/" replace />;
   
@@ -44,6 +45,7 @@ function ProtectedRoute({ children, adminOnly = false }: { children: React.React
 }
 
 export default function App() {
+  const { theme } = useTheme();
   return (
     <AuthProvider>
       <ApiKeyCheck>
@@ -81,7 +83,7 @@ export default function App() {
             </Route>
           </Routes>
         </BrowserRouter>
-        <Toaster position="bottom-right" theme="dark" />
+        <Toaster position="bottom-right" theme={theme === 'system' ? 'system' : theme} />
       </ApiKeyCheck>
     </AuthProvider>
   );

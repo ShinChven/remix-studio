@@ -27,8 +27,8 @@ const accentClasses: Record<AccentColor, string> = {
 };
 
 const expandedClasses: Record<AccentColor, string> = {
-  blue: 'border-blue-500/50 bg-neutral-900/50 rounded-b-none',
-  emerald: 'border-emerald-500/50 bg-neutral-900/50 rounded-b-none',
+  blue: 'border-blue-500/50 bg-white/50 dark:bg-neutral-900/50 rounded-b-none',
+  emerald: 'border-emerald-500/50 bg-white/50 dark:bg-neutral-900/50 rounded-b-none',
 };
 
 const selectedTextClasses: Record<AccentColor, string> = {
@@ -65,12 +65,12 @@ export function JobListItem({
     ? accentClasses[accentColor]
     : isExpanded
       ? expandedClasses[accentColor]
-      : `border-neutral-800 hover:border-neutral-700 ${borderClassName}`.trim();
+      : `border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 ${borderClassName}`.trim();
 
   return (
-    <div className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300 border-b border-neutral-800/50">
+    <div className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300 border-b border-neutral-200/50 dark:border-neutral-800/50">
       <div
-        className={`bg-neutral-950/50 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between transition-all cursor-pointer group/task p-3 lg:py-2.5 rounded-none border-0 ${headerClassName}`}
+        className={`bg-neutral-50/50 dark:bg-neutral-950/50 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between transition-all cursor-pointer group/task p-3 lg:py-2.5 rounded-none border-0 ${headerClassName}`}
         onClick={() => onToggleExpand(job.id)}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -79,7 +79,7 @@ export function JobListItem({
               e.stopPropagation();
               onToggleSelect(job.id);
             }}
-            className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isSelected ? selectedTextClasses[accentColor] : 'text-neutral-500 hover:text-white'}`}
+            className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isSelected ? selectedTextClasses[accentColor] : 'text-neutral-500 dark:text-neutral-500 hover:text-white'}`}
           >
             {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
           </button>
@@ -88,7 +88,7 @@ export function JobListItem({
             <ChevronDown className="w-3.5 h-3.5 text-neutral-600" />
           </div>
 
-          <span className={`text-xs font-medium truncate ${isExpanded ? 'text-white' : 'text-neutral-400'}`} title={job.prompt}>
+          <span className={`text-xs font-medium truncate ${isExpanded ? 'text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-400'}`} title={job.prompt}>
             {job.prompt}
           </span>
         </div>
@@ -98,11 +98,11 @@ export function JobListItem({
             <div className="flex items-center lg:hidden">
               <InfoChip className="max-w-[9rem] sm:max-w-none gap-1">
                 {providerName && (
-                  <span className="truncate leading-none text-neutral-500">
+                  <span className="truncate leading-none text-neutral-500 dark:text-neutral-500">
                     {providerName}
                   </span>
                 )}
-                {providerName && modelName && <span className="w-1 h-1 rounded-full bg-neutral-800 flex-shrink-0" />}
+                {providerName && modelName && <span className="w-1 h-1 rounded-full bg-neutral-200 dark:bg-neutral-800 flex-shrink-0" />}
                 {modelName && (
                   <span className={`truncate leading-none ${providerTextClasses[accentColor]}`}>
                     {modelName}
@@ -117,11 +117,11 @@ export function JobListItem({
               <div className="hidden lg:flex items-center">
                 <InfoChip className="max-w-none gap-1">
                   {providerName && (
-                    <span className="truncate leading-none text-neutral-500">
+                    <span className="truncate leading-none text-neutral-500 dark:text-neutral-500">
                       {providerName}
                     </span>
                   )}
-                  {providerName && modelName && <span className="w-1 h-1 rounded-full bg-neutral-800 flex-shrink-0" />}
+                  {providerName && modelName && <span className="w-1 h-1 rounded-full bg-neutral-200 dark:bg-neutral-800 flex-shrink-0" />}
                   {modelName && (
                     <span className={`truncate leading-none ${providerTextClasses[accentColor]}`}>
                       {modelName}
@@ -141,7 +141,7 @@ export function JobListItem({
       </div>
 
       {isExpanded && expandedContent && (
-        <div className={`bg-neutral-900/30 border-b p-4 space-y-4 animate-in slide-in-from-top-1 duration-200 border-t border-neutral-800/50 ${expandedBorderClasses[accentColor]}`}>
+        <div className={`bg-white/30 dark:bg-neutral-900/30 border-b p-4 space-y-4 animate-in slide-in-from-top-1 duration-200 border-t border-neutral-200/50 dark:border-neutral-800/50 ${expandedBorderClasses[accentColor]}`}>
           {expandedContent}
         </div>
       )}

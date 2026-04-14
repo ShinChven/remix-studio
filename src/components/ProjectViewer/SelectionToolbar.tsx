@@ -39,7 +39,7 @@ interface SelectionToolbarProps {
 
 /** A thin vertical divider — hidden on small screens so it never orphans on a wrapped line. */
 function Divider() {
-  return <div className="hidden lg:block h-4 w-px bg-neutral-800 flex-shrink-0" />;
+  return <div className="hidden lg:block h-4 w-px bg-neutral-200 dark:bg-neutral-800 flex-shrink-0" />;
 }
 
 export function SelectionToolbar({
@@ -61,7 +61,7 @@ export function SelectionToolbar({
 
   return (
     <div
-      className={`sticky top-0 z-20 flex justify-between bg-neutral-950/90 backdrop-blur-md border border-neutral-800 gap-2 sm:gap-3 shadow-lg shadow-black/20 p-3 rounded-none border-x-0 border-t-0 ${
+      className={`sticky top-0 z-20 flex justify-between bg-neutral-50/90 dark:bg-neutral-950/90 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 gap-2 sm:gap-3 shadow-lg shadow-black/20 p-3 rounded-none border-x-0 border-t-0 ${
         mobileSingleLine ? 'flex-row items-center' : 'flex-col lg:flex-row lg:items-center'
       }`}
     >
@@ -81,7 +81,7 @@ export function SelectionToolbar({
           onClick={onToggleSelectAll}
           title={t('projectViewer.common.selectAll')}
           aria-label={t('projectViewer.common.selectAll')}
-          className="flex items-center justify-start gap-3 min-h-8 p-1 rounded-lg text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors flex-shrink-0"
+          className="flex items-center justify-start gap-3 min-h-8 p-1 rounded-lg text-[10px] font-bold text-neutral-600 dark:text-neutral-400 hover:text-white uppercase tracking-widest transition-colors flex-shrink-0"
         >
           {selectedCount === totalCount && totalCount > 0 ? (
             <CheckSquare className={`w-4 h-4 sm:w-4 sm:h-4 ${checkIconClass}`} />
@@ -91,14 +91,14 @@ export function SelectionToolbar({
           <span className="hidden sm:inline whitespace-nowrap">{t('projectViewer.common.selectAll')}</span>
         </button>
 
-        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest whitespace-nowrap flex-shrink-0 sm:hidden">
+        <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest whitespace-nowrap flex-shrink-0 sm:hidden">
           {selectedCount > 0 ? `${selectedCount}/${totalCount}` : `${totalCount}`}
         </span>
 
         {selectedCount > 0 && (
           <>
             <Divider />
-            <span className="hidden sm:inline text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex-shrink-0 whitespace-nowrap">
+            <span className="hidden sm:inline text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest flex-shrink-0 whitespace-nowrap">
               {t('projectViewer.common.selectedCount', { count: selectedCount })}
             </span>
             <div
@@ -131,7 +131,7 @@ export function SelectionToolbar({
           className={`flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ${
             mobileSingleLine
               ? 'ml-auto flex-nowrap'
-              : 'ml-auto flex-wrap w-full pt-2 border-t border-neutral-800/50 lg:w-auto lg:pt-0 lg:border-none'
+              : 'ml-auto flex-wrap w-full pt-2 border-t border-neutral-200/50 dark:border-neutral-800/50 lg:w-auto lg:pt-0 lg:border-none'
           }`}
         >
           {rightActions}

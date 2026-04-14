@@ -230,23 +230,23 @@ export function Exports() {
         ) : (
           <a
             href="/api/auth/google-drive/connect"
-            className="flex items-center justify-center gap-2 bg-neutral-900/50 border border-neutral-800/50 px-4 py-2.5 rounded-xl hover:border-neutral-700 transition"
+            className="flex items-center justify-center gap-2 bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-neutral-800/50 px-4 py-2.5 rounded-xl hover:border-neutral-700 transition"
           >
-            <HardDrive className="h-4 w-4 text-neutral-500 flex-shrink-0" />
-            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest text-center">{t('exports.drive.connect')}</span>
+            <HardDrive className="h-4 w-4 text-neutral-500 dark:text-neutral-500 flex-shrink-0" />
+            <span className="text-[10px] font-black text-neutral-600 dark:text-neutral-400 uppercase tracking-widest text-center">{t('exports.drive.connect')}</span>
           </a>
         )}
 
         {/* Database stats */}
-        <div className="bg-neutral-900/50 border border-neutral-800/50 px-4 py-2.5 rounded-xl flex items-center justify-between sm:justify-start gap-4">
+        <div className="bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-neutral-800/50 px-4 py-2.5 rounded-xl flex items-center justify-between sm:justify-start gap-4">
           <div className="flex flex-col">
-            <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">{t('exports.stats.database')}</p>
-            <p className="text-xs font-bold text-white">{exports.length} {t('exports.stats.total')}</p>
+            <p className="text-[8px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">{t('exports.stats.database')}</p>
+            <p className="text-xs font-bold text-neutral-900 dark:text-white">{exports.length} {t('exports.stats.total')}</p>
           </div>
-          <div className="w-px h-6 bg-neutral-800" />
+          <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-800" />
           <div className="flex flex-col">
             <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest">{t('exports.stats.inProgress')}</p>
-            <p className="text-xs font-bold text-white">
+            <p className="text-xs font-bold text-neutral-900 dark:text-white">
               {exports.filter(t => t.status === 'pending' || t.status === 'processing').length} {t('exports.stats.active')}
             </p>
           </div>
@@ -254,11 +254,11 @@ export function Exports() {
       </div>
 
       {!loading && exports.length === 0 ? (
-        <div className="py-32 text-center text-neutral-600 border border-dashed border-neutral-900 rounded-[32px] bg-neutral-950/20">
+        <div className="py-32 text-center text-neutral-600 border border-dashed border-neutral-900 rounded-[32px] bg-neutral-50/20 dark:bg-neutral-950/20">
           <List className="w-12 h-12 mx-auto opacity-10 mb-4" />
           <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">{t('exports.empty.title')}</div>
           <div className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-8 max-w-[200px] mx-auto leading-relaxed">{t('exports.empty.description')}</div>
-          <Link to="/projects" className="px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-neutral-800 active:scale-95">
+          <Link to="/projects" className="px-6 py-2.5 bg-white dark:bg-neutral-900 hover:bg-neutral-800 text-neutral-900 dark:text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-neutral-200 dark:border-neutral-800 active:scale-95">
             {t('exports.empty.viewProjects')}
           </Link>
         </div>
@@ -274,7 +274,7 @@ export function Exports() {
             return (
               <div
                 key={task.id}
-                className={`bg-neutral-950/50 p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all group/task ${task.status === 'failed' ? 'border-red-900/30 bg-red-950/5' : 'border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50'}`}
+                className={`bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all group/task ${task.status === 'failed' ? 'border-red-900/30 bg-red-950/5' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50'}`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   {/* Status Indicator Bar */}
@@ -293,32 +293,32 @@ export function Exports() {
                         {task.projectName}
                         <ArrowRight className="w-2.5 h-2.5 group-hover/project:translate-x-0.5 transition-transform" />
                       </Link>
-                      <span className="text-[11px] sm:text-[10px] font-bold text-white sm:text-neutral-400 truncate tracking-tight">
+                      <span className="text-[11px] sm:text-[10px] font-bold text-neutral-900 dark:text-white sm:text-neutral-400 truncate tracking-tight">
                         {task.packageName || `Archive #${task.id.slice(0, 8)}`}
                       </span>
                     </div>
 
                     {/* Context Info */}
                     <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap mt-1">
-                      <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
+                      <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">
                         <Clock className="w-3 h-3" />
                         {new Date(task.createdAt).toLocaleString()}
                       </div>
                       {task.status === 'completed' && task.size ? (
-                        <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
+                        <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">
                           <HardDrive className="w-3 h-3" />
                           {formatSize(task.size)}
                         </div>
                       ) : null}
                       {task.status === 'completed' ? (
-                        <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
+                        <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">
                           <List className="w-3 h-3" />
                           {t('exports.card.files', { count: task.total })}
                         </div>
                       ) : null}
                       {(task.status === 'processing' || task.status === 'pending') && (
                         <div className="flex items-center gap-2 group-hover/task:translate-x-1 transition-transform">
-                          <div className="w-20 sm:w-24 h-1 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800/50">
+                          <div className="w-20 sm:w-24 h-1 bg-white dark:bg-neutral-900 rounded-full overflow-hidden border border-neutral-200/50 dark:border-neutral-800/50">
                             <div
                               className="h-full bg-blue-500 transition-all duration-500"
                               style={{ width: task.status === 'pending' ? '0%' : `${(task.current / task.total) * 100}%` }}
@@ -333,7 +333,7 @@ export function Exports() {
                       {/* Drive upload progress */}
                       {isDriveUploading && (
                         <div className="flex items-center gap-2">
-                          <div className="w-16 sm:w-20 h-1 bg-neutral-900 rounded-full overflow-hidden border border-emerald-900/40">
+                          <div className="w-16 sm:w-20 h-1 bg-white dark:bg-neutral-900 rounded-full overflow-hidden border border-emerald-900/40">
                             <div
                               className="h-full bg-emerald-500 transition-all duration-500"
                               style={{ width: driveDelivery?.status === 'pending' ? '5%' : `${driveProgress}%` }}
@@ -364,7 +364,7 @@ export function Exports() {
                       </div>
                     )}
                     {task.status === 'pending' && (
-                      <div className="flex items-center gap-1.5 text-neutral-500 text-[9px] font-black uppercase tracking-widest bg-neutral-900 px-2.5 py-1.5 rounded-lg border border-neutral-800">
+                      <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-500 text-[9px] font-black uppercase tracking-widest bg-white dark:bg-neutral-900 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800">
                         <Loader2 className="w-3.5 h-3.5 animate-pulse" />
                         {t('exports.status.queued')}
                       </div>
@@ -400,7 +400,7 @@ export function Exports() {
                     )}
                     <button
                       onClick={() => handleDelete(task.projectId, task.id)}
-                      className="p-2 sm:p-1.5 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90 bg-neutral-800/50 sm:bg-transparent"
+                      className="p-2 sm:p-1.5 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90 bg-neutral-200/50 dark:bg-neutral-800/50 sm:bg-transparent"
                       title={t('exports.card.delete')}
                     >
                       <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
@@ -420,7 +420,7 @@ export function Exports() {
               <button
                 onClick={handleLoadMore}
                 disabled={loadingMore}
-                className="group w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-3 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all border border-neutral-800 hover:border-neutral-700 active:scale-95 disabled:opacity-50"
+                className="group w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-3 bg-white dark:bg-neutral-900 hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all border border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 active:scale-95 disabled:opacity-50"
               >
                 {loadingMore ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

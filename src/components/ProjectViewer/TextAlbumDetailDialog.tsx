@@ -89,8 +89,8 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
               <FileText className="w-5 h-5 text-blue-500" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-bold text-white tracking-tight">{t('projectViewer.textDetail.title')}</h3>
-              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">
+              <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">{t('projectViewer.textDetail.title')}</h3>
+              <p className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest mt-0.5">
                 {t('projectViewer.textDetail.itemIndex', { index: (currentIndex + 1).toString().padStart(2, '0') })}
                 {hasMultipleItems ? ` / ${items.length.toString().padStart(2, '0')}` : ''}
               </p>
@@ -118,7 +118,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
             )}
             <button
               onClick={onClose}
-              className="p-2 text-neutral-500 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+              className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-white/10 rounded-xl transition-all"
               aria-label={t('projectViewer.textDetail.closeAria')}
             >
               <X className="w-5 h-5" />
@@ -127,16 +127,16 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
         </div>
 
         <div className="grid flex-1 min-h-0 grid-cols-1 lg:grid-cols-[minmax(280px,34vw)_1fr]">
-          <section className="min-h-0 border-b border-white/10 bg-neutral-950/60 lg:border-b-0 lg:border-r">
+          <section className="min-h-0 border-b border-white/10 bg-neutral-50/60 dark:bg-neutral-950/60 lg:border-b-0 lg:border-r">
             <div className="flex h-full flex-col">
-              <div className="px-4 md:px-5 py-4 border-b border-neutral-800 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-neutral-300">
+              <div className="px-4 md:px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
                   <Sparkles className="w-4 h-4 text-blue-400" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">{t('projectViewer.common.prompt')}</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-500">{t('projectViewer.common.prompt')}</span>
                 </div>
                 <button
                   onClick={() => handleCopy(item.prompt, t('projectViewer.common.prompt'))}
-                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2 shrink-0"
+                  className="px-3 py-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2 shrink-0"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   {t('projectViewer.common.copy')}
@@ -145,9 +145,9 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
               <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6">
                 {referenceImages.length > 0 && (
                   <div className="mb-6">
-                    <div className="mb-3 flex items-center gap-2 text-neutral-300">
+                    <div className="mb-3 flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
                       <FileImage className="w-4 h-4 text-blue-400" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">
+                      <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-500">
                         {t('projectViewer.textDetail.referenceImages', { count: referenceImages.length })}
                       </span>
                     </div>
@@ -157,7 +157,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
                           key={`${item.id}-ref-${idx}`}
                           type="button"
                           onClick={() => setLightboxData({ images: referenceImages.map(imageDisplayUrl), index: idx })}
-                          className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900"
+                          className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
                         >
                           <img
                             src={imageDisplayUrl(src)}
@@ -182,15 +182,15 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
 
           <section className="min-h-0 bg-black/20">
             <div className="flex h-full flex-col">
-              <div className="px-4 md:px-5 py-4 border-b border-neutral-800 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-neutral-300">
+              <div className="px-4 md:px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
                   <FileText className="w-4 h-4 text-blue-400" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">{t('projectViewer.common.generatedText')}</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-500">{t('projectViewer.common.generatedText')}</span>
                 </div>
                 <button
                   onClick={() => handleCopy(item.textContent || '', t('projectViewer.common.generatedText'))}
                   disabled={!item.textContent}
-                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2 shrink-0"
+                  className="px-3 py-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-600 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2 shrink-0"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   {t('projectViewer.common.copy')}
