@@ -75,7 +75,7 @@ export function configureAuth(userRepository: UserRepository) {
 }
 
 export function signToken(payload: JwtPayload): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: '24h' });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
 }
 
 export function verifyToken(token: string): JwtPayload {
