@@ -1,5 +1,14 @@
 # Remix Studio
 
+[![Self-Hosted](https://img.shields.io/badge/self--hosted-ready-111111?style=flat-square)](./README.md)
+[![Multimodal](https://img.shields.io/badge/AI-multimodal-0f766e?style=flat-square)](./README.md)
+[![MCP](https://img.shields.io/badge/MCP-supported-2563eb?style=flat-square)](./README.md#mcp-support)
+[![React 19](https://img.shields.io/badge/React-19-149eca?style=flat-square)](./README.md#architecture-at-a-glance)
+[![Hono](https://img.shields.io/badge/Hono-Node.js-e36002?style=flat-square)](./README.md#architecture-at-a-glance)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Prisma-336791?style=flat-square)](./README.md#architecture-at-a-glance)
+[![S3 Compatible](https://img.shields.io/badge/Storage-S3%20compatible-16a34a?style=flat-square)](./README.md#deployment)
+[![i18n](https://img.shields.io/badge/i18n-English%20%7C%20%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%20%7C%20%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87%20%7C%20%E6%97%A5%E6%9C%AC%E8%AA%9E%20%7C%20%ED%95%9C%EA%B5%AD%EC%96%B4%20%7C%20Fran%C3%A7ais-7c3aed?style=flat-square)](./README.md#what-remix-studio-does)
+
 Remix Studio is a self-hosted multimodal AI workspace for managing text, image, and video generation workflows in one place, with reusable prompt and reference libraries, provider management, background job queues, asset storage, and export tools built into a single web app. It is ready for cloud hosting with S3-compatible storage support, and also includes MCP access for prompt and library operations, so clients like Claude and Codex can help batch-create and organize content around your generation workflows while generation itself continues to run through the app.
 
 ![Remix Studio screenshot](assets/screenshot.jpg)
@@ -13,6 +22,7 @@ Remix Studio is a self-hosted multimodal AI workspace for managing text, image, 
 - Review outputs in-app and export finished assets as ZIP archives
 - Store generated assets in S3-compatible storage such as AWS S3 or MinIO
 - Support authenticated access with admin controls, 2FA, and passkeys
+- Provide a localized UI with built-in i18n support for English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French
 - Expose MCP tools for prompt and library operations
 
 ## Supported Workflows
@@ -38,6 +48,7 @@ These are the built-in model profiles currently included in the app.
 | **RunningHub** | - | `nano banana 2` | `Seedance 2.0 Ref` |
 | **BytePlus** | - | `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I` | `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` |
 | **Kling AI** | - | `Kling Image O1`, `Kling V3 Omni`, `Kling V3 Standard`, `Kling V2.1 Standard`, `Kling V2 Standard`, `Kling V1.5 Standard`, `Kling V1 Standard` | `Kling Video O1`, `Kling V3 Omni Video` |
+| **Replicate** | - | `Flux 2 Pro`, `Flux 2 Flex`, `Flux 2 Max` | `Seedance 2.0 Fast`, `Seedance 2.0` |
 
 ## MCP Support
 
