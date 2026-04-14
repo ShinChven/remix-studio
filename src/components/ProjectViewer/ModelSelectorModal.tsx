@@ -102,7 +102,9 @@ export function ModelSelectorModal({
                   </div>
                   <div>
                     <h4 className="text-xs font-black text-white uppercase tracking-wider">{provider.name}</h4>
-                    <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">{provider.type}</span>
+                    {provider.name.toLowerCase().replace(/\s/g, '') !== provider.type.toLowerCase().replace(/\s/g, '') && (
+                      <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">{provider.type}</span>
+                    )}
                   </div>
                 </div>
 
@@ -121,9 +123,6 @@ export function ModelSelectorModal({
                       >
                         <div className="relative z-10 flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className={`text-[9px] font-black uppercase tracking-widest mb-0.5 truncate transition-colors ${isSelected ? 'text-blue-400' : 'text-neutral-500'}`}>
-                              {model.generatorId}
-                            </div>
                             <div className={`text-sm font-bold truncate tracking-tight transition-colors ${isSelected ? 'text-blue-50' : 'text-neutral-300'}`}>
                               {model.name}
                             </div>
@@ -134,6 +133,7 @@ export function ModelSelectorModal({
                             </div>
                           )}
                         </div>
+
                         
                         {/* Hover/Selected decorators */}
                         <div className={`absolute inset-0 bg-gradient-to-br transition-all duration-500 pointer-events-none ${
