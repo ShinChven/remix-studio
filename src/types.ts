@@ -631,6 +631,19 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         sounds: ['on', 'off'],
       },
     },
+    {
+      id: 'replicate-seedance-2-0-video',
+      name: 'Seedance 2.0',
+      generatorId: 'Replicate',
+      modelId: 'bytedance/seedance-2.0',
+      category: 'video',
+      options: {
+        aspectRatios: ['adaptive', '16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+        resolutions: ['480p', '720p'],
+        durations: [5, 7, 8, 10, 15, -1],
+        sounds: ['on', 'off'],
+      },
+    },
   ],
 };
 

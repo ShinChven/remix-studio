@@ -10,6 +10,7 @@ export interface VideoGenerateRequest {
   refImageUrls?: string[];    // public/presigned URLs (for providers that require URL refs, e.g. Grok)
   refVideoUrls?: string[];
   refAudioUrls?: string[];
+  seed?: number;
 }
 
 export type VideoGenerateResult =

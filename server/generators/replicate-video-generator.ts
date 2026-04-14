@@ -146,6 +146,7 @@ export class ReplicateVideoGenerator extends VideoGenerator {
     if (typeof req.duration === 'number') input.duration = req.duration;
     if (req.resolution) input.resolution = req.resolution;
     if (req.aspectRatio) input.aspect_ratio = req.aspectRatio;
+    if (typeof req.seed === 'number') input.seed = req.seed;
 
     const imageRefs = this.resolveImageReferences(req);
     if (imageRefs.length === 1) {
