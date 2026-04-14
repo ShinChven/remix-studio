@@ -81,7 +81,7 @@ export function SelectionToolbar({
           onClick={onToggleSelectAll}
           title={t('projectViewer.common.selectAll')}
           aria-label={t('projectViewer.common.selectAll')}
-          className="flex items-center justify-center gap-1.5 sm:gap-2 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 sm:py-1 rounded-lg hover:bg-neutral-800 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors flex-shrink-0"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 min-h-8 min-w-8 px-2 sm:pl-1 sm:pr-3 py-1.5 sm:py-1 rounded-lg text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors flex-shrink-0"
         >
           {selectedCount === totalCount && totalCount > 0 ? (
             <CheckSquare className={`w-4 h-4 sm:w-4 sm:h-4 ${checkIconClass}`} />

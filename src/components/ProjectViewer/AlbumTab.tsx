@@ -84,42 +84,45 @@ export function AlbumTab({
 
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         {albumItems.length > 0 && (
           <SelectionToolbar
             totalCount={albumItems.length}
             selectedCount={selectedAlbumIds.size}
             onToggleSelectAll={toggleSelectAllAlbum}
+            mobileSingleLine
             mobileActionsRight
             prefix={
               <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                 <Layers className="w-4 h-4 text-blue-500" />
-                {t('projectViewer.album.itemsCount', { count: albumItems.length })}
-                <span className="mx-1 text-neutral-800">·</span>
                 <span className="text-blue-500/80">
                   {((albumItems || []).reduce((acc, item) => acc + (item.size || 0), 0) / (1024 * 1024)).toFixed(2)} MB
                 </span>
               </div>
             }
-            selectionActions={
+            rightActions={
               <>
                 <button
-                  onClick={() => openExportDialog(false)}
-                  title={t('projectViewer.album.exportSelected')}
-                  aria-label={t('projectViewer.album.exportSelected')}
+                  onClick={() => openExportDialog(selectedAlbumIds.size === 0)}
+                  title={selectedAlbumIds.size > 0 ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
+                  aria-label={selectedAlbumIds.size > 0 ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
                   className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
                 >
                   <Download className="w-3 h-3" />
-                  <span className="hidden sm:inline">{t('projectViewer.album.exportSelected')}</span>
+                  <span className="hidden sm:inline">
+                    {selectedAlbumIds.size > 0 ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
+                  </span>
                 </button>
                 <button
                   onClick={() => setShowCopyDialog(true)}
-                  title={t('projectViewer.common.copyToLibrary')}
-                  aria-label={t('projectViewer.common.copyToLibrary')}
+                  title={selectedAlbumIds.size > 0 ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
+                  aria-label={selectedAlbumIds.size > 0 ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
                   className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
                 >
                   <Copy className="w-3 h-3" />
-                  <span className="hidden sm:inline">{t('projectViewer.common.copyToLibrary')}</span>
+                  <span className="hidden sm:inline">
+                    {selectedAlbumIds.size > 0 ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
+                  </span>
                 </button>
                 {isTextProject && selectedAlbumIds.size > 1 && (
                   <button
@@ -132,41 +135,21 @@ export function AlbumTab({
                     <span className="hidden sm:inline">{t('projectViewer.album.compareSelected')}</span>
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    const itemsToDelete = albumItems.filter(item => selectedAlbumIds.has(item.id));
-                    setAlbumItemsToDelete(itemsToDelete);
-                    setShowDeleteAlbumModal(true);
-                  }}
-                  title={t('projectViewer.common.deleteSelected')}
-                  aria-label={t('projectViewer.common.deleteSelected')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
-                </button>
-              </>
-            }
-            zeroSelectionActions={
-              <>
-                <button
-                  onClick={() => openExportDialog(true)}
-                  title={t('projectViewer.album.exportAll')}
-                  aria-label={t('projectViewer.album.exportAll')}
-                  className="flex items-center justify-center gap-2 min-h-8 min-w-8 px-2 sm:px-0 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t('projectViewer.album.exportAll')}</span>
-                </button>
-                <button
-                  onClick={() => setShowCopyDialog(true)}
-                  title={t('projectViewer.album.copyAllToLibrary')}
-                  aria-label={t('projectViewer.album.copyAllToLibrary')}
-                  className="flex items-center justify-center gap-2 min-h-8 min-w-8 px-2 sm:px-0 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
-                >
-                  <Copy className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t('projectViewer.album.copyAllToLibrary')}</span>
-                </button>
+                {selectedAlbumIds.size > 0 && (
+                  <button
+                    onClick={() => {
+                      const itemsToDelete = albumItems.filter(item => selectedAlbumIds.has(item.id));
+                      setAlbumItemsToDelete(itemsToDelete);
+                      setShowDeleteAlbumModal(true);
+                    }}
+                    title={t('projectViewer.common.deleteSelected')}
+                    aria-label={t('projectViewer.common.deleteSelected')}
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
+                  </button>
+                )}
               </>
             }
           />
@@ -191,9 +174,9 @@ export function AlbumTab({
                 >
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
-                    className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500' : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'}`}
+                    className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-blue-500 text-blue-400' : 'border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700'}`}
                   >
-                    {isSelected ? <CheckSquare className="w-4 h-4 text-white" /> : <Square className="w-4 h-4 text-neutral-600" />}
+                    {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                   </button>
 
                   <button

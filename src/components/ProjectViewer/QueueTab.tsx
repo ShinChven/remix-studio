@@ -41,7 +41,7 @@ export function QueueTab({
   const { t } = useTranslation();
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4">
         {/* Queue Toolbar */}
         {queueJobs.length > 0 && (
           <SelectionToolbar
@@ -104,7 +104,7 @@ export function QueueTab({
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleQueueSelection(task.id); }}
-                          className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isSelected ? 'bg-blue-500/20 text-blue-400' : 'hover:bg-neutral-800 text-neutral-500 hover:text-white'}`}
+                          className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isSelected ? 'text-blue-400' : 'text-neutral-500 hover:text-white'}`}
                         >
                          {isSelected ? (
                            <CheckSquare className="w-4 h-4" />
