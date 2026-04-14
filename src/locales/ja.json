@@ -241,6 +241,7 @@
     "title": "プロジェクト",
     "description": "AI ワークフローと生成タスクを管理・追跡します。",
     "allProjects": "すべてのプロジェクト",
+    "searchPlaceholder": "名前またはIDでプロジェクトを検索...",
     "newProject": "新規プロジェクト",
     "sort": {
       "newest": "最新",
@@ -265,6 +266,7 @@
     "title": "ライブラリ",
     "description": "再利用可能なプロンプトと画像コレクションを管理します。",
     "allLibraries": "すべてのライブラリ",
+    "searchPlaceholder": "名前またはIDでライブラリを検索...",
     "newLibrary": "新規ライブラリ",
     "new": "新規",
     "noLibraries": {

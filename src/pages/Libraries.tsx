@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
-import { Plus, Folder, LayoutGrid, Layers, ChevronRight, ChevronLeft, Loader2, Copy } from 'lucide-react';
+import { Plus, Folder, LayoutGrid, Layers, ChevronRight, ChevronLeft, Loader2, Copy, Search } from 'lucide-react';
 import { duplicateLibrary, fetchLibraries } from '../api';
 import { DuplicateLibraryDialog } from '../components/DuplicateLibraryDialog';
 import { PageHeader } from '../components/PageHeader';
@@ -12,12 +12,14 @@ export function Libraries() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
+  const q = searchParams.get('q') || '';
   
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [libraryToDuplicate, setLibraryToDuplicate] = useState<Library | null>(null);
+  const [searchInput, setSearchInput] = useState(q);
 
   const navigate = useNavigate();
 
@@ -26,7 +28,7 @@ export function Libraries() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const result = await fetchLibraries(page, 20);
+        const result = await fetchLibraries(page, 24, q);
         if (mounted) {
           setLibraries(result.items);
           setTotal(result.total);
@@ -40,7 +42,7 @@ export function Libraries() {
     };
     load();
     return () => { mounted = false; };
-  }, [page]);
+  }, [page, q]);
 
   const addLibrary = () => navigate('/library/new');
 
@@ -49,7 +51,7 @@ export function Libraries() {
 
     try {
       const duplicated = await duplicateLibrary(libraryToDuplicate.id, name);
-      const result = await fetchLibraries(page, 20);
+      const result = await fetchLibraries(page, 24, q);
       setLibraries(result.items);
       setTotal(result.total);
       setPages(result.pages);
@@ -69,6 +71,25 @@ export function Libraries() {
     });
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchInput(e.target.value);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        if (searchInput) {
+          next.set('q', searchInput);
+        } else {
+          next.delete('q');
+        }
+        next.set('page', '1');
+        return next;
+      });
+    }
+  };
+
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
       <div className="w-full space-y-8 pb-20">
@@ -78,18 +99,34 @@ export function Libraries() {
         />
 
         <section>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 md:mb-8">
             <h3 className="text-xl font-semibold text-white flex items-center gap-2">
               <LayoutGrid className="w-5 h-5 text-blue-500" />
               {t('libraries.allLibraries')} {total > 0 && <span className="text-sm text-neutral-500 font-normal">({total})</span>}
             </h3>
-            <div className="flex gap-2">
-              <button
-                onClick={addLibrary}
-                className="text-xs md:text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-blue-600/30 font-medium"
-              >
-                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t('libraries.newLibrary')}</span><span className="sm:hidden">{t('libraries.new')}</span>
-              </button>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Search Input */}
+              <div className="relative flex-1 sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={handleSearchChange}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder={t('libraries.searchPlaceholder')}
+                  className="w-full bg-neutral-950/70 border border-neutral-800 rounded-xl py-2 pl-10 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={addLibrary}
+                  className="text-xs md:text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-blue-600/30 font-medium"
+                >
+                  <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t('libraries.newLibrary')}</span><span className="sm:hidden">{t('libraries.new')}</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -99,51 +136,59 @@ export function Libraries() {
             </div>
           ) : (
             <>
-              <div className="space-y-3">
-                {libraries.map(lib => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {libraries.map(lib => {
+                  const isImage = lib.type === 'image';
+                  return (
                   <Link
                     key={lib.id}
                     to={`/library/${lib.id}`}
-                    className="w-full bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/60 hover:border-blue-500/40 hover:bg-neutral-900/60 p-3 md:p-4 rounded-xl text-left transition-all group flex items-center justify-between gap-4"
+                    className={`bg-neutral-900/50 backdrop-blur-sm border border-neutral-800 ${isImage ? 'hover:border-indigo-500/50' : 'hover:border-blue-500/50'} p-4 md:p-5 rounded-2xl text-left transition-all group relative overflow-hidden`}
                   >
-                    <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                      <div className={`flex-shrink-0 p-2 md:p-2.5 rounded-lg ${lib.type === 'image' ? 'bg-indigo-500/10 text-indigo-500' : 'bg-blue-500/10 text-blue-500'} group-hover:scale-110 transition-transform`}>
-                        {lib.type === 'image' ? <Layers className="w-5 h-5" /> : <Folder className="w-5 h-5" />}
+                    <div className="flex items-start justify-between mb-3 md:mb-4">
+                      <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${isImage ? 'bg-indigo-500/10 text-indigo-500 shadow-indigo-500/5' : 'bg-blue-500/10 text-blue-500 shadow-blue-500/5'}`}>
+                        {isImage ? <Layers className="w-5 h-5 md:w-6 md:h-6" /> : <Folder className="w-5 h-5 md:w-6 md:h-6" />}
                       </div>
-                      <div className="overflow-hidden">
-                        <h4 className="font-semibold text-white text-sm md:text-base truncate">{lib.name}</h4>
-                        <div className="flex items-center gap-2 md:gap-3 mt-0.5 whitespace-nowrap overflow-hidden">
-                          <span className="text-[10px] md:text-xs text-neutral-500 uppercase tracking-wider font-medium">{lib.type || 'text'}</span>
-                          <span className="text-neutral-700">•</span>
-                          <span className="text-[10px] md:text-xs text-neutral-400">{t('libraries.libraryCard.items', { count: lib.items?.length || 0 })}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
                       <button
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           setLibraryToDuplicate(lib);
                         }}
-                        className="p-2 text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-transparent hover:border-blue-500/20"
+                        className="p-2 text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-neutral-700/50 bg-neutral-800/30"
                         title={t('libraries.libraryCard.duplicate')}
                       >
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-3.5 h-3.5" />
                       </button>
-                      <span className="hidden sm:inline text-sm font-medium text-blue-500 opacity-100 transition-opacity">{t('libraries.libraryCard.openEditor')}</span>
-                      <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-blue-500 transition-colors" />
                     </div>
+
+                    <h4 className="text-base md:text-lg font-semibold text-white truncate mb-2">{lib.name}</h4>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 mb-4">
+                      <div className="flex items-center gap-1.5 capitalize">
+                        <Folder className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <span>{lib.type || 'text'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <span>{t('libraries.libraryCard.items', { count: lib.items?.length || 0 })}</span>
+                      </div>
+                    </div>
+
+                    <div className={`pt-3 md:pt-4 border-t border-neutral-800/50 flex items-center justify-end text-[10px] md:text-xs font-black uppercase tracking-widest opacity-100 transition-opacity ${isImage ? 'text-indigo-500' : 'text-blue-500'}`}>
+                      {t('libraries.libraryCard.openEditor')}
+                    </div>
+
+                    <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${isImage ? 'via-indigo-500/20' : 'via-blue-500/20'} to-transparent opacity-100 transition-opacity`} />
                   </Link>
-                ))}
+                )})}
 
                 {libraries.length === 0 && (
                   <div className="col-span-full py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">
                     <Folder className="w-12 h-12 text-neutral-700" />
                     <div>
                       <p className="text-lg font-medium text-neutral-400">{t('libraries.noLibraries.title')}</p>
-                      <p className="text-sm">{t('libraries.noLibraries.description')}</p>
+                      <p className="text-sm">{q ? t('libraryEditor.noResultsFound') : t('libraries.noLibraries.description')}</p>
                     </div>
                   </div>
                 )}

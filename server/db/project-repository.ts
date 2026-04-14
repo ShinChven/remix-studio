@@ -16,13 +16,21 @@ export class ProjectRepository {
     }
   }
 
-  async getUserProjects(userId: string, page: number = 1, limit: number = 50, sortBy: 'createdAt' | 'totalSize' = 'createdAt'): Promise<{ items: Project[], total: number, page: number, pages: number }> {
+  async getUserProjects(userId: string, page: number = 1, limit: number = 50, sortBy: 'createdAt' | 'totalSize' = 'createdAt', q?: string): Promise<{ items: Project[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
+    const where: any = { userId };
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { id: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
     const [total, projects, allItems] = await Promise.all([
-      this.prisma.project.count({ where: { userId } }),
+      this.prisma.project.count({ where }),
       this.prisma.project.findMany({
-        where: { userId },
+        where,
         ...(sortBy === 'createdAt' ? { skip, take: limit } : {}),
         include: {
           _count: { select: { jobs: true, albumItems: true } },

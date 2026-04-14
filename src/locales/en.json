@@ -409,6 +409,7 @@
     "title": "Projects",
     "description": "Manage and track your AI workflows and generation tasks.",
     "allProjects": "All Projects",
+    "searchPlaceholder": "Search projects by name or ID...",
     "newProject": "New Project",
     "sort": {
       "newest": "Newest",
@@ -433,6 +434,7 @@
     "title": "Libraries",
     "description": "Manage your reusable prompts and image collections.",
     "allLibraries": "All Libraries",
+    "searchPlaceholder": "Search libraries by name or ID...",
     "newLibrary": "New Library",
     "new": "New",
     "noLibraries": {

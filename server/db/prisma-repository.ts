@@ -20,7 +20,7 @@ export class PrismaRepository implements IRepository {
   }
 
   // === Library CRUD ===
-  getUserLibraries(userId: string, page?: number, limit?: number) { return this.libraries.getUserLibraries(userId, page, limit); }
+  getUserLibraries(userId: string, page?: number, limit?: number, q?: string) { return this.libraries.getUserLibraries(userId, page, limit, q); }
   getLibrary(userId: string, libraryId: string) { return this.libraries.getLibrary(userId, libraryId); }
   createLibrary(userId: string, library: Omit<Library, 'items'>) { return this.libraries.createLibrary(userId, library); }
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }) { return this.libraries.updateLibrary(userId, libraryId, updates); }
@@ -38,7 +38,7 @@ export class PrismaRepository implements IRepository {
   reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]) { return this.libraries.reorderLibraryItems(userId, libraryId, updates); }
 
   // === Project CRUD ===
-  getUserProjects(userId: string, page?: number, limit?: number, sortBy?: 'createdAt' | 'totalSize') { return this.projects.getUserProjects(userId, page, limit, sortBy); }
+  getUserProjects(userId: string, page?: number, limit?: number, sortBy?: 'createdAt' | 'totalSize', q?: string) { return this.projects.getUserProjects(userId, page, limit, sortBy, q); }
   getProject(userId: string, projectId: string) { return this.projects.getProject(userId, projectId); }
   createProject(userId: string, project: Project) { return this.projects.createProject(userId, project); }
   updateProject(userId: string, projectId: string, updates: Partial<Project>) { return this.projects.updateProject(userId, projectId, updates); }

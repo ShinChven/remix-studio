@@ -16,16 +16,24 @@ export class LibraryRepository {
     }
   }
 
-  async getUserLibraries(userId: string, page: number = 1, limit: number = 50): Promise<{ items: Library[], total: number, page: number, pages: number }> {
+  async getUserLibraries(userId: string, page: number = 1, limit: number = 50, q?: string): Promise<{ items: Library[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
+    const where: any = { userId };
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { id: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
     const [total, libs] = await Promise.all([
-      this.prisma.library.count({ where: { userId } }),
+      this.prisma.library.count({ where }),
       this.prisma.library.findMany({
-        where: { userId },
+        where,
         skip,
         take: limit,
-        orderBy: { id: 'desc' }, // Fix: Library model doesn't have createdAt, sort by id locally
+        orderBy: { id: 'desc' },
         include: {
           items: {
             orderBy: [{ order: 'asc' }, { id: 'asc' }],

@@ -137,8 +137,9 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       const user = c.get('user') as JwtPayload;
       const page = parseInt(c.req.query('page') || '1', 10);
       const limit = parseInt(c.req.query('limit') || '50', 10);
+      const q = c.req.query('q');
 
-      const result = await repository.getUserLibraries(user.userId, page, limit);
+      const result = await repository.getUserLibraries(user.userId, page, limit, q);
       const signedItems = await Promise.all(result.items.map((lib) => signLibrary(lib, storage)));
       
       return c.json({

@@ -2,7 +2,7 @@ import { AppData, Library, LibraryItem, Project, AlbumItem, TrashItem } from '..
 
 export interface IRepository {
   // === Library CRUD ===
-  getUserLibraries(userId: string, page?: number, limit?: number): Promise<{ items: Library[], total: number, page: number, pages: number }>;
+  getUserLibraries(userId: string, page?: number, limit?: number, q?: string): Promise<{ items: Library[], total: number, page: number, pages: number }>;
   getLibrary(userId: string, libraryId: string): Promise<Library | null>;
   createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void>;
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }): Promise<void>;
@@ -20,7 +20,7 @@ export interface IRepository {
   searchLibraryItems(userId: string, query: string, options?: { libraryId?: string; tags?: string[]; page?: number; limit?: number }): Promise<{ items: (LibraryItem & { libraryId: string; libraryName: string })[]; total: number; page: number; pages: number }>;
 
   // === Project CRUD ===
-  getUserProjects(userId: string, page?: number, limit?: number, sortBy?: 'createdAt' | 'totalSize'): Promise<{ items: Project[], total: number, page: number, pages: number }>;
+  getUserProjects(userId: string, page?: number, limit?: number, sortBy?: 'createdAt' | 'totalSize', q?: string): Promise<{ items: Project[], total: number, page: number, pages: number }>;
   getProject(userId: string, projectId: string): Promise<Project | null>;
   createProject(userId: string, project: Project): Promise<void>;
   updateProject(userId: string, projectId: string, updates: Partial<Project>): Promise<void>;
