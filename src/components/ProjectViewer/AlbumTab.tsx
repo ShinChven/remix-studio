@@ -156,7 +156,7 @@ export function AlbumTab({
         )}
 
         {albumItems.length === 0 ? (
-          <div className="bg-white/20 dark:bg-neutral-900/20 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl p-12 md:p-24 text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner">
+          <div className="bg-white/40 dark:bg-neutral-900/40 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-xl p-12 md:p-24 text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner backdrop-blur-xl">
             {isTextProject ? <FileText className="w-16 h-16 text-neutral-800 animate-pulse" /> : isVideoProject ? <VideoIcon className="w-16 h-16 text-neutral-800 animate-pulse" /> : <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />}
             <div>
               <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400 tracking-wider uppercase">{isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : t('projectViewer.album.galleryEmpty')}</p>
@@ -213,12 +213,12 @@ export function AlbumTab({
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
             {albumItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = item.aspectRatio?.replace(':', '/') || '1/1';
               return (
-                <div key={item.id} className={`bg-neutral-50/50 dark:bg-neutral-950/50 border overflow-hidden flex flex-col group transition-all duration-300 active:scale-100 rounded-none border-neutral-200/10 dark:border-neutral-800/10 ${isSelected ? 'ring-1 ring-inset ring-blue-500/50 bg-blue-500/5' : ''}`}>
+                <div key={item.id} className={`bg-white/20 dark:bg-black/20 border overflow-hidden flex flex-col group transition-all duration-300 active:scale-100 rounded-xl border-neutral-200/20 dark:border-white/5 backdrop-blur-md ${isSelected ? 'ring-2 ring-inset ring-blue-500 shadow-xl shadow-blue-500/20 z-10 scale-[1.02]' : 'hover:shadow-2xl hover:z-10 hover:-translate-y-1'}`}>
                   <div className="bg-neutral-50 dark:bg-neutral-950 relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: aspectRatioStr }}>
                     {/* Selection Overlay */}
                     <div className={`absolute top-4 left-4 z-20 transition-all opacity-100`}>
@@ -318,66 +318,63 @@ export function AlbumTab({
                       </div>
                     )}
                   </div>
-                  <div className="mt-auto min-h-[150px] flex flex-col bg-white/60 dark:bg-neutral-900/60 backdrop-blur-sm relative border-t border-neutral-200/50 dark:border-neutral-800/50">
+                  <div className="mt-auto min-h-[160px] flex flex-col bg-white/40 dark:bg-black/40 backdrop-blur-md relative border-t border-neutral-200/50 dark:border-white/5">
                     <div className="p-5 flex-1 flex flex-col justify-start">
                     <button
                       type="button"
                       onClick={() => setPromptItem(item)}
-                      className="mb-4 block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
+                      className="mb-4 block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 h-14"
                       title={t('projectViewer.album.viewFullPrompt')}
                     >
                       <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400 line-clamp-3 font-medium group-hover:text-neutral-200 transition-colors cursor-pointer hover:text-white">
                         {item.prompt}
                       </p>
                     </button>
-                    <div className="mt-auto flex flex-wrap items-center gap-2">
-                      <div className="flex items-center gap-1.5 p-1 bg-neutral-50/50 dark:bg-neutral-950/50 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50">
-                        <span className="text-[8px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-800">
+                    <div className="mt-auto flex flex-col items-start gap-2 w-full">
+                      <div className="grid grid-cols-2 gap-1.5 p-1 bg-neutral-50/50 dark:bg-neutral-950/50 rounded-lg border border-neutral-200/50 dark:border-white/5 w-full">
+                        <span className="text-[8px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-white/50 dark:bg-neutral-900/50 rounded border border-neutral-200/50 dark:border-white/5 text-center truncate" title={getProviderName(item.providerId)}>
                           {getProviderName(item.providerId)}
                         </span>
-                        <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest px-1.5 py-0.5 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-800">
+                        <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest px-1.5 py-0.5 bg-white/50 dark:bg-neutral-900/50 rounded border border-neutral-200/50 dark:border-white/5 text-center truncate" title={getModelName(item.providerId, item.modelConfigId)}>
                           {getModelName(item.providerId, item.modelConfigId)}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1 px-1.5 py-1 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-lg border border-neutral-200/30 dark:border-neutral-800/30">
+                      <div className="grid grid-cols-3 gap-1 px-1.5 py-1 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-lg border border-neutral-200/30 dark:border-neutral-800/30 w-full">
                         {[
                           { label: t('projectViewer.album.raw'), size: item.size },
                           { label: t('projectViewer.album.optimized'), size: item.optimizedSize },
                           { label: t('projectViewer.album.thumbnail'), size: item.thumbnailSize }
                         ].map((s, i) => s.size ? (
-                          <React.Fragment key={s.label}>
-                            {i > 0 && <span className="text-[8px] text-neutral-800 font-bold mx-0.5">|</span>}
-                            <div className="flex items-center gap-1">
-                              <span className="text-[7px] font-black text-neutral-600 uppercase tracking-tighter">{s.label}</span>
-                              <span className="text-[8px] font-mono font-bold text-neutral-600 dark:text-neutral-400">
-                                {s.size > 1024 * 1024
-                                  ? `${(s.size / (1024 * 1024)).toFixed(1)}M`
-                                  : `${(s.size / 1024).toFixed(0)}K`}
-                              </span>
-                            </div>
-                          </React.Fragment>
-                        ) : null)}
+                          <div key={s.label} className="flex items-center justify-center gap-1 min-w-0">
+                            <span className="text-[7px] font-black text-neutral-600 uppercase tracking-tighter shrink-0">{s.label}</span>
+                            <span className="text-[8px] font-mono font-bold text-neutral-600 dark:text-neutral-400 truncate">
+                              {s.size > 1024 * 1024
+                                ? `${(s.size / (1024 * 1024)).toFixed(1)}M`
+                                : `${(s.size / 1024).toFixed(0)}K`}
+                            </span>
+                          </div>
+                        ) : <div key={i} />)}
                       </div>
 
-                      <div className="flex gap-1.5 h-6">
+                      <div className="flex justify-between items-center gap-1.5 h-6 w-full">
                         {item.resolution && (
-                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
+                          <span className="flex-1 flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200/50 dark:border-white/5 uppercase tracking-widest truncate">
                             {item.resolution}
                           </span>
                         )}
                         {!item.resolution && item.quality && (
-                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
+                          <span className="flex-1 flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200/50 dark:border-white/5 uppercase tracking-widest truncate">
                             {item.quality}
                           </span>
                         )}
                         {item.duration != null && (
-                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
+                          <span className="flex-1 flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200/50 dark:border-white/5 uppercase tracking-widest truncate">
                             {item.duration}s
                           </span>
                         )}
                         {item.format && (
-                          <span className="flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
+                          <span className="flex-1 flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200/50 dark:border-white/5 uppercase tracking-widest truncate">
                             {item.format}
                           </span>
                         )}

@@ -211,7 +211,7 @@ export function Exports() {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end gap-3 mb-8">
         {/* Google Drive control */}
         {user?.googleDriveConnected ? (
-          <div className="flex items-center justify-between sm:justify-start gap-3 bg-emerald-100 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 px-4 py-2.5 rounded-xl shadow-sm">
+          <div className="flex items-center justify-between sm:justify-start gap-3 bg-emerald-100/60 dark:bg-emerald-500/5 border border-emerald-200/50 dark:border-emerald-500/20 px-4 py-2.5 rounded-xl shadow-sm backdrop-blur-md">
             <div className="flex items-center gap-2">
               <HardDrive className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
               <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest">{t('exports.drive.connected')}</span>
@@ -230,7 +230,7 @@ export function Exports() {
         ) : (
           <a
             href="/api/auth/google-drive/connect"
-            className="flex items-center justify-center gap-2 bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 px-4 py-2.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition shadow-sm"
+            className="flex items-center justify-center gap-2 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition shadow-sm backdrop-blur-md"
           >
             <HardDrive className="h-4 w-4 text-neutral-600 dark:text-neutral-500 flex-shrink-0" />
             <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest text-center">{t('exports.drive.connect')}</span>
@@ -238,7 +238,7 @@ export function Exports() {
         )}
 
         {/* Database stats */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-4 py-2.5 rounded-xl flex items-center justify-between sm:justify-start gap-4 shadow-sm">
+        <div className="bg-white/60 dark:bg-neutral-900/60 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-xl flex items-center justify-between sm:justify-start gap-4 shadow-sm backdrop-blur-md">
           <div className="flex flex-col">
             <p className="text-[8px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">{t('exports.stats.database')}</p>
             <p className="text-xs font-bold text-neutral-900 dark:text-white">{exports.length} {t('exports.stats.total')}</p>
@@ -254,7 +254,7 @@ export function Exports() {
       </div>
 
       {!loading && exports.length === 0 ? (
-        <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-[32px] bg-white dark:bg-neutral-950/20 shadow-sm">
+        <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white/40 dark:bg-neutral-950/20 shadow-sm backdrop-blur-xl">
           <List className="w-12 h-12 mx-auto opacity-10 mb-4" />
           <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">{t('exports.empty.title')}</div>
           <div className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-8 max-w-[200px] mx-auto leading-relaxed">{t('exports.empty.description')}</div>
@@ -274,7 +274,7 @@ export function Exports() {
             return (
               <div
                 key={task.id}
-                className={`bg-white dark:bg-neutral-950 p-4 md:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all group/task shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5 ${task.status === 'failed' ? 'border-red-500/30 bg-red-50 dark:bg-red-500/5' : 'border-neutral-200 dark:border-neutral-800 hover:border-blue-500/50'}`}
+                className={`bg-white/70 dark:bg-neutral-950/70 p-4 md:p-5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all group/task shadow-sm hover:shadow-xl backdrop-blur-xl duration-300 hover:-translate-y-0.5 ${task.status === 'failed' ? 'border-red-500/30' : 'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/50'}`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   {/* Status Indicator Bar */}
@@ -420,7 +420,7 @@ export function Exports() {
               <button
                 onClick={handleLoadMore}
                 disabled={loadingMore}
-                className="group w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-3 bg-white dark:bg-neutral-900 hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all border border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 active:scale-95 disabled:opacity-50"
+                className="group w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-3 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md text-neutral-600 dark:text-neutral-400 hover:text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all border border-neutral-200/50 dark:border-white/5 hover:border-neutral-700 active:scale-95 disabled:opacity-50"
               >
                 {loadingMore ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

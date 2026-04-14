@@ -717,7 +717,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const albumItems = localProject.album || [];
 
   return (
-    <div className="flex flex-col lg:flex-row h-full bg-neutral-50 dark:bg-neutral-950 overflow-hidden lg:overflow-visible">
+    <div className="flex flex-col lg:flex-row h-full bg-transparent overflow-hidden lg:overflow-visible">
       <ModelSelectorModal
         isOpen={isModelSelectorOpen}
         onClose={() => setIsModelSelectorOpen(false)}
@@ -792,9 +792,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       />
 
       <div className={`flex-1 flex-col overflow-hidden min-h-0 ${mobileView === 'jobs' ? 'flex h-full' : 'hidden lg:flex'}`}>
-        <div className="p-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm flex flex-col gap-3 relative z-10">
+        <div className="p-3 border-b border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-black/40 backdrop-blur-3xl shadow-sm flex flex-col gap-3 relative z-10">
           <div className="min-h-[40px] flex items-center justify-center gap-4">
-            <div className="flex bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-1 flex-1 max-w-lg shadow-inner">
+            <div className="flex bg-neutral-100/30 dark:bg-black/40 border border-neutral-200/50 dark:border-white/5 rounded-xl p-1 flex-1 max-w-lg shadow-inner backdrop-blur-md">
               <button onClick={() => setActiveTab('draft')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'draft' ? 'bg-white dark:bg-neutral-800 text-blue-600 dark:text-white shadow-sm border border-neutral-200 dark:border-neutral-700' : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300 hover:bg-white/50 dark:hover:bg-neutral-900/50 border border-transparent'}`}>
                 <Plus className="w-3 h-3" />
                 <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.tabs.draft')}</span>

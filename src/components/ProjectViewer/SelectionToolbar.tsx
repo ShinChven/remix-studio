@@ -61,7 +61,7 @@ export function SelectionToolbar({
 
   return (
     <div
-      className={`sticky top-0 z-20 flex justify-between bg-neutral-50/90 dark:bg-neutral-950/90 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 gap-2 sm:gap-3 shadow-lg shadow-black/20 p-3 rounded-none border-x-0 border-t-0 ${
+      className={`sticky top-0 z-20 flex justify-between bg-white/10 dark:bg-black/10 backdrop-blur-2xl border border-neutral-200/50 dark:border-white/5 gap-2 sm:gap-3 shadow-lg shadow-black/20 p-3 rounded-none border-x-0 border-t-0 ${
         mobileSingleLine ? 'flex-row items-center' : 'flex-col lg:flex-row lg:items-center'
       }`}
     >

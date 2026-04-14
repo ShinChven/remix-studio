@@ -115,7 +115,7 @@ export function Libraries() {
                     onChange={handleSearchChange}
                     onKeyDown={handleSearchKeyDown}
                     placeholder={t('libraries.searchPlaceholder')}
-                    className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all shadow-sm"
+                    className="w-full bg-white/60 dark:bg-neutral-950/60 backdrop-blur-md border border-neutral-200/50 dark:border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all shadow-sm"
                   />
               </div>
 
@@ -143,7 +143,7 @@ export function Libraries() {
                   <Link
                     key={lib.id}
                     to={`/library/${lib.id}`}
-                    className={`bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 ${isImage ? 'hover:border-indigo-500/50' : 'hover:border-blue-500/50'} p-5 md:p-6 rounded-[32px] text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300`}
+                    className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${isImage ? 'hover:border-indigo-500/50' : 'hover:border-blue-500/50'} p-5 md:p-6 rounded-2xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300`}
                   >
                     <div className="flex items-start justify-between mb-3 md:mb-4">
                       <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${isImage ? 'bg-indigo-500/10 text-indigo-500 shadow-indigo-500/5' : 'bg-blue-500/10 text-blue-500 shadow-blue-500/5'}`}>
@@ -201,7 +201,7 @@ export function Libraries() {
                   <button
                     onClick={() => handlePageChange(Math.max(1, page - 1))}
                     disabled={page === 1}
-                    className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
+                    className="p-3 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
@@ -209,7 +209,7 @@ export function Libraries() {
                   <button
                     onClick={() => handlePageChange(Math.min(pages, page + 1))}
                     disabled={page === pages}
-                    className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
+                    className="p-3 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>

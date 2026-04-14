@@ -58,10 +58,10 @@ export function WorkflowItem({
       onDragOver={(e) => onDragOver(e, index)}
       onDrop={(e) => onDrop(e, index)}
       onDragEnd={onDragEnd}
-      className={`bg-white dark:bg-neutral-900 border rounded-2xl p-4 group transition-all ${
+      className={`bg-white/70 dark:bg-neutral-950/70 border rounded-xl p-4 group transition-all backdrop-blur-xl ${
         draggedIndex === index ? 'opacity-50 border-blue-500' : 
-        dragOverIndex === index ? 'border-blue-400 border-dashed bg-neutral-100 dark:bg-neutral-800' : 
-        'border-neutral-200 dark:border-neutral-800 hover:border-blue-500/50 shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5'
+        dragOverIndex === index ? 'border-blue-400 border-dashed bg-white/40 dark:bg-neutral-800/40' : 
+        'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/50 shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5'
       }`}
     >
       <div className="flex justify-between items-center mb-3">
@@ -89,7 +89,7 @@ export function WorkflowItem({
             onClick={() => onEdit(item)}
             className="group/text relative cursor-pointer"
           >
-            <div className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 pb-10 text-xs text-neutral-900 dark:text-neutral-300 line-clamp-4 min-h-[110px] transition-all hover:border-blue-500/30 hover:bg-white dark:hover:bg-neutral-900 shadow-inner">
+            <div className="w-full bg-white/40 dark:bg-black/40 border border-neutral-200/50 dark:border-white/5 rounded-xl p-4 pb-10 text-xs text-neutral-900 dark:text-neutral-300 line-clamp-4 min-h-[110px] transition-all hover:border-blue-500/30 hover:bg-white/60 dark:hover:bg-neutral-900/60 shadow-inner backdrop-blur-md">
               {item.value || <span className="opacity-30 italic font-medium">{t('projectViewer.workflow.noTextContent')}</span>}
               <div className="absolute bottom-3 left-3 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-neutral-500 dark:text-neutral-500 shadow-sm">
                 {t('projectViewer.workflow.characterCount', { count: item.value.length })}
@@ -101,7 +101,7 @@ export function WorkflowItem({
           </div>
           <button 
             onClick={() => onSelectFromLibrary(item.id)}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-neutral-50 dark:bg-neutral-900/20 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:border-blue-500/50 text-[10px] font-black text-neutral-500 dark:text-neutral-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all group uppercase tracking-widest shadow-sm"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-neutral-200/50 dark:border-white/5 rounded-xl bg-white/20 dark:bg-neutral-900/20 hover:bg-blue-50/40 dark:hover:bg-blue-500/10 hover:border-blue-500/50 text-[10px] font-black text-neutral-500 dark:text-neutral-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all group uppercase tracking-widest shadow-sm backdrop-blur-sm"
           >
             <LibraryIcon className="w-3.5 h-3.5 text-neutral-400 group-hover:text-blue-500" />
             {t('projectViewer.workflow.pickFromLibrary')}
@@ -116,7 +116,7 @@ export function WorkflowItem({
           }}
           className="group/library relative cursor-pointer"
         >
-          <div className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 text-xs flex items-center justify-between transition-all hover:border-emerald-500/30 hover:bg-white dark:hover:bg-neutral-900 shadow-inner">
+          <div className="w-full bg-white/40 dark:bg-black/40 border border-neutral-200/50 dark:border-white/5 rounded-xl p-4 text-xs flex items-center justify-between transition-all hover:border-emerald-500/30 hover:bg-white/60 dark:hover:bg-neutral-900/60 shadow-inner backdrop-blur-md">
             <div className="flex items-center gap-3">
               {(() => {
                 const firstImage = library?.type === 'image' && library.items[0]?.content;
@@ -154,7 +154,7 @@ export function WorkflowItem({
       {item.type === 'image' && (
         <div className="space-y-2">
           <div className="flex gap-2">
-            <label className="flex-1 block text-center py-3 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:border-amber-500/50 transition-all group relative overflow-hidden bg-neutral-50 dark:bg-neutral-900 shadow-sm">
+            <label className="flex-1 block text-center py-3 border border-dashed border-neutral-200/50 dark:border-white/5 rounded-xl cursor-pointer hover:bg-amber-50/40 dark:hover:bg-amber-500/10 hover:border-amber-500/50 transition-all group relative overflow-hidden bg-white/20 dark:bg-neutral-900/20 shadow-sm backdrop-blur-sm">
               {uploadingItemIds.has(item.id) ? (
                 <div className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 text-amber-600 dark:text-amber-500 animate-spin" />
@@ -170,7 +170,7 @@ export function WorkflowItem({
             </label>
             <button 
               onClick={() => onSelectFromLibrary(item.id)}
-              className="flex-1 flex items-center justify-center gap-2 py-3 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all group bg-neutral-50 dark:bg-neutral-900 shadow-sm"
+              className="flex-1 flex items-center justify-center gap-2 py-3 border border-dashed border-neutral-200/50 dark:border-white/5 rounded-xl hover:bg-emerald-50/40 dark:hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all group bg-white/20 dark:bg-neutral-900/20 shadow-sm backdrop-blur-sm"
             >
               <LibraryIcon className="w-4 h-4 text-neutral-400 group-hover:text-emerald-600" />
               <span className="text-[10px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest group-hover:text-neutral-900 dark:group-hover:text-neutral-200">{t('projectViewer.common.library')}</span>

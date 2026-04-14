@@ -69,7 +69,7 @@ export function Dashboard() {
                   <Link
                     key={project.id}
                     to={`/project/${project.id}`}
-                    className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-green-500/50 p-6 rounded-2xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 relative overflow-hidden"
+                    className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:border-green-500/50 p-6 rounded-xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 relative overflow-hidden"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="p-2 bg-green-500/10 rounded-lg text-green-500 group-hover:scale-110 transition-transform">
@@ -112,7 +112,7 @@ export function Dashboard() {
                   <Link
                     key={lib.id}
                     to={`/library/${lib.id}`}
-                    className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-blue-500/50 p-6 rounded-2xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300"
+                    className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:border-blue-500/50 p-6 rounded-xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300"
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500 group-hover:scale-110 transition-transform">

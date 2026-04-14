@@ -95,8 +95,8 @@ export function WorkflowPanel({
   const { t } = useTranslation();
 
   return (
-    <div className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
-      <div className="p-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm relative z-10">
+    <div className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/30 backdrop-blur-3xl flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
+      <div className="p-3 border-b border-neutral-200/50 dark:border-white/5 bg-transparent shadow-sm relative z-10">
         <div className="min-h-[40px] flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="text-[10px] font-black text-neutral-900 dark:text-white truncate tracking-widest leading-none uppercase">
@@ -134,11 +134,11 @@ export function WorkflowPanel({
         </div>
       </div>
 
-      <div className="h-[57px] p-3 border-b border-neutral-200 dark:border-neutral-800 flex gap-2 bg-white dark:bg-neutral-900 items-center">
-        <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200 dark:border-neutral-700 shadow-sm">
+      <div className="h-[57px] p-3 border-b border-neutral-200/50 dark:border-white/5 flex gap-2 bg-white/30 dark:bg-black/20 items-center backdrop-blur-xl">
+        <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
           <Type className="w-3 h-3" /> {t('projectViewer.common.text')}
         </button>
-        <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200 dark:border-neutral-700 shadow-sm">
+        <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
           <ImageIcon className="w-3 h-3" /> {t('projectViewer.common.imageShort')}
         </button>
         {localProject.type === 'video' && (
@@ -168,7 +168,7 @@ export function WorkflowPanel({
             })()}
           </>
         )}
-        <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200 dark:border-neutral-700 shadow-sm">
+        <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
           <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
         </button>
       </div>
@@ -199,7 +199,7 @@ export function WorkflowPanel({
           />
         ))}
         {(localProject.workflow || []).length === 0 && (
-          <div className="text-center text-neutral-500 dark:text-neutral-500 text-[10px] font-bold uppercase tracking-[0.2em] py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl bg-neutral-50 dark:bg-neutral-900/40 shadow-inner">{t('projectViewer.main.buildWorkflow')}</div>
+          <div className="text-center text-neutral-500 dark:text-neutral-500 text-[10px] font-bold uppercase tracking-[0.2em] py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-white/20 dark:bg-neutral-900/20 shadow-inner backdrop-blur-sm">{t('projectViewer.main.buildWorkflow')}</div>
         )}
       </div>
 

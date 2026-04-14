@@ -71,10 +71,10 @@ export function SettingsPanel({
   const isVideoProject = localProject.type === 'video';
 
   return (
-    <div className="shrink overflow-hidden flex flex-col p-4 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl min-h-0">
+    <div className="shrink overflow-hidden flex flex-col p-4 border-t border-neutral-200/50 dark:border-white/5 bg-white/60 dark:bg-black/60 backdrop-blur-2xl shadow-[0_-12px_48px_rgba(0,0,0,0.2)] min-h-0">
       <button
         onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
-        className="w-full p-3 bg-neutral-100 dark:bg-neutral-950/50 border border-neutral-200 dark:border-neutral-800 rounded-xl mb-3 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/50 transition-all group flex flex-col gap-2.5 shadow-inner"
+        className="w-full p-3 bg-white/40 dark:bg-black/40 backdrop-blur-md border border-neutral-200/50 dark:border-white/5 rounded-xl mb-3 hover:bg-white/60 dark:hover:bg-neutral-900/50 transition-all group flex flex-col gap-2.5 shadow-inner"
       >
         {/* Row 1: Provider Name + Chevron */}
         <div className="w-full flex items-center justify-between">
@@ -188,7 +188,7 @@ export function SettingsPanel({
           </div>
 
           {!hasSelectedModel ? (
-            <div className="rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950/50 px-4 py-5 text-center shadow-inner">
+            <div className="rounded-xl border border-dashed border-neutral-200 dark:border-neutral-800 bg-white/20 dark:bg-neutral-950/20 px-4 py-5 text-center shadow-inner backdrop-blur-sm">
               <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
                 {t('projectViewer.settings.modelOptionsHidden')}
               </p>
@@ -235,7 +235,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   {t('projectViewer.settings.resolution')}
                 </label>
-                <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap shadow-inner">
+                <div className="flex bg-white/40 dark:bg-neutral-950/40 border border-neutral-200/50 dark:border-white/5 p-1 rounded-xl gap-1 flex-wrap shadow-inner backdrop-blur-sm">
                   {(selectedModel?.options.resolutions || ['720p', '1080p']).map((r) => (
                     <button
                       key={r}
@@ -261,7 +261,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   {t('projectViewer.settings.durationSeconds')}
                 </label>
-                <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap shadow-inner">
+                <div className="flex bg-white/40 dark:bg-neutral-950/40 border border-neutral-200/50 dark:border-white/5 p-1 rounded-xl gap-1 flex-wrap shadow-inner backdrop-blur-sm">
                   {(selectedModel?.options.durations || [4, 6, 8]).map((d) => (
                     <button
                       key={d}
@@ -334,7 +334,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   {t('projectViewer.settings.temperature')}
                 </label>
-                <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap shadow-inner">
+                <div className="flex bg-white/40 dark:bg-neutral-950/40 border border-neutral-200/50 dark:border-white/5 p-1 rounded-xl gap-1 flex-wrap shadow-inner backdrop-blur-sm">
                   {(selectedModel?.options.temperatures || [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0]).map((t) => (
                     <button
                       key={t}
@@ -360,7 +360,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   {t('projectViewer.settings.maxTokens')}
                 </label>
-                <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap shadow-inner">
+                <div className="flex bg-white/40 dark:bg-neutral-950/40 border border-neutral-200/50 dark:border-white/5 p-1 rounded-xl gap-1 flex-wrap shadow-inner backdrop-blur-sm">
                   {(selectedModel?.options.maxTokenOptions || [256, 512, 1024, 2048, 4096, 8192]).map((m) => (
                     <button
                       key={m}
@@ -497,7 +497,7 @@ export function SettingsPanel({
                   <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                     {t('projectViewer.settings.steps')}
                   </label>
-                  <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap shadow-inner">
+                  <div className="flex bg-white/40 dark:bg-neutral-950/40 border border-neutral-200/50 dark:border-white/5 p-1 rounded-xl gap-1 flex-wrap shadow-inner backdrop-blur-sm">
                     {selectedModel.options.stepsOptions.map((s) => (
                       <button
                         key={s}
@@ -524,7 +524,7 @@ export function SettingsPanel({
                   <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                     {t('projectViewer.settings.guidance')}
                   </label>
-                  <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 flex-wrap shadow-inner">
+                  <div className="flex bg-white/40 dark:bg-neutral-950/40 border border-neutral-200/50 dark:border-white/5 p-1 rounded-xl gap-1 flex-wrap shadow-inner backdrop-blur-sm">
                     {selectedModel.options.guidanceOptions.map((g) => (
                       <button
                         key={g}
@@ -587,7 +587,7 @@ export function SettingsPanel({
         <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600">
           {t('projectViewer.settings.jobQuantity')}
         </label>
-        <div className="flex items-center gap-2 bg-white dark:bg-neutral-950 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-inner">
+        <div className="flex items-center gap-2 bg-white/40 dark:bg-black/40 px-3 py-1.5 rounded-xl border border-neutral-200/50 dark:border-white/5 shadow-inner backdrop-blur-sm">
           <input
             type="number"
             min="1"
