@@ -35,14 +35,14 @@ function formatBytes(bytes: number) {
 
 function statusBadgeClass(status: UserStatus) {
   return status === 'active'
-    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-sm'
-    : 'border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-300 shadow-sm';
+    ? 'border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 shadow-sm'
+    : 'border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 shadow-sm';
 }
 
 function roleBadgeClass(role: UserRole) {
   return role === 'admin'
-    ? 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300 shadow-sm'
-    : 'border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 shadow-sm';
+    ? 'border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300 shadow-sm'
+    : 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 shadow-sm';
 }
 
 export function AdminUsers() {
@@ -267,9 +267,9 @@ export function AdminUsers() {
           )}
         />
 
-        <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm">
+        <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 overflow-hidden shadow-sm backdrop-blur-xl">
           <form onSubmit={handleFilterSubmit} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_120px]">
-            <label className="flex items-center gap-3 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-6 py-4">
+            <label className="flex items-center gap-3 border-r border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-950/40 px-6 py-4">
               <Search className="h-4 w-4 text-neutral-400 dark:text-neutral-500" />
               <input
                 value={searchInput}
@@ -301,7 +301,7 @@ export function AdminUsers() {
 
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 bg-neutral-900 dark:bg-neutral-800 px-6 py-4 text-xs font-black text-white transition hover:bg-black uppercase tracking-widest active:scale-95"
+              className="inline-flex items-center justify-center gap-2 bg-neutral-900 dark:bg-neutral-800 hover:bg-black dark:hover:bg-neutral-700 px-6 py-4 text-xs font-black text-white transition-all uppercase tracking-widest active:scale-95"
             >
               <Filter className="h-4 w-4" />
               {t('adminUsers.apply')}
@@ -316,7 +316,7 @@ export function AdminUsers() {
           </div>
         )}
 
-        <section className="overflow-hidden rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
+        <section className="overflow-hidden rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 shadow-sm backdrop-blur-xl">
           {loading ? (
             <div className="flex items-center justify-center py-24">
               <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
@@ -331,7 +331,7 @@ export function AdminUsers() {
             </div>
           ) : (
             <>
-              <div className="hidden xl:grid xl:grid-cols-[minmax(240px,1.5fr)_110px_110px_170px_100px_100px_160px_120px] gap-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 px-6 py-4 text-xs font-medium uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">
+              <div className="hidden xl:grid xl:grid-cols-[minmax(240px,1.5fr)_110px_110px_170px_100px_100px_160px_120px] gap-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/70 px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">
                 <span>{t('adminUsers.table.user')}</span>
                 <span>{t('adminUsers.table.role')}</span>
                 <span>{t('adminUsers.table.status')}</span>
@@ -341,7 +341,7 @@ export function AdminUsers() {
                 <span>{t('adminUsers.table.lastLogin')}</span>
                 <span>{t('adminUsers.table.actions')}</span>
               </div>
-              <div className="divide-y divide-neutral-800">
+              <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
                 {users.map((user) => (
                   <div
                     key={user.id}
@@ -389,7 +389,7 @@ export function AdminUsers() {
                         value={user.role}
                         disabled={user.id === currentUser?.id}
                         onChange={(e) => void handleRoleChange(user.id, e.target.value as UserRole)}
-                        className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-3 py-2 text-xs text-neutral-200 outline-none disabled:opacity-50"
+                        className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-3 py-2 text-xs text-neutral-900 dark:text-neutral-200 font-bold outline-none disabled:opacity-50 transition-all focus:ring-2 focus:ring-blue-500/20"
                       >
                         <option value="user">{t('adminUsers.user')}</option>
                         <option value="admin">{t('adminUsers.admin')}</option>
@@ -410,7 +410,7 @@ export function AdminUsers() {
             <select
               value={filters.pageSize}
               onChange={(e) => setFilters((current) => ({ ...current, pageSize: Number(e.target.value), page: 1 }))}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-3 py-2 text-sm text-neutral-200 outline-none"
+              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-200 outline-none font-bold"
             >
               <option value={20}>{t('adminUsers.pageSize', { count: 20 })}</option>
               <option value={50}>{t('adminUsers.pageSize', { count: 50 })}</option>
@@ -438,8 +438,8 @@ export function AdminUsers() {
       </div>
 
       {isCreateOpen && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-[28px] border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl">
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 dark:bg-black/60 p-6 backdrop-blur-md">
+          <div className="w-full max-w-xl rounded-[28px] border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-6 py-5">
               <div>
                 <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('adminUsers.createModal.title')}</h3>
@@ -458,7 +458,7 @@ export function AdminUsers() {
                   required
                   value={createForm.email}
                   onChange={(e) => setCreateForm((current) => ({ ...current, email: e.target.value }))}
-                  className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
+                  className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
                 />
               </label>
 
@@ -470,7 +470,7 @@ export function AdminUsers() {
                   value={createForm.password}
                   onChange={(e) => setCreateForm((current) => ({ ...current, password: e.target.value }))}
                   placeholder={t('adminUsers.createModal.passwordPlaceholder')}
-                  className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
+                  className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
                 />
               </label>
 
@@ -480,7 +480,7 @@ export function AdminUsers() {
                   <select
                     value={createForm.role}
                     onChange={(e) => setCreateForm((current) => ({ ...current, role: e.target.value as UserRole }))}
-                    className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
+                    className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
                   >
                     <option value="user">{t('adminUsers.user')}</option>
                     <option value="admin">{t('adminUsers.admin')}</option>
@@ -492,7 +492,7 @@ export function AdminUsers() {
                   <select
                     value={createForm.status}
                     onChange={(e) => setCreateForm((current) => ({ ...current, status: e.target.value as UserStatus }))}
-                    className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
+                    className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
                   >
                     <option value="active">{t('adminUsers.active')}</option>
                     <option value="disabled">{t('adminUsers.disabled')}</option>
@@ -504,7 +504,7 @@ export function AdminUsers() {
                   <select
                     value={createForm.storageLimit}
                     onChange={(e) => setCreateForm((current) => ({ ...current, storageLimit: Number(e.target.value) }))}
-                    className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
+                    className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
                   >
                     {STORAGE_TIERS.map((tier) => (
                       <option key={tier.value} value={tier.value}>{tier.name}</option>
@@ -532,9 +532,9 @@ export function AdminUsers() {
       )}
 
       {activeUserId && (
-        <div className="fixed inset-0 z-[85] bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[85] bg-black/20 dark:bg-black/40 backdrop-blur-md">
           <div className="absolute inset-y-0 right-0 flex w-full justify-end">
-            <div className="h-full w-full max-w-2xl overflow-y-auto border-l border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 shadow-2xl">
+            <div className="h-full w-full max-w-2xl overflow-y-auto border-l border-neutral-200/50 dark:border-white/5 bg-white/80 dark:bg-neutral-950/80 shadow-2xl backdrop-blur-3xl">
               <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-6 py-5">
                 <div>
                   <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('adminUsers.detail.title')}</h3>
@@ -606,7 +606,7 @@ export function AdminUsers() {
                           value={activeUser.role}
                           disabled={activeUser.id === currentUser?.id}
                           onChange={(e) => void handleRoleChange(activeUser.id, e.target.value as UserRole)}
-                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none disabled:opacity-50"
+                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none disabled:opacity-50"
                         >
                           <option value="user">{t('adminUsers.user')}</option>
                           <option value="admin">{t('adminUsers.admin')}</option>
@@ -618,7 +618,7 @@ export function AdminUsers() {
                         <select
                           value={activeUser.storageLimit || STORAGE_TIERS[0].value}
                           onChange={(e) => void handleStorageLimitChange(activeUser.id, Number(e.target.value))}
-                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
+                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
                         >
                           {STORAGE_TIERS.map((tier) => (
                             <option key={tier.value} value={tier.value}>{tier.name}</option>
@@ -662,7 +662,7 @@ export function AdminUsers() {
                             required
                             value={resetPassword}
                             onChange={(e) => setResetPassword(e.target.value)}
-                            className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
+                            className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none shadow-sm"
                           />
                         </label>
                         <button
