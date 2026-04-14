@@ -52,7 +52,7 @@ These are the built-in model profiles currently included in the app.
 
 ## MCP Support
 
-Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped access to prompt and library tooling. It currently supports operations around prompt libraries, prompts, storage usage, and album summaries. Generation is not currently available through MCP.
+Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped access to prompt and library tooling. It currently supports operations around prompt libraries, prompts, storage usage, and album summaries.
 
 Clients can connect with OAuth 2.0 or a personal access token. Manage both in `Account -> MCP`. OAuth metadata is available at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`; related endpoints are `/register`, `/authorize`, and `/token`.
 
