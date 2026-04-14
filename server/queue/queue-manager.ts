@@ -650,6 +650,8 @@ export class QueueManager {
       prompt: item.prompt,
       status: item.status,
       imageContexts: (item.imageContexts as string[]) ?? [],
+      videoContexts: (item.videoContexts as string[]) ?? [],
+      audioContexts: (item.audioContexts as string[]) ?? [],
       imageUrl: item.imageUrl ?? undefined,
       thumbnailUrl: item.thumbnailUrl ?? undefined,
       optimizedUrl: item.optimizedUrl ?? undefined,

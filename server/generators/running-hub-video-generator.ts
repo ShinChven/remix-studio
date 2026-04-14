@@ -92,6 +92,26 @@ export class RunningHubVideoGenerator extends VideoGenerator {
       });
     }
 
+    // Video Input Node (Seedance nodeId 3, fieldName 'file')
+    if (req.refVideoUrls && req.refVideoUrls.length > 0) {
+      nodeInfoList.push({
+        nodeId: '3',
+        fieldName: 'file',
+        fieldValue: req.refVideoUrls[0],
+        description: 'Upload video (optional)'
+      });
+    }
+
+    // Audio Input Node (Seedance nodeId 11, fieldName 'audio')
+    if (req.refAudioUrls && req.refAudioUrls.length > 0) {
+      nodeInfoList.push({
+        nodeId: '11',
+        fieldName: 'audio',
+        fieldValue: req.refAudioUrls[0],
+        description: 'Upload audio (optional)'
+      });
+    }
+
     const payload = {
       nodeInfoList,
       instanceType: 'default', // Fallback, could be customized via config later if multiple instance types needed
