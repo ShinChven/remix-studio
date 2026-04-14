@@ -70,9 +70,9 @@ export function MainLayout() {
     : 0;
 
   return (
-    <div className="flex h-screen w-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-200 font-sans overflow-hidden">
+    <div className="flex h-screen w-screen bg-transparent text-neutral-900 dark:text-neutral-200 font-sans overflow-hidden">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 px-4 flex items-center gap-2 z-[100]">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/20 dark:bg-black/20 backdrop-blur-xl border-b border-neutral-200/20 dark:border-white/5 px-4 flex items-center gap-2 z-[100]">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 text-neutral-600 dark:text-neutral-400 hover:text-white transition-all active:scale-95"
@@ -100,7 +100,7 @@ export function MainLayout() {
         fixed inset-y-0 left-0 z-[120] transition-all duration-300 ease-in-out lg:relative
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         ${isCollapsed ? 'lg:w-20' : 'lg:w-64'} w-72
-        bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 flex flex-col group
+        bg-white/10 dark:bg-black/10 border-r border-neutral-200/20 dark:border-white/5 flex flex-col group backdrop-blur-2xl shadow-2xl shadow-black/10 dark:shadow-black/40
       `}>
         <div className="p-4 border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
           <Link
@@ -222,13 +222,13 @@ export function MainLayout() {
         </div>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex-shrink-0">
+        <div className="p-4 border-t border-neutral-200/20 dark:border-white/5 bg-transparent flex-shrink-0">
           <Link
             to="/account"
             onClick={() => setIsMobileMenuOpen(false)}
             className={`flex items-center overflow-hidden rounded-xl border p-3 transition-colors ${location.pathname === '/account'
                 ? 'border-cyan-500/50 bg-cyan-50 dark:bg-cyan-600/10 shadow-sm'
-                : 'border-neutral-200 dark:border-neutral-700/50 bg-white dark:bg-neutral-800/40 hover:border-neutral-300 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800/70 shadow-sm'
+                : 'border-neutral-200/50 dark:border-neutral-700/30 bg-white/10 dark:bg-black/20 hover:bg-white/20 dark:hover:bg-black/30 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
               } ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
               }`}
           >
@@ -258,7 +258,7 @@ export function MainLayout() {
             <Link
               to="/admin/users"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`mt-3 flex items-center rounded-xl border border-neutral-200 dark:border-neutral-700/50 bg-white dark:bg-neutral-800/40 p-3 text-sm text-neutral-700 dark:text-neutral-300 transition-colors hover:border-neutral-300 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800/70 shadow-sm ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
+              className={`mt-3 flex items-center rounded-xl border border-neutral-200/50 dark:border-neutral-700/30 bg-white/10 dark:bg-black/20 p-3 text-sm text-neutral-700 dark:text-neutral-300 transition-colors hover:bg-white/20 dark:hover:bg-black/30 ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
                 }`}
               title={t('sidebar.userManagement')}
             >
@@ -269,7 +269,7 @@ export function MainLayout() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden bg-neutral-50 dark:bg-neutral-950 flex flex-col mt-16 lg:mt-0 min-w-0 relative">
+      <div className="flex-1 overflow-hidden bg-transparent flex flex-col mt-16 lg:mt-0 min-w-0 relative">
         <div className="flex-1 overflow-y-auto min-w-0 custom-scrollbar">
           <Outlet />
         </div>

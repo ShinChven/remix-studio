@@ -11,15 +11,15 @@ import {
 } from 'lucide-react';
 
 const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
-  GoogleAI:   { icon: 'bg-blue-500/10 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500',   badge: 'bg-blue-50 dark:bg-blue-600/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-600/30' },
-  VertexAI:   { icon: 'bg-purple-500/10 dark:bg-purple-500/10 text-purple-600 dark:text-purple-500', badge: 'bg-purple-50 dark:bg-purple-600/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-600/30' },
-  RunningHub: { icon: 'bg-emerald-500/10 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500', badge: 'bg-emerald-50 dark:bg-emerald-600/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-600/30' },
-  KlingAI:    { icon: 'bg-lime-500/10 dark:bg-lime-500/10 text-lime-600 dark:text-lime-400', badge: 'bg-lime-50 dark:bg-lime-600/10 text-lime-700 dark:text-lime-300 border-lime-200 dark:border-lime-600/30' },
-  OpenAI:     { icon: 'bg-orange-500/10 dark:bg-orange-500/10 text-orange-600 dark:text-orange-500', badge: 'bg-orange-50 dark:bg-orange-600/10 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-600/30' },
-  Grok:       { icon: 'bg-rose-500/10 dark:bg-rose-500/10 text-rose-600 dark:text-rose-500', badge: 'bg-rose-50 dark:bg-rose-600/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-600/30' },
-  Claude:     { icon: 'bg-amber-500/10 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500', badge: 'bg-amber-50 dark:bg-amber-600/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-600/30' },
-  BytePlus:   { icon: 'bg-cyan-500/10 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-500', badge: 'bg-cyan-50 dark:bg-cyan-600/10 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-600/30' },
-  Replicate:  { icon: 'bg-fuchsia-500/10 dark:bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400', badge: 'bg-fuchsia-50 dark:bg-fuchsia-600/10 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-200 dark:border-fuchsia-600/30' },
+  GoogleAI:   { icon: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-500',   badge: 'bg-blue-100 dark:bg-blue-600/10 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-600/30' },
+  VertexAI:   { icon: 'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-500', badge: 'bg-purple-100 dark:bg-purple-600/10 text-purple-800 dark:text-purple-400 border-purple-200 dark:border-purple-600/30' },
+  RunningHub: { icon: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-500', badge: 'bg-emerald-100 dark:bg-emerald-600/10 text-emerald-800 dark:text-emerald-400 border-emerald-200 dark:border-emerald-600/30' },
+  KlingAI:    { icon: 'bg-lime-50 dark:bg-lime-500/10 text-lime-700 dark:text-lime-400', badge: 'bg-lime-100 dark:bg-lime-600/10 text-lime-800 dark:text-lime-300 border-lime-200 dark:border-lime-600/30' },
+  OpenAI:     { icon: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-500', badge: 'bg-orange-100 dark:bg-orange-600/10 text-orange-800 dark:text-orange-400 border-orange-200 dark:border-orange-600/30' },
+  Grok:       { icon: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-500', badge: 'bg-rose-100 dark:bg-rose-600/10 text-rose-800 dark:text-rose-400 border-rose-200 dark:border-rose-600/30' },
+  Claude:     { icon: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-500', badge: 'bg-amber-100 dark:bg-amber-600/10 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-600/30' },
+  BytePlus:   { icon: 'bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-500', badge: 'bg-cyan-100 dark:bg-cyan-600/10 text-cyan-800 dark:text-cyan-400 border-cyan-200 dark:border-cyan-600/30' },
+  Replicate:  { icon: 'bg-fuchsia-50 dark:bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-400', badge: 'bg-fuchsia-100 dark:bg-fuchsia-600/10 text-fuchsia-800 dark:text-fuchsia-300 border-fuchsia-200 dark:border-fuchsia-600/30' },
 };
 
 export function ProviderProfile() {
@@ -101,9 +101,9 @@ export function ProviderProfile() {
     : provider.hasKey;
 
   const CATEGORY_META: Record<string, { label: string; icon: typeof MessageSquare; color: string }> = {
-    text:  { label: t('providerProfile.categories.text'),  icon: MessageSquare, color: 'text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-500/10 border-sky-200 dark:border-sky-500/20' },
-    image: { label: t('providerProfile.categories.image'), icon: Image,         color: 'text-pink-700 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 border-pink-200 dark:border-pink-500/20' },
-    video: { label: t('providerProfile.categories.video'), icon: Video,         color: 'text-violet-700 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 border-violet-200 dark:border-violet-500/20' },
+    text:  { label: t('providerProfile.categories.text'),  icon: MessageSquare, color: 'text-sky-800 dark:text-sky-400 bg-sky-100 dark:bg-sky-500/10 border-sky-300 dark:border-sky-500/20 shadow-sm' },
+    image: { label: t('providerProfile.categories.image'), icon: Image,         color: 'text-pink-800 dark:text-pink-400 bg-pink-100 dark:bg-pink-500/10 border-pink-300 dark:border-pink-500/20 shadow-sm' },
+    video: { label: t('providerProfile.categories.video'), icon: Video,         color: 'text-violet-800 dark:text-violet-400 bg-violet-100 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/20 shadow-sm' },
   };
 
   return (
@@ -129,7 +129,7 @@ export function ProviderProfile() {
                   <Globe className="w-3.5 h-3.5" />{provider.apiUrl}
                 </span>
               )}
-              <span className={`flex items-center gap-1 text-xs font-bold ${hasCredentials ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
+              <span className={`flex items-center gap-1 text-xs font-black uppercase tracking-tight ${hasCredentials ? 'text-emerald-800 dark:text-emerald-400' : 'text-amber-800 dark:text-amber-400'}`}>
                 {hasCredentials
                   ? <><CheckCircle className="w-3.5 h-3.5" /> {provider.type === 'KlingAI' ? t('providerProfile.credentialsStored') : t('providerProfile.keyStored')}</>
                   : <><AlertCircle className="w-3.5 h-3.5" /> {provider.type === 'KlingAI' ? t('providerProfile.missingCredentials') : t('providerProfile.noKey')}</>}

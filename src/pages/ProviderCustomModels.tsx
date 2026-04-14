@@ -158,7 +158,7 @@ export function ProviderCustomModels() {
           <button
             onClick={openCreate}
             disabled={!!editor}
-            className="text-xs md:text-sm bg-cyan-600/20 text-cyan-400 hover:bg-cyan-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-cyan-600/30 font-medium disabled:opacity-30"
+            className="text-xs md:text-sm bg-cyan-600 text-white hover:bg-cyan-700 px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-cyan-700 font-black uppercase tracking-widest shadow-lg shadow-cyan-600/10 active:scale-95 disabled:opacity-30"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">{t('providerCustomModels.newVariant')}</span>
@@ -167,7 +167,7 @@ export function ProviderCustomModels() {
         </header>
 
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2">
+          <div className="p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl text-red-700 dark:text-red-400 text-sm flex items-center gap-2 shadow-sm font-medium">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             {error}
           </div>
@@ -196,7 +196,7 @@ export function ProviderCustomModels() {
               <select
                 value={editor.baseModelId}
                 onChange={(e) => setEditor({ ...editor, baseModelId: e.target.value })}
-                className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all"
+                className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-900 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all shadow-sm"
               >
                 <option value="">{t('providerCustomModels.selectBaseModel')}</option>
                 {baseModels.map((m) => (
@@ -229,7 +229,7 @@ export function ProviderCustomModels() {
                   value={editor.customName}
                   onChange={(e) => setEditor({ ...editor, customName: e.target.value })}
                   placeholder={t('providerCustomModels.namePlaceholder')}
-                  className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all placeholder:text-neutral-700"
+                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-900 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all placeholder:text-neutral-400 shadow-sm"
                 />
               </div>
               <div className="space-y-1.5">
@@ -242,7 +242,7 @@ export function ProviderCustomModels() {
                   value={editor.customModelId}
                   onChange={(e) => setEditor({ ...editor, customModelId: e.target.value })}
                   placeholder={t('providerCustomModels.idPlaceholder')}
-                  className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
+                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-neutral-900 dark:text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all placeholder:text-neutral-400 placeholder:font-sans shadow-sm"
                 />
               </div>
             </div>
@@ -252,14 +252,14 @@ export function ProviderCustomModels() {
               <button
                 onClick={handleEditorSave}
                 disabled={isSaving || !editor.customName.trim() || !(editor.customModelId || '').trim() || !editor.baseModelId}
-                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-neutral-900 dark:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all disabled:opacity-30 flex items-center gap-2"
+                className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all disabled:opacity-30 flex items-center gap-2 border border-cyan-700 shadow-sm active:scale-95"
               >
                 <Save className="w-3.5 h-3.5" />
                 {isSaving ? t('providerCustomModels.saving') : editor.mode === 'create' ? t('providerCustomModels.create') : t('providerCustomModels.update')}
               </button>
               <button
                 onClick={() => setEditor(null)}
-                className="px-4 py-2 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                className="px-5 py-2.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-xs font-black uppercase tracking-widest transition-all border border-neutral-200 dark:border-neutral-700 shadow-sm active:scale-95"
               >
                 {t('providerCustomModels.cancel')}
               </button>
@@ -269,11 +269,13 @@ export function ProviderCustomModels() {
 
         {/* List */}
         {customModels.length === 0 && !editor ? (
-          <div className="py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/20 dark:bg-neutral-900/20">
-            <Layers className="w-12 h-12 text-neutral-700" />
-            <div>
-              <p className="text-lg font-medium text-neutral-600 dark:text-neutral-400">{t('providerCustomModels.noVariants')}</p>
-              <p className="text-sm">{t('providerCustomModels.noVariantsDesc')}</p>
+          <div className="col-span-full py-20 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/20 shadow-sm">
+            <div className="p-4 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
+              <Layers className="w-8 h-8 text-neutral-600 dark:text-neutral-700" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-neutral-600 dark:text-neutral-400 tracking-tight">{t('providerCustomModels.noVariants')}</p>
+              <p className="text-sm mt-1">{t('providerCustomModels.noVariantsDesc')}</p>
             </div>
           </div>
         ) : customModels.length > 0 && (
@@ -284,12 +286,12 @@ export function ProviderCustomModels() {
               return (
                 <div
                   key={idx}
-                  className="bg-white/40 dark:bg-neutral-900/40 backdrop-blur-sm border border-neutral-200/60 dark:border-neutral-800/60 hover:border-neutral-700 px-4 py-3 rounded-xl transition-all flex items-center justify-between gap-4"
+                  className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-700 px-5 py-4 rounded-2xl transition-all flex items-center justify-between gap-4 shadow-sm hover:shadow-md"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-semibold text-neutral-900 dark:text-white text-sm truncate">{alias.customName}</h4>
-                      <code className="text-[11px] text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md font-mono border border-cyan-500/20">
+                      <h4 className="font-black text-neutral-900 dark:text-white text-sm truncate uppercase tracking-tight">{alias.customName}</h4>
+                      <code className="text-[10px] text-cyan-700 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10 px-2 py-0.5 rounded-md font-mono border border-cyan-200 dark:border-cyan-500/20 uppercase tracking-wider">
                         {alias.customModelId}
                       </code>
                     </div>

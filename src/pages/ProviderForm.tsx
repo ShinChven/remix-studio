@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { fetchProvider, createProvider, updateProvider } from '../api';
 import { ProviderType } from '../types';
-import { Save, Key, Eye, EyeOff } from 'lucide-react';
+import { Save, Key, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { ProviderIcon } from '../components/ProviderIcon';
 
 const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'KlingAI', 'OpenAI', 'Grok', 'Claude', 'BytePlus', 'Replicate'];
@@ -97,18 +97,18 @@ export function ProviderForm() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
-        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      <div className="h-full flex items-center justify-center bg-white dark:bg-neutral-950">
+        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-full flex flex-col py-12 md:py-16 px-4 md:px-8 bg-neutral-50 dark:bg-neutral-950">
+    <div className="min-h-full flex flex-col py-12 md:py-16 px-4 md:px-8 bg-white dark:bg-neutral-950">
       <div className="w-full max-w-3xl mx-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-5 md:p-8 shadow-2xl">
         <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-amber-600/10 rounded-2xl">
-            <ProviderIcon type={type} className="w-6 h-6 text-amber-500" />
+          <div className="p-3 bg-amber-50 dark:bg-amber-600/10 rounded-2xl border border-amber-200 dark:border-amber-600/20">
+            <ProviderIcon type={type} className="w-6 h-6 text-amber-600 dark:text-amber-500" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">
@@ -131,7 +131,7 @@ export function ProviderForm() {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder={t('providerForm.namePlaceholder')}
-                className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700"
+                className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-900 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-400 font-medium shadow-sm"
                 required
               />
             </div>
@@ -148,14 +148,16 @@ export function ProviderForm() {
                     type="button"
                     onClick={() => setType(t)}
                     className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all text-left min-h-[68px] ${
-                      type === t ? 'bg-amber-500/10 border-amber-500/50 text-amber-400' : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                      type === t 
+                        ? 'bg-amber-600 text-white border-amber-700 shadow-lg shadow-amber-600/20' 
+                        : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900'
                     }`}
                   >
                     <div className="flex-1">
-                      <span className="text-sm font-bold block leading-tight">{t}</span>
-                      <span className="text-[11px] opacity-60 font-normal">{TYPE_DESCRIPTIONS[t]}</span>
+                      <span className={`text-sm font-black block leading-tight ${type === t ? 'text-white' : 'text-neutral-900 dark:text-white'}`}>{t}</span>
+                      <span className={`text-[10px] font-bold uppercase tracking-tighter opacity-70 ${type === t ? 'text-amber-100' : ''}`}>{TYPE_DESCRIPTIONS[t]}</span>
                     </div>
-                    {type === t && <div className="w-2 h-2 rounded-full bg-current flex-shrink-0" />}
+                    {type === t && <div className="w-2.5 h-2.5 rounded-full bg-white flex-shrink-0 shadow-sm" />}
                   </button>
                 ))}
               </div>
@@ -175,7 +177,7 @@ export function ProviderForm() {
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
                   placeholder={isEditing && hasExistingKey ? t('providerForm.stored') : type === 'KlingAI' ? t('providerForm.accessKeyPlaceholder') : t('providerForm.apiKeyPlaceholder')}
-                  className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
+                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-900 dark:text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-400 placeholder:font-sans shadow-sm"
                 />
                 <button
                   type="button"
@@ -201,7 +203,7 @@ export function ProviderForm() {
                     value={apiSecret}
                     onChange={e => setApiSecret(e.target.value)}
                     placeholder={isEditing && hasExistingSecret ? t('providerForm.stored') : t('providerForm.secretKeyPlaceholder')}
-                    className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
+                    className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-900 dark:text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-400 placeholder:font-sans shadow-sm"
                   />
                   <button
                     type="button"
@@ -224,7 +226,7 @@ export function ProviderForm() {
                 value={apiUrl}
                 onChange={e => setApiUrl(e.target.value)}
                 placeholder={t('providerForm.apiUrlPlaceholder')}
-                className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
+                className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-900 dark:text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-400 placeholder:font-sans shadow-sm"
               />
             </div>
 
@@ -240,7 +242,7 @@ export function ProviderForm() {
                 max="1000"
                 value={concurrency}
                 onChange={e => setConcurrency(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-24 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all"
+                className="w-24 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-900 dark:text-neutral-200 font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all shadow-sm"
               />
                 <span className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">
                   {t('providerForm.maxRequests')}
@@ -250,7 +252,7 @@ export function ProviderForm() {
           </div>
 
           {error && (
-            <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+            <p className="text-sm font-bold text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl px-4 py-3 shadow-sm">
               {error}
             </p>
           )}
@@ -259,14 +261,14 @@ export function ProviderForm() {
             <button
               type="button"
               onClick={() => navigate('/providers')}
-              className="w-full sm:flex-1 px-4 py-3.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
+              className="w-full sm:flex-1 px-4 py-4 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98] border border-neutral-200 dark:border-neutral-700 shadow-sm"
             >
               {t('providerForm.cancel')}
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !name.trim()}
-              className="w-full sm:flex-1 px-4 py-3.5 bg-amber-500 hover:bg-amber-400 text-black rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-amber-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
+              className="w-full sm:flex-1 px-4 py-4 bg-amber-500 hover:bg-amber-600 text-white dark:text-black rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-amber-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2 border border-amber-600"
             >
               <Save className="w-4 h-4" />
               {isSubmitting ? t('providerForm.saving') : isEditing ? t('providerForm.submitSave') : t('providerForm.submitCreate')}
