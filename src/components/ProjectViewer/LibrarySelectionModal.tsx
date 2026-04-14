@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Library as LibraryIcon } from 'lucide-react';
 import { Library } from '../../types';
 
@@ -17,6 +18,7 @@ export function LibrarySelectionModal({
   libraries,
   selectedLibraryIds
 }: LibrarySelectionModalProps) {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   return (
@@ -30,8 +32,8 @@ export function LibrarySelectionModal({
               <LibraryIcon className="w-5 h-5 text-emerald-500" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Select Library</h3>
-              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Collections available for workflow</p>
+              <h3 className="text-lg font-bold text-white tracking-tight">{t('projectViewer.librarySelection.title')}</h3>
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">{t('projectViewer.librarySelection.description')}</p>
             </div>
           </div>
           <button 
@@ -46,7 +48,7 @@ export function LibrarySelectionModal({
           {libraries.length === 0 ? (
             <div className="py-20 text-center">
               <LibraryIcon className="w-12 h-12 text-neutral-800 mx-auto mb-4" />
-              <p className="text-neutral-500 font-bold uppercase tracking-widest text-xs">No libraries created yet</p>
+              <p className="text-neutral-500 font-bold uppercase tracking-widest text-xs">{t('projectViewer.librarySelection.noLibraries')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -81,7 +83,7 @@ export function LibrarySelectionModal({
                         </div>
                         {isSelected && (
                           <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                            Added
+                            {t('projectViewer.librarySelection.added')}
                           </span>
                         )}
                       </div>
@@ -94,7 +96,7 @@ export function LibrarySelectionModal({
                           {lib.type}
                         </span>
                         <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-neutral-700' : 'text-neutral-600'}`}>
-                          {lib.items.length} items
+                          {t('projectViewer.workflow.itemsCount', { count: lib.items.length })}
                         </span>
                       </div>
                     </div>
@@ -110,7 +112,7 @@ export function LibrarySelectionModal({
             onClick={onClose}
             className="px-6 py-2.5 text-neutral-400 hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
           >
-            Cancel
+            {t('projectViewer.common.cancel')}
           </button>
         </div>
       </div>

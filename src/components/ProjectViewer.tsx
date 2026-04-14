@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Project, Job, Library, WorkflowItem as WorkflowItemType, WorkflowItemType as WorkflowItemTypeKind, Provider, AlbumItem } from '../types';
 import { saveImage, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch } from '../api';
-import { CheckCircle2, List, Grid, ChevronLeft, Type, ImageIcon, Library as LibraryIcon, Plus, Settings, Trash2, Eraser, FileArchive } from 'lucide-react';
+import { CheckCircle2, List, Grid, ChevronLeft, Type, ImageIcon, Library as LibraryIcon, Plus, Settings, Trash2, Eraser } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { toast } from 'sonner';
 import { generateWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get('tab') as 'draft' | 'queue' | 'completed' | 'album') || 'draft';
@@ -153,9 +155,9 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const selectedProvider = providers.find(p => p.id === selectedProviderId);
   const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
 
-  const getProviderName = (id?: string) => id ? providers.find(p => p.id === id)?.name || id : 'Unknown Provider';
+  const getProviderName = (id?: string) => id ? providers.find(p => p.id === id)?.name || id : t('projectViewer.common.unknownProvider');
   const getModelName = (providerId?: string, modelId?: string) => {
-    if (!modelId) return 'Unknown Model';
+    if (!modelId) return t('projectViewer.common.unknownModel');
     const providerModels = providerId
       ? providers.find(p => p.id === providerId)?.models
       : undefined;
@@ -314,7 +316,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         setLocalProject(prev => ({ ...prev, workflow: prev.workflow.map(item => item.id === id ? { ...item, value: url, thumbnailUrl, optimizedUrl, size } : item) }));
       } catch (err: any) {
         console.error('Failed to upload image:', err);
-        toast.error(err.message || "Failed to upload image. Please try again.");
+        toast.error(err.message || t('projectViewer.toasts.uploadImageFailed'));
       } finally {
         setUploadingItemIds(prev => {
           const next = new Set(prev);
@@ -328,7 +330,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const addDraftsToQueue = async () => {
     const emptyItems = (localProject.workflow || []).filter(item => !item.value.trim());
     if (emptyItems.length > 0) {
-      setWorkflowError(`Missing information in ${emptyItems.length} workflow ${emptyItems.length === 1 ? 'item' : 'items'}.`);
+      setWorkflowError(t('projectViewer.errors.missingWorkflowInfo', { count: emptyItems.length }));
       setTimeout(() => setWorkflowError(null), 4000);
       return;
     }
@@ -405,7 +407,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       }
     } catch (error) {
       console.error('Failed to add drafts:', error);
-      toast.error('Failed to add drafts. Please try again.');
+      toast.error(t('projectViewer.toasts.addDraftsFailed'));
     } finally {
       setIsAddingDrafts(false);
       setDraftsProgress(null);
@@ -607,7 +609,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           onClick={() => setMobileView(mobileView === 'workflow' ? 'jobs' : 'workflow')}
           className="lg:hidden px-3 py-1.5 bg-blue-600/10 text-blue-500 rounded-xl hover:bg-blue-600/20 transition-all flex items-center gap-1.5 border border-blue-500/10 active:scale-95"
         >
-          {mobileView === 'workflow' ? (<><List className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest leading-none">Jobs</span></>) : (<><ChevronLeft className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest leading-none">Back</span></>)}
+          {mobileView === 'workflow' ? (<><List className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.main.mobileJobs')}</span></>) : (<><ChevronLeft className="w-3.5 h-3.5" /><span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.common.back')}</span></>)}
         </button>,
         document.getElementById('mobile-header-actions')!
       )}
@@ -619,11 +621,11 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           description={(
             <div className="flex flex-col gap-2 mt-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-neutral-950 border border-neutral-800 rounded">ID: {project.id}</span>
+                <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-neutral-950 border border-neutral-800 rounded">{t('projectViewer.main.projectId', { id: project.id })}</span>
               </div>
               <div className="flex items-center gap-3">
-                <span title="All changes are auto-saved" className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold uppercase tracking-widest opacity-60">
-                  <CheckCircle2 className="w-3 h-3" /> Auto-saved
+                <span title={t('projectViewer.main.autoSavedTitle')} className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold uppercase tracking-widest opacity-60">
+                  <CheckCircle2 className="w-3 h-3" /> {t('projectViewer.main.autoSaved')}
                 </span>
               </div>
             </div>
@@ -635,17 +637,17 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               <button
                 onClick={() => navigate(`/project/${project.id}/edit`)}
                 className="p-1.5 text-neutral-600 hover:text-green-400 transition-all hover:bg-green-400/10 rounded-lg"
-                title="Edit Project Information"
+                title={t('projectViewer.main.editProjectInfo')}
               ><Settings className="w-4 h-4" /></button>
               <button
                 onClick={() => navigate(`/project/${project.id}/orphans`)}
                 className="p-1.5 text-neutral-600 hover:text-blue-400 transition-all hover:bg-blue-400/10 rounded-lg"
-                title="Manage Orphan Files (Cleanup)"
+                title={t('projectViewer.main.manageOrphans')}
               ><Eraser className="w-4 h-4" /></button>
               <button 
                 onClick={() => setShowDeleteProjectModal(true)} 
                 className="p-1.5 text-neutral-600 hover:text-red-400 transition-all hover:bg-red-400/10 rounded-lg" 
-                title="Delete Project"
+                title={t('projectViewer.main.deleteProject')}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -655,13 +657,13 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
         <div className="p-3 border-b border-neutral-800 flex gap-2 bg-neutral-900/50">
           <button onClick={() => addWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
-            <Type className="w-3 h-3" /> Text
+            <Type className="w-3 h-3" /> {t('projectViewer.common.text')}
           </button>
           <button onClick={() => addWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
-            <ImageIcon className="w-3 h-3" /> Img
+            <ImageIcon className="w-3 h-3" /> {t('projectViewer.common.imageShort')}
           </button>
           <button onClick={() => addWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
-            <LibraryIcon className="w-3 h-3" /> Lib
+            <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
           </button>
         </div>
         <div ref={workflowListRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar lg:max-h-none">
@@ -680,7 +682,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             />
           ))}
           {(localProject.workflow || []).length === 0 && (
-            <div className="text-center text-neutral-600 text-[10px] font-bold uppercase tracking-widest py-12 border border-dashed border-neutral-800 rounded-2xl bg-neutral-900/20">Build your workflow</div>
+            <div className="text-center text-neutral-600 text-[10px] font-bold uppercase tracking-widest py-12 border border-dashed border-neutral-800 rounded-2xl bg-neutral-900/20">{t('projectViewer.main.buildWorkflow')}</div>
           )}
         </div>
 
@@ -702,28 +704,28 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               <button onClick={() => setActiveTab('draft')} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg transition-all ${activeTab === 'draft' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
                 <div className="flex items-center gap-1.5">
                   <Plus className="w-3 h-3" />
-                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">Draft</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.tabs.draft')}</span>
                 </div>
                 <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({draftJobs.length})</span>
               </button>
               <button onClick={() => setActiveTab('queue')} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg transition-all ${activeTab === 'queue' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
                 <div className="flex items-center gap-1.5">
                   <List className="w-3 h-3" />
-                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">Queue</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.tabs.queue')}</span>
                 </div>
                 <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({queueJobs.length})</span>
               </button>
               <button onClick={() => setActiveTab('completed')} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg transition-all ${activeTab === 'completed' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3 h-3" />
-                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">Done</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.tabs.done')}</span>
                 </div>
                 <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({completedJobs.length})</span>
               </button>
               <button onClick={() => setActiveTab('album')} className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg transition-all ${activeTab === 'album' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50 border border-transparent'}`}>
                 <div className="flex items-center gap-1.5">
                   <Grid className="w-3 h-3" />
-                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">{localProject.type === 'text' ? 'Texts' : 'Album'}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">{localProject.type === 'text' ? t('projectViewer.tabs.texts') : t('projectViewer.tabs.album')}</span>
                 </div>
                 <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({albumItems.length})</span>
               </button>
@@ -780,12 +782,12 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         </div>
       </div>
 
-      <ConfirmModal isOpen={itemToRemoveId !== null} onClose={() => setItemToRemoveId(null)} onConfirm={confirmRemoveWorkflowItem} title="Remove Workflow Item" message="Are you sure you want to remove this item from your workflow?" confirmText="Remove Item" type="danger" />
+      <ConfirmModal isOpen={itemToRemoveId !== null} onClose={() => setItemToRemoveId(null)} onConfirm={confirmRemoveWorkflowItem} title={t('projectViewer.confirm.removeWorkflowItem.title')} message={t('projectViewer.confirm.removeWorkflowItem.message')} confirmText={t('projectViewer.confirm.removeWorkflowItem.confirm')} type="danger" />
       <PromptModal item={editingItem} onClose={() => setEditingItem(null)} onSave={(value) => { if (editingItem) updateWorkflowItem(editingItem.id, value); setEditingItem(null); }} />
-      <ConfirmModal isOpen={showDeleteSelectedModal} onClose={() => setShowDeleteSelectedModal(false)} onConfirm={deleteSelectedDrafts} title="Delete Selected Drafts" message={`Are you sure you want to delete ${selectedDraftIds.size} selected drafts?`} confirmText="Delete Selected" type="danger" />
-      <ConfirmModal isOpen={showDeleteAllDraftsModal} onClose={() => setShowDeleteAllDraftsModal(false)} onConfirm={deleteAllDrafts} title="Delete All Drafts" message={`Are you sure you want to delete all ${draftJobs.length} draft tasks?`} confirmText="Delete All" type="danger" />
-      <ConfirmModal isOpen={showDeleteProjectModal} onClose={() => setShowDeleteProjectModal(false)} onConfirm={onDelete} title="Delete Project" message={`Are you sure you want to delete "${localProject.name}"?`} confirmText="Delete Project" type="danger" />
-      <ConfirmModal isOpen={jobToDeleteId !== null} onClose={() => setJobToDeleteId(null)} onConfirm={() => { if (jobToDeleteId) { deleteJob(jobToDeleteId); setJobToDeleteId(null); } }} title="Delete Job" message="Are you sure you want to delete this job?" confirmText="Delete Job" type="danger" />
+      <ConfirmModal isOpen={showDeleteSelectedModal} onClose={() => setShowDeleteSelectedModal(false)} onConfirm={deleteSelectedDrafts} title={t('projectViewer.confirm.deleteSelectedDrafts.title')} message={t('projectViewer.confirm.deleteSelectedDrafts.message', { count: selectedDraftIds.size })} confirmText={t('projectViewer.confirm.deleteSelectedDrafts.confirm')} type="danger" />
+      <ConfirmModal isOpen={showDeleteAllDraftsModal} onClose={() => setShowDeleteAllDraftsModal(false)} onConfirm={deleteAllDrafts} title={t('projectViewer.confirm.deleteAllDrafts.title')} message={t('projectViewer.confirm.deleteAllDrafts.message', { count: draftJobs.length })} confirmText={t('projectViewer.confirm.deleteAllDrafts.confirm')} type="danger" />
+      <ConfirmModal isOpen={showDeleteProjectModal} onClose={() => setShowDeleteProjectModal(false)} onConfirm={onDelete} title={t('projectViewer.confirm.deleteProject.title')} message={t('projectViewer.confirm.deleteProject.message', { name: localProject.name })} confirmText={t('projectViewer.confirm.deleteProject.confirm')} type="danger" />
+      <ConfirmModal isOpen={jobToDeleteId !== null} onClose={() => setJobToDeleteId(null)} onConfirm={() => { if (jobToDeleteId) { deleteJob(jobToDeleteId); setJobToDeleteId(null); } }} title={t('projectViewer.confirm.deleteJob.title')} message={t('projectViewer.confirm.deleteJob.message')} confirmText={t('projectViewer.confirm.deleteJob.confirm')} type="danger" />
       <LibrarySelectionModal
         isOpen={showLibrarySelector || !!selectingLibraryForItemId}
         onClose={() => {
@@ -848,14 +850,14 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             setAlbumItemsToDelete(null); 
           } 
         }} 
-        title="Move to Recycle Bin" 
-        message={`Are you sure you want to move ${albumItemsToDelete?.length || 0} items to the Recycle Bin?`} 
-        confirmText="Move to Trash" 
+        title={t('projectViewer.confirm.moveToRecycleBin.title')} 
+        message={t('projectViewer.confirm.moveToRecycleBin.message', { count: albumItemsToDelete?.length || 0 })} 
+        confirmText={t('projectViewer.confirm.moveToRecycleBin.confirm')} 
         type="danger" 
       />
-      <ConfirmModal isOpen={showDeleteCompletedSelectedModal} onClose={() => setShowDeleteCompletedSelectedModal(false)} onConfirm={deleteSelectedCompleted} title="Remove Selected Finished Records" message={`Are you sure you want to remove ${selectedCompletedIds.size} completed job records? (Album images will not be deleted)`} confirmText="Remove Selected" type="danger" />
-      <ConfirmModal isOpen={showDeleteQueueSelectedModal} onClose={() => setShowDeleteQueueSelectedModal(false)} onConfirm={deleteSelectedQueue} title="Delete Selected Jobs" message={`Are you sure you want to delete ${selectedQueueIds.size} selected jobs?`} confirmText="Delete Selected" type="danger" />
-      <ConfirmModal isOpen={showClearAllFailedModal} onClose={() => setShowClearAllFailedModal(false)} onConfirm={clearAllFailed} title="Clear All Failed Jobs" message="Are you sure you want to clear all failed jobs from the queue?" confirmText="Clear All Failed" type="danger" />
+      <ConfirmModal isOpen={showDeleteCompletedSelectedModal} onClose={() => setShowDeleteCompletedSelectedModal(false)} onConfirm={deleteSelectedCompleted} title={t('projectViewer.confirm.removeFinishedRecords.title')} message={t('projectViewer.confirm.removeFinishedRecords.message', { count: selectedCompletedIds.size })} confirmText={t('projectViewer.confirm.removeFinishedRecords.confirm')} type="danger" />
+      <ConfirmModal isOpen={showDeleteQueueSelectedModal} onClose={() => setShowDeleteQueueSelectedModal(false)} onConfirm={deleteSelectedQueue} title={t('projectViewer.confirm.deleteSelectedJobs.title')} message={t('projectViewer.confirm.deleteSelectedJobs.message', { count: selectedQueueIds.size })} confirmText={t('projectViewer.confirm.deleteSelectedJobs.confirm')} type="danger" />
+      <ConfirmModal isOpen={showClearAllFailedModal} onClose={() => setShowClearAllFailedModal(false)} onConfirm={clearAllFailed} title={t('projectViewer.confirm.clearFailedJobs.title')} message={t('projectViewer.confirm.clearFailedJobs.message')} confirmText={t('projectViewer.confirm.clearFailedJobs.confirm')} type="danger" />
     </div>
   );
 }

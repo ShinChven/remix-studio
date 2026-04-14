@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
 import { Save, ChevronLeft, StickyNote, Maximize2, Minimize2, Split, Eye, Edit3, Calendar, FileText, Tag as TagIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -8,6 +9,7 @@ import { fetchLibrary, createLibraryItem, updateLibraryItem } from '../api';
 import { TagModal } from '../components/TagModal';
 
 export function PromptEditor() {
+  const { t } = useTranslation();
   const { id, index } = useParams<{ id: string, index: string }>();
   const navigate = useNavigate();
 
@@ -84,7 +86,7 @@ export function PromptEditor() {
             <button
               onClick={() => navigate(`/library/${id}`)}
               className="p-2 md:p-3 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-xl md:rounded-2xl transition-all border border-neutral-800/50"
-              title="Back to Library"
+              title={t('promptEditor.backToLibrary')}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -96,7 +98,7 @@ export function PromptEditor() {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={isNew ? "Title..." : "Fragment Title"}
+                placeholder={isNew ? t('promptEditor.titlePlaceholder') : t('promptEditor.fragmentTitlePlaceholder')}
                 className="bg-transparent border-none text-lg md:text-xl font-bold text-white tracking-tight focus:outline-none focus:ring-0 p-0 placeholder:text-neutral-700 w-full truncate"
               />
               <div className="flex items-center gap-2 mt-0.5">
@@ -109,7 +111,7 @@ export function PromptEditor() {
                   className="flex items-center gap-1 px-1.5 py-0.5 rounded transition-all text-[9px] font-bold tracking-widest uppercase truncate border border-transparent hover:border-neutral-800 text-neutral-500 hover:text-blue-400 group/tagbtn"
                 >
                   <TagIcon className="w-3 h-3 transition-transform group-hover/tagbtn:scale-110" />
-                  {tags.length > 0 ? `${tags.length} Tags` : 'Add Tags'}
+                  {tags.length > 0 ? t('promptEditor.tagsCount', { count: tags.length }) : t('promptEditor.addTags')}
                 </button>
               </div>
             </div>
@@ -120,21 +122,21 @@ export function PromptEditor() {
                 <button
                   onClick={() => setViewMode('edit')}
                   className={`p-1.5 md:p-2 rounded-lg md:rounded-xl transition-all ${viewMode === 'edit' ? 'bg-neutral-800 text-blue-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
-                  title="Editor Only"
+                  title={t('promptEditor.viewMode.edit')}
                 >
                   <Edit3 className="w-4 md:w-4.5 h-4 md:h-4.5" />
                 </button>
                 <button
                   onClick={() => setViewMode('split')}
                   className={`p-1.5 md:p-2 rounded-lg md:rounded-xl transition-all ${viewMode === 'split' ? 'bg-neutral-800 text-blue-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
-                  title="Split View"
+                  title={t('promptEditor.viewMode.split')}
                 >
                   <Split className="w-4 md:w-4.5 h-4 md:h-4.5" />
                 </button>
                 <button
                   onClick={() => setViewMode('preview')}
                   className={`p-1.5 md:p-2 rounded-lg md:rounded-xl transition-all ${viewMode === 'preview' ? 'bg-neutral-800 text-blue-400 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
-                  title="Preview Only"
+                  title={t('promptEditor.viewMode.preview')}
                 >
                   <Eye className="w-4 md:w-4.5 h-4 md:h-4.5" />
                 </button>
@@ -143,7 +145,7 @@ export function PromptEditor() {
              <button
                onClick={() => setIsFullScreen(!isFullScreen)}
                className="p-2 md:p-3 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-xl md:rounded-2xl transition-all border border-neutral-800/50"
-               title="Toggle Fullscreen"
+               title={t('promptEditor.toggleFullscreen')}
              >
                {isFullScreen ? <Minimize2 className="w-4 md:w-5 h-4 md:h-5" /> : <Maximize2 className="w-4 md:w-5 h-4 md:h-5" />}
              </button>
@@ -154,8 +156,8 @@ export function PromptEditor() {
                className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl md:rounded-2xl font-bold uppercase tracking-widest text-[10px] md:text-xs transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-30 flex items-center justify-center gap-2 md:gap-3"
              >
                <Save className="w-3.5 md:w-4 h-3.5 md:h-4" />
-               <span className="hidden xs:inline">Save</span>
-               <span className="xs:hidden">Save</span>
+               <span className="hidden xs:inline">{t('promptEditor.save')}</span>
+               <span className="xs:hidden">{t('promptEditor.save')}</span>
              </button>
           </div>
         </div>
@@ -169,14 +171,14 @@ export function PromptEditor() {
                 <div className="px-6 py-3 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/20">
                   <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500 flex items-center gap-2">
                     <FileText className="w-3 h-3" />
-                    Source Content
+                    {t('promptEditor.sourceContent')}
                   </span>
-                  <div className="text-[8px] font-bold text-neutral-700 uppercase tracking-widest">Supports GFM Markdown</div>
+                  <div className="text-[8px] font-bold text-neutral-700 uppercase tracking-widest">{t('promptEditor.markdownSupport')}</div>
                 </div>
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="Draft your library fragment here using Markdown..."
+                  placeholder={t('promptEditor.editorPlaceholder')}
                   className="flex-1 w-full bg-transparent border-none p-4 md:p-8 text-neutral-200 text-sm md:text-base font-mono leading-relaxed focus:outline-none focus:ring-0 resize-none placeholder:text-neutral-800 custom-scrollbar"
                 />
               </div>
@@ -187,13 +189,13 @@ export function PromptEditor() {
                  <div className="px-6 py-3 border-b border-neutral-800 flex items-center bg-neutral-950/40">
                   <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2">
                     <Eye className="w-3 h-3" />
-                    Dynamic Preview
+                    {t('promptEditor.dynamicPreview')}
                   </span>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 prose prose-invert prose-neutral max-w-none prose-pre:bg-neutral-900 prose-pre:border prose-pre:border-neutral-800 custom-scrollbar">
                    {content.trim() === '' ? (
                      <div className="h-full flex items-center justify-center text-neutral-700 italic font-medium">
-                        Write something to see the preview here...
+                        {t('promptEditor.previewPlaceholder')}
                      </div>
                    ) : (
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -208,13 +210,13 @@ export function PromptEditor() {
 
           <div className="bg-neutral-950/50 border-t border-neutral-800 px-4 md:px-6 py-2 md:py-3 flex flex-wrap items-center justify-between gap-y-2 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-neutral-600">
              <div className="flex items-center gap-4 md:gap-6">
-               <span>Words: {content.trim() === '' ? 0 : content.trim().split(/\s+/).length}</span>
-               <span>Chars: {content.length}</span>
+               <span>{t('promptEditor.words', { count: content.trim() === '' ? 0 : content.trim().split(/\s+/).length })}</span>
+               <span>{t('promptEditor.chars', { count: content.length })}</span>
              </div>
              <div className="flex items-center gap-3 md:gap-4">
                <span className="flex items-center gap-1.5"><Calendar className="w-3 h-3" /> {new Date().toLocaleDateString()}</span>
                <span className="hidden sm:inline text-neutral-800">|</span>
-               <span className="hidden sm:inline">Library: {library.id}</span>
+               <span className="hidden sm:inline">{t('promptEditor.libraryLabel', { id: library.id })}</span>
              </div>
           </div>
         </div>

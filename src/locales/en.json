@@ -10,9 +10,1199 @@
     "storage": "Storage",
     "userManagement": "User Management"
   },
+  "mainLayout": {
+    "storageUnavailable": "Storage unavailable",
+    "toggleMenu": "Toggle Menu",
+    "expandSidebar": "Expand Sidebar",
+    "collapseSidebar": "Collapse Sidebar"
+  },
+  "confirmModal": {
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "apiKeyCheck": {
+    "loading": "Loading...",
+    "title": "API Key Required",
+    "description": "This application uses Nano Banana 2 (Gemini 3.1 Flash Image) which requires a paid Google Cloud API key.",
+    "learnMore": "Learn more about billing",
+    "selectApiKey": "Select API Key"
+  },
+  "projectRoute": {
+    "notFound": "Project not found.",
+    "renameFailed": "Failed to rename project folder. Reverting ID change."
+  },
+  "libraryRoute": {
+    "notFound": "Library not found."
+  },
+  "storageIndicator": {
+    "title": "Storage: {{used}} / {{limit}} ({{percent}}%)",
+    "storage": "Storage",
+    "usedOfLimit": "{{used}} of {{limit}}"
+  },
+  "tagModal": {
+    "title": "Edit Tags",
+    "description": "Add or remove tags for this item.",
+    "saveTags": "Save Tags",
+    "placeholder": "Enter tags (comma separated)...",
+    "add": "Add",
+    "noTags": "No tags added yet"
+  },
+  "storageView": {
+    "tiers": {
+      "free": "Free",
+      "professional": "Professional",
+      "premium": "Premium",
+      "custom": "Custom"
+    },
+    "analyzing": "Analyzing storage usage...",
+    "title": "Storage Analysis",
+    "description": "Detailed breakdown of your digital footprint.",
+    "capacityOverview": "Capacity Overview",
+    "consumption": "Consumption",
+    "totalLimit": "Total Limit",
+    "percentConsumed": "{{percent}}% consumed",
+    "optimizationTitle": "Storage Optimization",
+    "cleanOrphansTitle": "Clean Orphans",
+    "cleanOrphansDescription": "Identify and remove unreferenced files from project folders to reclaim space.",
+    "recycleBinTitle": "Recycle Bin",
+    "recycleBinDescription": "Total of {{size}} can be permanently deleted.",
+    "completeScan": "Complete Scan",
+    "projectRankings": "Project Rankings",
+    "album": "Album",
+    "orphans": "Orphans"
+  },
+  "dashboard": {
+    "welcome": "Welcome to Remix Studio",
+    "description": "Select a project or library from the sidebar, or create a new one to get started.",
+    "recentProjects": "Recent Projects",
+    "newProject": "New Project",
+    "new": "New",
+    "noProjects": "No projects yet. Create one to start generating.",
+    "libraries": "Libraries",
+    "newLibrary": "New Library",
+    "noLibraries": "No libraries yet. Create one to store reusable prompts.",
+    "projectStats": "{{jobCount}} jobs • {{imageCount}} images • {{date}}"
+  },
+  "projectViewer": {
+    "common": {
+      "unknownProvider": "Unknown Provider",
+      "unknownModel": "Unknown Model",
+      "provider": "Provider",
+      "model": "Model",
+      "back": "Back",
+      "text": "Text",
+      "imageShort": "Img",
+      "libraryShort": "Lib",
+      "library": "Library",
+      "cancel": "Cancel",
+      "close": "Close",
+      "copy": "Copy",
+      "copyToLibrary": "Copy to Library",
+      "selectAll": "Select All",
+      "selectedCount": "{{count}} Selected",
+      "delete": "Delete",
+      "deleteAll": "Delete All",
+      "deleteSelected": "Delete Selected",
+      "deleteJob": "Delete Job",
+      "upload": "Upload",
+      "prompt": "Prompt",
+      "generatedText": "Generated Text",
+      "fullPrompt": "Full Prompt"
+    },
+    "tabs": {
+      "draft": "Draft",
+      "queue": "Queue",
+      "done": "Done",
+      "album": "Album",
+      "texts": "Texts"
+    },
+    "toasts": {
+      "uploadImageFailed": "Failed to upload image. Please try again.",
+      "addDraftsFailed": "Failed to add drafts. Please try again."
+    },
+    "errors": {
+      "missingWorkflowInfo_one": "Missing information in {{count}} workflow item.",
+      "missingWorkflowInfo_other": "Missing information in {{count}} workflow items."
+    },
+    "main": {
+      "mobileJobs": "Jobs",
+      "projectId": "ID: {{id}}",
+      "autoSaved": "Auto-saved",
+      "autoSavedTitle": "All changes are auto-saved",
+      "editProjectInfo": "Edit Project Information",
+      "manageOrphans": "Manage Orphan Files (Cleanup)",
+      "deleteProject": "Delete Project",
+      "buildWorkflow": "Build your workflow"
+    },
+    "drafts": {
+      "emptyCanvas": "Empty Canvas",
+      "galleryReady": "You have beautiful creations ready. Start a new draft or explore your gallery.",
+      "buildWorkflowHint": "Build your project workflow on the left to start generating images.",
+      "openAlbum": "Open Album",
+      "startSelected": "Start Selected",
+      "startAllNow": "Start All Now",
+      "deleteAllDrafts": "Delete All Drafts",
+      "runJob": "Run Job"
+    },
+    "queue": {
+      "retry": "Retry",
+      "clearAllFailed": "Clear All Failed",
+      "running": "Running",
+      "queued": "Queued",
+      "failed": "Failed",
+      "retryJob": "Retry Job",
+      "visualContexts": "Visual Contexts",
+      "contextShort": "C_{{index}}",
+      "contextAlt": "Context {{index}}",
+      "errorDetails": "Error Details",
+      "unknownError": "Unknown error occurred",
+      "emptyTitle": "Queue is clear",
+      "emptyDescription": "Active jobs will appear here"
+    },
+    "completed": {
+      "finishedCount": "{{count}} Finished",
+      "completed": "Completed",
+      "deleteJobRecord": "Delete Job Record",
+      "metadata": "Metadata",
+      "emptyTitle": "No finished records",
+      "emptyDescription": "Historical job execution records will appear here"
+    },
+    "settings": {
+      "providerLabel": "Provider:",
+      "none": "None",
+      "selectModelToConfigure": "Select a model to configure options",
+      "soundValue": "Sound {{value}}",
+      "shuffle": "Shuffle",
+      "aiModel": "AI Model",
+      "selectProvider": "Select Provider",
+      "selectModel": "Select Model",
+      "modelOptionsHidden": "Model Options Hidden",
+      "chooseModelHint": "Choose a model to reveal provider-specific settings.",
+      "aspectRatio": "Aspect Ratio",
+      "resolution": "Resolution",
+      "durationSeconds": "Duration (s)",
+      "sound": "Sound",
+      "systemPrompt": "System Prompt",
+      "systemPromptPlaceholder": "Optional system instructions for the AI model...",
+      "temperature": "Temperature",
+      "maxTokens": "Max Tokens",
+      "quality": "Quality",
+      "background": "Background",
+      "format": "Format",
+      "workflowOptions": "Workflow Options",
+      "shuffleWorkflow": "Shuffle Workflow",
+      "randomizeOrder": "Randomize combinations order",
+      "jobQuantity": "Job Quantity",
+      "totalUniqueCombinations": "Total unique combinations",
+      "ofTotal": "OF {{count}}",
+      "selectProviderAndModel": "Please select an AI provider and model to continue.",
+      "uploadingImages": "Uploading Images...",
+      "savingDrafts": "Saving Drafts...",
+      "composingProgress": "Composing {{current}}/{{total}}",
+      "addToDraft": "Add to Draft"
+    },
+    "workflow": {
+      "noTextContent": "No text content...",
+      "pickFromLibrary": "Pick from Library",
+      "unknownLibrary": "Unknown Library",
+      "itemsCount": "{{count}} items",
+      "filteredTags": "Filtered: {{count}} tags",
+      "wait": "Wait"
+    },
+    "modelSelector": {
+      "title": "Select Model",
+      "description": "Choose an AI provider and a specific model for your workflow",
+      "searchPlaceholder": "Search by model or provider name...",
+      "noProviders": "No providers configured",
+      "noProvidersHint": "Go to settings to add your first AI provider",
+      "noModelsFound": "No models found matching \"{{query}}\"",
+      "footer": "Click a model card to select and continue"
+    },
+    "librarySelection": {
+      "title": "Select Library",
+      "description": "Collections available for workflow",
+      "noLibraries": "No libraries created yet",
+      "added": "Added"
+    },
+    "libraryPreview": {
+      "pickThisText": "Pick this text",
+      "itemsSummary": "{{filtered}} of {{total}} items",
+      "filterByTags": "Filter by tags",
+      "allItems": "All Items",
+      "noItemsMatch": "No items match",
+      "clearAllFilters": "Clear all filters",
+      "clickToSelect": "Click to Select",
+      "closeViewer": "Close Viewer"
+    },
+    "promptModal": {
+      "title": "Edit Prompt Fragment",
+      "description": "Workflow Text Block",
+      "placeholder": "Type your prompt here...",
+      "characterCount": "Character count: {{count}}",
+      "saveChanges": "Save Changes"
+    },
+    "exportDialog": {
+      "title": "Export Package",
+      "description": "Set the ZIP filename before queuing this export",
+      "itemCount_one": "{{count}} item in this package",
+      "itemCount_other": "{{count}} items in this package",
+      "packageName": "Package Name",
+      "placeholder": "album_export.zip",
+      "queueing": "Queueing...",
+      "startExport": "Start Export"
+    },
+    "albumPrompt": {
+      "title": "View Prompt",
+      "description": "Album Image Prompt",
+      "closeAria": "Close prompt dialog",
+      "promptCopied": "Prompt copied",
+      "copyFailed": "Failed to copy prompt",
+      "characterCount": "Character count: {{count}}"
+    },
+    "imageLightbox": {
+      "deleteImage": "Delete Image",
+      "previewAlt": "Preview {{index}}"
+    },
+    "copyToLibrary": {
+      "texts": "Texts",
+      "textItemCount_one": "{{count}} text item",
+      "textItemCount_other": "{{count}} text items",
+      "videoItemCount_one": "{{count}} video",
+      "videoItemCount_other": "{{count}} videos",
+      "imageItemCount_one": "{{count}} image",
+      "imageItemCount_other": "{{count}} images",
+      "loadLibrariesFailed": "Failed to load libraries: {{message}}",
+      "enterLibraryName": "Please enter a library name",
+      "selectLibrary": "Please select a library",
+      "createdNewLibrary": "Created new {{type}} library and copied {{itemSummary}}",
+      "copiedToLibrary": "Copied {{itemSummary}} to library",
+      "copyFailed": "Copy failed: {{message}}",
+      "description": "Duplicating {{itemSummary}} to {{type}} library",
+      "destination": "Destination",
+      "createNew": "Create New",
+      "addToExisting": "Add to Existing",
+      "newLibraryName": "New library name",
+      "versionToCopy": "Version to Copy",
+      "optimized": "Optimized",
+      "optimizedHint": "Fast preview version",
+      "raw": "Raw",
+      "rawHint": "Original full quality",
+      "copying": "Copying..."
+    },
+    "album": {
+      "exportQueued": "Export queued!",
+      "viewArchiveProgress": "View progress in Archive →",
+      "exportFailed": "Export failed: {{message}}",
+      "itemsCount": "{{count}} Items",
+      "exportSelected": "Export Selected",
+      "compareSelected": "Compare Selected",
+      "exportAll": "Export All",
+      "copyAllToLibrary": "Copy All to Library",
+      "noTexts": "No texts yet",
+      "noVideos": "No videos yet",
+      "galleryEmpty": "Gallery is empty",
+      "collection": "collection",
+      "reel": "reel",
+      "emptyDescription": "Start a generation to build your {{target}}",
+      "viewTextDetails": "Click to view text details",
+      "imageContexts": "+{{count}} img",
+      "view": "View",
+      "openOriginal": "Open Original",
+      "playVideo": "Play video",
+      "viewFullPrompt": "Click to view full prompt",
+      "raw": "RAW",
+      "optimized": "OPT",
+      "thumbnail": "THMB"
+    },
+    "compare": {
+      "title": "Compare Texts",
+      "subtitle": "{{count}} selected · esc close",
+      "closeAria": "Close compare view",
+      "copied": "{{label}} copied",
+      "copyFailed": "Failed to copy {{label}}",
+      "referenceImages": "Reference Images ({{count}})",
+      "referenceAlt": "Reference {{index}}",
+      "noGeneratedText": "No generated text."
+    },
+    "textDetail": {
+      "title": "Text View",
+      "itemIndex": "Item {{index}}",
+      "previousItem": "Previous text item",
+      "nextItem": "Next text item",
+      "dialogAria": "Text album details",
+      "closeAria": "Close text details dialog",
+      "copied": "{{label}} copied",
+      "copyFailed": "Failed to copy {{label}}",
+      "referenceImages": "Reference Images ({{count}})",
+      "referenceAlt": "Reference {{index}}",
+      "refShort": "Ref {{index}}",
+      "noGeneratedText": "No generated text.",
+      "characterCount": "{{count}} characters",
+      "keyboardHint": "Esc close · ← → navigate"
+    },
+    "confirm": {
+      "removeWorkflowItem": {
+        "title": "Remove Workflow Item",
+        "message": "Are you sure you want to remove this item from your workflow?",
+        "confirm": "Remove Item"
+      },
+      "deleteSelectedDrafts": {
+        "title": "Delete Selected Drafts",
+        "message": "Are you sure you want to delete {{count}} selected drafts?",
+        "confirm": "Delete Selected"
+      },
+      "deleteAllDrafts": {
+        "title": "Delete All Drafts",
+        "message": "Are you sure you want to delete all {{count}} draft tasks?",
+        "confirm": "Delete All"
+      },
+      "deleteProject": {
+        "title": "Delete Project",
+        "message": "Are you sure you want to delete \"{{name}}\"?",
+        "confirm": "Delete Project"
+      },
+      "deleteJob": {
+        "title": "Delete Job",
+        "message": "Are you sure you want to delete this job?",
+        "confirm": "Delete Job"
+      },
+      "moveToRecycleBin": {
+        "title": "Move to Recycle Bin",
+        "message": "Are you sure you want to move {{count}} items to the Recycle Bin?",
+        "confirm": "Move to Trash"
+      },
+      "removeFinishedRecords": {
+        "title": "Remove Selected Finished Records",
+        "message": "Are you sure you want to remove {{count}} completed job records? (Album images will not be deleted)",
+        "confirm": "Remove Selected"
+      },
+      "deleteSelectedJobs": {
+        "title": "Delete Selected Jobs",
+        "message": "Are you sure you want to delete {{count}} selected jobs?",
+        "confirm": "Delete Selected"
+      },
+      "clearFailedJobs": {
+        "title": "Clear All Failed Jobs",
+        "message": "Are you sure you want to clear all failed jobs from the queue?",
+        "confirm": "Clear All Failed"
+      }
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "description": "Manage and track your AI workflows and generation tasks.",
+    "allProjects": "All Projects",
+    "newProject": "New Project",
+    "sort": {
+      "newest": "Newest",
+      "largest": "Largest"
+    },
+    "noProjects": {
+      "title": "No projects yet",
+      "description": "Create a new project to start building your workflows."
+    },
+    "projectCard": {
+      "jobs": "{{count}} jobs",
+      "assets": {
+        "images": "{{count}} images",
+        "texts": "{{count}} texts",
+        "videos": "{{count}} videos"
+      },
+      "openProject": "Open Project →"
+    },
+    "pagination": "Page {{current}} of {{total}}"
+  },
+  "libraries": {
+    "title": "Libraries",
+    "description": "Manage your reusable prompts and image collections.",
+    "allLibraries": "All Libraries",
+    "newLibrary": "New Library",
+    "new": "New",
+    "noLibraries": {
+      "title": "No libraries yet",
+      "description": "Create one to store reusable prompts or images."
+    },
+    "libraryCard": {
+      "items": "{{count}} items",
+      "openEditor": "Open Editor →",
+      "duplicate": "Duplicate Library"
+    },
+    "duplicateDialog": {
+      "title": "Duplicate Library",
+      "description": "Create a copy of this library with a new name.",
+      "placeholder": "New library name",
+      "cancel": "Cancel",
+      "confirm": "Duplicate",
+      "success": "Copied \"{{name}}\"",
+      "error": "Failed to duplicate library"
+    }
+  },
+  "libraryEditor": {
+    "toasts": {
+      "uploadFailed": "Failed to upload images"
+    },
+    "collectionType": "{{type}} Collection",
+    "filterItems": "Filter items...",
+    "uploading": "Uploading...",
+    "upload": "Upload",
+    "addFragment": "Add Fragment",
+    "editLibrarySettings": "Edit Library Settings",
+    "importOutput": "Import / Output",
+    "deleteLibrary": "Delete Library",
+    "selectAll": "Select All",
+    "selectedCount": "{{count}} Selected",
+    "filterByTag": "Filter by Tag",
+    "tagsSelected": "{{count}} Tags Selected",
+    "allFragments": "All Fragments",
+    "batchTag": "Batch Tag",
+    "delete": "Delete",
+    "imageLabel": "IMG_{{index}}",
+    "editTags": "Edit Tags",
+    "refineInFullEditor": "Refine in Full Editor",
+    "deleteFragment": "Delete Fragment",
+    "fullSource": "Full Source",
+    "markdownEnabled": "Markdown Enabled",
+    "noResultsFound": "No results found",
+    "emptyTitle": "Ghost Town",
+    "tryDifferentSearch": "Try a different search term",
+    "emptyDescription": "Add content below to initialize library",
+    "references": {
+      "title": "Library In Use",
+      "message_one": "\"{{name}}\" is referenced by {{count}} project. You need to remove these references before deleting.",
+      "message_other": "\"{{name}}\" is referenced by {{count}} projects. You need to remove these references before deleting.",
+      "resolve": "Resolve References"
+    },
+    "confirm": {
+      "destroyLibrary": {
+        "title": "Destroy Library",
+        "message": "This will permanently delete the collection \"{{name}}\" and all its fragments. This action is irreversible.",
+        "confirm": "Destroy Collection"
+      },
+      "expungeFragment": {
+        "title": "Expunge Fragment",
+        "message": "Are you sure you want to remove this fragment from the collection?",
+        "confirm": "Remove Now"
+      },
+      "destroySelected": {
+        "title": "Destroy Selected Fragments",
+        "message": "Are you sure you want to delete {{count}} fragment(s)?",
+        "confirm": "Destroy Selected"
+      }
+    },
+    "tagModal": {
+      "batchTitle": "Batch Tag Selected Items",
+      "batchDescription": "Add tags to {{count}} selected item(s).",
+      "addTags": "Add Tags",
+      "editTitle": "Edit Item Tags"
+    }
+  },
+  "providers": {
+    "title": "Providers",
+    "description": "Manage API credentials for image generation backends. Keys are encrypted at rest.",
+    "allProviders": "All Providers",
+    "newProvider": "New Provider",
+    "new": "New",
+    "noProviders": {
+      "title": "No providers yet",
+      "description": "Add your first API key to start generating images."
+    },
+    "providerCard": {
+      "credentialsStored": "Credentials stored",
+      "keyStored": "Key stored",
+      "missingCredentials": "Missing credentials",
+      "noKey": "No key",
+      "projects": "{{count}} project",
+      "projects_plural": "{{count}} projects",
+      "activeJobs": "{{count}} active job",
+      "activeJobs_plural": "{{count}} active jobs"
+    },
+    "deleteDialog": {
+      "title": "Delete Provider",
+      "message": "Delete \"{{name}}\"? This removes the stored API key. Existing project references will remain as warnings, and any pending or processing jobs using this provider may fail until you switch them to another provider.",
+      "usageWarning": " Currently referenced by {{projectCount}} projects and {{jobCount}} active jobs.",
+      "confirm": "Delete",
+      "deleting": "Deleting…"
+    },
+    "errors": {
+      "load": "Failed to load providers.",
+      "delete": "Failed to delete provider."
+    }
+  },
+  "exports": {
+    "title": "Archive",
+    "description": "Manage your generated ZIP archives across all projects.",
+    "drive": {
+      "connected": "Drive Connected",
+      "disconnect": "Disconnect",
+      "connect": "Connect Drive",
+      "disconnectSuccess": "Google Drive disconnected",
+      "disconnectError": "Failed to disconnect Google Drive",
+      "uploadQueued": "Drive upload queued — watch the Drive icon for progress",
+      "uploadSuccess": "Uploaded to Google Drive!",
+      "uploadFailed": "Drive upload failed",
+      "openFile": "Open file",
+      "uploading": "Uploading to Drive…",
+      "uploadToDrive": "Upload to Google Drive"
+    },
+    "stats": {
+      "database": "Database",
+      "total": "Total",
+      "inProgress": "In Progress",
+      "active": "Active"
+    },
+    "empty": {
+      "title": "Archive is empty",
+      "description": "Generated project exports will appear here automatically",
+      "viewProjects": "View Projects"
+    },
+    "status": {
+      "ready": "Ready",
+      "archiving": "Archiving",
+      "queued": "Queued",
+      "failed": "Failed"
+    },
+    "card": {
+      "files": "{{count}} Files",
+      "download": "Download ZIP",
+      "delete": "Delete record"
+    },
+    "loadMore": "Load More Archives",
+    "deleteDialog": {
+      "title": "Delete Export Record",
+      "message": "Are you sure you want to delete this export record? This action cannot be undone.",
+      "confirm": "Delete Record"
+    }
+  },
+  "trash": {
+    "title": "Recycle Bin",
+    "description": "Review deleted items, restore what you need, or remove them permanently.",
+    "stats": {
+      "items": "{{count}} Items",
+      "total": "{{size}} Total"
+    },
+    "actions": {
+      "restore": "Restore",
+      "restoreCount": "Restore ({{count}})",
+      "deletePermanently": "Delete Permanently",
+      "emptyTrash": "Empty Trash"
+    },
+    "empty": {
+      "title": "Recycle Bin is Empty",
+      "description": "Deleted album items will appear here"
+    },
+    "card": {
+      "restore": "Restore",
+      "delete": "Delete Permanently"
+    },
+    "confirm": {
+      "empty": {
+        "title": "Empty Recycle Bin",
+        "message": "Are you sure you want to permanently delete all {{count}} items? This will free up {{size}} but cannot be undone.",
+        "confirm": "Empty Trash"
+      },
+      "deleteSelected": {
+        "title": "Delete Selected Items",
+        "message": "Are you sure you want to permanently delete {{count}} items? This will free up {{size}} and cannot be undone.",
+        "confirm": "Delete Permanently"
+      },
+      "deleteSingle": {
+        "title": "Permanently Delete Image",
+        "message": "Are you sure you want to permanently delete this image? This action cannot be undone.",
+        "confirm": "Delete Permanently"
+      },
+      "deleting": "Deleting..."
+    }
+  },
+  "login": {
+    "welcomeBack": "Welcome Back",
+    "completeRegistration": "Complete Registration",
+    "twoFactorVerification": "Two-Factor Verification",
+    "signInWith": "Sign in with your password, a saved passkey, or Google.",
+    "registrationDescription": "Your Google identity is verified. Enter an invite code to finish creating your account.",
+    "twoFactorDescription": "Enter the 6-digit code for {{email}}.",
+    "email": "Email Address",
+    "password": "Password",
+    "signIn": "Sign In",
+    "orContinueWith": "Or continue with",
+    "passkey": "Passkey",
+    "google": "Google",
+    "inviteCode": "Invite code",
+    "enterInviteCode": "Enter invite code",
+    "inviteCodeDescription": "Invite codes can be prefilled from the `inviteCode` URL parameter.",
+    "finishRegistration": "Finish Registration",
+    "restartGoogle": "Restart Google Sign-In",
+    "googleSignIn": "Google sign-in",
+    "verifiedSuccessfully": "Verified successfully",
+    "authCode": "Authentication code",
+    "verifyAndSignIn": "Verify and Sign In",
+    "back": "Back",
+    "errors": {
+      "passkeyNotSupported": "This browser does not support passkeys.",
+      "loginFailed": "Login failed",
+      "twoFactorFailed": "2FA verification failed",
+      "passkeyFailed": "Passkey login failed",
+      "registrationFailed": "Registration failed"
+    }
+  },
+  "accountTwoFactorSetup": {
+    "backToSecurity": "Back to Security",
+    "title": "Two-Factor Setup",
+    "description": "Configure your authenticator app for {{email}}.",
+    "thisAccount": "this account",
+    "enabled": "Enabled",
+    "currentPassword": "Current password",
+    "scanQr": "Scan QR Code",
+    "qrAlt": "Two-factor authentication QR code",
+    "qrUnavailable": "QR unavailable",
+    "expiresAt": "Expires {{time}}.",
+    "openOtpauth": "Open otpauth URI",
+    "verificationCode": "Verification code",
+    "enable": "Enable 2FA",
+    "step1": {
+      "title": "Step 1: Generate authenticator secret",
+      "withPassword": "Confirm your password before creating a new 2FA setup.",
+      "noPassword": "Generate a new authenticator secret for your account.",
+      "action": "Generate authenticator secret"
+    },
+    "step2": {
+      "title": "Step 2: Scan and verify",
+      "description": "Scan the QR code with Google Authenticator, 1Password, Authy, or another TOTP app. If scanning is unavailable, enter the setup key manually."
+    },
+    "errors": {
+      "loadAccount": "Failed to load account",
+      "prepareSetup": "Failed to prepare 2FA setup.",
+      "enable": "Failed to enable 2FA."
+    },
+    "success": {
+      "secretCreated": "Authenticator secret created. Scan the QR code, then verify the current code.",
+      "enabled": "Two-factor authentication is now enabled."
+    }
+  },
+  "libraryImportExport": {
+    "badge": "Text Library Workspace",
+    "title": "Import & Output",
+    "description": "Bulk load prompt fragments, preserve tags in output, and keep a clean import format for editing outside the app.",
+    "toasts": {
+      "importFailed": "Failed to import items.",
+      "outputCopied": "Library output copied to clipboard",
+      "copyFailed": "Failed to copy output."
+    },
+    "stats": {
+      "library": "Library",
+      "currentItems": "Current Items",
+      "currentTags": "Current Tags",
+      "readyToImport": "Ready To Import"
+    },
+    "importSource": {
+      "label": "Import Source",
+      "title": "Compose incoming library items",
+      "description": "Supports the legacy list format and a new tag-aware variant:",
+      "clear": "Clear",
+      "uploadText": "Upload Text",
+      "sharedTags": "Shared Tags",
+      "sharedTagsPlaceholder": "Applied to every imported item. Example: evergreen, short-form",
+      "detectedTags": "Detected Tags",
+      "skippedLines": "Skipped Lines",
+      "textareaPlaceholder": "Paste list items here.\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio",
+      "dropHint": "Drop `.txt` or `.md` files here"
+    },
+    "formatGuide": {
+      "title": "Format Guide",
+      "rule1": "Each item must start with `- ` so the parser can split entries predictably.",
+      "rule2": "Use `Title: Content` when you want a display title. Use `| tags: a, b` at the end when you want per-item tags.",
+      "rule3": "Shared tags above are merged into every parsed item and deduplicated automatically."
+    },
+    "parseStatus": {
+      "title": "Parse Status",
+      "valid": "All non-empty lines are valid import entries.",
+      "line": "Line {{line}}",
+      "moreSkipped": "+{{count}} more skipped lines"
+    },
+    "parseIssues": {
+      "missingListMarker": "Missing \"- \" list marker",
+      "emptyAfterMarker": "Line is empty after \"- \"",
+      "missingContentBeforeTags": "Missing content before the tags segment",
+      "missingContentAfterTitle": "Missing content after the title separator"
+    },
+    "importAction": "Import {{count}} Items",
+    "preview": {
+      "label": "Import Preview",
+      "title": "Review incoming tagged items",
+      "description": "Parsed items show exactly what will be created in this text library.",
+      "items": "Preview Items",
+      "sourceLine": "Source line {{line}}",
+      "tagsCount": "{{count}} tag",
+      "tagsCount_plural": "{{count}} tags",
+      "emptyTitle": "Nothing parsed yet",
+      "emptyDescription": "Add list items on the left and this panel will render the exact import result, including merged tags."
+    },
+    "output": {
+      "label": "Library Output",
+      "title": "Export current items with or without tags",
+      "description": "Tagged output preserves text library metadata. Plain output keeps the original minimal list format.",
+      "tagged": "Tagged",
+      "plain": "Plain",
+      "copy": "Copy Output",
+      "download": "Download .md"
+    }
+  },
+  "adminUsers": {
+    "title": "User Management",
+    "description": "Create users, control access, and inspect account usage without external systems.",
+    "inviteUsers": "Invite Users",
+    "createUser": "Create User",
+    "searchPlaceholder": "Search by email",
+    "allRoles": "All Roles",
+    "admin": "Admin",
+    "user": "User",
+    "allStatuses": "All Statuses",
+    "active": "Active",
+    "disabled": "Disabled",
+    "apply": "Apply",
+    "noUsersFound": "No users found",
+    "adjustFilters": "Adjust the filters or create a new account.",
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "status": "Status",
+      "storage": "Storage",
+      "projects": "Projects",
+      "libraries": "Libraries",
+      "lastLogin": "Last Login",
+      "actions": "Actions"
+    },
+    "never": "Never",
+    "justNow": "Just now",
+    "relativeTime": {
+      "m": "{{count}}m ago",
+      "h": "{{count}}h ago",
+      "d": "{{count}}d ago"
+    },
+    "neverSignedIn": "Never signed in",
+    "showingUsers": "Showing {{count}} of {{total}} users",
+    "noUsersToShow": "No users to show",
+    "pageSize": "{{count}} / page",
+    "pagination": "Page {{current}} of {{total}}",
+    "createModal": {
+      "title": "Create User",
+      "description": "Provision a new account. Password is optional for OAuth-only users.",
+      "email": "Email",
+      "password": "Initial Password",
+      "optional": "(optional)",
+      "passwordPlaceholder": "Leave empty for OAuth-only accounts",
+      "role": "Role",
+      "status": "Status",
+      "storage": "Storage",
+      "cancel": "Cancel",
+      "submit": "Create User"
+    },
+    "detail": {
+      "title": "User Detail",
+      "description": "Inspect account state, usage, and perform admin actions.",
+      "account": "Account",
+      "created": "Created",
+      "lastLogin": "Last Login",
+      "storageTier": "Storage Tier",
+      "usedLimit": "Used / Limit",
+      "createdBy": "Created By",
+      "selfRegistered": "Self-registered / system",
+      "inviteCode": "Invite Code",
+      "notInviteBased": "Not invite-based",
+      "inviteNote": "Invite Note",
+      "noNote": "No note",
+      "projects": "Projects",
+      "libraries": "Libraries",
+      "providers": "Providers",
+      "exports": "Exports",
+      "storageBreakdown": "Storage Breakdown",
+      "trash": "Trash",
+      "adminControls": "Admin Controls",
+      "limit": "Storage Limit",
+      "disableUser": "Disable User",
+      "enableUser": "Enable User",
+      "passwordReset": "Password Reset",
+      "newPassword": "New Password",
+      "resetSubmit": "Reset Password",
+      "ownPasswordNote": "Use the account settings page to change your own password."
+    },
+    "confirm": {
+      "enableTitle": "Enable User",
+      "disableTitle": "Disable User",
+      "enableMessage": "Are you sure you want to enable {{email}}?",
+      "disableMessage": "Are you sure you want to disable {{email}}?"
+    },
+    "toasts": {
+      "roleUpdated": "Role updated",
+      "storageUpdated": "Storage limit updated",
+      "userEnabled": "User enabled",
+      "userDisabled": "User disabled",
+      "userCreated": "User created",
+      "passwordReset": "Password reset"
+    },
+    "errors": {
+      "loadUsers": "Failed to load users",
+      "loadDetail": "Failed to load user detail",
+      "updateRole": "Failed to update role",
+      "updateStorage": "Failed to update storage limit",
+      "updateStatus": "Failed to update user status",
+      "createUser": "Failed to create user",
+      "resetPassword": "Failed to reset password"
+    }
+  },
+  "adminInvites": {
+    "title": "Invite Codes",
+    "description": "Create invite codes for Google sign-up, set how many people can use each code, and track usage.",
+    "createInvite": "Create Invite Code",
+    "noInvites": "No invite codes created yet.",
+    "table": {
+      "code": "Code",
+      "tier": "Tier",
+      "note": "Note",
+      "usage": "Usage",
+      "created": "Created",
+      "lastUsedBy": "Last Used By",
+      "lastUsedAt": "Last Used At",
+      "share": "Share"
+    },
+    "copyCode": "Copy invite code",
+    "codeCopied": "Invite code copied",
+    "noNote": "No note",
+    "unused": "Unused",
+    "copyLink": "Copy Link",
+    "linkCopied": "Invite link copied",
+    "createModal": {
+      "title": "Create Invite Code",
+      "description": "Set how many people can use this invite code and add an optional note.",
+      "tier": "Membership Tier",
+      "uses": "Allowed Uses",
+      "note": "Note",
+      "notePlaceholder": "Who this invite is for, or what it should be used for",
+      "cancel": "Cancel",
+      "submit": "Create"
+    },
+    "toasts": {
+      "created": "Invite code created",
+      "copyFailed": "Failed to copy"
+    },
+    "errors": {
+      "load": "Failed to load invite codes",
+      "create": "Failed to create invite code"
+    }
+  },
+  "libraryForm": {
+    "newTitle": "New Library",
+    "editTitle": "Edit Library",
+    "description": "Define your library properties",
+    "nameLabel": "Library Name",
+    "namePlaceholder": "e.g. Character Outfits, Sci-Fi Context...",
+    "typeLabel": "Content Type",
+    "typeText": "Text",
+    "typeImage": "Image",
+    "contentType": "{{type}} Content",
+    "permanent": "Permanent",
+    "cancel": "Cancel",
+    "submitCreate": "Create Library",
+    "submitSave": "Save Changes"
+  },
+  "projectForm": {
+    "newTitle": "New Project",
+    "editTitle": "Edit Project",
+    "description": "Define your project parameters",
+    "typeLabel": "Project Type",
+    "typeImage": "Image",
+    "typeText": "Text",
+    "typeVideo": "Video",
+    "nameLabel": "Project Name",
+    "namePlaceholderText": "e.g. Product Description Generator...",
+    "namePlaceholderImage": "e.g. Cyberpunk Character Series...",
+    "prefixLabel": "Project Prefix",
+    "prefixPlaceholder": "e.g. PJ01",
+    "prefixDescriptionText": "Used as prefix for output naming",
+    "prefixDescriptionImage": "Used for image filename generation",
+    "customIdLabel": "Custom ID (Optional)",
+    "customIdPlaceholder": "project-slug-id",
+    "customIdDescription": "Leave blank for automatic ID generation",
+    "cancel": "Cancel",
+    "submitCreate": "Start Project",
+    "submitSave": "Save Changes"
+  },
+  "promptEditor": {
+    "titlePlaceholder": "Title...",
+    "fragmentTitlePlaceholder": "Fragment Title",
+    "addTags": "Add Tags",
+    "tagsCount": "{{count}} Tags",
+    "backToLibrary": "Back to Library",
+    "viewMode": {
+      "edit": "Editor Only",
+      "split": "Split View",
+      "preview": "Preview Only"
+    },
+    "toggleFullscreen": "Toggle Fullscreen",
+    "save": "Save",
+    "sourceContent": "Source Content",
+    "markdownSupport": "Supports GFM Markdown",
+    "editorPlaceholder": "Draft your library fragment here using Markdown...",
+    "dynamicPreview": "Dynamic Preview",
+    "previewPlaceholder": "Write something to see the preview here...",
+    "words": "Words: {{count}}",
+    "chars": "Chars: {{count}}",
+    "libraryLabel": "Library: {{id}}",
+    "errorSave": "Failed to save library prompt"
+  },
+  "providerForm": {
+    "newTitle": "New Provider",
+    "editTitle": "Edit Provider",
+    "securityNote": "Keys encrypted with AES-256-GCM",
+    "nameLabel": "Provider Name",
+    "namePlaceholder": "e.g. Work account, Personal key…",
+    "typeLabel": "Provider Type",
+    "apiKeyLabel": "API Key",
+    "accessKeyLabel": "Access Key",
+    "secretKeyLabel": "Secret Key",
+    "leaveBlankToKeep": "— leave blank to keep existing",
+    "apiKeyPlaceholder": "Paste your API key…",
+    "accessKeyPlaceholder": "Paste your access key…",
+    "secretKeyPlaceholder": "Paste your secret key…",
+    "stored": "•••••••• (stored)",
+    "apiUrlLabel": "API URL",
+    "apiUrlOptional": "— optional override",
+    "apiUrlPlaceholder": "https://… (leave blank for default)",
+    "parallelTasksLabel": "Parallel Tasks",
+    "concurrencyLimit": "— concurrency limit",
+    "maxRequests": "Max requests",
+    "saving": "Saving…",
+    "submitCreate": "Create Provider",
+    "submitSave": "Save Changes",
+    "cancel": "Cancel",
+    "errors": {
+      "accessKeyRequired": "Access Key is required.",
+      "apiKeyRequired": "API Key is required.",
+      "secretKeyRequired": "Secret Key is required for KlingAI.",
+      "saveFailed": "Save failed."
+    }
+  },
+  "providerProfile": {
+    "errorLoad": "Failed to load provider.",
+    "errorNotFound": "Provider not found",
+    "backToProviders": "Back to Providers",
+    "credentialsStored": "Credentials stored",
+    "keyStored": "Key stored",
+    "missingCredentials": "Missing credentials",
+    "noKey": "No key",
+    "customModels": "Custom Models",
+    "edit": "Edit",
+    "concurrency": "Concurrency",
+    "projects": "Projects",
+    "jobs": "Jobs",
+    "models": "Models",
+    "supportedModels": "Supported Models",
+    "availableModels": "Available Models",
+    "refresh": "Refresh",
+    "addKeyToFetch": "Add an API key to fetch available models from the provider.",
+    "noModels": "No models returned by the provider API.",
+    "categories": {
+      "text": "Text Generation",
+      "image": "Image Generation",
+      "video": "Video Generation"
+    },
+    "modelCount": "{{count}} model",
+    "modelCount_plural": "{{count}} models",
+    "errors": {
+      "fetchModels": "Failed to fetch models from provider API."
+    }
+  },
+  "providerCustomModels": {
+    "errorLoad": "Failed to load provider.",
+    "errorNotFound": "Provider not found",
+    "backToProvider": "Back to {{name}}",
+    "title": "Custom Model Variants",
+    "description": "Create model variants with custom IDs. Each variant inherits all parameters from its base model.",
+    "newVariant": "New Variant",
+    "editVariant": "Edit Variant",
+    "baseModelLabel": "Base Model",
+    "selectBaseModel": "Select base model...",
+    "inherits": "Inherits: {{traits}}",
+    "modelNameLabel": "Model Name",
+    "modelIdLabel": "Model ID",
+    "namePlaceholder": "e.g. Product Photo v2",
+    "idPlaceholder": "e.g. seedream-5-0-my-finetune",
+    "saving": "Saving...",
+    "create": "Create",
+    "update": "Update",
+    "cancel": "Cancel",
+    "noVariants": "No custom model variants yet",
+    "noVariantsDesc": "Pick a base model, give it a custom name and model ID to create a variant.",
+    "confirmDelete": "Confirm",
+    "edit": "Edit",
+    "delete": "Delete",
+    "errors": {
+      "saveFailed": "Failed to save."
+    }
+  },
+  "libraryCleanup": {
+    "errorNotFound": "Library not found.",
+    "title": "Clean Up References",
+    "description": "Remove references to \"<span className=\"text-white font-medium\">{{name}}</span>\" from projects before deleting.",
+    "backToLibrary": "Back to Library",
+    "warning": "{{count}} project still referencing this library",
+    "warning_plural": "{{count}} projects still referencing this library",
+    "warningDesc": "Remove references individually or use the button below to clean all and delete.",
+    "remove": "Remove",
+    "allCleared": "All references cleared",
+    "allClearedDesc": "You can now safely delete this library.",
+    "cleanAllAndDelete": "Clean All & Delete Library",
+    "deleteLibrary": "Delete Library",
+    "confirm": {
+      "title": "Clean All & Delete",
+      "message": "This will remove all references to \"{{name}}\" from {{count}} project and permanently delete the library. This action is irreversible.",
+      "message_plural": "This will remove all references to \"{{name}}\" from {{count}} projects and permanently delete the library. This action is irreversible.",
+      "confirmText": "Clean & Delete"
+    }
+  },
+  "projectOrphans": {
+    "title": "Orphan Files Management",
+    "cleanupTool": "Cleanup Tool",
+    "projectLabel": "Project: {{name}}",
+    "backToProject": "Back to Project",
+    "refresh": "Refresh scan",
+    "deleteSelected": "Delete ({{count}})",
+    "clearAll": "Clear All",
+    "orphanedFiles": "Orphaned Files",
+    "totalWaste": "Total Waste",
+    "warning": "Warning",
+    "warningDesc": "These files are NOT referenced by any current component of this project and can be safely deleted.",
+    "selectAll": "Select All",
+    "filesSelected": "{{count}} Files Selected",
+    "cleanTitle": "Project is Clean",
+    "cleanDesc": "No unreferenced files found in storage.",
+    "preview": "Preview",
+    "unknownSize": "Unknown",
+    "scanning": "Scanning S3 for Orphans...",
+    "confirm": {
+      "title": "Permanently Delete Files",
+      "message": "Are you sure you want to delete {{count}} orphan file(s)? This action will permanently remove them from S3 and cannot be undone.",
+      "confirmText": "Delete Permanently",
+      "deleting": "Deleting..."
+    }
+  },
+  "mcpConnections": {
+    "title": "MCP Connections",
+    "description": "Connect AI apps securely through MCP protocol",
+    "justNow": "just now",
+    "relativeTime": {
+      "m": "{{count}}m ago",
+      "h": "{{count}}h ago"
+    },
+    "expiryOptions": {
+      "noExpiration": "No expiration",
+      "7days": "7 days",
+      "30days": "30 days",
+      "90days": "90 days",
+      "1year": "1 year"
+    },
+    "errorLoad": "Failed to load MCP connections.",
+    "toasts": {
+      "clientRevoked": "Client access revoked",
+      "tokenRevoked": "Token revoked",
+      "revokeFailed": "Failed to revoke",
+      "tokenCreated": "Token created — copy it now. You won't see it again.",
+      "tokenCopied": "Token copied to clipboard",
+      "createFailed": "Failed to create token",
+      "copied": "{{label}} copied",
+      "copyFailed": "Failed to copy {{label}}"
+    },
+    "connectSection": {
+      "title": "Connect an AI app to your account",
+      "description": "This page helps you connect AI apps to your workspace. Start by copying the app address below into the app you want to connect. Then choose one of the two supported sign-in methods.",
+      "oauthMethod": {
+        "title": "OAuth 2.1 connector",
+        "description": "Use this when the app can open a browser for sign-in. You sign in, approve access, and the app connects automatically. This is the best option for most users."
+      },
+      "tokenMethod": {
+        "title": "Access token",
+        "description": "Use this only when the app asks you to paste a token, API key, or secret. You create the token here and paste it into the app yourself."
+      },
+      "appAddress": {
+        "label": "App address",
+        "copyTitle": "Copy MCP URL",
+        "instruction": "Copy this into the AI app when it asks where to connect."
+      },
+      "advancedUrl": {
+        "label": "Advanced sign-in URL",
+        "copyTitle": "Copy OAuth metadata URL",
+        "instruction": "Only use this if the app specifically asks for a sign-in or discovery URL."
+      },
+      "steps": {
+        "1": { "title": "1. Copy Address", "desc": "Paste it into the AI app to start setup." },
+        "2": { "title": "2. Choose Method", "desc": "Use OAuth if it opens a browser, otherwise use a token." },
+        "3": { "title": "3. Manage Here", "desc": "View connections or revoke access anytime." }
+      },
+      "jsonSetup": {
+        "title": "Need to use a JSON configuration?",
+        "subtitle": "Click to show or hide JSON setup blocks",
+        "instruction": "Some apps ask you to paste a JSON setup block instead of filling out a form. Use the OAuth 2.1 version when the app supports browser sign-in. Use the access token version when the app asks for a token.",
+        "oauthJson": "OAuth 2.1 JSON",
+        "tokenJson": "Access token JSON",
+        "copyJson": "Copy JSON",
+        "tokenInstruction": "Replace <code className=\"text-amber-400\">YOUR_MCP_TOKEN</code> with a token from this page, then paste the finished JSON into the app."
+      }
+    },
+    "tokens": {
+      "title": "Access Tokens",
+      "newToken": "New Token",
+      "whenToUse": "When to use Access Tokens",
+      "tip": "Use an access token only if the app does not support the OAuth 2.1 connector. Keep tokens private, like a password. In most cases, you will paste the app address and this token into the app.",
+      "form": {
+        "tokenName": "Token Name",
+        "expiration": "Expiration",
+        "placeholder": "e.g. Claude Desktop",
+        "create": "Create Token",
+        "cancel": "Cancel",
+        "done": "Done"
+      },
+      "empty": {
+        "title": "No access tokens",
+        "desc": "Create a token to connect your first AI app manually."
+      },
+      "card": {
+        "created": "Created {{date}}",
+        "used": "Used {{date}}",
+        "expired": "Expired",
+        "expires": "Expires {{date}}",
+        "noExpiration": "No expiration",
+        "revokeTitle": "Revoke token"
+      }
+    },
+    "oauth": {
+      "title": "OAuth 2.1 Connections",
+      "recommended": "Recommended for simple sign-in",
+      "tip": "Apps that you connect with the OAuth 2.1 connector will appear here automatically. After you approve access in the browser, the app will show up here.",
+      "empty": {
+        "title": "No OAuth clients connected",
+        "desc": "Apps will appear here after sign-in is completed in your AI app."
+      },
+      "card": {
+        "activeToken": "{{count}} active token",
+        "activeToken_plural": "{{count}} active tokens",
+        "noTokens": "No active tokens",
+        "registered": "Registered {{date}}",
+        "revokeTitle": "Revoke all tokens"
+      }
+    },
+    "confirm": {
+      "revokeClientTitle": "Revoke Client Access",
+      "revokeTokenTitle": "Revoke Token",
+      "revokeClientMessage": "Revoke all access tokens for \"{{name}}\"? The client will need to re-authenticate.",
+      "revokeTokenMessage": "Revoke the token \"{{name}}\"? Any MCP client using this token will lose access immediately.",
+      "revoking": "Revoking...",
+      "revoke": "Revoke"
+    }
+  },
   "account": {
-    "title": "Account",
-    "description": "Manage your identity, security, and workspace capacity.",
+    "title": "Account Settings",
+    "description": "Manage your profile, storage, and security preferences.",
+    "errorUnavailable": "Account unavailable",
+    "errorUnavailableDesc": "The account data could not be loaded.",
     "tabs": {
       "overview": "Overview",
       "storage": "Storage",
@@ -23,14 +1213,102 @@
       "profile": "Profile",
       "administrator": "Administrator",
       "user": "User",
-      "plan": "{{tier}} plan",
+      "plan": "{{tier}} Plan",
       "memberSince": "Member since {{date}}",
-      "signOut": "Sign out"
+      "signOut": "Sign Out",
+      "projects": "Projects",
+      "libraries": "Libraries",
+      "providers": "Providers",
+      "openProjects": "Open projects",
+      "openLibraries": "Open libraries",
+      "manageProviders": "Manage providers",
+      "errorTitle": "Overview unavailable",
+      "retry": "Retry"
+    },
+    "storage": {
+      "title": "Storage",
+      "description": "Detailed breakdown of your workspace capacity and usage.",
+      "errorTitle": "Storage unavailable",
+      "retry": "Retry",
+      "capacityOverview": "Capacity Overview",
+      "capacityDesc": "{{percent}}% of your total quota is currently occupied.",
+      "consumption": "Consumption",
+      "planLimit": "Plan Limit",
+      "usage": "Usage",
+      "tier": "Tier",
+      "ofUsed": "{{percent}}% of used space",
+      "noUsage": "No usage yet",
+      "optimization": "Optimization",
+      "recycleBin": "Recycle Bin cleanup",
+      "recycleBinDesc": "{{size}} can be permanently removed.",
+      "projectReview": "Project storage review",
+      "projectReviewDesc": "Inspect the heaviest projects and clear orphaned assets where needed."
+    },
+    "security": {
+      "errorTitle": "Security unavailable",
+      "retry": "Retry",
+      "passwordTitle": "Password",
+      "passwordDescRotate": "Rotate your password without leaving the app.",
+      "passwordDescSet": "Set a password to enable password-based sign in.",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmNewPassword": "Confirm new password",
+      "updatePassword": "Update password",
+      "setPassword": "Set password",
+      "goPasswordless": "Go passwordless",
+      "goPasswordlessDesc": "Remove your password and sign in with passkeys only.",
+      "removePassword": "Remove password",
+      "passkeysTitle": "Passkeys",
+    "passkeysDesc": "Use Face ID, Touch ID, Windows Hello, or a hardware key to sign in.",
+    "registered": "{{count}} registered",
+    "placeholder": "This MacBook",
+    "defaultPasskeyName": "This device",
+    "addPasskey": "Add passkey",
+    "noPasskeys": "No passkeys registered yet.",
+      "added": "Added {{date}}",
+      "lastUsed": "Last used {{date}}",
+      "remove": "Remove",
+      "twoFactorTitle": "Two-Factor Authentication",
+      "twoFactorDesc": "Require a time-based authenticator code after password login.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "twoFactorSetupDesc": "Start the authenticator setup in a dedicated page so the verification flow has more room.",
+      "twoFactorSetupPending": "A setup is already in progress. Opening the page will let you continue and verify it.",
+      "openTwoFactor": "Open 2FA Setup",
+    "authCode": "Authenticator code",
+    "disableTwoFactor": "Disable 2FA",
+    "cancel": "Cancel",
+    "errors": {
+        "passwordLength": "New password must be at least 8 characters long.",
+        "passwordMatch": "New password and confirmation do not match.",
+        "passwordUpdateFailed": "Failed to update password.",
+        "passwordRemoveFailed": "Failed to remove password.",
+        "passkeyNotSupported": "This browser does not support passkeys.",
+        "passkeyCancelled": "Passkey registration was cancelled.",
+        "passkeyRegisterFailed": "Failed to register passkey.",
+        "passkeyRemoveFailed": "Failed to remove passkey.",
+        "twoFactorDisableFailed": "Failed to disable 2FA."
+      },
+      "success": {
+        "passwordUpdated": "Password updated successfully.",
+        "passwordRemoved": "Password removed. Your account is now passwordless.",
+        "passkeyAdded": "Passkey added successfully.",
+        "passkeyRemoved": "Passkey removed.",
+        "twoFactorDisabled": "Two-factor authentication has been disabled."
+      }
     },
     "preferences": {
       "language": "Language",
-      "languageDescription": "Choose your preferred application language.",
-      "selectLanguage": "Select Language"
+      "languageDescription": "Choose your preferred language for the interface.",
+      "selectLanguage": "Select language"
+    },
+    "confirm": {
+      "signOutTitle": "Sign out",
+      "signOutMessage": "Are you sure you want to sign out of Remix Studio on this device?",
+      "signOutConfirm": "Sign Out",
+      "removePasswordTitle": "Remove password",
+      "removePasswordMessage": "This will remove your password. You will only be able to sign in using passkeys. Enter your current password to confirm.",
+      "removePasswordPlaceholder": "Current password"
     }
   }
 }

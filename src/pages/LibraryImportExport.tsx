@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { createLibraryItemsBatch, fetchLibrary } from '../api';
 import { Library, LibraryItem } from '../types';
 import {
@@ -27,7 +28,7 @@ type ParsedPreviewItem = {
 type ParseIssue = {
   line: number;
   raw: string;
-  reason: string;
+  reasonKey: 'missingListMarker' | 'emptyAfterMarker' | 'missingContentBeforeTags' | 'missingContentAfterTitle';
 };
 
 type ExportMode = 'tagged' | 'plain';
@@ -59,7 +60,7 @@ function parseImportText(importText: string, sharedTagsInput: string): {
       issues.push({
         line: index + 1,
         raw: line,
-        reason: 'Missing "- " list marker',
+        reasonKey: 'missingListMarker',
       });
       return;
     }
@@ -69,7 +70,7 @@ function parseImportText(importText: string, sharedTagsInput: string): {
       issues.push({
         line: index + 1,
         raw: line,
-        reason: 'Line is empty after "- "',
+        reasonKey: 'emptyAfterMarker',
       });
       return;
     }
@@ -85,7 +86,7 @@ function parseImportText(importText: string, sharedTagsInput: string): {
       issues.push({
         line: index + 1,
         raw: line,
-        reason: 'Missing content before the tags segment',
+        reasonKey: 'missingContentBeforeTags',
       });
       return;
     }
@@ -99,7 +100,7 @@ function parseImportText(importText: string, sharedTagsInput: string): {
       issues.push({
         line: index + 1,
         raw: line,
-        reason: 'Missing content after the title separator',
+        reasonKey: 'missingContentAfterTitle',
       });
       return;
     }
@@ -132,6 +133,7 @@ function formatExportText(items: LibraryItem[], exportMode: ExportMode): string 
 }
 
 export function LibraryImportExport() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -235,7 +237,7 @@ export function LibraryImportExport() {
       navigate(`/library/${id}`);
     } catch (error: any) {
       console.error('Failed to import items:', error);
-      toast.error(`Failed to import items: ${error.message}`);
+      toast.error(error?.message || t('libraryImportExport.toasts.importFailed'));
     } finally {
       setIsImporting(false);
     }
@@ -250,9 +252,9 @@ export function LibraryImportExport() {
 
     try {
       await navigator.clipboard.writeText(currentExportText);
-      toast.success('Library output copied to clipboard');
+      toast.success(t('libraryImportExport.toasts.outputCopied'));
     } catch (error: any) {
-      toast.error(`Failed to copy output: ${error.message}`);
+      toast.error(error?.message || t('libraryImportExport.toasts.copyFailed'));
     }
   };
 
@@ -295,15 +297,15 @@ export function LibraryImportExport() {
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">
                 <FileText className="h-3.5 w-3.5" />
-                Text Library Workspace
+                {t('libraryImportExport.badge')}
               </div>
 
               <div>
                 <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">
-                  Import & Output
+                  {t('libraryImportExport.title')}
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-400">
-                  Bulk load prompt fragments, preserve tags in output, and keep a clean import format for editing outside the app.
+                  {t('libraryImportExport.description')}
                 </p>
               </div>
             </div>
@@ -311,19 +313,19 @@ export function LibraryImportExport() {
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Library</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('libraryImportExport.stats.library')}</div>
               <div className="mt-2 truncate text-sm font-bold text-white">{library.name}</div>
             </div>
             <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Current Items</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('libraryImportExport.stats.currentItems')}</div>
               <div className="mt-2 text-2xl font-black text-white">{library.items.length}</div>
             </div>
             <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Current Tags</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('libraryImportExport.stats.currentTags')}</div>
               <div className="mt-2 text-2xl font-black text-white">{libraryTagCount}</div>
             </div>
             <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Ready To Import</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('libraryImportExport.stats.readyToImport')}</div>
               <div className="mt-2 text-2xl font-black text-blue-400">{previewItems.length}</div>
             </div>
           </div>
@@ -334,10 +336,10 @@ export function LibraryImportExport() {
             <div className="flex flex-col gap-4 border-b border-neutral-800/70 pb-5">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">Import Source</div>
-                  <h2 className="mt-2 text-xl font-black tracking-tight text-white">Compose incoming library items</h2>
+                  <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">{t('libraryImportExport.importSource.label')}</div>
+                  <h2 className="mt-2 text-xl font-black tracking-tight text-white">{t('libraryImportExport.importSource.title')}</h2>
                   <p className="mt-2 max-w-xl text-sm leading-relaxed text-neutral-400">
-                    Supports the legacy list format and a new tag-aware variant:
+                    {t('libraryImportExport.importSource.description')}
                     <span className="mt-1 block font-mono text-xs text-neutral-300">
                       - Title: Content | tags: cinematic, portrait
                     </span>
@@ -350,14 +352,14 @@ export function LibraryImportExport() {
                     className="inline-flex items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-neutral-400 transition-all hover:border-red-500/30 hover:text-red-300"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Clear
+                    {t('libraryImportExport.importSource.clear')}
                   </button>
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-blue-300 transition-all hover:bg-blue-500 hover:text-white"
                   >
                     <UploadCloud className="h-4 w-4" />
-                    Upload Text
+                    {t('libraryImportExport.importSource.uploadText')}
                   </button>
                   <input
                     ref={fileInputRef}
@@ -374,24 +376,24 @@ export function LibraryImportExport() {
                 <label className="rounded-2xl border border-neutral-800/70 bg-neutral-900/60 p-4">
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
                     <Tag className="h-3.5 w-3.5 text-blue-400" />
-                    Shared Tags
+                    {t('libraryImportExport.importSource.sharedTags')}
                   </div>
                   <input
                     type="text"
                     value={sharedTagsInput}
                     onChange={(event) => setSharedTagsInput(event.target.value)}
-                    placeholder="Applied to every imported item. Example: evergreen, short-form"
+                    placeholder={t('libraryImportExport.importSource.sharedTagsPlaceholder')}
                     className="mt-3 w-full border-none bg-transparent p-0 text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:ring-0"
                   />
                 </label>
 
                 <div className="grid grid-cols-2 gap-3 lg:w-[240px]">
                   <div className="rounded-2xl border border-neutral-800/70 bg-neutral-900/50 p-4">
-                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Detected Tags</div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('libraryImportExport.importSource.detectedTags')}</div>
                     <div className="mt-2 text-xl font-black text-white">{previewTagCount}</div>
                   </div>
                   <div className="rounded-2xl border border-neutral-800/70 bg-neutral-900/50 p-4">
-                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Skipped Lines</div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('libraryImportExport.importSource.skippedLines')}</div>
                     <div className={`mt-2 text-xl font-black ${parseIssues.length > 0 ? 'text-amber-300' : 'text-white'}`}>
                       {parseIssues.length}
                     </div>
@@ -416,14 +418,14 @@ export function LibraryImportExport() {
               <textarea
                 value={importText}
                 onChange={(event) => setImportText(event.target.value)}
-                placeholder={`Paste list items here.\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio`}
+                placeholder={t('libraryImportExport.importSource.textareaPlaceholder')}
                 className="min-h-[320px] flex-1 resize-none border-none bg-transparent p-2 font-mono text-sm leading-7 text-neutral-200 placeholder:text-neutral-700 focus:outline-none focus:ring-0 custom-scrollbar"
               />
 
               {!importText && (
                 <div className="pointer-events-none absolute inset-x-0 bottom-10 mx-auto flex max-w-sm items-center justify-center gap-3 rounded-2xl border border-neutral-800/70 bg-neutral-950/80 px-4 py-3 text-xs text-neutral-500 backdrop-blur-sm">
                   <UploadCloud className="h-4 w-4 text-neutral-600" />
-                  Drop `.txt` or `.md` files here
+                  {t('libraryImportExport.importSource.dropHint')}
                 </div>
               )}
             </div>
@@ -432,37 +434,37 @@ export function LibraryImportExport() {
               <div className="rounded-[28px] border border-neutral-800/70 bg-neutral-900/45 p-5">
                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-neutral-400">
                   <AlertCircle className="h-3.5 w-3.5 text-blue-400" />
-                  Format Guide
+                  {t('libraryImportExport.formatGuide.title')}
                 </div>
                 <div className="mt-4 space-y-3 text-sm leading-relaxed text-neutral-300">
-                  <p>Each item must start with `- ` so the parser can split entries predictably.</p>
-                  <p>Use `Title: Content` when you want a display title. Use `| tags: a, b` at the end when you want per-item tags.</p>
-                  <p>Shared tags above are merged into every parsed item and deduplicated automatically.</p>
+                  <p>{t('libraryImportExport.formatGuide.rule1')}</p>
+                  <p>{t('libraryImportExport.formatGuide.rule2')}</p>
+                  <p>{t('libraryImportExport.formatGuide.rule3')}</p>
                 </div>
               </div>
 
               <div className="rounded-[28px] border border-neutral-800/70 bg-neutral-900/45 p-5">
                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-neutral-400">
                   <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  Parse Status
+                  {t('libraryImportExport.parseStatus.title')}
                 </div>
                 {parseIssues.length === 0 ? (
                   <p className="mt-4 text-sm leading-relaxed text-neutral-300">
-                    All non-empty lines are valid import entries.
+                    {t('libraryImportExport.parseStatus.valid')}
                   </p>
                 ) : (
                   <div className="mt-4 max-h-36 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
                     {parseIssues.slice(0, 6).map((issue) => (
-                      <div key={`${issue.line}-${issue.reason}`} className="rounded-2xl border border-amber-500/20 bg-amber-500/6 px-3 py-2">
+                      <div key={`${issue.line}-${issue.reasonKey}`} className="rounded-2xl border border-amber-500/20 bg-amber-500/6 px-3 py-2">
                         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">
-                          Line {issue.line}
+                          {t('libraryImportExport.parseStatus.line', { line: issue.line })}
                         </div>
-                        <div className="mt-1 text-xs text-neutral-200">{issue.reason}</div>
+                        <div className="mt-1 text-xs text-neutral-200">{t(`libraryImportExport.parseIssues.${issue.reasonKey}`)}</div>
                       </div>
                     ))}
                     {parseIssues.length > 6 && (
                       <div className="text-[11px] text-neutral-500">
-                        +{parseIssues.length - 6} more skipped lines
+                        {t('libraryImportExport.parseStatus.moreSkipped', { count: parseIssues.length - 6 })}
                       </div>
                     )}
                   </div>
@@ -479,7 +481,7 @@ export function LibraryImportExport() {
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  Import {previewItems.length} Items
+                  {t('libraryImportExport.importAction', { count: previewItems.length })}
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
@@ -490,15 +492,15 @@ export function LibraryImportExport() {
             <div className="rounded-[28px] border border-neutral-800/70 bg-neutral-900/45 p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">Import Preview</div>
-                  <h2 className="mt-2 text-xl font-black tracking-tight text-white">Review incoming tagged items</h2>
+                  <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">{t('libraryImportExport.preview.label')}</div>
+                  <h2 className="mt-2 text-xl font-black tracking-tight text-white">{t('libraryImportExport.preview.title')}</h2>
                   <p className="mt-2 text-sm leading-relaxed text-neutral-400">
-                    Parsed items show exactly what will be created in this text library.
+                    {t('libraryImportExport.preview.description')}
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/80 px-4 py-3">
-                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Preview Items</div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('libraryImportExport.preview.items')}</div>
                   <div className="mt-1 text-2xl font-black text-white">{previewItems.length}</div>
                 </div>
               </div>
@@ -513,7 +515,7 @@ export function LibraryImportExport() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
-                            Source line {item.sourceLine}
+                            {t('libraryImportExport.preview.sourceLine', { line: item.sourceLine })}
                           </div>
                           {item.title && (
                             <h3 className="mt-2 text-sm font-black uppercase tracking-[0.16em] text-blue-300">
@@ -523,7 +525,7 @@ export function LibraryImportExport() {
                         </div>
                         {item.tags.length > 0 && (
                           <div className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-blue-300">
-                            {item.tags.length} tag{item.tags.length === 1 ? '' : 's'}
+                            {t('libraryImportExport.preview.tagsCount', { count: item.tags.length })}
                           </div>
                         )}
                       </div>
@@ -548,10 +550,10 @@ export function LibraryImportExport() {
                   <div className="flex min-h-[240px] flex-col items-center justify-center rounded-[24px] border border-dashed border-neutral-800 bg-neutral-950/60 px-6 text-center">
                     <FileText className="h-10 w-10 text-neutral-800" />
                     <div className="mt-4 text-[10px] font-black uppercase tracking-[0.22em] text-neutral-600">
-                      Nothing parsed yet
+                      {t('libraryImportExport.preview.emptyTitle')}
                     </div>
                     <p className="mt-3 max-w-sm text-sm leading-relaxed text-neutral-500">
-                      Add list items on the left and this panel will render the exact import result, including merged tags.
+                      {t('libraryImportExport.preview.emptyDescription')}
                     </p>
                   </div>
                 )}
@@ -561,10 +563,10 @@ export function LibraryImportExport() {
             <div className="flex min-h-0 flex-1 flex-col rounded-[28px] border border-neutral-800/70 bg-neutral-900/45 p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">Library Output</div>
-                  <h2 className="mt-2 text-xl font-black tracking-tight text-white">Export current items with or without tags</h2>
+                  <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">{t('libraryImportExport.output.label')}</div>
+                  <h2 className="mt-2 text-xl font-black tracking-tight text-white">{t('libraryImportExport.output.title')}</h2>
                   <p className="mt-2 text-sm leading-relaxed text-neutral-400">
-                    Tagged output preserves text library metadata. Plain output keeps the original minimal list format.
+                    {t('libraryImportExport.output.description')}
                   </p>
                 </div>
 
@@ -577,7 +579,7 @@ export function LibraryImportExport() {
                         : 'text-neutral-500 hover:text-neutral-200'
                     }`}
                   >
-                    Tagged
+                    {t('libraryImportExport.output.tagged')}
                   </button>
                   <button
                     onClick={() => setExportMode('plain')}
@@ -587,7 +589,7 @@ export function LibraryImportExport() {
                         : 'text-neutral-500 hover:text-neutral-200'
                     }`}
                   >
-                    Plain
+                    {t('libraryImportExport.output.plain')}
                   </button>
                 </div>
               </div>
@@ -599,7 +601,7 @@ export function LibraryImportExport() {
                   className="inline-flex items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-950/90 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-neutral-300 transition-all hover:border-neutral-700 hover:text-white disabled:opacity-35"
                 >
                   <Copy className="h-4 w-4" />
-                  Copy Output
+                  {t('libraryImportExport.output.copy')}
                 </button>
                 <button
                   onClick={handleDownloadOutput}
@@ -607,7 +609,7 @@ export function LibraryImportExport() {
                   className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-blue-300 transition-all hover:bg-blue-500 hover:text-white disabled:opacity-35"
                 >
                   <Download className="h-4 w-4" />
-                  Download .md
+                  {t('libraryImportExport.output.download')}
                 </button>
               </div>
 

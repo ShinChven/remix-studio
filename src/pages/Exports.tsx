@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive, Link2Off, Upload } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ExportTask, DeliveryStatus } from '../types';
 import { fetchAllExports, deleteProjectExport, uploadExportToDrive, fetchDeliveryStatus, fetchActiveDeliveries, disconnectGoogleDrive, fetchCurrentUser } from '../api';
 import { PageHeader } from '../components/PageHeader';
@@ -9,6 +10,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
 
 export function Exports() {
+  const { t } = useTranslation();
   const { user: authUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(authUser);
@@ -53,7 +55,7 @@ export function Exports() {
       next.delete('error');
       setSearchParams(next, { replace: true });
     }
-  }, []);
+  }, [searchParams, setSearchParams]);
 
   // Poll delivery statuses
   useEffect(() => {
@@ -77,14 +79,14 @@ export function Exports() {
           if (status.status === 'completed') {
             toast.success(
               <span>
-                Uploaded to Google Drive!{' '}
+                {t('exports.drive.uploadSuccess')}{' '}
                 <a href={status.externalUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                  Open file
+                  {t('exports.drive.openFile')}
                 </a>
               </span>
             );
           } else if (status.status === 'failed') {
-            toast.error(status.error || 'Drive upload failed');
+            toast.error(status.error || t('exports.drive.uploadFailed'));
             // Remove from pending so the button resets
             setPendingDeliveries(prev => {
               const next = { ...prev };
@@ -102,7 +104,7 @@ export function Exports() {
     poll();
     deliveryPollRef.current = setInterval(poll, 3000);
     return () => { if (deliveryPollRef.current) clearInterval(deliveryPollRef.current); };
-  }, [pendingDeliveries, deliveries]);
+  }, [pendingDeliveries, deliveries, t]);
 
   const handleDisconnectDrive = async () => {
     setDisconnecting(true);
@@ -110,9 +112,9 @@ export function Exports() {
       await disconnectGoogleDrive();
       const me = await fetchCurrentUser();
       setUser(me);
-      toast.success('Google Drive disconnected');
+      toast.success(t('exports.drive.disconnectSuccess'));
     } catch (err: any) {
-      toast.error(err.message || 'Failed to disconnect Google Drive');
+      toast.error(err.message || t('exports.drive.disconnectError'));
     } finally {
       setDisconnecting(false);
     }
@@ -187,9 +189,9 @@ export function Exports() {
     try {
       const { deliveryTaskId } = await uploadExportToDrive(task.id);
       setPendingDeliveries(prev => ({ ...prev, [task.id]: deliveryTaskId }));
-      toast.success('Drive upload queued — watch the Drive icon for progress');
+      toast.success(t('exports.drive.uploadQueued'));
     } catch (err: any) {
-      toast.error(err.message || 'Failed to submit Drive upload');
+      toast.error(err.message || t('exports.drive.uploadFailed'));
     }
   };
 
@@ -201,8 +203,8 @@ export function Exports() {
   return (
     <div className="p-4 md:p-8 w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <PageHeader
-        title="Archive"
-        description="Manage your generated ZIP archives across all projects."
+        title={t('exports.title')}
+        description={t('exports.description')}
       />
 
       {/* Stats + Google Drive controls */}
@@ -212,7 +214,7 @@ export function Exports() {
           <div className="flex items-center justify-between sm:justify-start gap-3 bg-emerald-500/5 border border-emerald-500/20 px-4 py-2.5 rounded-xl">
             <div className="flex items-center gap-2">
               <HardDrive className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-              <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Drive Connected</span>
+              <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">{t('exports.drive.connected')}</span>
             </div>
             <div className="hidden sm:block w-px h-4 bg-emerald-500/20" />
             <button
@@ -221,8 +223,8 @@ export function Exports() {
               className="flex items-center gap-1.5 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition disabled:opacity-50"
             >
               {disconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3.5 w-3.5" />}
-              <span className="sm:hidden">Disconnect</span>
-              <span className="hidden sm:inline">Disconnect</span>
+              <span className="sm:hidden">{t('exports.drive.disconnect')}</span>
+              <span className="hidden sm:inline">{t('exports.drive.disconnect')}</span>
             </button>
           </div>
         ) : (
@@ -231,21 +233,21 @@ export function Exports() {
             className="flex items-center justify-center gap-2 bg-neutral-900/50 border border-neutral-800/50 px-4 py-2.5 rounded-xl hover:border-neutral-700 transition"
           >
             <HardDrive className="h-4 w-4 text-neutral-500 flex-shrink-0" />
-            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest text-center">Connect Drive</span>
+            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest text-center">{t('exports.drive.connect')}</span>
           </a>
         )}
 
         {/* Database stats */}
         <div className="bg-neutral-900/50 border border-neutral-800/50 px-4 py-2.5 rounded-xl flex items-center justify-between sm:justify-start gap-4">
           <div className="flex flex-col">
-            <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Database</p>
-            <p className="text-xs font-bold text-white">{exports.length} Total</p>
+            <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">{t('exports.stats.database')}</p>
+            <p className="text-xs font-bold text-white">{exports.length} {t('exports.stats.total')}</p>
           </div>
           <div className="w-px h-6 bg-neutral-800" />
           <div className="flex flex-col">
-            <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest">In Progress</p>
+            <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest">{t('exports.stats.inProgress')}</p>
             <p className="text-xs font-bold text-white">
-              {exports.filter(t => t.status === 'pending' || t.status === 'processing').length} Active
+              {exports.filter(t => t.status === 'pending' || t.status === 'processing').length} {t('exports.stats.active')}
             </p>
           </div>
         </div>
@@ -254,10 +256,10 @@ export function Exports() {
       {!loading && exports.length === 0 ? (
         <div className="py-32 text-center text-neutral-600 border border-dashed border-neutral-900 rounded-[32px] bg-neutral-950/20">
           <List className="w-12 h-12 mx-auto opacity-10 mb-4" />
-          <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">Archive is empty</div>
-          <div className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-8 max-w-[200px] mx-auto leading-relaxed">Generated project exports will appear here automatically</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">{t('exports.empty.title')}</div>
+          <div className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-8 max-w-[200px] mx-auto leading-relaxed">{t('exports.empty.description')}</div>
           <Link to="/projects" className="px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-neutral-800 active:scale-95">
-            View Projects
+            {t('exports.empty.viewProjects')}
           </Link>
         </div>
       ) : (
@@ -311,7 +313,7 @@ export function Exports() {
                       {task.status === 'completed' ? (
                         <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
                           <List className="w-3 h-3" />
-                          {task.total} Files
+                          {t('exports.card.files', { count: task.total })}
                         </div>
                       ) : null}
                       {(task.status === 'processing' || task.status === 'pending') && (
@@ -323,7 +325,7 @@ export function Exports() {
                             />
                           </div>
                           <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
-                            {task.status === 'pending' ? 'Queued' : `${task.current}/${task.total}`}
+                            {task.status === 'pending' ? t('exports.status.queued') : `${task.current}/${task.total}`}
                           </span>
                         </div>
                       )}
@@ -352,25 +354,25 @@ export function Exports() {
                     {task.status === 'completed' && (
                       <div className="flex items-center gap-1.5 text-emerald-500 text-[9px] font-black uppercase tracking-widest bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/10">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        Ready
+                        {t('exports.status.ready')}
                       </div>
                     )}
                     {task.status === 'processing' && (
                       <div className="flex items-center gap-1.5 text-blue-400 text-[9px] font-black uppercase tracking-widest bg-blue-500/5 px-2.5 py-1.5 rounded-lg border border-blue-500/10">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Archiving
+                        {t('exports.status.archiving')}
                       </div>
                     )}
                     {task.status === 'pending' && (
                       <div className="flex items-center gap-1.5 text-neutral-500 text-[9px] font-black uppercase tracking-widest bg-neutral-900 px-2.5 py-1.5 rounded-lg border border-neutral-800">
                         <Loader2 className="w-3.5 h-3.5 animate-pulse" />
-                        Queued
+                        {t('exports.status.queued')}
                       </div>
                     )}
                     {task.status === 'failed' && (
                       <div className="flex items-center gap-1.5 text-red-500 text-[9px] font-black uppercase tracking-widest bg-red-500/10 px-2.5 py-1.5 rounded-lg border border-red-500/20">
                         <XCircle className="w-3.5 h-3.5" />
-                        Failed
+                        {t('exports.status.failed')}
                       </div>
                     )}
                   </div>
@@ -381,7 +383,7 @@ export function Exports() {
                         href={task.downloadUrl}
                         download
                         className="p-2 sm:p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all active:scale-90 bg-blue-500/5 sm:bg-transparent"
-                        title="Download ZIP"
+                        title={t('exports.card.download')}
                       >
                         <Download className="w-5 h-5 sm:w-4 sm:h-4" />
                       </a>
@@ -391,7 +393,7 @@ export function Exports() {
                         onClick={() => handleUploadToDrive(task)}
                         disabled={!!isDriveUploading}
                         className="p-2 sm:p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500/5 sm:bg-transparent"
-                        title={isDriveUploading ? 'Uploading to Drive…' : 'Upload to Google Drive'}
+                        title={isDriveUploading ? t('exports.drive.uploading') : t('exports.drive.uploadToDrive')}
                       >
                         {isDriveUploading ? <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 animate-spin" /> : <Upload className="w-5 h-5 sm:w-4 sm:h-4" />}
                       </button>
@@ -399,7 +401,7 @@ export function Exports() {
                     <button
                       onClick={() => handleDelete(task.projectId, task.id)}
                       className="p-2 sm:p-1.5 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-90 bg-neutral-800/50 sm:bg-transparent"
-                      title="Delete record"
+                      title={t('exports.card.delete')}
                     >
                       <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                     </button>
@@ -425,7 +427,7 @@ export function Exports() {
                 ) : (
                   <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
                 )}
-                {loadingMore ? 'Loading...' : 'Load More Archives'}
+                {loadingMore ? t('libraries.duplicateDialog.confirm') + '...' : t('exports.loadMore')}
               </button>
             </div>
           )}
@@ -440,9 +442,9 @@ export function Exports() {
           setTaskToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Delete Export Record"
-        message="Are you sure you want to delete this export record? This action cannot be undone."
-        confirmText="Delete Record"
+        title={t('exports.deleteDialog.title')}
+        message={t('exports.deleteDialog.message')}
+        confirmText={t('exports.deleteDialog.confirm')}
         type="danger"
       />
     </div>

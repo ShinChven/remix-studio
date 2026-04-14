@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export function ApiKeyCheck({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const [hasKey, setHasKey] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -24,22 +26,22 @@ export function ApiKeyCheck({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (hasKey === null) return <div className="min-h-screen bg-neutral-900 flex items-center justify-center text-white">Loading...</div>;
+  if (hasKey === null) return <div className="min-h-screen bg-neutral-900 flex items-center justify-center text-white">{t('apiKeyCheck.loading')}</div>;
 
   if (!hasKey) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-900 text-white p-6">
-        <h1 className="text-3xl font-bold mb-4">API Key Required</h1>
+        <h1 className="text-3xl font-bold mb-4">{t('apiKeyCheck.title')}</h1>
         <p className="mb-8 text-neutral-400 max-w-md text-center">
-          This application uses Nano Banana 2 (Gemini 3.1 Flash Image) which requires a paid Google Cloud API key.
+          {t('apiKeyCheck.description')}
           <br/><br/>
-          <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline">Learn more about billing</a>
+          <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline">{t('apiKeyCheck.learnMore')}</a>
         </p>
         <button 
           onClick={handleSelectKey}
           className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
         >
-          Select API Key
+          {t('apiKeyCheck.selectApiKey')}
         </button>
       </div>
     );

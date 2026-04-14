@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Copy, FolderPlus, Library as LibraryIcon, Loader2, X, CheckSquare, Square, FileText } from 'lucide-react';
 import { Library, ProjectType } from '../../types';
 import { fetchLibraries, copyAlbumToLibrary } from '../../api';
@@ -23,11 +24,18 @@ export function CopyToLibraryDialog({
   onClose,
   onSuccess,
 }: CopyToLibraryDialogProps) {
+  const { t } = useTranslation();
   const isTextProject = projectType === 'text';
   const targetLibraryType = isTextProject ? 'text' : 'image';
-  const defaultLibraryName = `${projectName} ${isTextProject ? 'Texts' : 'Album'}`;
-  const itemLabel = isTextProject ? 'text item' : projectType === 'video' ? 'video' : 'image';
-  const itemSummary = `${itemIds.length} ${itemLabel}${itemIds.length === 1 ? '' : 's'}`;
+  const defaultLibraryName = `${projectName} ${isTextProject ? t('projectViewer.copyToLibrary.texts') : t('projectViewer.tabs.album')}`;
+  const itemSummary = t(
+    isTextProject
+      ? 'projectViewer.copyToLibrary.textItemCount'
+      : projectType === 'video'
+        ? 'projectViewer.copyToLibrary.videoItemCount'
+        : 'projectViewer.copyToLibrary.imageItemCount',
+    { count: itemIds.length }
+  );
   const AccentIcon = isTextProject ? FileText : LibraryIcon;
 
   const [mode, setMode] = useState<'new' | 'existing'>('new');
@@ -63,7 +71,7 @@ export function CopyToLibraryDialog({
         setMode('new');
       }
     } catch (err: any) {
-      toast.error(`Failed to load libraries: ${err.message}`);
+      toast.error(t('projectViewer.copyToLibrary.loadLibrariesFailed', { message: err.message }));
     } finally {
       setIsLoading(false);
     }
@@ -73,12 +81,12 @@ export function CopyToLibraryDialog({
     if (isSubmitting) return;
 
     if (mode === 'new' && !newLibraryName.trim()) {
-      toast.error('Please enter a library name');
+      toast.error(t('projectViewer.copyToLibrary.enterLibraryName'));
       return;
     }
 
     if (mode === 'existing' && !selectedLibraryId) {
-      toast.error('Please select a library');
+      toast.error(t('projectViewer.copyToLibrary.selectLibrary'));
       return;
     }
 
@@ -93,13 +101,13 @@ export function CopyToLibraryDialog({
 
       toast.success(
         mode === 'new'
-          ? `Created new ${targetLibraryType} library and copied ${itemSummary}`
-          : `Copied ${itemSummary} to library`
+          ? t('projectViewer.copyToLibrary.createdNewLibrary', { type: targetLibraryType, itemSummary })
+          : t('projectViewer.copyToLibrary.copiedToLibrary', { itemSummary })
       );
       onSuccess(result.libraryId);
       onClose();
     } catch (err: any) {
-      toast.error(`Copy failed: ${err.message}`);
+      toast.error(t('projectViewer.copyToLibrary.copyFailed', { message: err.message }));
     } finally {
       setIsSubmitting(false);
     }
@@ -121,9 +129,9 @@ export function CopyToLibraryDialog({
               <AccentIcon className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-xl font-black tracking-tight text-white">Copy to Library</h3>
+              <h3 className="text-xl font-black tracking-tight text-white">{t('projectViewer.common.copyToLibrary')}</h3>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                Duplicating {itemSummary} to {targetLibraryType} library
+                {t('projectViewer.copyToLibrary.description', { itemSummary, type: targetLibraryType })}
               </p>
             </div>
           </div>
@@ -138,7 +146,7 @@ export function CopyToLibraryDialog({
         <div className="p-8 space-y-8">
           {/* Target Selection */}
           <div className="space-y-4">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Destination</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('projectViewer.copyToLibrary.destination')}</label>
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => setMode('new')}
@@ -149,7 +157,7 @@ export function CopyToLibraryDialog({
                 }`}
               >
                 <FolderPlus className="w-8 h-8" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Create New</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('projectViewer.copyToLibrary.createNew')}</span>
               </button>
               <button
                 disabled={existingLibraries.length === 0}
@@ -161,7 +169,7 @@ export function CopyToLibraryDialog({
                 }`}
               >
                 <LibraryIcon className="w-8 h-8" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Add to Existing</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('projectViewer.copyToLibrary.addToExisting')}</span>
               </button>
             </div>
 
@@ -172,7 +180,7 @@ export function CopyToLibraryDialog({
                   value={newLibraryName}
                   onChange={(e) => setNewLibraryName(e.target.value)}
                   className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-5 py-4 text-sm text-white outline-none transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
-                  placeholder="New library name"
+                  placeholder={t('projectViewer.copyToLibrary.newLibraryName')}
                   autoFocus
                 />
               </div>
@@ -201,7 +209,7 @@ export function CopyToLibraryDialog({
 
           {!isTextProject && (
             <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Version to Copy</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('projectViewer.copyToLibrary.versionToCopy')}</label>
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setVersion('optimized')}
@@ -213,8 +221,8 @@ export function CopyToLibraryDialog({
                 >
                   {version === 'optimized' ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4" />}
                   <div className="text-left">
-                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Optimized</p>
-                    <p className="text-[8px] text-neutral-500 mt-1 uppercase tracking-wider">Fast preview version</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.copyToLibrary.optimized')}</p>
+                    <p className="text-[8px] text-neutral-500 mt-1 uppercase tracking-wider">{t('projectViewer.copyToLibrary.optimizedHint')}</p>
                   </div>
                 </button>
                 <button
@@ -227,8 +235,8 @@ export function CopyToLibraryDialog({
                 >
                   {version === 'raw' ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4" />}
                   <div className="text-left">
-                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Raw</p>
-                    <p className="text-[8px] text-neutral-500 mt-1 uppercase tracking-wider">Original full quality</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.copyToLibrary.raw')}</p>
+                    <p className="text-[8px] text-neutral-500 mt-1 uppercase tracking-wider">{t('projectViewer.copyToLibrary.rawHint')}</p>
                   </div>
                 </button>
               </div>
@@ -242,7 +250,7 @@ export function CopyToLibraryDialog({
             className="px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-neutral-400 transition-all hover:text-white"
             disabled={isSubmitting}
           >
-            Cancel
+            {t('projectViewer.common.cancel')}
           </button>
           <button
             onClick={() => void handleSubmit()}
@@ -252,12 +260,12 @@ export function CopyToLibraryDialog({
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Copying...
+                {t('projectViewer.copyToLibrary.copying')}
               </>
             ) : (
               <>
                 <Copy className="h-4 w-4" />
-                Copy to Library
+                {t('projectViewer.common.copyToLibrary')}
               </>
             )}
           </button>

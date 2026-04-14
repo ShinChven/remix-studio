@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Trash2, ChevronDown, List, CheckSquare, Square } from 'lucide-react';
 import { Job, ProjectType } from '../../types';
 
@@ -31,6 +32,7 @@ export function CompletedTab({
   setShowDeleteSelectedModal,
   projectType = 'image'
 }: CompletedTabProps) {
+  const { t } = useTranslation();
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-4">
@@ -47,19 +49,19 @@ export function CompletedTab({
                 ) : (
                   <Square className="w-4 h-4" />
                 )}
-                Select All
+                {t('projectViewer.common.selectAll')}
               </button>
 
               {selectedCompletedIds.size > 0 && (
                 <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
                   <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                    {selectedCompletedIds.size} Selected
+                    {t('projectViewer.common.selectedCount', { count: selectedCompletedIds.size })}
                   </span>
                   <button
                     onClick={() => setShowDeleteSelectedModal(true)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                   >
-                    <Trash2 className="w-3 h-3" /> Delete Selected
+                    <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteSelected')}
                   </button>
                 </div>
               )}
@@ -67,7 +69,7 @@ export function CompletedTab({
 
             <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest transition-colors">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              {completedJobs.length} Finished
+              {t('projectViewer.completed.finishedCount', { count: completedJobs.length })}
             </div>
           </div>
         )}
@@ -104,7 +106,7 @@ export function CompletedTab({
                         <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
                           <ChevronDown className="w-3 h-3 text-neutral-600" />
                         </div>
-                        <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Completed</span>
+                        <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">{t('projectViewer.completed.completed')}</span>
                       </div>
                     </div>
                   </div>
@@ -120,7 +122,7 @@ export function CompletedTab({
                       <button
                         onClick={(e) => { e.stopPropagation(); setJobToDeleteId(job.id); }}
                         className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title="Delete Job Record"
+                        title={t('projectViewer.completed.deleteJobRecord')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -132,7 +134,7 @@ export function CompletedTab({
                   <div className="bg-neutral-900/30 border-x border-b border-emerald-500/30 rounded-b-xl p-4 space-y-4 animate-in slide-in-from-top-1 duration-200">
                     <div className="flex flex-col gap-4">
                       <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">Full Prompt</label>
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.common.fullPrompt')}</label>
                         <div className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/50 select-all whitespace-pre-wrap font-mono">
                           {job.prompt}
                         </div>
@@ -140,7 +142,7 @@ export function CompletedTab({
 
                       {projectType === 'text' && job.resultText && (
                         <div className="space-y-2">
-                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">Generated Text</label>
+                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.common.generatedText')}</label>
                           <div className="text-xs text-neutral-200 leading-relaxed bg-neutral-950/50 p-4 rounded-xl border border-emerald-500/20 select-all whitespace-pre-wrap">
                             {job.resultText}
                           </div>
@@ -149,7 +151,7 @@ export function CompletedTab({
 
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="flex flex-col gap-1">
-                          <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">Metadata</span>
+                          <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">{t('projectViewer.completed.metadata')}</span>
                           <div className="flex flex-wrap gap-2">
                             {job.aspectRatio && (
                               <span className="text-[8px] font-bold text-neutral-400 bg-neutral-950 px-2 py-1 rounded border border-neutral-800 uppercase tracking-widest">{job.aspectRatio}</span>
@@ -177,8 +179,8 @@ export function CompletedTab({
             <div className="py-24 text-center text-neutral-600 bg-neutral-900/10 border-2 border-dashed border-neutral-900 rounded-3xl flex flex-col items-center gap-4">
               <CheckCircle2 className="w-12 h-12 opacity-10" />
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em]">No finished records</div>
-                <div className="text-[9px] opacity-40 mt-2">Historical job execution records will appear here</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em]">{t('projectViewer.completed.emptyTitle')}</div>
+                <div className="text-[9px] opacity-40 mt-2">{t('projectViewer.completed.emptyDescription')}</div>
               </div>
             </div>
           )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
 import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [showDeleteLibraryModal, setShowDeleteLibraryModal] = useState(false);
   const [showReferencesModal, setShowReferencesModal] = useState(false);
@@ -207,10 +209,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const handleDuplicateLibrary = async (name: string) => {
     try {
       const duplicated = await duplicateLibrary(library.id, name);
-      toast.success(`Copied "${library.name}"`);
+      toast.success(t('libraries.duplicateDialog.success', { name: library.name }));
       navigate(`/library/${duplicated.id}`);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to duplicate library');
+      toast.error(error.message || t('libraries.duplicateDialog.error'));
       throw error;
     }
   };
@@ -302,7 +304,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       onUpdate({ ...library, items: newItems });
     } catch (err: any) {
       console.error('Failed to upload images:', err);
-      toast.error(err.message || 'Failed to upload images');
+      toast.error(err.message || t('libraryEditor.toasts.uploadFailed'));
     } finally {
       setUploading(false);
     }
@@ -315,7 +317,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         description={(
           <div className="flex items-center gap-4 mt-2 md:mt-3">
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 px-2.5 py-1 bg-neutral-900/50 border border-neutral-800 rounded-lg backdrop-blur-sm">
-              {library.type || 'text'} Collection
+              {t('libraryEditor.collectionType', { type: library.type || 'text' })}
             </div>
           </div>
         )}
@@ -328,7 +330,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Filter items..."
+                placeholder={t('libraryEditor.filterItems')}
                 className="bg-neutral-900 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all w-full sm:w-48 lg:w-64"
               />
             </div>
@@ -337,7 +339,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               {library.type === 'image' ? (
                 <label className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
                   {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />}
-                  <span className="text-xs font-bold uppercase tracking-widest">{uploading ? 'Uploading...' : 'Upload'}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest">{uploading ? t('libraryEditor.uploading') : t('libraryEditor.upload')}</span>
                   <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} disabled={uploading} />
                 </label>
               ) : (
@@ -346,14 +348,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-xl transition-all border border-blue-600/20 hover:border-blue-600 active:scale-95 group shadow-sm"
                 >
                   <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-                  <span className="text-xs font-bold uppercase tracking-widest">Add Fragment</span>
+                  <span className="text-xs font-bold uppercase tracking-widest">{t('libraryEditor.addFragment')}</span>
                 </button>
               )}
 
               <button
                 onClick={() => setShowDuplicateDialog(true)}
                 className="p-2.5 text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
-                title="Duplicate Library"
+                title={t('libraries.libraryCard.duplicate')}
               >
                 <Copy className="w-5 h-5" />
               </button>
@@ -361,7 +363,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               <button
                 onClick={() => navigate(`/library/${library.id}/edit`)}
                 className="p-2.5 text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-800/50 hover:border-neutral-700 active:scale-95"
-                title="Edit Library Settings"
+                title={t('libraryEditor.editLibrarySettings')}
               >
                 <Settings className="w-5 h-5" />
               </button>
@@ -370,7 +372,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 <button
                   onClick={() => navigate(`/library/${library.id}/import-export`)}
                   className="p-2.5 text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
-                  title="Import / Output"
+                  title={t('libraryEditor.importOutput')}
                 >
                   <UploadCloud className="w-5 h-5" />
                 </button>
@@ -380,7 +382,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 onClick={handleDeleteLibrary}
                 disabled={checkingReferences}
                 className="p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-400/10 rounded-xl transition-all border border-neutral-800/50 hover:border-red-400/20 active:scale-95 disabled:opacity-50"
-                title="Delete Library"
+                title={t('libraryEditor.deleteLibrary')}
               >
                 {checkingReferences ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
               </button>
@@ -415,7 +417,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   )}
                 </div>
                 <span className={`text-[10px] font-black uppercase tracking-widest ${selectedItemIds.size > 0 ? 'text-blue-400' : 'text-neutral-500'}`}>
-                  {selectedItemIds.size > 0 ? `${selectedItemIds.size} Selected` : 'Select All'}
+                  {selectedItemIds.size > 0 ? t('libraryEditor.selectedCount', { count: selectedItemIds.size }) : t('libraryEditor.selectAll')}
                 </span>
               </div>
 
@@ -430,9 +432,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   }`}
                 >
                   <TagIcon className="w-3.5 h-3.5" />
-                  {selectedFilterTags.length === 0 ? 'Filter by Tag' : 
+                  {selectedFilterTags.length === 0 ? t('libraryEditor.filterByTag') : 
                    selectedFilterTags.length === 1 ? selectedFilterTags[0] : 
-                   `${selectedFilterTags.length} Tags Selected`}
+                   t('libraryEditor.tagsSelected', { count: selectedFilterTags.length })}
                   <ChevronDown className={`w-3 h-3 transition-transform ${showTagFilterDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -444,7 +446,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                         selectedFilterTags.length === 0 ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
                       }`}
                     >
-                      All Fragments
+                      {t('libraryEditor.allFragments')}
                     </button>
                     <div className="max-h-64 overflow-y-auto custom-scrollbar">
                       {availableTags.map(tag => (
@@ -471,13 +473,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   onClick={() => setShowBatchTagModal(true)}
                   className="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded-lg transition-all font-bold text-[10px] uppercase tracking-[0.15em] border border-blue-500/30"
                 >
-                  <TagIcon className="w-3.5 h-3.5" /> Batch Tag
+                  <TagIcon className="w-3.5 h-3.5" /> {t('libraryEditor.batchTag')}
                 </button>
                 <button 
                   onClick={() => setShowDeleteSelectedModal(true)}
                   className="flex items-center gap-2 px-3 py-1.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-lg transition-all font-bold text-[10px] uppercase tracking-[0.15em] border border-red-500/30"
                 >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                  <Trash2 className="w-3.5 h-3.5" /> {t('libraryEditor.delete')}
                 </button>
                 <div className="w-px h-4 bg-neutral-800/60 mx-1"></div>
                 <button 
@@ -524,12 +526,12 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                       <img src={item.thumbnailUrl || item.content} alt={`${originalIndex}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4">
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">IMG_{originalIndex + 1}</span>
+                          <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">{t('libraryEditor.imageLabel', { index: originalIndex + 1 })}</span>
                           <div className="flex items-center gap-2">
                              <button
                                onClick={(e) => { e.stopPropagation(); setTagModalItemId(item.id); }}
                                className="p-2.5 bg-neutral-950/80 text-neutral-400 hover:text-blue-400 rounded-xl backdrop-blur-md border border-white/5 hover:border-blue-400/20 transition-all active:scale-90"
-                               title="Edit Tags"
+                               title={t('libraryEditor.editTags')}
                              >
                                <TagIcon className="w-4 h-4" />
                              </button>
@@ -592,21 +594,21 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                             <button
                               onClick={(e) => { e.stopPropagation(); setTagModalItemId(item.id); }}
                               className="p-1.5 text-neutral-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all border border-transparent hover:border-blue-400/20 active:scale-95"
-                              title="Edit Tags"
+                              title={t('libraryEditor.editTags')}
                             >
                               <TagIcon className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); navigate(`/library/${library.id}/prompt/${originalIndex}`); }}
                               className="p-1.5 text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-lg transition-all border border-transparent hover:border-neutral-700 active:scale-95"
-                              title="Refine in Full Editor"
+                              title={t('libraryEditor.refineInFullEditor')}
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleRemoveItem(originalIndex); }}
                               className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all border border-transparent hover:border-red-500/20 active:scale-95"
-                              title="Delete Fragment"
+                              title={t('libraryEditor.deleteFragment')}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -617,8 +619,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                         <div className="p-4 sm:p-5 space-y-4 animate-in slide-in-from-top-1 duration-200 border-t border-neutral-800/50 bg-neutral-900/30">
                           <div className="space-y-2">
                              <div className="flex items-center justify-between">
-                               <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">Full Source</label>
-                               <span className="text-[8px] font-bold text-neutral-700 uppercase tracking-tighter">Markdown Enabled</span>
+                               <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('libraryEditor.fullSource')}</label>
+                               <span className="text-[8px] font-bold text-neutral-700 uppercase tracking-tighter">{t('libraryEditor.markdownEnabled')}</span>
                              </div>
                              <div className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/50 select-all whitespace-pre-wrap font-mono">
                                {item.content}
@@ -647,10 +649,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               </div>
               <div className="space-y-2">
                 <p className="text-2xl font-black text-neutral-500 tracking-tight italic">
-                  {searchTerm ? 'No results found' : 'Ghost Town'}
+                  {searchTerm ? t('libraryEditor.noResultsFound') : t('libraryEditor.emptyTitle')}
                 </p>
                 <p className="text-[10px] font-black text-neutral-700 uppercase tracking-[0.3em]">
-                  {searchTerm ? 'Try a different search term' : 'Add content below to initialize library'}
+                  {searchTerm ? t('libraryEditor.tryDifferentSearch') : t('libraryEditor.emptyDescription')}
                 </p>
               </div>
             </div>
@@ -697,9 +699,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         isOpen={showDeleteLibraryModal}
         onClose={() => setShowDeleteLibraryModal(false)}
         onConfirm={onDelete}
-        title="Destroy Library"
-        message={`This will permanently delete the collection "${library.name}" and all its fragments. This action is irreversible.`}
-        confirmText="Destroy Collection"
+        title={t('libraryEditor.confirm.destroyLibrary.title')}
+        message={t('libraryEditor.confirm.destroyLibrary.message', { name: library.name })}
+        confirmText={t('libraryEditor.confirm.destroyLibrary.confirm')}
         type="danger"
       />
 
@@ -719,9 +721,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   <AlertCircle className="w-8 h-8" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-2xl font-black text-white tracking-tight">Library In Use</h3>
+                  <h3 className="text-2xl font-black text-white tracking-tight">{t('libraryEditor.references.title')}</h3>
                   <p className="mt-3 text-base text-neutral-400 font-medium leading-relaxed">
-                    "{library.name}" is referenced by {referencingProjects.length} project{referencingProjects.length > 1 ? 's' : ''}. You need to remove these references before deleting.
+                    {t('libraryEditor.references.message', { name: library.name, count: referencingProjects.length })}
                   </p>
                   <div className="mt-4 space-y-2 max-h-40 overflow-y-auto">
                     {referencingProjects.map((p) => (
@@ -739,7 +741,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 onClick={() => setShowReferencesModal(false)}
                 className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
               >
-                Cancel
+                {t('confirmModal.cancel')}
               </button>
               <button
                 onClick={() => {
@@ -748,7 +750,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 }}
                 className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-500 text-white shadow-2xl shadow-amber-500/20 transition-all active:scale-[0.98]"
               >
-                Resolve References
+                {t('libraryEditor.references.resolve')}
               </button>
             </div>
           </div>
@@ -759,9 +761,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         isOpen={itemToRemoveIndex !== null}
         onClose={() => setItemToRemoveIndex(null)}
         onConfirm={confirmRemoveItem}
-        title="Expunge Fragment"
-        message="Are you sure you want to remove this fragment from the collection?"
-        confirmText="Remove Now"
+        title={t('libraryEditor.confirm.expungeFragment.title')}
+        message={t('libraryEditor.confirm.expungeFragment.message')}
+        confirmText={t('libraryEditor.confirm.expungeFragment.confirm')}
         type="danger"
       />
 
@@ -807,9 +809,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         isOpen={showDeleteSelectedModal}
         onClose={() => setShowDeleteSelectedModal(false)}
         onConfirm={deleteSelectedItems}
-        title="Destroy Selected Fragments"
-        message={`Are you sure you want to delete ${selectedItemIds.size} fragment(s)?`}
-        confirmText="Destroy Selected"
+        title={t('libraryEditor.confirm.destroySelected.title')}
+        message={t('libraryEditor.confirm.destroySelected.message', { count: selectedItemIds.size })}
+        confirmText={t('libraryEditor.confirm.destroySelected.confirm')}
         type="danger"
       />
 
@@ -817,9 +819,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         isOpen={showBatchTagModal}
         onClose={() => setShowBatchTagModal(false)}
         onSave={handleBatchTagSave}
-        title="Batch Tag Selected Items"
-        description={`Add tags to ${selectedItemIds.size} selected item(s).`}
-        saveButtonText="Add Tags"
+        title={t('libraryEditor.tagModal.batchTitle')}
+        description={t('libraryEditor.tagModal.batchDescription', { count: selectedItemIds.size })}
+        saveButtonText={t('libraryEditor.tagModal.addTags')}
       />
 
       <TagModal
@@ -827,7 +829,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         onClose={() => setTagModalItemId(null)}
         onSave={handleSingleTagSave}
         initialTags={tagModalItemId ? (library.items.find(i => i.id === tagModalItemId)?.tags || []) : []}
-        title="Edit Item Tags"
+        title={t('libraryEditor.tagModal.editTitle')}
       />
 
       <DuplicateLibraryDialog

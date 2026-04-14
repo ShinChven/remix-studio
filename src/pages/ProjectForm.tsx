@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layers, Terminal, Play, ImageIcon, Type, Video } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { createProject, updateProject, fetchProject } from '../api';
 import type { ProjectType } from '../types';
 
 export function ProjectForm() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -69,16 +71,16 @@ export function ProjectForm() {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white tracking-tight">
-              {isNew ? 'New Project' : 'Edit Project'}
+              {isNew ? t('projectForm.newTitle') : t('projectForm.editTitle')}
             </h2>
-            <p className="text-sm text-neutral-500">Define your project parameters</p>
+            <p className="text-sm text-neutral-500">{t('projectForm.description')}</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {isNew && (
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Project Type</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('projectForm.typeLabel')}</label>
               <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
@@ -90,7 +92,7 @@ export function ProjectForm() {
                   }`}
                 >
                   <ImageIcon className="w-6 h-6" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Image</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">{t('projectForm.typeImage')}</span>
                 </button>
                 <button
                   type="button"
@@ -102,7 +104,7 @@ export function ProjectForm() {
                   }`}
                 >
                   <Type className="w-6 h-6" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Text</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">{t('projectForm.typeText')}</span>
                 </button>
                 <button
                   type="button"
@@ -114,51 +116,51 @@ export function ProjectForm() {
                   }`}
                 >
                   <Video className="w-6 h-6" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Video</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">{t('projectForm.typeVideo')}</span>
                 </button>
               </div>
             </div>
           )}
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Project Name</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('projectForm.nameLabel')}</label>
             <input
               type="text"
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={projectType === 'text' ? "e.g. Product Description Generator..." : "e.g. Cyberpunk Character Series..."}
+              placeholder={projectType === 'text' ? t('projectForm.namePlaceholderText') : t('projectForm.namePlaceholderImage')}
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-700"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Project Prefix</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('projectForm.prefixLabel')}</label>
             <input
               type="text"
               value={prefix}
               onChange={(e) => setPrefix(e.target.value)}
-              placeholder="e.g. PJ01"
+              placeholder={t('projectForm.prefixPlaceholder')}
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-700"
             />
-            <p className="text-[10px] text-neutral-600 ml-1 font-medium tracking-wide">{projectType === 'text' ? 'Used as prefix for output naming' : 'Used for image filename generation'}</p>
+            <p className="text-[10px] text-neutral-600 ml-1 font-medium tracking-wide">{projectType === 'text' ? t('projectForm.prefixDescriptionText') : t('projectForm.prefixDescriptionImage')}</p>
           </div>
 
           {isNew && (
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Custom ID (Optional)</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('projectForm.customIdLabel')}</label>
               <div className="relative">
                 <Terminal className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-700" />
                 <input
                   type="text"
                   value={projectId}
                   onChange={(e) => setProjectId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
-                  placeholder="project-slug-id"
+                  placeholder={t('projectForm.customIdPlaceholder')}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-3 text-sm text-neutral-400 font-mono focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-800"
                 />
               </div>
-              <p className="text-[10px] text-neutral-600 ml-1 font-medium tracking-wide">Leave blank for automatic ID generation</p>
+              <p className="text-[10px] text-neutral-600 ml-1 font-medium tracking-wide">{t('projectForm.customIdDescription')}</p>
             </div>
           )}
 
@@ -168,7 +170,7 @@ export function ProjectForm() {
               onClick={() => navigate(-1)}
               className="flex-1 px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
             >
-              Cancel
+              {t('projectForm.cancel')}
             </button>
             <button
               type="submit"
@@ -176,7 +178,7 @@ export function ProjectForm() {
               className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-green-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
             >
               <Play className="w-4 h-4 fill-current" />
-              {isNew ? 'Start Project' : 'Save Changes'}
+              {isNew ? t('projectForm.submitCreate') : t('projectForm.submitSave')}
             </button>
           </div>
         </form>

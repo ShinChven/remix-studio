@@ -1,26 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Copy, Link as LinkIcon, Loader2, Plus, Ticket } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { createAdminInvite, getAdminInvites } from '../api';
 import type { InviteCode } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
 
-const MEMBERSHIP_TIERS = [
-  { value: 'free', label: 'Free (5GB)' },
-  { value: 'professional', label: 'Professional (100GB)' },
-  { value: 'premium', label: 'Premium (500GB)' },
-] as const;
-
-function formatDate(value?: number) {
-  if (!value) return 'Never';
-  return new Date(value).toLocaleString();
-}
-
-function membershipTierLabel(value: InviteCode['membershipTier']) {
-  return MEMBERSHIP_TIERS.find((tier) => tier.value === value)?.label || 'Free (5GB)';
-}
-
 export function AdminInvites() {
+  const { t } = useTranslation();
+
+  const MEMBERSHIP_TIERS = useMemo(() => [
+    { value: 'free', label: 'Free (5GB)' },
+    { value: 'professional', label: 'Professional (100GB)' },
+    { value: 'premium', label: 'Premium (500GB)' },
+  ] as const, []);
+
+  const formatDate = (value?: number) => {
+    if (!value) return t('adminUsers.never');
+    return new Date(value).toLocaleString();
+  };
+
+  const membershipTierLabel = (value: InviteCode['membershipTier']) => {
+    return MEMBERSHIP_TIERS.find((tier) => tier.value === value)?.label || 'Free (5GB)';
+  };
+
   const [invites, setInvites] = useState<InviteCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -36,7 +39,7 @@ export function AdminInvites() {
     try {
       setInvites(await getAdminInvites());
     } catch (err: any) {
-      setError(err.message || 'Failed to load invite codes');
+      setError(err.message || t('adminInvites.errors.load'));
     } finally {
       setLoading(false);
     }
@@ -64,10 +67,10 @@ export function AdminInvites() {
       setMaxUses('1');
       setMembershipTier('free');
       setIsCreateOpen(false);
-      toast.success('Invite code created');
+      toast.success(t('adminInvites.toasts.created'));
     } catch (err: any) {
-      setError(err.message || 'Failed to create invite code');
-      toast.error(err.message || 'Failed to create invite code');
+      setError(err.message || t('adminInvites.errors.create'));
+      toast.error(err.message || t('adminInvites.errors.create'));
     } finally {
       setCreating(false);
     }
@@ -78,7 +81,7 @@ export function AdminInvites() {
       await navigator.clipboard.writeText(value);
       toast.success(successMessage);
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('adminInvites.toasts.copyFailed'));
     }
   };
 
@@ -86,8 +89,8 @@ export function AdminInvites() {
     <div className="p-6 lg:p-10">
       <div className="mx-auto max-w-6xl space-y-8">
         <PageHeader
-          title="Invite Codes"
-          description="Create invite codes for Google sign-up, set how many people can use each code, and track usage."
+          title={t('adminInvites.title')}
+          description={t('adminInvites.description')}
           actions={(
             <button
               type="button"
@@ -96,7 +99,7 @@ export function AdminInvites() {
               className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25 disabled:opacity-60 shrink-0"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Create Invite Code
+              {t('adminInvites.createInvite')}
             </button>
           )}
         />
@@ -115,21 +118,21 @@ export function AdminInvites() {
           ) : invites.length === 0 ? (
             <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center text-neutral-400">
               <Ticket className="h-8 w-8 text-neutral-600" />
-              <p>No invite codes created yet.</p>
+              <p>{t('adminInvites.noInvites')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-800 text-sm">
                 <thead>
                   <tr className="text-left text-neutral-500">
-                    <th className="px-4 py-3 font-medium">Code</th>
-                    <th className="px-4 py-3 font-medium">Tier</th>
-                    <th className="px-4 py-3 font-medium">Note</th>
-                    <th className="px-4 py-3 font-medium">Usage</th>
-                    <th className="px-4 py-3 font-medium">Created</th>
-                    <th className="px-4 py-3 font-medium">Last Used By</th>
-                    <th className="px-4 py-3 font-medium">Last Used At</th>
-                    <th className="px-4 py-3 font-medium">Share</th>
+                    <th className="px-4 py-3 font-medium">{t('adminInvites.table.code')}</th>
+                    <th className="px-4 py-3 font-medium">{t('adminInvites.table.tier')}</th>
+                    <th className="px-4 py-3 font-medium">{t('adminInvites.table.note')}</th>
+                    <th className="px-4 py-3 font-medium">{t('adminInvites.table.usage')}</th>
+                    <th className="px-4 py-3 font-medium">{t('adminInvites.table.created')}</th>
+                    <th className="px-4 py-3 font-medium">{t('adminInvites.table.lastUsedBy')}</th>
+                    <th className="px-4 py-3 font-medium">{t('adminInvites.table.lastUsedAt')}</th>
+                    <th className="px-4 py-3 font-medium">{t('adminInvites.table.share')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-800">
@@ -142,9 +145,9 @@ export function AdminInvites() {
                             <span className="font-mono tracking-[0.2em] text-white">{invite.code}</span>
                             <button
                               type="button"
-                              onClick={() => void copyText(invite.code, 'Invite code copied')}
+                              onClick={() => void copyText(invite.code, t('adminInvites.codeCopied'))}
                               className="text-neutral-500 transition hover:text-white"
-                              title="Copy invite code"
+                              title={t('adminInvites.copyCode')}
                             >
                               <Copy className="h-4 w-4" />
                             </button>
@@ -152,24 +155,24 @@ export function AdminInvites() {
                         </td>
                         <td className="px-4 py-4 text-neutral-300">{membershipTierLabel(invite.membershipTier)}</td>
                         <td className="px-4 py-4 text-neutral-400">
-                          {invite.note || <span className="text-neutral-500">No note</span>}
+                          {invite.note || <span className="text-neutral-500">{t('adminInvites.noNote')}</span>}
                         </td>
                         <td className="px-4 py-4 text-neutral-400">
                           {invite.usedCount} / {invite.maxUses}
                         </td>
                         <td className="px-4 py-4 text-neutral-400">{formatDate(invite.createdAt)}</td>
                         <td className="px-4 py-4">
-                          {invite.lastUsedByEmail || <span className="text-neutral-500">Unused</span>}
+                          {invite.lastUsedByEmail || <span className="text-neutral-500">{t('adminInvites.unused')}</span>}
                         </td>
                         <td className="px-4 py-4 text-neutral-400">{formatDate(invite.lastUsedAt)}</td>
                         <td className="px-4 py-4">
                           <button
                             type="button"
-                            onClick={() => void copyText(inviteLink, 'Invite link copied')}
+                            onClick={() => void copyText(inviteLink, t('adminInvites.linkCopied'))}
                             className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-800 px-3 py-2 text-xs text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-700"
                           >
                             <LinkIcon className="h-3.5 w-3.5" />
-                            Copy Link
+                            {t('adminInvites.copyLink')}
                           </button>
                         </td>
                       </tr>
@@ -195,11 +198,11 @@ export function AdminInvites() {
             className="w-full max-w-lg rounded-[28px] border border-neutral-800 bg-neutral-900 p-6 shadow-[0_40px_120px_rgba(0,0,0,0.75)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <h3 className="text-xl font-semibold text-white">Create Invite Code</h3>
-            <p className="mt-2 text-sm text-neutral-400">Set how many people can use this invite code and add an optional note.</p>
+            <h3 className="text-xl font-semibold text-white">{t('adminInvites.createModal.title')}</h3>
+            <p className="mt-2 text-sm text-neutral-400">{t('adminInvites.createModal.description')}</p>
 
             <label className="mt-5 block">
-              <span className="mb-2 block text-sm text-neutral-300">Membership Tier</span>
+              <span className="mb-2 block text-sm text-neutral-300">{t('adminInvites.createModal.tier')}</span>
               <select
                 value={membershipTier}
                 onChange={(event) => setMembershipTier(event.target.value as InviteCode['membershipTier'])}
@@ -212,7 +215,7 @@ export function AdminInvites() {
             </label>
 
             <label className="mt-5 block">
-              <span className="mb-2 block text-sm text-neutral-300">Allowed Uses</span>
+              <span className="mb-2 block text-sm text-neutral-300">{t('adminInvites.createModal.uses')}</span>
               <input
                 type="number"
                 min={1}
@@ -224,13 +227,13 @@ export function AdminInvites() {
             </label>
 
             <label className="mt-5 block">
-              <span className="mb-2 block text-sm text-neutral-300">Note</span>
+              <span className="mb-2 block text-sm text-neutral-300">{t('adminInvites.createModal.note')}</span>
               <textarea
                 value={note}
                 maxLength={200}
                 rows={4}
                 onChange={(event) => setNote(event.target.value)}
-                placeholder="Who this invite is for, or what it should be used for"
+                placeholder={t('adminInvites.createModal.notePlaceholder')}
                 className="w-full resize-none rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none placeholder:text-neutral-500"
               />
               <p className="mt-2 text-xs text-neutral-500">{note.length}/200</p>
@@ -248,7 +251,7 @@ export function AdminInvites() {
                 disabled={creating}
                 className="rounded-2xl border border-neutral-800 px-4 py-3 text-sm text-neutral-300 transition hover:bg-neutral-800 disabled:opacity-60"
               >
-                Cancel
+                {t('adminInvites.createModal.cancel')}
               </button>
               <button
                 type="button"
@@ -257,7 +260,7 @@ export function AdminInvites() {
                 className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25 disabled:opacity-60"
               >
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Create
+                {t('adminInvites.createModal.submit')}
               </button>
             </div>
           </div>

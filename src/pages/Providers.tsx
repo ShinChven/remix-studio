@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { fetchProviders, deleteProvider } from '../api';
 import { Provider, ProviderType } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -19,6 +20,7 @@ const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
 };
 
 export function Providers() {
+  const { t } = useTranslation();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,11 +35,11 @@ export function Providers() {
       const data = await fetchProviders();
       setProviders(data.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name)));
     } catch {
-      setError('Failed to load providers.');
+      setError(t('providers.errors.load'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -49,33 +51,44 @@ export function Providers() {
       setDeleteTarget(null);
       await load();
     } catch {
-      setError('Failed to delete provider.');
+      setError(t('providers.errors.delete'));
     } finally {
       setIsDeleting(false);
     }
   };
 
+  const deleteMessage = deleteTarget
+    ? `${t('providers.deleteDialog.message', { name: deleteTarget.name })}${
+        deleteTarget.usage && (deleteTarget.usage.projectCount > 0 || deleteTarget.usage.activeJobCount > 0)
+          ? t('providers.deleteDialog.usageWarning', {
+              projectCount: deleteTarget.usage.projectCount,
+              jobCount: deleteTarget.usage.activeJobCount,
+            })
+          : ''
+      }`
+    : '';
+
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full space-y-8">
         <PageHeader
-          title="Providers"
-          description="Manage API credentials for image generation backends. Keys are encrypted at rest."
+          title={t('providers.title')}
+          description={t('providers.description')}
         />
 
         <section>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-white flex items-center gap-2">
               <Key className="w-5 h-5 text-amber-500" />
-              All Providers
+              {t('providers.allProviders')}
             </h3>
             <button
               onClick={() => navigate('/provider/new')}
               className="text-xs md:text-sm bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-amber-600/30 font-medium"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New Provider</span>
-              <span className="sm:hidden">New</span>
+              <span className="hidden sm:inline">{t('providers.newProvider')}</span>
+              <span className="sm:hidden">{t('providers.new')}</span>
             </button>
           </div>
 
@@ -95,8 +108,8 @@ export function Providers() {
               <div className="py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">
                 <Key className="w-12 h-12 text-neutral-700" />
                 <div>
-                  <p className="text-lg font-medium text-neutral-400">No providers yet</p>
-                  <p className="text-sm">Add your first API key to start generating images.</p>
+                  <p className="text-lg font-medium text-neutral-400">{t('providers.noProviders.title')}</p>
+                  <p className="text-sm">{t('providers.noProviders.description')}</p>
                 </div>
               </div>
             ) : (
@@ -128,13 +141,13 @@ export function Providers() {
                           )}
                           <span className={`flex items-center gap-1 text-[10px] font-medium ${hasCredentials ? 'text-emerald-400' : 'text-amber-400'}`}>
                             {hasCredentials
-                              ? <><CheckCircle className="w-3 h-3" /> {provider.type === 'KlingAI' ? 'Credentials stored' : 'Key stored'}</>
-                              : <><AlertCircle className="w-3 h-3" /> {provider.type === 'KlingAI' ? 'Missing credentials' : 'No key'}</>}
+                              ? <><CheckCircle className="w-3 h-3" /> {provider.type === 'KlingAI' ? t('providers.providerCard.credentialsStored') : t('providers.providerCard.keyStored')}</>
+                              : <><AlertCircle className="w-3 h-3" /> {provider.type === 'KlingAI' ? t('providers.providerCard.missingCredentials') : t('providers.providerCard.noKey')}</>}
                           </span>
                           {(projectCount > 0 || activeJobCount > 0) && (
                             <span className="flex items-center gap-2 text-[10px] text-neutral-500">
-                              {projectCount > 0 && <span>{projectCount} project{projectCount === 1 ? '' : 's'}</span>}
-                              {activeJobCount > 0 && <span>{activeJobCount} active job{activeJobCount === 1 ? '' : 's'}</span>}
+                              {projectCount > 0 && <span>{t('providers.providerCard.projects', { count: projectCount })}</span>}
+                              {activeJobCount > 0 && <span>{t('providers.providerCard.activeJobs', { count: activeJobCount })}</span>}
                             </span>
                           )}
                         </div>
@@ -145,14 +158,14 @@ export function Providers() {
                       <button
                         onClick={(e) => { e.stopPropagation(); navigate(`/provider/${provider.id}/edit`); }}
                         className="p-1.5 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors opacity-100"
-                        title="Edit"
+                        title={t('providerCustomModels.edit')}
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); setDeleteTarget(provider); }}
                         className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-100"
-                        title="Delete"
+                        title={t('providerCustomModels.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -170,13 +183,9 @@ export function Providers() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="Delete Provider"
-        message={
-          deleteTarget
-            ? `Delete "${deleteTarget.name}"? This removes the stored API key. Existing project references will remain as warnings, and any pending or processing jobs using this provider may fail until you switch them to another provider.${deleteTarget.usage && (deleteTarget.usage.projectCount > 0 || deleteTarget.usage.activeJobCount > 0) ? ` Currently referenced by ${deleteTarget.usage.projectCount} project${deleteTarget.usage.projectCount === 1 ? '' : 's'} and ${deleteTarget.usage.activeJobCount} active job${deleteTarget.usage.activeJobCount === 1 ? '' : 's'}.` : ''}`
-            : ''
-        }
-        confirmText={isDeleting ? 'Deleting…' : 'Delete'}
+        title={t('providers.deleteDialog.title')}
+        message={deleteMessage}
+        confirmText={isDeleting ? t('providers.deleteDialog.deleting') : t('providers.deleteDialog.confirm')}
         type="danger"
       />
     </div>

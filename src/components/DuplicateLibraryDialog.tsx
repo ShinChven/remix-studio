@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Copy, Loader2, X } from 'lucide-react';
 
 interface DuplicateLibraryDialogProps {
@@ -14,6 +15,7 @@ export function DuplicateLibraryDialog({
   onClose,
   onConfirm,
 }: DuplicateLibraryDialogProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(currentName);
   const [submitting, setSubmitting] = useState(false);
 
@@ -54,23 +56,23 @@ export function DuplicateLibraryDialog({
                 <Copy className="w-7 h-7" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-2xl font-black text-white tracking-tight">Duplicate Library</h3>
+                <h3 className="text-2xl font-black text-white tracking-tight">{t('libraries.duplicateDialog.title')}</h3>
                 <p className="mt-3 text-sm text-neutral-400 leading-relaxed">
-                  This will create a full copy of the library and check your storage quota before any files are duplicated.
+                  {t('libraries.duplicateDialog.description')}
                 </p>
               </div>
             </div>
             <button
               onClick={() => !submitting && onClose()}
               className="p-2 rounded-xl text-neutral-500 hover:text-white hover:bg-neutral-800/70 transition-colors"
-              aria-label="Close"
+              aria-label={t('libraries.duplicateDialog.cancel')}
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           <div className="mt-8">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">New Library Name</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('libraries.duplicateDialog.placeholder')}</label>
             <input
               type="text"
               value={name}
@@ -83,7 +85,7 @@ export function DuplicateLibraryDialog({
               }}
               autoFocus
               className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Library name"
+              placeholder={t('libraries.duplicateDialog.placeholder')}
             />
           </div>
         </div>
@@ -94,7 +96,7 @@ export function DuplicateLibraryDialog({
             className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
             disabled={submitting}
           >
-            Cancel
+            {t('libraries.duplicateDialog.cancel')}
           </button>
 
           <button
@@ -105,10 +107,10 @@ export function DuplicateLibraryDialog({
             {submitting ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Copying...
+                {t('libraries.duplicateDialog.confirm')}...
               </span>
             ) : (
-              'Create Copy'
+              t('libraries.duplicateDialog.confirm')
             )}
           </button>
         </div>

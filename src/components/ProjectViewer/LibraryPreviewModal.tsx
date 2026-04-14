@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, ChevronDown, Library as LibraryIcon } from 'lucide-react';
 import { Library, LibraryItem } from '../../types';
 import { imageDisplayUrl } from '../../api';
@@ -13,6 +14,7 @@ function TextLibraryItem({
   isSelectionMode?: boolean, 
   onSelect?: (content: string) => void 
 }) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   
   return (
@@ -37,7 +39,7 @@ function TextLibraryItem({
             )}
             {isSelectionMode && (
               <div className="text-[8px] font-black uppercase tracking-widest text-blue-400 opacity-0 group-hover/text-item:opacity-100 transition-opacity">
-                Pick this text
+                {t('projectViewer.libraryPreview.pickThisText')}
               </div>
             )}
           </div>
@@ -70,6 +72,7 @@ export function LibraryPreviewModal({
   isSelectionMode = false,
   onSelectItem
 }: LibraryPreviewModalProps) {
+  const { t } = useTranslation();
   const [previewLightbox, setPreviewLightbox] = useState<{images: string[], index: number} | null>(null);
   
   const availableTags = React.useMemo(() => {
@@ -111,7 +114,7 @@ export function LibraryPreviewModal({
             <div>
               <h3 className="text-lg font-bold text-white tracking-tight">{library.name}</h3>
               <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">
-                {filteredItems.length} of {library.items.length} items
+                {t('projectViewer.libraryPreview.itemsSummary', { filtered: filteredItems.length, total: library.items.length })}
               </p>
             </div>
           </div>
@@ -127,7 +130,7 @@ export function LibraryPreviewModal({
           <div className="px-6 py-4 bg-neutral-900 border-b border-neutral-800 flex flex-wrap gap-2">
             <div className="w-full text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-2 flex items-center gap-2">
               <span className="w-4 h-px bg-neutral-800" />
-              Filter by tags
+              {t('projectViewer.libraryPreview.filterByTags')}
             </div>
             <button
               onClick={() => onUpdateTags([])}
@@ -137,7 +140,7 @@ export function LibraryPreviewModal({
                   : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:border-neutral-700'
               }`}
             >
-              All Items
+              {t('projectViewer.libraryPreview.allItems')}
             </button>
             {availableTags.map(tag => (
               <button
@@ -160,8 +163,8 @@ export function LibraryPreviewModal({
              <div className="h-64 flex flex-col items-center justify-center text-neutral-600 gap-4 opacity-50">
                <LibraryIcon className="w-12 h-12 stroke-[1px]" />
                <div className="text-center">
-                 <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">No items match</p>
-                 <button onClick={() => onUpdateTags([])} className="text-[9px] font-bold text-blue-500/60 hover:text-blue-500 underline uppercase tracking-widest">Clear all filters</button>
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">{t('projectViewer.libraryPreview.noItemsMatch')}</p>
+                 <button onClick={() => onUpdateTags([])} className="text-[9px] font-bold text-blue-500/60 hover:text-blue-500 underline uppercase tracking-widest">{t('projectViewer.libraryPreview.clearAllFilters')}</button>
                </div>
              </div>
           ) : (
@@ -198,7 +201,7 @@ export function LibraryPreviewModal({
                         {isSelectionMode && (
                           <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover/img-container:opacity-100 transition-opacity flex items-center justify-center">
                             <div className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
-                              Click to Select
+                              {t('projectViewer.libraryPreview.clickToSelect')}
                             </div>
                           </div>
                         )}
@@ -224,7 +227,7 @@ export function LibraryPreviewModal({
             onClick={onClose}
             className="px-8 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-neutral-700"
           >
-            Close Viewer
+            {t('projectViewer.libraryPreview.closeViewer')}
           </button>
         </div>
       </div>

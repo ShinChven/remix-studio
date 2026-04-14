@@ -1,18 +1,13 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Filter, HardDrive, KeyRound, Loader2, Mail, Search, Shield, UserPlus, Users, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { adminResetUserPassword, createUser, getUserDetail, getUsers, updateUserRole, updateUserStatus, updateUserStorageLimit } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../contexts/AuthContext';
 import { UserDetail, UserRole, UserStatus, UserSummary } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
-
-const STORAGE_TIERS = [
-  { name: 'Free (5GB)', value: 5 * 1024 * 1024 * 1024 },
-  { name: 'Professional (100GB)', value: 100 * 1024 * 1024 * 1024 },
-  { name: 'Premium (500GB)', value: 500 * 1024 * 1024 * 1024 },
-];
 
 type UserFilters = {
   q: string;
@@ -38,29 +33,6 @@ function formatBytes(bytes: number) {
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
-function formatDate(value?: number) {
-  if (!value) return 'Never';
-  return new Date(value).toLocaleString();
-}
-
-function formatRelativeDate(value?: number) {
-  if (!value) return 'Never';
-  const diffMs = Date.now() - value;
-  const diffMin = Math.round(diffMs / 60000);
-  if (diffMin < 1) return 'Just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHr = Math.round(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
-  const diffDay = Math.round(diffHr / 24);
-  if (diffDay < 30) return `${diffDay}d ago`;
-  return new Date(value).toLocaleDateString();
-}
-
-function storageTierName(limit?: number) {
-  const matched = STORAGE_TIERS.find((tier) => Math.abs(tier.value - (limit || 0)) < 1000);
-  return matched?.name || 'Custom';
-}
-
 function statusBadgeClass(status: UserStatus) {
   return status === 'active'
     ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
@@ -74,7 +46,15 @@ function roleBadgeClass(role: UserRole) {
 }
 
 export function AdminUsers() {
+  const { t } = useTranslation();
   const { user: currentUser } = useAuth();
+
+  const STORAGE_TIERS = useMemo(() => [
+    { name: 'Free (5GB)', value: 5 * 1024 * 1024 * 1024 },
+    { name: 'Professional (100GB)', value: 100 * 1024 * 1024 * 1024 },
+    { name: 'Premium (500GB)', value: 500 * 1024 * 1024 * 1024 },
+  ], []);
+
   const [filters, setFilters] = useState<UserFilters>(initialFilters);
   const [searchInput, setSearchInput] = useState('');
   const [users, setUsers] = useState<UserSummary[]>([]);
@@ -99,6 +79,29 @@ export function AdminUsers() {
   const [resettingPassword, setResettingPassword] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<{ userId: string; status: UserStatus; email: string } | null>(null);
 
+  const formatDate = (value?: number) => {
+    if (!value) return t('adminUsers.never');
+    return new Date(value).toLocaleString();
+  };
+
+  const formatRelativeDate = (value?: number) => {
+    if (!value) return t('adminUsers.never');
+    const diffMs = Date.now() - value;
+    const diffMin = Math.round(diffMs / 60000);
+    if (diffMin < 1) return t('adminUsers.justNow');
+    if (diffMin < 60) return t('adminUsers.relativeTime.m', { count: diffMin });
+    const diffHr = Math.round(diffMin / 60);
+    if (diffHr < 24) return t('adminUsers.relativeTime.h', { count: diffHr });
+    const diffDay = Math.round(diffHr / 24);
+    if (diffDay < 30) return t('adminUsers.relativeTime.d', { count: diffDay });
+    return new Date(value).toLocaleDateString();
+  };
+
+  const storageTierName = (limit?: number) => {
+    const matched = STORAGE_TIERS.find((tier) => Math.abs(tier.value - (limit || 0)) < 1000);
+    return matched?.name || 'Custom';
+  };
+
   const canResetPassword = useMemo(
     () => activeUser && currentUser && activeUser.id !== currentUser.id,
     [activeUser, currentUser]
@@ -113,7 +116,7 @@ export function AdminUsers() {
       setTotal(result.total);
       setPages(result.pages);
     } catch (err: any) {
-      setError(err.message || 'Failed to load users');
+      setError(err.message || t('adminUsers.errors.loadUsers'));
     } finally {
       setLoading(false);
     }
@@ -127,7 +130,7 @@ export function AdminUsers() {
       setActiveUser(detail);
       setResetPassword('');
     } catch (err: any) {
-      setDetailError(err.message || 'Failed to load user detail');
+      setDetailError(err.message || t('adminUsers.errors.loadDetail'));
     } finally {
       setDetailLoading(false);
     }
@@ -161,22 +164,22 @@ export function AdminUsers() {
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     try {
       await updateUserRole(userId, newRole);
-      toast.success('Role updated');
+      toast.success(t('adminUsers.toasts.roleUpdated'));
       await refreshAll(userId);
     } catch (err: any) {
-      setError(err.message || 'Failed to update role');
-      toast.error(err.message || 'Failed to update role');
+      setError(err.message || t('adminUsers.errors.updateRole'));
+      toast.error(err.message || t('adminUsers.errors.updateRole'));
     }
   };
 
   const handleStorageLimitChange = async (userId: string, newLimit: number) => {
     try {
       await updateUserStorageLimit(userId, newLimit);
-      toast.success('Storage limit updated');
+      toast.success(t('adminUsers.toasts.storageUpdated'));
       await refreshAll(userId);
     } catch (err: any) {
-      setError(err.message || 'Failed to update storage limit');
-      toast.error(err.message || 'Failed to update storage limit');
+      setError(err.message || t('adminUsers.errors.updateStorage'));
+      toast.error(err.message || t('adminUsers.errors.updateStorage'));
     }
   };
 
@@ -184,11 +187,11 @@ export function AdminUsers() {
     if (!pendingStatusChange) return;
     try {
       await updateUserStatus(pendingStatusChange.userId, pendingStatusChange.status);
-      toast.success(`User ${pendingStatusChange.status === 'active' ? 'enabled' : 'disabled'}`);
+      toast.success(pendingStatusChange.status === 'active' ? t('adminUsers.toasts.userEnabled') : t('adminUsers.toasts.userDisabled'));
       await refreshAll(pendingStatusChange.userId);
     } catch (err: any) {
-      setError(err.message || 'Failed to update user status');
-      toast.error(err.message || 'Failed to update user status');
+      setError(err.message || t('adminUsers.errors.updateStatus'));
+      toast.error(err.message || t('adminUsers.errors.updateStatus'));
     } finally {
       setPendingStatusChange(null);
     }
@@ -200,7 +203,7 @@ export function AdminUsers() {
     setError('');
     try {
       await createUser(createForm);
-      toast.success('User created');
+      toast.success(t('adminUsers.toasts.userCreated'));
       setIsCreateOpen(false);
       setCreateForm({
         email: '',
@@ -212,8 +215,8 @@ export function AdminUsers() {
       setFilters((current) => ({ ...current, page: 1 }));
       await loadUsers();
     } catch (err: any) {
-      setError(err.message || 'Failed to create user');
-      toast.error(err.message || 'Failed to create user');
+      setError(err.message || t('adminUsers.errors.createUser'));
+      toast.error(err.message || t('adminUsers.errors.createUser'));
     } finally {
       setCreateLoading(false);
     }
@@ -226,12 +229,12 @@ export function AdminUsers() {
     setResettingPassword(true);
     try {
       await adminResetUserPassword(activeUser.id, resetPassword);
-      toast.success('Password reset');
+      toast.success(t('adminUsers.toasts.passwordReset'));
       setResetPassword('');
       await loadDetail(activeUser.id);
     } catch (err: any) {
-      setError(err.message || 'Failed to reset password');
-      toast.error(err.message || 'Failed to reset password');
+      setError(err.message || t('adminUsers.errors.resetPassword'));
+      toast.error(err.message || t('adminUsers.errors.resetPassword'));
     } finally {
       setResettingPassword(false);
     }
@@ -241,8 +244,8 @@ export function AdminUsers() {
     <div className="p-6 lg:p-10">
       <div className="w-full space-y-8">
         <PageHeader
-          title="User Management"
-          description="Create users, control access, and inspect account usage without external systems."
+          title={t('adminUsers.title')}
+          description={t('adminUsers.description')}
           actions={(
             <>
               <Link
@@ -250,7 +253,7 @@ export function AdminUsers() {
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25 shrink-0"
               >
                 <Mail className="h-4 w-4" />
-                Invite Users
+                {t('adminUsers.inviteUsers')}
               </Link>
               <button
                 type="button"
@@ -258,7 +261,7 @@ export function AdminUsers() {
                 className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-200 transition hover:bg-blue-500/25 shrink-0"
               >
                 <UserPlus className="h-4 w-4" />
-                Create User
+                {t('adminUsers.createUser')}
               </button>
             </>
           )}
@@ -271,7 +274,7 @@ export function AdminUsers() {
               <input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search by email"
+                placeholder={t('adminUsers.searchPlaceholder')}
                 className="w-full bg-transparent text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
               />
             </label>
@@ -281,9 +284,9 @@ export function AdminUsers() {
               onChange={(e) => setFilters((current) => ({ ...current, role: e.target.value as UserRole | 'all', page: 1 }))}
               className="rounded-2xl border border-neutral-800 bg-neutral-950/70 px-4 py-3 text-sm text-neutral-200 outline-none"
             >
-              <option value="all">All Roles</option>
-              <option value="admin">Admin</option>
-              <option value="user">User</option>
+              <option value="all">{t('adminUsers.allRoles')}</option>
+              <option value="admin">{t('adminUsers.admin')}</option>
+              <option value="user">{t('adminUsers.user')}</option>
             </select>
 
             <select
@@ -291,9 +294,9 @@ export function AdminUsers() {
               onChange={(e) => setFilters((current) => ({ ...current, status: e.target.value as UserStatus | 'all', page: 1 }))}
               className="rounded-2xl border border-neutral-800 bg-neutral-950/70 px-4 py-3 text-sm text-neutral-200 outline-none"
             >
-              <option value="all">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="disabled">Disabled</option>
+              <option value="all">{t('adminUsers.allStatuses')}</option>
+              <option value="active">{t('adminUsers.active')}</option>
+              <option value="disabled">{t('adminUsers.disabled')}</option>
             </select>
 
             <button
@@ -301,7 +304,7 @@ export function AdminUsers() {
               className="inline-flex items-center justify-center gap-2 rounded-2xl border border-neutral-800 bg-neutral-950/70 px-4 py-3 text-sm font-medium text-neutral-200 transition hover:border-neutral-700 hover:bg-neutral-900"
             >
               <Filter className="h-4 w-4" />
-              Apply
+              {t('adminUsers.apply')}
             </button>
           </form>
         </section>
@@ -322,21 +325,21 @@ export function AdminUsers() {
             <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
               <Users className="h-10 w-10 text-neutral-700" />
               <div>
-                <p className="text-lg font-medium text-neutral-300">No users found</p>
-                <p className="text-sm text-neutral-500">Adjust the filters or create a new account.</p>
+                <p className="text-lg font-medium text-neutral-300">{t('adminUsers.noUsersFound')}</p>
+                <p className="text-sm text-neutral-500">{t('adminUsers.adjustFilters')}</p>
               </div>
             </div>
           ) : (
             <>
               <div className="hidden xl:grid xl:grid-cols-[minmax(240px,1.5fr)_110px_110px_170px_100px_100px_160px_120px] gap-4 border-b border-neutral-800 bg-neutral-950/70 px-6 py-4 text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
-                <span>User</span>
-                <span>Role</span>
-                <span>Status</span>
-                <span>Storage</span>
-                <span>Projects</span>
-                <span>Libraries</span>
-                <span>Last Login</span>
-                <span>Actions</span>
+                <span>{t('adminUsers.table.user')}</span>
+                <span>{t('adminUsers.table.role')}</span>
+                <span>{t('adminUsers.table.status')}</span>
+                <span>{t('adminUsers.table.storage')}</span>
+                <span>{t('adminUsers.table.projects')}</span>
+                <span>{t('adminUsers.table.libraries')}</span>
+                <span>{t('adminUsers.table.lastLogin')}</span>
+                <span>{t('adminUsers.table.actions')}</span>
               </div>
               <div className="divide-y divide-neutral-800">
                 {users.map((user) => (
@@ -378,7 +381,7 @@ export function AdminUsers() {
                     <div className="text-sm text-neutral-300">{user.libraryCount}</div>
                     <div className="space-y-1">
                       <p className="text-sm text-neutral-300">{formatRelativeDate(user.lastLoginAt)}</p>
-                      <p className="text-xs text-neutral-500">{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never signed in'}</p>
+                      <p className="text-xs text-neutral-500">{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : t('adminUsers.neverSignedIn')}</p>
                     </div>
 
                     <div className="flex items-center justify-start gap-2" onClick={(event) => event.stopPropagation()}>
@@ -388,8 +391,8 @@ export function AdminUsers() {
                         onChange={(e) => void handleRoleChange(user.id, e.target.value as UserRole)}
                         className="rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-neutral-200 outline-none disabled:opacity-50"
                       >
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
+                        <option value="user">{t('adminUsers.user')}</option>
+                        <option value="admin">{t('adminUsers.admin')}</option>
                       </select>
                     </div>
                   </div>
@@ -401,7 +404,7 @@ export function AdminUsers() {
 
         <div className="flex flex-col gap-3 rounded-3xl border border-neutral-800 bg-neutral-900/40 px-4 py-4 md:flex-row md:items-center md:justify-between">
           <div className="text-sm text-neutral-400">
-            {total > 0 ? `Showing ${users.length} of ${total} users` : 'No users to show'}
+            {total > 0 ? t('adminUsers.showingUsers', { count: users.length, total }) : t('adminUsers.noUsersToShow')}
           </div>
           <div className="flex items-center gap-3">
             <select
@@ -409,9 +412,9 @@ export function AdminUsers() {
               onChange={(e) => setFilters((current) => ({ ...current, pageSize: Number(e.target.value), page: 1 }))}
               className="rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-200 outline-none"
             >
-              <option value={20}>20 / page</option>
-              <option value={50}>50 / page</option>
-              <option value={100}>100 / page</option>
+              <option value={20}>{t('adminUsers.pageSize', { count: 20 })}</option>
+              <option value={50}>{t('adminUsers.pageSize', { count: 50 })}</option>
+              <option value={100}>{t('adminUsers.pageSize', { count: 100 })}</option>
             </select>
             <button
               type="button"
@@ -421,7 +424,7 @@ export function AdminUsers() {
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="text-sm text-neutral-400">Page {filters.page} of {pages}</span>
+            <span className="text-sm text-neutral-400">{t('adminUsers.pagination', { current: filters.page, total: pages })}</span>
             <button
               type="button"
               disabled={filters.page >= pages}
@@ -439,8 +442,8 @@ export function AdminUsers() {
           <div className="w-full max-w-xl rounded-[28px] border border-neutral-800 bg-neutral-900 shadow-2xl">
             <div className="flex items-center justify-between border-b border-neutral-800 px-6 py-5">
               <div>
-                <h3 className="text-xl font-semibold text-white">Create User</h3>
-                <p className="mt-1 text-sm text-neutral-500">Provision a new account. Password is optional for OAuth-only users.</p>
+                <h3 className="text-xl font-semibold text-white">{t('adminUsers.createModal.title')}</h3>
+                <p className="mt-1 text-sm text-neutral-500">{t('adminUsers.createModal.description')}</p>
               </div>
               <button type="button" onClick={() => setIsCreateOpen(false)} className="rounded-xl border border-neutral-800 p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-white">
                 <X className="h-4 w-4" />
@@ -449,7 +452,7 @@ export function AdminUsers() {
 
             <form onSubmit={handleCreateUser} className="space-y-5 px-6 py-6">
               <label className="block space-y-2">
-                <span className="text-sm text-neutral-400">Email</span>
+                <span className="text-sm text-neutral-400">{t('adminUsers.createModal.email')}</span>
                 <input
                   type="email"
                   required
@@ -460,44 +463,44 @@ export function AdminUsers() {
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm text-neutral-400">Initial Password <span className="text-neutral-600">(optional)</span></span>
+                <span className="text-sm text-neutral-400">{t('adminUsers.createModal.password')} <span className="text-neutral-600">{t('adminUsers.createModal.optional')}</span></span>
                 <input
                   type="password"
                   minLength={8}
                   value={createForm.password}
                   onChange={(e) => setCreateForm((current) => ({ ...current, password: e.target.value }))}
-                  placeholder="Leave empty for OAuth-only accounts"
+                  placeholder={t('adminUsers.createModal.passwordPlaceholder')}
                   className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
                 />
               </label>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <label className="block space-y-2">
-                  <span className="text-sm text-neutral-400">Role</span>
+                  <span className="text-sm text-neutral-400">{t('adminUsers.createModal.role')}</span>
                   <select
                     value={createForm.role}
                     onChange={(e) => setCreateForm((current) => ({ ...current, role: e.target.value as UserRole }))}
                     className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
                   >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
+                    <option value="user">{t('adminUsers.user')}</option>
+                    <option value="admin">{t('adminUsers.admin')}</option>
                   </select>
                 </label>
 
                 <label className="block space-y-2">
-                  <span className="text-sm text-neutral-400">Status</span>
+                  <span className="text-sm text-neutral-400">{t('adminUsers.createModal.status')}</span>
                   <select
                     value={createForm.status}
                     onChange={(e) => setCreateForm((current) => ({ ...current, status: e.target.value as UserStatus }))}
                     className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none"
                   >
-                    <option value="active">Active</option>
-                    <option value="disabled">Disabled</option>
+                    <option value="active">{t('adminUsers.active')}</option>
+                    <option value="disabled">{t('adminUsers.disabled')}</option>
                   </select>
                 </label>
 
                 <label className="block space-y-2">
-                  <span className="text-sm text-neutral-400">Storage</span>
+                  <span className="text-sm text-neutral-400">{t('adminUsers.createModal.storage')}</span>
                   <select
                     value={createForm.storageLimit}
                     onChange={(e) => setCreateForm((current) => ({ ...current, storageLimit: Number(e.target.value) }))}
@@ -512,7 +515,7 @@ export function AdminUsers() {
 
               <div className="flex items-center justify-end gap-3 border-t border-neutral-800 pt-4">
                 <button type="button" onClick={() => setIsCreateOpen(false)} className="rounded-2xl px-4 py-3 text-sm text-neutral-400 transition hover:bg-neutral-800 hover:text-white">
-                  Cancel
+                  {t('adminUsers.createModal.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -520,7 +523,7 @@ export function AdminUsers() {
                   className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-100 transition hover:bg-blue-500/25 disabled:opacity-60"
                 >
                   {createLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-                  Create User
+                  {t('adminUsers.createModal.submit')}
                 </button>
               </div>
             </form>
@@ -534,8 +537,8 @@ export function AdminUsers() {
             <div className="h-full w-full max-w-2xl overflow-y-auto border-l border-neutral-800 bg-neutral-950 shadow-2xl">
               <div className="flex items-center justify-between border-b border-neutral-800 px-6 py-5">
                 <div>
-                  <h3 className="text-xl font-semibold text-white">User Detail</h3>
-                  <p className="mt-1 text-sm text-neutral-500">Inspect account state, usage, and perform admin actions.</p>
+                  <h3 className="text-xl font-semibold text-white">{t('adminUsers.detail.title')}</h3>
+                  <p className="mt-1 text-sm text-neutral-500">{t('adminUsers.detail.description')}</p>
                 </div>
                 <button type="button" onClick={() => setActiveUserId(null)} className="rounded-xl border border-neutral-800 p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-white">
                   <X className="h-4 w-4" />
@@ -556,7 +559,7 @@ export function AdminUsers() {
                   <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-5">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Account</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">{t('adminUsers.detail.account')}</p>
                         <h4 className="mt-2 text-2xl font-semibold text-white">{activeUser.email}</h4>
                         <p className="mt-2 text-sm text-neutral-500">{activeUser.id}</p>
                       </div>
@@ -567,51 +570,51 @@ export function AdminUsers() {
                     </div>
 
                     <div className="mt-6 grid gap-4 md:grid-cols-2">
-                      <Stat label="Created" value={formatDate(activeUser.createdAt)} icon={<Clock3 className="h-4 w-4" />} />
-                      <Stat label="Last Login" value={formatDate(activeUser.lastLoginAt)} icon={<CheckCircle2 className="h-4 w-4" />} />
-                      <Stat label="Storage Tier" value={storageTierName(activeUser.storageLimit)} icon={<HardDrive className="h-4 w-4" />} />
-                      <Stat label="Used / Limit" value={`${formatBytes(activeUser.usedStorage)} / ${formatBytes(activeUser.storageLimit || 0)}`} icon={<Shield className="h-4 w-4" />} />
-                      <Stat label="Created By" value={activeUser.createdBy?.email || 'Self-registered / system'} icon={<Users className="h-4 w-4" />} />
-                      <Stat label="Invite Code" value={activeUser.inviteCode?.code || 'Not invite-based'} icon={<Mail className="h-4 w-4" />} />
-                      <Stat label="Invite Note" value={activeUser.inviteCode?.note || 'No note'} icon={<Mail className="h-4 w-4" />} />
+                      <Stat label={t('adminUsers.detail.created')} value={formatDate(activeUser.createdAt)} icon={<Clock3 className="h-4 w-4" />} />
+                      <Stat label={t('adminUsers.detail.lastLogin')} value={formatDate(activeUser.lastLoginAt)} icon={<CheckCircle2 className="h-4 w-4" />} />
+                      <Stat label={t('adminUsers.detail.storageTier')} value={storageTierName(activeUser.storageLimit)} icon={<HardDrive className="h-4 w-4" />} />
+                      <Stat label={t('adminUsers.detail.usedLimit')} value={`${formatBytes(activeUser.usedStorage)} / ${formatBytes(activeUser.storageLimit || 0)}`} icon={<Shield className="h-4 w-4" />} />
+                      <Stat label={t('adminUsers.detail.createdBy')} value={activeUser.createdBy?.email || t('adminUsers.detail.selfRegistered')} icon={<Users className="h-4 w-4" />} />
+                      <Stat label={t('adminUsers.detail.inviteCode')} value={activeUser.inviteCode?.code || t('adminUsers.detail.notInviteBased')} icon={<Mail className="h-4 w-4" />} />
+                      <Stat label={t('adminUsers.detail.inviteNote')} value={activeUser.inviteCode?.note || t('adminUsers.detail.noNote')} icon={<Mail className="h-4 w-4" />} />
                     </div>
                   </section>
 
                   <section className="grid gap-4 md:grid-cols-4">
-                    <MiniCard label="Projects" value={activeUser.projectCount} />
-                    <MiniCard label="Libraries" value={activeUser.libraryCount} />
-                    <MiniCard label="Providers" value={activeUser.providerCount} />
-                    <MiniCard label="Exports" value={activeUser.exportCount} />
+                    <MiniCard label={t('adminUsers.detail.projects')} value={activeUser.projectCount} />
+                    <MiniCard label={t('adminUsers.detail.libraries')} value={activeUser.libraryCount} />
+                    <MiniCard label={t('adminUsers.detail.providers')} value={activeUser.providerCount} />
+                    <MiniCard label={t('adminUsers.detail.exports')} value={activeUser.exportCount} />
                   </section>
 
                   <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-5">
-                    <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Storage Breakdown</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">{t('adminUsers.detail.storageBreakdown')}</p>
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      <StorageRow label="Projects" value={activeUser.storageBreakdown.projects} />
-                      <StorageRow label="Libraries" value={activeUser.storageBreakdown.libraries} />
-                      <StorageRow label="Exports" value={activeUser.storageBreakdown.exports} />
-                      <StorageRow label="Trash" value={activeUser.storageBreakdown.trash} />
+                      <StorageRow label={t('adminUsers.detail.projects')} value={activeUser.storageBreakdown.projects} />
+                      <StorageRow label={t('adminUsers.detail.libraries')} value={activeUser.storageBreakdown.libraries} />
+                      <StorageRow label={t('adminUsers.detail.exports')} value={activeUser.storageBreakdown.exports} />
+                      <StorageRow label={t('adminUsers.detail.trash')} value={activeUser.storageBreakdown.trash} />
                     </div>
                   </section>
 
                   <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-5">
-                    <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Admin Controls</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">{t('adminUsers.detail.adminControls')}</p>
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
                       <label className="space-y-2">
-                        <span className="text-sm text-neutral-400">Role</span>
+                        <span className="text-sm text-neutral-400">{t('adminUsers.table.role')}</span>
                         <select
                           value={activeUser.role}
                           disabled={activeUser.id === currentUser?.id}
                           onChange={(e) => void handleRoleChange(activeUser.id, e.target.value as UserRole)}
                           className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none disabled:opacity-50"
                         >
-                          <option value="user">User</option>
-                          <option value="admin">Admin</option>
+                          <option value="user">{t('adminUsers.user')}</option>
+                          <option value="admin">{t('adminUsers.admin')}</option>
                         </select>
                       </label>
 
                       <label className="space-y-2">
-                        <span className="text-sm text-neutral-400">Storage Limit</span>
+                        <span className="text-sm text-neutral-400">{t('adminUsers.detail.limit')}</span>
                         <select
                           value={activeUser.storageLimit || STORAGE_TIERS[0].value}
                           onChange={(e) => void handleStorageLimitChange(activeUser.id, Number(e.target.value))}
@@ -639,7 +642,7 @@ export function AdminUsers() {
                             : 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20'
                         }`}
                       >
-                        {activeUser.status === 'active' ? 'Disable User' : 'Enable User'}
+                        {activeUser.status === 'active' ? t('adminUsers.detail.disableUser') : t('adminUsers.detail.enableUser')}
                       </button>
                     </div>
                   </section>
@@ -647,12 +650,12 @@ export function AdminUsers() {
                   <section className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-5">
                     <div className="flex items-center gap-2">
                       <KeyRound className="h-4 w-4 text-neutral-400" />
-                      <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Password Reset</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">{t('adminUsers.detail.passwordReset')}</p>
                     </div>
                     {canResetPassword ? (
                       <form onSubmit={handleResetPassword} className="mt-4 space-y-4">
                         <label className="block space-y-2">
-                          <span className="text-sm text-neutral-400">New Password</span>
+                          <span className="text-sm text-neutral-400">{t('adminUsers.detail.newPassword')}</span>
                           <input
                             type="password"
                             minLength={8}
@@ -668,11 +671,11 @@ export function AdminUsers() {
                           className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-100 transition hover:bg-blue-500/25 disabled:opacity-60"
                         >
                           {resettingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-                          Reset Password
+                          {t('adminUsers.detail.resetSubmit')}
                         </button>
                       </form>
                     ) : (
-                      <p className="mt-4 text-sm text-neutral-500">Use the account settings page to change your own password.</p>
+                      <p className="mt-4 text-sm text-neutral-500">{t('adminUsers.detail.ownPasswordNote')}</p>
                     )}
                   </section>
                 </div>
@@ -686,9 +689,9 @@ export function AdminUsers() {
         isOpen={pendingStatusChange !== null}
         onClose={() => setPendingStatusChange(null)}
         onConfirm={handleStatusChange}
-        title={pendingStatusChange?.status === 'active' ? 'Enable User' : 'Disable User'}
-        message={pendingStatusChange ? `Are you sure you want to ${pendingStatusChange.status === 'active' ? 'enable' : 'disable'} ${pendingStatusChange.email}?` : ''}
-        confirmText={pendingStatusChange?.status === 'active' ? 'Enable User' : 'Disable User'}
+        title={pendingStatusChange?.status === 'active' ? t('adminUsers.confirm.enableTitle') : t('adminUsers.confirm.disableTitle')}
+        message={pendingStatusChange ? (pendingStatusChange.status === 'active' ? t('adminUsers.confirm.enableMessage', { email: pendingStatusChange.email }) : t('adminUsers.confirm.disableMessage', { email: pendingStatusChange.email })) : ''}
+        confirmText={pendingStatusChange?.status === 'active' ? t('adminUsers.confirm.enableTitle') : t('adminUsers.confirm.disableTitle')}
         type={pendingStatusChange?.status === 'active' ? 'info' : 'danger'}
       />
     </div>

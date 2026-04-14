@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   fetchProjectOrphans, 
   deleteProjectOrphansBatch, 
@@ -26,6 +27,7 @@ import { toast } from 'sonner';
 import { PageHeader } from '../components/PageHeader';
 
 export function ProjectOrphans() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   
@@ -111,7 +113,7 @@ export function ProjectOrphans() {
   };
 
   const formatSize = (bytes?: number) => {
-    if (bytes === undefined) return 'Unknown';
+    if (bytes === undefined) return t('projectOrphans.unknownSize');
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -124,7 +126,7 @@ export function ProjectOrphans() {
       <div className="h-full flex items-center justify-center bg-neutral-950">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-          <p className="text-neutral-500 text-sm font-medium uppercase tracking-widest">Scanning S3 for Orphans...</p>
+          <p className="text-neutral-500 text-sm font-medium uppercase tracking-widest">{t('projectOrphans.scanning')}</p>
         </div>
       </div>
     );
@@ -136,27 +138,27 @@ export function ProjectOrphans() {
     <div className="h-full flex flex-col bg-neutral-950 overflow-hidden">
       {/* Header */}
       <PageHeader
-        title="Orphan Files Management"
+        title={t('projectOrphans.title')}
         description={(
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
                <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[10px] font-black text-blue-500 uppercase tracking-widest whitespace-nowrap">
-                 Cleanup Tool
+                 {t('projectOrphans.cleanupTool')}
                </span>
             </div>
             <p className="text-xs text-neutral-500 truncate mt-1">
-              Project: <span className="text-neutral-300">{project?.name || id}</span>
+              {t('projectOrphans.projectLabel', { name: project?.name || id })}
             </p>
           </div>
         )}
-        backLink={{ to: `/project/${id}`, label: 'Back to Project' }}
+        backLink={{ to: `/project/${id}`, label: t('projectOrphans.backToProject') }}
         actions={(
           <div className="flex items-center gap-3">
             <button
               onClick={loadData}
               disabled={loading}
               className="p-2.5 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-xl transition-all disabled:opacity-50"
-              title="Refresh scan"
+              title={t('projectOrphans.refresh')}
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -173,7 +175,7 @@ export function ProjectOrphans() {
                 className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-red-600/20 transition-all active:scale-95 disabled:opacity-50"
               >
                 {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                {selectedKeys.size > 0 ? `Delete (${selectedKeys.size})` : 'Clear All'}
+                {selectedKeys.size > 0 ? t('projectOrphans.deleteSelected', { count: selectedKeys.size }) : t('projectOrphans.clearAll')}
               </button>
             )}
           </div>
@@ -192,7 +194,7 @@ export function ProjectOrphans() {
                    <Layers className="w-5 h-5 text-blue-500" />
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Orphaned Files</p>
+                   <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{t('projectOrphans.orphanedFiles')}</p>
                    <p className="text-lg font-bold text-white">{orphans.length}</p>
                 </div>
              </div>
@@ -201,7 +203,7 @@ export function ProjectOrphans() {
                    <ImageIcon className="w-5 h-5 text-purple-500" />
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Total Waste</p>
+                   <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{t('projectOrphans.totalWaste')}</p>
                    <p className="text-lg font-bold text-white">{formatSize(totalSize)}</p>
                 </div>
              </div>
@@ -210,8 +212,8 @@ export function ProjectOrphans() {
                    <AlertTriangle className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="flex-1">
-                   <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Warning</p>
-                   <p className="text-[10px] text-neutral-400 font-medium leading-tight">These files are NOT referenced by any current component of this project and can be safely deleted.</p>
+                   <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">{t('projectOrphans.warning')}</p>
+                   <p className="text-[10px] text-neutral-400 font-medium leading-tight">{t('projectOrphans.warningDesc')}</p>
                 </div>
              </div>
           </div>
@@ -227,11 +229,11 @@ export function ProjectOrphans() {
                 ) : (
                   <Square className="w-4 h-4" />
                 )}
-                Select All
+                {t('projectOrphans.selectAll')}
               </button>
               {selectedKeys.size > 0 && (
                 <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
-                  {selectedKeys.size} Files Selected
+                  {t('projectOrphans.filesSelected', { count: selectedKeys.size })}
                 </span>
               )}
             </div>
@@ -243,8 +245,8 @@ export function ProjectOrphans() {
                   <CheckSquare className="w-10 h-10 text-emerald-500/40" />
                </div>
                <div>
-                  <p className="text-sm font-bold text-neutral-300 tracking-wider uppercase">Project is Clean</p>
-                  <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">No unreferenced files found in storage.</p>
+                  <p className="text-sm font-bold text-neutral-300 tracking-wider uppercase">{t('projectOrphans.cleanTitle')}</p>
+                  <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">{t('projectOrphans.cleanDesc')}</p>
                </div>
             </div>
           ) : (
@@ -288,7 +290,7 @@ export function ProjectOrphans() {
                             }}
                             className="px-2 py-0.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded text-[7px] font-black uppercase tracking-widest text-white transition-all whitespace-nowrap"
                            >
-                             Preview
+                             {t('projectOrphans.preview')}
                            </button>
                         </div>
                      </div>
@@ -317,9 +319,9 @@ export function ProjectOrphans() {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteSelected}
-        title="Permanently Delete Files"
-        message={`Are you sure you want to delete ${selectedKeys.size > 0 ? selectedKeys.size : orphans.length} orphan file(s)? This action will permanently remove them from S3 and cannot be undone.`}
-        confirmText={deleting ? 'Deleting...' : 'Permanently Delete'}
+        title={t('projectOrphans.confirm.title')}
+        message={t('projectOrphans.confirm.message', { count: selectedKeys.size > 0 ? selectedKeys.size : orphans.length })}
+        confirmText={deleting ? t('projectOrphans.confirm.deleting') : t('projectOrphans.confirm.confirmText')}
         type="danger"
       />
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { fetchProvider, fetchProviderModels, ProviderModelInfo } from '../api';
 import { Provider, ProviderType } from '../types';
 import { ProviderIcon } from '../components/ProviderIcon';
@@ -20,13 +21,8 @@ const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
   BytePlus:   { icon: 'bg-cyan-500/10 text-cyan-500', badge: 'bg-cyan-600/10 text-cyan-400 border-cyan-600/30' },
 };
 
-const CATEGORY_META: Record<string, { label: string; icon: typeof MessageSquare; color: string }> = {
-  text:  { label: 'Text Generation',  icon: MessageSquare, color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
-  image: { label: 'Image Generation', icon: Image,         color: 'text-pink-400 bg-pink-500/10 border-pink-500/20' },
-  video: { label: 'Video Generation', icon: Video,         color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
-};
-
 export function ProviderProfile() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [provider, setProvider] = useState<Provider | null>(null);
@@ -44,11 +40,11 @@ export function ProviderProfile() {
       const data = await fetchProvider(id);
       setProvider(data);
     } catch {
-      setError('Failed to load provider.');
+      setError(t('providerProfile.errorLoad'));
     } finally {
       setIsLoadingProvider(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   const loadModels = useCallback(async () => {
     if (!id) return;
@@ -59,11 +55,11 @@ export function ProviderProfile() {
       setModels(result.models);
       if (result.error) setModelsError(result.error);
     } catch {
-      setModelsError('Failed to fetch models from provider API.');
+      setModelsError(t('providerProfile.errors.fetchModels'));
     } finally {
       setIsLoadingModels(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => { loadProvider(); }, [loadProvider]);
   // RunningHub/KlingAI/BytePlus use static models; others require credentials.
@@ -90,9 +86,9 @@ export function ProviderProfile() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-4">
         <AlertCircle className="w-10 h-10 text-red-400" />
-        <p className="text-neutral-400">{error || 'Provider not found'}</p>
+        <p className="text-neutral-400">{error || t('providerProfile.errorNotFound')}</p>
         <button onClick={() => navigate('/providers')} className="text-sm text-amber-400 hover:underline">
-          Back to Providers
+          {t('providerProfile.backToProviders')}
         </button>
       </div>
     );
@@ -102,6 +98,12 @@ export function ProviderProfile() {
   const hasCredentials = provider.type === 'KlingAI'
     ? provider.hasKey && provider.hasSecret
     : provider.hasKey;
+
+  const CATEGORY_META: Record<string, { label: string; icon: typeof MessageSquare; color: string }> = {
+    text:  { label: t('providerProfile.categories.text'),  icon: MessageSquare, color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
+    image: { label: t('providerProfile.categories.image'), icon: Image,         color: 'text-pink-400 bg-pink-500/10 border-pink-500/20' },
+    video: { label: t('providerProfile.categories.video'), icon: Video,         color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+  };
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
@@ -128,12 +130,12 @@ export function ProviderProfile() {
               )}
               <span className={`flex items-center gap-1 text-xs font-medium ${hasCredentials ? 'text-emerald-400' : 'text-amber-400'}`}>
                 {hasCredentials
-                  ? <><CheckCircle className="w-3.5 h-3.5" /> {provider.type === 'KlingAI' ? 'Credentials stored' : 'Key stored'}</>
-                  : <><AlertCircle className="w-3.5 h-3.5" /> {provider.type === 'KlingAI' ? 'Missing credentials' : 'No key'}</>}
+                  ? <><CheckCircle className="w-3.5 h-3.5" /> {provider.type === 'KlingAI' ? t('providerProfile.credentialsStored') : t('providerProfile.keyStored')}</>
+                  : <><AlertCircle className="w-3.5 h-3.5" /> {provider.type === 'KlingAI' ? t('providerProfile.missingCredentials') : t('providerProfile.noKey')}</>}
               </span>
             </div>
           )}
-          backLink={{ to: '/providers', label: 'Providers' }}
+          backLink={{ to: '/providers', label: t('providers.title') }}
           actions={(
             <>
               {provider.type === 'BytePlus' && (
@@ -141,14 +143,14 @@ export function ProviderProfile() {
                   onClick={() => navigate(`/provider/${id}/custom-models`)}
                   className="text-xs md:text-sm bg-cyan-600/10 text-cyan-400 hover:bg-cyan-600/20 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-cyan-600/30 font-medium"
                 >
-                  <Layers className="w-4 h-4" /> Custom Models
+                  <Layers className="w-4 h-4" /> {t('providerProfile.customModels')}
                 </button>
               )}
               <button
                 onClick={() => navigate(`/provider/${id}/edit`)}
                 className="text-xs md:text-sm bg-neutral-800 text-neutral-300 hover:bg-neutral-700 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-neutral-700 font-medium shrink-0"
               >
-                <Pencil className="w-4 h-4" /> Edit
+                <Pencil className="w-4 h-4" /> {t('providerProfile.edit')}
               </button>
             </>
           )}
@@ -156,17 +158,17 @@ export function ProviderProfile() {
 
         {/* Provider Info */}
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <InfoCard label="Concurrency" value={String(provider.concurrency)} />
-          <InfoCard label="Projects" value={String(provider.usage?.projectCount ?? 0)} />
-          <InfoCard label="Jobs" value={String(provider.usage?.activeJobCount ?? 0)} />
-          <InfoCard label="Models" value={isLoadingModels ? '...' : String(models.length)} />
+          <InfoCard label={t('providerProfile.concurrency')} value={String(provider.concurrency)} />
+          <InfoCard label={t('providerProfile.projects')} value={String(provider.usage?.projectCount ?? 0)} />
+          <InfoCard label={t('providerProfile.jobs')} value={String(provider.usage?.activeJobCount ?? 0)} />
+          <InfoCard label={t('providerProfile.models')} value={isLoadingModels ? '...' : String(models.length)} />
         </section>
 
         {/* Models */}
         <section>
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-xl font-semibold text-white">
-              {provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' ? 'Supported Models' : 'Available Models'}
+              {provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' ? t('providerProfile.supportedModels') : t('providerProfile.availableModels')}
             </h3>
             {provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && (
               <button
@@ -174,7 +176,7 @@ export function ProviderProfile() {
                 disabled={isLoadingModels}
                 className="text-xs text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingModels ? 'animate-spin' : ''}`} /> Refresh
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingModels ? 'animate-spin' : ''}`} /> {t('providerProfile.refresh')}
               </button>
             )}
           </div>
@@ -182,7 +184,7 @@ export function ProviderProfile() {
           {!provider.hasKey && provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && (
             <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              Add an API key to fetch available models from the provider.
+              {t('providerProfile.addKeyToFetch')}
             </div>
           )}
 
@@ -199,7 +201,7 @@ export function ProviderProfile() {
             </div>
           ) : (provider.hasKey || provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus') && models.length === 0 && !modelsError ? (
             <div className="py-12 text-center text-neutral-500 text-sm">
-              No models returned by the provider API.
+              {t('providerProfile.noModels')}
             </div>
           ) : (
             <div className="space-y-6">
@@ -215,7 +217,7 @@ export function ProviderProfile() {
                         <Icon className="w-4 h-4" />
                         {meta.label}
                       </span>
-                      <span className="text-xs text-neutral-500">{items.length} model{items.length === 1 ? '' : 's'}</span>
+                      <span className="text-xs text-neutral-500">{t('providerProfile.modelCount', { count: items.length })}</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                       {items.map(m => (

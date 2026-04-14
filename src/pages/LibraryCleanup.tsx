@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation, Trans } from 'react-i18next';
 import { Library } from '../types';
 import {
   fetchLibrary,
@@ -17,6 +18,7 @@ interface ProjectRef {
 }
 
 export function LibraryCleanup() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -98,7 +100,7 @@ export function LibraryCleanup() {
   }
 
   if (!library) {
-    return <div className="p-8 text-neutral-500">Library not found.</div>;
+    return <div className="p-8 text-neutral-500">{t('libraryCleanup.errorNotFound')}</div>;
   }
 
   const allCleaned = references.length === 0;
@@ -108,13 +110,15 @@ export function LibraryCleanup() {
       <div className="w-full space-y-8">
         {/* Header */}
         <PageHeader
-          title="Clean Up References"
+          title={t('libraryCleanup.title')}
           description={(
-            <>
-              Remove references to "<span className="text-white font-medium">{library.name}</span>" from projects before deleting.
-            </>
+            <Trans
+              i18nKey="libraryCleanup.description"
+              values={{ name: library.name }}
+              components={{ span: <span className="text-white font-medium" /> }}
+            />
           )}
-          backLink={{ to: `/library/${id}`, label: 'Back to Library' }}
+          backLink={{ to: `/library/${id}`, label: t('libraryCleanup.backToLibrary') }}
         />
 
         {/* Warning banner */}
@@ -123,10 +127,10 @@ export function LibraryCleanup() {
             <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-amber-400">
-                {references.length} project{references.length > 1 ? 's' : ''} still referencing this library
+                {t('libraryCleanup.warning', { count: references.length })}
               </p>
               <p className="text-xs text-neutral-400 mt-1">
-                Remove references individually or use the button below to clean all and delete.
+                {t('libraryCleanup.warningDesc')}
               </p>
             </div>
           </div>
@@ -155,7 +159,7 @@ export function LibraryCleanup() {
                   ) : (
                     <Unlink className="w-3.5 h-3.5" />
                   )}
-                  Remove
+                  {t('libraryCleanup.remove')}
                 </button>
               </div>
             );
@@ -165,8 +169,8 @@ export function LibraryCleanup() {
             <div className="py-12 border-2 border-dashed border-neutral-800 rounded-2xl text-center text-neutral-500 flex flex-col items-center justify-center gap-3 bg-neutral-900/20">
               <Unlink className="w-10 h-10 text-neutral-700" />
               <div>
-                <p className="text-base font-medium text-neutral-400">All references cleared</p>
-                <p className="text-sm text-neutral-600 mt-1">You can now safely delete this library.</p>
+                <p className="text-base font-medium text-neutral-400">{t('libraryCleanup.allCleared')}</p>
+                <p className="text-sm text-neutral-600 mt-1">{t('libraryCleanup.allClearedDesc')}</p>
               </div>
             </div>
           )}
@@ -185,7 +189,7 @@ export function LibraryCleanup() {
               ) : (
                 <Trash2 className="w-4 h-4" />
               )}
-              Clean All & Delete Library
+              {t('libraryCleanup.cleanAllAndDelete')}
             </button>
           ) : (
             <button
@@ -198,7 +202,7 @@ export function LibraryCleanup() {
               ) : (
                 <Trash2 className="w-4 h-4" />
               )}
-              Delete Library
+              {t('libraryCleanup.deleteLibrary')}
             </button>
           )}
         </div>
@@ -208,9 +212,9 @@ export function LibraryCleanup() {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleCleanAllAndDelete}
-        title="Clean All & Delete"
-        message={`This will remove all references to "${library.name}" from ${references.length} project${references.length > 1 ? 's' : ''} and permanently delete the library. This action is irreversible.`}
-        confirmText="Clean & Delete"
+        title={t('libraryCleanup.confirm.title')}
+        message={t('libraryCleanup.confirm.message', { name: library.name, count: references.length })}
+        confirmText={t('libraryCleanup.confirm.confirmText')}
         type="danger"
       />
     </div>

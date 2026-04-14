@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Folder, Type, Image as ImageIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { createLibrary, updateLibrary, fetchLibrary } from '../api';
 
 export function LibraryForm() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -55,28 +57,28 @@ export function LibraryForm() {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white tracking-tight">
-              {isNew ? 'New Library' : 'Edit Library'}
+              {isNew ? t('libraryForm.newTitle') : t('libraryForm.editTitle')}
             </h2>
-            <p className="text-sm text-neutral-500">Define your library properties</p>
+            <p className="text-sm text-neutral-500">{t('libraryForm.description')}</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Library Name</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('libraryForm.nameLabel')}</label>
             <input
               type="text"
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Character Outfits, Sci-Fi Context..."
+              placeholder={t('libraryForm.namePlaceholder')}
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-neutral-700"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Content Type</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">{t('libraryForm.typeLabel')}</label>
             {isNew ? (
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -89,7 +91,7 @@ export function LibraryForm() {
                   }`}
                 >
                   <Type className="w-5 h-5" />
-                  <span className="text-sm font-bold">Text</span>
+                  <span className="text-sm font-bold">{t('libraryForm.typeText')}</span>
                 </button>
                 <button
                   type="button"
@@ -101,7 +103,7 @@ export function LibraryForm() {
                   }`}
                 >
                   <ImageIcon className="w-5 h-5" />
-                  <span className="text-sm font-bold">Image</span>
+                  <span className="text-sm font-bold">{t('libraryForm.typeImage')}</span>
                 </button>
               </div>
             ) : (
@@ -109,8 +111,8 @@ export function LibraryForm() {
                 type === 'image' ? 'bg-emerald-600/5 border-emerald-500/20 text-emerald-400' : 'bg-blue-600/5 border-blue-500/20 text-blue-400'
               }`}>
                 {type === 'image' ? <ImageIcon className="w-5 h-5" /> : <Type className="w-5 h-5" />}
-                <span className="text-sm font-bold capitalize">{type} Content</span>
-                <span className="ml-auto text-[10px] font-black uppercase tracking-[0.1em] opacity-50">Permanent</span>
+                <span className="text-sm font-bold capitalize">{t('libraryForm.contentType', { type: type === 'image' ? t('libraryForm.typeImage') : t('libraryForm.typeText') })}</span>
+                <span className="ml-auto text-[10px] font-black uppercase tracking-[0.1em] opacity-50">{t('libraryForm.permanent')}</span>
               </div>
             )}
           </div>
@@ -121,7 +123,7 @@ export function LibraryForm() {
               onClick={() => navigate(-1)}
               className="flex-1 px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
             >
-              Cancel
+              {t('libraryForm.cancel')}
             </button>
             <button
               type="submit"
@@ -129,7 +131,7 @@ export function LibraryForm() {
               className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
-              {isNew ? 'Create Library' : 'Save Changes'}
+              {isNew ? t('libraryForm.submitCreate') : t('libraryForm.submitSave')}
             </button>
           </div>
         </form>

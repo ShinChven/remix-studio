@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Layers, Shuffle, AlertCircle, Plus, Loader2 } from 'lucide-react';
 import { Project, Provider } from '../../types';
 
@@ -62,6 +63,7 @@ export function SettingsPanel({
   isAddingDrafts,
   draftsProgress
 }: SettingsPanelProps) {
+  const { t } = useTranslation();
   const selectedProvider = providers.find(p => p.id === selectedProviderId);
   const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
   const hasSelectedModel = Boolean(selectedProviderId && selectedModelId && selectedModel);
@@ -77,9 +79,9 @@ export function SettingsPanel({
         {/* Row 1: Provider Name + Chevron */}
         <div className="w-full flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[9px] font-black uppercase tracking-widest text-neutral-600">Provider:</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-neutral-600">{t('projectViewer.settings.providerLabel')}</span>
             <span className="text-[10px] font-bold text-neutral-300 truncate capitalize">
-              {selectedProvider?.name || 'None'}
+              {selectedProvider?.name || t('projectViewer.settings.none')}
             </span>
           </div>
           <div className={`p-1 rounded-md bg-neutral-800/50 group-hover:bg-neutral-800 transition-all ${isSettingsCollapsed ? 'rotate-180' : ''}`}>
@@ -92,7 +94,7 @@ export function SettingsPanel({
           <div className="flex items-center gap-2">
             {!hasSelectedModel ? (
               <span className="text-[9px] font-bold text-neutral-600 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                Select a model to configure options
+                {t('projectViewer.settings.selectModelToConfigure')}
               </span>
             ) : isTextProject ? (
               <>
@@ -116,7 +118,7 @@ export function SettingsPanel({
                 </span>
                 {selectedModel?.options.sounds && selectedModel.options.sounds.length > 0 && (
                   <span className="text-[9px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                    Sound {localProject.sound || 'on'}
+                    {t('projectViewer.settings.soundValue', { value: localProject.sound || 'on' })}
                   </span>
                 )}
               </>
@@ -135,7 +137,7 @@ export function SettingsPanel({
             )}
             {localProject.shuffle && (
               <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/30 uppercase tracking-widest flex items-center gap-1">
-                <Shuffle className="w-2.5 h-2.5" /> Shuffle
+                <Shuffle className="w-2.5 h-2.5" /> {t('projectViewer.settings.shuffle')}
               </span>
             )}
           </div>
@@ -146,7 +148,7 @@ export function SettingsPanel({
         <div className="space-y-4 pt-2 overflow-y-auto pr-1 min-h-0 shrink custom-scrollbar">
           <div className="space-y-1.5">
             <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-              AI Model
+              {t('projectViewer.settings.aiModel')}
             </label>
             <button
               onClick={() => setIsModelSelectorOpen(true)}
@@ -160,10 +162,10 @@ export function SettingsPanel({
               <div className="flex items-center justify-between relative z-10">
                 <div className="min-w-0">
                   <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-1">
-                    {selectedProvider?.name || 'Select Provider'}
+                    {selectedProvider?.name || t('projectViewer.settings.selectProvider')}
                   </div>
                   <div className="text-sm font-black text-white truncate tracking-tight">
-                    {selectedModel?.name || 'Select Model'}
+                    {selectedModel?.name || t('projectViewer.settings.selectModel')}
                   </div>
                 </div>
                 <div className="p-2 bg-neutral-800 rounded-xl group-hover/model-btn:bg-blue-600 group-hover/model-btn:text-white transition-all">
@@ -177,10 +179,10 @@ export function SettingsPanel({
           {!hasSelectedModel ? (
             <div className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-950/50 px-4 py-5 text-center">
               <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
-                Model Options Hidden
+                {t('projectViewer.settings.modelOptionsHidden')}
               </p>
               <p className="mt-1 text-xs text-neutral-600">
-                Choose a model to reveal provider-specific settings.
+                {t('projectViewer.settings.chooseModelHint')}
               </p>
             </div>
           ) : isVideoProject ? (
@@ -188,7 +190,7 @@ export function SettingsPanel({
               {/* Aspect Ratio */}
               <div className="space-y-2.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                  Aspect Ratio
+                  {t('projectViewer.settings.aspectRatio')}
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
                   {(selectedModel?.options.aspectRatios || ['16:9', '9:16', '1:1']).map((ratio) => (
@@ -220,7 +222,7 @@ export function SettingsPanel({
               {/* Resolution */}
               <div className="space-y-2.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                  Resolution
+                  {t('projectViewer.settings.resolution')}
                 </label>
                 <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
                   {(selectedModel?.options.resolutions || ['720p', '1080p']).map((r) => (
@@ -246,7 +248,7 @@ export function SettingsPanel({
               {/* Duration */}
               <div className="space-y-2.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                  Duration (s)
+                  {t('projectViewer.settings.durationSeconds')}
                 </label>
                 <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
                   {(selectedModel?.options.durations || [4, 6, 8]).map((d) => (
@@ -272,7 +274,7 @@ export function SettingsPanel({
               {selectedModel?.options.sounds && selectedModel.options.sounds.length > 0 && (
                 <div className="space-y-2.5">
                   <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                    Sound
+                    {t('projectViewer.settings.sound')}
                   </label>
                   <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
                     {selectedModel.options.sounds.map((sound) => (
@@ -301,7 +303,7 @@ export function SettingsPanel({
               {/* System Prompt */}
               <div className="space-y-2.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                  System Prompt
+                  {t('projectViewer.settings.systemPrompt')}
                 </label>
                 <textarea
                   value={localProject.systemPrompt || ''}
@@ -310,7 +312,7 @@ export function SettingsPanel({
                     setLocalProject(updated);
                     onUpdate(updated);
                   }}
-                  placeholder="Optional system instructions for the AI model..."
+                  placeholder={t('projectViewer.settings.systemPromptPlaceholder')}
                   rows={3}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-300 focus:outline-none focus:ring-1 focus:ring-blue-500/30 resize-none placeholder:text-neutral-700"
                 />
@@ -319,7 +321,7 @@ export function SettingsPanel({
               {/* Temperature */}
               <div className="space-y-2.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                  Temperature
+                  {t('projectViewer.settings.temperature')}
                 </label>
                 <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
                   {(selectedModel?.options.temperatures || [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0]).map((t) => (
@@ -345,7 +347,7 @@ export function SettingsPanel({
               {/* Max Tokens */}
               <div className="space-y-2.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                  Max Tokens
+                  {t('projectViewer.settings.maxTokens')}
                 </label>
                 <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1 flex-wrap">
                   {(selectedModel?.options.maxTokenOptions || [256, 512, 1024, 2048, 4096, 8192]).map((m) => (
@@ -373,7 +375,7 @@ export function SettingsPanel({
               {/* Image-specific settings */}
               <div className="space-y-2.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                  Aspect Ratio
+                  {t('projectViewer.settings.aspectRatio')}
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
                   {(selectedModel?.options.aspectRatios || ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2']).map((ratio) => (
@@ -404,7 +406,7 @@ export function SettingsPanel({
 
               <div className="space-y-2.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                  Quality
+                  {t('projectViewer.settings.quality')}
                 </label>
                 <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
                   {(selectedModel?.options.qualities || ['standard', 'hd']).map((q) => (
@@ -430,7 +432,7 @@ export function SettingsPanel({
               {selectedModel?.options.backgrounds && selectedModel.options.backgrounds.length > 0 && (
                 <div className="space-y-2.5">
                   <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                    Background
+                    {t('projectViewer.settings.background')}
                   </label>
                   <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
                     {selectedModel.options.backgrounds.map((b) => (
@@ -456,7 +458,7 @@ export function SettingsPanel({
 
               <div className="space-y-2.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                  Format
+                  {t('projectViewer.settings.format')}
                 </label>
                 <div className="flex bg-neutral-950 border border-neutral-800 p-1 rounded-xl gap-1">
                   {['png', 'jpeg', 'webp'].map((f) => (
@@ -483,7 +485,7 @@ export function SettingsPanel({
 
           <div className="space-y-2.5">
             <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-              Workflow Options
+              {t('projectViewer.settings.workflowOptions')}
             </label>
             <button
               onClick={() => {
@@ -503,9 +505,9 @@ export function SettingsPanel({
                 </div>
                 <div className="text-left">
                   <div className={`text-[10px] font-bold uppercase tracking-wider ${localProject.shuffle ? 'text-blue-400' : 'text-neutral-400'}`}>
-                    Shuffle Workflow
+                    {t('projectViewer.settings.shuffleWorkflow')}
                   </div>
-                  <div className="text-[9px] opacity-60 font-medium">Randomize combinations order</div>
+                  <div className="text-[9px] opacity-60 font-medium">{t('projectViewer.settings.randomizeOrder')}</div>
                 </div>
               </div>
               <div className={`w-8 h-4 rounded-full relative transition-all duration-300 ${localProject.shuffle ? 'bg-blue-500' : 'bg-neutral-800'}`}>
@@ -518,7 +520,7 @@ export function SettingsPanel({
 
       <div className="flex items-center justify-between px-1 mb-3">
         <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600">
-          Job Quantity
+          {t('projectViewer.settings.jobQuantity')}
         </label>
         <div className="flex items-center gap-2 bg-neutral-950 px-3 py-1.5 rounded-xl border border-neutral-800 shadow-inner">
           <input
@@ -534,8 +536,8 @@ export function SettingsPanel({
             }}
             className="w-10 bg-transparent text-xs text-blue-400 font-black focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
           />
-          <span className="text-[10px] text-neutral-600 font-bold tracking-tighter" title="Total unique combinations">
-            OF {combinations.length}
+          <span className="text-[10px] text-neutral-600 font-bold tracking-tighter" title={t('projectViewer.settings.totalUniqueCombinations')}>
+            {t('projectViewer.settings.ofTotal', { count: combinations.length })}
           </span>
         </div>
       </div>
@@ -547,7 +549,7 @@ export function SettingsPanel({
             : 'bg-red-500/10 border-red-500/20 text-red-500 shadow-red-500/5'
         }`}>
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span className="line-clamp-2">{!hasSelectedModel ? 'Please select an AI provider and model to continue.' : workflowError}</span>
+          <span className="line-clamp-2">{!hasSelectedModel ? t('projectViewer.settings.selectProviderAndModel') : workflowError}</span>
         </div>
       </div>
 
@@ -559,19 +561,19 @@ export function SettingsPanel({
         {uploadingItemIds.size > 0 ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            Uploading Images...
+            {t('projectViewer.settings.uploadingImages')}
           </>
         ) : isAddingDrafts ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
             {draftsProgress?.stage === 'saving'
-              ? 'Saving Drafts...'
-              : `Composing ${draftsProgress?.current ?? 0}/${draftsProgress?.total ?? 0}`}
+              ? t('projectViewer.settings.savingDrafts')
+              : t('projectViewer.settings.composingProgress', { current: draftsProgress?.current ?? 0, total: draftsProgress?.total ?? 0 })}
           </>
         ) : (
           <>
             <Plus className="w-4 h-4" />
-            Add to Draft
+            {t('projectViewer.settings.addToDraft')}
           </>
         )}
       </button>

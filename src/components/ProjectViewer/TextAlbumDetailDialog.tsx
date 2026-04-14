@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Copy, FileImage, FileText, Sparkles, X } from 'lucide-react';
 import { AlbumItem } from '../../types';
 import { imageDisplayUrl } from '../../api';
@@ -12,6 +13,7 @@ interface TextAlbumDetailDialogProps {
 }
 
 export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onClose }: TextAlbumDetailDialogProps) {
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(startIndex ?? 0);
 
   useEffect(() => {
@@ -46,9 +48,9 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
   const handleCopy = async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      toast.success(`${label} copied`);
+      toast.success(t('projectViewer.textDetail.copied', { label }));
     } catch {
-      toast.error(`Failed to copy ${label.toLowerCase()}`);
+      toast.error(t('projectViewer.textDetail.copyFailed', { label: label.toLowerCase() }));
     }
   };
 
@@ -68,7 +70,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
         <button
           onClick={showPrev}
           className="absolute left-3 top-1/2 z-10 -translate-y-1/2 p-3 text-white/50 hover:text-white transition-colors bg-black/40 hover:bg-black/70 rounded-full"
-          aria-label="Previous text item"
+          aria-label={t('projectViewer.textDetail.previousItem')}
         >
           <ChevronLeft className="w-7 h-7" />
         </button>
@@ -78,7 +80,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
         className="relative flex h-full w-full flex-col overflow-hidden"
         role="dialog"
         aria-modal="true"
-        aria-label="Text album details"
+        aria-label={t('projectViewer.textDetail.dialogAria')}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/10 bg-black/30 px-4 py-4 md:px-6">
@@ -87,9 +89,9 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
               <FileText className="w-5 h-5 text-blue-500" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-bold text-white tracking-tight">Text View</h3>
+              <h3 className="text-lg font-bold text-white tracking-tight">{t('projectViewer.textDetail.title')}</h3>
               <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">
-                Item {(currentIndex + 1).toString().padStart(2, '0')}
+                {t('projectViewer.textDetail.itemIndex', { index: (currentIndex + 1).toString().padStart(2, '0') })}
                 {hasMultipleItems ? ` / ${items.length.toString().padStart(2, '0')}` : ''}
               </p>
             </div>
@@ -101,14 +103,14 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
                 <button
                   onClick={showPrev}
                   className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-                  aria-label="Previous text item"
+                  aria-label={t('projectViewer.textDetail.previousItem')}
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button
                   onClick={showNext}
                   className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-                  aria-label="Next text item"
+                  aria-label={t('projectViewer.textDetail.nextItem')}
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
@@ -117,7 +119,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
             <button
               onClick={onClose}
               className="p-2 text-neutral-500 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-              aria-label="Close text details dialog"
+              aria-label={t('projectViewer.textDetail.closeAria')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -130,14 +132,14 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
               <div className="px-5 py-4 border-b border-neutral-800 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-neutral-300">
                   <Sparkles className="w-4 h-4 text-blue-400" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">Prompt</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">{t('projectViewer.common.prompt')}</span>
                 </div>
                 <button
-                  onClick={() => handleCopy(item.prompt, 'Prompt')}
+                  onClick={() => handleCopy(item.prompt, t('projectViewer.common.prompt'))}
                   className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2"
                 >
                   <Copy className="w-3.5 h-3.5" />
-                  Copy
+                  {t('projectViewer.common.copy')}
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-6">
@@ -146,7 +148,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
                     <div className="mb-3 flex items-center gap-2 text-neutral-300">
                       <FileImage className="w-4 h-4 text-blue-400" />
                       <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">
-                        Reference Images ({referenceImages.length})
+                        {t('projectViewer.textDetail.referenceImages', { count: referenceImages.length })}
                       </span>
                     </div>
                     <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
@@ -159,12 +161,12 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
                         >
                           <img
                             src={imageDisplayUrl(src)}
-                            alt={`Reference ${idx + 1}`}
+                            alt={t('projectViewer.textDetail.referenceAlt', { index: idx + 1 })}
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             referrerPolicy="no-referrer"
                           />
                           <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-left text-[9px] font-black uppercase tracking-[0.18em] text-white/80">
-                            Ref {idx + 1}
+                            {t('projectViewer.textDetail.refShort', { index: idx + 1 })}
                           </div>
                         </button>
                       ))}
@@ -183,20 +185,20 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
               <div className="px-5 py-4 border-b border-neutral-800 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-neutral-300">
                   <FileText className="w-4 h-4 text-blue-400" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">Generated Text</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-neutral-500">{t('projectViewer.common.generatedText')}</span>
                 </div>
                 <button
-                  onClick={() => handleCopy(item.textContent || '', 'Generated text')}
+                  onClick={() => handleCopy(item.textContent || '', t('projectViewer.common.generatedText'))}
                   disabled={!item.textContent}
                   className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2"
                 >
                   <Copy className="w-3.5 h-3.5" />
-                  Copy
+                  {t('projectViewer.common.copy')}
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-8">
                 <div className="mx-auto max-w-4xl whitespace-pre-wrap break-words text-base md:text-lg text-neutral-100 leading-relaxed">
-                  {item.textContent || 'No generated text.'}
+                  {item.textContent || t('projectViewer.textDetail.noGeneratedText')}
                 </div>
               </div>
             </div>
@@ -205,10 +207,10 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
 
         <div className="flex items-center justify-between gap-4 border-t border-white/10 bg-black/30 px-4 py-3 md:px-6">
           <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-            {(item.textContent || '').length} characters
+            {t('projectViewer.textDetail.characterCount', { count: (item.textContent || '').length })}
           </div>
           <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-            Esc close · ← → navigate
+            {t('projectViewer.textDetail.keyboardHint')}
           </div>
         </div>
       </div>
@@ -217,7 +219,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
         <button
           onClick={showNext}
           className="absolute right-3 top-1/2 z-10 -translate-y-1/2 p-3 text-white/50 hover:text-white transition-colors bg-black/40 hover:bg-black/70 rounded-full"
-          aria-label="Next text item"
+          aria-label={t('projectViewer.textDetail.nextItem')}
         >
           <ChevronRight className="w-7 h-7" />
         </button>

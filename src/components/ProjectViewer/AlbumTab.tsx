@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, Download, FileText, Play, Video as VideoIcon, Copy } from 'lucide-react';
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
@@ -41,9 +42,10 @@ export function AlbumTab({
   onExportStarted,
   projectType = 'image'
 }: AlbumTabProps) {
+  const { t } = useTranslation();
   const getDefaultExportPackageName = (name: string) => {
-    const safeName = (name || 'Album').replace(/[^a-zA-Z0-9-_]/g, '_');
-    return `${safeName}_Album.zip`;
+    const safeName = (name || t('projectViewer.tabs.album')).replace(/[^a-zA-Z0-9-_]/g, '_');
+    return `${safeName}_${t('projectViewer.tabs.album')}.zip`;
   };
 
   const isTextProject = projectType === 'text';
@@ -69,12 +71,12 @@ export function AlbumTab({
       onExportStarted();
       toast.success(
         <span>
-          Export queued!{' '}
-          <a href="/exports" className="underline font-bold">View progress in Archive →</a>
+          {t('projectViewer.album.exportQueued')}{' '}
+          <a href="/exports" className="underline font-bold">{t('projectViewer.album.viewArchiveProgress')}</a>
         </span>
       );
     } catch (err: any) {
-      toast.error(`Export failed: ${err.message}`);
+      toast.error(t('projectViewer.album.exportFailed', { message: err.message }));
       throw err;
     }
   };
@@ -87,7 +89,7 @@ export function AlbumTab({
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest transition-colors mr-2">
                 <Layers className="w-4 h-4 text-blue-500" />
-                {albumItems.length} Items
+                {t('projectViewer.album.itemsCount', { count: albumItems.length })}
                 <span className="mx-1 text-neutral-800">·</span>
                 <span className="text-blue-500/80">
                   {((albumItems || []).reduce((acc, item) => acc + (item.size || 0), 0) / (1024 * 1024)).toFixed(2)} MB
@@ -105,32 +107,32 @@ export function AlbumTab({
                 ) : (
                   <Square className="w-4 h-4" />
                 )}
-                Select All
+                {t('projectViewer.common.selectAll')}
               </button>
 
               {selectedAlbumIds.size > 0 && (
                 <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
                   <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                    {selectedAlbumIds.size} Selected
+                    {t('projectViewer.common.selectedCount', { count: selectedAlbumIds.size })}
                   </span>
                   <button
                     onClick={() => openExportDialog(false)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
                   >
-                    <Download className="w-3 h-3" /> Export Selected
+                    <Download className="w-3 h-3" /> {t('projectViewer.album.exportSelected')}
                   </button>
                   <button
                     onClick={() => setShowCopyDialog(true)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
                   >
-                    <Copy className="w-3 h-3" /> Copy to Library
+                    <Copy className="w-3 h-3" /> {t('projectViewer.common.copyToLibrary')}
                   </button>
                   {isTextProject && selectedAlbumIds.size > 1 && (
                     <button
                       onClick={() => setShowCompareDialog(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
                     >
-                      <Layers className="w-3 h-3" /> Compare Selected
+                      <Layers className="w-3 h-3" /> {t('projectViewer.album.compareSelected')}
                     </button>
                   )}
                   <button
@@ -141,7 +143,7 @@ export function AlbumTab({
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                   >
-                    <Trash2 className="w-3 h-3" /> Delete Selected
+                    <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteSelected')}
                   </button>
                 </div>
               )}
@@ -152,13 +154,13 @@ export function AlbumTab({
                     onClick={() => openExportDialog(true)}
                     className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
                   >
-                    <Download className="w-4 h-4" /> Export All
+                    <Download className="w-4 h-4" /> {t('projectViewer.album.exportAll')}
                   </button>
                   <button
                     onClick={() => setShowCopyDialog(true)}
                     className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50"
                   >
-                    <Copy className="w-4 h-4" /> Copy All to Library
+                    <Copy className="w-4 h-4" /> {t('projectViewer.album.copyAllToLibrary')}
                   </button>
                 </div>
               )}
@@ -170,8 +172,8 @@ export function AlbumTab({
           <div className="bg-neutral-900/20 border-2 border-dashed border-neutral-800 rounded-3xl p-12 md:p-24 text-center text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner">
             {isTextProject ? <FileText className="w-16 h-16 text-neutral-800 animate-pulse" /> : isVideoProject ? <VideoIcon className="w-16 h-16 text-neutral-800 animate-pulse" /> : <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />}
             <div>
-              <p className="text-sm font-bold text-neutral-400 tracking-wider uppercase">{isTextProject ? 'No texts yet' : isVideoProject ? 'No videos yet' : 'Gallery is empty'}</p>
-              <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">Start a generation to build your {isTextProject ? 'collection' : isVideoProject ? 'reel' : 'album'}</p>
+              <p className="text-sm font-bold text-neutral-400 tracking-wider uppercase">{isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : t('projectViewer.album.galleryEmpty')}</p>
+              <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">{t('projectViewer.album.emptyDescription', { target: isTextProject ? t('projectViewer.album.collection') : isVideoProject ? t('projectViewer.album.reel') : t('projectViewer.tabs.album').toLowerCase() })}</p>
             </div>
           </div>
         ) : isTextProject ? (
@@ -194,7 +196,7 @@ export function AlbumTab({
                     type="button"
                     onClick={() => setDetailIndex(index)}
                     className="min-w-0 flex-1 flex items-center gap-3 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
-                    title="Click to view text details"
+                    title={t('projectViewer.album.viewTextDetails')}
                   >
                     <span className="flex-shrink-0 text-[10px] font-mono text-neutral-600">#{(index + 1).toString().padStart(2, '0')}</span>
                     <p className="min-w-0 flex-1 truncate text-[12px] leading-none text-neutral-200">
@@ -202,10 +204,10 @@ export function AlbumTab({
                     </p>
                     {(item.imageContexts?.length || 0) > 0 && (
                       <span className="hidden sm:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-neutral-500">
-                        +{item.imageContexts?.length} img
+                        {t('projectViewer.album.imageContexts', { count: item.imageContexts?.length || 0 })}
                       </span>
                     )}
-                    <span className="hidden sm:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-blue-400/80">View</span>
+                    <span className="hidden sm:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-blue-400/80">{t('projectViewer.album.view')}</span>
                   </button>
 
                   <button
@@ -215,7 +217,7 @@ export function AlbumTab({
                       setShowDeleteAlbumModal(true);
                     }}
                     className="flex-shrink-0 p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                    title="Delete"
+                    title={t('projectViewer.common.delete')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -251,7 +253,7 @@ export function AlbumTab({
                           setShowDeleteAlbumModal(true);
                         }}
                         className="w-7 h-7 rounded-xl bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-lg"
-                        title="Delete"
+                        title={t('projectViewer.common.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -262,7 +264,7 @@ export function AlbumTab({
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
                         className="w-7 h-7 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all shadow-lg"
-                        title="Open Original"
+                        title={t('projectViewer.album.openOriginal')}
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
@@ -301,7 +303,7 @@ export function AlbumTab({
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setVideoPlayerItem(item); }}
                         className="absolute inset-0 z-10 flex items-center justify-center pointer-events-auto group/play"
-                        title="Play video"
+                        title={t('projectViewer.album.playVideo')}
                       >
                         <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-2xl transition-all group-hover/play:scale-110 group-hover/play:bg-purple-600/70">
                           <Play className="w-6 h-6 text-white fill-white ml-0.5" />
@@ -334,7 +336,7 @@ export function AlbumTab({
                       type="button"
                       onClick={() => setPromptItem(item)}
                       className="mb-4 block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
-                      title="Click to view full prompt"
+                      title={t('projectViewer.album.viewFullPrompt')}
                     >
                       <p className="text-[11px] leading-relaxed text-neutral-400 line-clamp-3 font-medium group-hover:text-neutral-200 transition-colors cursor-pointer hover:text-white">
                         {item.prompt}
@@ -352,9 +354,9 @@ export function AlbumTab({
 
                       <div className="flex items-center gap-1 px-1.5 py-1 bg-neutral-950/30 rounded-lg border border-neutral-800/30">
                         {[
-                          { label: 'RAW', size: item.size },
-                          { label: 'OPT', size: item.optimizedSize },
-                          { label: 'THMB', size: item.thumbnailSize }
+                          { label: t('projectViewer.album.raw'), size: item.size },
+                          { label: t('projectViewer.album.optimized'), size: item.optimizedSize },
+                          { label: t('projectViewer.album.thumbnail'), size: item.thumbnailSize }
                         ].map((s, i) => s.size ? (
                           <React.Fragment key={s.label}>
                             {i > 0 && <span className="text-[8px] text-neutral-800 font-bold mx-0.5">|</span>}
@@ -420,7 +422,7 @@ export function AlbumTab({
               type="button"
               onClick={() => setVideoPlayerItem(null)}
               className="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center hover:bg-neutral-800 transition-colors shadow-lg"
-              title="Close"
+              title={t('projectViewer.common.close')}
             >
               ×
             </button>

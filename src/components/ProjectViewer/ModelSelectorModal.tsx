@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Layers, AlertCircle, CheckCircle2, Search } from 'lucide-react';
 import { Provider, ProjectType } from '../../types';
 
@@ -21,6 +22,7 @@ export function ModelSelectorModal({
   onSelect,
   projectType = 'image',
 }: ModelSelectorModalProps) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredProviders = useMemo(() => {
@@ -53,8 +55,8 @@ export function ModelSelectorModal({
         <div className="p-6 md:p-8 border-b border-neutral-800/50 flex flex-col gap-5 bg-neutral-950/20 backdrop-blur-md">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-none mb-2">Select Model</h3>
-              <p className="text-neutral-500 text-xs md:text-sm font-medium">Choose an AI provider and a specific model for your workflow</p>
+              <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-none mb-2">{t('projectViewer.modelSelector.title')}</h3>
+              <p className="text-neutral-500 text-xs md:text-sm font-medium">{t('projectViewer.modelSelector.description')}</p>
             </div>
             <button 
               onClick={onClose}
@@ -73,7 +75,7 @@ export function ModelSelectorModal({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by model or provider name..."
+              placeholder={t('projectViewer.modelSelector.searchPlaceholder')}
               className="w-full bg-neutral-950/50 border border-neutral-800 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 rounded-2xl py-3 pl-11 pr-4 text-sm text-white placeholder-neutral-500 outline-none transition-all"
             />
           </div>
@@ -84,12 +86,12 @@ export function ModelSelectorModal({
           {providers.length === 0 ? (
             <div className="text-center py-20 bg-neutral-950/30 rounded-[32px] border border-dashed border-neutral-800">
               <AlertCircle className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
-              <p className="text-neutral-500 font-bold uppercase tracking-widest text-xs">No providers configured</p>
-              <p className="text-neutral-600 text-sm mt-2">Go to settings to add your first AI provider</p>
+              <p className="text-neutral-500 font-bold uppercase tracking-widest text-xs">{t('projectViewer.modelSelector.noProviders')}</p>
+              <p className="text-neutral-600 text-sm mt-2">{t('projectViewer.modelSelector.noProvidersHint')}</p>
             </div>
           ) : filteredProviders.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-neutral-500 text-sm">No models found matching "{searchQuery}"</p>
+              <p className="text-neutral-500 text-sm">{t('projectViewer.modelSelector.noModelsFound', { query: searchQuery })}</p>
             </div>
           ) : (
             filteredProviders.map((provider) => (
@@ -149,7 +151,7 @@ export function ModelSelectorModal({
         {/* Footer */}
         <div className="p-4 bg-neutral-950/40 border-t border-neutral-800/50 flex items-center justify-center">
            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-             Click a model card to select and continue
+             {t('projectViewer.modelSelector.footer')}
            </p>
         </div>
       </div>

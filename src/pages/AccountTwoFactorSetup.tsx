@@ -1,11 +1,13 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, Shield } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import QRCode from 'qrcode';
 import { enableTwoFactor, fetchCurrentUser, setupTwoFactor } from '../api';
 import { User } from '../types';
 
 export function AccountTwoFactorSetup() {
+  const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [setupPassword, setSetupPassword] = useState('');
@@ -28,7 +30,7 @@ export function AccountTwoFactorSetup() {
         setUser(me);
       } catch (err: any) {
         if (!mounted) return;
-        setError(err.message || 'Failed to load account');
+        setError(err.message || t('accountTwoFactorSetup.errors.loadAccount'));
       } finally {
         if (mounted) setLoading(false);
       }
@@ -38,7 +40,7 @@ export function AccountTwoFactorSetup() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,9 +83,9 @@ export function AccountTwoFactorSetup() {
       const pending = await setupTwoFactor(setupPassword);
       setPendingSetup(pending);
       setVerificationCode('');
-      setSuccess('Authenticator secret created. Scan the QR code, then verify the current code.');
+      setSuccess(t('accountTwoFactorSetup.success.secretCreated'));
     } catch (err: any) {
-      setError(err.message || 'Failed to prepare 2FA setup.');
+      setError(err.message || t('accountTwoFactorSetup.errors.prepareSetup'));
     } finally {
       setSettingUp(false);
     }
@@ -101,11 +103,11 @@ export function AccountTwoFactorSetup() {
       setQrCode('');
       setSetupPassword('');
       setVerificationCode('');
-      setSuccess('Two-factor authentication is now enabled.');
+      setSuccess(t('accountTwoFactorSetup.success.enabled'));
       const me = await fetchCurrentUser();
       setUser(me);
     } catch (err: any) {
-      setError(err.message || 'Failed to enable 2FA.');
+      setError(err.message || t('accountTwoFactorSetup.errors.enable'));
     } finally {
       setEnabling(false);
     }
@@ -126,16 +128,16 @@ export function AccountTwoFactorSetup() {
           <div>
             <Link to="/account?tab=security" className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-neutral-200">
               <ArrowLeft className="h-4 w-4" />
-              Back to Security
+              {t('accountTwoFactorSetup.backToSecurity')}
             </Link>
-            <h2 className="mt-3 text-2xl font-bold text-white">Two-Factor Setup</h2>
+            <h2 className="mt-3 text-2xl font-bold text-white">{t('accountTwoFactorSetup.title')}</h2>
             <p className="mt-2 text-sm text-neutral-400">
-              Configure your authenticator app for {user?.email || 'this account'}.
+              {t('accountTwoFactorSetup.description', { email: user?.email || t('accountTwoFactorSetup.thisAccount') })}
             </p>
           </div>
           {user?.twoFactorEnabled && (
             <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
-              Enabled
+              {t('accountTwoFactorSetup.enabled')}
             </span>
           )}
         </div>
@@ -162,9 +164,9 @@ export function AccountTwoFactorSetup() {
                   <Shield className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Step 1: Generate authenticator secret</h3>
+                  <h3 className="text-lg font-bold text-white">{t('accountTwoFactorSetup.step1.title')}</h3>
                   <p className="text-sm text-neutral-400">
-                    {user?.hasPassword ? 'Confirm your password before creating a new 2FA setup.' : 'Generate a new authenticator secret for your account.'}
+                    {user?.hasPassword ? t('accountTwoFactorSetup.step1.withPassword') : t('accountTwoFactorSetup.step1.noPassword')}
                   </p>
                 </div>
               </div>
@@ -172,7 +174,7 @@ export function AccountTwoFactorSetup() {
               <form onSubmit={handleStartSetup} className="mt-6 space-y-4">
                 {user?.hasPassword && (
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
+                    <label className="mb-2 block text-sm font-medium text-neutral-400">{t('accountTwoFactorSetup.currentPassword')}</label>
                     <input
                       type="password"
                       value={setupPassword}
@@ -188,7 +190,7 @@ export function AccountTwoFactorSetup() {
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {settingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
-                  Generate authenticator secret
+                  {t('accountTwoFactorSetup.step1.action')}
                 </button>
               </form>
             </section>
@@ -197,41 +199,41 @@ export function AccountTwoFactorSetup() {
               <section className="rounded-3xl border border-blue-500/20 bg-blue-500/5 p-6">
                 <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
                   <div className="flex flex-col items-center rounded-2xl border border-neutral-800 bg-neutral-950/80 p-4">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Scan QR Code</p>
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">{t('accountTwoFactorSetup.scanQr')}</p>
                     {qrCode ? (
                       <img
                         src={qrCode}
-                        alt="Two-factor authentication QR code"
+                        alt={t('accountTwoFactorSetup.qrAlt')}
                         className="h-[220px] w-[220px] rounded-xl border border-neutral-800 bg-black p-2"
                       />
                     ) : (
                       <div className="flex h-[220px] w-[220px] items-center justify-center rounded-xl border border-neutral-800 bg-neutral-950 text-sm text-neutral-500">
-                        QR unavailable
+                        {t('accountTwoFactorSetup.qrUnavailable')}
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-bold text-white">Step 2: Scan and verify</h3>
+                    <h3 className="text-lg font-bold text-white">{t('accountTwoFactorSetup.step2.title')}</h3>
                     <p className="mt-2 text-sm text-neutral-400">
-                      Scan the QR code with Google Authenticator, 1Password, Authy, or another TOTP app. If scanning is unavailable, enter the setup key manually.
+                      {t('accountTwoFactorSetup.step2.description')}
                     </p>
                     <p className="mt-4 break-all rounded-xl border border-neutral-800 bg-neutral-950 px-4 py-3 font-mono text-sm text-blue-200">
                       {pendingSetup.secret}
                     </p>
                     <p className="mt-2 text-xs text-neutral-500">
-                      Expires {new Date(pendingSetup.expiresAt).toLocaleTimeString()}.
+                      {t('accountTwoFactorSetup.expiresAt', { time: new Date(pendingSetup.expiresAt).toLocaleTimeString() })}
                     </p>
                     <a
                       href={pendingSetup.otpauthUri}
                       className="mt-3 inline-flex text-sm text-blue-300 hover:text-blue-200"
                     >
-                      Open otpauth URI
+                      {t('accountTwoFactorSetup.openOtpauth')}
                     </a>
 
                     <form onSubmit={handleEnable} className="mt-6 space-y-4">
                       <div>
-                        <label className="mb-2 block text-sm font-medium text-neutral-400">Verification code</label>
+                        <label className="mb-2 block text-sm font-medium text-neutral-400">{t('accountTwoFactorSetup.verificationCode')}</label>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -248,7 +250,7 @@ export function AccountTwoFactorSetup() {
                         className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {enabling ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                        Enable 2FA
+                        {t('accountTwoFactorSetup.enable')}
                       </button>
                     </form>
                   </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckSquare, Square, Trash2, Play, ChevronDown, Plus } from 'lucide-react';
 import { Job, AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl } from '../../api';
@@ -46,6 +47,7 @@ export function DraftsTab({
   projectType = 'image',
   projectName = 'Untitled Project'
 }: DraftsTabProps) {
+  const { t } = useTranslation();
   const displayAlbumItems = albumItems.slice(0, 5);
 
   const StackedGallery = () => (
@@ -85,12 +87,12 @@ export function DraftsTab({
 
       <div className="w-full max-w-xl mx-auto px-4 sm:px-6 text-center space-y-4 flex flex-col items-center">
         <h3 className="text-lg font-black text-white uppercase tracking-widest bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-          {displayAlbumItems.length > 0 ? projectName : "Empty Canvas"}
+          {displayAlbumItems.length > 0 ? projectName : t('projectViewer.drafts.emptyCanvas')}
         </h3>
         <p className="max-w-md text-[11px] font-medium text-neutral-500 uppercase tracking-[0.2em] leading-relaxed">
           {displayAlbumItems.length > 0 
-            ? "You have beautiful creations ready. Start a new draft or explore your gallery."
-            : "Build your project workflow on the left to start generating images."}
+            ? t('projectViewer.drafts.galleryReady')
+            : t('projectViewer.drafts.buildWorkflowHint')}
         </p>
         
         <div className="flex items-center justify-center gap-3 pt-4">
@@ -99,7 +101,7 @@ export function DraftsTab({
               onClick={onSwitchToAlbum}
               className="px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl border border-neutral-800 transition-all active:scale-95 flex items-center gap-2"
             >
-              Open Album
+              {t('projectViewer.drafts.openAlbum')}
             </button>
           )}
         </div>
@@ -122,25 +124,25 @@ export function DraftsTab({
                 ) : (
                   <Square className="w-4 h-4" />
                 )}
-                Select All
+                {t('projectViewer.common.selectAll')}
               </button>
               
               {selectedDraftIds.size > 0 && (
                 <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
                   <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                    {selectedDraftIds.size} Selected
+                    {t('projectViewer.common.selectedCount', { count: selectedDraftIds.size })}
                   </span>
                   <button 
                     onClick={() => setShowDeleteSelectedModal(true)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                   >
-                    <Trash2 className="w-3 h-3" /> Delete Selected
+                    <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteSelected')}
                   </button>
                   <button 
                     onClick={runSelectedDrafts}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
                   >
-                    <Play className="w-3 h-3 fill-current" /> Start Selected
+                    <Play className="w-3 h-3 fill-current" /> {t('projectViewer.drafts.startSelected')}
                   </button>
                 </div>
               )}
@@ -150,15 +152,15 @@ export function DraftsTab({
               <button 
                 onClick={() => setShowDeleteAllDraftsModal(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-neutral-500 hover:text-red-400 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
-                title="Delete All Drafts"
+                title={t('projectViewer.drafts.deleteAllDrafts')}
               >
-                <Trash2 className="w-3 h-3" /> Delete All
+                <Trash2 className="w-3 h-3" /> {t('projectViewer.common.deleteAll')}
               </button>
               <button 
                 onClick={runAllDrafts}
                 className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
               >
-                <Play className="w-3.5 h-3.5 fill-current" /> Start All Now
+                <Play className="w-3.5 h-3.5 fill-current" /> {t('projectViewer.drafts.startAllNow')}
               </button>
             </div>
           </div>
@@ -220,19 +222,19 @@ export function DraftsTab({
                           {task.format}
                         </span>
                       )}
-                      <span className="text-[9px] font-bold text-amber-500/70 uppercase tracking-widest px-2.5 py-1.5 bg-amber-500/5 rounded-lg border border-amber-500/20">Draft</span>
+                      <span className="text-[9px] font-bold text-amber-500/70 uppercase tracking-widest px-2.5 py-1.5 bg-amber-500/5 rounded-lg border border-amber-500/20">{t('projectViewer.tabs.draft')}</span>
                       <div className="flex items-center gap-1">
                         <button 
                           onClick={(e) => { e.stopPropagation(); runJob(task.id); }}
                           className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors border border-transparent hover:border-blue-500/20"
-                          title="Run Job"
+                          title={t('projectViewer.drafts.runJob')}
                         >
                           <Play className="w-3.5 h-3.5 fill-current" />
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setJobToDeleteId(task.id); }}
                           className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Delete Job"
+                          title={t('projectViewer.common.deleteJob')}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -242,20 +244,20 @@ export function DraftsTab({
                   {isExpanded && (
                     <div className="bg-neutral-900/30 border-x border-b border-blue-500/30 rounded-b-xl p-4 space-y-4 animate-in slide-in-from-top-1 duration-200">
                        <div className="space-y-2">
-                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">Full Prompt</label>
+                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('projectViewer.common.fullPrompt')}</label>
                           <div className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/50 p-3 rounded-lg border border-neutral-800 select-all whitespace-pre-wrap">
                             {task.prompt}
                           </div>
                        </div>
                        {task.imageContexts && task.imageContexts.length > 0 && (
                          <div className="space-y-3">
-                            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">Visual Contexts</label>
+                            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>
                             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                               {task.imageContexts.map((ctx, idx) => (
                                 <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-blue-500/50">
                                   <img 
                                     src={imageDisplayUrl(ctx)}
-                                    alt={`Context ${idx + 1}`} 
+                                    alt={t('projectViewer.queue.contextAlt', { index: idx + 1 })} 
                                     className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
                                     loading="lazy"
                                     onClick={(e) => {
@@ -264,7 +266,7 @@ export function DraftsTab({
                                     }}
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/ctx:opacity-100 transition-opacity flex items-end p-1.5 pointer-events-none">
-                                    <span className="text-[8px] font-black text-white/70 uppercase tracking-widest truncate">C_{idx + 1}</span>
+                                    <span className="text-[8px] font-black text-white/70 uppercase tracking-widest truncate">{t('projectViewer.queue.contextShort', { index: idx + 1 })}</span>
                                   </div>
                                 </div>
                               ))}

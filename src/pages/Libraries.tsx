@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
 import { Plus, Folder, LayoutGrid, Layers, ChevronRight, ChevronLeft, Loader2, Copy } from 'lucide-react';
 import { duplicateLibrary, fetchLibraries } from '../api';
@@ -8,6 +9,7 @@ import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
 
 export function Libraries() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
   
@@ -51,10 +53,10 @@ export function Libraries() {
       setLibraries(result.items);
       setTotal(result.total);
       setPages(result.pages);
-      toast.success(`Copied "${libraryToDuplicate.name}"`);
+      toast.success(t('libraries.duplicateDialog.success', { name: libraryToDuplicate.name }));
       navigate(`/library/${duplicated.id}`);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to duplicate library');
+      toast.error(error.message || t('libraries.duplicateDialog.error'));
       throw error;
     }
   };
@@ -71,22 +73,22 @@ export function Libraries() {
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
       <div className="w-full space-y-8 pb-20">
         <PageHeader
-          title="Libraries"
-          description="Manage your reusable prompts and image collections."
+          title={t('libraries.title')}
+          description={t('libraries.description')}
         />
 
         <section>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-white flex items-center gap-2">
               <LayoutGrid className="w-5 h-5 text-blue-500" />
-              All Libraries {total > 0 && <span className="text-sm text-neutral-500 font-normal">({total})</span>}
+              {t('libraries.allLibraries')} {total > 0 && <span className="text-sm text-neutral-500 font-normal">({total})</span>}
             </h3>
             <div className="flex gap-2">
               <button
                 onClick={addLibrary}
                 className="text-xs md:text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-blue-600/30 font-medium"
               >
-                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Library</span><span className="sm:hidden">New</span>
+                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t('libraries.newLibrary')}</span><span className="sm:hidden">{t('libraries.new')}</span>
               </button>
             </div>
           </div>
@@ -113,7 +115,7 @@ export function Libraries() {
                         <div className="flex items-center gap-2 md:gap-3 mt-0.5 whitespace-nowrap overflow-hidden">
                           <span className="text-[10px] md:text-xs text-neutral-500 uppercase tracking-wider font-medium">{lib.type || 'text'}</span>
                           <span className="text-neutral-700">•</span>
-                          <span className="text-[10px] md:text-xs text-neutral-400">{lib.items?.length || 0} items</span>
+                          <span className="text-[10px] md:text-xs text-neutral-400">{t('libraries.libraryCard.items', { count: lib.items?.length || 0 })}</span>
                         </div>
                       </div>
                     </div>
@@ -126,11 +128,11 @@ export function Libraries() {
                           setLibraryToDuplicate(lib);
                         }}
                         className="p-2 text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-transparent hover:border-blue-500/20"
-                        title="Duplicate Library"
+                        title={t('libraries.libraryCard.duplicate')}
                       >
                         <Copy className="w-4 h-4" />
                       </button>
-                      <span className="hidden sm:inline text-sm font-medium text-blue-500 opacity-100 transition-opacity">Open Editor →</span>
+                      <span className="hidden sm:inline text-sm font-medium text-blue-500 opacity-100 transition-opacity">{t('libraries.libraryCard.openEditor')}</span>
                       <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-blue-500 transition-colors" />
                     </div>
                   </Link>
@@ -140,8 +142,8 @@ export function Libraries() {
                   <div className="col-span-full py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">
                     <Folder className="w-12 h-12 text-neutral-700" />
                     <div>
-                      <p className="text-lg font-medium text-neutral-400">No libraries yet</p>
-                      <p className="text-sm">Create one to store reusable prompts or images.</p>
+                      <p className="text-lg font-medium text-neutral-400">{t('libraries.noLibraries.title')}</p>
+                      <p className="text-sm">{t('libraries.noLibraries.description')}</p>
                     </div>
                   </div>
                 )}
@@ -156,7 +158,7 @@ export function Libraries() {
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <span className="text-sm text-neutral-400 font-medium">Page {page} of {pages}</span>
+                  <span className="text-sm text-neutral-400 font-medium">{t('projects.pagination', { current: page, total: pages })}</span>
                   <button
                     onClick={() => handlePageChange(Math.min(pages, page + 1))}
                     disabled={page === pages}

@@ -13,6 +13,8 @@
   "account": {
     "title": "アカウント",
     "description": "ID、セキュリティ、ワークスペースの容量を管理します。",
+    "errorUnavailable": "アカウントを読み込めません",
+    "errorUnavailableDesc": "アカウントデータを読み込めませんでした。",
     "tabs": {
       "overview": "概要",
       "storage": "ストレージ",
@@ -25,12 +27,1168 @@
       "user": "ユーザー",
       "plan": "{{tier}} プラン",
       "memberSince": "{{date}} からのメンバー",
-      "signOut": "サインアウト"
+      "signOut": "サインアウト",
+      "projects": "プロジェクト",
+      "libraries": "ライブラリ",
+      "providers": "プロバイダー",
+      "openProjects": "プロジェクトを開く",
+      "openLibraries": "ライブラリを開く",
+      "manageProviders": "プロバイダーを管理",
+      "errorTitle": "概要を読み込めません",
+      "retry": "再試行"
+    },
+    "storage": {
+      "title": "ストレージ",
+      "description": "ワークスペースの容量と使用状況の詳細な内訳です。",
+      "errorTitle": "ストレージを読み込めません",
+      "retry": "再試行",
+      "capacityOverview": "容量の概要",
+      "capacityDesc": "現在、合計容量の {{percent}}% を使用しています。",
+      "consumption": "使用量",
+      "planLimit": "プラン上限",
+      "usage": "使用率",
+      "tier": "プラン",
+      "ofUsed": "使用済み容量の {{percent}}%",
+      "noUsage": "まだ使用されていません",
+      "optimization": "最適化",
+      "recycleBin": "ゴミ箱のクリーンアップ",
+      "recycleBinDesc": "{{size}} を完全に削除できます。",
+      "projectReview": "プロジェクトのストレージ確認",
+      "projectReviewDesc": "容量の大きいプロジェクトを確認し、必要に応じて孤立したアセットを整理します。"
+    },
+    "security": {
+      "errorTitle": "セキュリティを読み込めません",
+      "retry": "再試行",
+      "passwordTitle": "パスワード",
+      "passwordDescRotate": "アプリを離れずにパスワードを変更できます。",
+      "passwordDescSet": "パスワードログインを有効にするにはパスワードを設定してください。",
+      "currentPassword": "現在のパスワード",
+      "newPassword": "新しいパスワード",
+      "confirmNewPassword": "新しいパスワードを確認",
+      "updatePassword": "パスワードを更新",
+      "setPassword": "パスワードを設定",
+      "goPasswordless": "パスワードレスにする",
+      "goPasswordlessDesc": "パスワードを削除し、パスキーのみでサインインします。",
+      "removePassword": "パスワードを削除",
+      "passkeysTitle": "パスキー",
+      "passkeysDesc": "Face ID、Touch ID、Windows Hello、またはハードウェアキーでサインインします。",
+      "registered": "{{count}} 件登録済み",
+      "placeholder": "この MacBook",
+      "defaultPasskeyName": "このデバイス",
+      "addPasskey": "パスキーを追加",
+      "noPasskeys": "まだパスキーは登録されていません。",
+      "added": "{{date}} に追加",
+      "lastUsed": "{{date}} に使用",
+      "remove": "削除",
+      "twoFactorTitle": "二要素認証",
+      "twoFactorDesc": "パスワードログイン後に時間ベースの認証コードを必須にします。",
+      "enabled": "有効",
+      "disabled": "無効",
+      "twoFactorSetupDesc": "認証アプリの設定は専用ページで開始すると、確認フローをより広く使えます。",
+      "twoFactorSetupPending": "設定はすでに進行中です。ページを開くと続きから確認できます。",
+      "openTwoFactor": "2FA 設定を開く",
+      "authCode": "認証コード",
+      "disableTwoFactor": "2FA を無効化",
+      "cancel": "キャンセル",
+      "errors": {
+        "passwordLength": "新しいパスワードは 8 文字以上である必要があります。",
+        "passwordMatch": "新しいパスワードと確認用パスワードが一致しません。",
+        "passwordUpdateFailed": "パスワードの更新に失敗しました。",
+        "passwordRemoveFailed": "パスワードの削除に失敗しました。",
+        "passkeyNotSupported": "このブラウザはパスキーをサポートしていません。",
+        "passkeyCancelled": "パスキーの登録はキャンセルされました。",
+        "passkeyRegisterFailed": "パスキーの登録に失敗しました。",
+        "passkeyRemoveFailed": "パスキーの削除に失敗しました。",
+        "twoFactorDisableFailed": "2FA の無効化に失敗しました。"
+      },
+      "success": {
+        "passwordUpdated": "パスワードを更新しました。",
+        "passwordRemoved": "パスワードを削除しました。現在のアカウントはパスワードレスです。",
+        "passkeyAdded": "パスキーを追加しました。",
+        "passkeyRemoved": "パスキーを削除しました。",
+        "twoFactorDisabled": "二要素認証を無効にしました。"
+      }
     },
     "preferences": {
       "language": "言語",
       "languageDescription": "希望するアプリケーションの言語を選択してください。",
       "selectLanguage": "言語を選択"
+    },
+    "confirm": {
+      "signOutTitle": "サインアウト",
+      "signOutMessage": "このデバイスで Remix Studio からサインアウトしてもよろしいですか？",
+      "signOutConfirm": "サインアウト",
+      "removePasswordTitle": "パスワードを削除",
+      "removePasswordMessage": "パスワードを削除すると、今後はパスキーのみでサインインできます。確認のため現在のパスワードを入力してください。",
+      "removePasswordPlaceholder": "現在のパスワード"
+    }
+  },
+  "accountTwoFactorSetup": {
+    "backToSecurity": "Back to Security",
+    "title": "Two-Factor Setup",
+    "description": "Configure your authenticator app for {{email}}.",
+    "thisAccount": "this account",
+    "enabled": "Enabled",
+    "currentPassword": "Current password",
+    "scanQr": "Scan QR Code",
+    "qrAlt": "Two-factor authentication QR code",
+    "qrUnavailable": "QR unavailable",
+    "expiresAt": "Expires {{time}}.",
+    "openOtpauth": "Open otpauth URI",
+    "verificationCode": "Verification code",
+    "enable": "Enable 2FA",
+    "step1": {
+      "title": "Step 1: Generate authenticator secret",
+      "withPassword": "Confirm your password before creating a new 2FA setup.",
+      "noPassword": "Generate a new authenticator secret for your account.",
+      "action": "Generate authenticator secret"
+    },
+    "step2": {
+      "title": "Step 2: Scan and verify",
+      "description": "Scan the QR code with Google Authenticator, 1Password, Authy, or another TOTP app. If scanning is unavailable, enter the setup key manually."
+    },
+    "errors": {
+      "loadAccount": "Failed to load account",
+      "prepareSetup": "Failed to prepare 2FA setup.",
+      "enable": "Failed to enable 2FA."
+    },
+    "success": {
+      "secretCreated": "Authenticator secret created. Scan the QR code, then verify the current code.",
+      "enabled": "Two-factor authentication is now enabled."
+    }
+  },
+  "libraryImportExport": {
+    "badge": "Text Library Workspace",
+    "title": "Import & Output",
+    "description": "Bulk load prompt fragments, preserve tags in output, and keep a clean import format for editing outside the app.",
+    "toasts": {
+      "importFailed": "Failed to import items.",
+      "outputCopied": "Library output copied to clipboard",
+      "copyFailed": "Failed to copy output."
+    },
+    "stats": {
+      "library": "Library",
+      "currentItems": "Current Items",
+      "currentTags": "Current Tags",
+      "readyToImport": "Ready To Import"
+    },
+    "importSource": {
+      "label": "Import Source",
+      "title": "Compose incoming library items",
+      "description": "Supports the legacy list format and a new tag-aware variant:",
+      "clear": "Clear",
+      "uploadText": "Upload Text",
+      "sharedTags": "Shared Tags",
+      "sharedTagsPlaceholder": "Applied to every imported item. Example: evergreen, short-form",
+      "detectedTags": "Detected Tags",
+      "skippedLines": "Skipped Lines",
+      "textareaPlaceholder": "Paste list items here.\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio",
+      "dropHint": "Drop `.txt` or `.md` files here"
+    },
+    "formatGuide": {
+      "title": "Format Guide",
+      "rule1": "Each item must start with `- ` so the parser can split entries predictably.",
+      "rule2": "Use `Title: Content` when you want a display title. Use `| tags: a, b` at the end when you want per-item tags.",
+      "rule3": "Shared tags above are merged into every parsed item and deduplicated automatically."
+    },
+    "parseStatus": {
+      "title": "Parse Status",
+      "valid": "All non-empty lines are valid import entries.",
+      "line": "Line {{line}}",
+      "moreSkipped": "+{{count}} more skipped lines"
+    },
+    "parseIssues": {
+      "missingListMarker": "Missing \"- \" list marker",
+      "emptyAfterMarker": "Line is empty after \"- \"",
+      "missingContentBeforeTags": "Missing content before the tags segment",
+      "missingContentAfterTitle": "Missing content after the title separator"
+    },
+    "importAction": "Import {{count}} Items",
+    "preview": {
+      "label": "Import Preview",
+      "title": "Review incoming tagged items",
+      "description": "Parsed items show exactly what will be created in this text library.",
+      "items": "Preview Items",
+      "sourceLine": "Source line {{line}}",
+      "tagsCount": "{{count}} tag",
+      "tagsCount_plural": "{{count}} tags",
+      "emptyTitle": "Nothing parsed yet",
+      "emptyDescription": "Add list items on the left and this panel will render the exact import result, including merged tags."
+    },
+    "output": {
+      "label": "Library Output",
+      "title": "Export current items with or without tags",
+      "description": "Tagged output preserves text library metadata. Plain output keeps the original minimal list format.",
+      "tagged": "Tagged",
+      "plain": "Plain",
+      "copy": "Copy Output",
+      "download": "Download .md"
+    }
+  },
+  "dashboard": {
+    "welcome": "Remix Studio へようこそ",
+    "description": "サイドバーからプロジェクトまたはライブラリを選択するか、新しく作成して開始してください。",
+    "recentProjects": "最近のプロジェクト",
+    "newProject": "新規プロジェクト",
+    "new": "新規",
+    "noProjects": "プロジェクトはまだありません。作成して生成を開始しましょう。",
+    "libraries": "ライブラリ",
+    "newLibrary": "新規ライブラリ",
+    "noLibraries": "ライブラリはまだありません。再利用可能なプロンプトを保存するために作成してください。",
+    "projectStats": "{{jobCount}} ジョブ • {{imageCount}} 画像 • {{date}}"
+  },
+  "projects": {
+    "title": "プロジェクト",
+    "description": "AI ワークフローと生成タスクを管理・追跡します。",
+    "allProjects": "すべてのプロジェクト",
+    "newProject": "新規プロジェクト",
+    "sort": {
+      "newest": "最新",
+      "largest": "サイズ順"
+    },
+    "noProjects": {
+      "title": "プロジェクトがありません",
+      "description": "新しいプロジェクトを作成してワークフローの構築を始めましょう。"
+    },
+    "projectCard": {
+      "jobs": "{{count}} 件のジョブ",
+      "assets": {
+        "images": "{{count}} 枚の画像",
+        "texts": "{{count}} 件のテキスト",
+        "videos": "{{count}} 本の動画"
+      },
+      "openProject": "プロジェクトを開く →"
+    },
+    "pagination": "{{total}} ページ中 {{current}} ページ"
+  },
+  "libraries": {
+    "title": "ライブラリ",
+    "description": "再利用可能なプロンプトと画像コレクションを管理します。",
+    "allLibraries": "すべてのライブラリ",
+    "newLibrary": "新規ライブラリ",
+    "new": "新規",
+    "noLibraries": {
+      "title": "ライブラリがありません",
+      "description": "再利用可能なプロンプトや画像を保存するために作成してください。"
+    },
+    "libraryCard": {
+      "items": "{{count}} アイテム",
+      "openEditor": "エディタを開く →",
+      "duplicate": "ライブラリを複製"
+    },
+    "duplicateDialog": {
+      "title": "ライブラリを複製",
+      "description": "新しい名前でこのライブラリのコピーを作成します。",
+      "placeholder": "新しいライブラリ名",
+      "cancel": "キャンセル",
+      "confirm": "複製",
+      "success": "\"{{name}}\" をコピーしました",
+      "error": "ライブラリの複製に失敗しました"
+    }
+  },
+  "providers": {
+    "title": "プロバイダー",
+    "description": "画像生成バックエンドのAPI認証情報を管理します。キーは保存時に暗号化されます。",
+    "allProviders": "すべてのプロバイダー",
+    "newProvider": "新規プロバイダー",
+    "new": "新規",
+    "noProviders": {
+      "title": "プロバイダーがありません",
+      "description": "画像生成を開始するには、最初のAPIキーを追加してください。"
+    },
+    "providerCard": {
+      "credentialsStored": "認証情報が保存されました",
+      "keyStored": "キーが保存されました",
+      "missingCredentials": "認証情報が不足しています",
+      "noKey": "キーなし",
+      "projects": "{{count}} プロジェクト",
+      "projects_plural": "{{count}} プロジェクト",
+      "activeJobs": "{{count}} 実行中のジョブ",
+      "activeJobs_plural": "{{count}} 実行中のジョブ"
+    },
+    "deleteDialog": {
+      "title": "プロバイダーの削除",
+      "message": "\"{{name}}\" を削除しますか？これにより、保存されているAPIキーが削除されます。既存のプロジェクト参照は警告として残り、このプロバイダーを使用している保留中または処理中のジョブは、別のプロバイダーに切り替えるまで失敗する可能性があります。",
+      "usageWarning": " 現在、{{projectCount}} 個のプロジェクトと {{jobCount}} 個の実行中のジョブによって参照されています。",
+      "confirm": "削除",
+      "deleting": "削除中..."
+    },
+    "errors": {
+      "load": "プロバイダーの読み込みに失敗しました。",
+      "delete": "プロバイダーの削除に失敗しました。"
+    }
+  },
+  "exports": {
+    "title": "アーカイブ",
+    "description": "すべてのプロジェクトで生成された ZIP アーカイブを管理します。",
+    "drive": {
+      "connected": "Drive 接続済み",
+      "disconnect": "切断",
+      "connect": "Drive を接続",
+      "disconnectSuccess": "Google Drive との接続を解除しました",
+      "disconnectError": "Google Drive の接続解除に失敗しました",
+      "uploadQueued": "Drive アップロードを予約しました。進捗は Drive アイコンを確認してください",
+      "uploadSuccess": "Google Drive にアップロードしました！",
+      "uploadFailed": "Drive アップロードに失敗しました",
+      "openFile": "ファイルを開く",
+      "uploading": "Drive にアップロード中...",
+      "uploadToDrive": "Google Drive にアップロード"
+    },
+    "stats": {
+      "database": "データベース",
+      "total": "合計",
+      "inProgress": "進行中",
+      "active": "アクティブ"
+    },
+    "empty": {
+      "title": "アーカイブは空です",
+      "description": "生成されたプロジェクトのエクスポートが自動的にここに表示されます",
+      "viewProjects": "プロジェクトを表示"
+    },
+    "status": {
+      "ready": "準備完了",
+      "archiving": "アーカイブ中",
+      "queued": "待機中",
+      "failed": "失敗"
+    },
+    "card": {
+      "files": "{{count}} ファイル",
+      "download": "ZIP をダウンロード",
+      "delete": "レコードを削除"
+    },
+    "loadMore": "さらに読み込む",
+    "deleteDialog": {
+      "title": "エクスポートレコードの削除",
+      "message": "このエクスポートレコードを削除してもよろしいですか？この操作は取り消せません。",
+      "confirm": "レコードを削除"
+    }
+  },
+  "trash": {
+    "title": "ゴミ箱",
+    "description": "削除されたアイテムを確認し、必要なものを元に戻すか、永久に削除します。",
+    "stats": {
+      "items": "{{count}} 個のアイテム",
+      "total": "合計 {{size}}"
+    },
+    "actions": {
+      "restore": "元に戻す",
+      "restoreCount": "元に戻す ({{count}})",
+      "deletePermanently": "永久に削除",
+      "emptyTrash": "ゴミ箱を空にする"
+    },
+    "empty": {
+      "title": "ゴミ箱は空です",
+      "description": "削除されたアルバムアイテムがここに表示されます"
+    },
+    "card": {
+      "restore": "元に戻す",
+      "delete": "永久に削除"
+    },
+    "confirm": {
+      "empty": {
+        "title": "ゴミ箱を空にする",
+        "message": "すべての {{count}} 個のアイテムを永久に削除してもよろしいですか？これにより {{size}} が解放されますが、元に戻すことはできません。",
+        "confirm": "ゴミ箱を空にする"
+      },
+      "deleteSelected": {
+        "title": "選択したアイテムを削除",
+        "message": "{{count}} 個のアイテムを永久に削除してもよろしいですか？これにより {{size}} が解放されますが、元に戻すことはできません。",
+        "confirm": "永久に削除"
+      },
+      "deleteSingle": {
+        "title": "画像を永久に削除",
+        "message": "この画像を永久に削除してもよろしいですか？この操作は元に戻せません。",
+        "confirm": "永久に削除"
+      },
+      "deleting": "削除中..."
+    }
+  },
+  "login": {
+    "welcomeBack": "おかえりなさい",
+    "completeRegistration": "登録を完了する",
+    "twoFactorVerification": "2要素認証",
+    "signInWith": "パスワード、保存されたパスキー、または Google でサインインしてください。",
+    "registrationDescription": "Google の本人確認が完了しました。招待コードを入力してアカウント作成を完了してください。",
+    "twoFactorDescription": "{{email}} に送信された 6 桁のコードを入力してください。",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "signIn": "サインイン",
+    "orContinueWith": "または以下で続行",
+    "passkey": "パスキー",
+    "google": "Google",
+    "inviteCode": "招待コード",
+    "enterInviteCode": "招待コードを入力",
+    "inviteCodeDescription": "招待コードは `inviteCode` URL パラメータから自動入力できます。",
+    "finishRegistration": "登録を完了",
+    "restartGoogle": "Google サインインをやり直す",
+    "googleSignIn": "Google サインイン",
+    "verifiedSuccessfully": "認証に成功しました",
+    "authCode": "認証コード",
+    "verifyAndSignIn": "認証してサインイン",
+    "back": "戻る",
+    "errors": {
+      "passkeyNotSupported": "このブラウザはパスキーをサポートしていません。",
+      "loginFailed": "ログインに失敗しました",
+      "twoFactorFailed": "2要素認証に失敗しました",
+      "passkeyFailed": "パスキーによるログインに失敗しました",
+      "registrationFailed": "登録に失敗しました"
+    }
+  },
+  "adminUsers": {
+    "title": "ユーザー管理",
+    "description": "外部システムを使わずに、ユーザーの作成、アクセス制御、アカウントの使用状況の確認を行います。",
+    "inviteUsers": "ユーザーを招待",
+    "createUser": "ユーザーを作成",
+    "searchPlaceholder": "メールアドレスで検索",
+    "allRoles": "すべてのロール",
+    "admin": "管理者",
+    "user": "ユーザー",
+    "allStatuses": "すべてのステータス",
+    "active": "有効",
+    "disabled": "無効",
+    "apply": "適用",
+    "noUsersFound": "ユーザーが見つかりません",
+    "adjustFilters": "フィルターを調整するか、新しいアカウントを作成してください。",
+    "table": {
+      "user": "ユーザー",
+      "role": "ロール",
+      "status": "ステータス",
+      "storage": "ストレージ",
+      "projects": "プロジェクト",
+      "libraries": "ライブラリ",
+      "lastLogin": "最終ログイン",
+      "actions": "操作"
+    },
+    "never": "なし",
+    "justNow": "たった今",
+    "relativeTime": {
+      "m": "{{count}}分前",
+      "h": "{{count}}時間前",
+      "d": "{{count}}日前"
+    },
+    "neverSignedIn": "ログイン履歴なし",
+    "showingUsers": "{{total}}人中 {{count}}人のユーザーを表示中",
+    "noUsersToShow": "表示するユーザーがいません",
+    "pageSize": "{{count}} / ページ",
+    "pagination": "{{total}} ページ中 {{current}} ページ",
+    "createModal": {
+      "title": "ユーザーを作成",
+      "description": "新しいアカウントを作成します。OAuthのみのユーザーの場合、パスワードは任意です。",
+      "email": "メールアドレス",
+      "password": "初期パスワード",
+      "optional": "(任意)",
+      "passwordPlaceholder": "OAuthアカウントの場合は空欄のまま",
+      "role": "ロール",
+      "status": "ステータス",
+      "storage": "ストレージ",
+      "cancel": "キャンセル",
+      "submit": "ユーザーを作成"
+    },
+    "detail": {
+      "title": "ユーザー詳細",
+      "description": "アカウントの状態、使用状況を確認し、管理アクションを実行します。",
+      "account": "アカウント",
+      "created": "作成日時",
+      "lastLogin": "最終ログイン",
+      "storageTier": "ストレージ階層",
+      "usedLimit": "使用量 / 上限",
+      "createdBy": "作成者",
+      "selfRegistered": "自己登録 / システム",
+      "inviteCode": "招待コード",
+      "notInviteBased": "招待以外",
+      "inviteNote": "招待メモ",
+      "noNote": "メモなし",
+      "projects": "プロジェクト",
+      "libraries": "ライブラリ",
+      "providers": "プロバイダー",
+      "exports": "エクスポート",
+      "storageBreakdown": "ストレージ内訳",
+      "trash": "ゴミ箱",
+      "adminControls": "管理コントロール",
+      "limit": "ストレージ上限",
+      "disableUser": "ユーザーを無効化",
+      "enableUser": "ユーザーを有効化",
+      "passwordReset": "パスワードリセット",
+      "newPassword": "新パスワード",
+      "resetSubmit": "パスワードをリセット",
+      "ownPasswordNote": "自身のパスワードを変更するには、アカウント設定ページを使用してください。"
+    },
+    "confirm": {
+      "enableTitle": "ユーザーを有効化",
+      "disableTitle": "ユーザーを無効化",
+      "enableMessage": "{{email}} を有効にしてもよろしいですか？",
+      "disableMessage": "{{email}} を無効にしてもよろしいですか？"
+    },
+    "toasts": {
+      "roleUpdated": "ロールを更新しました",
+      "storageUpdated": "ストレージ上限を更新しました",
+      "userEnabled": "ユーザーを有効にしました",
+      "userDisabled": "ユーザーを無効にしました",
+      "userCreated": "ユーザーを作成しました",
+      "passwordReset": "パスワードをリセットしました"
+    },
+    "errors": {
+      "loadUsers": "ユーザーの読み込みに失敗しました",
+      "loadDetail": "ユーザー詳細の読み込みに失敗しました",
+      "updateRole": "ロールの更新に失敗しました",
+      "updateStorage": "ストレージ上限の更新に失敗しました",
+      "updateStatus": "ユーザーステータスの更新に失敗しました",
+      "createUser": "ユーザーの作成に失敗しました",
+      "resetPassword": "パスワードのリセットに失敗しました"
+    }
+  },
+  "adminInvites": {
+    "title": "招待コード",
+    "description": "Googleログイン用の招待コードを作成し、各コードの使用回数を設定して、使用状況を追跡します。",
+    "createInvite": "招待コードを作成",
+    "noInvites": "招待コードはまだ作成されていません。",
+    "table": {
+      "code": "コード",
+      "tier": "階層",
+      "note": "メモ",
+      "usage": "使用状況",
+      "created": "作成日時",
+      "lastUsedBy": "最終使用者",
+      "lastUsedAt": "最終使用日時",
+      "share": "共有"
+    },
+    "copyCode": "招待コードをコピー",
+    "codeCopied": "招待コードをコピーしました",
+    "noNote": "メモなし",
+    "unused": "未使用",
+    "copyLink": "リンクをコピー",
+    "linkCopied": "招待リンクをコピーしました",
+    "createModal": {
+      "title": "招待コードを作成",
+      "description": "この招待コードの使用回数を設定し、オプションでメモを追加します。",
+      "tier": "メンバーシップ階層",
+      "uses": "許可される使用回数",
+      "note": "メモ",
+      "notePlaceholder": "誰のための招待か、または用途を入力してください",
+      "cancel": "キャンセル",
+      "submit": "作成"
+    },
+    "toasts": {
+      "created": "招待コードを作成しました",
+      "copyFailed": "コピーに失敗しました"
+    },
+    "errors": {
+      "load": "招待コードの読み込みに失敗しました",
+      "create": "招待コードの作成に失敗しました"
+    }
+  },
+  "libraryForm": {
+    "newTitle": "新規ライブラリ",
+    "editTitle": "ライブラリを編集",
+    "description": "ライブラリのプロパティを定義します",
+    "nameLabel": "ライブラリ名",
+    "namePlaceholder": "例: キャラクター衣装、SF設定...",
+    "typeLabel": "コンテンツタイプ",
+    "typeText": "テキスト",
+    "typeImage": "画像",
+    "contentType": "{{type}} コンテンツ",
+    "permanent": "永久",
+    "cancel": "キャンセル",
+    "submitCreate": "ライブラリを作成",
+    "submitSave": "変更を保存"
+  },
+  "projectForm": {
+    "newTitle": "新規プロジェクト",
+    "editTitle": "プロジェクトを編集",
+    "description": "プロジェクトパラメータを定義します",
+    "typeLabel": "プロジェクトタイプ",
+    "typeImage": "画像",
+    "typeText": "テキスト",
+    "typeVideo": "動画",
+    "nameLabel": "プロジェクト名",
+    "namePlaceholderText": "例: 製品説明ジェネレーター...",
+    "namePlaceholderImage": "例: サイバーパンクキャラクターシリーズ...",
+    "prefixLabel": "プロジェクト接頭辞",
+    "prefixPlaceholder": "例: PJ01",
+    "prefixDescriptionText": "出力名の接頭辞として使用されます",
+    "prefixDescriptionImage": "画像ファイル名の生成に使用されます",
+    "customIdLabel": "カスタムID (任意)",
+    "customIdPlaceholder": "プロジェクト識別子",
+    "customIdDescription": "自動生成する場合は空欄のままにしてください",
+    "cancel": "キャンセル",
+    "submitCreate": "プロジェクトを開始",
+    "submitSave": "変更を保存"
+  },
+  "promptEditor": {
+    "titlePlaceholder": "タイトル...",
+    "fragmentTitlePlaceholder": "フラグメントタイトル",
+    "addTags": "タグを追加",
+    "tagsCount": "{{count}} 個のタグ",
+    "backToLibrary": "ライブラリに戻る",
+    "viewMode": {
+      "edit": "エディタのみ",
+      "split": "分割表示",
+      "preview": "プレビューのみ"
+    },
+    "toggleFullscreen": "フルスクリーン切り替え",
+    "save": "保存",
+    "sourceContent": "ソースコンテンツ",
+    "markdownSupport": "GFM Markdownをサポート",
+    "editorPlaceholder": "ここにMarkdownを使用してライブラリフラグメントを作成してください...",
+    "dynamicPreview": "ダイナミックプレビュー",
+    "previewPlaceholder": "プレビューを表示するには何か入力してください...",
+    "words": "単語数: {{count}}",
+    "chars": "文字数: {{count}}",
+    "libraryLabel": "ライブラリ: {{id}}",
+    "errorSave": "ライブラリプロンプトの保存に失敗しました"
+  },
+  "providerForm": {
+    "newTitle": "プロバイダーの新規作成",
+    "editTitle": "プロバイダーの編集",
+    "securityNote": "キーは AES-256-GCM で暗号化されます",
+    "nameLabel": "プロバイダー名",
+    "namePlaceholder": "例: 仕事用アカウント、個人用キー...",
+    "typeLabel": "プロバイダーの種類",
+    "apiKeyLabel": "API Key",
+    "accessKeyLabel": "Access Key",
+    "secretKeyLabel": "Secret Key",
+    "leaveBlankToKeep": "— 変更しない場合は空白のままにしてください",
+    "apiKeyPlaceholder": "API Key を貼り付け...",
+    "accessKeyPlaceholder": "Access Key を貼り付け...",
+    "secretKeyPlaceholder": "Secret Key を貼り付け...",
+    "stored": "•••••••• (保存済み)",
+    "apiUrlLabel": "API URL",
+    "apiUrlOptional": "— オプションのオーバーライド",
+    "apiUrlPlaceholder": "https://... (デフォルトを使用する場合は空白)",
+    "parallelTasksLabel": "並列タスク",
+    "concurrencyLimit": "— 同時実行制限",
+    "maxRequests": "最大リクエスト数",
+    "saving": "保存中...",
+    "submitCreate": "プロバイダーを作成",
+    "submitSave": "変更を保存",
+    "cancel": "キャンセル",
+    "errors": {
+      "accessKeyRequired": "Access Key は必須です。",
+      "apiKeyRequired": "API Key は必須です。",
+      "secretKeyRequired": "KlingAI には Secret Key が必須です。",
+      "saveFailed": "保存に失敗しました。"
+    }
+  },
+  "providerProfile": {
+    "errorLoad": "プロバイダーの読み込みに失敗しました。",
+    "errorNotFound": "プロバイダーが見つかりません",
+    "backToProviders": "プロバイダー一覧に戻る",
+    "credentialsStored": "認証情報保存済み",
+    "keyStored": "キー保存済み",
+    "missingCredentials": "認証情報が不足しています",
+    "noKey": "キーなし",
+    "customModels": "カスタムモデル",
+    "edit": "編集",
+    "concurrency": "同時実行数",
+    "projects": "プロジェクト",
+    "jobs": "ジョブ",
+    "models": "モデル",
+    "supportedModels": "サポートされているモデル",
+    "availableModels": "利用可能なモデル",
+    "refresh": "更新",
+    "addKeyToFetch": "API Key を追加してプロバイダーから利用可能なモデルを取得します。",
+    "noModels": "プロバイダー API からモデルが返されませんでした。",
+    "categories": {
+      "text": "テキスト生成",
+      "image": "画像生成",
+      "video": "動画生成"
+    },
+    "modelCount": "{{count}} モデル",
+    "modelCount_plural": "{{count}} モデル",
+    "errors": {
+      "fetchModels": "プロバイダー API からのモデル取得に失敗しました。"
+    }
+  },
+  "providerCustomModels": {
+    "errorLoad": "プロバイダーの読み込みに失敗しました。",
+    "errorNotFound": "プロバイダーが見つかりません",
+    "backToProvider": "{{name}} に戻る",
+    "title": "カスタムモデルバリアント",
+    "description": "カスタム ID でモデルバリアントを作成します。各バリアントはベースモデルのすべてのパラメータを継承します。",
+    "newVariant": "新しいバリアント",
+    "editVariant": "バリアントを編集",
+    "baseModelLabel": "ベースモデル",
+    "selectBaseModel": "ベースモデルを選択...",
+    "inherits": "継承: {{traits}}",
+    "modelNameLabel": "モデル名",
+    "modelIdLabel": "モデル ID",
+    "namePlaceholder": "例: 製品写真 v2",
+    "idPlaceholder": "例: seedream-5-0-my-finetune",
+    "saving": "保存中...",
+    "create": "作成",
+    "update": "更新",
+    "cancel": "キャンセル",
+    "noVariants": "カスタムモデルバリアントはまだありません",
+    "noVariantsDesc": "ベースモデルを選択し、カスタム名とモデル ID を入力してバリアントを作成してください。",
+    "confirmDelete": "確認",
+    "edit": "編集",
+    "delete": "削除",
+    "errors": {
+      "saveFailed": "保存に失敗しました。"
+    }
+  },
+  "libraryCleanup": {
+    "errorNotFound": "ライブラリが見つかりません。",
+    "title": "参照のクリーンアップ",
+    "description": "削除する前に、プロジェクトから \"<span className=\"text-white font-medium\">{{name}}</span>\" への参照を削除してください。",
+    "backToLibrary": "ライブラリに戻る",
+    "warning": "{{count}} 個のプロジェクトがまだこのライブラリを参照しています",
+    "warning_plural": "{{count}} 個のプロジェクトがまだこのライブラリを参照しています",
+    "warningDesc": "参照を個別に削除するか、下のボタンを使用してすべてクリーンアップして削除してください。",
+    "remove": "削除",
+    "allCleared": "すべての参照がクリアされました",
+    "allClearedDesc": "これでこのライブラリを安全に削除できます。",
+    "cleanAllAndDelete": "すべてクリーンアップしてライブラリを削除",
+    "deleteLibrary": "ライブラリを削除",
+    "confirm": {
+      "title": "すべてクリーンアップして削除",
+      "message": "これにより、{{count}} 個のプロジェクトから \"{{name}}\" へのすべての参照が削除され、ライブラリが永久に削除されます。この操作は取り消せません。",
+      "message_plural": "これにより、{{count}} 個のプロジェクトから \"{{name}}\" へのすべての参照が削除され、ライブラリが永久に削除されます。この操作は取り消せません。",
+      "confirmText": "クリーンアップして削除"
+    }
+  },
+  "projectOrphans": {
+    "title": "孤立ファイルの管理",
+    "cleanupTool": "クリーンアップツール",
+    "projectLabel": "プロジェクト: {{name}}",
+    "backToProject": "プロジェクトに戻る",
+    "refresh": "スキャンを更新",
+    "deleteSelected": "削除 ({{count}})",
+    "clearAll": "すべてクリア",
+    "orphanedFiles": "孤立ファイル",
+    "totalWaste": "無駄な容量の合計",
+    "warning": "警告",
+    "warningDesc": "これらのファイルは、このプロジェクトの現在のコンポーネントによって参照されておらず、安全に削除できます。",
+    "selectAll": "すべて選択",
+    "filesSelected": "{{count}} ファイル選択済み",
+    "cleanTitle": "プロジェクトはクリーンです",
+    "cleanDesc": "ストレージ内に参照されていないファイルは見つかりませんでした。",
+    "preview": "プレビュー",
+    "unknownSize": "不明",
+    "scanning": "S3 で孤立ファイルをスキャン中...",
+    "confirm": {
+      "title": "ファイルを永久に削除",
+      "message": "{{count}} 個の孤立ファイルを削除してもよろしいですか？この操作により S3 から永久に削除され、元に戻すことはできません。",
+      "confirmText": "永久に削除",
+      "deleting": "削除中..."
+    }
+  },
+  "mcpConnections": {
+    "title": "MCP 接続",
+    "description": "MCP プロトコルを通じて AI アプリを安全に接続します",
+    "justNow": "たった今",
+    "relativeTime": {
+      "m": "{{count}}分前",
+      "h": "{{count}}時間前"
+    },
+    "expiryOptions": {
+      "noExpiration": "期限なし",
+      "7days": "7日",
+      "30days": "30日",
+      "90days": "90日",
+      "1year": "1年"
+    },
+    "errorLoad": "MCP 接続の読み込みに失敗しました。",
+    "toasts": {
+      "clientRevoked": "クライアントアクセスを取り消しました",
+      "tokenRevoked": "トークンを取り消しました",
+      "revokeFailed": "取り消しに失敗しました",
+      "tokenCreated": "トークンを作成しました。今すぐコピーしてください。後からは再表示できません。",
+      "tokenCopied": "トークンをクリップボードにコピーしました",
+      "createFailed": "トークンの作成に失敗しました",
+      "copied": "{{label}} をコピーしました",
+      "copyFailed": "{{label}} のコピーに失敗しました"
+    },
+    "connectSection": {
+      "title": "AI アプリをアカウントに接続する",
+      "description": "このページでは AI アプリをワークスペースに接続できます。まず下のアプリ接続先アドレスを、接続したいアプリにコピーしてください。その後、対応している 2 つのサインイン方法から 1 つを選びます。",
+      "oauthMethod": {
+        "title": "OAuth 2.1 コネクタ",
+        "description": "アプリがサインイン用にブラウザを開ける場合はこちらを使います。サインインしてアクセスを承認すると、アプリが自動的に接続されます。ほとんどのユーザーにはこの方法が最適です。"
+      },
+      "tokenMethod": {
+        "title": "アクセストークン",
+        "description": "アプリにトークン、API キー、またはシークレットの貼り付けを求められた場合のみ使用してください。ここでトークンを作成し、自分でアプリに貼り付けます。"
+      },
+      "appAddress": {
+        "label": "アプリの接続先",
+        "copyTitle": "MCP URL をコピー",
+        "instruction": "AI アプリが接続先を求めたときに、これをコピーして貼り付けてください。"
+      },
+      "advancedUrl": {
+        "label": "高度なサインイン URL",
+        "copyTitle": "OAuth メタデータ URL をコピー",
+        "instruction": "アプリがサインイン URL またはディスカバリー URL を明示的に要求する場合のみ使用してください。"
+      },
+      "steps": {
+        "1": { "title": "1. アドレスをコピー", "desc": "AI アプリに貼り付けて設定を開始します。" },
+        "2": { "title": "2. 方法を選択", "desc": "ブラウザが開くなら OAuth、そうでなければトークンを使います。" },
+        "3": { "title": "3. ここで管理", "desc": "接続の確認やアクセスの取り消しをいつでも行えます。" }
+      },
+      "jsonSetup": {
+        "title": "JSON 設定が必要ですか？",
+        "subtitle": "クリックして JSON 設定ブロックを表示または非表示にします",
+        "instruction": "一部のアプリでは、フォーム入力ではなく JSON 設定ブロックの貼り付けが必要です。ブラウザサインインに対応している場合は OAuth 2.1 版を使ってください。トークンを求められる場合はアクセストークン版を使ってください。",
+        "oauthJson": "OAuth 2.1 JSON",
+        "tokenJson": "アクセストークン JSON",
+        "copyJson": "JSON をコピー",
+        "tokenInstruction": "<code className=\"text-amber-400\">YOUR_MCP_TOKEN</code> をこのページで作成したトークンに置き換えて、完成した JSON をアプリに貼り付けてください。"
+      }
+    },
+    "tokens": {
+      "title": "アクセストークン",
+      "newToken": "新しいトークン",
+      "whenToUse": "アクセストークンを使う場面",
+      "tip": "アクセストークンは、アプリが OAuth 2.1 コネクタに対応していない場合にのみ使用してください。トークンはパスワードのように厳重に扱ってください。通常は、アプリの接続先アドレスとこのトークンをアプリに貼り付けます。",
+      "form": {
+        "tokenName": "トークン名",
+        "expiration": "有効期限",
+        "placeholder": "例: Claude Desktop",
+        "create": "トークンを作成",
+        "cancel": "キャンセル",
+        "done": "完了"
+      },
+      "empty": {
+        "title": "アクセストークンがありません",
+        "desc": "最初の AI アプリを手動で接続するためのトークンを作成してください。"
+      },
+      "card": {
+        "created": "{{date}} に作成",
+        "used": "{{date}} に使用",
+        "expired": "期限切れ",
+        "expires": "{{date}} まで有効",
+        "noExpiration": "期限なし",
+        "revokeTitle": "トークンを取り消す"
+      }
+    },
+    "oauth": {
+      "title": "OAuth 2.1 接続",
+      "recommended": "簡単なサインインに推奨",
+      "tip": "OAuth 2.1 コネクタで接続したアプリは自動的にここへ表示されます。ブラウザでアクセスを承認すると、そのアプリがここに表示されます。",
+      "empty": {
+        "title": "接続済みの OAuth クライアントはありません",
+        "desc": "AI アプリでサインインが完了すると、ここにアプリが表示されます。"
+      },
+      "card": {
+        "activeToken": "有効なトークン {{count}} 件",
+        "activeToken_plural": "有効なトークン {{count}} 件",
+        "noTokens": "有効なトークンはありません",
+        "registered": "{{date}} に登録",
+        "revokeTitle": "すべてのトークンを取り消す"
+      }
+    },
+    "confirm": {
+      "revokeClientTitle": "クライアントアクセスを取り消す",
+      "revokeTokenTitle": "トークンを取り消す",
+      "revokeClientMessage": "\"{{name}}\" のすべてのアクセストークンを取り消しますか？ クライアントは再認証が必要になります。",
+      "revokeTokenMessage": "トークン \"{{name}}\" を取り消しますか？ このトークンを使っている MCP クライアントは直ちにアクセスを失います。",
+      "revoking": "取り消し中...",
+      "revoke": "取り消す"
+    }
+  },
+  "projectViewer": {
+    "common": {
+      "unknownProvider": "不明なプロバイダー",
+      "unknownModel": "不明なモデル",
+      "provider": "プロバイダー",
+      "model": "モデル",
+      "back": "戻る",
+      "text": "テキスト",
+      "imageShort": "画像",
+      "libraryShort": "ライブラリ",
+      "library": "ライブラリ",
+      "cancel": "キャンセル",
+      "close": "閉じる",
+      "copy": "コピー",
+      "copyToLibrary": "ライブラリにコピー",
+      "selectAll": "すべて選択",
+      "selectedCount": "{{count}} 件選択",
+      "delete": "削除",
+      "deleteAll": "すべて削除",
+      "deleteSelected": "選択を削除",
+      "deleteJob": "ジョブを削除",
+      "upload": "アップロード",
+      "prompt": "プロンプト",
+      "generatedText": "生成テキスト",
+      "fullPrompt": "完全なプロンプト"
+    },
+    "tabs": {
+      "draft": "下書き",
+      "queue": "キュー",
+      "done": "完了",
+      "album": "アルバム",
+      "texts": "テキスト"
+    },
+    "toasts": {
+      "uploadImageFailed": "画像のアップロードに失敗しました。もう一度お試しください。",
+      "addDraftsFailed": "下書きの追加に失敗しました。もう一度お試しください。"
+    },
+    "errors": {
+      "missingWorkflowInfo_one": "{{count}} 件のワークフロー項目に情報がありません。",
+      "missingWorkflowInfo_other": "{{count}} 件のワークフロー項目に情報がありません。"
+    },
+    "main": {
+      "mobileJobs": "ジョブ",
+      "projectId": "ID: {{id}}",
+      "autoSaved": "自動保存済み",
+      "autoSavedTitle": "すべての変更は自動保存されます",
+      "editProjectInfo": "プロジェクト情報を編集",
+      "manageOrphans": "孤立ファイルを管理（クリーンアップ）",
+      "deleteProject": "プロジェクトを削除",
+      "buildWorkflow": "ワークフローを作成"
+    },
+    "drafts": {
+      "emptyCanvas": "空のキャンバス",
+      "galleryReady": "すばらしい作品が準備できています。新しい下書きを始めるか、ギャラリーを確認してください。",
+      "buildWorkflowHint": "左側でプロジェクトのワークフローを作成して画像生成を開始します。",
+      "openAlbum": "アルバムを開く",
+      "startSelected": "選択を開始",
+      "startAllNow": "すべて今すぐ開始",
+      "deleteAllDrafts": "すべての下書きを削除",
+      "runJob": "ジョブを実行"
+    },
+    "queue": {
+      "retry": "再試行",
+      "clearAllFailed": "失敗をすべてクリア",
+      "running": "実行中",
+      "queued": "待機中",
+      "failed": "失敗",
+      "retryJob": "ジョブを再試行",
+      "visualContexts": "ビジュアルコンテキスト",
+      "contextShort": "C_{{index}}",
+      "contextAlt": "コンテキスト {{index}}",
+      "errorDetails": "エラー詳細",
+      "unknownError": "不明なエラーが発生しました",
+      "emptyTitle": "キューは空です",
+      "emptyDescription": "進行中のジョブがここに表示されます"
+    },
+    "completed": {
+      "finishedCount": "{{count}} 件完了",
+      "completed": "完了",
+      "deleteJobRecord": "ジョブ記録を削除",
+      "metadata": "メタデータ",
+      "emptyTitle": "完了記録はありません",
+      "emptyDescription": "過去のジョブ実行記録がここに表示されます"
+    },
+    "settings": {
+      "providerLabel": "プロバイダー:",
+      "none": "なし",
+      "selectModelToConfigure": "設定するモデルを選択してください",
+      "soundValue": "音声 {{value}}",
+      "shuffle": "シャッフル",
+      "aiModel": "AI モデル",
+      "selectProvider": "プロバイダーを選択",
+      "selectModel": "モデルを選択",
+      "modelOptionsHidden": "モデルオプションは非表示です",
+      "chooseModelHint": "モデルを選択すると、プロバイダー固有の設定が表示されます。",
+      "aspectRatio": "アスペクト比",
+      "resolution": "解像度",
+      "durationSeconds": "長さ（秒）",
+      "sound": "サウンド",
+      "systemPrompt": "システムプロンプト",
+      "systemPromptPlaceholder": "AI モデル向けの任意のシステム指示...",
+      "temperature": "Temperature",
+      "maxTokens": "最大トークン",
+      "quality": "品質",
+      "background": "背景",
+      "format": "形式",
+      "workflowOptions": "ワークフローオプション",
+      "shuffleWorkflow": "ワークフローをシャッフル",
+      "randomizeOrder": "組み合わせ順をランダム化",
+      "jobQuantity": "ジョブ数",
+      "totalUniqueCombinations": "一意な組み合わせ総数",
+      "ofTotal": "全 {{count}}",
+      "selectProviderAndModel": "続行するには AI プロバイダーとモデルを選択してください。",
+      "uploadingImages": "画像をアップロード中...",
+      "savingDrafts": "下書きを保存中...",
+      "composingProgress": "{{current}}/{{total}} を作成中",
+      "addToDraft": "下書きに追加"
+    },
+    "workflow": {
+      "noTextContent": "テキスト内容がありません...",
+      "pickFromLibrary": "ライブラリから選択",
+      "unknownLibrary": "不明なライブラリ",
+      "itemsCount": "{{count}} 件",
+      "filteredTags": "フィルター済み: {{count}} タグ",
+      "wait": "待機"
+    },
+    "modelSelector": {
+      "title": "モデルを選択",
+      "description": "ワークフロー用の AI プロバイダーと具体的なモデルを選択します",
+      "searchPlaceholder": "モデル名またはプロバイダー名で検索...",
+      "noProviders": "プロバイダーが設定されていません",
+      "noProvidersHint": "設定から最初の AI プロバイダーを追加してください",
+      "noModelsFound": "\"{{query}}\" に一致するモデルが見つかりません",
+      "footer": "モデルカードをクリックして選択し、続行します"
+    },
+    "librarySelection": {
+      "title": "ライブラリを選択",
+      "description": "ワークフローで利用可能なコレクション",
+      "noLibraries": "ライブラリはまだ作成されていません",
+      "added": "追加済み"
+    },
+    "libraryPreview": {
+      "pickThisText": "このテキストを選択",
+      "itemsSummary": "{{filtered}} / {{total}} 件",
+      "filterByTags": "タグで絞り込む",
+      "allItems": "すべての項目",
+      "noItemsMatch": "一致する項目がありません",
+      "clearAllFilters": "すべてのフィルターをクリア",
+      "clickToSelect": "クリックして選択",
+      "closeViewer": "ビューアーを閉じる"
+    },
+    "promptModal": {
+      "title": "プロンプト断片を編集",
+      "description": "ワークフローテキストブロック",
+      "placeholder": "ここにプロンプトを入力...",
+      "characterCount": "文字数: {{count}}",
+      "saveChanges": "変更を保存"
+    },
+    "exportDialog": {
+      "title": "パッケージをエクスポート",
+      "description": "エクスポートをキューに入れる前に ZIP ファイル名を設定します",
+      "itemCount_one": "このパッケージには {{count}} 件が含まれます",
+      "itemCount_other": "このパッケージには {{count}} 件が含まれます",
+      "packageName": "パッケージ名",
+      "placeholder": "album_export.zip",
+      "queueing": "キューに追加中...",
+      "startExport": "エクスポートを開始"
+    },
+    "albumPrompt": {
+      "title": "プロンプトを表示",
+      "description": "アルバム画像プロンプト",
+      "closeAria": "プロンプトダイアログを閉じる",
+      "promptCopied": "プロンプトをコピーしました",
+      "copyFailed": "プロンプトのコピーに失敗しました",
+      "characterCount": "文字数: {{count}}"
+    },
+    "imageLightbox": {
+      "deleteImage": "画像を削除",
+      "previewAlt": "プレビュー {{index}}"
+    },
+    "copyToLibrary": {
+      "texts": "テキスト",
+      "textItemCount_one": "{{count}} 件のテキスト",
+      "textItemCount_other": "{{count}} 件のテキスト",
+      "videoItemCount_one": "{{count}} 本の動画",
+      "videoItemCount_other": "{{count}} 本の動画",
+      "imageItemCount_one": "{{count}} 枚の画像",
+      "imageItemCount_other": "{{count}} 枚の画像",
+      "loadLibrariesFailed": "ライブラリの読み込みに失敗しました: {{message}}",
+      "enterLibraryName": "ライブラリ名を入力してください",
+      "selectLibrary": "ライブラリを選択してください",
+      "createdNewLibrary": "新しい {{type}} ライブラリを作成し、{{itemSummary}} をコピーしました",
+      "copiedToLibrary": "{{itemSummary}} をライブラリにコピーしました",
+      "copyFailed": "コピーに失敗しました: {{message}}",
+      "description": "{{itemSummary}} を {{type}} ライブラリに複製しています",
+      "destination": "保存先",
+      "createNew": "新規作成",
+      "addToExisting": "既存に追加",
+      "newLibraryName": "新しいライブラリ名",
+      "versionToCopy": "コピーするバージョン",
+      "optimized": "最適化版",
+      "optimizedHint": "高速プレビュー版",
+      "raw": "RAW",
+      "rawHint": "オリジナルのフル品質",
+      "copying": "コピー中..."
+    },
+    "album": {
+      "exportQueued": "エクスポートをキューに追加しました！",
+      "viewArchiveProgress": "Archive で進行状況を見る →",
+      "exportFailed": "エクスポート失敗: {{message}}",
+      "itemsCount": "{{count}} 件",
+      "exportSelected": "選択をエクスポート",
+      "compareSelected": "選択を比較",
+      "exportAll": "すべてエクスポート",
+      "copyAllToLibrary": "すべてライブラリにコピー",
+      "noTexts": "まだテキストがありません",
+      "noVideos": "まだ動画がありません",
+      "galleryEmpty": "ギャラリーは空です",
+      "collection": "コレクション",
+      "reel": "リール",
+      "emptyDescription": "生成を開始して {{target}} を作成します",
+      "viewTextDetails": "クリックしてテキスト詳細を表示",
+      "imageContexts": "+{{count}} 画像",
+      "view": "表示",
+      "openOriginal": "元画像を開く",
+      "playVideo": "動画を再生",
+      "viewFullPrompt": "クリックして完全なプロンプトを表示",
+      "raw": "RAW",
+      "optimized": "最適化",
+      "thumbnail": "サムネイル"
+    },
+    "compare": {
+      "title": "テキストを比較",
+      "subtitle": "{{count}} 件選択中 · esc で閉じる",
+      "closeAria": "比較ビューを閉じる",
+      "copied": "{{label}} をコピーしました",
+      "copyFailed": "{{label}} のコピーに失敗しました",
+      "referenceImages": "参照画像（{{count}}）",
+      "referenceAlt": "参照 {{index}}",
+      "noGeneratedText": "生成テキストはありません。"
+    },
+    "textDetail": {
+      "title": "テキスト表示",
+      "itemIndex": "項目 {{index}}",
+      "previousItem": "前のテキスト項目",
+      "nextItem": "次のテキスト項目",
+      "dialogAria": "テキストアルバム詳細",
+      "closeAria": "テキスト詳細ダイアログを閉じる",
+      "copied": "{{label}} をコピーしました",
+      "copyFailed": "{{label}} のコピーに失敗しました",
+      "referenceImages": "参照画像（{{count}}）",
+      "referenceAlt": "参照 {{index}}",
+      "refShort": "参照 {{index}}",
+      "noGeneratedText": "生成テキストはありません。",
+      "characterCount": "{{count}} 文字",
+      "keyboardHint": "Esc で閉じる · ← → で移動"
+    },
+    "confirm": {
+      "removeWorkflowItem": {
+        "title": "ワークフロー項目を削除",
+        "message": "この項目をワークフローから削除してもよろしいですか？",
+        "confirm": "項目を削除"
+      },
+      "deleteSelectedDrafts": {
+        "title": "選択した下書きを削除",
+        "message": "選択した {{count}} 件の下書きを削除してもよろしいですか？",
+        "confirm": "選択を削除"
+      },
+      "deleteAllDrafts": {
+        "title": "すべての下書きを削除",
+        "message": "すべての {{count}} 件の下書きタスクを削除してもよろしいですか？",
+        "confirm": "すべて削除"
+      },
+      "deleteProject": {
+        "title": "プロジェクトを削除",
+        "message": "\"{{name}}\" を削除してもよろしいですか？",
+        "confirm": "プロジェクトを削除"
+      },
+      "deleteJob": {
+        "title": "ジョブを削除",
+        "message": "このジョブを削除してもよろしいですか？",
+        "confirm": "ジョブを削除"
+      },
+      "moveToRecycleBin": {
+        "title": "ゴミ箱に移動",
+        "message": "{{count}} 件をゴミ箱に移動してもよろしいですか？",
+        "confirm": "ゴミ箱に移動"
+      },
+      "removeFinishedRecords": {
+        "title": "選択した完了記録を削除",
+        "message": "完了した {{count}} 件のジョブ記録を削除してもよろしいですか？（アルバム画像は削除されません）",
+        "confirm": "選択を削除"
+      },
+      "deleteSelectedJobs": {
+        "title": "選択したジョブを削除",
+        "message": "選択した {{count}} 件のジョブを削除してもよろしいですか？",
+        "confirm": "選択を削除"
+      },
+      "clearFailedJobs": {
+        "title": "失敗したジョブをすべてクリア",
+        "message": "キューから失敗したジョブをすべてクリアしてもよろしいですか？",
+        "confirm": "すべてクリア"
+      }
     }
   }
 }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckSquare, Square, Trash2, Play, ChevronDown, Loader2, List } from 'lucide-react';
 import { Job } from '../../types';
 import { imageDisplayUrl } from '../../api';
@@ -36,6 +37,7 @@ export function QueueTab({
   setJobToDeleteId,
   setLightboxData
 }: QueueTabProps) {
+  const { t } = useTranslation();
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-8">
@@ -52,27 +54,27 @@ export function QueueTab({
                 ) : (
                   <Square className="w-4 h-4" />
                 )}
-                Select All
+                {t('projectViewer.common.selectAll')}
               </button>
 
               {selectedQueueIds.size > 0 && (
                 <div className="flex items-center gap-2 pl-4 border-l border-neutral-800">
                   <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                    {selectedQueueIds.size} Selected
+                    {t('projectViewer.common.selectedCount', { count: selectedQueueIds.size })}
                   </span>
                   {queueJobs.some(j => selectedQueueIds.has(j.id) && j.status === 'failed') && (
                     <button
                       onClick={retrySelectedQueue}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
                     >
-                      <Play className="w-3 h-3 fill-current" /> Retry
+                      <Play className="w-3 h-3 fill-current" /> {t('projectViewer.queue.retry')}
                     </button>
                   )}
                   <button
                     onClick={deleteSelectedQueue}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                   >
-                    <Trash2 className="w-3 h-3" /> Delete
+                    <Trash2 className="w-3 h-3" /> {t('projectViewer.common.delete')}
                   </button>
                 </div>
               )}
@@ -83,7 +85,7 @@ export function QueueTab({
                 onClick={clearAllFailed}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
               >
-                <Trash2 className="w-3 h-3" /> Clear All Failed
+                <Trash2 className="w-3 h-3" /> {t('projectViewer.queue.clearAllFailed')}
               </button>
             )}
           </div>
@@ -146,18 +148,18 @@ export function QueueTab({
                         {task.status === 'processing' && (
                           <div className="flex items-center gap-2 text-blue-400 text-[10px] font-bold uppercase tracking-widest bg-blue-500/5 px-3 py-1.5 rounded-lg border border-blue-500/10">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            Running
+                            {t('projectViewer.queue.running')}
                           </div>
                         )}
-                        {task.status === 'pending' && <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest px-3 py-1.5 bg-neutral-900 rounded-lg border border-neutral-800 shadow-sm">Queued</span>}
-                        {task.status === 'failed' && <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-3 py-1.5 bg-red-500/10 rounded-lg border border-red-500/20">Failed</span>}
+                        {task.status === 'pending' && <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest px-3 py-1.5 bg-neutral-900 rounded-lg border border-neutral-800 shadow-sm">{t('projectViewer.queue.queued')}</span>}
+                        {task.status === 'failed' && <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-3 py-1.5 bg-red-500/10 rounded-lg border border-red-500/20">{t('projectViewer.queue.failed')}</span>}
                       
                       <div className="flex items-center gap-1">
                         {task.status === 'failed' && (
                           <button 
                             onClick={(e) => { e.stopPropagation(); runJob(task.id); }}
                             className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
-                            title="Retry Job"
+                            title={t('projectViewer.queue.retryJob')}
                           >
                             <Play className="w-3.5 h-3.5 fill-current" />
                           </button>
@@ -165,7 +167,7 @@ export function QueueTab({
                         <button 
                           onClick={(e) => { e.stopPropagation(); setJobToDeleteId(task.id); }}
                           className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Delete Job"
+                          title={t('projectViewer.common.deleteJob')}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -175,14 +177,14 @@ export function QueueTab({
                   {isExpanded && (
                     <div className={`bg-neutral-900/30 border-x border-b rounded-b-xl p-4 space-y-4 animate-in slide-in-from-top-1 duration-200 ${task.status === 'failed' ? 'border-red-500/30' : 'border-blue-500/30'}`}>
                        <div className="space-y-2">
-                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">Full Prompt</label>
+                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('projectViewer.common.fullPrompt')}</label>
                           <div className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/50 p-3 rounded-lg border border-neutral-800 select-all whitespace-pre-wrap font-mono">
                             {task.prompt}
                           </div>
                        </div>
                        {task.imageContexts && task.imageContexts.length > 0 && (
                          <div className="space-y-3">
-                            <label className="text-[9px] font-black uppercase tracking-[0.1em] text-neutral-600 px-1">Visual Contexts</label>
+                            <label className="text-[9px] font-black uppercase tracking-[0.1em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>
                             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                               {task.imageContexts.map((ctx, idx) => (
                                 <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-blue-500/50">
@@ -197,7 +199,7 @@ export function QueueTab({
                                     }}
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/ctx:opacity-100 transition-opacity flex items-end p-1.5 pointer-events-none">
-                                    <span className="text-[8px] font-black text-white/70 uppercase tracking-widest truncate">C_{idx + 1}</span>
+                                    <span className="text-[8px] font-black text-white/70 uppercase tracking-widest truncate">{t('projectViewer.queue.contextShort', { index: idx + 1 })}</span>
                                   </div>
                                 </div>
                               ))}
@@ -206,9 +208,9 @@ export function QueueTab({
                        )}
                        {task.status === 'failed' && (
                           <div className="space-y-2">
-                             <label className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/70">Error Details</label>
+                             <label className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/70">{t('projectViewer.queue.errorDetails')}</label>
                              <div className="text-[10px] font-mono text-red-400 bg-red-950/20 p-3 rounded-lg border border-red-500/20 break-all leading-tight">
-                               {task.error || 'Unknown error occurred'}
+                               {task.error || t('projectViewer.queue.unknownError')}
                              </div>
                           </div>
                        )}
@@ -220,8 +222,8 @@ export function QueueTab({
             {queueJobs.length === 0 && (
               <div className="py-24 text-center text-neutral-600">
                 <List className="w-12 h-12 mx-auto opacity-10 mb-4" />
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em]">Queue is clear</div>
-                <div className="text-[9px] opacity-40 mt-2">Active jobs will appear here</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em]">{t('projectViewer.queue.emptyTitle')}</div>
+                <div className="text-[9px] opacity-40 mt-2">{t('projectViewer.queue.emptyDescription')}</div>
               </div>
             )}
         </div>

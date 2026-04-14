@@ -64,7 +64,7 @@ export function MainLayout() {
 
   const storageText = storageSize !== null && storageLimit !== null
     ? `${formatStorageSize(storageSize)} / ${formatStorageSize(storageLimit)}`
-    : 'Storage unavailable';
+    : t('mainLayout.storageUnavailable');
   const storageUsagePercent = storageSize !== null && storageLimit
     ? Math.min(100, (storageSize / storageLimit) * 100)
     : 0;
@@ -76,7 +76,7 @@ export function MainLayout() {
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 text-neutral-400 hover:text-white transition-all active:scale-95"
-          aria-label="Toggle Menu"
+          aria-label={t('mainLayout.toggleMenu')}
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -116,7 +116,7 @@ export function MainLayout() {
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={`hidden lg:flex p-2 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors ${isCollapsed ? 'w-full justify-center' : ''}`}
-            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            title={isCollapsed ? t('mainLayout.expandSidebar') : t('mainLayout.collapseSidebar')}
           >
             {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
           </button>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
 interface ImageLightboxProps {
@@ -9,6 +10,7 @@ interface ImageLightboxProps {
 }
 
 export function ImageLightbox({ images, startIndex, onClose, onDelete }: ImageLightboxProps) {
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   
   useEffect(() => {
@@ -46,7 +48,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete }: ImageLi
           <button 
             onClick={(e) => { e.stopPropagation(); onDelete(currentIndex); }} 
             className="p-2 text-white/50 hover:text-red-500 transition-colors bg-black/50 hover:bg-black/80 rounded-full"
-            title="Delete Image"
+            title={t('projectViewer.imageLightbox.deleteImage')}
           >
             <Trash2 className="w-6 h-6" />
           </button>
@@ -64,7 +66,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete }: ImageLi
       
       <img 
         src={images[currentIndex]} 
-        alt={`Preview ${currentIndex + 1}`} 
+        alt={t('projectViewer.imageLightbox.previewAlt', { index: currentIndex + 1 })} 
         className="max-w-[90vw] max-h-[90vh] object-contain select-none shadow-2xl"
         onClick={(e) => e.stopPropagation()} 
       />

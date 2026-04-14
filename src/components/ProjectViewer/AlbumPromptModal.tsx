@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Copy, Type, X } from 'lucide-react';
 import { AlbumItem } from '../../types';
 import { toast } from 'sonner';
@@ -9,14 +10,15 @@ interface AlbumPromptModalProps {
 }
 
 export function AlbumPromptModal({ item, onClose }: AlbumPromptModalProps) {
+  const { t } = useTranslation();
   if (!item) return null;
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(item.prompt);
-      toast.success('Prompt copied');
+      toast.success(t('projectViewer.albumPrompt.promptCopied'));
     } catch {
-      toast.error('Failed to copy prompt');
+      toast.error(t('projectViewer.albumPrompt.copyFailed'));
     }
   };
 
@@ -31,14 +33,14 @@ export function AlbumPromptModal({ item, onClose }: AlbumPromptModalProps) {
               <Type className="w-5 h-5 text-blue-500" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">View Prompt</h3>
-              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Album Image Prompt</p>
+              <h3 className="text-lg font-bold text-white tracking-tight">{t('projectViewer.albumPrompt.title')}</h3>
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">{t('projectViewer.albumPrompt.description')}</p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-2 text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
-            aria-label="Close prompt dialog"
+            aria-label={t('projectViewer.albumPrompt.closeAria')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -54,7 +56,7 @@ export function AlbumPromptModal({ item, onClose }: AlbumPromptModalProps) {
 
         <div className="p-6 border-t border-neutral-800 bg-neutral-950/40 flex items-center justify-between gap-4">
           <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest pl-2">
-            Character count: {item.prompt.length}
+            {t('projectViewer.albumPrompt.characterCount', { count: item.prompt.length })}
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -62,13 +64,13 @@ export function AlbumPromptModal({ item, onClose }: AlbumPromptModalProps) {
               className="px-6 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2"
             >
               <Copy className="w-3.5 h-3.5" />
-              Copy
+              {t('projectViewer.common.copy')}
             </button>
             <button
               onClick={onClose}
               className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-blue-500/20 active:scale-95"
             >
-              Close
+              {t('projectViewer.common.close')}
             </button>
           </div>
         </div>

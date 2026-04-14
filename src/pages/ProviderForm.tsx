@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { fetchProvider, createProvider, updateProvider } from '../api';
 import { ProviderType } from '../types';
 import { Save, Key, Eye, EyeOff } from 'lucide-react';
@@ -19,6 +20,7 @@ const TYPE_DESCRIPTIONS: Record<ProviderType, string> = {
 };
 
 export function ProviderForm() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const navigate = useNavigate();
@@ -61,9 +63,9 @@ export function ProviderForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    if (!isEditing && !apiKey.trim()) { setError(type === 'KlingAI' ? 'Access Key is required.' : 'API Key is required.'); return; }
-    if (type === 'KlingAI' && !isEditing && !apiSecret.trim()) { setError('Secret Key is required for KlingAI.'); return; }
-    if (type === 'KlingAI' && isEditing && !apiSecret.trim() && !hasExistingSecret) { setError('Secret Key is required for KlingAI.'); return; }
+    if (!isEditing && !apiKey.trim()) { setError(type === 'KlingAI' ? t('providerForm.errors.accessKeyRequired') : t('providerForm.errors.apiKeyRequired')); return; }
+    if (type === 'KlingAI' && !isEditing && !apiSecret.trim()) { setError(t('providerForm.errors.secretKeyRequired')); return; }
+    if (type === 'KlingAI' && isEditing && !apiSecret.trim() && !hasExistingSecret) { setError(t('providerForm.errors.secretKeyRequired')); return; }
 
     setIsSubmitting(true);
     setError(null);
@@ -86,7 +88,7 @@ export function ProviderForm() {
         navigate('/providers');
       }
     } catch (e: any) {
-      setError(e?.message || 'Save failed.');
+      setError(e?.message || t('providerForm.errors.saveFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -109,9 +111,9 @@ export function ProviderForm() {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white tracking-tight">
-              {isEditing ? 'Edit Provider' : 'New Provider'}
+              {isEditing ? t('providerForm.editTitle') : t('providerForm.newTitle')}
             </h2>
-            <p className="text-sm text-neutral-500">Keys encrypted with AES-256-GCM</p>
+            <p className="text-sm text-neutral-500">{t('providerForm.securityNote')}</p>
           </div>
         </div>
 
@@ -120,14 +122,14 @@ export function ProviderForm() {
             {/* Name */}
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
-                Provider Name
+                {t('providerForm.nameLabel')}
               </label>
               <input
                 type="text"
                 autoFocus
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="e.g. Work account, Personal key…"
+                placeholder={t('providerForm.namePlaceholder')}
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700"
                 required
               />
@@ -136,7 +138,7 @@ export function ProviderForm() {
             {/* Type */}
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
-                Provider Type
+                {t('providerForm.typeLabel')}
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {PROVIDER_TYPES.map(t => (
@@ -161,9 +163,9 @@ export function ProviderForm() {
             {/* API Key / Access Key */}
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
-                {type === 'KlingAI' ? 'Access Key' : 'API Key'}{' '}
+                {type === 'KlingAI' ? t('providerForm.accessKeyLabel') : t('providerForm.apiKeyLabel')}{' '}
                 {isEditing && hasExistingKey && (
-                  <span className="normal-case font-normal tracking-normal">— leave blank to keep existing</span>
+                  <span className="normal-case font-normal tracking-normal">{t('providerForm.leaveBlankToKeep')}</span>
                 )}
               </label>
               <div className="relative">
@@ -171,7 +173,7 @@ export function ProviderForm() {
                   type={showKey ? 'text' : 'password'}
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
-                  placeholder={isEditing && hasExistingKey ? '•••••••• (stored)' : type === 'KlingAI' ? 'Paste your access key…' : 'Paste your API key…'}
+                  placeholder={isEditing && hasExistingKey ? t('providerForm.stored') : type === 'KlingAI' ? t('providerForm.accessKeyPlaceholder') : t('providerForm.apiKeyPlaceholder')}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
                 />
                 <button
@@ -187,9 +189,9 @@ export function ProviderForm() {
             {type === 'KlingAI' && (
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
-                  Secret Key{' '}
+                  {t('providerForm.secretKeyLabel')}{' '}
                   {isEditing && hasExistingSecret && (
-                    <span className="normal-case font-normal tracking-normal">— leave blank to keep existing</span>
+                    <span className="normal-case font-normal tracking-normal">{t('providerForm.leaveBlankToKeep')}</span>
                   )}
                 </label>
                 <div className="relative">
@@ -197,7 +199,7 @@ export function ProviderForm() {
                     type={showSecret ? 'text' : 'password'}
                     value={apiSecret}
                     onChange={e => setApiSecret(e.target.value)}
-                    placeholder={isEditing && hasExistingSecret ? '•••••••• (stored)' : 'Paste your secret key…'}
+                    placeholder={isEditing && hasExistingSecret ? t('providerForm.stored') : t('providerForm.secretKeyPlaceholder')}
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 pr-11 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
                   />
                   <button
@@ -213,14 +215,14 @@ export function ProviderForm() {
 
             {/* API URL */}
             <div className="space-y-2">
-              <label className="text-[10px) font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
-                API URL <span className="normal-case font-normal tracking-normal">— optional override</span>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
+                {t('providerForm.apiUrlLabel')} <span className="normal-case font-normal tracking-normal">{t('providerForm.apiUrlOptional')}</span>
               </label>
               <input
                 type="url"
                 value={apiUrl}
                 onChange={e => setApiUrl(e.target.value)}
-                placeholder="https://… (leave blank for default)"
+                placeholder={t('providerForm.apiUrlPlaceholder')}
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all placeholder:text-neutral-700 placeholder:font-sans"
               />
             </div>
@@ -228,7 +230,7 @@ export function ProviderForm() {
             {/* Concurrency */}
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">
-                Parallel Tasks <span className="normal-case font-normal tracking-normal">— concurrency limit</span>
+                {t('providerForm.parallelTasksLabel')} <span className="normal-case font-normal tracking-normal">{t('providerForm.concurrencyLimit')}</span>
               </label>
               <div className="flex items-center gap-4">
               <input
@@ -240,7 +242,7 @@ export function ProviderForm() {
                 className="w-24 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all"
               />
                 <span className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">
-                  Max requests
+                  {t('providerForm.maxRequests')}
                 </span>
               </div>
             </div>
@@ -258,7 +260,7 @@ export function ProviderForm() {
               onClick={() => navigate('/providers')}
               className="w-full sm:flex-1 px-4 py-3.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
             >
-              Cancel
+              {t('providerForm.cancel')}
             </button>
             <button
               type="submit"
@@ -266,7 +268,7 @@ export function ProviderForm() {
               className="w-full sm:flex-1 px-4 py-3.5 bg-amber-500 hover:bg-amber-400 text-black rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-amber-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
-              {isSubmitting ? 'Saving…' : isEditing ? 'Save Changes' : 'Create Provider'}
+              {isSubmitting ? t('providerForm.saving') : isEditing ? t('providerForm.submitSave') : t('providerForm.submitCreate')}
             </button>
           </div>
         </form>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Tag as TagIcon, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { X, Tag as TagIcon } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -16,12 +17,16 @@ export function TagModal({
   onClose, 
   onSave, 
   initialTags = [], 
-  title = "Edit Tags", 
-  description = "Add or remove tags for this item.",
-  saveButtonText = "Save Tags"
+  title,
+  description,
+  saveButtonText
 }: Props) {
+  const { t } = useTranslation();
   const [tags, setTags] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
+  const resolvedTitle = title ?? t('tagModal.title');
+  const resolvedDescription = description ?? t('tagModal.description');
+  const resolvedSaveButtonText = saveButtonText ?? t('tagModal.saveTags');
 
   useEffect(() => {
     if (isOpen) {
@@ -62,8 +67,8 @@ export function TagModal({
               <TagIcon className="w-5 h-5 text-blue-500" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">{title}</h3>
-              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">{description}</p>
+              <h3 className="text-lg font-bold text-white tracking-tight">{resolvedTitle}</h3>
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">{resolvedDescription}</p>
             </div>
           </div>
           <button 
@@ -81,7 +86,7 @@ export function TagModal({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Enter tags (comma separated)..."
+              placeholder={t('tagModal.placeholder')}
               className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
               autoFocus
             />
@@ -89,14 +94,14 @@ export function TagModal({
               onClick={handleAddTag}
               className="px-4 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl transition-all font-bold text-xs uppercase tracking-widest"
             >
-              Add
+              {t('tagModal.add')}
             </button>
           </div>
 
           <div className="flex flex-wrap gap-2 min-h-[100px] content-start">
             {tags.length === 0 && (
               <div className="w-full text-center py-8 text-neutral-600 text-xs font-bold uppercase tracking-widest italic border border-dashed border-neutral-800 rounded-xl">
-                No tags added yet
+                {t('tagModal.noTags')}
               </div>
             )}
             {tags.map(tag => (
@@ -115,7 +120,7 @@ export function TagModal({
             onClick={onClose}
             className="px-6 py-2.5 text-neutral-400 hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
           >
-            Cancel
+            {t('confirmModal.cancel')}
           </button>
           <button 
             onClick={() => {
@@ -124,7 +129,7 @@ export function TagModal({
             }}
             className="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 rounded-xl transition-all font-black uppercase tracking-widest text-[10px]"
           >
-            {saveButtonText}
+            {resolvedSaveButtonText}
           </button>
         </div>
       </div>

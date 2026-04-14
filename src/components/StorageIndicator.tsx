@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Database } from 'lucide-react';
 import { fetchStorageAnalysis } from '../api';
 import { motion } from 'motion/react';
@@ -9,6 +10,7 @@ interface StorageIndicatorProps {
 }
 
 export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
+  const { t } = useTranslation();
   const [size, setSize] = useState<number | null>(null);
   const [limit, setLimit] = useState<number>(5 * 1024 * 1024 * 1024);
   const navigate = useNavigate();
@@ -54,7 +56,11 @@ export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
         flex items-center gap-3 overflow-hidden
         ${isCollapsed ? 'justify-center' : ''}
       `}
-      title={`Storage: ${formatSize(size)} / ${formatSize(limit)} (${usagePercent.toFixed(1)}%)`}
+      title={t('storageIndicator.title', {
+        used: formatSize(size),
+        limit: formatSize(limit),
+        percent: usagePercent.toFixed(1),
+      })}
     >
       <div className="w-8 h-8 rounded-lg bg-blue-600/10 flex items-center justify-center flex-shrink-0">
         <Database className={`w-4 h-4 ${usagePercent > 90 ? 'text-red-400' : 'text-blue-400'}`} />
@@ -63,7 +69,7 @@ export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
       {!isCollapsed && (
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">Storage</span>
+            <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">{t('storageIndicator.storage')}</span>
             <span className="text-[10px] font-bold text-neutral-400">{usagePercent.toFixed(0)}%</span>
           </div>
           <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden">
@@ -73,7 +79,7 @@ export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
               className={`h-full rounded-full ${usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-amber-500' : 'bg-blue-500'}`}
             />
           </div>
-          <span className="text-[10px] font-semibold text-neutral-400 mt-1 truncate">{formatSize(size)} of {formatSize(limit)}</span>
+          <span className="text-[10px] font-semibold text-neutral-400 mt-1 truncate">{t('storageIndicator.usedOfLimit', { used: formatSize(size), limit: formatSize(limit) })}</span>
         </div>
       )}
     </motion.div>

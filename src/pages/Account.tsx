@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -31,11 +31,6 @@ const STORAGE_COLORS: Record<string, string> = {
   trash: '#ef4444',
   other: '#94a3b8',
 };
-const TIER_NAMES: Record<number, string> = {
-  [5 * 1024 * 1024 * 1024]: 'Free',
-  [100 * 1024 * 1024 * 1024]: 'Professional',
-  [500 * 1024 * 1024 * 1024]: 'Premium',
-};
 
 function isAccountTab(value: string | null): value is AccountTab {
   return value !== null && ACCOUNT_TABS.includes(value as AccountTab);
@@ -47,14 +42,6 @@ function formatBytes(bytes: number) {
   const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   const value = bytes / Math.pow(1024, index);
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
-}
-
-function formatTier(limit?: number) {
-  if (!limit) return 'Custom';
-  if (Math.abs(limit - 5 * 1024 * 1024 * 1024) < 1000) return 'Free';
-  if (Math.abs(limit - 100 * 1024 * 1024 * 1024) < 1000) return 'Professional';
-  if (Math.abs(limit - 500 * 1024 * 1024 * 1024) < 1000) return 'Premium';
-  return 'Custom';
 }
 
 export function Account() {
@@ -103,6 +90,20 @@ export function Account() {
     return isAccountTab(tab) ? tab : 'overview';
   });
 
+  const formatTier = useCallback((limit?: number) => {
+    if (!limit) return t('account.storage.tierCustom');
+    if (Math.abs(limit - 5 * 1024 * 1024 * 1024) < 1000) return t('account.storage.tierFree');
+    if (Math.abs(limit - 100 * 1024 * 1024 * 1024) < 1000) return t('account.storage.tierProfessional');
+    if (Math.abs(limit - 500 * 1024 * 1024 * 1024) < 1000) return t('account.storage.tierPremium');
+    return t('account.storage.tierCustom');
+  }, [t]);
+
+  const TIER_NAMES: Record<number, string> = useMemo(() => ({
+    [5 * 1024 * 1024 * 1024]: t('account.storage.tierFree'),
+    [100 * 1024 * 1024 * 1024]: t('account.storage.tierProfessional'),
+    [500 * 1024 * 1024 * 1024]: t('account.storage.tierPremium'),
+  }), [t]);
+
   useEffect(() => {
     const tab = searchParams.get('tab');
     const normalizedTab = isAccountTab(tab) ? tab : 'overview';
@@ -133,7 +134,7 @@ export function Account() {
         setUser(me);
       } catch (error: any) {
         if (!mounted) return;
-        setUserLoadError(error.message || 'Failed to load account');
+        setUserLoadError(error.message || t('account.errorUnavailableDesc'));
       } finally {
         if (mounted) setUserLoading(false);
       }
@@ -143,7 +144,7 @@ export function Account() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!user || activeTab !== 'overview' || overviewLoaded || overviewLoading) return;
@@ -164,14 +165,14 @@ export function Account() {
         setProviderCount(providers.length);
         setOverviewLoaded(true);
       } catch (error: any) {
-        setOverviewLoadError(error.message || 'Failed to load overview');
+        setOverviewLoadError(error.message || t('account.overview.errorTitle'));
       } finally {
         setOverviewLoading(false);
       }
     };
 
     void loadOverview();
-  }, [activeTab, overviewLoaded, overviewLoading, user]);
+  }, [activeTab, overviewLoaded, overviewLoading, user, t]);
 
   useEffect(() => {
     if (!user || activeTab !== 'storage' || storageLoaded || storageLoading) return;
@@ -185,14 +186,14 @@ export function Account() {
         setStorage(storageAnalysis);
         setStorageLoaded(true);
       } catch (error: any) {
-        setStorageLoadError(error.message || 'Failed to load storage');
+        setStorageLoadError(error.message || t('account.storage.errorTitle'));
       } finally {
         setStorageLoading(false);
       }
     };
 
     void loadStorage();
-  }, [activeTab, storageLoaded, storageLoading, user]);
+  }, [activeTab, storageLoaded, storageLoading, user, t]);
 
   useEffect(() => {
     if (!user || activeTab !== 'security' || securityLoaded || securityLoading) return;
@@ -206,14 +207,14 @@ export function Account() {
         setSecuritySettings(settings);
         setSecurityLoaded(true);
       } catch (error: any) {
-        setSecurityError(error.message || 'Failed to load security settings');
+        setSecurityError(error.message || t('account.security.errorTitle'));
       } finally {
         setSecurityLoading(false);
       }
     };
 
     void loadSecurity();
-  }, [activeTab, securityLoaded, securityLoading, user]);
+  }, [activeTab, securityLoaded, securityLoading, user, t]);
 
   const usagePercent = useMemo(() => {
     if (!storage?.limit) return 0;
@@ -226,12 +227,12 @@ export function Account() {
     setPasswordSuccess('');
 
     if (newPassword.length < 8) {
-      setPasswordError('New password must be at least 8 characters long.');
+      setPasswordError(t('account.security.errors.passwordLength'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('New password and confirmation do not match.');
+      setPasswordError(t('account.security.errors.passwordMatch'));
       return;
     }
 
@@ -241,9 +242,9 @@ export function Account() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setPasswordSuccess('Password updated successfully.');
+      setPasswordSuccess(t('account.security.success.passwordUpdated'));
     } catch (error: any) {
-      setPasswordError(error.message || 'Failed to update password.');
+      setPasswordError(error.message || t('account.security.errors.passwordUpdateFailed'));
     } finally {
       setSavingPassword(false);
     }
@@ -257,11 +258,11 @@ export function Account() {
       await removePassword(removePasswordInput);
       setRemovePasswordInput('');
       setShowRemovePasswordConfirm(false);
-      setPasswordSuccess('Password removed. Your account is now passwordless.');
+      setPasswordSuccess(t('account.security.success.passwordRemoved'));
       const updated = await fetchCurrentUser();
       setUser(updated);
     } catch (error: any) {
-      setPasswordError(error.message || 'Failed to remove password.');
+      setPasswordError(error.message || t('account.security.errors.passwordRemoveFailed'));
     } finally {
       setRemovingPassword(false);
     }
@@ -303,7 +304,7 @@ export function Account() {
 
   const handlePasskeyRegistration = async () => {
     if (!isPasskeySupported()) {
-      setPasskeyError('This browser does not support passkeys.');
+      setPasskeyError(t('account.security.errors.passkeyNotSupported'));
       return;
     }
 
@@ -312,21 +313,21 @@ export function Account() {
     setSavingPasskey(true);
 
     try {
-      const { options, flowToken } = await beginPasskeyRegistration(passkeyName.trim() || 'This device');
+      const { options, flowToken } = await beginPasskeyRegistration(passkeyName.trim() || t('account.security.defaultPasskeyName'));
       const credential = await navigator.credentials.create({
         publicKey: toPublicKeyCreationOptions(options),
       });
 
       if (!credential) {
-        throw new Error('Passkey registration was cancelled.');
+        throw new Error(t('account.security.errors.passkeyCancelled'));
       }
 
       await finishPasskeyRegistration(flowToken, serializeAttestationCredential(credential as PublicKeyCredential));
       setPasskeyName('');
-      setPasskeySuccess('Passkey added successfully.');
+      setPasskeySuccess(t('account.security.success.passkeyAdded'));
       await refreshSecurity();
     } catch (error: any) {
-      setPasskeyError(error.message || 'Failed to register passkey.');
+      setPasskeyError(error.message || t('account.security.errors.passkeyRegisterFailed'));
     } finally {
       setSavingPasskey(false);
     }
@@ -339,10 +340,10 @@ export function Account() {
 
     try {
       await removePasskey(passkeyId);
-      setPasskeySuccess('Passkey removed.');
+      setPasskeySuccess(t('account.security.success.passkeyRemoved'));
       await refreshSecurity();
     } catch (error: any) {
-      setPasskeyError(error.message || 'Failed to remove passkey.');
+      setPasskeyError(error.message || t('account.security.errors.passkeyRemoveFailed'));
     } finally {
       setRemovingPasskeyId(null);
     }
@@ -358,10 +359,10 @@ export function Account() {
       await disableTwoFactor(twoFactorDisablePassword, twoFactorDisableCode);
       setTwoFactorDisablePassword('');
       setTwoFactorDisableCode('');
-      setTwoFactorSuccess('Two-factor authentication has been disabled.');
+      setTwoFactorSuccess(t('account.security.success.twoFactorDisabled'));
       await refreshSecurity();
     } catch (error: any) {
-      setTwoFactorError(error.message || 'Failed to disable 2FA.');
+      setTwoFactorError(error.message || t('account.security.errors.twoFactorDisableFailed'));
     } finally {
       setDisablingTwoFactor(false);
     }
@@ -382,8 +383,8 @@ export function Account() {
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <h1 className="font-semibold text-white">Account unavailable</h1>
-              <p className="mt-1 text-sm">{userLoadError || 'The account data could not be loaded.'}</p>
+              <h1 className="font-semibold text-white">{t('account.errorUnavailable')}</h1>
+              <p className="mt-1 text-sm">{userLoadError || t('account.errorUnavailableDesc')}</p>
             </div>
           </div>
         </div>
@@ -474,7 +475,7 @@ export function Account() {
                     <div className="flex items-start gap-3">
                       <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
                       <div>
-                        <h3 className="font-semibold text-white">Overview unavailable</h3>
+                        <h3 className="font-semibold text-white">{t('account.overview.errorTitle')}</h3>
                         <p className="mt-1 text-sm">{overviewLoadError}</p>
                       </div>
                     </div>
@@ -483,7 +484,7 @@ export function Account() {
                       onClick={retryOverviewLoad}
                       className="rounded-xl border border-amber-400/20 px-3 py-2 text-sm font-medium text-amber-200 transition-colors hover:bg-amber-400/10"
                     >
-                      Retry
+                      {t('account.overview.retry')}
                     </button>
                   </div>
                 </div>
@@ -492,28 +493,28 @@ export function Account() {
                   <div className="rounded-2xl border border-neutral-800 bg-neutral-950/80 p-5">
                     <div className="flex items-center gap-2 text-neutral-400">
                       <Play className="h-4 w-4 text-green-400" />
-                      <span className="text-xs uppercase tracking-[0.18em]">Projects</span>
+                      <span className="text-xs uppercase tracking-[0.18em]">{t('account.overview.projects')}</span>
                     </div>
                     <p className="mt-4 text-3xl font-black text-white">{projectCount ?? 0}</p>
-                    <Link to="/projects" className="mt-3 inline-block text-sm text-green-400 hover:text-green-300">Open projects</Link>
+                    <Link to="/projects" className="mt-3 inline-block text-sm text-green-400 hover:text-green-300">{t('account.overview.openProjects')}</Link>
                   </div>
 
                   <div className="rounded-2xl border border-neutral-800 bg-neutral-950/80 p-5">
                     <div className="flex items-center gap-2 text-neutral-400">
                       <Folder className="h-4 w-4 text-blue-400" />
-                      <span className="text-xs uppercase tracking-[0.18em]">Libraries</span>
+                      <span className="text-xs uppercase tracking-[0.18em]">{t('account.overview.libraries')}</span>
                     </div>
                     <p className="mt-4 text-3xl font-black text-white">{libraryCount ?? 0}</p>
-                    <Link to="/libraries" className="mt-3 inline-block text-sm text-blue-400 hover:text-blue-300">Open libraries</Link>
+                    <Link to="/libraries" className="mt-3 inline-block text-sm text-blue-400 hover:text-blue-300">{t('account.overview.openLibraries')}</Link>
                   </div>
 
                   <div className="rounded-2xl border border-neutral-800 bg-neutral-950/80 p-5">
                     <div className="flex items-center gap-2 text-neutral-400">
                       <KeyRound className="h-4 w-4 text-amber-400" />
-                      <span className="text-xs uppercase tracking-[0.18em]">Providers</span>
+                      <span className="text-xs uppercase tracking-[0.18em]">{t('account.overview.providers')}</span>
                     </div>
                     <p className="mt-4 text-3xl font-black text-white">{providerCount ?? 0}</p>
-                    <Link to="/providers" className="mt-3 inline-block text-sm text-amber-400 hover:text-amber-300">Manage providers</Link>
+                    <Link to="/providers" className="mt-3 inline-block text-sm text-amber-400 hover:text-amber-300">{t('account.overview.manageProviders')}</Link>
                   </div>
                 </>
               )}
@@ -533,8 +534,8 @@ export function Account() {
                   <div className="flex items-start gap-3">
                     <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
                     <div>
-                      <h2 className="font-semibold text-white">Storage unavailable</h2>
-                      <p className="mt-1 text-sm">{storageLoadError || 'The storage data could not be loaded.'}</p>
+                      <h2 className="font-semibold text-white">{t('account.storage.errorTitle')}</h2>
+                      <p className="mt-1 text-sm">{storageLoadError || t('account.storage.errorTitle')}</p>
                     </div>
                   </div>
                   <button
@@ -542,7 +543,7 @@ export function Account() {
                     onClick={retryStorageLoad}
                     className="rounded-xl border border-amber-400/20 px-3 py-2 text-sm font-medium text-amber-200 transition-colors hover:bg-amber-400/10"
                   >
-                    Retry
+                    {t('account.storage.retry')}
                   </button>
                 </div>
               </section>
@@ -553,8 +554,8 @@ export function Account() {
                     <HardDrive className="h-5 w-5" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-white">Storage</h2>
-                    <p className="text-sm text-neutral-400">Detailed breakdown of your workspace capacity and usage.</p>
+                    <h2 className="text-lg font-bold text-white">{t('account.storage.title')}</h2>
+                    <p className="text-sm text-neutral-400">{t('account.storage.description')}</p>
                   </div>
                 </div>
 
@@ -562,8 +563,8 @@ export function Account() {
                   <div className="rounded-2xl border border-neutral-800 bg-neutral-950/80 p-5">
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-neutral-500">Capacity Overview</p>
-                        <p className="mt-2 text-sm text-neutral-400">{usagePercent.toFixed(1)}% of your total quota is currently occupied.</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-neutral-500">{t('account.storage.capacityOverview')}</p>
+                        <p className="mt-2 text-sm text-neutral-400">{t('account.storage.capacityDesc', { percent: usagePercent.toFixed(1) })}</p>
                       </div>
                       <div className="text-right text-sm text-neutral-400">
                         {formatBytes(storage.totalSize)} / {formatBytes(storage.limit)}
@@ -581,20 +582,20 @@ export function Account() {
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
 
                     <div className="rounded-2xl border border-blue-500/10 bg-neutral-950/80 p-5">
-                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Consumption</span>
+                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('account.storage.consumption')}</span>
                       <p className="mt-4 text-3xl font-black text-white">{formatBytes(storage.totalSize)}</p>
                     </div>
                     <div className="rounded-2xl border border-neutral-800 bg-neutral-950/80 p-5">
-                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Plan Limit</span>
+                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('account.storage.planLimit')}</span>
                       <p className="mt-4 text-3xl font-black text-white">{formatBytes(storage.limit)}</p>
                     </div>
                     <div className="rounded-2xl border border-neutral-800 bg-neutral-950/80 p-5">
-                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Usage</span>
+                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('account.storage.usage')}</span>
                       <p className="mt-4 text-3xl font-black text-white">{usagePercent.toFixed(1)}%</p>
                     </div>
                     <div className="rounded-2xl border border-neutral-800 bg-neutral-950/80 p-5">
-                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">Tier</span>
-                      <p className="mt-4 text-3xl font-black text-white">{TIER_NAMES[storage.limit] || 'Custom'}</p>
+                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">{t('account.storage.tier')}</span>
+                      <p className="mt-4 text-3xl font-black text-white">{TIER_NAMES[storage.limit] || t('account.storage.tierCustom')}</p>
                     </div>
                   </div>
 
@@ -616,7 +617,7 @@ export function Account() {
                         </div>
 
                         <p className="mt-2 text-xs text-neutral-500">
-                          {storage.totalSize > 0 ? `${((category.size / storage.totalSize) * 100).toFixed(1)}% of used space` : 'No usage yet'}
+                          {storage.totalSize > 0 ? t('account.storage.ofUsed', { percent: ((category.size / storage.totalSize) * 100).toFixed(1) }) : t('account.storage.noUsage')}
                         </p>
 
                         {visibleSubCategories && visibleSubCategories.length > 0 && (
@@ -637,26 +638,26 @@ export function Account() {
                     <div className="rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-600/10 to-indigo-600/10 p-6">
                       <h3 className="flex items-center gap-2 text-lg font-bold text-white">
                         <Zap className="h-5 w-5 text-yellow-400" />
-                        Optimization
+                        {t('account.storage.optimization')}
                       </h3>
                       <div className="mt-5 grid gap-4">
                         <Link to="/trash" className="rounded-2xl border border-neutral-800 bg-neutral-950/70 p-4 transition hover:border-red-500/30">
                           <div className="flex items-center gap-3">
                             <Trash2 className="h-5 w-5 text-red-400" />
-                            <p className="font-medium text-white">Recycle Bin cleanup</p>
+                            <p className="font-medium text-white">{t('account.storage.recycleBin')}</p>
                           </div>
                           <p className="mt-2 text-sm text-neutral-400">
-                            {formatBytes(storage.categories.find((category) => category.id === 'trash')?.size || 0)} can be permanently removed.
+                            {t('account.storage.recycleBinDesc', { size: formatBytes(storage.categories.find((category) => category.id === 'trash')?.size || 0) })}
                           </p>
                         </Link>
 
                         <Link to="/projects" className="rounded-2xl border border-neutral-800 bg-neutral-950/70 p-4 transition hover:border-amber-500/30">
                           <div className="flex items-center gap-3">
                             <Folder className="h-5 w-5 text-amber-400" />
-                            <p className="font-medium text-white">Project storage review</p>
+                            <p className="font-medium text-white">{t('account.storage.projectReview')}</p>
                           </div>
                           <p className="mt-2 text-sm text-neutral-400">
-                            Inspect the heaviest projects and clear orphaned assets where needed.
+                            {t('account.storage.projectReviewDesc')}
                           </p>
                         </Link>
                       </div>
@@ -680,8 +681,8 @@ export function Account() {
                   <div className="flex items-start gap-3">
                     <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
                     <div>
-                      <h2 className="font-semibold text-white">Security unavailable</h2>
-                      <p className="mt-1 text-sm">{securityError || 'The security settings could not be loaded.'}</p>
+                      <h2 className="font-semibold text-white">{t('account.security.errorTitle')}</h2>
+                      <p className="mt-1 text-sm">{securityError || t('account.security.errorTitle')}</p>
                     </div>
                   </div>
                   <button
@@ -689,7 +690,7 @@ export function Account() {
                     onClick={retrySecurityLoad}
                     className="rounded-xl border border-amber-400/20 px-3 py-2 text-sm font-medium text-amber-200 transition-colors hover:bg-amber-400/10"
                   >
-                    Retry
+                    {t('account.security.retry')}
                   </button>
                 </div>
               </section>
@@ -701,9 +702,9 @@ export function Account() {
                       <Shield className="h-5 w-5" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-white">Password</h2>
+                      <h2 className="text-lg font-bold text-white">{t('account.security.passwordTitle')}</h2>
                       <p className="text-sm text-neutral-400">
-                        {user?.hasPassword ? 'Rotate your password without leaving the app.' : 'Set a password to enable password-based sign in.'}
+                        {user?.hasPassword ? t('account.security.passwordDescRotate') : t('account.security.passwordDescSet')}
                       </p>
                     </div>
                   </div>
@@ -711,7 +712,7 @@ export function Account() {
                   <form onSubmit={handlePasswordSubmit} className="mt-6 w-full space-y-4">
                     {user?.hasPassword && (
                       <div>
-                        <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
+                        <label className="mb-2 block text-sm font-medium text-neutral-400">{t('account.security.currentPassword')}</label>
                         <input
                           type="password"
                           value={currentPassword}
@@ -724,7 +725,7 @@ export function Account() {
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-sm font-medium text-neutral-400">New password</label>
+                        <label className="mb-2 block text-sm font-medium text-neutral-400">{t('account.security.newPassword')}</label>
                         <input
                           type="password"
                           value={newPassword}
@@ -736,7 +737,7 @@ export function Account() {
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-sm font-medium text-neutral-400">Confirm new password</label>
+                        <label className="mb-2 block text-sm font-medium text-neutral-400">{t('account.security.confirmNewPassword')}</label>
                         <input
                           type="password"
                           value={confirmPassword}
@@ -768,7 +769,7 @@ export function Account() {
                       className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
-                      {user?.hasPassword ? 'Update password' : 'Set password'}
+                      {user?.hasPassword ? t('account.security.updatePassword') : t('account.security.setPassword')}
                     </button>
                   </form>
 
@@ -776,15 +777,15 @@ export function Account() {
                     <div className="mt-6 border-t border-neutral-800 pt-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-neutral-300">Go passwordless</p>
-                          <p className="text-xs text-neutral-500">Remove your password and sign in with passkeys only.</p>
+                          <p className="text-sm font-medium text-neutral-300">{t('account.security.goPasswordless')}</p>
+                          <p className="text-xs text-neutral-500">{t('account.security.goPasswordlessDesc')}</p>
                         </div>
                         <button
                           type="button"
                           onClick={() => setShowRemovePasswordConfirm(true)}
                           className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          Remove password
+                          {t('account.security.removePassword')}
                         </button>
                       </div>
                     </div>
@@ -798,12 +799,12 @@ export function Account() {
                         <Fingerprint className="h-5 w-5" />
                       </div>
                       <div>
-                        <h2 className="text-lg font-bold text-white">Passkeys</h2>
-                        <p className="text-sm text-neutral-400">Use Face ID, Touch ID, Windows Hello, or a hardware key to sign in.</p>
+                        <h2 className="text-lg font-bold text-white">{t('account.security.passkeysTitle')}</h2>
+                        <p className="text-sm text-neutral-400">{t('account.security.passkeysDesc')}</p>
                       </div>
                     </div>
                     <span className="rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-300">
-                      {securitySettings.passkeys.length} registered
+                      {t('account.security.registered', { count: securitySettings.passkeys.length })}
                     </span>
                   </div>
 
@@ -812,7 +813,7 @@ export function Account() {
                       type="text"
                       value={passkeyName}
                       onChange={(event) => setPasskeyName(event.target.value)}
-                      placeholder="This MacBook"
+                      placeholder={t('account.security.placeholder')}
                       className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
                     />
                     <button
@@ -822,7 +823,7 @@ export function Account() {
                       className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {savingPasskey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Fingerprint className="h-4 w-4" />}
-                      Add passkey
+                      {t('account.security.addPasskey')}
                     </button>
                   </div>
 
@@ -843,7 +844,7 @@ export function Account() {
                   <div className="mt-6 space-y-3">
                     {securitySettings.passkeys.length === 0 ? (
                       <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 px-4 py-5 text-sm text-neutral-400">
-                        No passkeys registered yet.
+                        {t('account.security.noPasskeys')}
                       </div>
                     ) : (
                       securitySettings.passkeys.map((passkey) => (
@@ -851,8 +852,8 @@ export function Account() {
                           <div>
                             <p className="font-medium text-white">{passkey.name}</p>
                             <p className="mt-1 text-sm text-neutral-500">
-                              Added {new Date(passkey.createdAt).toLocaleString()}
-                              {passkey.lastUsedAt ? ` • Last used ${new Date(passkey.lastUsedAt).toLocaleString()}` : ''}
+                              {t('account.security.added', { date: new Date(passkey.createdAt).toLocaleString() })}
+                              {passkey.lastUsedAt ? ` • ${t('account.security.lastUsed', { date: new Date(passkey.lastUsedAt).toLocaleString() })}` : ''}
                             </p>
                           </div>
                           <button
@@ -862,7 +863,7 @@ export function Account() {
                             className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/15 disabled:opacity-60"
                           >
                             {removingPasskeyId === passkey.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                            Remove
+                            {t('account.security.remove')}
                           </button>
                         </div>
                       ))
@@ -877,12 +878,12 @@ export function Account() {
                         <Shield className="h-5 w-5" />
                       </div>
                       <div>
-                        <h2 className="text-lg font-bold text-white">Two-Factor Authentication</h2>
-                        <p className="text-sm text-neutral-400">Require a time-based authenticator code after password login.</p>
+                        <h2 className="text-lg font-bold text-white">{t('account.security.twoFactorTitle')}</h2>
+                        <p className="text-sm text-neutral-400">{t('account.security.twoFactorDesc')}</p>
                       </div>
                     </div>
                     <span className={`rounded-full border px-3 py-1 text-xs font-medium ${securitySettings.twoFactorEnabled ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-neutral-700 bg-neutral-800 text-neutral-300'}`}>
-                      {securitySettings.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                      {securitySettings.twoFactorEnabled ? t('account.security.enabled') : t('account.security.disabled')}
                     </span>
                   </div>
 
@@ -903,11 +904,11 @@ export function Account() {
                   {!securitySettings.twoFactorEnabled ? (
                     <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950/70 p-4">
                       <p className="text-sm text-neutral-400">
-                        Start the authenticator setup in a dedicated page so the verification flow has more room.
+                        {t('account.security.twoFactorSetupDesc')}
                       </p>
                       {securitySettings.pendingTwoFactorSetup && (
                         <p className="mt-2 text-sm text-amber-300">
-                          A setup is already in progress. Opening the page will let you continue and verify it.
+                          {t('account.security.twoFactorSetupPending')}
                         </p>
                       )}
                       <Link
@@ -915,7 +916,7 @@ export function Account() {
                         className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
                       >
                         <Shield className="h-4 w-4" />
-                        Open 2FA Setup
+                        {t('account.security.openTwoFactor')}
                       </Link>
                     </div>
                   ) : (
@@ -923,7 +924,7 @@ export function Account() {
                       <div className="grid gap-4 md:grid-cols-2">
                         {user?.hasPassword && (
                           <div>
-                            <label className="mb-2 block text-sm font-medium text-neutral-400">Current password</label>
+                            <label className="mb-2 block text-sm font-medium text-neutral-400">{t('account.security.currentPassword')}</label>
                             <input
                               type="password"
                               value={twoFactorDisablePassword}
@@ -934,7 +935,7 @@ export function Account() {
                           </div>
                         )}
                         <div>
-                          <label className="mb-2 block text-sm font-medium text-neutral-400">Authenticator code</label>
+                          <label className="mb-2 block text-sm font-medium text-neutral-400">{t('account.security.authCode')}</label>
                           <input
                             type="text"
                             inputMode="numeric"
@@ -953,7 +954,7 @@ export function Account() {
                         className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {disablingTwoFactor ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
-                        Disable 2FA
+                        {t('account.security.disableTwoFactor')}
                       </button>
                     </form>
                   )}
@@ -1003,9 +1004,9 @@ export function Account() {
           isOpen={showSignOutConfirm}
           onClose={() => setShowSignOutConfirm(false)}
           onConfirm={handleConfirmSignOut}
-          title="Sign out"
-          message="Are you sure you want to sign out of Remix Studio on this device?"
-          confirmText="Sign Out"
+          title={t('account.confirm.signOutTitle')}
+          message={t('account.confirm.signOutMessage')}
+          confirmText={t('account.confirm.signOutConfirm')}
           type="danger"
         />
 
@@ -1024,15 +1025,15 @@ export function Account() {
                     <AlertCircle className="w-8 h-8" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-2xl font-black text-white tracking-tight">Remove password</h3>
+                    <h3 className="text-2xl font-black text-white tracking-tight">{t('account.confirm.removePasswordTitle')}</h3>
                     <p className="mt-3 text-base text-neutral-400 font-medium leading-relaxed">
-                      This will remove your password. You will only be able to sign in using passkeys. Enter your current password to confirm.
+                      {t('account.confirm.removePasswordMessage')}
                     </p>
                     <input
                       type="password"
                       value={removePasswordInput}
                       onChange={(e) => setRemovePasswordInput(e.target.value)}
-                      placeholder="Current password"
+                      placeholder={t('account.confirm.removePasswordPlaceholder')}
                       className="mt-4 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-red-500/50"
                       autoFocus
                     />
@@ -1050,14 +1051,14 @@ export function Account() {
                   onClick={() => { setShowRemovePasswordConfirm(false); setRemovePasswordInput(''); setPasswordError(''); }}
                   className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
                 >
-                  Cancel
+                  {t('account.security.cancel')}
                 </button>
                 <button
                   onClick={handleRemovePassword}
                   disabled={removingPassword || !removePasswordInput}
                   className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {removingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Remove'}
+                  {removingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : t('account.security.remove')}
                 </button>
               </div>
             </div>

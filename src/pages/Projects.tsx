@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Project, ProjectType } from '../types';
 import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video } from 'lucide-react';
 import { fetchProjects } from '../api';
@@ -48,6 +49,7 @@ function getProjectTypeMeta(type: ProjectType | undefined) {
 }
 
 export function Projects() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
   const rawSort = searchParams.get('sort');
@@ -113,15 +115,15 @@ export function Projects() {
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
       <div className="w-full space-y-8 pb-20">
         <PageHeader
-          title="Projects"
-          description="Manage and track your AI workflows and generation tasks."
+          title={t('projects.title')}
+          description={t('projects.description')}
         />
 
         <section>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
             <h3 className="text-xl font-semibold text-white flex items-center gap-2">
               {sort === 'totalSize' ? <HardDrive className="w-5 h-5 text-blue-500" /> : <Clock className="w-5 h-5 text-green-500" />}
-              All Projects {total > 0 && <span className="text-sm text-neutral-500 font-normal">({total})</span>}
+              {t('projects.allProjects')} {total > 0 && <span className="text-sm text-neutral-500 font-normal">({total})</span>}
             </h3>
             <div className="flex items-center gap-3">
               <div className="flex flex-1 sm:flex-none rounded-xl border border-neutral-800 bg-neutral-950/70 p-1">
@@ -134,7 +136,7 @@ export function Projects() {
                       : 'text-neutral-500 hover:text-neutral-200'
                   }`}
                 >
-                  Newest
+                  {t('projects.sort.newest')}
                 </button>
                 <button
                   type="button"
@@ -145,7 +147,7 @@ export function Projects() {
                       : 'text-neutral-500 hover:text-neutral-200'
                   }`}
                 >
-                  Largest
+                  {t('projects.sort.largest')}
                 </button>
               </div>
 
@@ -154,7 +156,7 @@ export function Projects() {
                 onClick={addProject}
                 className="hidden sm:flex text-xs md:text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-4 py-2 rounded-xl transition-all items-center gap-2 border border-green-600/30 font-bold"
               >
-                <Plus className="w-4 h-4" /> <span>New Project</span>
+                <Plus className="w-4 h-4" /> <span>{t('projects.newProject')}</span>
               </button>
             </div>
           </div>
@@ -191,11 +193,11 @@ export function Projects() {
                     <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 mb-4">
                       <div className="flex items-center gap-1.5">
                         <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                        <span>{(project.jobCount ?? project.jobs?.length) || 0} jobs</span>
+                        <span>{t('projects.projectCard.jobs', { count: (project.jobCount ?? project.jobs?.length) || 0 })}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <AssetIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                        <span>{(project.albumCount ?? project.album?.length) || 0} {typeMeta.assetLabel}</span>
+                        <span>{t(`projects.projectCard.assets.${typeMeta.assetLabel}`, { count: (project.albumCount ?? project.album?.length) || 0 })}</span>
                       </div>
                       <div className={`flex items-center gap-1.5 font-medium ${typeMeta.accentClassName}`}>
                         <HardDrive className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -208,7 +210,7 @@ export function Projects() {
                     </div>
 
                     <div className={`pt-3 md:pt-4 border-t border-neutral-800/50 flex items-center justify-end text-[10px] md:text-xs font-black uppercase tracking-widest opacity-100 transition-opacity ${typeMeta.accentClassName}`}>
-                      Open Project →
+                      {t('projects.projectCard.openProject')}
                     </div>
 
                     <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
@@ -219,8 +221,8 @@ export function Projects() {
                   <div className="col-span-full py-16 border-2 border-dashed border-neutral-800 rounded-3xl text-center text-neutral-500 flex flex-col items-center justify-center gap-4 bg-neutral-900/20">
                     <Play className="w-12 h-12 text-neutral-700" />
                     <div>
-                      <p className="text-lg font-medium text-neutral-400">No projects yet</p>
-                      <p className="text-sm">Create a new project to start building your workflows.</p>
+                      <p className="text-lg font-medium text-neutral-400">{t('projects.noProjects.title')}</p>
+                      <p className="text-sm">{t('projects.noProjects.description')}</p>
                     </div>
                   </div>
                 )}
@@ -235,7 +237,7 @@ export function Projects() {
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <span className="text-sm text-neutral-400 font-medium">Page {page} of {pages}</span>
+                  <span className="text-sm text-neutral-400 font-medium">{t('projects.pagination', { current: page, total: pages })}</span>
                   <button
                     onClick={() => handlePageChange(Math.min(pages, page + 1))}
                     disabled={page === pages}

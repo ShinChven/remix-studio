@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Project, Library } from '../types';
 import { fetchProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject, renameProjectFolder, fetchLibraries } from '../api';
 import { ProjectViewer } from './ProjectViewer';
@@ -7,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function ProjectRoute() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [libraries, setLibraries] = useState<Library[]>([]);
@@ -53,7 +55,7 @@ export function ProjectRoute() {
   }
 
   if (!project) {
-    return <div className="p-8 text-neutral-500">Project not found.</div>;
+    return <div className="p-8 text-neutral-500">{t('projectRoute.notFound')}</div>;
   }
 
   const onUpdate = async (updatedProject: Project) => {
@@ -64,7 +66,7 @@ export function ProjectRoute() {
         await renameProjectFolder(project.id, updatedProject.id);
       } catch (e) {
         console.error("Failed to rename project folder:", e);
-        toast.error("Failed to rename project folder. Reverting ID change.");
+        toast.error(t('projectRoute.renameFailed'));
         updatedProject = { ...updatedProject, id: project.id };
       }
     }

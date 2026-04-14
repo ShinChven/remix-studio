@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Library, Project } from '../types';
 import { Plus, Play, Folder, LayoutGrid, Clock, Loader2 } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { fetchProjects, fetchLibraries } from '../api';
 
 export function Dashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   
   const [projects, setProjects] = useState<Project[]>([]);
@@ -42,8 +44,8 @@ export function Dashboard() {
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full space-y-8">
         <PageHeader
-          title="Welcome to Remix Studio"
-          description="Select a project or library from the sidebar, or create a new one to get started."
+          title={t('dashboard.welcome')}
+          description={t('dashboard.description')}
         />
 
         {isLoading ? (
@@ -56,10 +58,10 @@ export function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg md:text-xl font-semibold text-white flex items-center gap-2">
                   <Clock className="w-5 h-5 text-green-500" />
-                  Recent Projects
+                  {t('dashboard.recentProjects')}
                 </h3>
                 <button onClick={addProject} className="text-xs md:text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
-                  <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Project</span><span className="sm:hidden">New</span>
+                  <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t('dashboard.newProject')}</span><span className="sm:hidden">{t('dashboard.new')}</span>
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -76,12 +78,18 @@ export function Dashboard() {
                       <span className="text-xs text-neutral-500 font-mono truncate max-w-[120px]">{project.id}</span>
                     </div>
                     <h4 className="font-medium text-white truncate">{project.name}</h4>
-                    <p className="text-xs text-neutral-500 mt-1">{(project.jobCount ?? project.jobs?.length) || 0} jobs • {(project.albumCount ?? project.album?.length) || 0} images • {new Date(project.createdAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-neutral-500 mt-1">
+                      {t('dashboard.projectStats', { 
+                        jobCount: (project.jobCount ?? project.jobs?.length) || 0,
+                        imageCount: (project.albumCount ?? project.album?.length) || 0,
+                        date: new Date(project.createdAt).toLocaleDateString()
+                      })}
+                    </p>
                   </Link>
                 ))}
                 {projects.length === 0 && (
                   <div className="col-span-full p-8 border border-neutral-800 border-dashed rounded-xl text-center text-neutral-500">
-                    No projects yet. Create one to start generating.
+                    {t('dashboard.noProjects')}
                   </div>
                 )}
               </div>
@@ -91,11 +99,11 @@ export function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg md:text-xl font-semibold text-white flex items-center gap-2">
                   <LayoutGrid className="w-5 h-5 text-blue-500" />
-                  Libraries
+                  {t('dashboard.libraries')}
                 </h3>
                 <div className="flex gap-2">
                   <button onClick={addLibrary} className="text-xs md:text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
-                    <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Library</span><span className="sm:hidden">New</span>
+                    <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t('dashboard.newLibrary')}</span><span className="sm:hidden">{t('dashboard.new')}</span>
                   </button>
                 </div>
               </div>
@@ -117,7 +125,7 @@ export function Dashboard() {
                 ))}
                 {libraries.length === 0 && (
                   <div className="col-span-full p-8 border border-neutral-800 border-dashed rounded-xl text-center text-neutral-500">
-                    No libraries yet. Create one to store reusable prompts.
+                    {t('dashboard.noLibraries')}
                   </div>
                 )}
               </div>

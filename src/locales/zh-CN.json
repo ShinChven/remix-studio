@@ -10,27 +10,1185 @@
     "storage": "存储",
     "userManagement": "用户管理"
   },
+  "dashboard": {
+    "welcome": "欢迎来到 Remix Studio",
+    "description": "从侧边栏选择项目或库，或者创建一个新项目或库开始。",
+    "recentProjects": "最近项目",
+    "newProject": "新项目",
+    "new": "新建",
+    "noProjects": "暂无项目。创建一个项目开始生成。",
+    "libraries": "库",
+    "newLibrary": "新库",
+    "noLibraries": "暂无库。创建一个库来存储可重用的提示词。",
+    "projectStats": "{{jobCount}} 个作业 • {{imageCount}} 张图片 • {{date}}"
+  },
+  "projects": {
+    "title": "项目",
+    "description": "管理并跟踪您的 AI 工作流和生成任务。",
+    "allProjects": "所有项目",
+    "newProject": "新建项目",
+    "sort": {
+      "newest": "最新",
+      "largest": "最大"
+    },
+    "noProjects": {
+      "title": "暂无项目",
+      "description": "创建一个新项目开始构建您的工作流。"
+    },
+    "projectCard": {
+      "jobs": "{{count}} 个作业",
+      "assets": {
+        "images": "{{count}} 张图片",
+        "texts": "{{count}} 个文本",
+        "videos": "{{count}} 个视频"
+      },
+      "openProject": "打开项目 →"
+    },
+    "pagination": "第 {{current}} / {{total}} 页"
+  },
+  "libraries": {
+    "title": "资源库",
+    "description": "管理您的可复用提示词和图像集合。",
+    "allLibraries": "所有资源库",
+    "newLibrary": "新建资源库",
+    "new": "新建",
+    "noLibraries": {
+      "title": "暂无资源库",
+      "description": "创建一个资源库来存储可复用的提示词或图像。"
+    },
+    "libraryCard": {
+      "items": "{{count}} 个项目",
+      "openEditor": "打开编辑器 →",
+      "duplicate": "复制资源库"
+    },
+    "duplicateDialog": {
+      "title": "复制资源库",
+      "description": "为该资源库创建一个新名称的副本。",
+      "placeholder": "新资源库名称",
+      "cancel": "取消",
+      "confirm": "复制",
+      "success": "已复制 \"{{name}}\"",
+      "error": "复制资源库失败"
+    }
+  },
+  "providers": {
+    "title": "供应商",
+    "description": "管理图像生成后端的 API 凭据。密钥在存储时已加密。",
+    "allProviders": "所有供应商",
+    "newProvider": "新供应商",
+    "new": "新建",
+    "noProviders": {
+      "title": "尚无供应商",
+      "description": "添加您的第一个 API 密钥以开始生成图像。"
+    },
+    "providerCard": {
+      "credentialsStored": "凭据已存储",
+      "keyStored": "密钥已存储",
+      "missingCredentials": "缺少凭据",
+      "noKey": "无密钥",
+      "projects": "{{count}} 个项目",
+      "projects_plural": "{{count}} 个项目",
+      "activeJobs": "{{count}} 个进行中的任务",
+      "activeJobs_plural": "{{count}} 个进行中的任务"
+    },
+    "deleteDialog": {
+      "title": "删除供应商",
+      "message": "删除 \"{{name}}\"？这将移除存储的 API 密钥。现有的项目引用将保留为警告，任何使用此供应商的待处理或处理中的任务都可能失败，直到您将其切换到另一个供应商。",
+      "usageWarning": " 当前被 {{projectCount}} 个项目和 {{jobCount}} 个进行中的任务引用。",
+      "confirm": "删除",
+      "deleting": "正在删除..."
+    },
+    "errors": {
+      "load": "加载供应商失败。",
+      "delete": "删除供应商失败。"
+    }
+  },
+  "exports": {
+    "title": "导出归档",
+    "description": "管理所有生成的项目 ZIP 归档。",
+    "drive": {
+      "connected": "Google Drive 已连接",
+      "disconnect": "断开连接",
+      "connect": "连接 Google Drive",
+      "disconnectSuccess": "Google Drive 已断开连接",
+      "disconnectError": "断开 Google Drive 连接失败",
+      "uploadQueued": "上传任务已加入队列 — 请关注 Drive 图标查看进度",
+      "uploadSuccess": "已成功上传到 Google Drive！",
+      "uploadFailed": "上传到 Google Drive 失败",
+      "openFile": "打开文件",
+      "uploading": "正在上传到 Drive...",
+      "uploadToDrive": "上传到 Google Drive"
+    },
+    "stats": {
+      "database": "数据库",
+      "total": "总计",
+      "inProgress": "进行中",
+      "active": "活跃"
+    },
+    "empty": {
+      "title": "归档库为空",
+      "description": "生成的项目导出将自动显示在这里",
+      "viewProjects": "查看项目"
+    },
+    "status": {
+      "ready": "就绪",
+      "archiving": "正在归档",
+      "queued": "队列中",
+      "failed": "失败"
+    },
+    "card": {
+      "files": "{{count}} 个文件",
+      "download": "下载 ZIP",
+      "delete": "删除记录"
+    },
+    "loadMore": "加载更多归档",
+    "deleteDialog": {
+      "title": "删除导出记录",
+      "message": "确定要删除此导出记录吗？此操作无法撤销。",
+      "confirm": "删除记录"
+    }
+  },
+  "trash": {
+    "title": "回收站",
+    "description": "查看已删除的项目，还原您需要的项，或永久删除它们。",
+    "stats": {
+      "items": "{{count}} 个项目",
+      "total": "总计 {{size}}"
+    },
+    "actions": {
+      "restore": "还原",
+      "restoreCount": "还原 ({{count}})",
+      "deletePermanently": "永久删除",
+      "emptyTrash": "清空回收站"
+    },
+    "empty": {
+      "title": "回收站为空",
+      "description": "已删除的相册项目将显示在这里"
+    },
+    "card": {
+      "restore": "还原",
+      "delete": "永久删除"
+    },
+    "confirm": {
+      "empty": {
+        "title": "清空回收站",
+        "message": "确定要永久删除所有 {{count}} 个项目吗？这将释放 {{size}} 空间，且操作无法撤销。",
+        "confirm": "清空回收站"
+      },
+      "deleteSelected": {
+        "title": "删除所选项目",
+        "message": "确定要永久删除这 {{count}} 个项目吗？这将释放 {{size}} 空间，且操作无法撤销。",
+        "confirm": "永久删除"
+      },
+      "deleteSingle": {
+        "title": "永久删除图片",
+        "message": "确定要永久删除此图片吗？此操作无法撤销。",
+        "confirm": "永久删除"
+      },
+      "deleting": "正在删除..."
+    }
+  },
+  "login": {
+    "welcomeBack": "欢迎回来",
+    "completeRegistration": "完成注册",
+    "twoFactorVerification": "双重验证",
+    "signInWith": "使用密码、保存的通行密钥或 Google 登录。",
+    "registrationDescription": "您的 Google 身份已验证。请输入邀请码以完成账户创建。",
+    "twoFactorDescription": "请输入发送至 {{email}} 的 6 位验证码。",
+    "email": "电子邮箱",
+    "password": "密码",
+    "signIn": "登录",
+    "orContinueWith": "或通过以下方式继续",
+    "passkey": "通行密钥",
+    "google": "Google",
+    "inviteCode": "邀请码",
+    "enterInviteCode": "输入邀请码",
+    "inviteCodeDescription": "邀请码可以从 `inviteCode` URL 参数中自动填充。",
+    "finishRegistration": "完成注册",
+    "restartGoogle": "重新开始 Google 登录",
+    "googleSignIn": "Google 登录",
+    "verifiedSuccessfully": "验证成功",
+    "authCode": "身份验证码",
+    "verifyAndSignIn": "验证并登录",
+    "back": "返回",
+    "errors": {
+      "passkeyNotSupported": "此浏览器不支持通行密钥。",
+      "loginFailed": "登录失败",
+      "twoFactorFailed": "双重验证失败",
+      "passkeyFailed": "通行密钥登录失败",
+      "registrationFailed": "注册失败"
+    }
+  },
+  "accountTwoFactorSetup": {
+    "backToSecurity": "返回安全设置",
+    "title": "双重验证设置",
+    "description": "为 {{email}} 配置身份验证器应用。",
+    "thisAccount": "此账户",
+    "enabled": "已启用",
+    "currentPassword": "当前密码",
+    "scanQr": "扫描二维码",
+    "qrAlt": "双重验证二维码",
+    "qrUnavailable": "二维码不可用",
+    "expiresAt": "{{time}} 过期。",
+    "openOtpauth": "打开 otpauth URI",
+    "verificationCode": "验证码",
+    "enable": "启用 2FA",
+    "step1": {
+      "title": "步骤 1：生成身份验证器密钥",
+      "withPassword": "在创建新的 2FA 设置前，请先确认您的密码。",
+      "noPassword": "为您的账户生成新的身份验证器密钥。",
+      "action": "生成身份验证器密钥"
+    },
+    "step2": {
+      "title": "步骤 2：扫描并验证",
+      "description": "使用 Google Authenticator、1Password、Authy 或其他 TOTP 应用扫描二维码。如果无法扫描，请手动输入设置密钥。"
+    },
+    "errors": {
+      "loadAccount": "加载账户失败",
+      "prepareSetup": "准备 2FA 设置失败。",
+      "enable": "启用 2FA 失败。"
+    },
+    "success": {
+      "secretCreated": "身份验证器密钥已创建。请扫描二维码，然后验证当前验证码。",
+      "enabled": "双重验证现已启用。"
+    }
+  },
+  "libraryImportExport": {
+    "badge": "文本资源库工作区",
+    "title": "导入与导出",
+    "description": "批量导入提示片段，在导出中保留标签，并保持适合在应用外编辑的整洁格式。",
+    "toasts": {
+      "importFailed": "导入项目失败。",
+      "outputCopied": "资源库输出已复制到剪贴板",
+      "copyFailed": "复制输出失败。"
+    },
+    "stats": {
+      "library": "资源库",
+      "currentItems": "当前项目数",
+      "currentTags": "当前标签数",
+      "readyToImport": "可导入项目"
+    },
+    "importSource": {
+      "label": "导入源",
+      "title": "整理即将导入的资源库项目",
+      "description": "支持旧版列表格式和新的标签格式：",
+      "clear": "清空",
+      "uploadText": "上传文本",
+      "sharedTags": "共享标签",
+      "sharedTagsPlaceholder": "将应用到每个导入项目。例如：evergreen, short-form",
+      "detectedTags": "检测到的标签",
+      "skippedLines": "跳过的行",
+      "textareaPlaceholder": "在此粘贴列表项目。\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio",
+      "dropHint": "将 `.txt` 或 `.md` 文件拖放到这里"
+    },
+    "formatGuide": {
+      "title": "格式说明",
+      "rule1": "每个项目都必须以 `- ` 开头，解析器才能稳定拆分条目。",
+      "rule2": "如需显示标题，请使用 `Title: Content`。如需项目级标签，请在结尾使用 `| tags: a, b`。",
+      "rule3": "上方的共享标签会合并到每个解析出的项目中，并自动去重。"
+    },
+    "parseStatus": {
+      "title": "解析状态",
+      "valid": "所有非空行都是有效的导入条目。",
+      "line": "第 {{line}} 行",
+      "moreSkipped": "另外还有 {{count}} 行被跳过"
+    },
+    "parseIssues": {
+      "missingListMarker": "缺少 \"- \" 列表标记",
+      "emptyAfterMarker": "\"- \" 之后内容为空",
+      "missingContentBeforeTags": "标签片段之前缺少内容",
+      "missingContentAfterTitle": "标题分隔符之后缺少内容"
+    },
+    "importAction": "导入 {{count}} 个项目",
+    "preview": {
+      "label": "导入预览",
+      "title": "检查即将导入的标签项目",
+      "description": "解析后的项目会准确显示在此文本资源库中将要创建的内容。",
+      "items": "预览项目",
+      "sourceLine": "源行 {{line}}",
+      "tagsCount": "{{count}} 个标签",
+      "tagsCount_plural": "{{count}} 个标签",
+      "emptyTitle": "尚未解析任何内容",
+      "emptyDescription": "在左侧添加列表项目，此面板将显示精确的导入结果，包括合并后的标签。"
+    },
+    "output": {
+      "label": "资源库输出",
+      "title": "导出当前项目，可选择带标签或不带标签",
+      "description": "带标签输出会保留文本资源库元数据。纯文本输出会保留原始的精简列表格式。",
+      "tagged": "带标签",
+      "plain": "纯文本",
+      "copy": "复制输出",
+      "download": "下载 .md"
+    }
+  },
+  "adminUsers": {
+    "title": "用户管理",
+    "description": "创建用户、控制访问权限，并在无需外部系统的情况下检查账户使用情况。",
+    "inviteUsers": "邀请用户",
+    "createUser": "创建用户",
+    "searchPlaceholder": "按邮箱搜索",
+    "allRoles": "所有角色",
+    "admin": "管理员",
+    "user": "用户",
+    "allStatuses": "所有状态",
+    "active": "已启用",
+    "disabled": "已禁用",
+    "apply": "应用",
+    "noUsersFound": "未找到用户",
+    "adjustFilters": "调整筛选条件或创建新账户。",
+    "table": {
+      "user": "用户",
+      "role": "角色",
+      "status": "状态",
+      "storage": "存储",
+      "projects": "项目",
+      "libraries": "库",
+      "lastLogin": "上次登录",
+      "actions": "操作"
+    },
+    "never": "从不",
+    "justNow": "刚刚",
+    "relativeTime": {
+      "m": "{{count}} 分钟前",
+      "h": "{{count}} 小时前",
+      "d": "{{count}} 天前"
+    },
+    "neverSignedIn": "从未登录",
+    "showingUsers": "显示 {{count}} / {{total}} 名用户",
+    "noUsersToShow": "无用户可显示",
+    "pageSize": "{{count}} / 页",
+    "pagination": "第 {{current}} / {{total}} 页",
+    "createModal": {
+      "title": "创建用户",
+      "description": "开设新账户。对于仅使用 OAuth 的用户，密码是可选的。",
+      "email": "电子邮箱",
+      "password": "初始密码",
+      "optional": "(可选)",
+      "passwordPlaceholder": "OAuth 账户请留空",
+      "role": "角色",
+      "status": "状态",
+      "storage": "存储",
+      "cancel": "取消",
+      "submit": "创建用户"
+    },
+    "detail": {
+      "title": "用户详情",
+      "description": "检查账户状态、使用情况并执行管理操作。",
+      "account": "账户",
+      "created": "创建时间",
+      "lastLogin": "上次登录",
+      "storageTier": "存储层级",
+      "usedLimit": "已用 / 限额",
+      "createdBy": "创建者",
+      "selfRegistered": "自助注册 / 系统",
+      "inviteCode": "邀请码",
+      "notInviteBased": "非邀请码注册",
+      "inviteNote": "邀请备注",
+      "noNote": "无备注",
+      "projects": "项目",
+      "libraries": "库",
+      "providers": "供应商",
+      "exports": "导出",
+      "storageBreakdown": "存储详情",
+      "trash": "回收站",
+      "adminControls": "管理控制",
+      "limit": "存储限额",
+      "disableUser": "禁用用户",
+      "enableUser": "启用用户",
+      "passwordReset": "重置密码",
+      "newPassword": "新密码",
+      "resetSubmit": "重置密码",
+      "ownPasswordNote": "请使用账户设置页面更改您自己的密码。"
+    },
+    "confirm": {
+      "enableTitle": "启用用户",
+      "disableTitle": "禁用用户",
+      "enableMessage": "确定要启用 {{email}} 吗？",
+      "disableMessage": "确定要禁用 {{email}} 吗？"
+    },
+    "toasts": {
+      "roleUpdated": "角色已更新",
+      "storageUpdated": "存储限额已更新",
+      "userEnabled": "用户已启用",
+      "userDisabled": "用户已禁用",
+      "userCreated": "用户已创建",
+      "passwordReset": "密码已重置"
+    },
+    "errors": {
+      "loadUsers": "加载用户失败",
+      "loadDetail": "加载用户详情失败",
+      "updateRole": "更新角色失败",
+      "updateStorage": "更新存储限额失败",
+      "updateStatus": "更新用户状态失败",
+      "createUser": "创建用户失败",
+      "resetPassword": "重置密码失败"
+    }
+  },
+  "adminInvites": {
+    "title": "邀请码",
+    "description": "为 Google 登录创建邀请码，设置每个邀请码的使用次数，并跟踪使用情况。",
+    "createInvite": "创建邀请码",
+    "noInvites": "尚未创建邀请码。",
+    "table": {
+      "code": "邀请码",
+      "tier": "层级",
+      "note": "备注",
+      "usage": "使用情况",
+      "created": "创建时间",
+      "lastUsedBy": "最后使用者",
+      "lastUsedAt": "最后使用时间",
+      "share": "分享"
+    },
+    "copyCode": "复制邀请码",
+    "codeCopied": "邀请码已复制",
+    "noNote": "无备注",
+    "unused": "未使用",
+    "copyLink": "复制链接",
+    "linkCopied": "邀请链接已复制",
+    "createModal": {
+      "title": "创建邀请码",
+      "description": "设置此邀请码的使用次数并添加可选备注。",
+      "tier": "会员层级",
+      "uses": "允许使用次数",
+      "note": "备注",
+      "notePlaceholder": "此邀请发送给谁，或用途是什么",
+      "cancel": "取消",
+      "submit": "创建"
+    },
+    "toasts": {
+      "created": "邀请码已创建",
+      "copyFailed": "复制失败"
+    },
+    "errors": {
+      "load": "加载邀请码失败",
+      "create": "创建邀请码失败"
+    }
+  },
+  "libraryForm": {
+    "newTitle": "新建库",
+    "editTitle": "编辑库",
+    "description": "定义您的库属性",
+    "nameLabel": "库名称",
+    "namePlaceholder": "例如：角色服装、科幻背景...",
+    "typeLabel": "内容类型",
+    "typeText": "文本",
+    "typeImage": "图像",
+    "contentType": "{{type}} 内容",
+    "permanent": "永久",
+    "cancel": "取消",
+    "submitCreate": "创建库",
+    "submitSave": "保存更改"
+  },
+  "projectForm": {
+    "newTitle": "新建项目",
+    "editTitle": "编辑项目",
+    "description": "定义您的项目参数",
+    "typeLabel": "项目类型",
+    "typeImage": "图像",
+    "typeText": "文本",
+    "typeVideo": "视频",
+    "nameLabel": "项目名称",
+    "namePlaceholderText": "例如：产品描述生成器...",
+    "namePlaceholderImage": "例如：赛博朋克角色系列...",
+    "prefixLabel": "项目前缀",
+    "prefixPlaceholder": "例如：PJ01",
+    "prefixDescriptionText": "用作输出命名的前缀",
+    "prefixDescriptionImage": "用于图像文件名生成",
+    "customIdLabel": "自定义 ID (可选)",
+    "customIdPlaceholder": "项目标识符",
+    "customIdDescription": "留空则自动生成 ID",
+    "cancel": "取消",
+    "submitCreate": "开始项目",
+    "submitSave": "保存更改"
+  },
+  "promptEditor": {
+    "titlePlaceholder": "标题...",
+    "fragmentTitlePlaceholder": "片段标题",
+    "addTags": "添加标签",
+    "tagsCount": "{{count}} 个标签",
+    "backToLibrary": "返回库",
+    "viewMode": {
+      "edit": "仅编辑",
+      "split": "分屏视图",
+      "preview": "仅预览"
+    },
+    "toggleFullscreen": "切换全屏",
+    "save": "保存",
+    "sourceContent": "源内容",
+    "markdownSupport": "支持 GFM Markdown",
+    "editorPlaceholder": "在此使用 Markdown 撰写您的库片段...",
+    "dynamicPreview": "动态预览",
+    "previewPlaceholder": "在这里撰写内容以查看预览...",
+    "words": "字数：{{count}}",
+    "chars": "字符数：{{count}}",
+    "libraryLabel": "库：{{id}}",
+    "errorSave": "保存库提示词失败"
+  },
+  "providerForm": {
+    "newTitle": "新建供应商",
+    "editTitle": "编辑供应商",
+    "securityNote": "密钥使用 AES-256-GCM 加密",
+    "nameLabel": "供应商名称",
+    "namePlaceholder": "例如：工作账户、个人密钥...",
+    "typeLabel": "供应商类型",
+    "apiKeyLabel": "API 密钥",
+    "accessKeyLabel": "Access Key",
+    "secretKeyLabel": "Secret Key",
+    "leaveBlankToKeep": "— 留空以保持现有值",
+    "apiKeyPlaceholder": "粘贴您的 API 密钥...",
+    "accessKeyPlaceholder": "粘贴您的 access key...",
+    "secretKeyPlaceholder": "粘贴您的 secret key...",
+    "stored": "•••••••• (已存储)",
+    "apiUrlLabel": "API 地址",
+    "apiUrlOptional": "— 可选覆盖",
+    "apiUrlPlaceholder": "https://... (留空使用默认值)",
+    "parallelTasksLabel": "并行任务",
+    "concurrencyLimit": "— 并发限制",
+    "maxRequests": "最大请求数",
+    "saving": "正在保存...",
+    "submitCreate": "创建供应商",
+    "submitSave": "保存更改",
+    "cancel": "取消",
+    "errors": {
+      "accessKeyRequired": "Access Key 是必填项。",
+      "apiKeyRequired": "API Key 是必填项。",
+      "secretKeyRequired": "KlingAI 需要 Secret Key。",
+      "saveFailed": "保存失败。"
+    }
+  },
+  "providerProfile": {
+    "errorLoad": "加载供应商失败。",
+    "errorNotFound": "未找到供应商",
+    "backToProviders": "返回供应商列表",
+    "credentialsStored": "凭据已存储",
+    "keyStored": "密钥已存储",
+    "missingCredentials": "缺少凭据",
+    "noKey": "无密钥",
+    "customModels": "自定义模型",
+    "edit": "编辑",
+    "concurrency": "并发限制",
+    "projects": "项目",
+    "jobs": "任务",
+    "models": "模型",
+    "supportedModels": "支持的模型",
+    "availableModels": "可用模型",
+    "refresh": "刷新",
+    "addKeyToFetch": "添加 API 密钥以从供应商获取可用模型。",
+    "noModels": "供应商 API 未返回任何模型。",
+    "categories": {
+      "text": "文本生成",
+      "image": "图像生成",
+      "video": "视频生成"
+    },
+    "modelCount": "{{count}} 个模型",
+    "modelCount_plural": "{{count}} 个模型",
+    "errors": {
+      "fetchModels": "从供应商 API 获取模型失败。"
+    }
+  },
+  "providerCustomModels": {
+    "errorLoad": "加载供应商失败。",
+    "errorNotFound": "未找到供应商",
+    "backToProvider": "返回 {{name}}",
+    "title": "自定义模型变体",
+    "description": "使用自定义 ID 创建模型变体。每个变体都会继承其基础模型的所有参数。",
+    "newVariant": "新建变体",
+    "editVariant": "编辑变体",
+    "baseModelLabel": "基础模型",
+    "selectBaseModel": "选择基础模型...",
+    "inherits": "继承：{{traits}}",
+    "modelNameLabel": "模型名称",
+    "modelIdLabel": "模型 ID",
+    "namePlaceholder": "例如：产品照片 v2",
+    "idPlaceholder": "例如：seedream-5-0-my-finetune",
+    "saving": "正在保存...",
+    "create": "创建",
+    "update": "更新",
+    "cancel": "取消",
+    "noVariants": "暂无自定义模型变体",
+    "noVariantsDesc": "选择一个基础模型，提供自定义名称和模型 ID 以创建变体。",
+    "confirmDelete": "确认删除",
+    "edit": "编辑",
+    "delete": "删除",
+    "errors": {
+      "saveFailed": "保存失败。"
+    }
+  },
+  "libraryCleanup": {
+    "errorNotFound": "未找到资源库。",
+    "title": "清理引用",
+    "description": "在删除前，从项目中移除对 \"<span className=\"text-white font-medium\">{{name}}</span>\" 的引用。",
+    "backToLibrary": "返回资源库",
+    "warning": "仍有 {{count}} 个项目引用此资源库",
+    "warning_plural": "仍有 {{count}} 个项目引用此资源库",
+    "warningDesc": "逐个移除引用，或使用下方按钮清理所有引用并删除。",
+    "remove": "移除",
+    "allCleared": "所有引用已清理",
+    "allClearedDesc": "您现在可以安全地删除此资源库。",
+    "cleanAllAndDelete": "清理所有引用并删除资源库",
+    "deleteLibrary": "删除资源库",
+    "confirm": {
+      "title": "清理所有并删除",
+      "message": "这将从 {{count}} 个项目中移除对 \"{{name}}\" 的所有引用，并永久删除资源库。此操作不可逆。",
+      "message_plural": "这将从 {{count}} 个项目中移除对 \"{{name}}\" 的所有引用，并永久删除资源库。此操作不可逆。",
+      "confirmText": "清理并删除"
+    }
+  },
+  "projectOrphans": {
+    "title": "孤立文件管理",
+    "cleanupTool": "清理工具",
+    "projectLabel": "项目：{{name}}",
+    "backToProject": "返回项目",
+    "refresh": "刷新扫描",
+    "deleteSelected": "删除 ({{count}})",
+    "clearAll": "清空所有",
+    "orphanedFiles": "孤立文件",
+    "totalWaste": "总计浪费",
+    "warning": "警告",
+    "warningDesc": "这些文件未被此项目的任何当前组件引用，可以安全删除。",
+    "selectAll": "全选",
+    "filesSelected": "已选择 {{count}} 个文件",
+    "cleanTitle": "项目很整洁",
+    "cleanDesc": "存储中未发现未引用的文件。",
+    "preview": "预览",
+    "unknownSize": "未知",
+    "scanning": "正在扫描存储中的孤立文件...",
+    "confirm": {
+      "title": "永久删除文件",
+      "message": "确定要删除 {{count}} 个孤立文件吗？此操作将永久从存储中移除且无法撤销。",
+      "confirmText": "永久删除",
+      "deleting": "正在删除..."
+    }
+  },
+  "mcpConnections": {
+    "title": "MCP 连接",
+    "description": "通过 MCP 协议安全连接 AI 应用",
+    "justNow": "刚刚",
+    "relativeTime": {
+      "m": "{{count}} 分钟前",
+      "h": "{{count}} 小时前"
+    },
+    "expiryOptions": {
+      "noExpiration": "永不过期",
+      "7days": "7 天",
+      "30days": "30 天",
+      "90days": "90 天",
+      "1year": "1 年"
+    },
+    "errorLoad": "加载 MCP 连接失败。",
+    "toasts": {
+      "clientRevoked": "已撤销客户端访问权限",
+      "tokenRevoked": "令牌已撤销",
+      "revokeFailed": "撤销失败",
+      "tokenCreated": "令牌已创建 — 请立即复制。之后您将无法再次查看。",
+      "tokenCopied": "令牌已复制到剪贴板",
+      "createFailed": "创建令牌失败",
+      "copied": "{{label}} 已复制",
+      "copyFailed": "复制 {{label}} 失败"
+    },
+    "connectSection": {
+      "title": "将 AI 应用连接到您的账户",
+      "description": "此页面帮助您将 AI 应用连接到您的工作区。首先将下方的应用地址复制到您要连接的应用中。然后选择两种支持的登录方式之一。",
+      "oauthMethod": {
+        "title": "OAuth 2.1 连接器",
+        "description": "当应用可以打开浏览器进行登录时使用此方式。您登录并批准访问后，应用将自动连接。这是大多数用户的最佳选择。"
+      },
+      "tokenMethod": {
+        "title": "访问令牌",
+        "description": "仅在应用要求您粘贴令牌、API 密钥或密钥时使用此方式。您在此处创建令牌并自行将其粘贴到应用中。"
+      },
+      "appAddress": {
+        "label": "应用地址",
+        "copyTitle": "复制 MCP URL",
+        "instruction": "当 AI 应用询问连接地址时，请复制此地址。"
+      },
+      "advancedUrl": {
+        "label": "高级登录 URL",
+        "copyTitle": "复制 OAuth 元数据 URL",
+        "instruction": "仅当应用特别要求登录或发现 URL 时才使用此地址。"
+      },
+      "steps": {
+        "1": { "title": "1. 复制地址", "desc": "将其粘贴到 AI 应用中开始设置。" },
+        "2": { "title": "2. 选择方式", "desc": "如果支持浏览器登录则使用 OAuth，否则使用令牌。" },
+        "3": { "title": "3. 在此管理", "desc": "随时查看连接或撤销访问权限。" }
+      },
+      "jsonSetup": {
+        "title": "需要使用 JSON 配置？",
+        "subtitle": "点击显示或隐藏 JSON 设置块",
+        "instruction": "某些应用要求您粘贴 JSON 设置块而不是填写表单。当应用支持浏览器登录时使用 OAuth 2.1 版本。当应用要求提供令牌时使用访问令牌版本。",
+        "oauthJson": "OAuth 2.1 JSON",
+        "tokenJson": "访问令牌 JSON",
+        "copyJson": "复制 JSON",
+        "tokenInstruction": "将 <code className=\"text-amber-400\">YOUR_MCP_TOKEN</code> 替换为此页面的令牌，然后将完整的 JSON 粘贴到应用中。"
+      }
+    },
+    "tokens": {
+      "title": "访问令牌",
+      "newToken": "新令牌",
+      "whenToUse": "何时使用访问令牌",
+      "tip": "仅当应用不支持 OAuth 2.1 连接器时才使用访问令牌。请像保护密码一样保护令牌。在大多数情况下，您需要将应用地址和此令牌粘贴到应用中。",
+      "form": {
+        "tokenName": "令牌名称",
+        "expiration": "有效期",
+        "placeholder": "例如：Claude Desktop",
+        "create": "创建令牌",
+        "cancel": "取消",
+        "done": "完成"
+      },
+      "empty": {
+        "title": "无访问令牌",
+        "desc": "创建一个令牌来手动连接您的第一个 AI 应用。"
+      },
+      "card": {
+        "created": "创建于 {{date}}",
+        "used": "上次使用于 {{date}}",
+        "expired": "已过期",
+        "expires": "{{date}} 过期",
+        "noExpiration": "永不过期",
+        "revokeTitle": "撤销令牌"
+      }
+    },
+    "oauth": {
+      "title": "OAuth 2.1 连接",
+      "recommended": "推荐用于简单登录",
+      "tip": "您通过 OAuth 2.1 连接器连接的应用将自动显示在此处。在浏览器中批准访问后，应用将出现在这里。",
+      "empty": {
+        "title": "无 OAuth 客户端连接",
+        "desc": "在您的 AI 应用中完成登录后，应用将显示在此处。"
+      },
+      "card": {
+        "activeToken": "{{count}} 个活动令牌",
+        "activeToken_plural": "{{count}} 个活动令牌",
+        "noTokens": "无活动令牌",
+        "registered": "注册于 {{date}}",
+        "revokeTitle": "撤销所有令牌"
+      }
+    },
+    "confirm": {
+      "revokeClientTitle": "撤销客户端访问权限",
+      "revokeTokenTitle": "撤销令牌",
+      "revokeClientMessage": "确定要撤销 \"{{name}}\" 的所有访问令牌吗？客户端将需要重新进行身份验证。",
+      "revokeTokenMessage": "确定要撤销令牌 \"{{name}}\" 吗？任何使用此令牌的 MCP 客户端都将立即失去访问权限。",
+      "revoking": "正在撤销...",
+      "revoke": "撤销"
+    }
+  },
   "account": {
-    "title": "账户",
-    "description": "管理您的身份、安全和工作空间容量。",
+    "title": "账户设置",
+    "description": "管理您的个人资料、存储和安全偏好。",
+    "errorUnavailable": "账户信息不可用",
+    "errorUnavailableDesc": "无法加载账户数据。",
     "tabs": {
       "overview": "概览",
       "storage": "存储",
       "security": "安全",
-      "preferences": "偏好设置"
+      "preferences": "偏好"
     },
     "overview": {
       "profile": "个人资料",
       "administrator": "管理员",
-      "user": "用户",
-      "plan": "{{tier}} 计划",
-      "memberSince": "注册日期 {{date}}",
-      "signOut": "退出登录"
+      "user": "普通用户",
+      "plan": "{{tier}} 方案",
+      "memberSince": "成员起始日 {{date}}",
+      "signOut": "退出登录",
+      "projects": "项目",
+      "libraries": "库",
+      "providers": "供应商",
+      "openProjects": "查看项目",
+      "openLibraries": "查看库",
+      "manageProviders": "管理供应商",
+      "errorTitle": "概览不可用",
+      "retry": "重试"
+    },
+    "storage": {
+      "title": "存储",
+      "description": "工作区容量和使用情况的详细说明。",
+      "errorTitle": "存储信息不可用",
+      "retry": "重试",
+      "capacityOverview": "容量概览",
+      "capacityDesc": "目前已占用总配额的 {{percent}}%。",
+      "consumption": "已用容量",
+      "planLimit": "方案限制",
+      "usage": "使用率",
+      "tier": "等级",
+      "ofUsed": "占已用空间的 {{percent}}%",
+      "noUsage": "尚无使用记录",
+      "optimization": "优化",
+      "recycleBin": "回收站清理",
+      "recycleBinDesc": "可以永久删除 {{size}} 的内容。",
+      "projectReview": "项目存储检查",
+      "projectReviewDesc": "检查占用最多的项目，并根据需要清理孤立资产。"
+    },
+    "security": {
+      "errorTitle": "安全设置不可用",
+      "retry": "重试",
+      "passwordTitle": "密码",
+      "passwordDescRotate": "在不离开应用的情况下更换您的密码。",
+      "passwordDescSet": "设置密码以启用基于密码的登录。",
+      "currentPassword": "当前密码",
+      "newPassword": "新密码",
+      "confirmNewPassword": "确认新密码",
+      "updatePassword": "更新密码",
+      "setPassword": "设置密码",
+      "goPasswordless": "启用无密码登录",
+      "goPasswordlessDesc": "移除密码，仅使用通行密钥登录。",
+      "removePassword": "移除密码",
+      "passkeysTitle": "通行密钥",
+    "passkeysDesc": "使用面容 ID、指纹、Windows Hello 或硬件密钥登录。",
+    "registered": "已注册 {{count}} 个",
+    "placeholder": "例如：这台 MacBook",
+    "defaultPasskeyName": "这台设备",
+    "addPasskey": "添加通行密钥",
+    "noPasskeys": "尚未注册通行密钥。",
+      "added": "添加于 {{date}}",
+      "lastUsed": "上次使用于 {{date}}",
+      "remove": "移除",
+      "twoFactorTitle": "双重验证",
+      "twoFactorDesc": "在密码登录后要求提供基于时间的一次性验证码。",
+      "enabled": "已启用",
+      "disabled": "已禁用",
+      "twoFactorSetupDesc": "在专用页面中开始身份验证器设置，以便验证流程有更多操作空间。",
+      "twoFactorSetupPending": "设置已在进行中。打开页面将允许您继续并进行验证。",
+      "openTwoFactor": "打开 2FA 设置",
+    "authCode": "身份验证器代码",
+    "disableTwoFactor": "禁用 2FA",
+    "cancel": "取消",
+    "errors": {
+        "passwordLength": "新密码长度必须至少为 8 个字符。",
+        "passwordMatch": "新密码与确认密码不匹配。",
+        "passwordUpdateFailed": "更新密码失败。",
+        "passwordRemoveFailed": "移除密码失败。",
+        "passkeyNotSupported": "此浏览器不支持通行密钥。",
+        "passkeyCancelled": "通行密钥注册已取消。",
+        "passkeyRegisterFailed": "注册通行密钥失败。",
+        "passkeyRemoveFailed": "移除通行密钥失败。",
+        "twoFactorDisableFailed": "禁用 2FA 失败。"
+      },
+      "success": {
+        "passwordUpdated": "密码更新成功。",
+        "passwordRemoved": "密码已移除。您的账户现在支持无密码登录。",
+        "passkeyAdded": "通行密钥添加成功。",
+        "passkeyRemoved": "通行密钥已移除。",
+        "twoFactorDisabled": "双重验证已禁用。"
+      }
     },
     "preferences": {
       "language": "语言",
-      "languageDescription": "选择您首选的应用语言。",
+      "languageDescription": "选择您偏好的界面语言。",
       "selectLanguage": "选择语言"
+    },
+    "confirm": {
+      "signOutTitle": "退出登录",
+      "signOutMessage": "确定要在此设备上退出 Remix Studio 吗？",
+      "signOutConfirm": "退出登录",
+      "removePasswordTitle": "移除密码",
+      "removePasswordMessage": "这将移除您的密码。您将只能使用通行密钥登录。请输入当前密码以确认。",
+      "removePasswordPlaceholder": "当前密码"
+    }
+  },
+  "projectViewer": {
+    "common": {
+      "unknownProvider": "未知提供商",
+      "unknownModel": "未知模型",
+      "provider": "提供商",
+      "model": "模型",
+      "back": "返回",
+      "text": "文本",
+      "imageShort": "图",
+      "libraryShort": "库",
+      "library": "资料库",
+      "cancel": "取消",
+      "close": "关闭",
+      "copy": "复制",
+      "copyToLibrary": "复制到资料库",
+      "selectAll": "全选",
+      "selectedCount": "已选 {{count}} 项",
+      "delete": "删除",
+      "deleteAll": "全部删除",
+      "deleteSelected": "删除所选",
+      "deleteJob": "删除任务",
+      "upload": "上传",
+      "prompt": "提示词",
+      "generatedText": "生成文本",
+      "fullPrompt": "完整提示词"
+    },
+    "tabs": {
+      "draft": "草稿",
+      "queue": "队列",
+      "done": "完成",
+      "album": "相册",
+      "texts": "文本"
+    },
+    "toasts": {
+      "uploadImageFailed": "上传图片失败，请重试。",
+      "addDraftsFailed": "添加草稿失败，请重试。"
+    },
+    "errors": {
+      "missingWorkflowInfo_one": "{{count}} 个工作流项目缺少信息。",
+      "missingWorkflowInfo_other": "{{count}} 个工作流项目缺少信息。"
+    },
+    "main": {
+      "mobileJobs": "任务",
+      "projectId": "ID: {{id}}",
+      "autoSaved": "已自动保存",
+      "autoSavedTitle": "所有更改都会自动保存",
+      "editProjectInfo": "编辑项目信息",
+      "manageOrphans": "管理孤立文件（清理）",
+      "deleteProject": "删除项目",
+      "buildWorkflow": "构建你的工作流"
+    },
+    "drafts": {
+      "emptyCanvas": "空白画布",
+      "galleryReady": "你的精彩作品已经准备好。开始新的草稿或浏览你的相册。",
+      "buildWorkflowHint": "在左侧构建项目工作流以开始生成图片。",
+      "openAlbum": "打开相册",
+      "startSelected": "开始所选",
+      "startAllNow": "立即全部开始",
+      "deleteAllDrafts": "删除所有草稿",
+      "runJob": "运行任务"
+    },
+    "queue": {
+      "retry": "重试",
+      "clearAllFailed": "清除所有失败项",
+      "running": "运行中",
+      "queued": "排队中",
+      "failed": "失败",
+      "retryJob": "重试任务",
+      "visualContexts": "视觉上下文",
+      "contextShort": "C_{{index}}",
+      "contextAlt": "上下文 {{index}}",
+      "errorDetails": "错误详情",
+      "unknownError": "发生未知错误",
+      "emptyTitle": "队列已清空",
+      "emptyDescription": "活动任务会显示在这里"
+    },
+    "completed": {
+      "finishedCount": "已完成 {{count}} 项",
+      "completed": "已完成",
+      "deleteJobRecord": "删除任务记录",
+      "metadata": "元数据",
+      "emptyTitle": "暂无完成记录",
+      "emptyDescription": "历史任务执行记录会显示在这里"
+    },
+    "settings": {
+      "providerLabel": "提供商：",
+      "none": "无",
+      "selectModelToConfigure": "选择一个模型以配置选项",
+      "soundValue": "声音 {{value}}",
+      "shuffle": "随机",
+      "aiModel": "AI 模型",
+      "selectProvider": "选择提供商",
+      "selectModel": "选择模型",
+      "modelOptionsHidden": "模型选项已隐藏",
+      "chooseModelHint": "选择模型以显示特定于提供商的设置。",
+      "aspectRatio": "宽高比",
+      "resolution": "分辨率",
+      "durationSeconds": "时长（秒）",
+      "sound": "声音",
+      "systemPrompt": "系统提示词",
+      "systemPromptPlaceholder": "AI 模型的可选系统指令...",
+      "temperature": "温度",
+      "maxTokens": "最大 Token",
+      "quality": "质量",
+      "background": "背景",
+      "format": "格式",
+      "workflowOptions": "工作流选项",
+      "shuffleWorkflow": "打乱工作流",
+      "randomizeOrder": "随机组合顺序",
+      "jobQuantity": "任务数量",
+      "totalUniqueCombinations": "唯一组合总数",
+      "ofTotal": "共 {{count}}",
+      "selectProviderAndModel": "请选择一个 AI 提供商和模型以继续。",
+      "uploadingImages": "正在上传图片...",
+      "savingDrafts": "正在保存草稿...",
+      "composingProgress": "正在组合 {{current}}/{{total}}",
+      "addToDraft": "添加到草稿"
+    },
+    "workflow": {
+      "noTextContent": "没有文本内容...",
+      "pickFromLibrary": "从资料库中选择",
+      "unknownLibrary": "未知资料库",
+      "itemsCount": "{{count}} 项",
+      "filteredTags": "已筛选：{{count}} 个标签",
+      "wait": "等待"
+    },
+    "modelSelector": {
+      "title": "选择模型",
+      "description": "为你的工作流选择 AI 提供商和具体模型",
+      "searchPlaceholder": "按模型或提供商名称搜索...",
+      "noProviders": "尚未配置提供商",
+      "noProvidersHint": "前往设置添加你的第一个 AI 提供商",
+      "noModelsFound": "未找到匹配“{{query}}”的模型",
+      "footer": "点击模型卡片以选择并继续"
+    },
+    "librarySelection": {
+      "title": "选择资料库",
+      "description": "可用于工作流的集合",
+      "noLibraries": "尚未创建资料库",
+      "added": "已添加"
+    },
+    "libraryPreview": {
+      "pickThisText": "选择这段文本",
+      "itemsSummary": "{{filtered}} / {{total}} 项",
+      "filterByTags": "按标签筛选",
+      "allItems": "全部项目",
+      "noItemsMatch": "没有匹配的项目",
+      "clearAllFilters": "清除所有筛选",
+      "clickToSelect": "点击选择",
+      "closeViewer": "关闭查看器"
+    },
+    "promptModal": {
+      "title": "编辑提示词片段",
+      "description": "工作流文本块",
+      "placeholder": "在这里输入提示词...",
+      "characterCount": "字符数：{{count}}",
+      "saveChanges": "保存更改"
+    },
+    "exportDialog": {
+      "title": "导出包",
+      "description": "在加入导出队列前设置 ZIP 文件名",
+      "itemCount_one": "此包包含 {{count}} 项",
+      "itemCount_other": "此包包含 {{count}} 项",
+      "packageName": "包名称",
+      "placeholder": "album_export.zip",
+      "queueing": "加入队列中...",
+      "startExport": "开始导出"
+    },
+    "albumPrompt": {
+      "title": "查看提示词",
+      "description": "相册图片提示词",
+      "closeAria": "关闭提示词对话框",
+      "promptCopied": "提示词已复制",
+      "copyFailed": "复制提示词失败",
+      "characterCount": "字符数：{{count}}"
+    },
+    "imageLightbox": {
+      "deleteImage": "删除图片",
+      "previewAlt": "预览 {{index}}"
+    },
+    "copyToLibrary": {
+      "texts": "文本",
+      "textItemCount_one": "{{count}} 个文本项",
+      "textItemCount_other": "{{count}} 个文本项",
+      "videoItemCount_one": "{{count}} 个视频",
+      "videoItemCount_other": "{{count}} 个视频",
+      "imageItemCount_one": "{{count}} 张图片",
+      "imageItemCount_other": "{{count}} 张图片",
+      "loadLibrariesFailed": "加载资料库失败：{{message}}",
+      "enterLibraryName": "请输入资料库名称",
+      "selectLibrary": "请选择资料库",
+      "createdNewLibrary": "已创建新的{{type}}资料库并复制{{itemSummary}}",
+      "copiedToLibrary": "已将{{itemSummary}}复制到资料库",
+      "copyFailed": "复制失败：{{message}}",
+      "description": "正在将{{itemSummary}}复制到{{type}}资料库",
+      "destination": "目标位置",
+      "createNew": "新建",
+      "addToExisting": "添加到现有资料库",
+      "newLibraryName": "新资料库名称",
+      "versionToCopy": "要复制的版本",
+      "optimized": "优化版",
+      "optimizedHint": "快速预览版本",
+      "raw": "原始版",
+      "rawHint": "原始完整质量",
+      "copying": "复制中..."
+    },
+    "album": {
+      "exportQueued": "导出已加入队列！",
+      "viewArchiveProgress": "在归档中查看进度 →",
+      "exportFailed": "导出失败：{{message}}",
+      "itemsCount": "{{count}} 项",
+      "exportSelected": "导出所选",
+      "compareSelected": "比较所选",
+      "exportAll": "全部导出",
+      "copyAllToLibrary": "全部复制到资料库",
+      "noTexts": "还没有文本",
+      "noVideos": "还没有视频",
+      "galleryEmpty": "相册为空",
+      "collection": "集合",
+      "reel": "短片",
+      "emptyDescription": "开始一次生成来构建你的{{target}}",
+      "viewTextDetails": "点击查看文本详情",
+      "imageContexts": "+{{count}} 图",
+      "view": "查看",
+      "openOriginal": "打开原图",
+      "playVideo": "播放视频",
+      "viewFullPrompt": "点击查看完整提示词",
+      "raw": "原始",
+      "optimized": "优化",
+      "thumbnail": "缩略图"
+    },
+    "compare": {
+      "title": "比较文本",
+      "subtitle": "已选 {{count}} 项 · esc 关闭",
+      "closeAria": "关闭比较视图",
+      "copied": "已复制{{label}}",
+      "copyFailed": "复制{{label}}失败",
+      "referenceImages": "参考图片（{{count}}）",
+      "referenceAlt": "参考图 {{index}}",
+      "noGeneratedText": "没有生成文本。"
+    },
+    "textDetail": {
+      "title": "文本视图",
+      "itemIndex": "项目 {{index}}",
+      "previousItem": "上一个文本项",
+      "nextItem": "下一个文本项",
+      "dialogAria": "文本相册详情",
+      "closeAria": "关闭文本详情对话框",
+      "copied": "已复制{{label}}",
+      "copyFailed": "复制{{label}}失败",
+      "referenceImages": "参考图片（{{count}}）",
+      "referenceAlt": "参考图 {{index}}",
+      "refShort": "参考 {{index}}",
+      "noGeneratedText": "没有生成文本。",
+      "characterCount": "{{count}} 个字符",
+      "keyboardHint": "Esc 关闭 · ← → 导航"
+    },
+    "confirm": {
+      "removeWorkflowItem": {
+        "title": "移除工作流项目",
+        "message": "确定要从工作流中移除此项目吗？",
+        "confirm": "移除项目"
+      },
+      "deleteSelectedDrafts": {
+        "title": "删除所选草稿",
+        "message": "确定要删除所选的 {{count}} 个草稿吗？",
+        "confirm": "删除所选"
+      },
+      "deleteAllDrafts": {
+        "title": "删除所有草稿",
+        "message": "确定要删除全部 {{count}} 个草稿任务吗？",
+        "confirm": "全部删除"
+      },
+      "deleteProject": {
+        "title": "删除项目",
+        "message": "确定要删除“{{name}}”吗？",
+        "confirm": "删除项目"
+      },
+      "deleteJob": {
+        "title": "删除任务",
+        "message": "确定要删除此任务吗？",
+        "confirm": "删除任务"
+      },
+      "moveToRecycleBin": {
+        "title": "移到回收站",
+        "message": "确定要将 {{count}} 项移到回收站吗？",
+        "confirm": "移到回收站"
+      },
+      "removeFinishedRecords": {
+        "title": "移除所选完成记录",
+        "message": "确定要移除 {{count}} 条已完成任务记录吗？（不会删除相册图片）",
+        "confirm": "移除所选"
+      },
+      "deleteSelectedJobs": {
+        "title": "删除所选任务",
+        "message": "确定要删除所选的 {{count}} 个任务吗？",
+        "confirm": "删除所选"
+      },
+      "clearFailedJobs": {
+        "title": "清除所有失败任务",
+        "message": "确定要从队列中清除所有失败任务吗？",
+        "confirm": "清除所有失败项"
+      }
     }
   }
 }

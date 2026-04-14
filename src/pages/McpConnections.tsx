@@ -1,31 +1,34 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Copy, Key, Loader2, Plus, Shield, Trash2, Unplug } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { fetchOAuthClients, fetchPersonalAccessTokens, revokeOAuthClient, revokePersonalAccessToken, createPersonalAccessToken, type OAuthClientSummary, type PersonalAccessTokenSummary } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
 
-function formatDate(ts: number) {
-  return new Date(ts).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function formatRelative(ts: number) {
-  const diff = Date.now() - ts;
-  if (diff < 60_000) return 'just now';
-  if (diff < 3600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86400_000) return `${Math.floor(diff / 3600_000)}h ago`;
-  return formatDate(ts);
-}
-
-const EXPIRY_OPTIONS = [
-  { label: 'No expiration', value: 0 },
-  { label: '7 days', value: 7 },
-  { label: '30 days', value: 30 },
-  { label: '90 days', value: 90 },
-  { label: '1 year', value: 365 },
-];
-
 export function McpConnections() {
+  const { t } = useTranslation();
+
+  const formatDate = useCallback((ts: number) => {
+    return new Date(ts).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }, []);
+
+  const formatRelative = useCallback((ts: number) => {
+    const diff = Date.now() - ts;
+    if (diff < 60_000) return t('mcpConnections.justNow');
+    if (diff < 3600_000) return t('mcpConnections.relativeTime.m', { count: Math.floor(diff / 60_000) });
+    if (diff < 86400_000) return t('mcpConnections.relativeTime.h', { count: Math.floor(diff / 3600_000) });
+    return formatDate(ts);
+  }, [t, formatDate]);
+
+  const EXPIRY_OPTIONS = useMemo(() => [
+    { label: t('mcpConnections.expiryOptions.noExpiration'), value: 0 },
+    { label: t('mcpConnections.expiryOptions.7days'), value: 7 },
+    { label: t('mcpConnections.expiryOptions.30days'), value: 30 },
+    { label: t('mcpConnections.expiryOptions.90days'), value: 90 },
+    { label: t('mcpConnections.expiryOptions.1year'), value: 365 },
+  ], [t]);
+
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const mcpUrl = origin ? `${origin}/mcp` : '/mcp';
   const oauthMetadataUrl = origin ? `${origin}/.well-known/oauth-authorization-server` : '/.well-known/oauth-authorization-server';
@@ -79,11 +82,11 @@ export function McpConnections() {
       setClients(clientsData);
       setTokens(tokensData);
     } catch {
-      setError('Failed to load MCP connections.');
+      setError(t('mcpConnections.errorLoad'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -99,15 +102,15 @@ export function McpConnections() {
     try {
       if (revokeTarget.type === 'client') {
         await revokeOAuthClient(revokeTarget.clientId);
-        toast.success('Client access revoked');
+        toast.success(t('mcpConnections.toasts.clientRevoked'));
       } else {
         await revokePersonalAccessToken(revokeTarget.id);
-        toast.success('Token revoked');
+        toast.success(t('mcpConnections.toasts.tokenRevoked'));
       }
       setRevokeTarget(null);
       await load();
     } catch {
-      toast.error('Failed to revoke');
+      toast.error(t('mcpConnections.toasts.revokeFailed'));
     } finally {
       setIsRevoking(false);
     }
@@ -123,7 +126,7 @@ export function McpConnections() {
       setPatExpiry(0);
       await load();
     } catch {
-      toast.error('Failed to create token');
+      toast.error(t('mcpConnections.toasts.createFailed'));
     } finally {
       setIsCreating(false);
     }
@@ -133,7 +136,7 @@ export function McpConnections() {
     if (!newToken) return;
     navigator.clipboard.writeText(newToken);
     setCopied(true);
-    toast.success('Token copied to clipboard');
+    toast.success(t('mcpConnections.toasts.tokenCopied'));
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -146,9 +149,9 @@ export function McpConnections() {
   const copyText = async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      toast.success(`${label} copied`);
+      toast.success(t('mcpConnections.toasts.copied', { label }));
     } catch {
-      toast.error(`Failed to copy ${label.toLowerCase()}`);
+      toast.error(t('mcpConnections.toasts.copyFailed', { label: label.toLowerCase() }));
     }
   };
 
@@ -156,8 +159,8 @@ export function McpConnections() {
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto bg-neutral-950/20">
       <div className="w-full space-y-8 md:space-y-12">
         <PageHeader
-          title="MCP Connections"
-          description="Connect AI apps securely through MCP protocol"
+          title={t('mcpConnections.title')}
+          description={t('mcpConnections.description')}
         />
 
         <section className="rounded-2xl border border-neutral-800/70 bg-neutral-900/20 backdrop-blur-md overflow-hidden relative group">
@@ -168,9 +171,9 @@ export function McpConnections() {
             </div>
             <div className="flex-1 space-y-6 md:space-y-8">
               <div>
-                <h3 className="text-lg font-bold text-white tracking-tight">Connect an AI app to your account</h3>
+                <h3 className="text-lg font-bold text-white tracking-tight">{t('mcpConnections.connectSection.title')}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-neutral-400 max-w-3xl">
-                  This page helps you connect AI apps to your workspace. Start by copying the app address below into the app you want to connect. Then choose one of the two supported sign-in methods.
+                  {t('mcpConnections.connectSection.description')}
                 </p>
               </div>
 
@@ -178,63 +181,63 @@ export function McpConnections() {
                 <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4 md:p-5 transition-transform hover:scale-[1.01] duration-300">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                    <p className="text-sm font-bold text-blue-300">OAuth 2.1 connector</p>
+                    <p className="text-sm font-bold text-blue-300">{t('mcpConnections.connectSection.oauthMethod.title')}</p>
                   </div>
                   <p className="text-sm leading-relaxed text-neutral-400">
-                    Use this when the app can open a browser for sign-in. You sign in, approve access, and the app connects automatically. This is the best option for most users.
+                    {t('mcpConnections.connectSection.oauthMethod.description')}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 md:p-5 transition-transform hover:scale-[1.01] duration-300">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                    <p className="text-sm font-bold text-amber-300">Access token</p>
+                    <p className="text-sm font-bold text-amber-300">{t('mcpConnections.connectSection.tokenMethod.title')}</p>
                   </div>
                   <p className="text-sm leading-relaxed text-neutral-400">
-                    Use this only when the app asks you to paste a token, API key, or secret. You create the token here and paste it into the app yourself.
+                    {t('mcpConnections.connectSection.tokenMethod.description')}
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4 md:p-5">
-                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">App address</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">{t('mcpConnections.connectSection.appAddress.label')}</p>
                   <div className="flex items-center gap-2">
                     <code className="min-w-0 flex-1 break-all rounded-xl bg-neutral-900/80 px-4 py-3 text-xs md:text-sm text-sky-300 font-mono border border-neutral-800">{mcpUrl}</code>
                     <button
                       onClick={() => copyText(mcpUrl, 'MCP URL')}
                       className="flex-shrink-0 rounded-xl bg-neutral-800 p-3 text-neutral-300 transition-all hover:bg-neutral-700 active:scale-95 border border-neutral-700 shadow-sm"
-                      title="Copy MCP URL"
+                      title={t('mcpConnections.connectSection.appAddress.copyTitle')}
                     >
                       <Copy className="h-5 w-5" />
                     </button>
                   </div>
                   <p className="mt-3 text-sm text-neutral-500 italic">
-                    Copy this into the AI app when it asks where to connect.
+                    {t('mcpConnections.connectSection.appAddress.instruction')}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-neutral-800/70 bg-neutral-950/60 p-4 md:p-5">
-                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">Advanced sign-in URL</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">{t('mcpConnections.connectSection.advancedUrl.label')}</p>
                   <div className="flex items-center gap-2">
                     <code className="min-w-0 flex-1 break-all rounded-xl bg-neutral-900/80 px-4 py-3 text-xs md:text-sm text-blue-300 font-mono border border-neutral-800">{oauthMetadataUrl}</code>
                     <button
                       onClick={() => copyText(oauthMetadataUrl, 'OAuth metadata URL')}
                       className="flex-shrink-0 rounded-xl bg-neutral-800 p-3 text-neutral-300 transition-all hover:bg-neutral-700 active:scale-95 border border-neutral-700 shadow-sm"
-                      title="Copy OAuth metadata URL"
+                      title={t('mcpConnections.connectSection.advancedUrl.copyTitle')}
                     >
                       <Copy className="h-5 w-5" />
                     </button>
                   </div>
                   <p className="mt-3 text-sm text-neutral-500 italic">
-                    Only use this if the app specifically asks for a sign-in or discovery URL.
+                    {t('mcpConnections.connectSection.advancedUrl.instruction')}
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
                 {[
-                  { title: '1. Copy Address', desc: 'Paste it into the AI app to start setup.' },
-                  { title: '2. Choose Method', desc: 'Use OAuth if it opens a browser, otherwise use a token.' },
-                  { title: '3. Manage Here', desc: 'View connections or revoke access anytime.' }
+                  { title: t('mcpConnections.connectSection.steps.1.title'), desc: t('mcpConnections.connectSection.steps.1.desc') },
+                  { title: t('mcpConnections.connectSection.steps.2.title'), desc: t('mcpConnections.connectSection.steps.2.desc') },
+                  { title: t('mcpConnections.connectSection.steps.3.title'), desc: t('mcpConnections.connectSection.steps.3.desc') }
                 ].map((step, i) => (
                   <div key={i} className="rounded-2xl border border-neutral-800/70 bg-neutral-950/40 p-4 relative overflow-hidden group/step">
                     <div className="absolute -right-2 -bottom-2 text-6xl font-display font-black text-neutral-800/10 select-none group-hover/step:text-sky-500/5 transition-colors">{i + 1}</div>
@@ -254,8 +257,8 @@ export function McpConnections() {
                       <Plus className={`h-4 w-4 transition-transform duration-300 ${showJsonSetup ? 'rotate-45' : ''}`} />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white tracking-tight">Need to use a JSON configuration?</h4>
-                      <p className="text-xs text-neutral-500 mt-0.5">Click to show or hide JSON setup blocks</p>
+                      <h4 className="text-sm font-bold text-white tracking-tight">{t('mcpConnections.connectSection.jsonSetup.title')}</h4>
+                      <p className="text-xs text-neutral-500 mt-0.5">{t('mcpConnections.connectSection.jsonSetup.subtitle')}</p>
                     </div>
                   </div>
                   {showJsonSetup ? <ChevronUp className="h-5 w-5 text-neutral-600" /> : <ChevronDown className="h-5 w-5 text-neutral-600" />}
@@ -265,17 +268,17 @@ export function McpConnections() {
                   <div className="p-4 md:p-6 pt-0 space-y-6 animate-in slide-in-from-top-4 duration-300">
                     <div className="h-px bg-neutral-800 mb-6" />
                     <p className="text-sm leading-relaxed text-neutral-400 italic mb-4">
-                      Some apps ask you to paste a JSON setup block instead of filling out a form. Use the OAuth 2.1 version when the app supports browser sign-in. Use the access token version when the app asks for a token.
+                      {t('mcpConnections.connectSection.jsonSetup.instruction')}
                     </p>
                     <div className="grid gap-6 lg:grid-cols-2">
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">OAuth 2.1 JSON</p>
+                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">{t('mcpConnections.connectSection.jsonSetup.oauthJson')}</p>
                           <button
                             onClick={() => copyText(projectOAuthJson, 'OAuth JSON')}
                             className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
                           >
-                            Copy JSON
+                            {t('mcpConnections.connectSection.jsonSetup.copyJson')}
                           </button>
                         </div>
                         <div className="relative group/code">
@@ -284,17 +287,17 @@ export function McpConnections() {
                           </pre>
                         </div>
                         <p className="text-xs text-neutral-500 leading-relaxed">
-                          Use this when the app can open a browser and let you sign in.
+                          {t('mcpConnections.connectSection.oauthMethod.description')}
                         </p>
                       </div>
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">Access token JSON</p>
+                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">{t('mcpConnections.connectSection.jsonSetup.tokenJson')}</p>
                           <button
                             onClick={() => copyText(projectTokenJson, 'Bearer token JSON')}
                             className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
                           >
-                            Copy JSON
+                            {t('mcpConnections.connectSection.jsonSetup.copyJson')}
                           </button>
                         </div>
                         <div className="relative group/code">
@@ -303,7 +306,7 @@ export function McpConnections() {
                           </pre>
                         </div>
                         <p className="text-xs text-neutral-500 leading-relaxed">
-                          Replace <code className="text-amber-400">YOUR_MCP_TOKEN</code> with a token from this page, then paste the finished JSON into the app.
+                          {t('mcpConnections.connectSection.jsonSetup.tokenInstruction')}
                         </p>
                       </div>
                     </div>
@@ -328,14 +331,14 @@ export function McpConnections() {
               <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
                 <Key className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-bold text-white tracking-tight">Access Tokens</h3>
+              <h3 className="text-xl font-bold text-white tracking-tight">{t('mcpConnections.tokens.title')}</h3>
             </div>
             <button
               onClick={() => { setShowCreatePat(true); setNewToken(null); }}
               className="text-xs md:text-sm bg-amber-600 text-white hover:bg-amber-500 px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold shadow-lg shadow-amber-600/10 active:scale-95"
             >
               <Plus className="w-4 h-4" />
-              <span>New Token</span>
+              <span>{t('mcpConnections.tokens.newToken')}</span>
             </button>
           </div>
 
@@ -343,9 +346,9 @@ export function McpConnections() {
             <div className="absolute right-0 top-0 p-4 opacity-10 group-hover/tip:opacity-20 transition-opacity">
               <Shield className="w-12 h-12 text-amber-500" />
             </div>
-            <p className="text-sm font-bold text-amber-300 mb-1">When to use Access Tokens</p>
+            <p className="text-sm font-bold text-amber-300 mb-1">{t('mcpConnections.tokens.whenToUse')}</p>
             <p className="text-sm leading-relaxed text-neutral-400 max-w-2xl">
-              Use an access token only if the app does not support the OAuth 2.1 connector. Keep tokens private, like a password. In most cases, you will paste the app address and this token into the app.
+              {t('mcpConnections.tokens.tip')}
             </p>
           </div>
 
@@ -356,7 +359,7 @@ export function McpConnections() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2.5 text-emerald-400 text-sm font-bold bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-xl">
                     <CheckCircle className="w-4 h-4" />
-                    Token created — copy it now. You won't see it again.
+                    {t('mcpConnections.toasts.tokenCreated')}
                   </div>
                   <div className="flex items-center gap-3">
                     <code className="flex-1 bg-neutral-950 text-amber-400 px-4 py-3 rounded-xl text-xs md:text-sm font-mono break-all select-all border border-neutral-800 shadow-inner">
@@ -365,7 +368,7 @@ export function McpConnections() {
                     <button
                       onClick={handleCopy}
                       className="flex-shrink-0 p-3 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-700 shadow-sm"
-                      title="Copy token"
+                      title={t('mcpConnections.tokens.card.revokeTitle')}
                     >
                       {copied ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5 text-neutral-300" />}
                     </button>
@@ -374,27 +377,27 @@ export function McpConnections() {
                     onClick={handleCloseNewToken}
                     className="text-sm font-bold text-neutral-400 hover:text-white transition-colors"
                   >
-                    Done
+                    {t('mcpConnections.tokens.form.done')}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 ml-1">Token Name</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 ml-1">{t('mcpConnections.tokens.form.tokenName')}</label>
                       <input
                         ref={patNameRef}
                         type="text"
                         value={patName}
                         onChange={(e) => setPatName(e.target.value)}
-                        placeholder="e.g. Claude Desktop"
+                        placeholder={t('mcpConnections.tokens.form.placeholder')}
                         className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all font-medium"
                         maxLength={128}
                         onKeyDown={(e) => { if (e.key === 'Enter' && patName.trim()) handleCreatePat(); }}
                       />
                     </div>
                     <div className="w-full sm:w-48 space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 ml-1">Expiration</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 ml-1">{t('mcpConnections.tokens.form.expiration')}</label>
                       <select
                         value={patExpiry}
                         onChange={(e) => setPatExpiry(Number(e.target.value))}
@@ -413,13 +416,13 @@ export function McpConnections() {
                       className="flex-1 sm:flex-none text-sm bg-amber-600 text-white hover:bg-amber-500 px-6 py-2.5 rounded-xl transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-amber-600/10 active:scale-95"
                     >
                       {isCreating && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Create Token
+                      {t('mcpConnections.tokens.form.create')}
                     </button>
                     <button
                       onClick={() => { setShowCreatePat(false); setPatName(''); setPatExpiry(0); }}
                       className="flex-1 sm:flex-none text-sm font-bold text-neutral-400 hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-neutral-900 border border-neutral-800"
                     >
-                      Cancel
+                      {t('mcpConnections.tokens.form.cancel')}
                     </button>
                   </div>
                 </div>
@@ -439,8 +442,8 @@ export function McpConnections() {
                   <Key className="w-8 h-8 text-neutral-700" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-neutral-400 tracking-tight">No access tokens</p>
-                  <p className="text-sm max-w-xs mx-auto text-neutral-500 mt-1">Create a token to connect your first AI app manually.</p>
+                  <p className="text-lg font-bold text-neutral-400 tracking-tight">{t('mcpConnections.tokens.empty.title')}</p>
+                  <p className="text-sm max-w-xs mx-auto text-neutral-500 mt-1">{t('mcpConnections.tokens.empty.desc')}</p>
                 </div>
               </div>
             ) : (
@@ -459,24 +462,24 @@ export function McpConnections() {
                         <code className="text-[10px] font-mono text-neutral-400 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800">{token.tokenPrefix}...</code>
                         <div className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
                           <div className="w-1 h-1 rounded-full bg-neutral-700" />
-                          <span>Created {formatDate(token.createdAt)}</span>
+                          <span>{t('mcpConnections.tokens.card.created', { date: formatDate(token.createdAt) })}</span>
                         </div>
                         {token.lastUsedAt && (
                           <div className="flex items-center gap-1.5 text-[10px] font-bold text-sky-400">
                             <div className="w-1 h-1 rounded-full bg-sky-400" />
-                            <span>Used {formatRelative(token.lastUsedAt)}</span>
+                            <span>{t('mcpConnections.tokens.card.used', { date: formatRelative(token.lastUsedAt) })}</span>
                           </div>
                         )}
                         {token.expiresAt && (
                           <div className={`flex items-center gap-1.5 text-[10px] font-bold ${token.expired ? 'text-red-400' : 'text-neutral-500'}`}>
                             <div className={`w-1 h-1 rounded-full ${token.expired ? 'bg-red-400' : 'bg-neutral-600'}`} />
-                            <span>{token.expired ? 'Expired' : `Expires ${formatDate(token.expiresAt)}`}</span>
+                            <span>{token.expired ? t('mcpConnections.tokens.card.expired') : t('mcpConnections.tokens.card.expires', { date: formatDate(token.expiresAt) })}</span>
                           </div>
                         )}
                         {!token.expiresAt && (
                           <div className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-600">
                             <div className="w-1 h-1 rounded-full bg-neutral-700" />
-                            <span>No expiration</span>
+                            <span>{t('mcpConnections.tokens.card.noExpiration')}</span>
                           </div>
                         )}
                       </div>
@@ -485,7 +488,7 @@ export function McpConnections() {
                   <button
                     onClick={() => setRevokeTarget({ type: 'token', id: token.id, name: token.name })}
                     className="flex-shrink-0 self-end sm:self-center p-2.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hover:rotate-12"
-                    title="Revoke token"
+                    title={t('mcpConnections.tokens.card.revokeTitle')}
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
@@ -502,7 +505,7 @@ export function McpConnections() {
               <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20">
                 <Shield className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-bold text-white tracking-tight">OAuth 2.1 Connections</h3>
+              <h3 className="text-xl font-bold text-white tracking-tight">{t('mcpConnections.oauth.title')}</h3>
             </div>
           </div>
 
@@ -510,9 +513,9 @@ export function McpConnections() {
             <div className="absolute right-0 top-0 p-4 opacity-10 group-hover/tip:opacity-20 transition-opacity">
               <CheckCircle className="w-12 h-12 text-blue-500" />
             </div>
-            <p className="text-sm font-bold text-blue-300 mb-1">Recommended for simple sign-in</p>
+            <p className="text-sm font-bold text-blue-300 mb-1">{t('mcpConnections.oauth.recommended')}</p>
             <p className="text-sm leading-relaxed text-neutral-400 max-w-2xl">
-              Apps that you connect with the OAuth 2.1 connector will appear here automatically. After you approve access in the browser, the app will show up here.
+              {t('mcpConnections.oauth.tip')}
             </p>
           </div>
 
@@ -527,8 +530,8 @@ export function McpConnections() {
                   <Shield className="w-8 h-8 text-neutral-700" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-neutral-400 tracking-tight">No OAuth clients connected</p>
-                  <p className="text-sm max-w-xs mx-auto text-neutral-500 mt-1">Apps will appear here after sign-in is completed in your AI app.</p>
+                  <p className="text-lg font-bold text-neutral-400 tracking-tight">{t('mcpConnections.oauth.empty.title')}</p>
+                  <p className="text-sm max-w-xs mx-auto text-neutral-500 mt-1">{t('mcpConnections.oauth.empty.desc')}</p>
                 </div>
               </div>
             ) : (
@@ -553,13 +556,13 @@ export function McpConnections() {
                           <div className={`w-1 h-1 rounded-full ${client.activeTokens > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`} />
                           <span>
                             {client.activeTokens > 0
-                              ? `${client.activeTokens} active token${client.activeTokens === 1 ? '' : 's'}`
-                              : 'No active tokens'}
+                              ? t('mcpConnections.oauth.card.activeToken', { count: client.activeTokens })
+                              : t('mcpConnections.oauth.card.noTokens')}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
                           <div className="w-1 h-1 rounded-full bg-neutral-700" />
-                          <span>Registered {formatDate(client.createdAt)}</span>
+                          <span>{t('mcpConnections.oauth.card.registered', { date: formatDate(client.createdAt) })}</span>
                         </div>
                       </div>
                     </div>
@@ -567,7 +570,7 @@ export function McpConnections() {
                   <button
                     onClick={() => setRevokeTarget({ type: 'client', clientId: client.clientId, name: client.clientName || client.clientId })}
                     className="flex-shrink-0 self-end sm:self-center p-2.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hover:-rotate-12"
-                    title="Revoke all tokens"
+                    title={t('mcpConnections.oauth.card.revokeTitle')}
                   >
                     <Unplug className="w-5 h-5" />
                   </button>
@@ -582,15 +585,15 @@ export function McpConnections() {
         isOpen={!!revokeTarget}
         onClose={() => setRevokeTarget(null)}
         onConfirm={handleRevoke}
-        title={revokeTarget?.type === 'client' ? 'Revoke Client Access' : 'Revoke Token'}
+        title={revokeTarget?.type === 'client' ? t('mcpConnections.confirm.revokeClientTitle') : t('mcpConnections.confirm.revokeTokenTitle')}
         message={
           revokeTarget?.type === 'client'
-            ? `Revoke all access tokens for "${revokeTarget.name}"? The client will need to re-authenticate.`
+            ? t('mcpConnections.confirm.revokeClientMessage', { name: revokeTarget.name })
             : revokeTarget
-              ? `Revoke the token "${revokeTarget.name}"? Any MCP client using this token will lose access immediately.`
+              ? t('mcpConnections.confirm.revokeTokenMessage', { name: revokeTarget.name })
               : ''
         }
-        confirmText={isRevoking ? 'Revoking...' : 'Revoke'}
+        confirmText={isRevoking ? t('mcpConnections.confirm.revoking') : t('mcpConnections.confirm.revoke')}
         type="danger"
       />
     </div>

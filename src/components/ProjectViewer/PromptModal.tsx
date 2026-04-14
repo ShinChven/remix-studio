@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Type, X, Save } from 'lucide-react';
 import { WorkflowItem } from '../../types';
 
@@ -9,6 +10,7 @@ interface PromptModalProps {
 }
 
 export function PromptModal({ item, onClose, onSave }: PromptModalProps) {
+  const { t } = useTranslation();
   const [value, setValue] = useState('');
 
   useEffect(() => {
@@ -28,8 +30,8 @@ export function PromptModal({ item, onClose, onSave }: PromptModalProps) {
               <Type className="w-5 h-5 text-blue-500" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Edit Prompt Fragment</h3>
-              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Workflow Text Block</p>
+              <h3 className="text-lg font-bold text-white tracking-tight">{t('projectViewer.promptModal.title')}</h3>
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">{t('projectViewer.promptModal.description')}</p>
             </div>
           </div>
           <button 
@@ -45,28 +47,28 @@ export function PromptModal({ item, onClose, onSave }: PromptModalProps) {
             autoFocus
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="Type your prompt here..."
+            placeholder={t('projectViewer.promptModal.placeholder')}
             className="flex-1 w-full bg-transparent border-none text-neutral-200 text-lg md:text-xl font-medium leading-relaxed focus:outline-none focus:ring-0 resize-none placeholder:text-neutral-800 custom-scrollbar"
           />
         </div>
 
         <div className="p-6 border-t border-neutral-800 bg-neutral-950/40 flex items-center justify-between gap-4">
           <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest pl-2">
-            Character count: {value.length}
+            {t('projectViewer.promptModal.characterCount', { count: value.length })}
           </div>
           <div className="flex items-center gap-3">
             <button 
               onClick={onClose}
               className="px-6 py-2.5 text-neutral-400 hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
             >
-              Cancel
+              {t('projectViewer.common.cancel')}
             </button>
             <button 
               onClick={() => onSave(value)}
               className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center gap-2"
             >
               <Save className="w-3.5 h-3.5" />
-              Save Changes
+              {t('projectViewer.promptModal.saveChanges')}
             </button>
           </div>
         </div>

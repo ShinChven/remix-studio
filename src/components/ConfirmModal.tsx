@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertCircle, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { AlertCircle } from 'lucide-react';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -18,11 +19,15 @@ export function ConfirmModal({
   onConfirm,
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  cancelText,
   type = 'info'
 }: ConfirmModalProps) {
+  const { t } = useTranslation();
   if (!isOpen) return null;
+
+  const resolvedConfirmText = confirmText ?? t('confirmModal.confirm');
+  const resolvedCancelText = cancelText ?? t('confirmModal.cancel');
 
   return (
     <div 
@@ -58,7 +63,7 @@ export function ConfirmModal({
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
           >
-            {cancelText}
+            {resolvedCancelText}
           </button>
           
           <button
@@ -72,7 +77,7 @@ export function ConfirmModal({
                 : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'
             }`}
           >
-            {confirmText}
+            {resolvedConfirmText}
           </button>
         </div>
       </div>

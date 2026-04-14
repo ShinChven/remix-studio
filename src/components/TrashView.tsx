@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TrashItem } from '../types';
 import { fetchTrash, restoreTrashItem, restoreTrashBatch, deleteTrashPermanently, deleteTrashBatch, emptyTrash, imageDisplayUrl } from '../api';
 import { Trash2, RotateCcw, CheckSquare, Square, CheckCircle2, Calendar, Folder, HardDrive } from 'lucide-react';
@@ -7,6 +8,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { ImageLightbox } from './ProjectViewer/ImageLightbox';
 
 export function TrashView() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<TrashItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -129,18 +131,18 @@ export function TrashView() {
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-700">
         <PageHeader
-          title="Recycle Bin"
-          description="Review deleted items, restore what you need, or remove them permanently."
+          title={t('trash.title')}
+          description={t('trash.description')}
         />
 
       <div className="sticky top-0 z-20 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-neutral-950/80 backdrop-blur-md border border-neutral-800/50 p-4 rounded-2xl shadow-lg shadow-black/20">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-            {items.length} Items
+            {t('trash.stats.items', { count: items.length })}
           </span>
           <span className="text-neutral-800">·</span>
           <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
-            {formatSize(totalSize)} Total
+            {t('trash.stats.total', { size: formatSize(totalSize) })}
           </span>
         </div>
 
@@ -151,13 +153,13 @@ export function TrashView() {
                 onClick={handleRestoreBatch}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-blue-500/30 transition-all shadow-lg shadow-blue-500/5"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> Restore ({selectedIds.size})
+                <RotateCcw className="w-3.5 h-3.5" /> {t('trash.actions.restoreCount', { count: selectedIds.size })}
               </button>
               <button
                 onClick={() => setShowDeleteSelectedConfirm(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-red-500/30 transition-all shadow-lg shadow-red-500/5"
               >
-                <Trash2 className="w-3.5 h-3.5" /> Delete Permanently
+                <Trash2 className="w-3.5 h-3.5" /> {t('trash.actions.deletePermanently')}
               </button>
             </div>
           )}
@@ -167,7 +169,7 @@ export function TrashView() {
               onClick={() => setShowEmptyConfirm(true)}
               className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-red-900/20 text-neutral-400 hover:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-neutral-800 hover:border-red-500/30 transition-all ml-2"
             >
-              Empty Trash
+              {t('trash.actions.emptyTrash')}
             </button>
           )}
         </div>
@@ -179,8 +181,8 @@ export function TrashView() {
             <Trash2 className="w-12 h-12 text-neutral-800" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-widest">Recycle Bin is Empty</h3>
-            <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">Deleted album items will appear here</p>
+            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-widest">{t('trash.empty.title')}</h3>
+            <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">{t('trash.empty.description')}</p>
           </div>
         </div>
       ) : (
@@ -248,14 +250,14 @@ export function TrashView() {
                        <button
                         onClick={() => handleRestore(item.id)}
                         className="p-2 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20 hover:bg-blue-500/20 transition-all"
-                        title="Restore"
+                        title={t('trash.card.restore')}
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setItemToDeleteId(item.id)}
                         className="p-2 bg-red-500/10 text-red-500 rounded-lg border border-red-500/20 hover:bg-red-500/20 transition-all"
-                        title="Delete Permanently"
+                        title={t('trash.card.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -273,9 +275,9 @@ export function TrashView() {
         isOpen={showEmptyConfirm}
         onClose={() => setShowEmptyConfirm(false)}
         onConfirm={handleEmptyTrash}
-        title="Empty Recycle Bin"
-        message={`Are you sure you want to permanently delete all ${items.length} items? This will free up ${formatSize(totalSize)} but cannot be undone.`}
-        confirmText={isDeleting ? "Deleting..." : "Empty Trash"}
+        title={t('trash.confirm.empty.title')}
+        message={t('trash.confirm.empty.message', { count: items.length, size: formatSize(totalSize) })}
+        confirmText={isDeleting ? t('trash.confirm.deleting') : t('trash.confirm.empty.confirm')}
         type="danger"
       />
 
@@ -283,9 +285,9 @@ export function TrashView() {
         isOpen={showDeleteSelectedConfirm}
         onClose={() => setShowDeleteSelectedConfirm(false)}
         onConfirm={handleDeleteSelected}
-        title="Delete Selected Items"
-        message={`Are you sure you want to permanently delete ${selectedIds.size} items? This will free up ${formatSize(selectedSize)} and cannot be undone.`}
-        confirmText={isDeleting ? "Deleting..." : "Delete Permanently"}
+        title={t('trash.confirm.deleteSelected.title')}
+        message={t('trash.confirm.deleteSelected.message', { count: selectedIds.size, size: formatSize(selectedSize) })}
+        confirmText={isDeleting ? t('trash.confirm.deleting') : t('trash.confirm.deleteSelected.confirm')}
         type="danger"
       />
 
@@ -293,9 +295,9 @@ export function TrashView() {
         isOpen={!!itemToDeleteId}
         onClose={() => setItemToDeleteId(null)}
         onConfirm={handleDeleteSingle}
-        title="Permanently Delete Image"
-        message="Are you sure you want to permanently delete this image? This action cannot be undone."
-        confirmText={isDeleting ? "Deleting..." : "Delete Permanently"}
+        title={t('trash.confirm.deleteSingle.title')}
+        message={t('trash.confirm.deleteSingle.message')}
+        confirmText={isDeleting ? t('trash.confirm.deleting') : t('trash.confirm.deleteSingle.confirm')}
         type="danger"
       />
       

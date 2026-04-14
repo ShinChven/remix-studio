@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Database, HardDrive, FileArchive, Trash2, Folder, Zap, AlertCircle, ChevronRight, PieChart as IconPieChart } from 'lucide-react';
 import { fetchStorageAnalysis } from '../api';
 import { StorageAnalysis, StorageCategory } from '../types';
@@ -17,14 +18,15 @@ const COLORS: Record<string, string> = {
 };
 
 export function StorageView() {
+  const { t } = useTranslation();
   const [analysis, setAnalysis] = useState<StorageAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
   const TIER_NAMES: Record<number, string> = {
-    [5 * 1024 * 1024 * 1024]: 'Free',
-    [100 * 1024 * 1024 * 1024]: 'Professional',
-    [500 * 1024 * 1024 * 1024]: 'Premium',
+    [5 * 1024 * 1024 * 1024]: t('storageView.tiers.free'),
+    [100 * 1024 * 1024 * 1024]: t('storageView.tiers.professional'),
+    [500 * 1024 * 1024 * 1024]: t('storageView.tiers.premium'),
   };
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export function StorageView() {
       <div className="flex-1 flex items-center justify-center bg-neutral-950 p-8">
         <div className="flex flex-col items-center gap-4">
           <Database className="w-12 h-12 text-blue-500 animate-pulse" />
-          <p className="text-neutral-400 font-medium">Analyzing storage usage...</p>
+          <p className="text-neutral-400 font-medium">{t('storageView.analyzing')}</p>
         </div>
       </div>
     );
@@ -99,9 +101,9 @@ export function StorageView() {
           <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center">
             <HardDrive className="w-6 h-6 text-blue-400" />
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Storage Analysis</h1>
+          <h1 className="text-3xl font-black text-white tracking-tight">{t('storageView.title')}</h1>
         </div>
-        <p className="text-neutral-400 text-lg">Detailed breakdown of your digital footprint.</p>
+        <p className="text-neutral-400 text-lg">{t('storageView.description')}</p>
       </motion.div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start">
@@ -112,17 +114,17 @@ export function StorageView() {
             {/* 1. Capacity & Consumption Overview Card */}
             <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-md border-blue-500/10 h-full min-h-[220px]">
               <div>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-black mb-4 block">Capacity Overview</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-black mb-4 block">{t('storageView.capacityOverview')}</span>
                 <div className="space-y-4">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-neutral-500 uppercase font-black tracking-tight mb-1">Consumption</span>
+                    <span className="text-[10px] text-neutral-500 uppercase font-black tracking-tight mb-1">{t('storageView.consumption')}</span>
                     <span className="text-2xl font-black text-white leading-none">{formatSize(analysis.totalSize)}</span>
                   </div>
                   <div className="flex flex-col border-t border-neutral-800/50 pt-3">
-                    <span className="text-[10px] text-neutral-500 uppercase font-black tracking-tight mb-1">Total Limit</span>
+                    <span className="text-[10px] text-neutral-500 uppercase font-black tracking-tight mb-1">{t('storageView.totalLimit')}</span>
                     <div className="flex items-baseline gap-2">
                        <span className="text-xl font-black text-neutral-300">{formatSize(analysis.limit)}</span>
-                       <span className="text-[10px] font-bold text-blue-500 uppercase">{TIER_NAMES[analysis.limit] || 'Custom'}</span>
+                       <span className="text-[10px] font-bold text-blue-500 uppercase">{TIER_NAMES[analysis.limit] || t('storageView.tiers.custom')}</span>
                     </div>
                   </div>
                 </div>
@@ -136,7 +138,7 @@ export function StorageView() {
                   />
                 </div>
                 <div className="text-[10px] text-neutral-500 font-bold mt-2">
-                  {((analysis.totalSize / analysis.limit) * 100).toFixed(1)}% consumed
+                  {t('storageView.percentConsumed', { percent: ((analysis.totalSize / analysis.limit) * 100).toFixed(1) })}
                 </div>
               </div>
             </div>
@@ -234,7 +236,7 @@ export function StorageView() {
           <div className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-3xl p-8 backdrop-blur-xl">
             <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
               <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-              Storage Optimization
+              {t('storageView.optimizationTitle')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="flex gap-4">
@@ -242,8 +244,8 @@ export function StorageView() {
                      <AlertCircle className="w-6 h-6 text-orange-400" />
                   </div>
                   <div>
-                     <p className="text-white font-bold mb-1">Clean Orphans</p>
-                     <p className="text-sm text-neutral-400">Identify and remove unreferenced files from project folders to reclaim space.</p>
+                     <p className="text-white font-bold mb-1">{t('storageView.cleanOrphansTitle')}</p>
+                     <p className="text-sm text-neutral-400">{t('storageView.cleanOrphansDescription')}</p>
                   </div>
                </div>
                 <Link to="/trash" className="flex gap-4 group cursor-pointer">
@@ -251,8 +253,8 @@ export function StorageView() {
                      <Trash2 className="w-6 h-6 text-red-400" />
                   </div>
                   <div>
-                     <p className="text-white font-bold mb-1 group-hover:text-red-400 transition-colors">Recycle Bin</p>
-                     <p className="text-sm text-neutral-400">Total of {formatSize(analysis.categories.find(c => c.id === 'trash')?.size || 0)} can be permanently deleted.</p>
+                     <p className="text-white font-bold mb-1 group-hover:text-red-400 transition-colors">{t('storageView.recycleBinTitle')}</p>
+                     <p className="text-sm text-neutral-400">{t('storageView.recycleBinDescription', { size: formatSize(analysis.categories.find(c => c.id === 'trash')?.size || 0) })}</p>
                   </div>
                </Link>
             </div>
@@ -309,7 +311,7 @@ export function StorageView() {
                       animate={{ opacity: 1 }}
                     >
                       <IconPieChart className="w-8 h-8 text-neutral-700 mb-2 mx-auto" />
-                      <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest block">Complete Scan</span>
+                      <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest block">{t('storageView.completeScan')}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -327,7 +329,7 @@ export function StorageView() {
       >
         <h2 className="text-2xl font-black text-white mb-8 flex items-center gap-3">
           <Folder className="w-6 h-6 text-neutral-500" />
-          Project Rankings
+          {t('storageView.projectRankings')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
           {analysis.projects.map(proj => (
@@ -343,7 +345,7 @@ export function StorageView() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-widest text-neutral-500">
-                    <span>Album</span>
+                    <span>{t('storageView.album')}</span>
                     <span>{formatSize(proj.album)}</span>
                   </div>
                   <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden">
@@ -351,7 +353,7 @@ export function StorageView() {
                   </div>
                   {proj.orphans > 0 && (
                     <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-widest text-orange-500/70 group-hover:text-orange-400 transition-colors">
-                      <span>Orphans</span>
+                      <span>{t('storageView.orphans')}</span>
                       <span>{formatSize(proj.orphans)}</span>
                     </div>
                   )}
