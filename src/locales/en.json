@@ -202,6 +202,7 @@
       "addToDraft": "Add to Draft"
     },
     "workflow": {
+      "characterCount": "{{count}} chars",
       "noTextContent": "No text content...",
       "pickFromLibrary": "Pick from Library",
       "unknownLibrary": "Unknown Library",
@@ -240,6 +241,14 @@
       "placeholder": "Type your prompt here...",
       "characterCount": "Character count: {{count}}",
       "saveChanges": "Save Changes"
+    },
+    "promptLimitModal": {
+      "title": "Prompt limit reached",
+      "message_one": "{{count}} draft for {{model}} is longer than the model limit ({{limit}}). The longest prompt is {{longest}}. Cut prompts before adding drafts?",
+      "message_other": "{{count}} drafts for {{model}} are longer than the model limit ({{limit}}). The longest prompt is {{longest}}. Cut prompts before adding drafts?",
+      "cancel": "Cancel",
+      "keep": "Keep Full Prompt",
+      "truncate": "Cut to Limit"
     },
     "exportDialog": {
       "title": "Export Package",

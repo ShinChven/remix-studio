@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Project, Job, Library, WorkflowItem as WorkflowItemType, WorkflowItemType as WorkflowItemTypeKind, Provider, AlbumItem } from '../types';
+import { Project, Job, Library, WorkflowItem as WorkflowItemType, WorkflowItemType as WorkflowItemTypeKind, Provider, AlbumItem, estimatePromptLength, formatPromptLimit, isPromptOverLimit, truncatePromptToLimit } from '../types';
 import { saveImage, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,6 +14,7 @@ import { ModelSelectorModal } from './ProjectViewer/ModelSelectorModal';
 import { LibrarySelectionModal } from './ProjectViewer/LibrarySelectionModal';
 import { LibraryPreviewModal } from './ProjectViewer/LibraryPreviewModal';
 import { PromptModal } from './ProjectViewer/PromptModal';
+import { PromptLimitModal } from './ProjectViewer/PromptLimitModal';
 import { ImageLightbox } from './ProjectViewer/ImageLightbox';
 import { DraftsTab } from './ProjectViewer/DraftsTab';
 import { QueueTab } from './ProjectViewer/QueueTab';
@@ -26,6 +27,16 @@ interface Props {
   libraries: Library[];
   onUpdate: (project: Project) => void;
   onDelete: () => void;
+}
+
+type PromptLimitDecision = 'truncate' | 'keep' | 'cancel';
+
+interface PromptLimitDialogState {
+  modelName: string;
+  affectedCount: number;
+  limitLabel: string;
+  longestPromptLabel: string;
+  resolve: (decision: PromptLimitDecision) => void;
 }
 
 export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props) {
@@ -77,6 +88,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [selectedCompletedIds, setSelectedCompletedIds] = useState<Set<string>>(new Set());
   const [isAddingDrafts, setIsAddingDrafts] = useState(false);
   const [draftsProgress, setDraftsProgress] = useState<{ current: number; total: number; stage: 'composing' | 'saving' } | null>(null);
+  const [promptLimitDialog, setPromptLimitDialog] = useState<PromptLimitDialogState | null>(null);
 
   const projectRef = useRef(localProject);
   const skipProjectSyncRef = useRef(false);
@@ -395,7 +407,40 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         await new Promise<void>(resolve => setTimeout(resolve, 0));
       }
 
-      const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...newJobs] };
+      const promptLimit = selectedModel?.promptLimit;
+      let finalizedJobs = newJobs;
+
+      if (promptLimit) {
+        const overLimitJobs = newJobs.filter(job => isPromptOverLimit(job.prompt, promptLimit));
+
+        if (overLimitJobs.length > 0) {
+          const longestPromptLength = overLimitJobs.reduce((max, job) => {
+            return Math.max(max, estimatePromptLength(job.prompt, promptLimit));
+          }, 0);
+
+          const decision = await new Promise<PromptLimitDecision>((resolve) => {
+            setPromptLimitDialog({
+              modelName: selectedModel?.name || t('projectViewer.settings.selectModel'),
+              affectedCount: overLimitJobs.length,
+              limitLabel: formatPromptLimit(promptLimit),
+              longestPromptLabel: `${longestPromptLength.toLocaleString()} ${promptLimit.unit}`,
+              resolve,
+            });
+          });
+
+          if (decision === 'cancel') return;
+
+          if (decision === 'truncate') {
+            finalizedJobs = newJobs.map((job) => (
+              isPromptOverLimit(job.prompt, promptLimit)
+                ? { ...job, prompt: truncatePromptToLimit(job.prompt, promptLimit) }
+                : job
+            ));
+          }
+        }
+      }
+
+      const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...finalizedJobs] };
       setDraftsProgress({ current: total, total, stage: 'saving' });
 
       await apiUpdateProject(updatedProject.id, {
@@ -747,6 +792,25 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
       <ConfirmModal isOpen={itemToRemoveId !== null} onClose={() => setItemToRemoveId(null)} onConfirm={confirmRemoveWorkflowItem} title={t('projectViewer.confirm.removeWorkflowItem.title')} message={t('projectViewer.confirm.removeWorkflowItem.message')} confirmText={t('projectViewer.confirm.removeWorkflowItem.confirm')} type="danger" />
       <PromptModal item={editingItem} onClose={() => setEditingItem(null)} onSave={(value) => { if (editingItem) updateWorkflowItem(editingItem.id, value); setEditingItem(null); }} />
+      <PromptLimitModal
+        isOpen={promptLimitDialog !== null}
+        modelName={promptLimitDialog?.modelName || ''}
+        affectedCount={promptLimitDialog?.affectedCount || 0}
+        limitLabel={promptLimitDialog?.limitLabel || ''}
+        longestPromptLabel={promptLimitDialog?.longestPromptLabel || ''}
+        onCancel={() => {
+          promptLimitDialog?.resolve('cancel');
+          setPromptLimitDialog(null);
+        }}
+        onKeep={() => {
+          promptLimitDialog?.resolve('keep');
+          setPromptLimitDialog(null);
+        }}
+        onTruncate={() => {
+          promptLimitDialog?.resolve('truncate');
+          setPromptLimitDialog(null);
+        }}
+      />
       <ConfirmModal isOpen={showDeleteSelectedModal} onClose={() => setShowDeleteSelectedModal(false)} onConfirm={deleteSelectedDrafts} title={t('projectViewer.confirm.deleteSelectedDrafts.title')} message={t('projectViewer.confirm.deleteSelectedDrafts.message', { count: selectedDraftIds.size })} confirmText={t('projectViewer.confirm.deleteSelectedDrafts.confirm')} type="danger" />
       <ConfirmModal isOpen={showDeleteAllDraftsModal} onClose={() => setShowDeleteAllDraftsModal(false)} onConfirm={deleteAllDrafts} title={t('projectViewer.confirm.deleteAllDrafts.title')} message={t('projectViewer.confirm.deleteAllDrafts.message', { count: draftJobs.length })} confirmText={t('projectViewer.confirm.deleteAllDrafts.confirm')} type="danger" />
       <ConfirmModal isOpen={showDeleteProjectModal} onClose={() => setShowDeleteProjectModal(false)} onConfirm={onDelete} title={t('projectViewer.confirm.deleteProject.title')} message={t('projectViewer.confirm.deleteProject.message', { name: localProject.name })} confirmText={t('projectViewer.confirm.deleteProject.confirm')} type="danger" />

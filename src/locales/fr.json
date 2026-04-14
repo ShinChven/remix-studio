@@ -1005,6 +1005,7 @@
       "addToDraft": "Ajouter au brouillon"
     },
     "workflow": {
+      "characterCount": "{{count}} car.",
       "noTextContent": "Aucun contenu texte...",
       "pickFromLibrary": "Choisir dans la bibliothèque",
       "unknownLibrary": "Bibliothèque inconnue",
@@ -1043,6 +1044,14 @@
       "placeholder": "Saisissez votre prompt ici...",
       "characterCount": "Nombre de caractères : {{count}}",
       "saveChanges": "Enregistrer les modifications"
+    },
+    "promptLimitModal": {
+      "title": "Limite de prompt atteinte",
+      "message_one": "{{count}} brouillon pour {{model}} dépasse la limite du modèle ({{limit}}). Le prompt le plus long fait {{longest}}. Faut-il le couper avant d'ajouter les brouillons ?",
+      "message_other": "{{count}} brouillons pour {{model}} dépassent la limite du modèle ({{limit}}). Le prompt le plus long fait {{longest}}. Faut-il les couper avant d'ajouter les brouillons ?",
+      "cancel": "Annuler",
+      "keep": "Garder le prompt",
+      "truncate": "Couper à la limite"
     },
     "exportDialog": {
       "title": "Exporter le paquet",

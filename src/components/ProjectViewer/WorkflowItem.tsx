@@ -83,8 +83,11 @@ export function WorkflowItem({
             onClick={() => onEdit(item)}
             className="group/text relative cursor-pointer"
           >
-            <div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-xs text-neutral-400 line-clamp-4 min-h-[96px] transition-all hover:border-blue-500/30 hover:bg-neutral-900/50">
+            <div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 pb-8 text-xs text-neutral-400 line-clamp-4 min-h-[96px] transition-all hover:border-blue-500/30 hover:bg-neutral-900/50">
               {item.value || <span className="opacity-30 italic">{t('projectViewer.workflow.noTextContent')}</span>}
+              <div className="absolute bottom-2 left-2 rounded-md border border-neutral-800 bg-neutral-900/90 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-neutral-500">
+                {t('projectViewer.workflow.characterCount', { count: item.value.length })}
+              </div>
               <div className="absolute top-2 right-2 p-1.5 bg-neutral-900/80 rounded-md border border-neutral-800 opacity-100 transition-all hover:text-blue-400">
                 <Maximize2 className="w-3.5 h-3.5" />
               </div>

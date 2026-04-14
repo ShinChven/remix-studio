@@ -1005,6 +1005,7 @@
       "addToDraft": "下書きに追加"
     },
     "workflow": {
+      "characterCount": "{{count}} 文字",
       "noTextContent": "テキスト内容がありません...",
       "pickFromLibrary": "ライブラリから選択",
       "unknownLibrary": "不明なライブラリ",
@@ -1043,6 +1044,14 @@
       "placeholder": "ここにプロンプトを入力...",
       "characterCount": "文字数: {{count}}",
       "saveChanges": "変更を保存"
+    },
+    "promptLimitModal": {
+      "title": "プロンプトが上限を超えています",
+      "message_one": "{{model}} の草稿 {{count}} 件がモデル上限（{{limit}}）を超えています。最長のプロンプトは {{longest}} です。草稿に追加する前に上限まで切り詰めますか？",
+      "message_other": "{{model}} の草稿 {{count}} 件がモデル上限（{{limit}}）を超えています。最長のプロンプトは {{longest}} です。草稿に追加する前に上限まで切り詰めますか？",
+      "cancel": "キャンセル",
+      "keep": "そのまま追加",
+      "truncate": "上限まで切る"
     },
     "exportDialog": {
       "title": "パッケージをエクスポート",

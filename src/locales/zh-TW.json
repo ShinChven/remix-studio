@@ -1005,6 +1005,7 @@
       "addToDraft": "加入草稿"
     },
     "workflow": {
+      "characterCount": "{{count}} 字元",
       "noTextContent": "沒有文字內容...",
       "pickFromLibrary": "從資料庫挑選",
       "unknownLibrary": "未知資料庫",
@@ -1043,6 +1044,14 @@
       "placeholder": "在這裡輸入提示詞...",
       "characterCount": "字元數：{{count}}",
       "saveChanges": "儲存變更"
+    },
+    "promptLimitModal": {
+      "title": "提示詞超出限制",
+      "message_one": "{{model}} 有 {{count}} 個草稿提示詞超過模型限制（{{limit}}）。最長提示詞為 {{longest}}。要在加入草稿前截斷到限制內嗎？",
+      "message_other": "{{model}} 有 {{count}} 個草稿提示詞超過模型限制（{{limit}}）。最長提示詞為 {{longest}}。要在加入草稿前截斷到限制內嗎？",
+      "cancel": "取消",
+      "keep": "保留完整提示詞",
+      "truncate": "截斷到限制"
     },
     "exportDialog": {
       "title": "匯出封裝",

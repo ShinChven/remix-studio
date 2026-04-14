@@ -40,6 +40,7 @@ export interface ModelConfig {
   modelId: string; // The actual API model string (e.g. 'gemini-3.1-flash-image-preview')
   category: ProjectType; // 'image' | 'text' | 'video'
   apiUrl?: string; // Optional override
+  promptLimit?: PromptLimitMeta;
   options: {
     aspectRatios?: string[];
     qualities?: string[];
@@ -54,6 +55,36 @@ export interface ModelConfig {
   };
 }
 
+export interface PromptLimitMeta {
+  value: number;
+  unit: 'tokens' | 'characters';
+}
+
+const APPROX_CHARS_PER_TOKEN = 4;
+
+export function estimatePromptLength(prompt: string, limit?: PromptLimitMeta): number {
+  if (!limit) return prompt.length;
+  if (limit.unit === 'characters') return prompt.length;
+  return Math.ceil(prompt.length / APPROX_CHARS_PER_TOKEN);
+}
+
+export function isPromptOverLimit(prompt: string, limit?: PromptLimitMeta): boolean {
+  if (!limit) return false;
+  return estimatePromptLength(prompt, limit) > limit.value;
+}
+
+export function truncatePromptToLimit(prompt: string, limit?: PromptLimitMeta): string {
+  if (!limit || !isPromptOverLimit(prompt, limit)) return prompt;
+  if (limit.unit === 'characters') return prompt.slice(0, limit.value);
+  return prompt.slice(0, limit.value * APPROX_CHARS_PER_TOKEN).trimEnd();
+}
+
+export function formatPromptLimit(limit?: PromptLimitMeta): string {
+  if (!limit) return '';
+  const unit = limit.unit === 'tokens' ? 'tokens' : 'characters';
+  return `${limit.value.toLocaleString()} ${unit}`;
+}
+
 export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   GoogleAI: [
     {
@@ -62,6 +93,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'GoogleAI',
       modelId: 'gemini-3.1-flash-image-preview',
       category: 'image',
+      promptLimit: { value: 131072, unit: 'tokens' },
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21'],
         qualities: ['1K', '2K', '4K'],
@@ -73,6 +105,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'GoogleAI',
       modelId: 'gemini-3-flash-preview',
       category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
@@ -84,6 +117,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'GoogleAI',
       modelId: 'gemini-3.1-pro-preview',
       category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
@@ -95,6 +129,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'GoogleAI',
       modelId: 'gemini-3.1-flash-lite-preview',
       category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
@@ -106,6 +141,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'GoogleAI',
       modelId: 'veo-3.1-generate-preview',
       category: 'video',
+      promptLimit: { value: 1024, unit: 'tokens' },
       options: {
         aspectRatios: ['16:9', '9:16'],
         resolutions: ['720p', '1080p', '4k'],
@@ -118,6 +154,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'GoogleAI',
       modelId: 'veo-3.1-lite-generate-preview',
       category: 'video',
+      promptLimit: { value: 1024, unit: 'tokens' },
       options: {
         aspectRatios: ['16:9', '9:16'],
         resolutions: ['720p', '1080p'],
@@ -132,6 +169,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'VertexAI',
       modelId: 'gemini-3.1-flash-image-preview',
       category: 'image',
+      promptLimit: { value: 131072, unit: 'tokens' },
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21'],
         qualities: ['1K', '2K', '4K'],
@@ -143,6 +181,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'VertexAI',
       modelId: 'gemini-3-flash-preview',
       category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
@@ -154,6 +193,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'VertexAI',
       modelId: 'gemini-3.1-pro-preview',
       category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
@@ -165,6 +205,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'VertexAI',
       modelId: 'gemini-3.1-flash-lite-preview',
       category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
@@ -332,6 +373,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'OpenAI',
       modelId: 'gpt-5.4',
       category: 'text',
+      promptLimit: { value: 1050000, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
@@ -343,6 +385,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'OpenAI',
       modelId: 'gpt-5.4-mini',
       category: 'text',
+      promptLimit: { value: 400000, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
@@ -354,6 +397,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'OpenAI',
       modelId: 'gpt-5.4-nano',
       category: 'text',
+      promptLimit: { value: 400000, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
@@ -413,6 +457,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'Grok',
       modelId: 'grok-4.20-0309-non-reasoning',
       category: 'text',
+      promptLimit: { value: 2000000, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
@@ -424,6 +469,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'Grok',
       modelId: 'grok-4-1-fast-non-reasoning',
       category: 'text',
+      promptLimit: { value: 2000000, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
@@ -449,6 +495,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'Claude',
       modelId: 'claude-opus-4-6',
       category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
@@ -460,6 +507,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'Claude',
       modelId: 'claude-sonnet-4-6',
       category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
@@ -471,6 +519,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'Claude',
       modelId: 'claude-haiku-4-5-20251001',
       category: 'text',
+      promptLimit: { value: 200000, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
