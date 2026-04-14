@@ -1272,7 +1272,11 @@
       "recycleBin": "Recycle Bin cleanup",
       "recycleBinDesc": "{{size}} can be permanently removed.",
       "projectReview": "Project storage review",
-      "projectReviewDesc": "Inspect the heaviest projects and clear orphaned assets where needed."
+      "projectReviewDesc": "Inspect the heaviest projects and clear orphaned assets where needed.",
+      "tierFree": "Free",
+      "tierProfessional": "Professional",
+      "tierPremium": "Premium",
+      "tierCustom": "Custom"
     },
     "security": {
       "errorTitle": "Security unavailable",

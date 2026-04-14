@@ -54,7 +54,11 @@
       "recycleBin": "ゴミ箱のクリーンアップ",
       "recycleBinDesc": "{{size}} を完全に削除できます。",
       "projectReview": "プロジェクトのストレージ確認",
-      "projectReviewDesc": "容量の大きいプロジェクトを確認し、必要に応じて孤立したアセットを整理します。"
+      "projectReviewDesc": "容量の大きいプロジェクトを確認し、必要に応じて孤立したアセットを整理します。",
+      "tierFree": "無料",
+      "tierProfessional": "プロフェッショナル",
+      "tierPremium": "プレミアム",
+      "tierCustom": "カスタム"
     },
     "security": {
       "errorTitle": "セキュリティを読み込めません",

@@ -830,7 +830,11 @@
       "recycleBin": "回收站清理",
       "recycleBinDesc": "可以永久删除 {{size}} 的内容。",
       "projectReview": "项目存储检查",
-      "projectReviewDesc": "检查占用最多的项目，并根据需要清理孤立资产。"
+      "projectReviewDesc": "检查占用最多的项目，并根据需要清理孤立资产。",
+      "tierFree": "免费",
+      "tierProfessional": "专业",
+      "tierPremium": "高级",
+      "tierCustom": "自定义"
     },
     "security": {
       "errorTitle": "安全设置不可用",

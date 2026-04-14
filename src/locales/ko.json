@@ -54,7 +54,11 @@
       "recycleBin": "휴지통 정리",
       "recycleBinDesc": "{{size}}를 영구적으로 제거할 수 있습니다.",
       "projectReview": "프로젝트 저장공간 검토",
-      "projectReviewDesc": "용량이 큰 프로젝트를 확인하고 필요하면 고아 자산을 정리하세요."
+      "projectReviewDesc": "용량이 큰 프로젝트를 확인하고 필요하면 고아 자산을 정리하세요.",
+      "tierFree": "무료",
+      "tierProfessional": "프로페셔널",
+      "tierPremium": "프리미엄",
+      "tierCustom": "사용자 지정"
     },
     "security": {
       "errorTitle": "보안 정보를 불러올 수 없습니다",

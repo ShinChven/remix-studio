@@ -115,7 +115,7 @@ export function MainLayout() {
           </Link>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`hidden lg:flex p-2 rounded-lg hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-200 transition-colors ${isCollapsed ? 'w-full justify-center' : ''}`}
+            className={`hidden lg:flex p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors ${isCollapsed ? 'w-full justify-center' : ''}`}
             title={isCollapsed ? t('mainLayout.expandSidebar') : t('mainLayout.collapseSidebar')}
           >
             {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
@@ -133,8 +133,8 @@ export function MainLayout() {
             to="/"
             onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/'
-                ? 'bg-blue-600/10 text-blue-400 border-blue-600/20'
-                : 'hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-200 border-transparent'
+                ? 'bg-blue-600/10 text-blue-700 dark:text-blue-400 border-blue-600/20'
+                : 'hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title={t('sidebar.dashboard')}
           >
@@ -146,8 +146,8 @@ export function MainLayout() {
             to="/projects"
             onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/projects' || location.pathname.startsWith('/project/')
-                ? 'bg-green-600/10 text-green-400 border-green-600/20'
-                : 'hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-200 border-transparent'
+                ? 'bg-green-600/10 text-green-700 dark:text-green-400 border-green-600/20'
+                : 'hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title={t('sidebar.projects')}
           >
@@ -159,8 +159,8 @@ export function MainLayout() {
             to="/libraries"
             onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/libraries' || location.pathname.startsWith('/library/')
-                ? 'bg-blue-600/10 text-blue-400 border-blue-600/20'
-                : 'hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-200 border-transparent'
+                ? 'bg-blue-600/10 text-blue-700 dark:text-blue-400 border-blue-600/20'
+                : 'hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title={t('sidebar.libraries')}
           >
@@ -172,8 +172,8 @@ export function MainLayout() {
             to="/providers"
             onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/providers' || location.pathname.startsWith('/provider/')
-                ? 'bg-amber-600/10 text-amber-400 border-amber-600/20'
-                : 'hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-200 border-transparent'
+                ? 'bg-amber-600/10 text-amber-700 dark:text-amber-400 border-amber-600/20'
+                : 'hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title={t('sidebar.providers')}
           >
@@ -185,8 +185,8 @@ export function MainLayout() {
             to="/account/mcp"
             onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/account/mcp'
-                ? 'bg-violet-600/10 text-violet-400 border-violet-600/20'
-                : 'hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-200 border-transparent'
+                ? 'bg-violet-600/10 text-violet-700 dark:text-violet-400 border-violet-600/20'
+                : 'hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title={t('sidebar.mcp')}
           >
@@ -198,8 +198,8 @@ export function MainLayout() {
             to="/exports"
             onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/exports'
-                ? 'bg-blue-600/10 text-blue-400 border-blue-600/20'
-                : 'hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-200 border-transparent'
+                ? 'bg-blue-600/10 text-blue-700 dark:text-blue-400 border-blue-600/20'
+                : 'hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title={t('sidebar.archive')}
           >
@@ -211,8 +211,8 @@ export function MainLayout() {
             to="/trash"
             onClick={() => setIsMobileMenuOpen(false)}
             className={`w-full px-3 py-2 rounded-lg flex items-center transition-all border ${location.pathname === '/trash'
-                ? 'bg-red-600/10 text-red-400 border-red-600/20'
-                : 'hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-200 border-transparent'
+                ? 'bg-red-600/10 text-red-700 dark:text-red-400 border-red-600/20'
+                : 'hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
               } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title={t('sidebar.recycleBin')}
           >
@@ -228,7 +228,7 @@ export function MainLayout() {
             onClick={() => setIsMobileMenuOpen(false)}
             className={`flex items-center overflow-hidden rounded-xl border p-3 transition-colors ${location.pathname === '/account'
                 ? 'border-cyan-600/30 bg-cyan-600/10'
-                : 'border-neutral-700/50 bg-neutral-200/40 dark:bg-neutral-800/40 hover:border-neutral-600 hover:bg-neutral-800/70'
+                : 'border-neutral-700/50 bg-neutral-200/40 dark:bg-neutral-800/40 hover:border-neutral-600 hover:bg-neutral-200 dark:hover:bg-neutral-800/70'
               } ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
               }`}
           >
@@ -240,8 +240,8 @@ export function MainLayout() {
             </div>
             {!isCollapsed && (
               <div className="ml-auto min-w-0 flex-1 text-right">
-                <p className={`text-[10px] uppercase tracking-wider ${location.pathname === '/account' ? 'text-cyan-200/70' : 'text-neutral-500 dark:text-neutral-500'}`}>{t('sidebar.storage')}</p>
-                <p className={`text-xs font-medium truncate ${location.pathname === '/account' ? 'text-cyan-50' : 'text-neutral-700 dark:text-neutral-300'}`} title={storageText}>
+                <p className={`text-[10px] uppercase tracking-wider ${location.pathname === '/account' ? 'text-cyan-700 dark:text-cyan-200/70' : 'text-neutral-500 dark:text-neutral-500'}`}>{t('sidebar.storage')}</p>
+                <p className={`text-xs font-medium truncate ${location.pathname === '/account' ? 'text-cyan-900 dark:text-cyan-50' : 'text-neutral-700 dark:text-neutral-300'}`} title={storageText}>
                   {storageText}
                 </p>
                 <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
@@ -258,11 +258,11 @@ export function MainLayout() {
             <Link
               to="/admin/users"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`mt-3 flex items-center rounded-xl border border-neutral-700/50 bg-neutral-200/40 dark:bg-neutral-800/40 p-3 text-sm text-neutral-700 dark:text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-800/70 ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
+              className={`mt-3 flex items-center rounded-xl border border-neutral-700/50 bg-neutral-200/40 dark:bg-neutral-800/40 p-3 text-sm text-neutral-700 dark:text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-200 dark:hover:bg-neutral-800/70 ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
                 }`}
               title={t('sidebar.userManagement')}
             >
-              <Shield className="w-5 h-5 text-blue-400 flex-shrink-0" />
+              <Shield className="w-5 h-5 text-blue-700 dark:text-blue-400 flex-shrink-0" />
               <span className={`overflow-hidden whitespace-nowrap font-medium transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline'}`}>{t('sidebar.userManagement')}</span>
             </Link>
           )}

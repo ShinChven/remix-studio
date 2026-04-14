@@ -54,7 +54,11 @@
       "recycleBin": "資源回收筒清理",
       "recycleBinDesc": "可永久移除 {{size}}。",
       "projectReview": "專案儲存檢查",
-      "projectReviewDesc": "檢查占用空間最多的專案，並視需要清理孤立資產。"
+      "projectReviewDesc": "檢查占用空間最多的專案，並視需要清理孤立資產。",
+      "tierFree": "免費",
+      "tierProfessional": "專業",
+      "tierPremium": "高級",
+      "tierCustom": "自定義"
     },
     "security": {
       "errorTitle": "安全設定不可用",

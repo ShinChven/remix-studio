@@ -52,7 +52,7 @@ export function StorageIndicator({ isCollapsed }: StorageIndicatorProps) {
       onClick={() => navigate('/account?tab=storage')}
       className={`
         mx-3 mb-2 p-2 rounded-xl cursor-pointer transition-all duration-300
-        bg-neutral-200/40 dark:bg-neutral-800/40 border border-neutral-700/50 hover:bg-neutral-800/60 hover:border-neutral-600
+        bg-neutral-100 dark:bg-neutral-800/40 border border-neutral-300 dark:border-neutral-700/50 hover:bg-neutral-200 dark:hover:bg-neutral-800/60 hover:border-neutral-300 dark:hover:border-neutral-600
         flex items-center gap-3 overflow-hidden
         ${isCollapsed ? 'justify-center' : ''}
       `}

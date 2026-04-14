@@ -54,7 +54,11 @@
       "recycleBin": "Nettoyage de la corbeille",
       "recycleBinDesc": "{{size}} peuvent être supprimés définitivement.",
       "projectReview": "Analyse du stockage des projets",
-      "projectReviewDesc": "Inspectez les projets les plus volumineux et supprimez les éléments orphelins si nécessaire."
+      "projectReviewDesc": "Inspectez les projets les plus volumineux et supprimez les éléments orphelins si nécessaire.",
+      "tierFree": "Gratuit",
+      "tierProfessional": "Professionnel",
+      "tierPremium": "Premium",
+      "tierCustom": "Personnalisé"
     },
     "security": {
       "errorTitle": "Sécurité indisponible",
