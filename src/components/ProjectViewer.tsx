@@ -4,8 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Project, Job, Library, WorkflowItem as WorkflowItemType, WorkflowItemType as WorkflowItemTypeKind, Provider, AlbumItem } from '../types';
 import { saveImage, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch } from '../api';
-import { CheckCircle2, List, Grid, ChevronLeft, Type, ImageIcon, Library as LibraryIcon, Plus, Settings, Trash2, Eraser } from 'lucide-react';
-import { PageHeader } from './PageHeader';
+import { CheckCircle2, List, Grid, ChevronLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
@@ -16,12 +15,11 @@ import { LibrarySelectionModal } from './ProjectViewer/LibrarySelectionModal';
 import { LibraryPreviewModal } from './ProjectViewer/LibraryPreviewModal';
 import { PromptModal } from './ProjectViewer/PromptModal';
 import { ImageLightbox } from './ProjectViewer/ImageLightbox';
-import { WorkflowItem } from './ProjectViewer/WorkflowItem';
-import { SettingsPanel } from './ProjectViewer/SettingsPanel';
 import { DraftsTab } from './ProjectViewer/DraftsTab';
 import { QueueTab } from './ProjectViewer/QueueTab';
 import { CompletedTab } from './ProjectViewer/CompletedTab';
 import { AlbumTab } from './ProjectViewer/AlbumTab';
+import { WorkflowPanel } from './ProjectViewer/WorkflowPanel';
 
 interface Props {
   project: Project;
@@ -622,88 +620,53 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         document.getElementById('mobile-header-actions')!
       )}
 
-      {/* Left Pane: Workflow Builder */}
-      <div className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-800 bg-neutral-900/30 flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
-        <PageHeader
-          title={localProject.name}
-          description={(
-            <div className="flex flex-col gap-2 mt-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-neutral-950 border border-neutral-800 rounded">{t('projectViewer.main.projectId', { id: project.id })}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span title={t('projectViewer.main.autoSavedTitle')} className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold uppercase tracking-widest opacity-60">
-                  <CheckCircle2 className="w-3 h-3" /> {t('projectViewer.main.autoSaved')}
-                </span>
-              </div>
-            </div>
-          )}
-          className="p-4 border-b border-neutral-800 mb-0"
-          headerClassName="max-w-full"
-          actions={(
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => navigate(`/project/${project.id}/edit`)}
-                className="p-1.5 text-neutral-600 hover:text-green-400 transition-all hover:bg-green-400/10 rounded-lg"
-                title={t('projectViewer.main.editProjectInfo')}
-              ><Settings className="w-4 h-4" /></button>
-              <button
-                onClick={() => navigate(`/project/${project.id}/orphans`)}
-                className="p-1.5 text-neutral-600 hover:text-blue-400 transition-all hover:bg-blue-400/10 rounded-lg"
-                title={t('projectViewer.main.manageOrphans')}
-              ><Eraser className="w-4 h-4" /></button>
-              <button 
-                onClick={() => setShowDeleteProjectModal(true)} 
-                className="p-1.5 text-neutral-600 hover:text-red-400 transition-all hover:bg-red-400/10 rounded-lg" 
-                title={t('projectViewer.main.deleteProject')}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        />
-
-        <div className="p-3 border-b border-neutral-800 flex gap-2 bg-neutral-900/50">
-          <button onClick={() => addWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
-            <Type className="w-3 h-3" /> {t('projectViewer.common.text')}
-          </button>
-          <button onClick={() => addWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
-            <ImageIcon className="w-3 h-3" /> {t('projectViewer.common.imageShort')}
-          </button>
-          <button onClick={() => addWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
-            <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
-          </button>
-        </div>
-        <div ref={workflowListRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar lg:max-h-none">
-          {(localProject.workflow || []).map((item, index) => (
-            <WorkflowItem
-              key={item.id} item={item} index={index} draggedIndex={draggedIndex} dragOverIndex={dragOverIndex}
-              onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} onDragEnd={() => { setDraggedIndex(null); setDragOverIndex(null); }}
-              onRemove={setItemToRemoveId} onEdit={setEditingItem} onPreviewLibrary={(lib) => {
-                setPreviewingLibrary(lib);
-                setPreviewingWorkflowItemId(item.id);
-              }}
-              onImageUpload={handleImageUpload} uploadingItemIds={uploadingItemIds} libraries={libraries}
-              onLightbox={(images, index) => setLightboxData({ images, index })}
-              onUpdateTags={updateWorkflowItemTags}
-              onSelectFromLibrary={(id) => setSelectingLibraryForItemId(id)}
-            />
-          ))}
-          {(localProject.workflow || []).length === 0 && (
-            <div className="text-center text-neutral-600 text-[10px] font-bold uppercase tracking-widest py-12 border border-dashed border-neutral-800 rounded-2xl bg-neutral-900/20">{t('projectViewer.main.buildWorkflow')}</div>
-          )}
-        </div>
-
-        <SettingsPanel
-          localProject={localProject} setLocalProject={setLocalProject} onUpdate={onUpdate}
-          providers={providers} selectedProviderId={selectedProviderId} selectedModelId={selectedModelId}
-          isSettingsCollapsed={isSettingsCollapsed} setIsSettingsCollapsed={setIsSettingsCollapsed}
-          queueCount={queueCount} setQueueCount={setQueueCount} setHasManuallySetQueueCount={setHasManuallySetQueueCount}
-          combinations={combinations} setIsModelSelectorOpen={setIsModelSelectorOpen}
-          workflowError={workflowError} uploadingItemIds={uploadingItemIds} onAddDraftsToQueue={addDraftsToQueue}
-          isAddingDrafts={isAddingDrafts} draftsProgress={draftsProgress}
-        />
-      </div>
+      <WorkflowPanel
+        project={project}
+        localProject={localProject}
+        libraries={libraries}
+        providers={providers}
+        mobileView={mobileView}
+        workflowListRef={workflowListRef}
+        draggedIndex={draggedIndex}
+        dragOverIndex={dragOverIndex}
+        selectedProviderId={selectedProviderId}
+        selectedModelId={selectedModelId}
+        isSettingsCollapsed={isSettingsCollapsed}
+        queueCount={queueCount}
+        workflowError={workflowError}
+        uploadingItemIds={uploadingItemIds}
+        isAddingDrafts={isAddingDrafts}
+        draftsProgress={draftsProgress}
+        combinations={combinations}
+        onNavigateToEdit={() => navigate(`/project/${project.id}/edit`)}
+        onNavigateToOrphans={() => navigate(`/project/${project.id}/orphans`)}
+        onShowDeleteProject={() => setShowDeleteProjectModal(true)}
+        onAddWorkflowItem={addWorkflowItem}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onDragEnd={() => {
+          setDraggedIndex(null);
+          setDragOverIndex(null);
+        }}
+        onRemoveItem={setItemToRemoveId}
+        onEditItem={setEditingItem}
+        onPreviewLibrary={(lib, workflowItemId) => {
+          setPreviewingLibrary(lib);
+          setPreviewingWorkflowItemId(workflowItemId);
+        }}
+        onImageUpload={handleImageUpload}
+        onLightbox={(images, index) => setLightboxData({ images, index })}
+        onUpdateTags={updateWorkflowItemTags}
+        onSelectFromLibrary={setSelectingLibraryForItemId}
+        setLocalProject={setLocalProject}
+        onUpdate={onUpdate}
+        setIsSettingsCollapsed={setIsSettingsCollapsed}
+        setQueueCount={setQueueCount}
+        setHasManuallySetQueueCount={setHasManuallySetQueueCount}
+        setIsModelSelectorOpen={setIsModelSelectorOpen}
+        onAddDraftsToQueue={addDraftsToQueue}
+      />
 
       <div className={`flex-1 flex-col overflow-hidden min-h-0 ${mobileView === 'jobs' ? 'flex h-full' : 'hidden lg:flex'}`}>
         <div className="p-3 border-b border-neutral-800 bg-neutral-900/20 backdrop-blur-md shadow-sm flex flex-col gap-3">
