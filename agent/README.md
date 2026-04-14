@@ -12,3 +12,4 @@ Suggested entry points:
 - `image-handling.md` for image upload, storage, and signing behavior
 - `storage-analytics.md` for quota and storage analysis behavior
 - `queue-architecture-design.md` and `runninghub-polling-strategy.md` for generation queue behavior
+- `glassmorphism-design-spec.md` for visual and UI design standards

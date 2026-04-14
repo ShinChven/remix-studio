@@ -138,8 +138,11 @@ export function WorkflowPanel({
         <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
           <Type className="w-3 h-3" /> {t('projectViewer.common.text')}
         </button>
+        <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
+          <ImageIcon className="w-3 h-3" /> {t('projectViewer.common.imageShort')}
+        </button>
         <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
-          <LibraryIcon className="w-3 h-3" /> {t('projectViewer.tabs.library')}
+          <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
         </button>
         {localProject.type === 'video' && (
           <>
@@ -168,9 +171,6 @@ export function WorkflowPanel({
             })()}
           </>
         )}
-        <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
-          <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
-        </button>
       </div>
 
       <div ref={workflowListRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar lg:max-h-none">
