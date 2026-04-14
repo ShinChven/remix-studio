@@ -6,6 +6,32 @@ import { useTranslation } from 'react-i18next';
 import { fetchStorageAnalysis } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 
+function NavItem({ to, icon, label, isActive, isCollapsed, onClick }: {
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  isActive: boolean;
+  isCollapsed: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={`w-full px-3 py-2.5 rounded-xl flex items-center transition-all border ${isActive
+          ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
+          : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
+        } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+      title={label}
+    >
+      {icon}
+      <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>
+        {label}
+      </span>
+    </Link>
+  );
+}
+
 export function MainLayout() {
   const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -129,96 +155,68 @@ export function MainLayout() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          <Link
+          <NavItem
             to="/"
+            icon={<LayoutGrid className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.dashboard')}
+            isActive={location.pathname === '/'}
+            isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2.5 rounded-xl flex items-center transition-all border ${location.pathname === '/'
-                ? 'bg-blue-600 text-white border-blue-700 shadow-md shadow-blue-600/10'
-                : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
-              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title={t('sidebar.dashboard')}
-          >
-            <LayoutGrid className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.dashboard')}</span>
-          </Link>
+          />
 
-          <Link
+          <NavItem
             to="/projects"
+            icon={<Play className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.projects')}
+            isActive={location.pathname === '/projects' || location.pathname.startsWith('/project/')}
+            isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2.5 rounded-xl flex items-center transition-all border ${location.pathname === '/projects' || location.pathname.startsWith('/project/')
-                ? 'bg-green-600 text-white border-green-700 shadow-md shadow-green-600/10'
-                : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
-              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title={t('sidebar.projects')}
-          >
-            <Play className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.projects')}</span>
-          </Link>
+          />
 
-          <Link
+          <NavItem
             to="/libraries"
+            icon={<Folder className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.libraries')}
+            isActive={location.pathname === '/libraries' || location.pathname.startsWith('/library/')}
+            isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2.5 rounded-xl flex items-center transition-all border ${location.pathname === '/libraries' || location.pathname.startsWith('/library/')
-                ? 'bg-blue-600 text-white border-blue-700 shadow-md shadow-blue-600/10'
-                : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
-              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title={t('sidebar.libraries')}
-          >
-            <Folder className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.libraries')}</span>
-          </Link>
+          />
 
-          <Link
+          <NavItem
             to="/providers"
+            icon={<Key className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.providers')}
+            isActive={location.pathname === '/providers' || location.pathname.startsWith('/provider/')}
+            isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2.5 rounded-xl flex items-center transition-all border ${location.pathname === '/providers' || location.pathname.startsWith('/provider/')
-                ? 'bg-amber-600 text-white border-amber-700 shadow-md shadow-amber-600/10'
-                : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
-              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title={t('sidebar.providers')}
-          >
-            <Key className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.providers')}</span>
-          </Link>
+          />
 
-          <Link
+          <NavItem
             to="/account/mcp"
+            icon={<Unplug className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.mcp')}
+            isActive={location.pathname === '/account/mcp'}
+            isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2.5 rounded-xl flex items-center transition-all border ${location.pathname === '/account/mcp'
-                ? 'bg-violet-600 text-white border-violet-700 shadow-md shadow-violet-600/10'
-                : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
-              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title={t('sidebar.mcp')}
-          >
-            <Unplug className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.mcp')}</span>
-          </Link>
+          />
 
-          <Link
+          <NavItem
             to="/exports"
+            icon={<FileArchive className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.archive')}
+            isActive={location.pathname === '/exports'}
+            isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2.5 rounded-xl flex items-center transition-all border ${location.pathname === '/exports'
-                ? 'bg-blue-600 text-white border-blue-700 shadow-md shadow-blue-600/10'
-                : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
-              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title={t('sidebar.archive')}
-          >
-            <FileArchive className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.archive')}</span>
-          </Link>
+          />
 
-          <Link
+          <NavItem
             to="/trash"
+            icon={<Trash2 className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.recycleBin')}
+            isActive={location.pathname === '/trash'}
+            isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`w-full px-3 py-2.5 rounded-xl flex items-center transition-all border ${location.pathname === '/trash'
-                ? 'bg-red-600 text-white border-red-700 shadow-md shadow-red-600/10'
-                : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border-transparent'
-              } gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
-            title={t('sidebar.recycleBin')}
-          >
-            <Trash2 className="w-5 h-5 flex-shrink-0" />
-            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100'}`}>{t('sidebar.recycleBin')}</span>
-          </Link>
+          />
         </div>
 
         {/* User Profile */}
@@ -227,26 +225,26 @@ export function MainLayout() {
             to="/account"
             onClick={() => setIsMobileMenuOpen(false)}
             className={`flex items-center overflow-hidden rounded-xl border p-3 transition-colors ${location.pathname === '/account'
-                ? 'border-cyan-500/50 bg-cyan-50 dark:bg-cyan-600/10 shadow-sm'
+                ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
                 : 'border-neutral-200/50 dark:border-neutral-700/30 bg-white/10 dark:bg-black/20 hover:bg-white/20 dark:hover:bg-black/30 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
               } ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
               }`}
           >
             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${location.pathname === '/account'
-                ? 'bg-cyan-500/15 text-cyan-300'
+                ? 'bg-white/20 text-white'
                 : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
               }`}>
               <UserIcon className="w-4 h-4" />
             </div>
             {!isCollapsed && (
               <div className="ml-auto min-w-0 flex-1 text-right">
-                <p className={`text-[10px] uppercase tracking-wider ${location.pathname === '/account' ? 'text-cyan-700 dark:text-cyan-200/70' : 'text-neutral-500 dark:text-neutral-500'}`}>{t('sidebar.storage')}</p>
-                <p className={`text-xs font-medium truncate ${location.pathname === '/account' ? 'text-cyan-900 dark:text-cyan-50' : 'text-neutral-700 dark:text-neutral-300'}`} title={storageText}>
+                <p className={`text-[10px] uppercase tracking-wider ${location.pathname === '/account' ? 'text-white/70' : 'text-neutral-500 dark:text-neutral-500'}`}>{t('sidebar.storage')}</p>
+                <p className={`text-xs font-medium truncate ${location.pathname === '/account' ? 'text-white' : 'text-neutral-700 dark:text-neutral-300'}`} title={storageText}>
                   {storageText}
                 </p>
-                <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800 border border-neutral-200 dark:border-transparent">
+                <div className={`mt-1.5 h-2 w-full overflow-hidden rounded-full ${location.pathname === '/account' ? 'bg-white/20' : 'bg-neutral-200 dark:bg-neutral-800'} border border-neutral-200 dark:border-transparent`}>
                   <div
-                    className={`h-full rounded-full transition-all ${storageUsagePercent > 90 ? 'bg-red-500' : storageUsagePercent > 70 ? 'bg-amber-500' : 'bg-blue-500'
+                    className={`h-full rounded-full transition-all ${location.pathname === '/account' ? 'bg-white' : (storageUsagePercent > 90 ? 'bg-red-500' : storageUsagePercent > 70 ? 'bg-amber-500' : 'bg-blue-500')
                       }`}
                     style={{ width: `${storageUsagePercent}%` }}
                   />
@@ -258,11 +256,14 @@ export function MainLayout() {
             <Link
               to="/admin/users"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`mt-3 flex items-center rounded-xl border border-neutral-200/50 dark:border-neutral-700/30 bg-white/10 dark:bg-black/20 p-3 text-sm text-neutral-700 dark:text-neutral-300 transition-colors hover:bg-white/20 dark:hover:bg-black/30 ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
+              className={`mt-3 flex items-center rounded-xl border transition-all ${location.pathname === '/admin/users'
+                  ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
+                  : 'border-neutral-200/50 dark:border-neutral-700/30 bg-white/10 dark:bg-black/20 text-neutral-700 dark:text-neutral-300 hover:bg-white/20 dark:hover:bg-black/30'
+                } p-3 text-sm ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
                 }`}
               title={t('sidebar.userManagement')}
             >
-              <Shield className="w-5 h-5 text-blue-700 dark:text-blue-400 flex-shrink-0" />
+              <Shield className={`w-5 h-5 flex-shrink-0 ${location.pathname === '/admin/users' ? 'text-white' : 'text-blue-700 dark:text-blue-400'}`} />
               <span className={`overflow-hidden whitespace-nowrap font-medium transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline'}`}>{t('sidebar.userManagement')}</span>
             </Link>
           )}

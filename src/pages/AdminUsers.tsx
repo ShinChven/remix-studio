@@ -141,6 +141,13 @@ export function AdminUsers() {
   }, [filters]);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((current) => ({ ...current, q: searchInput.trim(), page: 1 }));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
     if (!activeUserId) {
       setActiveUser(null);
       setDetailError('');
@@ -156,10 +163,6 @@ export function AdminUsers() {
     }
   };
 
-  const handleFilterSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    setFilters((current) => ({ ...current, q: searchInput.trim(), page: 1 }));
-  };
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     try {
@@ -268,7 +271,7 @@ export function AdminUsers() {
         />
 
         <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 overflow-hidden shadow-sm backdrop-blur-xl">
-          <form onSubmit={handleFilterSubmit} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_120px]">
+          <form onSubmit={(e) => e.preventDefault()} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
             <label className="flex items-center gap-3 border-r border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-950/40 px-6 py-4">
               <Search className="h-4 w-4 text-neutral-400 dark:text-neutral-500" />
               <input
@@ -299,13 +302,6 @@ export function AdminUsers() {
               <option value="disabled">{t('adminUsers.disabled')}</option>
             </select>
 
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center gap-2 bg-neutral-900 dark:bg-neutral-800 hover:bg-black dark:hover:bg-neutral-700 px-6 py-4 text-xs font-black text-white transition-all uppercase tracking-widest active:scale-95"
-            >
-              <Filter className="h-4 w-4" />
-              {t('adminUsers.apply')}
-            </button>
           </form>
         </section>
 
