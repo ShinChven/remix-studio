@@ -19,7 +19,6 @@ interface CompletedTabProps {
   toggleSelectAllCompleted: () => void;
   setShowDeleteSelectedModal: (show: boolean) => void;
   projectType?: ProjectType;
-  viewMode?: 'standard' | 'compact';
 }
 
 export function CompletedTab({
@@ -35,12 +34,11 @@ export function CompletedTab({
   toggleSelectAllCompleted,
   setShowDeleteSelectedModal,
   projectType = 'image',
-  viewMode = 'standard'
 }: CompletedTabProps) {
   const { t } = useTranslation();
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className={`flex flex-col ${viewMode === 'standard' ? 'gap-4' : 'gap-0'}`}>
+      <div className="flex flex-col gap-0">
         {/* Completed Jobs Header/Toolbar */}
         {completedJobs.length > 0 && (
           <SelectionToolbar
@@ -50,7 +48,6 @@ export function CompletedTab({
             onToggleSelectAll={toggleSelectAllCompleted}
             mobileSingleLine
             mobileActionsRight
-            viewMode={viewMode}
             rightActions={
               selectedCompletedIds.size > 0 ? (
                 <button
@@ -68,7 +65,7 @@ export function CompletedTab({
         )}
 
         {/* Jobs List */}
-        <div className={viewMode === 'standard' ? 'space-y-3' : 'space-y-0'}>
+        <div className="space-y-0">
           {completedJobs.map(job => {
             const isExpanded = expandedJobId === job.id;
             const isSelected = selectedCompletedIds.has(job.id);
@@ -84,7 +81,6 @@ export function CompletedTab({
                 modelName={getModelName(job.providerId, job.modelConfigId)}
                 onToggleExpand={toggleJobExpand}
                 onToggleSelect={toggleCompletedSelection}
-                viewMode={viewMode}
                 statusBadge={
                   <InfoChip className="text-emerald-500 bg-emerald-500/5 border-emerald-500/20">
                     {t('projectViewer.completed.completed')}

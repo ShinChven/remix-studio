@@ -130,14 +130,14 @@ export function WorkflowPanel({
         </div>
       </div>
 
-      <div className="p-3 border-b border-neutral-800 flex gap-2 bg-neutral-900/50">
-        <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
+      <div className="h-[57px] p-3 border-b border-neutral-800 flex gap-2 bg-neutral-900/50 items-center">
+        <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
           <Type className="w-3 h-3" /> {t('projectViewer.common.text')}
         </button>
-        <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
+        <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
           <ImageIcon className="w-3 h-3" /> {t('projectViewer.common.imageShort')}
         </button>
-        <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-2 rounded-lg text-neutral-400 hover:text-white transition-colors">
+        <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
           <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
         </button>
       </div>

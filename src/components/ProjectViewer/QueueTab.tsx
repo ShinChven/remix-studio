@@ -22,7 +22,6 @@ interface QueueTabProps {
   runJob: (id: string) => void;
   setJobToDeleteId: (id: string) => void;
   setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void } | null) => void;
-  viewMode?: 'standard' | 'compact';
 }
 
 export function QueueTab({
@@ -40,12 +39,11 @@ export function QueueTab({
   runJob,
   setJobToDeleteId,
   setLightboxData,
-  viewMode = 'standard'
 }: QueueTabProps) {
   const { t } = useTranslation();
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className={`flex flex-col ${viewMode === 'standard' ? 'gap-4' : 'gap-0'}`}>
+      <div className="flex flex-col gap-0">
         {/* Queue Toolbar */}
         {queueJobs.length > 0 && (
           <SelectionToolbar
@@ -54,7 +52,6 @@ export function QueueTab({
             onToggleSelectAll={toggleSelectAllQueue}
             mobileSingleLine
             mobileActionsRight
-            viewMode={viewMode}
             rightActions={
               <>
                 {selectedQueueIds.size > 0 && (
@@ -96,7 +93,7 @@ export function QueueTab({
         )}
 
         {/* Active Jobs */}
-        <div className={viewMode === 'standard' ? 'space-y-3' : 'space-y-0'}>
+        <div className="space-y-0">
             {queueJobs.map(task => {
               const isExpanded = expandedJobId === task.id;
               const isSelected = selectedQueueIds.has(task.id);
@@ -112,7 +109,6 @@ export function QueueTab({
                   modelName={getModelName(task.providerId, task.modelConfigId)}
                   onToggleExpand={toggleJobExpand}
                   onToggleSelect={toggleQueueSelection}
-                  viewMode={viewMode}
                   metaChips={
                     <>
                       {task.aspectRatio && (

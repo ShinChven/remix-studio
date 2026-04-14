@@ -26,7 +26,6 @@ interface AlbumTabProps {
   setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void } | null) => void;
   onExportStarted: () => void;
   projectType?: ProjectType;
-  viewMode?: 'standard' | 'compact';
 }
 
 export function AlbumTab({
@@ -43,7 +42,6 @@ export function AlbumTab({
   setLightboxData,
   onExportStarted,
   projectType = 'image',
-  viewMode = 'standard'
 }: AlbumTabProps) {
   const { t } = useTranslation();
   const getDefaultExportPackageName = (name: string) => {
@@ -86,7 +84,7 @@ export function AlbumTab({
 
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className={`flex flex-col ${viewMode === 'standard' ? 'gap-4' : 'gap-0'}`}>
+      <div className="flex flex-col gap-0">
         {albumItems.length > 0 && (
           <SelectionToolbar
             totalCount={albumItems.length}
@@ -94,7 +92,6 @@ export function AlbumTab({
             onToggleSelectAll={toggleSelectAllAlbum}
             mobileSingleLine
             mobileActionsRight
-            viewMode={viewMode}
             prefix={!isTextProject && (
               <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                 <Layers className="w-4 h-4 text-blue-500" />
@@ -167,7 +164,7 @@ export function AlbumTab({
             </div>
           </div>
         ) : isTextProject ? (
-          <div className={`overflow-hidden border border-neutral-800 bg-neutral-900/40 ${viewMode === 'standard' ? 'rounded-2xl' : 'rounded-none border-x-0 border-t-0'}`}>
+          <div className="overflow-hidden border border-neutral-800 bg-neutral-900/40 rounded-none border-x-0 border-t-0">
             {albumItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               return (
@@ -216,16 +213,12 @@ export function AlbumTab({
             })}
           </div>
         ) : (
-          <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 ${viewMode === 'standard' ? 'gap-6' : 'gap-0'}`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-0">
             {albumItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = item.aspectRatio?.replace(':', '/') || '1/1';
               return (
-                <div key={item.id} className={`bg-neutral-950/50 border overflow-hidden flex flex-col group transition-all duration-300 active:scale-100 ${
-                  viewMode === 'standard' 
-                    ? `rounded-2xl hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/50 bg-blue-500/5 shadow-lg shadow-blue-500/20' : 'border-neutral-800 hover:border-blue-500/40'}`
-                    : `rounded-none border-neutral-800/10 ${isSelected ? 'ring-1 ring-inset ring-blue-500/50 bg-blue-500/5' : ''}`
-                }`}>
+                <div key={item.id} className={`bg-neutral-950/50 border overflow-hidden flex flex-col group transition-all duration-300 active:scale-100 rounded-none border-neutral-800/10 ${isSelected ? 'ring-1 ring-inset ring-blue-500/50 bg-blue-500/5' : ''}`}>
                   <div className="bg-neutral-950 relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: aspectRatioStr }}>
                     {/* Selection Overlay */}
                     <div className={`absolute top-4 left-4 z-20 transition-all opacity-100`}>
@@ -325,7 +318,8 @@ export function AlbumTab({
                       </div>
                     )}
                   </div>
-                  <div className="p-5 bg-neutral-900/60 backdrop-blur-sm relative border-t border-neutral-800/50 flex-1 flex flex-col justify-between">
+                  <div className="mt-auto min-h-[150px] flex flex-col bg-neutral-900/60 backdrop-blur-sm relative border-t border-neutral-800/50">
+                    <div className="p-5 flex-1 flex flex-col justify-start">
                     <button
                       type="button"
                       onClick={() => setPromptItem(item)}
@@ -336,7 +330,7 @@ export function AlbumTab({
                         {item.prompt}
                       </p>
                     </button>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="mt-auto flex flex-wrap items-center gap-2">
                       <div className="flex items-center gap-1.5 p-1 bg-neutral-950/50 rounded-lg border border-neutral-800/50">
                         <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-neutral-900 rounded border border-neutral-800">
                           {getProviderName(item.providerId)}
@@ -387,6 +381,7 @@ export function AlbumTab({
                             {item.format}
                           </span>
                         )}
+                      </div>
                       </div>
                     </div>
                   </div>
