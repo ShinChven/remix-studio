@@ -1,9 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckSquare, Square, Trash2, Play, ChevronDown, Loader2, List, OctagonX } from 'lucide-react';
+import { Trash2, Play, Loader2, List, OctagonX } from 'lucide-react';
 import { Job } from '../../types';
 import { imageDisplayUrl } from '../../api';
 import { SelectionToolbar } from './SelectionToolbar';
+import { JobListItem } from './JobListItem';
+import { InfoChip } from './InfoChip';
 
 interface QueueTabProps {
   queueJobs: Job[];
@@ -96,93 +98,78 @@ export function QueueTab({
               const isExpanded = expandedJobId === task.id;
               const isSelected = selectedQueueIds.has(task.id);
               return (
-                <div key={task.id} className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div
-                    onClick={() => toggleJobExpand(task.id)}
-                    className={`bg-neutral-950/50 p-4 rounded-xl border flex justify-between items-center transition-all cursor-pointer group/task ${isSelected ? 'border-blue-500/30 bg-blue-500/5' : isExpanded ? 'border-blue-500/50 bg-neutral-900/50 rounded-b-none' : 'border-neutral-800 hover:border-neutral-700'} ${task.status === 'failed' && !isSelected ? 'border-red-900/30 bg-red-950/5' : ''}`}
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleQueueSelection(task.id); }}
-                          className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isSelected ? 'text-blue-400' : 'text-neutral-500 hover:text-white'}`}
-                        >
-                         {isSelected ? (
-                           <CheckSquare className="w-4 h-4" />
-                         ) : (
-                           <Square className="w-4 h-4" />
-                         )}
-                       </button>
-                       <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                         <ChevronDown className="w-3.5 h-3.5 text-neutral-600" />
-                       </div>
-                       <span className={`text-xs font-medium truncate pr-6 ${isExpanded ? 'text-white' : 'text-neutral-400'}`} title={task.prompt}>
-                         {task.prompt}
-                       </span>
-                    </div>
-                      <div className="flex-shrink-0 ml-4 flex items-center gap-3">
-                        <div className="hidden md:flex items-center gap-1.5 px-2 py-1 bg-neutral-950/50 rounded-lg border border-neutral-800/50">
-                          <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest leading-none">
-                            {getProviderName(task.providerId)}
-                          </span>
-                          <span className="w-1 h-1 rounded-full bg-neutral-800" />
-                          <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest leading-none">
-                            {getModelName(task.providerId, task.modelConfigId)}
-                          </span>
-                        </div>
-                        {task.aspectRatio && (
-                          <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                            {task.aspectRatio}
-                          </span>
-                        )}
-                         {task.quality && (
-                          <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                            {task.quality}
-                          </span>
-                        )}
-                        {task.format && (
-                          <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
-                            {task.format}
-                          </span>
-                        )}
-                        {task.status === 'processing' && (
-                          <div className="flex items-center gap-2 text-blue-400 text-[10px] font-bold uppercase tracking-widest bg-blue-500/5 px-3 py-1.5 rounded-lg border border-blue-500/10">
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            {t('projectViewer.queue.running')}
-                          </div>
-                        )}
-                        {task.status === 'pending' && <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest px-3 py-1.5 bg-neutral-900 rounded-lg border border-neutral-800 shadow-sm">{t('projectViewer.queue.queued')}</span>}
-                        {task.status === 'failed' && <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-3 py-1.5 bg-red-500/10 rounded-lg border border-red-500/20">{t('projectViewer.queue.failed')}</span>}
-                      
-                      <div className="flex items-center gap-1">
-                        {task.status === 'failed' && (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); runJob(task.id); }}
-                            className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
-                            title={t('projectViewer.queue.retryJob')}
-                          >
-                            <Play className="w-3.5 h-3.5 fill-current" />
-                          </button>
-                        )}
+                <JobListItem
+                  key={task.id}
+                  job={task}
+                  isExpanded={isExpanded}
+                  isSelected={isSelected}
+                  accentColor="blue"
+                  borderClassName={task.status === 'failed' ? 'border-red-900/30 bg-red-950/5' : ''}
+                  providerName={getProviderName(task.providerId)}
+                  modelName={getModelName(task.providerId, task.modelConfigId)}
+                  onToggleExpand={toggleJobExpand}
+                  onToggleSelect={toggleQueueSelection}
+                  metaChips={
+                    <>
+                      {task.aspectRatio && (
+                        <InfoChip className="text-neutral-500">
+                          {task.aspectRatio}
+                        </InfoChip>
+                      )}
+                      {task.quality && (
+                        <InfoChip className="text-neutral-500">
+                          {task.quality}
+                        </InfoChip>
+                      )}
+                      {task.format && (
+                        <InfoChip className="text-neutral-500">
+                          {task.format}
+                        </InfoChip>
+                      )}
+                    </>
+                  }
+                  statusBadge={
+                    <>
+                      {task.status === 'processing' && (
+                        <InfoChip className="gap-1 text-blue-400 bg-blue-500/5 border-blue-500/10">
+                          <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                          {t('projectViewer.queue.running')}
+                        </InfoChip>
+                      )}
+                      {task.status === 'pending' && <InfoChip className="text-neutral-500 shadow-sm">{t('projectViewer.queue.queued')}</InfoChip>}
+                      {task.status === 'failed' && <InfoChip className="text-red-500 bg-red-500/10 border-red-500/20">{t('projectViewer.queue.failed')}</InfoChip>}
+                    </>
+                  }
+                  actionButtons={
+                    <>
+                      {task.status === 'failed' && (
                         <button 
-                          onClick={(e) => { e.stopPropagation(); setJobToDeleteId(task.id); }}
-                          className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title={t('projectViewer.common.deleteJob')}
+                          onClick={(e) => { e.stopPropagation(); runJob(task.id); }}
+                          className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+                          title={t('projectViewer.queue.retryJob')}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Play className="w-3.5 h-3.5 fill-current" />
                         </button>
-                      </div>
-                    </div>
-                  </div>
-                  {isExpanded && (
-                    <div className={`bg-neutral-900/30 border-x border-b rounded-b-xl p-4 space-y-4 animate-in slide-in-from-top-1 duration-200 ${task.status === 'failed' ? 'border-red-500/30' : 'border-blue-500/30'}`}>
-                       <div className="space-y-2">
+                      )}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setJobToDeleteId(task.id); }}
+                        className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title={t('projectViewer.common.deleteJob')}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  }
+                  expandedContent={
+                    <>
+                      <div className="space-y-2">
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('projectViewer.common.fullPrompt')}</label>
                           <div className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/50 p-3 rounded-lg border border-neutral-800 select-all whitespace-pre-wrap font-mono">
                             {task.prompt}
                           </div>
-                       </div>
-                       {task.imageContexts && task.imageContexts.length > 0 && (
-                         <div className="space-y-3">
+                      </div>
+                      {task.imageContexts && task.imageContexts.length > 0 && (
+                        <div className="space-y-3">
                             <label className="text-[9px] font-black uppercase tracking-[0.1em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>
                             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                               {task.imageContexts.map((ctx, idx) => (
@@ -203,19 +190,19 @@ export function QueueTab({
                                 </div>
                               ))}
                             </div>
-                         </div>
-                       )}
-                       {task.status === 'failed' && (
-                          <div className="space-y-2">
+                        </div>
+                      )}
+                      {task.status === 'failed' && (
+                        <div className="space-y-2">
                              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/70">{t('projectViewer.queue.errorDetails')}</label>
                              <div className="text-[10px] font-mono text-red-400 bg-red-950/20 p-3 rounded-lg border border-red-500/20 break-all leading-tight">
                                {task.error || t('projectViewer.queue.unknownError')}
                              </div>
-                          </div>
-                       )}
-                    </div>
-                  )}
-                </div>
+                        </div>
+                      )}
+                    </>
+                  }
+                />
               );
             })}
             {queueJobs.length === 0 && (

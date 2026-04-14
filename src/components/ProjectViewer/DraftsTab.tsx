@@ -1,9 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckSquare, Square, Trash2, Play, ChevronDown, Plus } from 'lucide-react';
+import { Trash2, Play, Plus } from 'lucide-react';
 import { Job, AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl } from '../../api';
 import { SelectionToolbar } from './SelectionToolbar';
+import { JobListItem } from './JobListItem';
+import { InfoChip } from './InfoChip';
 
 interface DraftsTabProps {
   draftJobs: Job[];
@@ -153,87 +155,68 @@ export function DraftsTab({
               const isExpanded = expandedJobId === task.id;
               const isSelected = selectedDraftIds.has(task.id);
               return (
-                <div key={task.id} className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className={`bg-neutral-950/50 p-4 rounded-xl border flex justify-between items-center transition-all cursor-pointer group/task ${isSelected ? 'border-blue-500/30 bg-blue-500/5' : isExpanded ? 'border-blue-500/50 bg-neutral-900/50 rounded-b-none' : 'border-neutral-800 hover:border-neutral-700'}`}>
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                         <button 
-                           onClick={(e) => { e.stopPropagation(); toggleDraftSelection(task.id); }}
-                           className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isSelected ? 'text-blue-400' : 'text-neutral-500 hover:text-white'}`}
-                         >
-                           {isSelected ? (
-                             <CheckSquare className="w-4 h-4" />
-                           ) : (
-                             <Square className="w-4 h-4" />
-                           )}
-                         </button>
-                         <div 
-                           className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
-                           onClick={() => toggleJobExpand(task.id)}
-                         >
-                           <ChevronDown className="w-3.5 h-3.5 text-neutral-600" />
-                         </div>
-                         <span 
-                           className={`text-xs font-medium truncate pr-6 ${isExpanded ? 'text-white' : 'text-neutral-400'}`} 
-                           title={task.prompt}
-                           onClick={() => toggleJobExpand(task.id)}
-                         >
-                           {task.prompt}
-                         </span>
-                      </div>
-                    <div className="flex items-center gap-2">
-                      <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-neutral-950 rounded-lg border border-neutral-800/50">
-                        <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest leading-none">
-                          {getProviderName(task.providerId)}
-                        </span>
-                        <span className="w-1 h-1 rounded-full bg-neutral-800" />
-                        <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest leading-none">
-                          {getModelName(task.providerId, task.modelConfigId)}
-                        </span>
-                      </div>
+                <JobListItem
+                  key={task.id}
+                  job={task}
+                  isExpanded={isExpanded}
+                  isSelected={isSelected}
+                  accentColor="blue"
+                  providerName={getProviderName(task.providerId)}
+                  modelName={getModelName(task.providerId, task.modelConfigId)}
+                  onToggleExpand={toggleJobExpand}
+                  onToggleSelect={toggleDraftSelection}
+                  metaChips={
+                    <>
                       {task.aspectRatio && (
-                        <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                        <InfoChip className="text-neutral-500">
                           {task.aspectRatio}
-                        </span>
+                        </InfoChip>
                       )}
                       {task.quality && (
-                        <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                        <InfoChip className="text-neutral-500">
                           {task.quality}
-                        </span>
+                        </InfoChip>
                       )}
                       {task.format && (
-                        <span className="text-[8px] font-bold text-neutral-500 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 uppercase tracking-widest">
+                        <InfoChip className="text-neutral-500">
                           {task.format}
-                        </span>
+                        </InfoChip>
                       )}
-                      <span className="text-[9px] font-bold text-amber-500/70 uppercase tracking-widest px-2.5 py-1.5 bg-amber-500/5 rounded-lg border border-amber-500/20">{t('projectViewer.tabs.draft')}</span>
-                      <div className="flex items-center gap-1">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); runJob(task.id); }}
-                          className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors border border-transparent hover:border-blue-500/20"
-                          title={t('projectViewer.drafts.runJob')}
-                        >
-                          <Play className="w-3.5 h-3.5 fill-current" />
-                        </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setJobToDeleteId(task.id); }}
-                          className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title={t('projectViewer.common.deleteJob')}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  {isExpanded && (
-                    <div className="bg-neutral-900/30 border-x border-b border-blue-500/30 rounded-b-xl p-4 space-y-4 animate-in slide-in-from-top-1 duration-200">
-                       <div className="space-y-2">
+                    </>
+                  }
+                  statusBadge={
+                    <InfoChip className="text-amber-500/70 bg-amber-500/5 border-amber-500/20">
+                      {t('projectViewer.tabs.draft')}
+                    </InfoChip>
+                  }
+                  actionButtons={
+                    <>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); runJob(task.id); }}
+                        className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors border border-transparent hover:border-blue-500/20"
+                        title={t('projectViewer.drafts.runJob')}
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setJobToDeleteId(task.id); }}
+                        className="p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title={t('projectViewer.common.deleteJob')}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  }
+                  expandedContent={
+                    <>
+                      <div className="space-y-2">
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('projectViewer.common.fullPrompt')}</label>
                           <div className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/50 p-3 rounded-lg border border-neutral-800 select-all whitespace-pre-wrap">
                             {task.prompt}
                           </div>
-                       </div>
-                       {task.imageContexts && task.imageContexts.length > 0 && (
-                         <div className="space-y-3">
+                      </div>
+                      {task.imageContexts && task.imageContexts.length > 0 && (
+                        <div className="space-y-3">
                             <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>
                             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                               {task.imageContexts.map((ctx, idx) => (
@@ -254,11 +237,11 @@ export function DraftsTab({
                                 </div>
                               ))}
                             </div>
-                         </div>
-                       )}
-                    </div>
-                  )}
-                </div>
+                        </div>
+                      )}
+                    </>
+                  }
+                />
               );
             })}
             {draftJobs.length === 0 && <StackedGallery />}
