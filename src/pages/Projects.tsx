@@ -156,12 +156,12 @@ export function Projects() {
                     onChange={handleSearchChange}
                     onKeyDown={handleSearchKeyDown}
                     placeholder={t('projects.searchPlaceholder')}
-                    className="w-full bg-white/60 dark:bg-neutral-950/60 backdrop-blur-md border border-neutral-200/50 dark:border-white/5 rounded-xl py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all shadow-sm"
+                    className="w-full bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all shadow-sm"
                   />
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="flex flex-1 sm:flex-none rounded-xl border border-neutral-200/50 dark:border-white/5 bg-neutral-50/50 dark:bg-neutral-950/50 backdrop-blur-sm p-1 shadow-inner">
+                <div className="flex flex-1 sm:flex-none rounded-xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-md p-1 shadow-inner">
                   <button
                     type="button"
                     onClick={() => handleSortChange('createdAt')}
@@ -271,7 +271,7 @@ export function Projects() {
                   <button
                     onClick={() => handlePageChange(Math.max(1, page - 1))}
                     disabled={page === 1}
-                    className="p-3 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
+                    className="p-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
@@ -279,7 +279,7 @@ export function Projects() {
                   <button
                     onClick={() => handlePageChange(Math.min(pages, page + 1))}
                     disabled={page === pages}
-                    className="p-3 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
+                    className="p-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>

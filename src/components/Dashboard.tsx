@@ -88,7 +88,7 @@ export function Dashboard() {
                   </Link>
                 ))}
                 {projects.length === 0 && (
-                  <div className="col-span-full p-8 border border-neutral-200 dark:border-neutral-800 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500">
+                  <div className="col-span-full p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
                     {t('dashboard.noProjects')}
                   </div>
                 )}
@@ -124,7 +124,7 @@ export function Dashboard() {
                   </Link>
                 ))}
                 {libraries.length === 0 && (
-                  <div className="col-span-full p-8 border border-neutral-200 dark:border-neutral-800 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500">
+                  <div className="col-span-full p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
                     {t('dashboard.noLibraries')}
                   </div>
                 )}

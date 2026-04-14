@@ -239,7 +239,7 @@ export function McpConnections() {
                   { title: t('mcpConnections.connectSection.steps.2.title'), desc: t('mcpConnections.connectSection.steps.2.desc') },
                   { title: t('mcpConnections.connectSection.steps.3.title'), desc: t('mcpConnections.connectSection.steps.3.desc') }
                 ].map((step, i) => (
-                  <div key={i} className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-4 relative overflow-hidden group/step shadow-sm hover:shadow-md transition-shadow">
+                  <div key={i} className="rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-md p-4 relative overflow-hidden group/step shadow-sm hover:shadow-md transition-shadow">
                     <div className="absolute -right-2 -bottom-2 text-6xl font-display font-black text-neutral-800/10 select-none group-hover/step:text-sky-500/5 transition-colors">{i + 1}</div>
                     <p className="text-xs font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-400 mb-1 relative z-10">{step.title}</p>
                     <p className="text-sm text-neutral-500 dark:text-neutral-500 relative z-10 leading-relaxed">{step.desc}</p>
@@ -354,7 +354,7 @@ export function McpConnections() {
 
           {/* Create PAT form */}
           {showCreatePat && (
-            <div className="p-5 md:p-6 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-2xl border border-neutral-200/50 dark:border-white/5 rounded-xl space-y-5 animate-in zoom-in-95 duration-200 shadow-xl relative z-10">
+            <div className="p-5 md:p-6 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl space-y-5 animate-in zoom-in-95 duration-200 shadow-xl relative z-10">
               {newToken ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2.5 text-emerald-400 text-sm font-bold bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-xl">
@@ -450,7 +450,7 @@ export function McpConnections() {
               tokens.map((token) => (
                 <div
                   key={token.id}
-                  className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:border-amber-500/30 hover:bg-neutral-50 dark:hover:bg-neutral-900/40 p-4 md:p-5 rounded-xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
+                  className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-900/80 p-4 md:p-5 rounded-xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
                 >
                   <div className="flex items-center gap-4 overflow-hidden">
                     <div className="flex-shrink-0 p-3 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover/card:scale-110 transition-transform">
@@ -538,7 +538,7 @@ export function McpConnections() {
               clients.map((client) => (
                 <div
                   key={client.id}
-                  className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:border-blue-500/30 hover:bg-neutral-50 dark:hover:bg-neutral-900/40 p-4 md:p-5 rounded-xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
+                  className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-900/80 p-4 md:p-5 rounded-xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
                 >
                   <div className="flex items-center gap-4 overflow-hidden">
                     <div className="flex-shrink-0 p-3 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 group-hover/card:scale-110 transition-transform">

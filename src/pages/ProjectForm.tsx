@@ -64,7 +64,7 @@ export function ProjectForm() {
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-50 dark:bg-neutral-950">
-      <div className="w-full max-w-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="w-full max-w-md bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center gap-3 mb-8">
           <div className={`p-3 rounded-2xl ${projectType === 'text' ? 'bg-blue-600/10' : projectType === 'video' ? 'bg-purple-600/10' : 'bg-green-600/10'}`}>
             <Layers className={`w-6 h-6 ${projectType === 'text' ? 'text-blue-500' : projectType === 'video' ? 'text-purple-500' : 'text-green-500'}`} />
@@ -88,7 +88,7 @@ export function ProjectForm() {
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                     projectType === 'image'
                       ? 'border-green-500 bg-green-500/10 text-green-400'
-                      : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
+                      : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl shadow-sm text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
                   }`}
                 >
                   <ImageIcon className="w-6 h-6" />
@@ -100,7 +100,7 @@ export function ProjectForm() {
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                     projectType === 'text'
                       ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                      : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
+                      : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl shadow-sm text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
                   }`}
                 >
                   <Type className="w-6 h-6" />
@@ -112,7 +112,7 @@ export function ProjectForm() {
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                     projectType === 'video'
                       ? 'border-purple-500 bg-purple-500/10 text-purple-400'
-                      : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
+                      : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl shadow-sm text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
                   }`}
                 >
                   <Video className="w-6 h-6" />

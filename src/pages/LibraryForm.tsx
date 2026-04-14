@@ -51,7 +51,7 @@ export function LibraryForm() {
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-50 dark:bg-neutral-950">
-      <div className="w-full max-w-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="w-full max-w-md bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 bg-blue-600/10 rounded-2xl">
             <Folder className="w-6 h-6 text-blue-500" />
@@ -88,7 +88,7 @@ export function LibraryForm() {
                   className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
                     type === 'text'
                       ? 'bg-blue-600/10 border-blue-500/50 text-blue-400'
-                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                      : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5 text-neutral-600 hover:border-neutral-700 backdrop-blur-xl shadow-sm'
                   }`}
                 >
                   <Type className="w-5 h-5" />
@@ -100,7 +100,7 @@ export function LibraryForm() {
                   className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
                     type === 'image'
                       ? 'bg-emerald-600/10 border-emerald-500/50 text-emerald-400'
-                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                      : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5 text-neutral-600 hover:border-neutral-700 backdrop-blur-xl shadow-sm'
                   }`}
                 >
                   <ImageIcon className="w-5 h-5" />
@@ -112,7 +112,7 @@ export function LibraryForm() {
                   className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
                     type === 'video'
                       ? 'bg-purple-600/10 border-purple-500/50 text-purple-400'
-                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                      : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5 text-neutral-600 hover:border-neutral-700 backdrop-blur-xl shadow-sm'
                   }`}
                 >
                   <Video className="w-5 h-5" />
@@ -124,7 +124,7 @@ export function LibraryForm() {
                   className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
                     type === 'audio'
                       ? 'bg-amber-600/10 border-amber-500/50 text-amber-400'
-                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:border-neutral-700'
+                      : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5 text-neutral-600 hover:border-neutral-700 backdrop-blur-xl shadow-sm'
                   }`}
                 >
                   <Music className="w-5 h-5" />

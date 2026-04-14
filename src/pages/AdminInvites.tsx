@@ -110,7 +110,7 @@ export function AdminInvites() {
           </div>
         )}
 
-        <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-4 lg:p-6">
+        <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-4 lg:p-6">
           {loading ? (
             <div className="flex min-h-48 items-center justify-center text-neutral-600 dark:text-neutral-400">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -169,7 +169,7 @@ export function AdminInvites() {
                           <button
                             type="button"
                             onClick={() => void copyText(inviteLink, t('adminInvites.linkCopied'))}
-                            className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-200 dark:bg-neutral-800 px-3 py-2 text-xs text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-700"
+                            className="inline-flex items-center gap-2 rounded-xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-700"
                           >
                             <LinkIcon className="h-3.5 w-3.5" />
                             {t('adminInvites.copyLink')}
@@ -187,7 +187,7 @@ export function AdminInvites() {
 
       {isCreateOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6 backdrop-blur-md"
           onClick={() => {
             if (!creating) {
               setIsCreateOpen(false);
@@ -195,7 +195,7 @@ export function AdminInvites() {
           }}
         >
           <div
-            className="w-full max-w-lg rounded-[28px] border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-[0_40px_120px_rgba(0,0,0,0.75)]"
+            className="w-full max-w-lg rounded-[28px] border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6 shadow-[0_40px_120px_rgba(0,0,0,0.75)]"
             onClick={(event) => event.stopPropagation()}
           >
             <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('adminInvites.createModal.title')}</h3>

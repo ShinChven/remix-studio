@@ -112,7 +112,7 @@ export function StorageView() {
           {/* Main 3x2 (or adaptive) Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 1. Capacity & Consumption Overview Card */}
-            <div className="bg-white/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-md border-blue-500/10 h-full min-h-[220px]">
+            <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-3xl h-full min-h-[220px] shadow-sm">
               <div>
                 <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 font-black mb-4 block">{t('storageView.capacityOverview')}</span>
                 <div className="space-y-4">
@@ -194,8 +194,8 @@ export function StorageView() {
 
               const cardClasses = `
                 p-5 rounded-2xl transition-all duration-300 group flex flex-col justify-between h-full min-h-[220px]
-                ${hoveredCategory === cat.id ? 'bg-neutral-200 dark:bg-neutral-800 border-neutral-600' : 'bg-white/50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800'}
-                border backdrop-blur-md ${href ? 'cursor-pointer' : 'cursor-default'}
+                ${hoveredCategory === cat.id ? 'bg-white/80 dark:bg-neutral-900/80' : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5'}
+                border backdrop-blur-xl shadow-sm ${href ? 'cursor-pointer' : 'cursor-default'}
               `;
 
               if (href) {
@@ -233,7 +233,7 @@ export function StorageView() {
           </div>
 
           {/* Quick Stats Panel (Storage Optimization) */}
-          <div className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-3xl p-8 backdrop-blur-xl">
+          <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-3xl p-8 backdrop-blur-3xl shadow-sm">
             <h2 className="text-xl font-black text-neutral-900 dark:text-white mb-6 flex items-center gap-2">
               <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
               {t('storageView.optimizationTitle')}
@@ -336,7 +336,7 @@ export function StorageView() {
             <Link 
               key={proj.id} 
               to={`/project/${proj.id}`}
-              className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 hover:border-blue-500/50 hover:bg-neutral-800/50 transition-all group flex flex-col justify-between h-full min-h-[160px]"
+              className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 rounded-2xl p-5 hover:border-blue-500/50 hover:bg-white/80 dark:hover:bg-neutral-900/80 backdrop-blur-xl transition-all group flex flex-col justify-between h-full min-h-[160px] shadow-sm"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">

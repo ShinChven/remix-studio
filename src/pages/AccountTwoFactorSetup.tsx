@@ -158,7 +158,7 @@ export function AccountTwoFactorSetup() {
 
         {!user?.twoFactorEnabled && (
           <>
-            <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-6">
+            <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-300">
                   <Shield className="h-5 w-5" />
@@ -196,9 +196,9 @@ export function AccountTwoFactorSetup() {
             </section>
 
             {pendingSetup && (
-              <section className="rounded-3xl border border-blue-500/20 bg-blue-500/5 p-6">
+              <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6 shadow-sm">
                 <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-                  <div className="flex flex-col items-center rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-950/80 p-4">
+                  <div className="flex flex-col items-center rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 shadow-sm">
                     <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-500">{t('accountTwoFactorSetup.scanQr')}</p>
                     {qrCode ? (
                       <img
@@ -218,7 +218,7 @@ export function AccountTwoFactorSetup() {
                     <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
                       {t('accountTwoFactorSetup.step2.description')}
                     </p>
-                    <p className="mt-4 break-all rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 font-mono text-sm text-blue-200">
+                    <p className="mt-4 break-all rounded-xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl px-4 py-3 font-mono text-sm text-blue-300 shadow-sm">
                       {pendingSetup.secret}
                     </p>
                     <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-500">

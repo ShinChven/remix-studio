@@ -98,7 +98,7 @@ export function MainLayout() {
   return (
     <div className="flex h-screen w-screen bg-transparent text-neutral-900 dark:text-neutral-200 font-sans overflow-hidden">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/20 dark:bg-black/20 backdrop-blur-xl border-b border-neutral-200/20 dark:border-white/5 px-4 flex items-center gap-2 z-[100]">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/40 dark:bg-black/40 backdrop-blur-3xl border-b border-neutral-200/50 dark:border-white/5 px-4 flex items-center gap-2 z-[100] shadow-sm">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 text-neutral-600 dark:text-neutral-400 hover:text-white transition-all active:scale-95"
@@ -126,7 +126,7 @@ export function MainLayout() {
         fixed inset-y-0 left-0 z-[120] transition-all duration-300 ease-in-out lg:relative
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         ${isCollapsed ? 'lg:w-20' : 'lg:w-64'} w-72
-        bg-white/10 dark:bg-black/10 border-r border-neutral-200/20 dark:border-white/5 flex flex-col group backdrop-blur-2xl shadow-2xl shadow-black/10 dark:shadow-black/40
+        bg-white/10 dark:bg-black/10 border-r border-neutral-200/50 dark:border-white/5 flex flex-col group backdrop-blur-3xl shadow-2xl shadow-black/10 dark:shadow-black/40
       `}>
         <div className="p-4 border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
           <Link
@@ -226,7 +226,7 @@ export function MainLayout() {
             onClick={() => setIsMobileMenuOpen(false)}
             className={`flex items-center overflow-hidden rounded-xl border p-3 transition-colors ${location.pathname === '/account'
                 ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
-                : 'border-neutral-200/50 dark:border-neutral-700/30 bg-white/10 dark:bg-black/20 hover:bg-white/20 dark:hover:bg-black/30 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl hover:bg-white/60 dark:hover:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 shadow-sm'
               } ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
               }`}
           >
@@ -258,7 +258,7 @@ export function MainLayout() {
               onClick={() => setIsMobileMenuOpen(false)}
               className={`mt-3 flex items-center rounded-xl border transition-all ${location.pathname === '/admin/users'
                   ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
-                  : 'border-neutral-200/50 dark:border-neutral-700/30 bg-white/10 dark:bg-black/20 text-neutral-700 dark:text-neutral-300 hover:bg-white/20 dark:hover:bg-black/30'
+                  : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl text-neutral-700 dark:text-neutral-300 hover:bg-white/60 dark:hover:bg-neutral-800/60 shadow-sm'
                 } p-3 text-sm ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
                 }`}
               title={t('sidebar.userManagement')}

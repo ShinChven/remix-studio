@@ -224,7 +224,7 @@ export function ProviderProfile() {
                       {items.map(m => (
                         <div
                           key={m.id}
-                          className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl px-5 py-4 hover:border-neutral-400 dark:hover:border-neutral-700 transition-all shadow-sm hover:shadow-md group/card"
+                          className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 rounded-2xl px-5 py-4 hover:border-neutral-400 dark:hover:border-neutral-700 transition-all shadow-sm hover:shadow-md group/card backdrop-blur-xl"
                         >
                           <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{m.name}</p>
                           <p className="text-[10px] text-neutral-500 dark:text-neutral-500 truncate font-mono mt-0.5 uppercase tracking-wider">{m.id}</p>
@@ -247,7 +247,7 @@ export function ProviderProfile() {
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl px-5 py-4 text-center shadow-sm">
+    <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-2xl px-5 py-4 text-center shadow-sm backdrop-blur-md">
       <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-1">{label}</p>
       <p className="text-xl font-bold text-neutral-900 dark:text-white">{value}</p>
     </div>

@@ -402,7 +402,7 @@ export function Account() {
           description={t('account.description')}
         />
 
-        <div className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-3">
+        <div className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-3">
           <div className="grid gap-2 md:grid-cols-4">
             {[
               { id: 'overview' as const, label: t('account.tabs.overview'), icon: UserIcon },
@@ -420,7 +420,7 @@ export function Account() {
                   className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition-colors ${
                     isActive
                       ? 'border-blue-500/30 bg-blue-500/10 text-neutral-900 dark:text-white'
-                      : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-neutral-200'
+                      : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-neutral-200'
                   }`}
                 >
                   <Icon className={`h-4 w-4 ${isActive ? 'text-blue-300' : 'text-neutral-500 dark:text-neutral-500'}`} />
@@ -432,7 +432,7 @@ export function Account() {
         </div>
 
         {activeTab === 'overview' && (
-          <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-6">
+          <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex items-start gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
@@ -468,7 +468,7 @@ export function Account() {
 
             <div className="mt-6 grid gap-4 md:grid-cols-3">
               {overviewLoading && !overviewLoaded ? (
-                <div className="col-span-full flex min-h-[220px] items-center justify-center rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/60">
+                <div className="col-span-full flex min-h-[220px] items-center justify-center rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl">
                   <Loader2 className="h-6 w-6 animate-spin text-neutral-500 dark:text-neutral-500" />
                 </div>
               ) : overviewLoadError ? (
@@ -492,7 +492,7 @@ export function Account() {
                 </div>
               ) : (
                 <>
-                  <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-950/80 p-5">
+                  <div className="rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5">
                     <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
                       <Play className="h-4 w-4 text-green-400" />
                       <span className="text-xs uppercase tracking-[0.18em]">{t('account.overview.projects')}</span>
@@ -501,7 +501,7 @@ export function Account() {
                     <Link to="/projects" className="mt-3 inline-block text-sm text-green-400 hover:text-green-300">{t('account.overview.openProjects')}</Link>
                   </div>
 
-                  <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-950/80 p-5">
+                  <div className="rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5">
                     <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
                       <Folder className="h-4 w-4 text-blue-400" />
                       <span className="text-xs uppercase tracking-[0.18em]">{t('account.overview.libraries')}</span>
@@ -562,7 +562,7 @@ export function Account() {
                 </div>
 
                 <div className="mt-8 space-y-6">
-                  <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-950/80 p-5">
+                  <div className="rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5">
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-500">{t('account.storage.capacityOverview')}</p>
@@ -587,15 +587,15 @@ export function Account() {
                       <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('account.storage.consumption')}</span>
                       <p className="mt-4 text-3xl font-black text-neutral-900 dark:text-white">{formatBytes(storage.totalSize)}</p>
                     </div>
-                    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-950/80 p-5">
+                    <div className="rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5">
                       <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('account.storage.planLimit')}</span>
                       <p className="mt-4 text-3xl font-black text-neutral-900 dark:text-white">{formatBytes(storage.limit)}</p>
                     </div>
-                    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-950/80 p-5">
+                    <div className="rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5">
                       <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('account.storage.usage')}</span>
                       <p className="mt-4 text-3xl font-black text-neutral-900 dark:text-white">{usagePercent.toFixed(1)}%</p>
                     </div>
-                    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-950/80 p-5">
+                    <div className="rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5">
                       <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('account.storage.tier')}</span>
                       <p className="mt-4 text-3xl font-black text-neutral-900 dark:text-white">{TIER_NAMES[storage.limit] || t('account.storage.tierCustom')}</p>
                     </div>
@@ -606,7 +606,7 @@ export function Account() {
                       const visibleSubCategories = category.subCategories?.filter((subCategory) => subCategory.id !== 'drafts');
 
                       return (
-                      <div key={category.id} className="flex h-full min-h-[210px] flex-col rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/60 p-5">
+                      <div key={category.id} className="flex h-full min-h-[210px] flex-col rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-3">
                             <div
@@ -643,7 +643,7 @@ export function Account() {
                         {t('account.storage.optimization')}
                       </h3>
                       <div className="mt-5 grid gap-4">
-                        <Link to="/trash" className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 p-4 transition hover:border-red-500/30">
+                        <Link to="/projects" className="rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 transition hover:border-amber-500/30">
                           <div className="flex items-center gap-3">
                             <Trash2 className="h-5 w-5 text-red-400" />
                             <p className="font-medium text-neutral-900 dark:text-white">{t('account.storage.recycleBin')}</p>
@@ -698,7 +698,7 @@ export function Account() {
               </section>
             ) : (
               <>
-                <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-6">
+                <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-300">
                       <Shield className="h-5 w-5" />
@@ -794,7 +794,7 @@ export function Account() {
                   )}
                 </section>
 
-                <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-6">
+                <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-300">
@@ -810,7 +810,7 @@ export function Account() {
                     </span>
                   </div>
 
-                  <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 p-4 md:flex-row">
+                  <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 md:flex-row">
                     <input
                       type="text"
                       value={passkeyName}
@@ -845,12 +845,12 @@ export function Account() {
 
                   <div className="mt-6 space-y-3">
                     {securitySettings.passkeys.length === 0 ? (
-                      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/60 px-4 py-5 text-sm text-neutral-600 dark:text-neutral-400">
+                      <div className="rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl px-4 py-5 text-sm text-neutral-600 dark:text-neutral-400">
                         {t('account.security.noPasskeys')}
                       </div>
                     ) : (
                       securitySettings.passkeys.map((passkey) => (
-                        <div key={passkey.id} className="flex flex-col gap-3 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/60 px-4 py-4 md:flex-row md:items-center md:justify-between">
+                        <div key={passkey.id} className="flex flex-col gap-3 rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl px-4 py-4 md:flex-row md:items-center md:justify-between">
                           <div>
                             <p className="font-medium text-neutral-900 dark:text-white">{passkey.name}</p>
                             <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-500">
@@ -873,7 +873,7 @@ export function Account() {
                   </div>
                 </section>
 
-                <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-6">
+                <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-300">
@@ -904,7 +904,7 @@ export function Account() {
                   )}
 
                   {!securitySettings.twoFactorEnabled ? (
-                    <div className="mt-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 p-4">
+                    <div className="mt-6 space-y-4 rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4">
                       <p className="text-sm text-neutral-600 dark:text-neutral-400">
                         {t('account.security.twoFactorSetupDesc')}
                       </p>
@@ -922,7 +922,7 @@ export function Account() {
                       </Link>
                     </div>
                   ) : (
-                    <form onSubmit={handleDisableTwoFactor} className="mt-6 space-y-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/70 p-4">
+                    <form onSubmit={handleDisableTwoFactor} className="mt-6 space-y-4 rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4">
                       <div className="grid gap-4 md:grid-cols-2">
                         {user?.hasPassword && (
                           <div>
@@ -968,7 +968,7 @@ export function Account() {
 
         {activeTab === 'preferences' && (
           <div className="space-y-6">
-            <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-6">
+            <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-300">
                   <Globe className="h-5 w-5" />
@@ -1000,7 +1000,7 @@ export function Account() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-6">
+            <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-300">
                   <Sun className="h-5 w-5 dark:hidden block" />
@@ -1049,7 +1049,7 @@ export function Account() {
             onClick={() => { setShowRemovePasswordConfirm(false); setRemovePasswordInput(''); setPasswordError(''); }}
           >
             <div
-              className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/50 rounded-[32px] shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300"
+              className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl rounded-[32px] shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-8">

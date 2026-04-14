@@ -189,7 +189,7 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-black">
       <Starfield />
 
-      <div className="relative z-10 max-w-md w-full p-8 rounded-[2.5rem] bg-white/10 border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] flex flex-col items-center backdrop-blur-sm backdrop-saturate-150 ring-1 ring-inset ring-white/10">
+      <div className="relative z-10 max-w-md w-full p-8 rounded-[2.5rem] bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 shadow-2xl flex flex-col items-center backdrop-blur-3xl">
         <img src="/favicon.svg" alt="Remix Studio Logo" className="w-16 h-16 mb-6" />
         <h2 className="text-3xl font-bold text-center text-zinc-100 mb-2">
           {isTwoFactorStep ? t('login.twoFactorVerification') : registerMode ? t('login.completeRegistration') : t('login.welcomeBack')}

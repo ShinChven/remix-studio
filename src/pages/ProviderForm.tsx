@@ -105,7 +105,7 @@ export function ProviderForm() {
 
   return (
     <div className="min-h-full flex flex-col py-12 md:py-16 px-4 md:px-8 bg-white dark:bg-neutral-950">
-      <div className="w-full max-w-3xl mx-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-5 md:p-8 shadow-2xl">
+      <div className="w-full max-w-3xl mx-auto bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-3xl p-5 md:p-8 shadow-2xl backdrop-blur-3xl">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 bg-amber-50 dark:bg-amber-600/10 rounded-2xl border border-amber-200 dark:border-amber-600/20">
             <ProviderIcon type={type} className="w-6 h-6 text-amber-600 dark:text-amber-500" />
@@ -150,7 +150,7 @@ export function ProviderForm() {
                     className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all text-left min-h-[68px] ${
                       type === t 
                         ? 'bg-amber-600 text-white border-amber-700 shadow-lg shadow-amber-600/20' 
-                        : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                        : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 backdrop-blur-xl shadow-sm'
                     }`}
                   >
                     <div className="flex-1">
@@ -261,7 +261,7 @@ export function ProviderForm() {
             <button
               type="button"
               onClick={() => navigate('/providers')}
-              className="w-full sm:flex-1 px-4 py-4 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98] border border-neutral-200 dark:border-neutral-700 shadow-sm"
+              className="w-full sm:flex-1 px-4 py-4 bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98] backdrop-blur-xl shadow-sm"
             >
               {t('providerForm.cancel')}
             </button>
