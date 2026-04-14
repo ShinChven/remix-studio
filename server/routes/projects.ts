@@ -448,7 +448,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
-      const targetLibraryType = project.type === 'text' ? 'text' : 'image';
+      const targetLibraryType = project.type === 'text' ? 'text' : project.type === 'video' ? 'video' : 'image';
 
       const itemsToCopy = (project.album || []).filter(item => itemIds.includes(item.id));
       if (itemsToCopy.length === 0) return c.json({ error: 'No matching items found' }, 400);
@@ -456,7 +456,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const bucket = storage.getBucketName();
 
       let requiredSize = 0;
-      if (targetLibraryType === 'image') {
+      if (targetLibraryType === 'image' || targetLibraryType === 'video') {
         for (const item of itemsToCopy) {
           if (version === 'raw') {
             requiredSize += Number(item.size) || 0;

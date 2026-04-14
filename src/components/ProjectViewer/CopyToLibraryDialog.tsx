@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Copy, FolderPlus, Library as LibraryIcon, Loader2, X, CheckSquare, Square, FileText } from 'lucide-react';
+import { Copy, FolderPlus, Library as LibraryIcon, Loader2, X, CheckSquare, Square, FileText, Video as VideoIcon } from 'lucide-react';
 import { Library, ProjectType } from '../../types';
 import { fetchLibraries, copyAlbumToLibrary } from '../../api';
 import { toast } from 'sonner';
@@ -26,8 +26,15 @@ export function CopyToLibraryDialog({
 }: CopyToLibraryDialogProps) {
   const { t } = useTranslation();
   const isTextProject = projectType === 'text';
-  const targetLibraryType = isTextProject ? 'text' : 'image';
-  const defaultLibraryName = `${projectName} ${isTextProject ? t('projectViewer.copyToLibrary.texts') : t('projectViewer.tabs.album')}`;
+  const isVideoProject = projectType === 'video';
+  const targetLibraryType = isTextProject ? 'text' : isVideoProject ? 'video' : 'image';
+  const defaultLibraryName = `${projectName} ${
+    isTextProject
+      ? t('projectViewer.copyToLibrary.texts')
+      : isVideoProject
+        ? t('projectViewer.copyToLibrary.videos')
+        : t('projectViewer.tabs.album')
+  }`;
   const itemSummary = t(
     isTextProject
       ? 'projectViewer.copyToLibrary.textItemCount'
@@ -36,7 +43,7 @@ export function CopyToLibraryDialog({
         : 'projectViewer.copyToLibrary.imageItemCount',
     { count: itemIds.length }
   );
-  const AccentIcon = isTextProject ? FileText : LibraryIcon;
+  const AccentIcon = isTextProject ? FileText : isVideoProject ? VideoIcon : LibraryIcon;
 
   const [mode, setMode] = useState<'new' | 'existing'>('new');
   const [newLibraryName, setNewLibraryName] = useState(defaultLibraryName);

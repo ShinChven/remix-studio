@@ -25,7 +25,7 @@ async function estimateLibraryCopySize(library: Library, storage: S3Storage): Pr
   for (const item of library.items) {
     total += item.size || 0;
 
-    if (library.type !== 'image') continue;
+    if (library.type !== 'image' && library.type !== 'video' && library.type !== 'audio') continue;
 
     const contentKey = item.content && !item.content.startsWith('http') && !item.content.startsWith('data:')
       ? item.content
@@ -59,7 +59,7 @@ async function cloneLibraryItems(
   destinationLibraryId: string,
   storage: S3Storage
 ): Promise<LibraryItem[]> {
-  if (sourceLibrary.type !== 'image') {
+  if (sourceLibrary.type !== 'image' && sourceLibrary.type !== 'video' && sourceLibrary.type !== 'audio') {
     return sourceLibrary.items.map((item) => ({
       ...item,
       id: randomUUID(),
@@ -92,7 +92,7 @@ async function cloneLibraryItems(
 
 /** Sign S3 keys in library item content fields */
 async function signLibraryImages(items: LibraryItem[], storage: S3Storage, libraryType: string): Promise<LibraryItem[]> {
-  if (libraryType !== 'image') return items;
+  if (libraryType !== 'image' && libraryType !== 'video' && libraryType !== 'audio') return items;
   return Promise.all(
     items.map(async (item) => {
       let size = item.size;
