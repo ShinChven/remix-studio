@@ -243,6 +243,7 @@
     "allProjects": "すべてのプロジェクト",
     "searchPlaceholder": "名前またはIDでプロジェクトを検索...",
     "newProject": "新規プロジェクト",
+    "noResultsFound": "名称またはIDに一致するプロジェクトは見つかりませんでした。",
     "sort": {
       "newest": "最新",
       "largest": "サイズ順"
@@ -268,6 +269,7 @@
     "allLibraries": "すべてのライブラリ",
     "searchPlaceholder": "名前またはIDでライブラリを検索...",
     "newLibrary": "新規ライブラリ",
+    "noResultsFound": "名称またはIDに一致するライブラリは見つかりませんでした。",
     "new": "新規",
     "noLibraries": {
       "title": "ライブラリがありません",

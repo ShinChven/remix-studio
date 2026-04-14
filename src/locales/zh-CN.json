@@ -26,7 +26,9 @@
     "title": "项目",
     "description": "管理并跟踪您的 AI 工作流和生成任务。",
     "allProjects": "所有项目",
+    "searchPlaceholder": "搜索项目名称或 ID...",
     "newProject": "新建项目",
+    "noResultsFound": "未找到匹配的项目",
     "sort": {
       "newest": "最新",
       "largest": "最大"
@@ -50,7 +52,9 @@
     "title": "资源库",
     "description": "管理您的可复用提示词和图像集合。",
     "allLibraries": "所有资源库",
+    "searchPlaceholder": "搜索资源库名称或 ID...",
     "newLibrary": "新建资源库",
+    "noResultsFound": "未找到匹配的资源库",
     "new": "新建",
     "noLibraries": {
       "title": "暂无资源库",

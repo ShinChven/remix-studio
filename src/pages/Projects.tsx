@@ -258,7 +258,7 @@ export function Projects() {
                     <Play className="w-12 h-12 text-neutral-700" />
                     <div>
                       <p className="text-lg font-medium text-neutral-400">{t('projects.noProjects.title')}</p>
-                      <p className="text-sm">{q ? t('libraryEditor.noResultsFound') : t('projects.noProjects.description')}</p>
+                      <p className="text-sm">{q ? t('projects.noResultsFound') : t('projects.noProjects.description')}</p>
                     </div>
                   </div>
                 )}

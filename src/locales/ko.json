@@ -241,7 +241,9 @@
     "title": "프로젝트",
     "description": "AI 워크플로우 및 생성 작업을 관리하고 추적하세요.",
     "allProjects": "모든 프로젝트",
+    "searchPlaceholder": "이름 또는 ID로 프로젝트 검색...",
     "newProject": "새 프로젝트",
+    "noResultsFound": "일치하는 프로젝트를 찾을 수 없습니다.",
     "sort": {
       "newest": "최신순",
       "largest": "용량순"
@@ -265,7 +267,9 @@
     "title": "라이브러리",
     "description": "재사용 가능한 프롬프트 및 이미지 컬렉션을 관리합니다.",
     "allLibraries": "모든 라이브러리",
+    "searchPlaceholder": "이름 또는 ID로 라이브러리 검색...",
     "newLibrary": "새 라이브러리",
+    "noResultsFound": "일치하는 라이브러리를 찾을 수 없습니다.",
     "new": "새로 만들기",
     "noLibraries": {
       "title": "라이브러리가 없습니다",

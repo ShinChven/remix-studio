@@ -241,7 +241,9 @@
     "title": "專案",
     "description": "管理並追蹤您的 AI 工作流和生成任務。",
     "allProjects": "所有專案",
+    "searchPlaceholder": "搜尋專案名稱或 ID...",
     "newProject": "新建專案",
+    "noResultsFound": "未找到相符的專案",
     "sort": {
       "newest": "最新",
       "largest": "最大"
@@ -265,7 +267,9 @@
     "title": "資源庫",
     "description": "管理您的可重複使用提示詞和圖像集合。",
     "allLibraries": "所有資源庫",
+    "searchPlaceholder": "搜尋資源庫名稱或 ID...",
     "newLibrary": "新建資源庫",
+    "noResultsFound": "未找到相符的資源庫",
     "new": "新建",
     "noLibraries": {
       "title": "暫無資源庫",

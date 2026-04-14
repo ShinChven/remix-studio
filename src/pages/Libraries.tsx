@@ -188,7 +188,7 @@ export function Libraries() {
                     <Folder className="w-12 h-12 text-neutral-700" />
                     <div>
                       <p className="text-lg font-medium text-neutral-400">{t('libraries.noLibraries.title')}</p>
-                      <p className="text-sm">{q ? t('libraryEditor.noResultsFound') : t('libraries.noLibraries.description')}</p>
+                      <p className="text-sm">{q ? t('libraries.noResultsFound') : t('libraries.noLibraries.description')}</p>
                     </div>
                   </div>
                 )}

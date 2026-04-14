@@ -241,7 +241,9 @@
     "title": "Projets",
     "description": "Gérez et suivez vos flux de travail et tâches de génération IA.",
     "allProjects": "Tous les projets",
+    "searchPlaceholder": "Rechercher des projets par nom ou ID...",
     "newProject": "Nouveau projet",
+    "noResultsFound": "Aucun projet correspondant trouvé",
     "sort": {
       "newest": "Plus récents",
       "largest": "Plus volumineux"
@@ -265,7 +267,9 @@
     "title": "Bibliothèques",
     "description": "Gérez vos invites réutilisables et vos collections d'images.",
     "allLibraries": "Toute les bibliothèques",
+    "searchPlaceholder": "Rechercher des bibliothèques par nom ou ID...",
     "newLibrary": "Nouvelle bibliothèque",
+    "noResultsFound": "Aucune bibliothèque correspondante trouvée",
     "new": "Nouveau",
     "noLibraries": {
       "title": "Pas encore de bibliothèque",

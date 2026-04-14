@@ -411,6 +411,7 @@
     "allProjects": "All Projects",
     "searchPlaceholder": "Search projects by name or ID...",
     "newProject": "New Project",
+    "noResultsFound": "No matching projects found",
     "sort": {
       "newest": "Newest",
       "largest": "Largest"
@@ -436,6 +437,7 @@
     "allLibraries": "All Libraries",
     "searchPlaceholder": "Search libraries by name or ID...",
     "newLibrary": "New Library",
+    "noResultsFound": "No matching libraries found",
     "new": "New",
     "noLibraries": {
       "title": "No libraries yet",
