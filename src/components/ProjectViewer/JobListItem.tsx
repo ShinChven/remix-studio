@@ -112,7 +112,7 @@ export function JobListItem({
             </div>
           )}
 
-          <div className="flex items-start gap-2 sm:items-center lg:flex-wrap lg:justify-end">
+          <div className="flex items-center gap-2 lg:flex-wrap lg:justify-end">
             {(providerName || modelName) && (
               <div className="hidden lg:flex items-center">
                 <InfoChip className="max-w-none gap-1">
@@ -130,12 +130,12 @@ export function JobListItem({
                 </InfoChip>
               </div>
             )}
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 self-center">
               {metaChips}
               {statusBadge}
             </div>
 
-            {actionButtons && <div className="ml-auto flex items-center gap-1 flex-shrink-0">{actionButtons}</div>}
+            {actionButtons && <div className="ml-auto flex items-center gap-1 self-center flex-shrink-0">{actionButtons}</div>}
           </div>
         </div>
       </div>
