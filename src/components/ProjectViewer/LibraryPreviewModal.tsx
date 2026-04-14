@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, ChevronDown, Library as LibraryIcon } from 'lucide-react';
+import { X, ChevronDown, Library as LibraryIcon, Video as VideoIcon, Volume2 } from 'lucide-react';
 import { Library, LibraryItem } from '../../types';
 import { imageDisplayUrl } from '../../api';
 import { ImageLightbox } from './ImageLightbox';
@@ -200,6 +200,65 @@ export function LibraryPreviewModal({
                         />
                         {isSelectionMode && (
                           <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover/img-container:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
+                              {t('projectViewer.libraryPreview.clickToSelect')}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {library.type === 'video' && (
+                      <div 
+                        className={`aspect-video bg-black relative border-b border-neutral-800 group/vid-container cursor-pointer overflow-hidden ${isSelectionMode ? 'ring-inset hover:ring-2 hover:ring-blue-500' : ''}`}
+                        onClick={() => {
+                          if (isSelectionMode && onSelectItem) {
+                            onSelectItem(item.content);
+                          }
+                        }}
+                      >
+                        {item.thumbnailUrl ? (
+                          <img 
+                            src={imageDisplayUrl(item.thumbnailUrl)} 
+                            alt={item.content} 
+                            className="w-full h-full object-cover group-hover/vid-container:scale-105 transition-transform duration-500" 
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-neutral-950">
+                            <VideoIcon className="w-8 h-8 text-neutral-800" />
+                          </div>
+                        )}
+                        <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                          <div className="flex items-center gap-2">
+                             <div className="p-1 bg-white/10 rounded backdrop-blur-sm">
+                               <VideoIcon className="w-3 h-3 text-white" />
+                             </div>
+                             <span className="text-[8px] font-black text-white uppercase tracking-widest">{t('projectViewer.common.video')}</span>
+                          </div>
+                        </div>
+                        {isSelectionMode && (
+                          <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover/vid-container:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
+                              {t('projectViewer.libraryPreview.clickToSelect')}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {library.type === 'audio' && (
+                      <div 
+                        className={`aspect-[4/1] bg-neutral-950 relative border-b border-neutral-800 group/aud-container cursor-pointer overflow-hidden ${isSelectionMode ? 'ring-inset hover:ring-2 hover:ring-blue-500' : ''}`}
+                        onClick={() => {
+                          if (isSelectionMode && onSelectItem) {
+                            onSelectItem(item.content);
+                          }
+                        }}
+                      >
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Volume2 className="w-6 h-6 text-neutral-700 group-hover/aud-container:text-cyan-500/50 transition-colors" />
+                        </div>
+                        <div className="absolute inset-y-0 left-0 w-1 bg-cyan-500/40" />
+                        {isSelectionMode && (
+                          <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover/aud-container:opacity-100 transition-opacity flex items-center justify-center">
                             <div className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
                               {t('projectViewer.libraryPreview.clickToSelect')}
                             </div>

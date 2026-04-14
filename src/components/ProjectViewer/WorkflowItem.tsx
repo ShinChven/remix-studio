@@ -70,12 +70,12 @@ export function WorkflowItem({
             <GripVertical className="w-4 h-4" />
           </div>
           <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
-            {item.type === 'text' && <Type className="w-3 h-3 text-blue-500" />}
-            {item.type === 'library' && <LibraryIcon className="w-3 h-3 text-emerald-500" />}
-            {item.type === 'image' && <ImageIcon className="w-3 h-3 text-amber-500" />}
-            {item.type === 'video' && <VideoIcon className="w-3 h-3 text-violet-400" />}
             {item.type === 'audio' && <Volume2 className="w-3 h-3 text-cyan-400" />}
-            {item.type}
+            {item.type === 'text' ? t('projectViewer.common.text') :
+             item.type === 'image' ? t('projectViewer.common.imageShort') :
+             item.type === 'video' ? t('projectViewer.common.video') :
+             item.type === 'audio' ? t('projectViewer.common.audio') :
+             item.type}
           </span>
         </div>
         <button onClick={() => onRemove(item.id)} className="text-neutral-600 hover:text-red-400 opacity-100 transition-all p-1">
@@ -201,7 +201,9 @@ export function WorkflowItem({
               ) : (
                 <div className="flex items-center justify-center gap-2">
                   <VideoIcon className="w-3.5 h-3.5 text-neutral-500 group-hover:text-violet-400" />
-                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">Upload Video</span>
+                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">
+                    {t('projectViewer.common.upload')} {t('projectViewer.common.video')}
+                  </span>
                   <input type="file" accept="video/*" onChange={(e) => onVideoUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
                 </div>
               )}
@@ -239,7 +241,9 @@ export function WorkflowItem({
               ) : (
                 <div className="flex items-center justify-center gap-2">
                   <Volume2 className="w-3.5 h-3.5 text-neutral-500 group-hover:text-cyan-400" />
-                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">Upload Audio</span>
+                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300">
+                    {t('projectViewer.common.upload')} {t('projectViewer.common.audio')}
+                  </span>
                   <input type="file" accept="audio/*" onChange={(e) => onAudioUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
                 </div>
               )}

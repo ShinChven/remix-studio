@@ -66,9 +66,15 @@ export function LibrarySelectionModal({
                     }`}
                   >
                     <div className="flex-shrink-0">
-                      {lib.type === 'image' && lib.items[0] ? (
+                      {(lib.type === 'image' || lib.type === 'video') && lib.items[0] ? (
                         <div className={`w-12 h-12 rounded-xl overflow-hidden border shadow-md ${isSelected ? 'border-neutral-800 grayscale' : 'border-neutral-800'}`}>
-                          <img src={lib.items[0].thumbnailUrl || lib.items[0].content} alt={lib.name} className="w-full h-full object-cover" />
+                          <img 
+                            src={lib.type === 'image' 
+                              ? (lib.items[0].thumbnailUrl || lib.items[0].content)
+                              : (lib.items[0].thumbnailUrl || '')} 
+                            alt={lib.name} 
+                            className="w-full h-full object-cover" 
+                          />
                         </div>
                       ) : (
                         <div className={`p-3 bg-neutral-900 rounded-xl border transition-all ${isSelected ? 'border-neutral-800' : 'border-neutral-800 group-hover:bg-neutral-950 group-hover:border-emerald-500/20'}`}>
@@ -93,7 +99,11 @@ export function LibrarySelectionModal({
                             ? 'bg-neutral-900/50 border-neutral-800 text-neutral-600' 
                             : 'bg-neutral-950 border-neutral-800 text-neutral-500 group-hover:border-neutral-700'
                         }`}>
-                          {lib.type}
+                          {lib.type === 'text' ? t('projectViewer.common.text') :
+                           lib.type === 'image' ? t('projectViewer.common.imageShort') :
+                           lib.type === 'video' ? t('projectViewer.common.video') :
+                           lib.type === 'audio' ? t('projectViewer.common.audio') :
+                           lib.type}
                         </span>
                         <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-neutral-700' : 'text-neutral-600'}`}>
                           {t('projectViewer.workflow.itemsCount', { count: lib.items.length })}

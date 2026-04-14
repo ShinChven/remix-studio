@@ -116,7 +116,7 @@ export function LibraryForm() {
                   }`}
                 >
                   <Video className="w-5 h-5" />
-                  <span className="text-sm font-bold">{t('libraryForm.typeVideo', 'Video')}</span>
+                  <span className="text-sm font-bold">{t('libraryForm.typeVideo', 'Video Library')}</span>
                 </button>
                 <button
                   type="button"
@@ -128,7 +128,7 @@ export function LibraryForm() {
                   }`}
                 >
                   <Music className="w-5 h-5" />
-                  <span className="text-sm font-bold">{t('libraryForm.typeAudio', 'Audio')}</span>
+                  <span className="text-sm font-bold">{t('libraryForm.typeAudio', 'Audio Library')}</span>
                 </button>
               </div>
             ) : (
@@ -144,8 +144,8 @@ export function LibraryForm() {
                  <Type className="w-5 h-5" />}
                 <span className="text-sm font-bold capitalize">{t('libraryForm.contentType', { type: 
                   type === 'image' ? t('libraryForm.typeImage') : 
-                  type === 'video' ? t('libraryForm.typeVideo', 'Video') :
-                  type === 'audio' ? t('libraryForm.typeAudio', 'Audio') :
+                  type === 'video' ? t('projectViewer.common.video') :
+                  type === 'audio' ? t('projectViewer.common.audio') :
                   t('libraryForm.typeText') 
                 })}</span>
                 <span className="ml-auto text-[10px] font-black uppercase tracking-[0.1em] opacity-50">{t('libraryForm.permanent')}</span>
