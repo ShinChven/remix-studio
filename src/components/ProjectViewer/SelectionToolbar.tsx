@@ -62,11 +62,11 @@ export function SelectionToolbar({
   return (
     <div
       className={`sticky top-0 z-20 flex justify-between bg-neutral-950/90 backdrop-blur-md border border-neutral-800 p-2.5 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl gap-2 sm:gap-3 shadow-lg shadow-black/20 ${
-        mobileSingleLine ? 'flex-row items-center lg:flex-row lg:items-center' : 'flex-col lg:flex-row lg:items-center'
+        mobileSingleLine ? 'flex-row items-center' : 'flex-col lg:flex-row lg:items-center'
       }`}
     >
       <div
-        className={`flex items-center w-full lg:w-auto gap-1.5 sm:gap-x-3 sm:gap-y-2 ${
+        className={`flex items-center min-w-0 gap-1.5 sm:gap-x-3 sm:gap-y-2 ${
           mobileSingleLine ? 'flex-nowrap min-w-0' : 'flex-wrap'
         }`}
       >
@@ -91,7 +91,7 @@ export function SelectionToolbar({
           <span className="hidden sm:inline whitespace-nowrap">{t('projectViewer.common.selectAll')}</span>
         </button>
 
-        <span className="sm:hidden text-[10px] font-bold text-neutral-500 uppercase tracking-widest whitespace-nowrap flex-shrink-0">
+        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest whitespace-nowrap flex-shrink-0 sm:hidden">
           {selectedCount > 0 ? `${selectedCount}/${totalCount}` : `${totalCount}`}
         </span>
 
@@ -128,9 +128,9 @@ export function SelectionToolbar({
       {/* Right group */}
       {rightActions && (
         <div
-          className={`flex items-center gap-1.5 sm:gap-2 lg:w-auto lg:justify-end flex-shrink-0 ${
+          className={`flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ${
             mobileSingleLine
-              ? 'ml-auto flex-nowrap w-auto pt-0 border-none'
+              ? 'ml-auto flex-nowrap'
               : 'ml-auto flex-wrap w-full pt-2 border-t border-neutral-800/50 lg:w-auto lg:pt-0 lg:border-none'
           }`}
         >
