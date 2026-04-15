@@ -506,11 +506,18 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const safeLibraryId = libraryId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const newItems: LibraryItem[] = [];
+      
+      const jobFilenameMap = new Map<string, string>();
+      for (const job of project.jobs) {
+        if (job.filename) jobFilenameMap.set(job.id, job.filename);
+      }
 
       if (targetLibraryType === 'text') {
         for (const item of itemsToCopy) {
+          const jobFilename = item.jobId ? jobFilenameMap.get(item.jobId) : undefined;
           newItems.push({
             id: randomUUID(),
+            title: jobFilename || undefined,
             content: item.textContent || item.prompt || '',
           });
         }
@@ -522,26 +529,37 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
           let destMainKey: string | undefined;
           let destThumbKey: string | undefined;
+          let basename: string | undefined;
 
           if (sourceMainKey && !sourceMainKey.startsWith('http') && !sourceMainKey.startsWith('data:')) {
-            const basename = sourceMainKey.split('/').pop() || sourceMainKey;
+            basename = sourceMainKey.split('/').pop() || sourceMainKey;
             destMainKey = `${user.userId}/${safeLibraryId}/${basename}`;
             await storage.copy(sourceMainKey, destMainKey);
           } else {
             destMainKey = sourceMainKey;
+            if (sourceMainKey?.startsWith('http')) {
+              try {
+                const url = new URL(sourceMainKey);
+                basename = url.pathname.split('/').pop();
+              } catch {
+                basename = undefined;
+              }
+            }
           }
 
           if (sourceThumbKey && !sourceThumbKey.startsWith('http') && !sourceThumbKey.startsWith('data:')) {
-            const basename = sourceThumbKey.split('/').pop() || sourceThumbKey;
-            destThumbKey = `${user.userId}/${safeLibraryId}/${basename}`;
+            const thumbBasename = sourceThumbKey.split('/').pop() || sourceThumbKey;
+            destThumbKey = `${user.userId}/${safeLibraryId}/${thumbBasename}`;
             await storage.copy(sourceThumbKey, destThumbKey);
           } else {
             destThumbKey = sourceThumbKey;
           }
 
+          const jobFilename = item.jobId ? jobFilenameMap.get(item.jobId) : undefined;
+
           newItems.push({
             id: randomUUID(),
-            title: item.prompt || undefined,
+            title: basename || jobFilename || undefined,
             content: destMainKey || '',
             thumbnailUrl: destThumbKey,
             optimizedUrl: version === 'raw' ? destMainKey : undefined,
