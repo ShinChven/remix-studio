@@ -74,7 +74,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [selectingLibraryForItemId, setSelectingLibraryForItemId] = useState<string | null>(null);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
-  const [lightboxData, setLightboxData] = useState<{ images: string[], index: number, onDelete?: (index: number) => void } | null>(null);
+  const [lightboxData, setLightboxData] = useState<{ images: string[], index: number, onDelete?: (index: number) => void, onIndexChange?: (index: number) => void } | null>(null);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'workflow' | 'jobs'>('workflow');
   const [selectedQueueIds, setSelectedQueueIds] = useState<Set<string>>(new Set());
@@ -938,7 +938,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           setPreviewingWorkflowItemId(null);
         }}
       />
-      {lightboxData && <ImageLightbox images={lightboxData.images} startIndex={lightboxData.index} onClose={() => setLightboxData(null)} onDelete={lightboxData.onDelete} />}
+      {lightboxData && <ImageLightbox images={lightboxData.images} startIndex={lightboxData.index} onClose={() => setLightboxData(null)} onDelete={lightboxData.onDelete} onIndexChange={lightboxData.onIndexChange} />}
       <ConfirmModal 
         isOpen={showDeleteAlbumModal} 
         onClose={() => { setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); }} 

@@ -23,7 +23,7 @@ interface AlbumTabProps {
   setShowDeleteAlbumModal: (show: boolean) => void;
   getProviderName: (id?: string) => string;
   getModelName: (providerId?: string, modelId?: string) => string;
-  setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void } | null) => void;
+  setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void, onIndexChange?: (index: number) => void } | null) => void;
   onExportStarted: () => void;
   projectType?: ProjectType;
 }
@@ -218,7 +218,7 @@ export function AlbumTab({
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = item.aspectRatio?.replace(':', '/') || '1/1';
               return (
-                <div key={item.id} className={`bg-white/20 dark:bg-black/20 border overflow-hidden flex flex-col group transition-all duration-300 active:scale-100 rounded-xl border-neutral-200/20 dark:border-white/5 backdrop-blur-md ${isSelected ? 'ring-2 ring-inset ring-blue-500 shadow-xl shadow-blue-500/20 z-10 scale-[1.02]' : 'hover:shadow-2xl hover:z-10 hover:-translate-y-1'}`}>
+                <div key={item.id} id={`album-item-${item.id}`} className={`bg-white/20 dark:bg-black/20 border overflow-hidden flex flex-col group transition-all duration-300 active:scale-100 rounded-xl border-neutral-200/20 dark:border-white/5 backdrop-blur-md ${isSelected ? 'ring-2 ring-inset ring-blue-500 shadow-xl shadow-blue-500/20 z-10 scale-[1.02]' : 'hover:shadow-2xl hover:z-10 hover:-translate-y-1'}`}>
                   <div className="bg-neutral-50 dark:bg-neutral-950 relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: aspectRatioStr }}>
                     {/* Selection Overlay */}
                     <div className={`absolute top-4 left-4 z-20 transition-all opacity-100`}>
@@ -279,6 +279,15 @@ export function AlbumTab({
                                setAlbumItemsToDelete([itemToDelete]);
                                setShowDeleteAlbumModal(true);
                              }
+                          },
+                          onIndexChange: (newIndex) => {
+                            const newItem = validItems[newIndex];
+                            if (newItem) {
+                              const el = document.getElementById(`album-item-${newItem.id}`);
+                              if (el) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }
+                            }
                           }
                         });
                       }}

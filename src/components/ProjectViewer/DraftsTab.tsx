@@ -22,7 +22,7 @@ interface DraftsTabProps {
   getModelName: (providerId?: string, modelId?: string) => string;
   runJob: (id: string) => void;
   setJobToDeleteId: (id: string) => void;
-  setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void } | null) => void;
+  setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void, onIndexChange?: (index: number) => void } | null) => void;
   albumItems?: AlbumItem[];
   onSwitchToAlbum?: () => void;
   projectType?: ProjectType;

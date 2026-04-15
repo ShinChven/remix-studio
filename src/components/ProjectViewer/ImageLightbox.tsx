@@ -8,12 +8,19 @@ interface ImageLightboxProps {
   startIndex: number;
   onClose: () => void;
   onDelete?: (index: number) => void;
+  onIndexChange?: (index: number) => void;
 }
 
-export function ImageLightbox({ images, startIndex, onClose, onDelete }: ImageLightboxProps) {
+export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexChange }: ImageLightboxProps) {
   const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   
+  useEffect(() => {
+    if (onIndexChange) {
+      onIndexChange(currentIndex);
+    }
+  }, [currentIndex, onIndexChange]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
