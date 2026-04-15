@@ -20,8 +20,9 @@ Remix Studio is a self-hosted multimodal AI workspace for managing text, image, 
 - Combine workflow steps and library items into many prompt permutations automatically
 - Create drafts in bulk, then run all or selected jobs instead of generating one by one
 - Queue generation jobs for background processing with per-provider concurrency control
-- Store AI provider credentials and model configurations
+- Store AI provider credentials, model configurations, and custom model aliases
 - Review outputs in-app and export finished assets as ZIP archives
+- Deliver finished exports to external storage like Google Drive
 - Store generated assets in S3-compatible storage such as AWS S3 or MinIO
 - Support authenticated access with admin controls, 2FA, and passkeys
 - Provide a localized UI with built-in i18n support for English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French
@@ -29,20 +30,23 @@ Remix Studio is a self-hosted multimodal AI workspace for managing text, image, 
 
 ## Core Workflow
 
-1. Save prompt fragments, styles, subjects, and references into reusable libraries.
+1. Save prompt fragments, styles, subjects, and reference assets into reusable libraries.
 2. Build a project workflow by mixing direct inputs with one or more libraries.
 3. Let Remix Studio expand those inputs into combinations, then create drafts in batches.
 4. Run all or selected drafts through the queue with provider-level concurrency limits.
 5. Review outputs, retry failures, and export finished results.
+6. Optionally deliver exports to Google Drive.
 
 ## Supported Workflows
 
-- Text to text
-- Text to image
-- Text to video
-- Image to text
-- Image to image
-- Image to video
+- **Text to text**: Standard LLM generation
+- **Text to image**: Prompt-based image generation
+- **Text to video**: Prompt-based video generation
+- **Image to text**: Describe or analyze images (multimodal)
+- **Image to image**: Stylize or transform images
+- **Image to video**: Animate images into video
+- **Video to video**: Transform or edit videos using reference video context
+- **Audio to video**: Generate video using reference audio context (e.g. for lip-sync or music)
 
 ## Current Supported Models
 
