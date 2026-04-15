@@ -9,21 +9,31 @@
 [![S3 Compatible](https://img.shields.io/badge/Storage-S3%20compatible-16a34a?style=flat-square)](./README.md#deployment)
 [![i18n](https://img.shields.io/badge/i18n-English%20%7C%20%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%20%7C%20%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87%20%7C%20%E6%97%A5%E6%9C%AC%E8%AA%9E%20%7C%20%ED%95%9C%EA%B5%AD%EC%96%B4%20%7C%20Fran%C3%A7ais-7c3aed?style=flat-square)](./README.md#what-remix-studio-does)
 
-Remix Studio is a self-hosted multimodal AI workspace for managing text, image, and video generation workflows in one place, with reusable prompt and reference libraries, provider management, background job queues, asset storage, and export tools built into a single web app. It is ready for cloud hosting with S3-compatible storage support, and also includes MCP access for prompt and library operations, so clients like Claude and Codex can help batch-create and organize content around your generation workflows while generation itself continues to run through the app.
+Remix Studio is a self-hosted multimodal AI workspace for managing text, image, and video generation workflows in one place. You can save prompt fragments and reference assets into reusable libraries, combine them into large sets of prompt variations, create drafts in bulk, and run those batches through a background queue instead of generating one by one. It also includes provider management, asset storage, export tools, and MCP access for prompt and library operations, so clients like Claude and Codex can help organize content around your workflows while generation itself continues to run through the app.
 
 ![Remix Studio screenshot](assets/screenshot.jpg)
 
 ## What Remix Studio Does
 
 - Manage text, image, and video generation projects in one workspace
+- Save reusable prompt fragments and reference assets in libraries
+- Combine workflow steps and library items into many prompt permutations automatically
+- Create drafts in bulk, then run all or selected jobs instead of generating one by one
+- Queue generation jobs for background processing with per-provider concurrency control
 - Store AI provider credentials and model configurations
-- Build reusable text prompt libraries and image reference libraries
-- Queue generation jobs for background processing
 - Review outputs in-app and export finished assets as ZIP archives
 - Store generated assets in S3-compatible storage such as AWS S3 or MinIO
 - Support authenticated access with admin controls, 2FA, and passkeys
 - Provide a localized UI with built-in i18n support for English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French
 - Expose MCP tools for prompt and library operations
+
+## Core Workflow
+
+1. Save prompt fragments, styles, subjects, and references into reusable libraries.
+2. Build a project workflow by mixing direct inputs with one or more libraries.
+3. Let Remix Studio expand those inputs into combinations, then create drafts in batches.
+4. Run all or selected drafts through the queue with provider-level concurrency limits.
+5. Review outputs, retry failures, and export finished results.
 
 ## Supported Workflows
 

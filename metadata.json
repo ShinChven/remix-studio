@@ -1,5 +1,5 @@
 {
   "name": "Remix Studio",
-  "description": "A local-first batch AI image generation platform that combines prompt fragments to generate massive permutations of content.",
+  "description": "A local-first multimodal AI workspace for saving prompts in libraries, generating prompt combinations in bulk, and running concurrent batches instead of one-by-one generation.",
   "requestFramePermissions": []
 }
