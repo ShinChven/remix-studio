@@ -24,14 +24,16 @@ async function attemptRefresh(): Promise<boolean> {
  * If the token has expired, it calls /api/auth/refresh once, then retries.
  * If refresh fails, it redirects to login.
  */
-// Core auth flow endpoints that must never trigger a refresh (would cause loops)
+// Pre-login endpoints that must never trigger a refresh (would cause loops).
+// Only list paths used BEFORE the user has a session — not management endpoints
+// like 2FA setup or passkey registration, which need refresh to stay alive.
 const AUTH_FLOW_PREFIXES = [
   '/api/auth/login',
   '/api/auth/logout',
   '/api/auth/refresh',
-  '/api/auth/2fa',
-  '/api/auth/passkeys',
-  '/api/auth/google/',      // OAuth login flow
+  '/api/auth/2fa/verify-login',   // login-time 2FA verification
+  '/api/auth/passkeys/login',     // passkey login flow
+  '/api/auth/google/',            // OAuth login flow
 ];
 
 async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
@@ -72,13 +74,13 @@ async function handleResponse<T>(res: Response, defaultError: string): Promise<T
 // ========== Auth / Account ==========
 
 export async function fetchCurrentUser(): Promise<User> {
-  const res = await fetch('/api/auth/me', { headers: getHeaders(false) });
+  const res = await apiFetch('/api/auth/me', { headers: getHeaders(false) });
   const data = await handleResponse<{ user: User }>(res, 'Failed to load account');
   return data.user;
 }
 
 export async function updatePassword(currentPassword: string, newPassword: string): Promise<void> {
-  const res = await fetch('/api/auth/password', {
+  const res = await apiFetch('/api/auth/password', {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify({ currentPassword, newPassword }),
@@ -102,12 +104,12 @@ export async function removePassword(currentPassword: string): Promise<void> {
 }
 
 export async function fetchSecuritySettings(): Promise<SecuritySettings> {
-  const res = await fetch('/api/auth/security', { headers: getHeaders(false) });
+  const res = await apiFetch('/api/auth/security', { headers: getHeaders(false) });
   return handleResponse<SecuritySettings>(res, 'Failed to load security settings');
 }
 
 export async function beginPasskeyRegistration(name: string): Promise<{ options: any; flowToken: string }> {
-  const res = await fetch('/api/auth/passkeys/register/options', {
+  const res = await apiFetch('/api/auth/passkeys/register/options', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ name }),
@@ -116,7 +118,7 @@ export async function beginPasskeyRegistration(name: string): Promise<{ options:
 }
 
 export async function finishPasskeyRegistration(flowToken: string, credential: any): Promise<{ passkey: PasskeySummary }> {
-  const res = await fetch('/api/auth/passkeys/register/verify', {
+  const res = await apiFetch('/api/auth/passkeys/register/verify', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ flowToken, credential }),
@@ -125,7 +127,7 @@ export async function finishPasskeyRegistration(flowToken: string, credential: a
 }
 
 export async function removePasskey(passkeyId: string): Promise<void> {
-  const res = await fetch(`/api/auth/passkeys/${passkeyId}`, {
+  const res = await apiFetch(`/api/auth/passkeys/${passkeyId}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -154,7 +156,7 @@ export async function finishPasskeyLogin(flowToken: string, credential: any): Pr
 }
 
 export async function setupTwoFactor(password: string): Promise<{ secret: string; otpauthUri: string; expiresAt: number }> {
-  const res = await fetch('/api/auth/2fa/setup', {
+  const res = await apiFetch('/api/auth/2fa/setup', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ password }),
@@ -163,7 +165,7 @@ export async function setupTwoFactor(password: string): Promise<{ secret: string
 }
 
 export async function enableTwoFactor(code: string): Promise<void> {
-  const res = await fetch('/api/auth/2fa/enable', {
+  const res = await apiFetch('/api/auth/2fa/enable', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ code }),
@@ -175,7 +177,7 @@ export async function enableTwoFactor(code: string): Promise<void> {
 }
 
 export async function disableTwoFactor(password: string, code: string): Promise<void> {
-  const res = await fetch('/api/auth/2fa/disable', {
+  const res = await apiFetch('/api/auth/2fa/disable', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ password, code }),
