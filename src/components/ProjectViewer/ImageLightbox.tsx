@@ -43,7 +43,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete }: ImageLi
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer" onClick={onClose}>
+    <div className="fixed inset-0 z-[900] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer" onClick={onClose}>
       <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
         {onDelete && (
           <button 

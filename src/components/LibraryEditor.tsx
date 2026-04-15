@@ -813,7 +813,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       {/* References warning modal */}
       {showReferencesModal && createPortal(
         <div
-          className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
+          className="fixed inset-0 z-[900] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
           onClick={() => setShowReferencesModal(false)}
         >
           <div
@@ -874,7 +874,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       />
 
       {lightboxIndex !== null && library.items[lightboxIndex] && createPortal(
-        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={() => setLightboxIndex(null)}>
+        <div className="fixed inset-0 z-[900] flex items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={() => setLightboxIndex(null)}>
           <button 
             onClick={() => setLightboxIndex(null)}
             className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 text-neutral-900 dark:text-white rounded-full transition-all"
