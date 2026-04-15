@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
+import { fetchCurrentUser } from '../api';
 
 interface AuthContextType {
   user: User | null;
@@ -15,15 +16,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => {
-        if (res.ok) {
-          return res.json();
-        }
-        throw new Error('Unauthorized');
-      })
-      .then(data => {
-        setUser(data.user);
+    fetchCurrentUser()
+      .then(user => {
+        setUser(user);
       })
       .catch(() => {
         setUser(null);

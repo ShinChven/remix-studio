@@ -90,7 +90,7 @@ export async function updatePassword(currentPassword: string, newPassword: strin
 }
 
 export async function removePassword(currentPassword: string): Promise<void> {
-  const res = await fetch('/api/auth/password', {
+  const res = await apiFetch('/api/auth/password', {
     method: 'DELETE',
     headers: getHeaders(),
     body: JSON.stringify({ currentPassword }),
