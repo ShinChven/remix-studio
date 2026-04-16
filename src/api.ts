@@ -217,11 +217,12 @@ export async function loadData(): Promise<AppData> {
 
 // ========== Library CRUD ==========
 
-export async function fetchLibraries(page: number = 1, limit: number = 50, q?: string): Promise<import('./types').PaginatedResult<Library>> {
+export async function fetchLibraries(page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false): Promise<import('./types').PaginatedResult<Library>> {
   const params = new URLSearchParams();
   if (page) params.set('page', page.toString());
   if (limit) params.set('limit', limit.toString());
   if (q) params.set('q', q);
+  if (includeItems) params.set('includeItems', 'true');
   
   const res = await apiFetch(`/api/libraries?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Library>>(res, 'Failed to list libraries');
@@ -295,9 +296,14 @@ export async function removeLibraryReferences(libraryId: string, projectIds?: st
 
 // ========== Library Item CRUD ==========
 
-export async function fetchLibraryItems(libraryId: string): Promise<LibraryItem[]> {
-  const res = await apiFetch(`/api/libraries/${libraryId}/items`, { headers: getHeaders(false) });
-  return handleResponse<LibraryItem[]>(res, 'Failed to list items');
+export async function fetchLibraryItems(libraryId: string, page: number = 1, limit: number = 24, q?: string, tags: string[] = []): Promise<PaginatedResult<LibraryItem>> {
+  const params = new URLSearchParams();
+  params.set('page', page.toString());
+  params.set('limit', limit.toString());
+  if (q) params.set('q', q);
+  tags.forEach((tag) => params.append('tag', tag));
+  const res = await apiFetch(`/api/libraries/${libraryId}/items?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<PaginatedResult<LibraryItem>>(res, 'Failed to list items');
 }
 
 export async function createLibraryItem(libraryId: string, item: LibraryItem): Promise<void> {

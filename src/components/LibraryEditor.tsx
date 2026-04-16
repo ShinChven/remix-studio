@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Library } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, ChevronLeft, ChevronRight, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileText } from 'lucide-react';
+import { Library, LibraryItem } from '../types';
+import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileText } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { TagModal } from './TagModal';
 import { PageHeader } from './PageHeader';
-import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary } from '../api';
+import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary, fetchLibraryItems, imageDisplayUrl } from '../api';
 import { DuplicateLibraryDialog } from './DuplicateLibraryDialog';
 import { RenameItemModal } from './RenameItemModal';
+import { ImageLightbox } from './ProjectViewer/ImageLightbox';
 import { toast } from 'sonner';
 
 interface Props {
@@ -21,13 +22,16 @@ interface Props {
 export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentPage = parseInt(searchParams.get('page') || '1', 10);
+  const searchTerm = searchParams.get('q') || '';
+
   const [showDeleteLibraryModal, setShowDeleteLibraryModal] = useState(false);
   const [showReferencesModal, setShowReferencesModal] = useState(false);
   const [referencingProjects, setReferencingProjects] = useState<{ id: string; name: string }[]>([]);
   const [checkingReferences, setCheckingReferences] = useState(false);
   const [itemToRemoveIndex, setItemToRemoveIndex] = useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchInput, setSearchInput] = useState(searchTerm);
   const [uploading, setUploading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -44,7 +48,61 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState('');
 
+  // Server-side paginated items
+  const [items, setItems] = useState<LibraryItem[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loadingItems, setLoadingItems] = useState(true);
+
   const ITEMS_PER_PAGE = 24;
+  const selectedTagsKey = selectedFilterTags.join('\u0000');
+
+  const setCurrentPage = useCallback((page: number | ((prev: number) => number)) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      const newPage = typeof page === 'function' ? page(currentPage) : page;
+      next.set('page', Math.max(1, newPage).toString());
+      return next;
+    });
+  }, [setSearchParams, currentPage]);
+
+  const setSearchTerm = useCallback((q: string) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (q) {
+        next.set('q', q);
+      } else {
+        next.delete('q');
+      }
+      next.set('page', '1');
+      return next;
+    });
+  }, [setSearchParams]);
+
+  // Fetch items from server when page/search/library changes
+  const loadItems = useCallback(async () => {
+    setLoadingItems(true);
+    try {
+      const result = await fetchLibraryItems(library.id, currentPage, ITEMS_PER_PAGE, searchTerm || undefined, selectedFilterTags);
+      setItems(result.items);
+      setTotalItems(result.total);
+      setTotalPages(result.pages);
+    } catch (e) {
+      console.error('Failed to load items:', e);
+    } finally {
+      setLoadingItems(false);
+    }
+  }, [library.id, currentPage, searchTerm, selectedTagsKey]);
+
+  useEffect(() => {
+    loadItems();
+  }, [loadItems]);
+
+  useEffect(() => {
+    setSearchInput(searchTerm);
+  }, [searchTerm]);
+
+  const hasActiveItemFilters = Boolean(searchTerm) || selectedFilterTags.length > 0;
 
   const toggleItemExpand = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -60,7 +118,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       if (e.shiftKey && lastSelectedIndex !== null) {
         const start = Math.min(lastSelectedIndex, index);
         const end = Math.max(lastSelectedIndex, index);
-        const rangeIds = filteredItems.slice(start, end + 1).map(f => f.item.id);
+        const rangeIds = items.slice(start, end + 1).map(item => item.id);
         
         // If the start item is being selected, select the range. Otherwise, deselect.
         const shouldSelect = !prev.has(id);
@@ -80,10 +138,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   };
 
   const toggleSelectAll = () => {
-    if (selectedItemIds.size === filteredItems.length && filteredItems.length > 0) {
+    if (selectedItemIds.size === items.length && items.length > 0) {
       setSelectedItemIds(new Set());
     } else {
-      setSelectedItemIds(new Set(filteredItems.map(f => f.item.id)));
+      setSelectedItemIds(new Set(items.map(item => item.id)));
     }
   };
 
@@ -93,10 +151,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       for (const id of idsToDelete) {
         await apiDeleteLibraryItem(library.id, id);
       }
-      const newItems = library.items.filter(i => !selectedItemIds.has(i.id));
-      onUpdate({ ...library, items: newItems });
       setSelectedItemIds(new Set());
       setLastSelectedIndex(null);
+      await loadItems();
     } catch (e) {
       console.error('Failed to delete items:', e);
     }
@@ -105,51 +162,24 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
   const handleBatchTagSave = async (tagsToAdd: string[]) => {
      if (tagsToAdd.length === 0) return;
-     const newItems = [...library.items];
      for (const id of selectedItemIds) {
-       const index = newItems.findIndex(i => i.id === id);
-       if (index !== -1) {
-         const currentTags = newItems[index].tags || [];
+       const item = items.find(i => i.id === id);
+       if (item) {
+         const currentTags = item.tags || [];
          const updatedTags = Array.from(new Set([...currentTags, ...tagsToAdd]));
-         newItems[index] = { ...newItems[index], tags: updatedTags };
-         updateLibraryItem(library.id, id, { tags: updatedTags }).catch(console.error);
+         await updateLibraryItem(library.id, id, { tags: updatedTags }).catch(console.error);
        }
      }
-     onUpdate({ ...library, items: newItems });
      setSelectedItemIds(new Set());
      setLastSelectedIndex(null);
+     await loadItems();
   };
 
   const handleSingleTagSave = async (tags: string[]) => {
     if (!tagModalItemId) return;
-    const newItems = [...library.items];
-    const index = newItems.findIndex(i => i.id === tagModalItemId);
-    if (index !== -1) {
-      newItems[index] = { ...newItems[index], tags };
-      updateLibraryItem(library.id, tagModalItemId, { tags }).catch(console.error);
-    }
-    onUpdate({ ...library, items: newItems });
+    await updateLibraryItem(library.id, tagModalItemId, { tags }).catch(console.error);
+    await loadItems();
   };
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    if (lightboxIndex === null) return;
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setLightboxIndex(null);
-      } else if (e.key === 'ArrowLeft') {
-        setLightboxIndex(prev => (prev !== null && prev > 0 ? prev - 1 : prev));
-      } else if (e.key === 'ArrowRight') {
-        setLightboxIndex(prev => (prev !== null && prev < library.items.length - 1 ? prev + 1 : prev));
-      }
-    };
-    
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxIndex, library.items.length]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -161,36 +191,18 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
   const availableTags = React.useMemo(() => {
     const tagSet = new Set<string>();
-    library.items.forEach(i => {
+    [...library.items, ...items].forEach(i => {
       if (i.tags) i.tags.forEach(t => tagSet.add(t));
     });
     return Array.from(tagSet).sort();
-  }, [library.items]);
+  }, [library.items, items]);
 
   const toggleFilterTag = (tag: string) => {
-    setSelectedFilterTags(prev => 
+    setCurrentPage(1);
+    setSelectedFilterTags(prev =>
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
   };
-
-  const filteredItems = library.items
-    .map((item, index) => ({ item, originalIndex: index }))
-    .filter(({ item }) => {
-      const search = searchTerm.toLowerCase();
-      const matchesSearch = (item.title?.toLowerCase().includes(search) || false) ||
-                           (item.content?.toLowerCase().includes(search) || false);
-      
-      const matchesTags = selectedFilterTags.length === 0 || 
-                         (item.tags && selectedFilterTags.some(t => item.tags?.includes(t)));
-      
-      return matchesSearch && matchesTags;
-    });
-
-  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
-  const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   const handleDeleteLibrary = async () => {
     setCheckingReferences(true);
@@ -227,14 +239,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
   const confirmRemoveItem = async () => {
     if (itemToRemoveIndex !== null) {
-      const item = library.items[itemToRemoveIndex];
-      try {
-        await apiDeleteLibraryItem(library.id, item.id);
-        const newItems = [...library.items];
-        newItems.splice(itemToRemoveIndex, 1);
-        onUpdate({ ...library, items: newItems });
-      } catch (e) {
-        console.error('Failed to delete item:', e);
+      const item = items[itemToRemoveIndex];
+      if (item) {
+        try {
+          await apiDeleteLibraryItem(library.id, item.id);
+          await loadItems();
+        } catch (e) {
+          console.error('Failed to delete item:', e);
+        }
       }
       setItemToRemoveIndex(null);
     }
@@ -253,18 +265,21 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
   const handleDragEnd = async () => {
     if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
-      const newItems = [...library.items];
-      const draggedItem = newItems[draggedIndex];
-      newItems.splice(draggedIndex, 1);
-      newItems.splice(dragOverIndex, 0, draggedItem);
-      
-      onUpdate({ ...library, items: newItems });
-      
-      const updates = newItems.map((item, idx) => ({ id: item.id, order: idx }));
+      const reordered = [...items];
+      const draggedItem = reordered[draggedIndex];
+      reordered.splice(draggedIndex, 1);
+      reordered.splice(dragOverIndex, 0, draggedItem);
+
+      // Optimistic update for immediate visual feedback
+      setItems(reordered);
+
+      const pageOffset = (currentPage - 1) * ITEMS_PER_PAGE;
+      const updates = reordered.map((item, idx) => ({ id: item.id, order: pageOffset + idx }));
       try {
         await updateLibraryItemOrders(library.id, updates);
       } catch (err) {
         console.error('Failed to save updated order', err);
+        await loadItems();
       }
     }
     setDraggedIndex(null);
@@ -277,8 +292,6 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
     setUploading(true);
     try {
-      const newItems = [...library.items];
-
       for (const file of files) {
         const base64 = await new Promise<string>((resolve) => {
           const reader = new FileReader();
@@ -297,26 +310,19 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           throw new Error('Unsupported library type for upload');
         }
 
-        const newItem = { 
-          id: crypto.randomUUID(), 
-          content: result.key, 
-          title: file.name, // Use original filename as default title
-          order: newItems.length,
+        const newItem = {
+          id: crypto.randomUUID(),
+          content: result.key,
+          title: file.name,
+          order: totalItems + files.indexOf(file),
           thumbnailUrl: 'thumbnailKey' in result ? result.thumbnailKey : undefined,
           optimizedUrl: 'optimizedKey' in result ? result.optimizedKey : undefined,
           size: result.size
         };
         await createLibraryItem(library.id, newItem);
-        // Use signed URLs for immediate display, DB stores the S3 keys
-        newItems.push({ 
-          ...newItem, 
-          content: result.url,
-          thumbnailUrl: 'thumbnailUrl' in result ? result.thumbnailUrl : undefined,
-          optimizedUrl: 'optimizedUrl' in result ? result.optimizedUrl : undefined
-        });
       }
 
-      onUpdate({ ...library, items: newItems });
+      await loadItems();
     } catch (err: any) {
       console.error('Failed to upload files:', err);
       toast.error(err.message || t('libraryEditor.toasts.uploadFailed'));
@@ -326,18 +332,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   };
 
   const handleUpdateTitle = async (itemId: string, newTitle: string) => {
-    const newItems = [...library.items];
-    const index = newItems.findIndex(i => i.id === itemId);
-    if (index !== -1) {
-      const updatedTitle = newTitle.trim();
-      newItems[index] = { ...newItems[index], title: updatedTitle };
-      try {
-        await updateLibraryItem(library.id, itemId, { title: updatedTitle });
-        onUpdate({ ...library, items: newItems });
-      } catch (err) {
-        console.error('Failed to update title', err);
-        toast.error('Failed to update title');
-      }
+    const updatedTitle = newTitle.trim();
+    try {
+      await updateLibraryItem(library.id, itemId, { title: updatedTitle });
+      await loadItems();
+    } catch (err) {
+      console.error('Failed to update title', err);
+      toast.error('Failed to update title');
     }
     setEditingTitleId(null);
   };
@@ -360,8 +361,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" />
               <input
                 type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') setSearchTerm(searchInput); }}
                 placeholder={t('libraryEditor.filterItems')}
                 className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all w-full sm:w-48 lg:w-64 font-medium shadow-sm"
               />
@@ -442,7 +444,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
       <div className="flex-1 overflow-y-auto pr-2 md:pr-4 -mr-2 md:-mr-4 custom-scrollbar space-y-4 md:space-y-6 pb-20">
         {/* Batch Action Toolbar (Mirrors item style) */}
-        {filteredItems.length > -1 && (
+        {items.length > -1 && (
           <div className={`
             sticky top-0 z-20 flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 shadow-xl
             ${selectedItemIds.size > 0 
@@ -455,7 +457,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   onClick={toggleSelectAll}
                   className="p-1 hover:bg-white/5 rounded transition-colors cursor-pointer"
                 >
-                  {selectedItemIds.size === filteredItems.length && filteredItems.length > 0 ? (
+                  {selectedItemIds.size === items.length && items.length > 0 ? (
                     <CheckSquare className="w-4.5 h-4.5 text-blue-500" />
                   ) : selectedItemIds.size > 0 ? (
                     <div className="w-4.5 h-4.5 flex items-center justify-center">
@@ -490,7 +492,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 {showTagFilterDropdown && (
                   <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
                     <button
-                      onClick={() => setSelectedFilterTags([])}
+                      onClick={() => {
+                        setSelectedFilterTags([]);
+                        setCurrentPage(1);
+                      }}
                       className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors mb-1 ${
                         selectedFilterTags.length === 0 ? 'bg-blue-600 text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
                       }`}
@@ -542,18 +547,24 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           </div>
         )}
 
-        <div className={library.type !== 'text' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8" : "space-y-2.5"}>
-          {paginatedItems.map(({ item, originalIndex }) => {
+        {loadingItems && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+          </div>
+        )}
+
+        <div className={`${library.type !== 'text' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8" : "space-y-2.5"} ${loadingItems ? 'hidden' : ''}`}>
+          {items.map((item, index) => {
             const isExpanded = expandedItemId === item.id;
             const isSelected = selectedItemIds.has(item.id);
-            
+
             return (
-            <div 
-              key={item.id} 
-              className={`group relative flex flex-col transition-all duration-300 ${draggedIndex === originalIndex ? 'opacity-50' : ''} ${dragOverIndex === originalIndex ? 'ring-2 ring-blue-500 rounded-xl scale-105 z-10' : ''}`}
-              draggable={library.type === 'image' && !searchTerm}
-              onDragStart={(e) => handleDragStart(e, originalIndex)}
-              onDragEnter={(e) => handleDragEnter(e, originalIndex)}
+            <div
+              key={item.id}
+              className={`group relative flex flex-col transition-all duration-300 ${draggedIndex === index ? 'opacity-50' : ''} ${dragOverIndex === index ? 'ring-2 ring-blue-500 rounded-xl scale-105 z-10' : ''}`}
+              draggable={library.type === 'image' && !hasActiveItemFilters}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragEnter={(e) => handleDragEnter(e, index)}
               onDragOver={(e) => e.preventDefault()}
               onDragEnd={handleDragEnd}
               onDrop={(e) => e.preventDefault()}
@@ -569,14 +580,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 `}>
                   {library.type !== 'text' ? (
                     <div className={`relative flex-1 rounded-xl overflow-hidden cursor-pointer transition-all ${isSelected ? 'ring-4 ring-blue-500/50 scale-95' : ''}`} onClick={(e) => { 
-                      if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, originalIndex, e); 
+                      if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, index, e); 
                       else {
-                        if (library.type === 'image') setLightboxIndex(originalIndex);
+                        if (library.type === 'image') setLightboxIndex(index);
                         // For video/audio, expansion or separate player could be used, but for now let's just use the grid
                       }
                     }}>
                       {library.type === 'image' ? (
-                        <img src={item.thumbnailUrl || item.content} alt={`${originalIndex}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
+                        <img src={item.thumbnailUrl || item.content} alt={`${index}`} className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" />
                       ) : library.type === 'video' ? (
                         <div className="w-full h-full flex items-center justify-center bg-neutral-200 dark:bg-neutral-800">
                           {item.thumbnailUrl ? (
@@ -605,8 +616,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                               title={t('libraryEditor.clickToRename', 'Click to rename')}
                             >
                               <span className="text-[10px] font-bold text-white/90 truncate flex-1">
-                                {item.title || (library.type === 'image' ? t('libraryEditor.imageLabel', { index: originalIndex + 1 }) : 
-                                 library.type === 'video' ? 'Video ' + (originalIndex + 1) : 'Audio ' + (originalIndex + 1))}
+                                {item.title || (library.type === 'image' ? t('libraryEditor.imageLabel', { index: (currentPage - 1) * ITEMS_PER_PAGE + index + 1 }) :
+                                 library.type === 'video' ? 'Video ' + ((currentPage - 1) * ITEMS_PER_PAGE + index + 1) : 'Audio ' + ((currentPage - 1) * ITEMS_PER_PAGE + index + 1))}
                               </span>
                               <Edit3 className="w-3 h-3 text-white/40 group-hover/item:text-white/70 flex-shrink-0 transition-colors" />
                             </div>
@@ -623,7 +634,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                                  <TagIcon className="w-3.5 h-3.5" />
                                </button>
                                <button
-                                 onClick={(e) => { e.stopPropagation(); handleRemoveItem(originalIndex); }}
+                                 onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }}
                                  className="p-1.5 bg-neutral-50/80 dark:bg-neutral-950/80 text-neutral-600 dark:text-neutral-400 hover:text-red-500 rounded-lg backdrop-blur-md border border-white/5 hover:border-red-500/20 transition-all active:scale-90"
                                >
                                  <Trash2 className="w-3.5 h-3.5" />
@@ -638,13 +649,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                       <div 
                         className={`p-4 md:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 ${isExpanded ? 'border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800/40' : ''}`}
                         onClick={(e) => { 
-                          if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, originalIndex, e); 
+                          if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, index, e); 
                           else toggleItemExpand(item.id, e);
                         }}
                       >
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
                           <div 
-                            onClick={(e) => toggleItemSelection(item.id, originalIndex, e)}
+                            onClick={(e) => toggleItemSelection(item.id, index, e)}
                             className="p-1 hover:bg-white/5 rounded transition-colors cursor-pointer"
                           >
                             {isSelected ? (
@@ -687,14 +698,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                               <TagIcon className="w-3.5 h-3.5" />
                             </button>
                             <button
-                               onClick={(e) => { e.stopPropagation(); navigate(`/library/${library.id}/prompt/${originalIndex}`); }}
+                               onClick={(e) => { e.stopPropagation(); navigate(`/library/${library.id}/prompt/${item.id}`); }}
                                className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-lg transition-all border border-transparent hover:border-neutral-700 active:scale-95"
                                title={library.type === 'text' ? t('libraryEditor.refineInFullEditor') : t('libraryEditor.editDetails', 'Edit Details')}
                              >
                                {library.type === 'text' ? <Edit3 className="w-3.5 h-3.5" /> : <Settings className="w-3.5 h-3.5" />}
                              </button>
                             <button
-                              onClick={(e) => { e.stopPropagation(); handleRemoveItem(originalIndex); }}
+                              onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }}
                               className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all border border-transparent hover:border-red-500/20 active:scale-95"
                               title={t('libraryEditor.deleteFragment')}
                             >
@@ -730,17 +741,17 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             );
           })}
 
-          {filteredItems.length === 0 && (
+          {items.length === 0 && !loadingItems && (
             <div className="col-span-full py-24 text-center border-2 border-dashed border-neutral-200/50 dark:border-neutral-800/50 rounded-[40px] bg-white/10 dark:bg-neutral-900/10 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95">
               <div className="p-8 rounded-[32px] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl">
-                {searchTerm ? <Search className="w-16 h-16 text-neutral-800" /> : <Plus className="w-16 h-16 text-neutral-800" />}
+                {hasActiveItemFilters ? <Search className="w-16 h-16 text-neutral-800" /> : <Plus className="w-16 h-16 text-neutral-800" />}
               </div>
               <div className="space-y-2">
                 <p className="text-2xl font-black text-neutral-500 dark:text-neutral-500 tracking-tight italic">
-                  {searchTerm ? t('libraryEditor.noResultsFound') : t('libraryEditor.emptyTitle')}
+                  {hasActiveItemFilters ? t('libraryEditor.noResultsFound') : t('libraryEditor.emptyTitle')}
                 </p>
                 <p className="text-[10px] font-black text-neutral-700 uppercase tracking-[0.3em]">
-                  {searchTerm ? t('libraryEditor.tryDifferentSearch') : t('libraryEditor.emptyDescription')}
+                  {hasActiveItemFilters ? t('libraryEditor.tryDifferentSearch') : t('libraryEditor.emptyDescription')}
                 </p>
               </div>
             </div>
@@ -856,43 +867,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         type="danger"
       />
 
-      {lightboxIndex !== null && library.items[lightboxIndex] && createPortal(
-        <div className="fixed inset-0 z-[900] flex items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={() => setLightboxIndex(null)}>
-          <button 
-            onClick={() => setLightboxIndex(null)}
-            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 text-neutral-900 dark:text-white rounded-full transition-all"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          
-          <button 
-            onClick={(e) => { e.stopPropagation(); setLightboxIndex(prev => prev! > 0 ? prev! - 1 : prev); }}
-            disabled={lightboxIndex === 0}
-            className="absolute left-4 md:left-10 p-4 bg-white/10 hover:bg-white/20 disabled:opacity-0 disabled:pointer-events-none text-neutral-900 dark:text-white rounded-full transition-all"
-          >
-            <ChevronLeft className="w-8 h-8" />
-          </button>
-          
-          <div className="relative w-full max-w-7xl h-[85vh] flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
-            <img 
-              src={library.items[lightboxIndex].optimizedUrl || library.items[lightboxIndex].content} 
-              alt={`img-${lightboxIndex}`}
-              className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl animate-in zoom-in-95 duration-500"
-            />
-            <div className="absolute bottom-[-3rem] text-white/50 font-black tracking-widest text-xs uppercase bg-black/50 px-4 py-2 rounded-full border border-white/10">
-              {lightboxIndex + 1} / {library.items.length}
-            </div>
-          </div>
- 
-          <button 
-            onClick={(e) => { e.stopPropagation(); setLightboxIndex(prev => prev! < library.items.length - 1 ? prev! + 1 : prev); }}
-            disabled={lightboxIndex === library.items.length - 1}
-            className="absolute right-4 md:right-10 p-4 bg-white/10 hover:bg-white/20 disabled:opacity-0 disabled:pointer-events-none text-neutral-900 dark:text-white rounded-full transition-all"
-          >
-            <ChevronRight className="w-8 h-8" />
-          </button>
-        </div>,
-        document.body
+      {lightboxIndex !== null && items[lightboxIndex] && (
+        <ImageLightbox
+          images={items.map(item => imageDisplayUrl(item.optimizedUrl || item.content))}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={setLightboxIndex}
+        />
       )}
 
       <ConfirmModal
@@ -918,7 +899,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         isOpen={tagModalItemId !== null}
         onClose={() => setTagModalItemId(null)}
         onSave={handleSingleTagSave}
-        initialTags={tagModalItemId ? (library.items.find(i => i.id === tagModalItemId)?.tags || []) : []}
+        initialTags={tagModalItemId ? (items.find(i => i.id === tagModalItemId)?.tags || []) : []}
         title={t('libraryEditor.tagModal.editTitle')}
       />
 

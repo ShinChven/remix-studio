@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
@@ -14,6 +14,7 @@ interface ImageLightboxProps {
 export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexChange }: ImageLightboxProps) {
   const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(startIndex);
+  const dialogRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     if (onIndexChange) {
@@ -22,10 +23,29 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
   }, [currentIndex, onIndexChange]);
 
   useEffect(() => {
+    setCurrentIndex(startIndex);
+  }, [startIndex]);
+
+  useEffect(() => {
+    dialogRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft') setCurrentIndex(prev => prev > 0 ? prev - 1 : images.length - 1);
-      if (e.key === 'ArrowRight') setCurrentIndex(prev => prev < images.length - 1 ? prev + 1 : 0);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setCurrentIndex(prev => prev > 0 ? prev - 1 : images.length - 1);
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setCurrentIndex(prev => prev < images.length - 1 ? prev + 1 : 0);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -50,7 +70,14 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[900] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer" onClick={onClose}>
+    <div
+      ref={dialogRef}
+      tabIndex={-1}
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[900] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer outline-none"
+      onClick={onClose}
+    >
       <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
         {onDelete && (
           <button 

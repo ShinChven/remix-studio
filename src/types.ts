@@ -29,6 +29,7 @@ export interface Library {
   name: string;
   type: LibraryType;
   items: LibraryItem[];
+  itemCount?: number;
 }
 
 export type ProjectType = 'image' | 'text' | 'video';

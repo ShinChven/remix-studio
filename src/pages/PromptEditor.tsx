@@ -14,7 +14,7 @@ export function PromptEditor() {
   const navigate = useNavigate();
 
   const isNew = index === 'new';
-  const itemIndex = isNew ? -1 : parseInt(index || '0');
+  const itemToken = index || '';
 
   const [library, setLibrary] = useState<Library | null>(null);
   const [content, setContent] = useState('');
@@ -24,23 +24,34 @@ export function PromptEditor() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [showTagModal, setShowTagModal] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [itemOrdinal, setItemOrdinal] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
     fetchLibrary(id).then(lib => {
       setLibrary(lib);
       if (!isNew) {
-        const item = lib.items[itemIndex];
+        const parsedIndex = Number.parseInt(itemToken, 10);
+        const resolvedIndex = Number.isNaN(parsedIndex)
+          ? lib.items.findIndex((item) => item.id === itemToken)
+          : parsedIndex;
+        const item = resolvedIndex >= 0 ? lib.items[resolvedIndex] : undefined;
         if (item === undefined) {
           navigate(`/library/${id}`);
         } else {
+          setEditingItemId(item.id);
+          setItemOrdinal(resolvedIndex + 1);
           setContent(item.content || '');
           setTitle(item.title || '');
           setTags(item.tags || []);
         }
+      } else {
+        setEditingItemId(null);
+        setItemOrdinal(null);
       }
     }).catch(() => navigate('/libraries'));
-  }, [id, index]);
+  }, [id, isNew, itemToken, navigate]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -58,8 +69,8 @@ export function PromptEditor() {
         };
         await createLibraryItem(id, newItem);
       } else {
-        const existingItem = library.items[itemIndex];
-        await updateLibraryItem(id, existingItem.id, {
+        if (!editingItemId) return;
+        await updateLibraryItem(id, editingItemId, {
           content,
           title: title.trim(),
           tags,
@@ -103,7 +114,7 @@ export function PromptEditor() {
               />
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-neutral-600 truncate">
-                  {library.name} {isNew ? '' : `• #${itemIndex + 1}`}
+                  {library.name} {isNew || itemOrdinal === null ? '' : `• #${itemOrdinal}`}
                 </span>
                 <div className="w-px h-3 bg-neutral-200 dark:bg-neutral-800 hidden sm:block"></div>
                 <button 

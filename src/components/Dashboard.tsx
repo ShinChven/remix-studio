@@ -132,7 +132,7 @@ export function Dashboard() {
                       </div>
                       <h4 className="font-medium text-neutral-900 dark:text-white truncate flex-1">{lib.name}</h4>
                     </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-500">{lib.items?.length || 0} items</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-500">{lib.itemCount ?? lib.items?.length ?? 0} items</p>
                   </Link>
                 ))}
                 {libraries.length === 0 && (

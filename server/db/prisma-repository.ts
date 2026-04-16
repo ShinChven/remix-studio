@@ -20,7 +20,7 @@ export class PrismaRepository implements IRepository {
   }
 
   // === Library CRUD ===
-  getUserLibraries(userId: string, page?: number, limit?: number, q?: string) { return this.libraries.getUserLibraries(userId, page, limit, q); }
+  getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean) { return this.libraries.getUserLibraries(userId, page, limit, q, includeItems); }
   getLibrary(userId: string, libraryId: string) { return this.libraries.getLibrary(userId, libraryId); }
   createLibrary(userId: string, library: Omit<Library, 'items'>) { return this.libraries.createLibrary(userId, library); }
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }) { return this.libraries.updateLibrary(userId, libraryId, updates); }
@@ -31,6 +31,7 @@ export class PrismaRepository implements IRepository {
 
   // === Library Item CRUD ===
   getLibraryItems(userId: string, libraryId: string) { return this.libraries.getLibraryItems(userId, libraryId); }
+  getLibraryItemsPaginated(userId: string, libraryId: string, page?: number, limit?: number, q?: string, tags?: string[]) { return this.libraries.getLibraryItemsPaginated(userId, libraryId, page, limit, q, tags); }
   createLibraryItem(userId: string, libraryId: string, item: LibraryItem) { return this.libraries.createLibraryItem(userId, libraryId, item); }
   createLibraryItemsBatch(userId: string, libraryId: string, items: LibraryItem[]) { return this.libraries.createLibraryItemsBatch(userId, libraryId, items); }
   updateLibraryItem(userId: string, libraryId: string, itemId: string, updates: Partial<LibraryItem>) { return this.libraries.updateLibraryItem(userId, libraryId, itemId, updates); }

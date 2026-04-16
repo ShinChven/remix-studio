@@ -138,13 +138,18 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       const page = parseInt(c.req.query('page') || '1', 10);
       const limit = parseInt(c.req.query('limit') || '50', 10);
       const q = c.req.query('q');
+      const includeItems = c.req.query('includeItems') === 'true';
 
-      const result = await repository.getUserLibraries(user.userId, page, limit, q);
+      const result = await repository.getUserLibraries(user.userId, page, limit, q, includeItems);
+
+      if (!includeItems) {
+        return c.json(result);
+      }
+
       const signedItems = await Promise.all(result.items.map((lib) => signLibrary(lib, storage)));
-      
       return c.json({
         ...result,
-        items: signedItems
+        items: signedItems,
       });
     } catch (e) {
       console.error('[GET /api/libraries]', e);
@@ -319,12 +324,21 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
     try {
       const user = c.get('user') as JwtPayload;
       const libId = c.req.param('libId');
-      const [items, library] = await Promise.all([
-        repository.getLibraryItems(user.userId, libId),
-        repository.getLibrary(user.userId, libId),
-      ]);
+      const page = parseInt(c.req.query('page') || '1', 10);
+      const limit = parseInt(c.req.query('limit') || '24', 10);
+      const q = c.req.query('q');
+      const tags = c.req.queries('tag');
+
+      const library = await repository.getLibrary(user.userId, libId);
       if (!library) return c.json({ error: 'Not found' }, 404);
-      return c.json(await signLibraryImages(items, storage, library.type));
+
+      const result = await repository.getLibraryItemsPaginated(user.userId, libId, page, limit, q, tags);
+      const signedItems = await signLibraryImages(result.items, storage, library.type);
+
+      return c.json({
+        ...result,
+        items: signedItems,
+      });
     } catch (e) {
       console.error('[GET /api/libraries/:libId/items]', e);
       return c.json({ error: 'Failed to list items' }, 500);

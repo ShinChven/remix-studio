@@ -16,7 +16,7 @@ export class LibraryRepository {
     }
   }
 
-  async getUserLibraries(userId: string, page: number = 1, limit: number = 50, q?: string): Promise<{ items: Library[], total: number, page: number, pages: number }> {
+  async getUserLibraries(userId: string, page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false): Promise<{ items: Library[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
     const where: any = { userId };
@@ -34,11 +34,16 @@ export class LibraryRepository {
         skip,
         take: limit,
         orderBy: { id: 'desc' },
-        include: {
-          items: {
-            orderBy: [{ order: 'asc' }, { id: 'asc' }],
-          },
-        },
+        include: includeItems
+          ? {
+              items: {
+                orderBy: [{ order: 'asc' }, { id: 'asc' }],
+              },
+              _count: { select: { items: true } },
+            }
+          : {
+              _count: { select: { items: true } },
+            },
       })
     ]);
 
@@ -46,7 +51,8 @@ export class LibraryRepository {
       id: lib.id,
       name: lib.name,
       type: lib.type as LibraryType,
-      items: lib.items.map((item) => this.mapItem(item)),
+      items: 'items' in lib && Array.isArray(lib.items) ? lib.items.map((item) => this.mapItem(item)) : [],
+      itemCount: lib._count.items,
     }));
 
     return {
@@ -109,6 +115,53 @@ export class LibraryRepository {
       orderBy: [{ order: 'asc' }, { id: 'asc' }],
     });
     return items.map((item) => this.mapItem(item));
+  }
+
+  async getLibraryItemsPaginated(userId: string, libraryId: string, page: number = 1, limit: number = 24, q?: string, tags?: string[]): Promise<{ items: LibraryItem[], total: number, page: number, pages: number }> {
+    const lib = await this.prisma.library.findFirst({ where: { id: libraryId, userId } });
+    if (!lib) return { items: [], total: 0, page, pages: 1 };
+
+    const skip = (page - 1) * limit;
+    const where: any = { libraryId };
+    const andClauses: any[] = [];
+
+    if (q) {
+      andClauses.push({
+        OR: [
+          { title: { contains: q, mode: 'insensitive' } },
+          { content: { contains: q, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (tags && tags.length > 0) {
+      andClauses.push({
+        OR: tags.map((tag) => ({
+          tags: { array_contains: [tag] },
+        })),
+      });
+    }
+
+    if (andClauses.length > 0) {
+      where.AND = andClauses;
+    }
+
+    const [total, items] = await Promise.all([
+      this.prisma.libraryItem.count({ where }),
+      this.prisma.libraryItem.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ order: 'asc' }, { id: 'asc' }],
+      }),
+    ]);
+
+    return {
+      items: items.map((item) => this.mapItem(item)),
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    };
   }
 
   async createLibraryItem(userId: string, libraryId: string, item: LibraryItem): Promise<void> {
