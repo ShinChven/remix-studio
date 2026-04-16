@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "mcp:inspect": "npx @modelcontextprotocol/inspector --transport streamablehttp --url http://localhost:3000/mcp"
+    "mcp:inspect": "npx @modelcontextprotocol/inspector --transport http --url http://localhost:3000/mcp"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.87.0",
