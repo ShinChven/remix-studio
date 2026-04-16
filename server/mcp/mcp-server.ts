@@ -60,12 +60,14 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
   });
 
   // ─── Tool: list_libraries ───
-  server.tool(
+  server.registerTool(
     'list_libraries',
-    'List all text libraries for the authenticated user. Returns library id, name, type, and item count.',
     {
-      page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
-      limit: z.number().int().min(1).max(100).default(50).describe('Items per page (default 50)'),
+      description: 'List all text libraries for the authenticated user. Returns library id, name, type, and item count.',
+      inputSchema: {
+        page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
+        limit: z.number().int().min(1).max(100).default(50).describe('Items per page (default 50)'),
+      },
     },
     async ({ page, limit }) => {
       const result = await repository.getUserLibraries(userId, page, limit);
@@ -95,11 +97,13 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
   );
 
   // ─── Tool: create_library ───
-  server.tool(
+  server.registerTool(
     'create_library',
-    'Create a new text library.',
     {
-      name: z.string().min(1).max(256).describe('Library name'),
+      description: 'Create a new text library.',
+      inputSchema: {
+        name: z.string().min(1).max(256).describe('Library name'),
+      },
     },
     async ({ name }) => {
       const id = crypto.randomUUID();
@@ -116,14 +120,16 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
   );
 
   // ─── Tool: create_prompt ───
-  server.tool(
+  server.registerTool(
     'create_prompt',
-    'Create a text prompt (item) in a library. The content is the prompt text. Tags are optional.',
     {
-      library_id: z.string().describe('The library ID to add the prompt to'),
-      content: z.string().min(1).describe('The prompt text content'),
-      title: z.string().optional().describe('Optional title for the prompt'),
-      tags: z.array(z.string()).optional().describe('Optional tags for categorization'),
+      description: 'Create a text prompt (item) in a library. The content is the prompt text. Tags are optional.',
+      inputSchema: {
+        library_id: z.string().describe('The library ID to add the prompt to'),
+        content: z.string().min(1).describe('The prompt text content'),
+        title: z.string().optional().describe('Optional title for the prompt'),
+        tags: z.array(z.string()).optional().describe('Optional tags for categorization'),
+      },
     },
     async ({ library_id, content, title, tags }) => {
       const id = crypto.randomUUID();
@@ -145,15 +151,17 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
   );
 
   // ─── Tool: search_library_items ───
-  server.tool(
+  server.registerTool(
     'search_library_items',
-    'Search text prompts across libraries by keyword (matches content and title) and/or tags. Returns matching items with their library context.',
     {
-      query: z.string().describe('Search keyword to match against prompt content and title'),
-      library_id: z.string().optional().describe('Optional: limit search to a specific library'),
-      tags: z.array(z.string()).optional().describe('Optional: filter by tags (items must contain ALL specified tags)'),
-      page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
-      limit: z.number().int().min(1).max(100).default(20).describe('Items per page (default 20)'),
+      description: 'Search text prompts across libraries by keyword (matches content and title) and/or tags. Returns matching items with their library context.',
+      inputSchema: {
+        query: z.string().describe('Search keyword to match against prompt content and title'),
+        library_id: z.string().optional().describe('Optional: limit search to a specific library'),
+        tags: z.array(z.string()).optional().describe('Optional: filter by tags (items must contain ALL specified tags)'),
+        page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
+        limit: z.number().int().min(1).max(100).default(20).describe('Items per page (default 20)'),
+      },
     },
     async ({ query, library_id, tags, page, limit }) => {
       const result = await repository.searchLibraryItems(userId, query, {
@@ -187,10 +195,11 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
   );
 
   // ─── Tool: get_storage_usage ───
-  server.tool(
+  server.registerTool(
     'get_storage_usage',
-    'Get storage usage summary for the authenticated user. Returns total usage, storage limit, and breakdown by category (projects, libraries, archives, trash).',
-    {},
+    {
+      description: 'Get storage usage summary for the authenticated user. Returns total usage, storage limit, and breakdown by category (projects, libraries, archives, trash).',
+    },
     async () => {
       const [allItems, trashItems, userRecord] = await Promise.all([
         repository.getAllUserItems(userId),
@@ -252,12 +261,14 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
   );
 
   // ─── Tool: list_albums ───
-  server.tool(
+  server.registerTool(
     'list_albums',
-    'List all project albums for the authenticated user. Returns each project with its album item count and total album size.',
     {
-      page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
-      limit: z.number().int().min(1).max(100).default(20).describe('Items per page (default 20)'),
+      description: 'List all project albums for the authenticated user. Returns each project with its album item count and total album size.',
+      inputSchema: {
+        page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
+        limit: z.number().int().min(1).max(100).default(20).describe('Items per page (default 20)'),
+      },
     },
     async ({ page, limit }) => {
       const projectsResult = await repository.getUserProjects(userId, page, limit);
