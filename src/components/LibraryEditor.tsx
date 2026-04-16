@@ -9,6 +9,7 @@ import { TagModal } from './TagModal';
 import { PageHeader } from './PageHeader';
 import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary } from '../api';
 import { DuplicateLibraryDialog } from './DuplicateLibraryDialog';
+import { RenameItemModal } from './RenameItemModal';
 import { toast } from 'sonner';
 
 interface Props {
@@ -324,11 +325,11 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     }
   };
 
-  const handleUpdateTitle = async (itemId: string) => {
+  const handleUpdateTitle = async (itemId: string, newTitle: string) => {
     const newItems = [...library.items];
     const index = newItems.findIndex(i => i.id === itemId);
     if (index !== -1) {
-      const updatedTitle = tempTitle.trim();
+      const updatedTitle = newTitle.trim();
       newItems[index] = { ...newItems[index], title: updatedTitle };
       try {
         await updateLibraryItem(library.id, itemId, { title: updatedTitle });
@@ -594,39 +595,21 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3">
                         <div className="flex flex-col gap-1.5">
-                          {editingTitleId === item.id ? (
-                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                              <input 
-                                type="text"
-                                value={tempTitle}
-                                onChange={e => setTempTitle(e.target.value)}
-                                onBlur={() => handleUpdateTitle(item.id)}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') handleUpdateTitle(item.id);
-                                  if (e.key === 'Escape') setEditingTitleId(null);
-                                }}
-                                autoFocus
-                                className="flex-1 bg-white/80 dark:bg-neutral-900/80 border border-blue-500/50 rounded px-2 py-1 text-[10px] text-neutral-900 dark:text-white focus:outline-none"
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between group/title">
-                              <span className="text-[10px] font-bold text-white/90 truncate max-w-[120px]">
+                            <div
+                              className="flex items-center justify-between gap-1 group/title cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingTitleId(item.id);
+                                setTempTitle(item.title || '');
+                              }}
+                              title={t('libraryEditor.clickToRename', 'Click to rename')}
+                            >
+                              <span className="text-[10px] font-bold text-white/90 truncate flex-1">
                                 {item.title || (library.type === 'image' ? t('libraryEditor.imageLabel', { index: originalIndex + 1 }) : 
                                  library.type === 'video' ? 'Video ' + (originalIndex + 1) : 'Audio ' + (originalIndex + 1))}
                               </span>
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingTitleId(item.id);
-                                  setTempTitle(item.title || '');
-                                }}
-                                className="opacity-0 group-hover/title:opacity-100 p-1 hover:text-blue-400 transition-all"
-                              >
-                                <Edit3 className="w-3 h-3" />
-                              </button>
+                              <Edit3 className="w-3 h-3 text-white/40 group-hover/item:text-white/70 flex-shrink-0 transition-colors" />
                             </div>
-                          )}
                           <div className="flex justify-between items-center mt-1">
                             <span className="text-[9px] font-black text-white/40 uppercase tracking-widest truncate max-w-[60px]">
                               {library.type.toUpperCase()}
@@ -937,6 +920,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         onSave={handleSingleTagSave}
         initialTags={tagModalItemId ? (library.items.find(i => i.id === tagModalItemId)?.tags || []) : []}
         title={t('libraryEditor.tagModal.editTitle')}
+      />
+
+      <RenameItemModal
+        isOpen={editingTitleId !== null}
+        onClose={() => setEditingTitleId(null)}
+        onConfirm={(newTitle) => editingTitleId ? handleUpdateTitle(editingTitleId, newTitle) : undefined}
+        initialName={tempTitle}
       />
 
       <DuplicateLibraryDialog
