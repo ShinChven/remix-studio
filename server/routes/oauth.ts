@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { getCookie, setCookie } from 'hono/cookie';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
@@ -49,6 +50,19 @@ function buildLoginRedirect(req: Request): URL {
 
 export function createOAuthRouter(prisma: PrismaClient) {
   const router = new Hono<{ Variables: Variables }>();
+
+  // CORS for OAuth discovery, registration, and token endpoints.
+  // Required by the MCP spec for browser-based OAuth flows (e.g. MCP Inspector direct mode).
+  // These endpoints are safe to expose: discovery is public metadata, /token requires
+  // a valid authorization code + PKCE verifier, /register is public by design (RFC 7591).
+  const oauthCors = cors({
+    origin: '*',
+    allowHeaders: ['Authorization', 'Content-Type', 'Accept', 'MCP-Protocol-Version'],
+    allowMethods: ['GET', 'POST', 'OPTIONS'],
+  });
+  router.use('/.well-known/*', oauthCors);
+  router.use('/register', oauthCors);
+  router.use('/token', oauthCors);
 
   // ============================================================
   // RFC 8414 — OAuth 2.0 Authorization Server Metadata
