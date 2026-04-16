@@ -127,10 +127,16 @@ export class LibraryRepository {
 
     if (q) {
       andClauses.push({
-        OR: [
-          { title: { contains: q, mode: 'insensitive' } },
-          { content: { contains: q, mode: 'insensitive' } },
-        ],
+        OR: lib.type === 'text'
+          ? [
+              { title: { contains: q, mode: 'insensitive' } },
+              { content: { contains: q, mode: 'insensitive' } },
+              { tags: { array_contains: [q] } },
+            ]
+          : [
+              { title: { contains: q, mode: 'insensitive' } },
+              { tags: { array_contains: [q] } },
+            ],
       });
     }
 

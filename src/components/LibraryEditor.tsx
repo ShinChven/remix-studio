@@ -60,17 +60,19 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const setCurrentPage = useCallback((page: number | ((prev: number) => number)) => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
-      const newPage = typeof page === 'function' ? page(currentPage) : page;
+      const prevPage = parseInt(prev.get('page') || '1', 10);
+      const newPage = typeof page === 'function' ? page(prevPage) : page;
       next.set('page', Math.max(1, newPage).toString());
       return next;
     });
-  }, [setSearchParams, currentPage]);
+  }, [setSearchParams]);
 
   const setSearchTerm = useCallback((q: string) => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
-      if (q) {
-        next.set('q', q);
+      const normalized = q.trim();
+      if (normalized) {
+        next.set('q', normalized);
       } else {
         next.delete('q');
       }
