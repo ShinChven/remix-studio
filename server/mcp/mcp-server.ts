@@ -68,6 +68,13 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
         page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
         limit: z.number().int().min(1).max(100).default(50).describe('Items per page (default 50)'),
       },
+      annotations: {
+        title: 'List Libraries',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
     async ({ page, limit }) => {
       const result = await repository.getUserLibraries(userId, page, limit);
@@ -104,6 +111,13 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
       inputSchema: {
         name: z.string().min(1).max(256).describe('Library name'),
       },
+      annotations: {
+        title: 'Create Library',
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
     },
     async ({ name }) => {
       const id = crypto.randomUUID();
@@ -130,6 +144,13 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
         title: z.string().optional().describe('Optional title for the prompt'),
         tags: z.array(z.string()).optional().describe('Optional tags for categorization'),
       },
+      annotations: {
+        title: 'Create Prompt',
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
     },
     async ({ library_id, content, title, tags }) => {
       const id = crypto.randomUUID();
@@ -150,6 +171,51 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
     },
   );
 
+  // ─── Tool: batch_create_prompts ───
+  server.registerTool(
+    'batch_create_prompts',
+    {
+      description: 'Create multiple text prompts (items) in a library in a single batch. Each item requires content; title and tags are optional.',
+      inputSchema: {
+        library_id: z.string().describe('The library ID to add the prompts to'),
+        items: z.array(z.object({
+          content: z.string().min(1).describe('The prompt text content'),
+          title: z.string().optional().describe('Optional title for the prompt'),
+          tags: z.array(z.string()).optional().describe('Optional tags for categorization'),
+        })).min(1).max(100).describe('Array of prompts to create (1–100 items)'),
+      },
+      annotations: {
+        title: 'Batch Create Prompts',
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async ({ library_id, items }) => {
+      const libraryItems = items.map((item) => ({
+        id: crypto.randomUUID(),
+        content: item.content,
+        title: item.title,
+        tags: item.tags,
+      }));
+      await repository.createLibraryItemsBatch(userId, library_id, libraryItems);
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({
+              library_id,
+              created: libraryItems.map((item) => ({ id: item.id, title: item.title })),
+              count: libraryItems.length,
+              message: `${libraryItems.length} prompts created successfully`,
+            }),
+          },
+        ],
+      };
+    },
+  );
+
   // ─── Tool: search_library_items ───
   server.registerTool(
     'search_library_items',
@@ -161,6 +227,13 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
         tags: z.array(z.string()).optional().describe('Optional: filter by tags (items must contain ALL specified tags)'),
         page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
         limit: z.number().int().min(1).max(100).default(20).describe('Items per page (default 20)'),
+      },
+      annotations: {
+        title: 'Search Library Items',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
     },
     async ({ query, library_id, tags, page, limit }) => {
@@ -199,6 +272,13 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
     'get_storage_usage',
     {
       description: 'Get storage usage summary for the authenticated user. Returns total usage, storage limit, and breakdown by category (projects, libraries, archives, trash).',
+      annotations: {
+        title: 'Get Storage Usage',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
     async () => {
       const [allItems, trashItems, userRecord] = await Promise.all([
@@ -268,6 +348,13 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
       inputSchema: {
         page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
         limit: z.number().int().min(1).max(100).default(20).describe('Items per page (default 20)'),
+      },
+      annotations: {
+        title: 'List Albums',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
     },
     async ({ page, limit }) => {
