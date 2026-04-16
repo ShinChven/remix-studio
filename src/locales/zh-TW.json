@@ -10,6 +10,67 @@
     "storage": "存儲",
     "userManagement": "用戶管理"
   },
+  "mainLayout": {
+    "storageUnavailable": "存儲不可用",
+    "toggleMenu": "切換選單",
+    "expandSidebar": "展開側邊欄",
+    "collapseSidebar": "收起側邊欄"
+  },
+  "confirmModal": {
+    "confirm": "確認",
+    "cancel": "取消"
+  },
+  "apiKeyCheck": {
+    "loading": "載入中...",
+    "title": "需要 API 金鑰",
+    "description": "此應用程式使用 Nano Banana 2 (Gemini 3.1 Flash Image) ，需要付費的 Google Cloud API 金鑰。",
+    "learnMore": "了解更多關於計費的資訊",
+    "selectApiKey": "選擇 API 金鑰"
+  },
+  "projectRoute": {
+    "notFound": "未找到專案。",
+    "renameFailed": "重命名專案資料夾失敗。正在撤銷 ID 更改。"
+  },
+  "libraryRoute": {
+    "notFound": "未找到庫。"
+  },
+  "storageIndicator": {
+    "title": "存儲：{{used}} / {{limit}} ({{percent}}%)",
+    "storage": "存儲",
+    "usedOfLimit": "{{used}} / {{limit}}"
+  },
+  "tagModal": {
+    "title": "編輯標籤",
+    "description": "為此項目添加或刪除標籤。",
+    "saveTags": "保存標籤",
+    "placeholder": "輸入標籤 (逗號分隔)...",
+    "add": "添加",
+    "noTags": "尚未添加標籤"
+  },
+  "storageView": {
+    "tiers": {
+      "free": "免費",
+      "professional": "專業",
+      "premium": "高級",
+      "custom": "自定義"
+    },
+    "analyzing": "正在分析存儲使用情況...",
+    "title": "存儲分析",
+    "description": "數位足跡的詳細細分。",
+    "capacityOverview": "容量概覽",
+    "consumption": "消耗量",
+    "totalLimit": "總限制",
+    "percentConsumed": "已消耗 {{percent}}%",
+    "optimizationTitle": "存儲優化",
+    "cleanOrphansTitle": "清理孤立檔案",
+    "cleanOrphansDescription": "識別並從專案資料夾中刪除未引用的檔案以回收空間。",
+    "recycleBinTitle": "資源回收筒",
+    "recycleBinDescription": "共有 {{size}} 可以永久刪除。",
+    "completeScan": "完整掃描",
+    "projectRankings": "專案排名",
+    "album": "相簿",
+    "orphans": "孤立檔案"
+  },
   "account": {
     "title": "帳戶設定",
     "description": "管理您的個人資料、儲存空間與安全性偏好。",
@@ -298,6 +359,67 @@
       "confirm": "複製",
       "success": "已複製 \"{{name}}\"",
       "error": "複製資源庫失敗"
+    }
+  },
+  "libraryEditor": {
+    "toasts": {
+      "uploadFailed": "上傳圖片失敗"
+    },
+    "collectionType": "{{type}} 集合",
+    "filterItems": "篩選項目...",
+    "uploading": "正在上傳...",
+    "upload": "上傳",
+    "addFragment": "添加片段",
+    "editLibrarySettings": "編輯庫設置",
+    "importOutput": "導入 / 匯出",
+    "deleteLibrary": "刪除庫",
+    "selectAll": "全選",
+    "selectedCount": "已選擇 {{count}} 項",
+    "filterByTag": "按標籤篩選",
+    "tagsSelected": "已選擇 {{count}} 個標籤",
+    "allFragments": "所有片段",
+    "batchTag": "批量標籤",
+    "delete": "刪除",
+    "imageLabel": "IMG_{{index}}",
+    "clickToRename": "點擊重命名",
+    "renameItem": "重命名項目",
+    "editTags": "編輯標籤",
+    "refineInFullEditor": "在完整編輯器中完善",
+    "deleteFragment": "刪除片段",
+    "fullSource": "完整源碼",
+    "markdownEnabled": "Markdown 已啟用",
+    "noResultsFound": "未找到結果",
+    "emptyTitle": "空空如也",
+    "tryDifferentSearch": "嘗試不同的搜索詞",
+    "emptyDescription": "在下方添加內容以初始化庫",
+    "references": {
+      "title": "庫正在使用中",
+      "message_one": "\"{{name}}\" 被 {{count}} 個專案引用。刪除前需要移除這些引用。",
+      "message_other": "\"{{name}}\" 被 {{count}} 個專案引用。刪除前需要移除這些引用。",
+      "resolve": "解決引用"
+    },
+    "confirm": {
+      "destroyLibrary": {
+        "title": "銷毀庫",
+        "message": "這將永久刪除集合 \"{{name}}\" 及其所有片段。此操作不可逆。",
+        "confirm": "銷毀集合"
+      },
+      "expungeFragment": {
+        "title": "刪除片段",
+        "message": "確定要從集合中移除此片段嗎？",
+        "confirm": "立即移除"
+      },
+      "destroySelected": {
+        "title": "銷毀所選片段",
+        "message": "確定要刪除 {{count}} 個片段嗎？",
+        "confirm": "銷毀所選"
+      }
+    },
+    "tagModal": {
+      "batchTitle": "批量標記所選項目",
+      "batchDescription": "為 {{count}} 個所選項目添加標籤。",
+      "addTags": "添加標籤",
+      "editTitle": "編輯項目標籤"
     }
   },
   "providers": {
@@ -918,8 +1040,11 @@
       "back": "返回",
       "text": "文字",
       "imageShort": "圖",
+      "videoShort": "影片",
+      "audioShort": "音频",
       "libraryShort": "庫",
       "library": "資料庫",
+      "save": "保存",
       "cancel": "取消",
       "close": "關閉",
       "copy": "複製",
@@ -932,6 +1057,8 @@
       "deleteJob": "刪除任務",
       "upload": "上傳",
       "prompt": "提示詞",
+      "video": "影片",
+      "audio": "音频",
       "generatedText": "生成文字",
       "fullPrompt": "完整提示詞"
     },
@@ -1103,6 +1230,10 @@
       "texts": "文字",
       "textItemCount_one": "{{count}} 個文字項目",
       "textItemCount_other": "{{count}} 個文字項目",
+      "video": "影片",
+      "videos": "影片",
+      "audio": "音频",
+      "audios": "音频",
       "videoItemCount_one": "{{count}} 個影片",
       "videoItemCount_other": "{{count}} 個影片",
       "imageItemCount_one": "{{count}} 張圖片",

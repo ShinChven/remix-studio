@@ -10,6 +10,67 @@
     "storage": "存储",
     "userManagement": "用户管理"
   },
+  "mainLayout": {
+    "storageUnavailable": "存储不可用",
+    "toggleMenu": "切换菜单",
+    "expandSidebar": "展开侧边栏",
+    "collapseSidebar": "收起侧边栏"
+  },
+  "confirmModal": {
+    "confirm": "确认",
+    "cancel": "取消"
+  },
+  "apiKeyCheck": {
+    "loading": "加载中...",
+    "title": "需要 API 密钥",
+    "description": "此应用程序使用 Nano Banana 2 (Gemini 3.1 Flash Image) ，需要付费的 Google Cloud API 密钥。",
+    "learnMore": "了解更多关于计费的信息",
+    "selectApiKey": "选择 API 密钥"
+  },
+  "projectRoute": {
+    "notFound": "未找到项目。",
+    "renameFailed": "重命名项目文件夹失败。正在撤销 ID 更改。"
+  },
+  "libraryRoute": {
+    "notFound": "未找到库。"
+  },
+  "storageIndicator": {
+    "title": "存储：{{used}} / {{limit}} ({{percent}}%)",
+    "storage": "存储",
+    "usedOfLimit": "{{used}} / {{limit}}"
+  },
+  "tagModal": {
+    "title": "编辑标签",
+    "description": "为此项目添加或删除标签。",
+    "saveTags": "保存标签",
+    "placeholder": "输入标签 (逗号分隔)...",
+    "add": "添加",
+    "noTags": "尚未添加标签"
+  },
+  "storageView": {
+    "tiers": {
+      "free": "免费",
+      "professional": "专业",
+      "premium": "高级",
+      "custom": "自定义"
+    },
+    "analyzing": "正在分析存储使用情况...",
+    "title": "存储分析",
+    "description": "数字足迹的详细细分。",
+    "capacityOverview": "容量概览",
+    "consumption": "消耗量",
+    "totalLimit": "总限制",
+    "percentConsumed": "已消耗 {{percent}}%",
+    "optimizationTitle": "存储优化",
+    "cleanOrphansTitle": "清理孤立文件",
+    "cleanOrphansDescription": "识别并从项目文件夹中删除未引用的文件以回收空间。",
+    "recycleBinTitle": "回收站",
+    "recycleBinDescription": "共有 {{size}} 可以永久删除。",
+    "completeScan": "完整扫描",
+    "projectRankings": "项目排名",
+    "album": "相册",
+    "orphans": "孤立文件"
+  },
   "dashboard": {
     "welcome": "欢迎来到 Remix Studio",
     "description": "从侧边栏选择项目或库，或者创建一个新项目或库开始。",
@@ -73,6 +134,67 @@
       "confirm": "复制",
       "success": "已复制 \"{{name}}\"",
       "error": "复制资源库失败"
+    }
+  },
+  "libraryEditor": {
+    "toasts": {
+      "uploadFailed": "上传图片失败"
+    },
+    "collectionType": "{{type}} 集合",
+    "filterItems": "筛选项目...",
+    "uploading": "正在上传...",
+    "upload": "上传",
+    "addFragment": "添加片段",
+    "editLibrarySettings": "编辑库设置",
+    "importOutput": "导入 / 导出",
+    "deleteLibrary": "删除库",
+    "selectAll": "全选",
+    "selectedCount": "已选择 {{count}} 项",
+    "filterByTag": "按标签筛选",
+    "tagsSelected": "已选择 {{count}} 个标签",
+    "allFragments": "所有片段",
+    "batchTag": "批量标签",
+    "delete": "删除",
+    "imageLabel": "IMG_{{index}}",
+    "clickToRename": "点击重命名",
+    "renameItem": "重命名项目",
+    "editTags": "编辑标签",
+    "refineInFullEditor": "在完整编辑器中完善",
+    "deleteFragment": "删除片段",
+    "fullSource": "完整源码",
+    "markdownEnabled": "Markdown 已启用",
+    "noResultsFound": "未找到结果",
+    "emptyTitle": "空空如也",
+    "tryDifferentSearch": "尝试不同的搜索词",
+    "emptyDescription": "在下方添加内容以初始化库",
+    "references": {
+      "title": "库正在使用中",
+      "message_one": "\"{{name}}\" 被 {{count}} 个项目引用。删除前需要移除这些引用。",
+      "message_other": "\"{{name}}\" 被 {{count}} 个项目引用。删除前需要移除这些引用。",
+      "resolve": "解决引用"
+    },
+    "confirm": {
+      "destroyLibrary": {
+        "title": "销毁库",
+        "message": "这将永久删除集合 \"{{name}}\" 及其所有片段。此操作不可逆。",
+        "confirm": "销毁集合"
+      },
+      "expungeFragment": {
+        "title": "删除片段",
+        "message": "确定要从集合中移除此片段吗？",
+        "confirm": "立即移除"
+      },
+      "destroySelected": {
+        "title": "销毁所选片段",
+        "message": "确定要删除 {{count}} 个片段吗？",
+        "confirm": "销毁所选"
+      }
+    },
+    "tagModal": {
+      "batchTitle": "批量标记所选项目",
+      "batchDescription": "为 {{count}} 个所选项目添加标签。",
+      "addTags": "添加标签",
+      "editTitle": "编辑项目标签"
     }
   },
   "providers": {
@@ -918,8 +1040,11 @@
       "back": "返回",
       "text": "文本",
       "imageShort": "图",
+      "videoShort": "视频",
+      "audioShort": "音频",
       "libraryShort": "库",
       "library": "资料库",
+      "save": "保存",
       "cancel": "取消",
       "close": "关闭",
       "copy": "复制",
@@ -932,6 +1057,8 @@
       "deleteJob": "删除任务",
       "upload": "上传",
       "prompt": "提示词",
+      "video": "视频",
+      "audio": "音频",
       "generatedText": "生成文本",
       "fullPrompt": "完整提示词"
     },
@@ -1103,6 +1230,10 @@
       "texts": "文本",
       "textItemCount_one": "{{count}} 个文本项",
       "textItemCount_other": "{{count}} 个文本项",
+      "video": "视频",
+      "videos": "视频",
+      "audio": "音频",
+      "audios": "音频",
       "videoItemCount_one": "{{count}} 个视频",
       "videoItemCount_other": "{{count}} 个视频",
       "imageItemCount_one": "{{count}} 张图片",

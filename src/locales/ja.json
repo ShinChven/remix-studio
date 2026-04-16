@@ -10,6 +10,67 @@
     "storage": "ストレージ",
     "userManagement": "ユーザー管理"
   },
+  "mainLayout": {
+    "storageUnavailable": "ストレージ利用不可",
+    "toggleMenu": "メニュー切り替え",
+    "expandSidebar": "サイドバーを展開",
+    "collapseSidebar": "サイドバーを折りたたむ"
+  },
+  "confirmModal": {
+    "confirm": "確認",
+    "cancel": "キャンセル"
+  },
+  "apiKeyCheck": {
+    "loading": "読み込み中...",
+    "title": "APIキーが必要です",
+    "description": "このアプリケーションは Nano Banana 2 (Gemini 3.1 Flash Image) を使用しており、有料の Google Cloud API キーが必要です。",
+    "learnMore": "請求の詳細を表示",
+    "selectApiKey": "APIキーを選択"
+  },
+  "projectRoute": {
+    "notFound": "プロジェクトが見つかりません。",
+    "renameFailed": "プロジェクトフォルダ名の変更に失敗しました。IDの変更を元に戻します。"
+  },
+  "libraryRoute": {
+    "notFound": "ライブラリが見つかりません。"
+  },
+  "storageIndicator": {
+    "title": "ストレージ: {{used}} / {{limit}} ({{percent}}%)",
+    "storage": "ストレージ",
+    "usedOfLimit": "{{used}} / {{limit}}"
+  },
+  "tagModal": {
+    "title": "タグを編集",
+    "description": "このアイテムのタグを追加または削除します。",
+    "saveTags": "タグを保存",
+    "placeholder": "タグを入力 (カンマ区切り)...",
+    "add": "追加",
+    "noTags": "タグがまだ追加されていません"
+  },
+  "storageView": {
+    "tiers": {
+      "free": "無料",
+      "professional": "プロフェッショナル",
+      "premium": "プレミアム",
+      "custom": "カスタム"
+    },
+    "analyzing": "ストレージ使用状況を分析中...",
+    "title": "ストレージ分析",
+    "description": "デジタルフットプリントの詳細な内訳。",
+    "capacityOverview": "容量の概要",
+    "consumption": "消費量",
+    "totalLimit": "総制限",
+    "percentConsumed": "{{percent}}% 消費済み",
+    "optimizationTitle": "ストレージの最適化",
+    "cleanOrphansTitle": "孤立ファイルのクリーンアップ",
+    "cleanOrphansDescription": "プロジェクトフォルダから参照されていないファイルを特定して削除し、スペースを回収します。",
+    "recycleBinTitle": "ゴミ箱",
+    "recycleBinDescription": "合計 {{size}} を完全に削除できます。",
+    "completeScan": "完全スキャン",
+    "projectRankings": "プロジェクトランキング",
+    "album": "アルバム",
+    "orphans": "孤立ファイル"
+  },
   "account": {
     "title": "アカウント",
     "description": "ID、セキュリティ、ワークスペースの容量を管理します。",
@@ -298,6 +359,67 @@
       "confirm": "複製",
       "success": "\"{{name}}\" をコピーしました",
       "error": "ライブラリの複製に失敗しました"
+    }
+  },
+  "libraryEditor": {
+    "toasts": {
+      "uploadFailed": "画像のアップロードに失敗しました"
+    },
+    "collectionType": "{{type}} コレクション",
+    "filterItems": "アイテムを絞り込む...",
+    "uploading": "アップロード中...",
+    "upload": "アップロード",
+    "addFragment": "フラグメントを追加",
+    "editLibrarySettings": "ライブラリ設定を編集",
+    "importOutput": "インポート / エクスポート",
+    "deleteLibrary": "ライブラリを削除",
+    "selectAll": "すべて選択",
+    "selectedCount": "{{count}} 個選択済み",
+    "filterByTag": "タグで絞り込む",
+    "tagsSelected": "{{count}} 個のタグを選択済み",
+    "allFragments": "すべてのフラグメント",
+    "batchTag": "一括タグ付け",
+    "delete": "削除",
+    "imageLabel": "IMG_{{index}}",
+    "clickToRename": "クリックして名前を変更",
+    "renameItem": "アイテム名を変更",
+    "editTags": "タグを編集",
+    "refineInFullEditor": "フルエディタで詳細編集",
+    "deleteFragment": "フラグメントを削除",
+    "fullSource": "フルソース",
+    "markdownEnabled": "Markdown 有効",
+    "noResultsFound": "結果が見つかりません",
+    "emptyTitle": "ゴーストタウン",
+    "tryDifferentSearch": "別の検索ワードを試してください",
+    "emptyDescription": "以下にコンテンツを追加してライブラリを初期化してください",
+    "references": {
+      "title": "ライブラリを使用中",
+      "message_one": "\"{{name}}\" は {{count}} 個のプロジェクトで参照されています。削除する前にこれらの参照を削除する必要があります。",
+      "message_other": "\"{{name}}\" は {{count}} 個のプロジェクトで参照されています。削除する前にこれらの参照を削除する必要があります。",
+      "resolve": "参照を解決"
+    },
+    "confirm": {
+      "destroyLibrary": {
+        "title": "ライブラリを破棄",
+        "message": "コレクション \"{{name}}\" とそのすべてのフラグメントを完全に削除します。この操作は取り消せません。",
+        "confirm": "コレクションを破棄"
+      },
+      "expungeFragment": {
+        "title": "フラグメントを抹消",
+        "message": "このフラグメントをコレクションから削除してもよろしいですか？",
+        "confirm": "今すぐ削除"
+      },
+      "destroySelected": {
+        "title": "選択したフラグメントを破棄",
+        "message": "{{count}} 個のフラグメントを削除してもよろしいですか？",
+        "confirm": "選択したものを破棄"
+      }
+    },
+    "tagModal": {
+      "batchTitle": "選択したアイテムを一括タグ付け",
+      "batchDescription": "{{count}} 個の選択したアイテムにタグを追加します。",
+      "addTags": "タグを追加",
+      "editTitle": "アイテムのタグを編集"
     }
   },
   "providers": {
@@ -918,8 +1040,11 @@
       "back": "戻る",
       "text": "テキスト",
       "imageShort": "画像",
+      "videoShort": "動画",
+      "audioShort": "音声",
       "libraryShort": "ライブラリ",
       "library": "ライブラリ",
+      "save": "保存",
       "cancel": "キャンセル",
       "close": "閉じる",
       "copy": "コピー",
@@ -932,6 +1057,8 @@
       "deleteJob": "ジョブを削除",
       "upload": "アップロード",
       "prompt": "プロンプト",
+      "video": "動画",
+      "audio": "音声",
       "generatedText": "生成テキスト",
       "fullPrompt": "完全なプロンプト"
     },

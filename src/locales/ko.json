@@ -10,6 +10,67 @@
     "storage": "저장공간",
     "userManagement": "사용자 관리"
   },
+  "mainLayout": {
+    "storageUnavailable": "스토리지 사용 불가",
+    "toggleMenu": "메뉴 토글",
+    "expandSidebar": "사이드바 확장",
+    "collapseSidebar": "사이드바 축소"
+  },
+  "confirmModal": {
+    "confirm": "확인",
+    "cancel": "취소"
+  },
+  "apiKeyCheck": {
+    "loading": "로딩 중...",
+    "title": "API 키 필요",
+    "description": "이 애플리케이션은 유료 Google Cloud API 키가 필요한 Nano Banana 2(Gemini 3.1 Flash Image)를 사용합니다.",
+    "learnMore": "결제에 대해 자세히 알아보기",
+    "selectApiKey": "API 키 선택"
+  },
+  "projectRoute": {
+    "notFound": "프로젝트를 찾을 수 없습니다.",
+    "renameFailed": "프로젝트 폴더 이름을 바꾸지 못했습니다. ID 변경을 되돌리는 중입니다."
+  },
+  "libraryRoute": {
+    "notFound": "라이브러리를 찾을 수 없습니다."
+  },
+  "storageIndicator": {
+    "title": "스토리지: {{used}} / {{limit}} ({{percent}}%)",
+    "storage": "스토리지",
+    "usedOfLimit": "{{used}} / {{limit}}"
+  },
+  "tagModal": {
+    "title": "태그 편집",
+    "description": "이 항목의 태그를 추가하거나 제거합니다.",
+    "saveTags": "태그 저장",
+    "placeholder": "태그 입력 (쉼표로 구분)...",
+    "add": "추가",
+    "noTags": "아직 태그가 추가되지 않았습니다"
+  },
+  "storageView": {
+    "tiers": {
+      "free": "무료",
+      "professional": "프로페셔널",
+      "premium": "프리미엄",
+      "custom": "커스텀"
+    },
+    "analyzing": "스토리지 사용량 분석 중...",
+    "title": "스토리지 분석",
+    "description": "디지털 발자국의 상세 분석입니다.",
+    "capacityOverview": "용량 개요",
+    "consumption": "소비량",
+    "totalLimit": "총 제한",
+    "percentConsumed": "{{percent}}% 소비됨",
+    "optimizationTitle": "스토리지 최적화",
+    "cleanOrphansTitle": "고립된 파일 정리",
+    "cleanOrphansDescription": "프로젝트 폴더에서 참조되지 않은 파일을 식별하고 제거하여 공간을 회수합니다.",
+    "recycleBinTitle": "휴지통",
+    "recycleBinDescription": "총 {{size}}를 영구적으로 삭제할 수 있습니다.",
+    "completeScan": "전체 스캔",
+    "projectRankings": "프로젝트 순위",
+    "album": "앨범",
+    "orphans": "고립된 파일"
+  },
   "account": {
     "title": "계정",
     "description": "ID, 보안 및 워크스페이스 용량을 관리합니다.",
@@ -298,6 +359,67 @@
       "confirm": "복제",
       "success": "\"{{name}}\"을(를) 복사했습니다",
       "error": "라이브러리 복제 실패"
+    }
+  },
+  "libraryEditor": {
+    "toasts": {
+      "uploadFailed": "이미지 업로드 실패"
+    },
+    "collectionType": "{{type}} 컬렉션",
+    "filterItems": "항목 필터링...",
+    "uploading": "업로드 중...",
+    "upload": "업로드",
+    "addFragment": "프래그먼트 추가",
+    "editLibrarySettings": "라이브러리 설정 편집",
+    "importOutput": "가져오기 / 내보내기",
+    "deleteLibrary": "라이브러리 삭제",
+    "selectAll": "전체 선택",
+    "selectedCount": "{{count}}개 선택됨",
+    "filterByTag": "태그로 필터링",
+    "tagsSelected": "{{count}}개 태그 선택됨",
+    "allFragments": "모든 프래그먼트",
+    "batchTag": "일괄 태그",
+    "delete": "삭제",
+    "imageLabel": "IMG_{{index}}",
+    "clickToRename": "클릭하여 이름 바꾸기",
+    "renameItem": "항목 이름 바꾸기",
+    "editTags": "태그 편집",
+    "refineInFullEditor": "전체 에디터에서 다듬기",
+    "deleteFragment": "프래그먼트 삭제",
+    "fullSource": "전체 소스",
+    "markdownEnabled": "마크다운 활성화됨",
+    "noResultsFound": "결과 없음",
+    "emptyTitle": "유령 마을",
+    "tryDifferentSearch": "다른 검색어 시도",
+    "emptyDescription": "라이브러리를 초기화하려면 아래에 내용을 추가하세요",
+    "references": {
+      "title": "라이브러리 사용 중",
+      "message_one": "\"{{name}}\"은(는) {{count}}개 프로젝트에서 참조 중입니다. 삭제하기 전에 이 참조를 제거해야 합니다.",
+      "message_other": "\"{{name}}\"은(는) {{count}}개 프로젝트에서 참조 중입니다. 삭제하기 전에 이 참조를 제거해야 합니다.",
+      "resolve": "참조 해결"
+    },
+    "confirm": {
+      "destroyLibrary": {
+        "title": "라이브러리 파괴",
+        "message": "\"{{name}}\" 컬렉션과 모든 프래그먼트를 영구적으로 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
+        "confirm": "컬렉션 파괴"
+      },
+      "expungeFragment": {
+        "title": "프래그먼트 말소",
+        "message": "컬렉션에서 이 프래그먼트를 제거하시겠습니까?",
+        "confirm": "지금 제거"
+      },
+      "destroySelected": {
+        "title": "선택한 프래그먼트 파괴",
+        "message": "{{count}}개 프래그먼트를 삭제하시겠습니까?",
+        "confirm": "선택 항목 파괴"
+      }
+    },
+    "tagModal": {
+      "batchTitle": "선택한 항목 일괄 태그",
+      "batchDescription": "{{count}}개 선택한 항목에 태그를 추가합니다.",
+      "addTags": "태그 추가",
+      "editTitle": "항목 태그 편집"
     }
   },
   "providers": {
@@ -918,8 +1040,11 @@
       "back": "뒤로",
       "text": "텍스트",
       "imageShort": "이미지",
+      "videoShort": "비디오",
+      "audioShort": "오디오",
       "libraryShort": "라이브러리",
       "library": "라이브러리",
+      "save": "저장",
       "cancel": "취소",
       "close": "닫기",
       "copy": "복사",
@@ -932,6 +1057,8 @@
       "deleteJob": "작업 삭제",
       "upload": "업로드",
       "prompt": "프롬프트",
+      "video": "비디오",
+      "audio": "오디오",
       "generatedText": "생성된 텍스트",
       "fullPrompt": "전체 프롬프트"
     },
@@ -1103,6 +1230,10 @@
       "texts": "텍스트",
       "textItemCount_one": "텍스트 {{count}}개",
       "textItemCount_other": "텍스트 {{count}}개",
+      "video": "비디오",
+      "videos": "비디오",
+      "audio": "오디오",
+      "audios": "오디오",
       "videoItemCount_one": "비디오 {{count}}개",
       "videoItemCount_other": "비디오 {{count}}개",
       "imageItemCount_one": "이미지 {{count}}개",

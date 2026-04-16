@@ -10,6 +10,67 @@
     "storage": "Stockage",
     "userManagement": "Gestion des utilisateurs"
   },
+  "mainLayout": {
+    "storageUnavailable": "Stockage indisponible",
+    "toggleMenu": "Basculer le menu",
+    "expandSidebar": "Développer la barre latérale",
+    "collapseSidebar": "Réduire la barre latérale"
+  },
+  "confirmModal": {
+    "confirm": "Confirmer",
+    "cancel": "Annuler"
+  },
+  "apiKeyCheck": {
+    "loading": "Chargement...",
+    "title": "Clé API requise",
+    "description": "Cette application utilise Nano Banana 2 (Gemini 3.1 Flash Image), qui nécessite une clé API Google Cloud payante.",
+    "learnMore": "En savoir plus sur la facturation",
+    "selectApiKey": "Sélectionner une clé API"
+  },
+  "projectRoute": {
+    "notFound": "Projet non trouvé.",
+    "renameFailed": "Échec du renommage du dossier du projet. Annulation du changement d'ID."
+  },
+  "libraryRoute": {
+    "notFound": "Bibliothèque non trouvée."
+  },
+  "storageIndicator": {
+    "title": "Stockage : {{used}} / {{limit}} ({{percent}}%)",
+    "storage": "Stockage",
+    "usedOfLimit": "{{used}} / {{limit}}"
+  },
+  "tagModal": {
+    "title": "Modifier les tags",
+    "description": "Ajouter ou supprimer des tags pour cet élément.",
+    "saveTags": "Enregistrer les tags",
+    "placeholder": "Entrez les tags (séparés par des virgules)...",
+    "add": "Ajouter",
+    "noTags": "Aucun tag ajouté pour le moment"
+  },
+  "storageView": {
+    "tiers": {
+      "free": "Gratuit",
+      "professional": "Professionnel",
+      "premium": "Premium",
+      "custom": "Personnalisé"
+    },
+    "analyzing": "Analyse de l'utilisation du stockage...",
+    "title": "Analyse du stockage",
+    "description": "Une répartition détaillée de votre empreinte numérique.",
+    "capacityOverview": "Aperçu de la capacité",
+    "consumption": "Consommation",
+    "totalLimit": "Limite totale",
+    "percentConsumed": "{{percent}}% consommé",
+    "optimizationTitle": "Optimisation du stockage",
+    "cleanOrphansTitle": "Nettoyage des fichiers orphelins",
+    "cleanOrphansDescription": "Identifiez et suppmie les fichiers non référencés des dossiers de projet pour récupérer de l'espace.",
+    "recycleBinTitle": "Corbeille",
+    "recycleBinDescription": "Un total de {{size}} peut être supprimé définitivement.",
+    "completeScan": "Scan complet",
+    "projectRankings": "Classement des projets",
+    "album": "Album",
+    "orphans": "Orphelins"
+  },
   "account": {
     "title": "Compte",
     "description": "Gérez votre identité, votre sécurité et la capacité de votre espace de travail.",
@@ -298,6 +359,67 @@
       "confirm": "Dupliquer",
       "success": "Copié \"{{name}}\"",
       "error": "Échec de la duplication de la bibliothèque"
+    }
+  },
+  "libraryEditor": {
+    "toasts": {
+      "uploadFailed": "Échec du téléchargement de l'image"
+    },
+    "collectionType": "Collection de {{type}}",
+    "filterItems": "Filtrer les éléments...",
+    "uploading": "Téléchargement...",
+    "upload": "Télécharger",
+    "addFragment": "Ajouter un fragment",
+    "editLibrarySettings": "Modifier les paramètres de la bibliothèque",
+    "importOutput": "Import / Export",
+    "deleteLibrary": "Supprimer la bibliothèque",
+    "selectAll": "Tout sélectionner",
+    "selectedCount": "{{count}} sélectionné(s)",
+    "filterByTag": "Filtrer par tag",
+    "tagsSelected": "{{count}} tag(s) sélectionné(s)",
+    "allFragments": "Tous les fragments",
+    "batchTag": "Tag en lot",
+    "delete": "Supprimer",
+    "imageLabel": "IMG_{{index}}",
+    "clickToRename": "Cliquez pour renommer",
+    "renameItem": "Renommer l'élément",
+    "editTags": "Modifier les tags",
+    "refineInFullEditor": "Affiner dans l'éditeur complet",
+    "deleteFragment": "Supprimer le fragment",
+    "fullSource": "Source complète",
+    "markdownEnabled": "Markdown activé",
+    "noResultsFound": "Aucun résultat trouvé",
+    "emptyTitle": "Ville fantôme",
+    "tryDifferentSearch": "Essayez un autre mot-clé",
+    "emptyDescription": "Ajoutez du contenu ci-dessous pour initialiser la bibliothèque",
+    "references": {
+      "title": "Bibliothèque utilisée",
+      "message_one": "\"{{name}}\" est référencé par {{count}} projet. Vous devez supprimer ces références avant la suppression.",
+      "message_other": "\"{{name}}\" est référencé par {{count}} projets. Vous devez supprimer ces références avant la suppression.",
+      "resolve": "Résoudre les références"
+    },
+    "confirm": {
+      "destroyLibrary": {
+        "title": "Détruire la bibliothèque",
+        "message": "Cela supprimera définitivement la collection \"{{name}}\" et tous ses fragments. Cette action est irréversible.",
+        "confirm": "Détruire la collection"
+      },
+      "expungeFragment": {
+        "title": "Expurger le fragment",
+        "message": "Voulez-vous vraiment supprimer ce fragment de la collection ?",
+        "confirm": "Supprimer maintenant"
+      },
+      "destroySelected": {
+        "title": "Détruire les fragments sélectionnés",
+        "message": "Voulez-vous vraiment supprimer {{count}} fragments ?",
+        "confirm": "Détruire la sélection"
+      }
+    },
+    "tagModal": {
+      "batchTitle": "Marquage en lot des éléments sélectionnés",
+      "batchDescription": "Ajouter des tags aux {{count}} éléments sélectionnés.",
+      "addTags": "Ajouter des tags",
+      "editTitle": "Modifier les tags de l'élément"
     }
   },
   "providers": {
@@ -918,8 +1040,11 @@
       "back": "Retour",
       "text": "Texte",
       "imageShort": "Img",
+      "videoShort": "Vidéo",
+      "audioShort": "Audio",
       "libraryShort": "Biblio",
       "library": "Bibliothèque",
+      "save": "Enregistrer",
       "cancel": "Annuler",
       "close": "Fermer",
       "copy": "Copier",
@@ -932,6 +1057,8 @@
       "deleteJob": "Supprimer la tâche",
       "upload": "Téléverser",
       "prompt": "Prompt",
+      "video": "Vidéo",
+      "audio": "Audio",
       "generatedText": "Texte généré",
       "fullPrompt": "Prompt complet"
     },
