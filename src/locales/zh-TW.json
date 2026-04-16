@@ -958,7 +958,8 @@
       "editProjectInfo": "編輯專案資訊",
       "manageOrphans": "管理孤立檔案（清理）",
       "deleteProject": "刪除專案",
-      "buildWorkflow": "建立你的工作流程"
+      "duplicateProject": "複製專案",
+      "buildWorkflow": "構建您的工作流"
     },
     "drafts": {
       "emptyCanvas": "空白畫布",

@@ -958,6 +958,7 @@
       "editProjectInfo": "プロジェクト情報を編集",
       "manageOrphans": "孤立ファイルを管理（クリーンアップ）",
       "deleteProject": "プロジェクトを削除",
+      "duplicateProject": "プロジェクトを複製",
       "buildWorkflow": "ワークフローを作成"
     },
     "drafts": {

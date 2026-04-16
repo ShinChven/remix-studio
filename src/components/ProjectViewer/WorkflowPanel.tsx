@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, Eraser, ImageIcon, Library as LibraryIcon, Settings, Trash2, Type, Video as VideoIcon, Volume2 } from 'lucide-react';
+import { CheckCircle2, Copy, Eraser, ImageIcon, Library as LibraryIcon, Settings, Trash2, Type, Video as VideoIcon, Volume2 } from 'lucide-react';
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
@@ -25,6 +25,7 @@ interface WorkflowPanelProps {
   combinations: any[];
   onNavigateToEdit: () => void;
   onNavigateToOrphans: () => void;
+  onNavigateToDuplicate: () => void;
   onShowDeleteProject: () => void;
   onAddWorkflowItem: (type: 'text' | 'image' | 'video' | 'audio' | 'library') => void;
   onDragStart: (e: React.DragEvent, index: number) => void;
@@ -69,6 +70,7 @@ export function WorkflowPanel({
   combinations,
   onNavigateToEdit,
   onNavigateToOrphans,
+  onNavigateToDuplicate,
   onShowDeleteProject,
   onAddWorkflowItem,
   onDragStart,
@@ -118,6 +120,11 @@ export function WorkflowPanel({
               className="p-1.5 text-neutral-500 hover:text-white transition-all hover:bg-white/10 rounded-lg dark:hover:bg-white/10"
               title={t('projectViewer.main.editProjectInfo')}
             ><Settings className="w-4 h-4" /></button>
+            <button
+              onClick={onNavigateToDuplicate}
+              className="p-1.5 text-neutral-500 hover:text-green-400 transition-all hover:bg-green-400/10 rounded-lg"
+              title={t('projectViewer.main.duplicateProject')}
+            ><Copy className="w-4 h-4" /></button>
             <button
               onClick={onNavigateToOrphans}
               className="p-1.5 text-neutral-500 hover:text-blue-400 transition-all hover:bg-blue-400/10 rounded-lg"

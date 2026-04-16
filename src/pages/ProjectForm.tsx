@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Layers, Terminal, Play, ImageIcon, Type, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createProject, updateProject, fetchProject } from '../api';
-import type { ProjectType } from '../types';
+import type { ProjectType, WorkflowItem } from '../types';
 
 export function ProjectForm() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const isNew = !id;
+  const copyFrom = location.state?.copyFrom;
 
   const [name, setName] = useState('');
   const [projectId, setProjectId] = useState('');
   const [prefix, setPrefix] = useState('');
   const [projectType, setProjectType] = useState<ProjectType>('image');
+  const [workflowToCopy, setWorkflowToCopy] = useState<WorkflowItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -26,8 +29,20 @@ export function ProjectForm() {
         setPrefix(proj.prefix || '');
         setProjectType(proj.type || 'image');
       }).catch(() => navigate('/projects'));
+    } else if (copyFrom) {
+      fetchProject(copyFrom).then(proj => {
+        setName(proj.name);
+        setPrefix(proj.prefix || '');
+        setProjectType(proj.type || 'image');
+        // Generate new IDs for workflow items when copying
+        const copiedWorkflow = (proj.workflow || []).map(item => ({
+          ...item,
+          id: crypto.randomUUID()
+        }));
+        setWorkflowToCopy(copiedWorkflow);
+      }).catch(err => console.error('Failed to fetch source project:', err));
     }
-  }, [id, navigate]);
+  }, [id, copyFrom, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +59,7 @@ export function ProjectForm() {
           name: name.trim(),
           type: projectType,
           createdAt: Date.now(),
-          workflow: [],
+          workflow: workflowToCopy,
           jobs: [],
           album: [],
           shuffle: false,

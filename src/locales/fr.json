@@ -958,7 +958,8 @@
       "editProjectInfo": "Modifier les informations du projet",
       "manageOrphans": "Gérer les fichiers orphelins (nettoyage)",
       "deleteProject": "Supprimer le projet",
-      "buildWorkflow": "Construisez votre workflow"
+      "duplicateProject": "Dupliquer le projet",
+      "buildWorkflow": "Construisez votre flux"
     },
     "drafts": {
       "emptyCanvas": "Toile vide",

@@ -761,8 +761,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         combinations={combinations}
         onNavigateToEdit={() => navigate(`/project/${project.id}/edit`)}
         onNavigateToOrphans={() => navigate(`/project/${project.id}/orphans`)}
-        onShowDeleteProject={() => setShowDeleteProjectModal(true)}
-        onAddWorkflowItem={addWorkflowItem}
+        onNavigateToDuplicate={() => navigate(`/project/new`, { state: { copyFrom: project.id } })}
+        onShowDeleteProject={() => setShowDeleteProjectModal(true)}        onAddWorkflowItem={addWorkflowItem}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDrop={handleDrop}

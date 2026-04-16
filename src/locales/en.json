@@ -136,6 +136,7 @@
       "editProjectInfo": "Edit Project Information",
       "manageOrphans": "Manage Orphan Files (Cleanup)",
       "deleteProject": "Delete Project",
+      "duplicateProject": "Duplicate Project",
       "buildWorkflow": "Build your workflow"
     },
     "drafts": {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, Project } from '../types';
-import { Plus, Play, Folder, LayoutGrid, Clock, Loader2 } from 'lucide-react';
+import { Plus, Play, Folder, LayoutGrid, Clock, Loader2, Copy } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { fetchProjects, fetchLibraries } from '../api';
 
@@ -75,7 +75,19 @@ export function Dashboard() {
                       <div className="p-2 bg-green-500/10 rounded-lg text-green-500 group-hover:scale-110 transition-transform">
                         <Play className="w-5 h-5" />
                       </div>
-                      <span className="text-xs text-neutral-500 dark:text-neutral-500 font-mono truncate max-w-[120px]">{project.id}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate('/project/new', { state: { copyFrom: project.id } });
+                          }}
+                          className="p-1.5 text-neutral-500 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all"
+                          title={t('projectViewer.main.duplicateProject')}
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="text-xs text-neutral-500 dark:text-neutral-500 font-mono truncate max-w-[120px]">{project.id}</span>
+                      </div>
                     </div>
                     <h4 className="font-medium text-neutral-900 dark:text-white truncate">{project.name}</h4>
                     <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">

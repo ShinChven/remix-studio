@@ -958,7 +958,8 @@
       "editProjectInfo": "프로젝트 정보 편집",
       "manageOrphans": "고아 파일 관리(정리)",
       "deleteProject": "프로젝트 삭제",
-      "buildWorkflow": "워크플로를 구성하세요"
+      "duplicateProject": "프로젝트 복제",
+      "buildWorkflow": "워크플로 구축"
     },
     "drafts": {
       "emptyCanvas": "빈 캔버스",

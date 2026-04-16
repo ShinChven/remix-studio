@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Project, ProjectType } from '../types';
-import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video, Search } from 'lucide-react';
+import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video, Search, Copy } from 'lucide-react';
 import { fetchProjects } from '../api';
 import { PageHeader } from '../components/PageHeader';
 
@@ -219,9 +219,21 @@ export function Projects() {
                       <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
                         <ProjectIcon className="w-5 h-5 md:w-6 md:h-6" />
                       </div>
-                      <span className="hidden sm:block text-[10px] text-neutral-500 dark:text-neutral-500 font-mono bg-neutral-100 dark:bg-neutral-800/50 px-2 py-1 rounded border border-neutral-200 dark:border-neutral-800 truncate max-w-[140px] shadow-inner">
-                        {project.id}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate('/project/new', { state: { copyFrom: project.id } });
+                          }}
+                          className="p-1.5 text-neutral-500 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all"
+                          title={t('projectViewer.main.duplicateProject')}
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="hidden sm:block text-[10px] text-neutral-500 dark:text-neutral-500 font-mono bg-neutral-100 dark:bg-neutral-800/50 px-2 py-1 rounded border border-neutral-200 dark:border-neutral-800 truncate max-w-[140px] shadow-inner">
+                          {project.id}
+                        </span>
+                      </div>
                     </div>
 
                     <h4 className="text-base md:text-lg font-semibold text-neutral-900 dark:text-white truncate mb-2">{project.name}</h4>
