@@ -804,6 +804,11 @@
     "errorLoad": "加载 MCP 连接失败。",
     "toasts": {
       "clientRevoked": "已撤销客户端访问权限",
+      "clientCreated": "已创建 OAuth 客户端",
+      "clientCreateFailed": "创建 OAuth 客户端失败",
+      "clientRedirectRequired": "请至少添加一个重定向 URI",
+      "clientIdCopied": "Client ID 已复制到剪贴板",
+      "clientSecretCopied": "Client secret 已复制到剪贴板",
       "tokenRevoked": "令牌已撤销",
       "revokeFailed": "撤销失败",
       "tokenCreated": "令牌已创建 — 请立即复制。之后您将无法再次查看。",
@@ -885,8 +890,25 @@
     },
     "oauth": {
       "title": "OAuth 2.1 连接",
+      "newClient": "新客户端",
       "recommended": "推荐用于简单登录",
       "tip": "您通过 OAuth 2.1 连接器连接的应用将自动显示在此处。在浏览器中批准访问后，应用将出现在这里。",
+      "form": {
+        "clientName": "客户端名称",
+        "clientNamePlaceholder": "例如：Claude Desktop local",
+        "authMethod": "认证方式",
+        "redirectUris": "重定向 URI",
+        "redirectUrisPlaceholder": "http://localhost:3000/callback\nhttps://example.com/oauth/callback",
+        "redirectUrisHint": "每行输入一个重定向 URI。重定向 URI 必须使用 HTTPS 或 localhost。",
+        "create": "创建客户端",
+        "created": "OAuth 客户端已创建，请立即复制凭据。",
+        "createdHint": "Client secret 只会显示一次。关闭此面板前，请先将它保存到 MCP 应用或密钥管理工具中。",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "copyClientId": "复制 Client ID",
+        "copyClientSecret": "复制 Client secret",
+        "scope": "Scope"
+      },
       "empty": {
         "title": "无 OAuth 客户端连接",
         "desc": "在您的 AI 应用中完成登录后，应用将显示在此处。"

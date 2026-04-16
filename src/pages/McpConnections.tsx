@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Copy, Key, Loader2, Plus, Shield, Trash2, Unplug } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { fetchOAuthClients, fetchPersonalAccessTokens, revokeOAuthClient, revokePersonalAccessToken, createPersonalAccessToken, type OAuthClientSummary, type PersonalAccessTokenSummary } from '../api';
+import { fetchOAuthClients, fetchPersonalAccessTokens, revokeOAuthClient, revokePersonalAccessToken, createPersonalAccessToken, registerOAuthClient, type OAuthClientRegistrationResult, type OAuthClientSummary, type PersonalAccessTokenSummary } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
@@ -71,6 +71,16 @@ export function McpConnections() {
   const [copied, setCopied] = useState(false);
   const patNameRef = useRef<HTMLInputElement>(null);
 
+  // Manual OAuth client registration state
+  const [showCreateClient, setShowCreateClient] = useState(false);
+  const [clientName, setClientName] = useState('');
+  const [redirectUrisText, setRedirectUrisText] = useState('');
+  const [tokenEndpointAuthMethod, setTokenEndpointAuthMethod] = useState<'client_secret_basic' | 'client_secret_post' | 'none'>('client_secret_basic');
+  const [isCreatingClient, setIsCreatingClient] = useState(false);
+  const [newClientCredentials, setNewClientCredentials] = useState<OAuthClientRegistrationResult | null>(null);
+  const [copiedClientField, setCopiedClientField] = useState<'id' | 'secret' | null>(null);
+  const clientNameRef = useRef<HTMLInputElement>(null);
+
   const load = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -95,6 +105,12 @@ export function McpConnections() {
       patNameRef.current.focus();
     }
   }, [showCreatePat]);
+
+  useEffect(() => {
+    if (showCreateClient && clientNameRef.current) {
+      clientNameRef.current.focus();
+    }
+  }, [showCreateClient]);
 
   const handleRevoke = async () => {
     if (!revokeTarget) return;
@@ -144,6 +160,57 @@ export function McpConnections() {
     setNewToken(null);
     setShowCreatePat(false);
     setCopied(false);
+  };
+
+  const handleCreateClient = async () => {
+    const redirectUris = redirectUrisText
+      .split('\n')
+      .map((uri) => uri.trim())
+      .filter(Boolean);
+
+    if (redirectUris.length === 0) {
+      toast.error(t('mcpConnections.toasts.clientRedirectRequired'));
+      return;
+    }
+
+    setIsCreatingClient(true);
+    try {
+      const result = await registerOAuthClient({
+        clientName,
+        redirectUris,
+        tokenEndpointAuthMethod,
+      });
+      setNewClientCredentials(result);
+      setClientName('');
+      setRedirectUrisText('');
+      setTokenEndpointAuthMethod('client_secret_basic');
+      toast.success(t('mcpConnections.toasts.clientCreated'));
+      await load();
+    } catch {
+      toast.error(t('mcpConnections.toasts.clientCreateFailed'));
+    } finally {
+      setIsCreatingClient(false);
+    }
+  };
+
+  const handleCopyClientField = async (value: string, field: 'id' | 'secret') => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedClientField(field);
+      toast.success(t(field === 'id' ? 'mcpConnections.toasts.clientIdCopied' : 'mcpConnections.toasts.clientSecretCopied'));
+      setTimeout(() => setCopiedClientField((current) => (current === field ? null : current)), 2000);
+    } catch {
+      toast.error(t('mcpConnections.toasts.copyFailed', { label: field === 'id' ? 'client id' : 'client secret' }));
+    }
+  };
+
+  const handleCloseNewClient = () => {
+    setShowCreateClient(false);
+    setNewClientCredentials(null);
+    setCopiedClientField(null);
+    setClientName('');
+    setRedirectUrisText('');
+    setTokenEndpointAuthMethod('client_secret_basic');
   };
 
   const copyText = async (value: string, label: string) => {
@@ -507,6 +574,13 @@ export function McpConnections() {
               </div>
               <h3 className="text-xl font-bold text-neutral-900 dark:text-white tracking-tight">{t('mcpConnections.oauth.title')}</h3>
             </div>
+            <button
+              onClick={() => { setShowCreateClient(true); setNewClientCredentials(null); }}
+              className="text-xs md:text-sm bg-blue-600 text-white hover:bg-blue-500 px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold shadow-lg shadow-blue-600/10 active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{t('mcpConnections.oauth.newClient')}</span>
+            </button>
           </div>
 
           <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5 relative overflow-hidden group/tip">
@@ -518,6 +592,130 @@ export function McpConnections() {
               {t('mcpConnections.oauth.tip')}
             </p>
           </div>
+
+          {showCreateClient && (
+            <div className="p-5 md:p-6 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl space-y-5 animate-in zoom-in-95 duration-200 shadow-xl relative z-10">
+              {newClientCredentials ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2.5 text-emerald-400 text-sm font-bold bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-xl">
+                    <CheckCircle className="w-4 h-4" />
+                    {t('mcpConnections.oauth.form.created')}
+                  </div>
+                  <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
+                    {t('mcpConnections.oauth.form.createdHint')}
+                  </p>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 ml-1">{t('mcpConnections.oauth.form.clientId')}</label>
+                      <div className="flex items-center gap-3">
+                        <code className="flex-1 bg-neutral-50 dark:bg-neutral-950 text-sky-400 px-4 py-3 rounded-xl text-xs md:text-sm font-mono break-all select-all border border-neutral-200 dark:border-neutral-800 shadow-inner">
+                          {newClientCredentials.client_id}
+                        </code>
+                        <button
+                          onClick={() => handleCopyClientField(newClientCredentials.client_id, 'id')}
+                          className="flex-shrink-0 p-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-700 shadow-sm"
+                          title={t('mcpConnections.oauth.form.copyClientId')}
+                        >
+                          {copiedClientField === 'id' ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />}
+                        </button>
+                      </div>
+                    </div>
+                    {newClientCredentials.client_secret && (
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 ml-1">{t('mcpConnections.oauth.form.clientSecret')}</label>
+                        <div className="flex items-center gap-3">
+                          <code className="flex-1 bg-neutral-50 dark:bg-neutral-950 text-amber-400 px-4 py-3 rounded-xl text-xs md:text-sm font-mono break-all select-all border border-neutral-200 dark:border-neutral-800 shadow-inner">
+                            {newClientCredentials.client_secret}
+                          </code>
+                          <button
+                            onClick={() => handleCopyClientField(newClientCredentials.client_secret!, 'secret')}
+                            className="flex-shrink-0 p-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-700 shadow-sm"
+                            title={t('mcpConnections.oauth.form.copyClientSecret')}
+                          >
+                            {copiedClientField === 'secret' ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-3 text-xs text-neutral-500 dark:text-neutral-500">
+                    <div className="rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 px-4 py-3">
+                      <span className="font-bold text-neutral-700 dark:text-neutral-300">{t('mcpConnections.oauth.form.authMethod')}:</span> {newClientCredentials.token_endpoint_auth_method}
+                    </div>
+                    <div className="rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 px-4 py-3">
+                      <span className="font-bold text-neutral-700 dark:text-neutral-300">{t('mcpConnections.oauth.form.scope')}:</span> {newClientCredentials.scope}
+                    </div>
+                    <div className="rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 px-4 py-3">
+                      <span className="font-bold text-neutral-700 dark:text-neutral-300">{t('mcpConnections.oauth.form.redirectUris')}:</span> {newClientCredentials.redirect_uris.length}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleCloseNewClient}
+                    className="text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-white transition-colors"
+                  >
+                    {t('mcpConnections.tokens.form.done')}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 ml-1">{t('mcpConnections.oauth.form.clientName')}</label>
+                      <input
+                        ref={clientNameRef}
+                        type="text"
+                        value={clientName}
+                        onChange={(e) => setClientName(e.target.value)}
+                        placeholder={t('mcpConnections.oauth.form.clientNamePlaceholder')}
+                        className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-neutral-900 dark:text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
+                        maxLength={128}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 ml-1">{t('mcpConnections.oauth.form.authMethod')}</label>
+                      <select
+                        value={tokenEndpointAuthMethod}
+                        onChange={(e) => setTokenEndpointAuthMethod(e.target.value as 'client_secret_basic' | 'client_secret_post' | 'none')}
+                        className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium appearance-none cursor-pointer"
+                      >
+                        <option value="client_secret_basic">client_secret_basic</option>
+                        <option value="client_secret_post">client_secret_post</option>
+                        <option value="none">none</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 ml-1">{t('mcpConnections.oauth.form.redirectUris')}</label>
+                    <textarea
+                      value={redirectUrisText}
+                      onChange={(e) => setRedirectUrisText(e.target.value)}
+                      placeholder={t('mcpConnections.oauth.form.redirectUrisPlaceholder')}
+                      className="min-h-32 w-full resize-y bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-900 dark:text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
+                    />
+                    <p className="text-xs text-neutral-500 dark:text-neutral-500 leading-relaxed">
+                      {t('mcpConnections.oauth.form.redirectUrisHint')}
+                    </p>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={handleCreateClient}
+                      disabled={isCreatingClient}
+                      className="flex-1 sm:flex-none text-sm bg-blue-600 text-white hover:bg-blue-500 px-6 py-2.5 rounded-xl transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/10 active:scale-95"
+                    >
+                      {isCreatingClient && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {t('mcpConnections.oauth.form.create')}
+                    </button>
+                    <button
+                      onClick={handleCloseNewClient}
+                      className="flex-1 sm:flex-none text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                    >
+                      {t('mcpConnections.tokens.form.cancel')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid gap-4">
             {isLoading ? (

@@ -927,6 +927,11 @@
     "errorLoad": "MCP 연결을 불러오지 못했습니다.",
     "toasts": {
       "clientRevoked": "클라이언트 접근 권한을 취소했습니다",
+      "clientCreated": "OAuth 클라이언트를 생성했습니다",
+      "clientCreateFailed": "OAuth 클라이언트 생성에 실패했습니다",
+      "clientRedirectRequired": "리디렉션 URI를 하나 이상 추가하세요",
+      "clientIdCopied": "Client ID를 클립보드에 복사했습니다",
+      "clientSecretCopied": "Client secret을 클립보드에 복사했습니다",
       "tokenRevoked": "토큰을 취소했습니다",
       "revokeFailed": "취소하지 못했습니다",
       "tokenCreated": "토큰이 생성되었습니다. 지금 복사하세요. 다시는 표시되지 않습니다.",
@@ -1008,8 +1013,25 @@
     },
     "oauth": {
       "title": "OAuth 2.1 연결",
+      "newClient": "새 클라이언트",
       "recommended": "간편 로그인에 권장",
       "tip": "OAuth 2.1 커넥터로 연결한 앱은 자동으로 여기에 표시됩니다. 브라우저에서 접근을 승인하면 앱이 여기에 나타납니다.",
+      "form": {
+        "clientName": "클라이언트 이름",
+        "clientNamePlaceholder": "예: Claude Desktop local",
+        "authMethod": "인증 방식",
+        "redirectUris": "리디렉션 URI",
+        "redirectUrisPlaceholder": "http://localhost:3000/callback\nhttps://example.com/oauth/callback",
+        "redirectUrisHint": "한 줄에 하나씩 리디렉션 URI를 입력하세요. 리디렉션 URI는 HTTPS 또는 localhost여야 합니다.",
+        "create": "클라이언트 생성",
+        "created": "OAuth 클라이언트가 생성되었습니다. 지금 자격 증명을 복사하세요.",
+        "createdHint": "Client secret은 한 번만 표시됩니다. 이 패널을 닫기 전에 MCP 앱이나 시크릿 관리자에 저장하세요.",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "copyClientId": "Client ID 복사",
+        "copyClientSecret": "Client secret 복사",
+        "scope": "Scope"
+      },
       "empty": {
         "title": "연결된 OAuth 클라이언트가 없습니다",
         "desc": "AI 앱에서 로그인이 완료되면 앱이 여기에 표시됩니다."

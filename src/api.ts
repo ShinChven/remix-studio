@@ -964,9 +964,41 @@ export interface PersonalAccessTokenSummary {
   createdAt: number;
 }
 
+export interface OAuthClientRegistrationResult {
+  client_id: string;
+  client_id_issued_at: number;
+  client_secret?: string;
+  client_secret_expires_at: number;
+  client_name: string | null;
+  redirect_uris: string[];
+  grant_types: string[];
+  response_types: string[];
+  token_endpoint_auth_method: 'client_secret_basic' | 'client_secret_post' | 'none';
+  scope: string;
+}
+
 export async function fetchOAuthClients(): Promise<OAuthClientSummary[]> {
   const res = await apiFetch('/api/oauth/clients', { headers: getHeaders(false) });
   return handleResponse<OAuthClientSummary[]>(res, 'Failed to load OAuth clients');
+}
+
+export async function registerOAuthClient(input: {
+  clientName?: string;
+  redirectUris: string[];
+  tokenEndpointAuthMethod?: 'client_secret_basic' | 'client_secret_post' | 'none';
+  scope?: string;
+}): Promise<OAuthClientRegistrationResult> {
+  const res = await apiFetch('/register', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({
+      client_name: input.clientName?.trim() || undefined,
+      redirect_uris: input.redirectUris,
+      token_endpoint_auth_method: input.tokenEndpointAuthMethod ?? 'client_secret_basic',
+      scope: input.scope ?? 'mcp:tools',
+    }),
+  });
+  return handleResponse<OAuthClientRegistrationResult>(res, 'Failed to register OAuth client');
 }
 
 export async function revokeOAuthClient(clientId: string): Promise<void> {

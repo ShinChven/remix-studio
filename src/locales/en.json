@@ -1128,6 +1128,11 @@
     "errorLoad": "Failed to load MCP connections.",
     "toasts": {
       "clientRevoked": "Client access revoked",
+      "clientCreated": "OAuth client created",
+      "clientCreateFailed": "Failed to create OAuth client",
+      "clientRedirectRequired": "Add at least one redirect URI",
+      "clientIdCopied": "Client ID copied to clipboard",
+      "clientSecretCopied": "Client secret copied to clipboard",
       "tokenRevoked": "Token revoked",
       "revokeFailed": "Failed to revoke",
       "tokenCreated": "Token created — copy it now. You won't see it again.",
@@ -1209,8 +1214,25 @@
     },
     "oauth": {
       "title": "OAuth 2.1 Connections",
+      "newClient": "New Client",
       "recommended": "Recommended for simple sign-in",
       "tip": "Apps that you connect with the OAuth 2.1 connector will appear here automatically. After you approve access in the browser, the app will show up here.",
+      "form": {
+        "clientName": "Client Name",
+        "clientNamePlaceholder": "e.g. Claude Desktop local",
+        "authMethod": "Auth Method",
+        "redirectUris": "Redirect URIs",
+        "redirectUrisPlaceholder": "http://localhost:3000/callback\nhttps://example.com/oauth/callback",
+        "redirectUrisHint": "Enter one redirect URI per line. Redirect URIs must use HTTPS or localhost.",
+        "create": "Create Client",
+        "created": "OAuth client created — copy the credentials now.",
+        "createdHint": "The client secret is only shown once. Store it in the MCP app or secret manager before closing this panel.",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "copyClientId": "Copy client ID",
+        "copyClientSecret": "Copy client secret",
+        "scope": "Scope"
+      },
       "empty": {
         "title": "No OAuth clients connected",
         "desc": "Apps will appear here after sign-in is completed in your AI app."

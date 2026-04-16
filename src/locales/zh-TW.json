@@ -927,6 +927,11 @@
     "errorLoad": "載入 MCP 連線失敗。",
     "toasts": {
       "clientRevoked": "已撤銷用戶端存取權限",
+      "clientCreated": "已建立 OAuth 用戶端",
+      "clientCreateFailed": "建立 OAuth 用戶端失敗",
+      "clientRedirectRequired": "請至少新增一個重新導向 URI",
+      "clientIdCopied": "Client ID 已複製到剪貼簿",
+      "clientSecretCopied": "Client secret 已複製到剪貼簿",
       "tokenRevoked": "權杖已撤銷",
       "revokeFailed": "撤銷失敗",
       "tokenCreated": "權杖已建立，請立即複製。之後將無法再次查看。",
@@ -1008,8 +1013,25 @@
     },
     "oauth": {
       "title": "OAuth 2.1 連線",
+      "newClient": "新用戶端",
       "recommended": "建議用於簡單登入",
       "tip": "使用 OAuth 2.1 連接器連線的應用會自動顯示在這裡。在瀏覽器中核准存取後，應用就會出現在此處。",
+      "form": {
+        "clientName": "用戶端名稱",
+        "clientNamePlaceholder": "例如：Claude Desktop local",
+        "authMethod": "驗證方式",
+        "redirectUris": "重新導向 URI",
+        "redirectUrisPlaceholder": "http://localhost:3000/callback\nhttps://example.com/oauth/callback",
+        "redirectUrisHint": "每行輸入一個重新導向 URI。重新導向 URI 必須使用 HTTPS 或 localhost。",
+        "create": "建立用戶端",
+        "created": "OAuth 用戶端已建立，請立即複製憑證。",
+        "createdHint": "Client secret 只會顯示一次。關閉此面板前，請先將它保存到 MCP 應用或祕密管理工具中。",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "copyClientId": "複製 Client ID",
+        "copyClientSecret": "複製 Client secret",
+        "scope": "Scope"
+      },
       "empty": {
         "title": "尚未連接任何 OAuth 用戶端",
         "desc": "在 AI 應用中完成登入後，應用將顯示在這裡。"

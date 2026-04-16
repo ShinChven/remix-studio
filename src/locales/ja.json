@@ -927,6 +927,11 @@
     "errorLoad": "MCP 接続の読み込みに失敗しました。",
     "toasts": {
       "clientRevoked": "クライアントアクセスを取り消しました",
+      "clientCreated": "OAuth クライアントを作成しました",
+      "clientCreateFailed": "OAuth クライアントの作成に失敗しました",
+      "clientRedirectRequired": "少なくとも 1 つのリダイレクト URI を追加してください",
+      "clientIdCopied": "Client ID をクリップボードにコピーしました",
+      "clientSecretCopied": "Client secret をクリップボードにコピーしました",
       "tokenRevoked": "トークンを取り消しました",
       "revokeFailed": "取り消しに失敗しました",
       "tokenCreated": "トークンを作成しました。今すぐコピーしてください。後からは再表示できません。",
@@ -1008,8 +1013,25 @@
     },
     "oauth": {
       "title": "OAuth 2.1 接続",
+      "newClient": "新しいクライアント",
       "recommended": "簡単なサインインに推奨",
       "tip": "OAuth 2.1 コネクタで接続したアプリは自動的にここへ表示されます。ブラウザでアクセスを承認すると、そのアプリがここに表示されます。",
+      "form": {
+        "clientName": "クライアント名",
+        "clientNamePlaceholder": "例: Claude Desktop local",
+        "authMethod": "認証方式",
+        "redirectUris": "リダイレクト URI",
+        "redirectUrisPlaceholder": "http://localhost:3000/callback\nhttps://example.com/oauth/callback",
+        "redirectUrisHint": "1 行に 1 つのリダイレクト URI を入力してください。リダイレクト URI は HTTPS または localhost である必要があります。",
+        "create": "クライアントを作成",
+        "created": "OAuth クライアントを作成しました。今すぐ認証情報をコピーしてください。",
+        "createdHint": "Client secret は一度しか表示されません。このパネルを閉じる前に、MCP アプリまたはシークレットマネージャーに保存してください。",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "copyClientId": "Client ID をコピー",
+        "copyClientSecret": "Client secret をコピー",
+        "scope": "Scope"
+      },
       "empty": {
         "title": "接続済みの OAuth クライアントはありません",
         "desc": "AI アプリでサインインが完了すると、ここにアプリが表示されます。"
