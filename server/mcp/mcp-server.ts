@@ -66,16 +66,25 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
     version: '1.0.0',
   });
 
-  // ─── Resource: list_libraries ───
-  server.registerResource(
+  // ─── Tool: list_libraries ───
+  server.registerTool(
     'list_libraries',
-    'remix://libraries/list',
     {
       description: 'List all text libraries for the authenticated user. Returns library id, name, type, and item count.',
-      mimeType: 'application/json',
+      inputSchema: {
+        page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
+        limit: z.number().int().min(1).max(100).default(50).describe('Items per page (default 50)'),
+      },
+      annotations: {
+        title: 'List Libraries',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
-    async (uri) => {
-      const result = await repository.getUserLibraries(userId, 1, 100);
+    async ({ page, limit }) => {
+      const result = await repository.getUserLibraries(userId, page, limit);
       const textLibraries = result.items
         .filter((lib) => lib.type === 'text')
         .map((lib) => ({
@@ -86,10 +95,9 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
         }));
 
       return {
-        contents: [
+        content: [
           {
-            uri: uri.href,
-            mimeType: 'application/json',
+            type: 'text' as const,
             text: JSON.stringify({
               libraries: textLibraries,
               total: textLibraries.length,
@@ -266,15 +274,20 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
     },
   );
 
-  // ─── Resource: get_storage_usage ───
-  server.registerResource(
+  // ─── Tool: get_storage_usage ───
+  server.registerTool(
     'get_storage_usage',
-    'remix://storage/usage',
     {
       description: 'Get storage usage summary for the authenticated user. Returns total usage, storage limit, and breakdown by category (projects, libraries, archives, trash).',
-      mimeType: 'application/json',
+      annotations: {
+        title: 'Get Storage Usage',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
-    async (uri) => {
+    async () => {
       const [allItems, trashItems, userRecord] = await Promise.all([
         repository.getAllUserItems(userId),
         repository.getTrashItems(userId),
@@ -305,10 +318,9 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
       const totalSize = totalProjectsSize + totalLibrarySize + totalExportSize + totalTrashSize;
 
       return {
-        contents: [
+        content: [
           {
-            uri: uri.href,
-            mimeType: 'application/json',
+            type: 'text' as const,
             text: JSON.stringify({
               totalSize,
               totalSizeFormatted: formatSize(totalSize),
@@ -328,16 +340,25 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
     },
   );
 
-  // ─── Resource: list_albums ───
-  server.registerResource(
+  // ─── Tool: list_albums ───
+  server.registerTool(
     'list_albums',
-    'remix://albums/list',
     {
       description: 'List all project albums for the authenticated user. Returns each project with its album item count and total album size.',
-      mimeType: 'application/json',
+      inputSchema: {
+        page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
+        limit: z.number().int().min(1).max(100).default(20).describe('Items per page (default 20)'),
+      },
+      annotations: {
+        title: 'List Albums',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
-    async (uri) => {
-      const projectsResult = await repository.getUserProjects(userId, 1, 100);
+    async ({ page, limit }) => {
+      const projectsResult = await repository.getUserProjects(userId, page, limit);
 
       // Fetch album stats for each project
       const albumStats = await Promise.all(
@@ -363,10 +384,9 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
       );
 
       return {
-        contents: [
+        content: [
           {
-            uri: uri.href,
-            mimeType: 'application/json',
+            type: 'text' as const,
             text: JSON.stringify({
               albums: albumStats,
               total: projectsResult.total,
