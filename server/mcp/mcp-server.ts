@@ -53,6 +53,13 @@ async function resolveBearer(prisma: PrismaClient, authHeader: string | undefine
   return null;
 }
 
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
 function createMcpServerInstance(repository: IRepository, userRepository: UserRepository, prisma: PrismaClient, userId: string) {
   const server = new McpServer({
     name: 'remix-studio',
@@ -310,13 +317,6 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
 
       const totalSize = totalProjectsSize + totalLibrarySize + totalExportSize + totalTrashSize;
 
-      const formatSize = (bytes: number) => {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-        return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-      };
-
       return {
         content: [
           {
@@ -372,13 +372,6 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
             (sum, item) => sum + Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0),
             0,
           );
-
-          const formatSize = (bytes: number) => {
-            if (bytes < 1024) return `${bytes} B`;
-            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-            if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-            return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-          };
 
           return {
             projectId: project.id,
