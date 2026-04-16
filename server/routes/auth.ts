@@ -156,7 +156,7 @@ function hashRateLimitValue(value: string) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
-async function finalizeLogin(c: any, userRepository: UserRepository, user: NonNullable<Awaited<ReturnType<UserRepository['findById']>>>) {
+async function setLoginCookies(c: any, userRepository: UserRepository, user: NonNullable<Awaited<ReturnType<UserRepository['findById']>>>) {
   await userRepository.touchLastLogin(user.sk);
 
   const token = signToken({
@@ -176,6 +176,10 @@ async function finalizeLogin(c: any, userRepository: UserRepository, user: NonNu
 
   setCookie(c, 'token', token, getSessionCookieOptions(c.req.url));
   setCookie(c, 'refreshToken', refreshToken, getRefreshCookieOptions(c.req.url));
+}
+
+async function finalizeLogin(c: any, userRepository: UserRepository, user: NonNullable<Awaited<ReturnType<UserRepository['findById']>>>) {
+  await setLoginCookies(c, userRepository, user);
 
   return c.json({
     user: {
@@ -1204,14 +1208,7 @@ export function createAuthRouter(userRepository: UserRepository) {
         }
 
         clearCookie(c, 'google_register_flow');
-        await userRepository.touchLastLogin(user.sk);
-        const token = signToken({
-          userId: user.sk,
-          email: user.email,
-          role: user.role,
-          sessionVersion: user.sessionVersion ?? 0,
-        });
-        setCookie(c, 'token', token, getSessionCookieOptions(c.req.url));
+        await setLoginCookies(c, userRepository, user);
 
         return c.redirect(normalizeNextUrl(flow.nextUrl));
       }
@@ -1287,14 +1284,7 @@ export function createAuthRouter(userRepository: UserRepository) {
 
       clearCookie(c, 'google_register_flow');
 
-      await userRepository.touchLastLogin(user.sk);
-      const token = signToken({
-        userId: user.sk,
-        email: user.email,
-        role: user.role,
-        sessionVersion: user.sessionVersion ?? 0,
-      });
-      setCookie(c, 'token', token, getSessionCookieOptions(c.req.url));
+      await setLoginCookies(c, userRepository, user);
 
       return c.json({
         user: toSerializedUser(
