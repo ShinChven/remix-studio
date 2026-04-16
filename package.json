@@ -9,7 +9,8 @@
     "start": "NODE_ENV=production node dist-server/server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "mcp:inspect": "npx @modelcontextprotocol/inspector --transport streamablehttp --url http://localhost:3000/mcp"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.87.0",
