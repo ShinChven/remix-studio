@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Layers, Terminal, Play, ImageIcon, Type, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createProject, updateProject, fetchProject } from '../api';
-import type { ProjectType, WorkflowItem } from '../types';
+import type { Project, ProjectType, WorkflowItem } from '../types';
 
 export function ProjectForm() {
   const { t } = useTranslation();
@@ -19,6 +19,7 @@ export function ProjectForm() {
   const [prefix, setPrefix] = useState('');
   const [projectType, setProjectType] = useState<ProjectType>('image');
   const [workflowToCopy, setWorkflowToCopy] = useState<WorkflowItem[]>([]);
+  const [sourceProject, setSourceProject] = useState<Partial<Project> | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -40,6 +41,8 @@ export function ProjectForm() {
           id: crypto.randomUUID()
         }));
         setWorkflowToCopy(copiedWorkflow);
+        // Preserve model choices and generation settings
+        setSourceProject(proj);
       }).catch(err => console.error('Failed to fetch source project:', err));
     }
   }, [id, copyFrom, navigate]);
@@ -62,8 +65,27 @@ export function ProjectForm() {
           workflow: workflowToCopy,
           jobs: [],
           album: [],
-          shuffle: false,
+          shuffle: sourceProject?.shuffle ?? false,
           prefix: prefix.trim(),
+          // Copy model choices and generation settings from source project
+          ...(sourceProject && {
+            providerId: sourceProject.providerId,
+            modelConfigId: sourceProject.modelConfigId,
+            aspectRatio: sourceProject.aspectRatio,
+            quality: sourceProject.quality,
+            background: sourceProject.background,
+            format: sourceProject.format,
+            // Text generation settings
+            systemPrompt: sourceProject.systemPrompt,
+            temperature: sourceProject.temperature,
+            maxTokens: sourceProject.maxTokens,
+            // Video generation settings
+            duration: sourceProject.duration,
+            resolution: sourceProject.resolution,
+            sound: sourceProject.sound,
+            steps: sourceProject.steps,
+            guidance: sourceProject.guidance,
+          }),
         });
       } else {
         targetId = id!;
