@@ -84,6 +84,16 @@ export function createOAuthRouter(prisma: PrismaClient) {
   // ============================================================
   router.post('/register', async (c) => {
     try {
+      const sessionToken = getCookie(c, 'token');
+      let createdByUserId: string | null = null;
+      if (sessionToken) {
+        try {
+          createdByUserId = verifyToken(sessionToken).userId;
+        } catch {
+          createdByUserId = null;
+        }
+      }
+
       const body = await c.req.json();
       const redirectUris = body.redirect_uris;
       if (!Array.isArray(redirectUris) || redirectUris.length === 0) {
@@ -115,6 +125,7 @@ export function createOAuthRouter(prisma: PrismaClient) {
       await prisma.oAuthClient.create({
         data: {
           clientId,
+          createdByUserId,
           clientSecretHash,
           clientName,
           redirectUris,
@@ -318,19 +329,21 @@ export function createOAuthRouter(prisma: PrismaClient) {
     try {
       const user = c.get('user') as JwtPayload;
 
-      // Find all clients that have active (non-revoked, non-expired) tokens for this user
-      const tokens = await prisma.oAuthAccessToken.findMany({
-        where: { userId: user.userId, revoked: false, expiresAt: { gt: new Date() } },
-        select: { clientId: true },
-        distinct: ['clientId'],
-      });
-      const allClientIds = tokens.map((t) => t.clientId);
-
       const clients = await prisma.oAuthClient.findMany({
-        where: { clientId: { in: allClientIds } },
+        where: {
+          OR: [
+            { createdByUserId: user.userId },
+            {
+              accessTokens: {
+                some: { userId: user.userId, revoked: false, expiresAt: { gt: new Date() } },
+              },
+            },
+          ],
+        },
         select: {
           id: true,
           clientId: true,
+          createdByUserId: true,
           clientName: true,
           redirectUris: true,
           scope: true,
@@ -354,10 +367,83 @@ export function createOAuthRouter(prisma: PrismaClient) {
         scope: client.scope,
         activeTokens: client._count.accessTokens,
         createdAt: client.createdAt.getTime(),
+        isOwned: client.createdByUserId === user.userId,
       })));
     } catch (e) {
       console.error('[GET /api/oauth/clients]', e);
       return c.json({ error: 'Failed to list OAuth clients' }, 500);
+    }
+  });
+
+  router.patch('/api/oauth/clients/:clientId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const clientId = c.req.param('clientId');
+      const body = await c.req.json();
+      const redirectUris = body.redirect_uris;
+
+      if (!Array.isArray(redirectUris) || redirectUris.length === 0) {
+        return c.json({ error: 'invalid_client_metadata', error_description: 'redirect_uris is required' }, 400);
+      }
+
+      for (const uri of redirectUris) {
+        try {
+          const parsed = new URL(uri);
+          const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1' || parsed.hostname === '::1';
+          if (!isLocalhost && parsed.protocol !== 'https:') {
+            return c.json({ error: 'invalid_client_metadata', error_description: 'Redirect URIs must be localhost or HTTPS' }, 400);
+          }
+        } catch {
+          return c.json({ error: 'invalid_client_metadata', error_description: `Invalid redirect URI: ${uri}` }, 400);
+        }
+      }
+
+      const client = await prisma.oAuthClient.findUnique({
+        where: { clientId },
+        select: { id: true, createdByUserId: true },
+      });
+
+      if (!client) {
+        return c.json({ error: 'invalid_client', error_description: 'Unknown client_id' }, 404);
+      }
+
+      if (client.createdByUserId !== user.userId) {
+        return c.json({ error: 'forbidden', error_description: 'You do not own this client' }, 403);
+      }
+
+      const updated = await prisma.oAuthClient.update({
+        where: { clientId },
+        data: { redirectUris },
+        select: {
+          id: true,
+          clientId: true,
+          clientName: true,
+          redirectUris: true,
+          scope: true,
+          createdAt: true,
+          _count: {
+            select: {
+              accessTokens: {
+                where: { userId: user.userId, revoked: false, expiresAt: { gt: new Date() } },
+              },
+            },
+          },
+        },
+      });
+
+      return c.json({
+        id: updated.id,
+        clientId: updated.clientId,
+        clientName: updated.clientName,
+        redirectUris: updated.redirectUris,
+        scope: updated.scope,
+        activeTokens: updated._count.accessTokens,
+        createdAt: updated.createdAt.getTime(),
+        isOwned: true,
+      });
+    } catch (e) {
+      console.error('[PATCH /api/oauth/clients/:clientId]', e);
+      return c.json({ error: 'Failed to update OAuth client' }, 500);
     }
   });
 

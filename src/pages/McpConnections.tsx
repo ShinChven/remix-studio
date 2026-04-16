@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Copy, Key, Loader2, Plus, Shield, Trash2, Unplug } from 'lucide-react';
+import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Copy, Key, Loader2, Pencil, Plus, Shield, Trash2, Unplug } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { fetchOAuthClients, fetchPersonalAccessTokens, revokeOAuthClient, revokePersonalAccessToken, createPersonalAccessToken, registerOAuthClient, type OAuthClientRegistrationResult, type OAuthClientSummary, type PersonalAccessTokenSummary } from '../api';
+import { fetchOAuthClients, fetchPersonalAccessTokens, revokeOAuthClient, revokePersonalAccessToken, createPersonalAccessToken, registerOAuthClient, updateOAuthClientRedirectUris, type OAuthClientRegistrationResult, type OAuthClientSummary, type PersonalAccessTokenSummary } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
@@ -80,6 +80,9 @@ export function McpConnections() {
   const [newClientCredentials, setNewClientCredentials] = useState<OAuthClientRegistrationResult | null>(null);
   const [copiedClientField, setCopiedClientField] = useState<'id' | 'secret' | null>(null);
   const clientNameRef = useRef<HTMLInputElement>(null);
+  const [editingClient, setEditingClient] = useState<OAuthClientSummary | null>(null);
+  const [editingRedirectUrisText, setEditingRedirectUrisText] = useState('');
+  const [isSavingClient, setIsSavingClient] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -211,6 +214,37 @@ export function McpConnections() {
     setClientName('');
     setRedirectUrisText('');
     setTokenEndpointAuthMethod('client_secret_basic');
+  };
+
+  const handleStartEditClient = (client: OAuthClientSummary) => {
+    setEditingClient(client);
+    setEditingRedirectUrisText(client.redirectUris.join('\n'));
+  };
+
+  const handleSaveClientRedirectUris = async () => {
+    if (!editingClient) return;
+    const redirectUris = editingRedirectUrisText
+      .split('\n')
+      .map((uri) => uri.trim())
+      .filter(Boolean);
+
+    if (redirectUris.length === 0) {
+      toast.error(t('mcpConnections.toasts.clientRedirectRequired'));
+      return;
+    }
+
+    setIsSavingClient(true);
+    try {
+      const updated = await updateOAuthClientRedirectUris(editingClient.clientId, redirectUris);
+      setClients((current) => current.map((client) => client.clientId === updated.clientId ? updated : client));
+      setEditingClient(null);
+      setEditingRedirectUrisText('');
+      toast.success(t('mcpConnections.toasts.clientUpdated'));
+    } catch {
+      toast.error(t('mcpConnections.toasts.clientUpdateFailed'));
+    } finally {
+      setIsSavingClient(false);
+    }
   };
 
   const copyText = async (value: string, label: string) => {
@@ -593,6 +627,43 @@ export function McpConnections() {
             </p>
           </div>
 
+          {editingClient && (
+            <div className="p-5 md:p-6 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl space-y-4 animate-in zoom-in-95 duration-200 shadow-xl relative z-10">
+              <div>
+                <h4 className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">{t('mcpConnections.oauth.edit.title', { name: editingClient.clientName || editingClient.clientId })}</h4>
+                <p className="mt-1 text-xs leading-relaxed text-neutral-500 dark:text-neutral-500">{t('mcpConnections.oauth.edit.description')}</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 ml-1">{t('mcpConnections.oauth.form.redirectUris')}</label>
+                <textarea
+                  value={editingRedirectUrisText}
+                  onChange={(e) => setEditingRedirectUrisText(e.target.value)}
+                  placeholder={t('mcpConnections.oauth.form.redirectUrisPlaceholder')}
+                  className="min-h-32 w-full resize-y bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-900 dark:text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
+                />
+                <p className="text-xs text-neutral-500 dark:text-neutral-500 leading-relaxed">
+                  {t('mcpConnections.oauth.form.redirectUrisHint')}
+                </p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleSaveClientRedirectUris}
+                  disabled={isSavingClient}
+                  className="flex-1 sm:flex-none text-sm bg-blue-600 text-white hover:bg-blue-500 px-6 py-2.5 rounded-xl transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/10 active:scale-95"
+                >
+                  {isSavingClient && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t('mcpConnections.oauth.edit.save')}
+                </button>
+                <button
+                  onClick={() => { setEditingClient(null); setEditingRedirectUrisText(''); }}
+                  className="flex-1 sm:flex-none text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                >
+                  {t('mcpConnections.tokens.form.cancel')}
+                </button>
+              </div>
+            </div>
+          )}
+
           {showCreateClient && (
             <div className="p-5 md:p-6 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl space-y-5 animate-in zoom-in-95 duration-200 shadow-xl relative z-10">
               {newClientCredentials ? (
@@ -750,6 +821,12 @@ export function McpConnections() {
                         {client.clientName && (
                           <code className="text-[10px] font-mono text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800">{client.clientId.slice(0, 12)}...</code>
                         )}
+                        {client.isOwned && (
+                          <div className="flex items-center gap-1.5 text-[10px] font-medium text-blue-500">
+                            <div className="w-1 h-1 rounded-full bg-blue-500" />
+                            <span>{t('mcpConnections.oauth.card.manualClient')}</span>
+                          </div>
+                        )}
                         <div className={`flex items-center gap-1.5 text-[10px] font-bold ${client.activeTokens > 0 ? 'text-emerald-400' : 'text-neutral-500 dark:text-neutral-500'}`}>
                           <div className={`w-1 h-1 rounded-full ${client.activeTokens > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`} />
                           <span>
@@ -765,13 +842,24 @@ export function McpConnections() {
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setRevokeTarget({ type: 'client', clientId: client.clientId, name: client.clientName || client.clientId })}
-                    className="flex-shrink-0 self-end sm:self-center p-2.5 text-neutral-500 dark:text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hover:-rotate-12"
-                    title={t('mcpConnections.oauth.card.revokeTitle')}
-                  >
-                    <Unplug className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    {client.isOwned && (
+                      <button
+                        onClick={() => handleStartEditClient(client)}
+                        className="flex-shrink-0 p-2.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 hover:bg-blue-500/10 rounded-xl transition-all"
+                        title={t('mcpConnections.oauth.card.editTitle')}
+                      >
+                        <Pencil className="w-5 h-5" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setRevokeTarget({ type: 'client', clientId: client.clientId, name: client.clientName || client.clientId })}
+                      className="flex-shrink-0 p-2.5 text-neutral-500 dark:text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hover:-rotate-12"
+                      title={t('mcpConnections.oauth.card.revokeTitle')}
+                    >
+                      <Unplug className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               ))
             )}

@@ -36,6 +36,7 @@ model User {
   passkeys      PasskeyCredential[]
   oauthAuthorizationCodes OAuthAuthorizationCode[]
   oauthAccessTokens       OAuthAccessToken[]
+  oauthClients            OAuthClient[]
   personalAccessTokens    PersonalAccessToken[]
   sessions              UserSession[]
   createdByUser User? @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
@@ -368,6 +369,7 @@ model DeliveryTask {
 model OAuthClient {
   id                      String   @id @default(uuid())
   clientId                String   @unique
+  createdByUserId         String?
   clientSecretHash        String?
   clientName              String?
   redirectUris            Json     // String[]
@@ -379,8 +381,11 @@ model OAuthClient {
   clientSecretExpiresAt   DateTime?
   createdAt               DateTime @default(now())
 
+  createdBy          User? @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   authorizationCodes OAuthAuthorizationCode[]
   accessTokens       OAuthAccessToken[]
+
+  @@index([createdByUserId])
 }
 
 model OAuthAuthorizationCode {

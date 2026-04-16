@@ -1130,6 +1130,8 @@
       "clientRevoked": "Client access revoked",
       "clientCreated": "OAuth client created",
       "clientCreateFailed": "Failed to create OAuth client",
+      "clientUpdated": "OAuth callback updated",
+      "clientUpdateFailed": "Failed to update OAuth callback",
       "clientRedirectRequired": "Add at least one redirect URI",
       "clientIdCopied": "Client ID copied to clipboard",
       "clientSecretCopied": "Client secret copied to clipboard",
@@ -1217,6 +1219,11 @@
       "newClient": "New Client",
       "recommended": "Recommended for simple sign-in",
       "tip": "Apps that you connect with the OAuth 2.1 connector will appear here automatically. After you approve access in the browser, the app will show up here.",
+      "edit": {
+        "title": "Edit callbacks for {{name}}",
+        "description": "Update the callback URLs used by this OAuth client. Keep one redirect URI per line.",
+        "save": "Save Callback URLs"
+      },
       "form": {
         "clientName": "Client Name",
         "clientNamePlaceholder": "e.g. Claude Desktop local",
@@ -1238,10 +1245,12 @@
         "desc": "Apps will appear here after sign-in is completed in your AI app."
       },
       "card": {
+        "manualClient": "Manual client",
         "activeToken": "{{count}} active token",
         "activeToken_plural": "{{count}} active tokens",
         "noTokens": "No active tokens",
         "registered": "Registered {{date}}",
+        "editTitle": "Edit callback URLs",
         "revokeTitle": "Revoke all tokens"
       }
     },

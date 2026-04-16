@@ -951,6 +951,7 @@ export interface OAuthClientSummary {
   scope: string | null;
   activeTokens: number;
   createdAt: number;
+  isOwned: boolean;
 }
 
 export interface PersonalAccessTokenSummary {
@@ -999,6 +1000,15 @@ export async function registerOAuthClient(input: {
     }),
   });
   return handleResponse<OAuthClientRegistrationResult>(res, 'Failed to register OAuth client');
+}
+
+export async function updateOAuthClientRedirectUris(clientId: string, redirectUris: string[]): Promise<OAuthClientSummary> {
+  const res = await apiFetch(`/api/oauth/clients/${encodeURIComponent(clientId)}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify({ redirect_uris: redirectUris }),
+  });
+  return handleResponse<OAuthClientSummary>(res, 'Failed to update OAuth client');
 }
 
 export async function revokeOAuthClient(clientId: string): Promise<void> {
