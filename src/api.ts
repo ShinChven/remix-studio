@@ -48,8 +48,10 @@ async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
       // Retry the original request with fresh token (cookie is now updated)
       return fetch(url, { ...options, credentials: 'include' });
     } else {
-      // Refresh failed — redirect to login
-      window.location.href = '/login';
+      // Refresh failed — redirect to login (but not if already there, to avoid loops)
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
       return res;
     }
   }
