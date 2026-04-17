@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, Download, FileText, Play, Video as VideoIcon, Copy } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Video as VideoIcon, Copy } from 'lucide-react';
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
@@ -44,6 +45,7 @@ export function AlbumTab({
   projectType = 'image',
 }: AlbumTabProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const getDefaultExportPackageName = (name: string) => {
     const safeName = (name || t('projectViewer.tabs.album')).replace(/[^a-zA-Z0-9-_]/g, '_');
     return `${safeName}_${t('projectViewer.tabs.album')}.zip`;
@@ -70,12 +72,8 @@ export function AlbumTab({
     try {
       await startAlbumExport(projectId, pendingExportItemIds, packageName);
       onExportStarted();
-      toast.success(
-        <span>
-          {t('projectViewer.album.exportQueued')}{' '}
-          <a href="/exports" className="underline font-bold">{t('projectViewer.album.viewArchiveProgress')}</a>
-        </span>
-      );
+      navigate('/exports');
+      toast.success(t('projectViewer.album.exportQueued'));
     } catch (err: any) {
       toast.error(t('projectViewer.album.exportFailed', { message: err.message }));
       throw err;
@@ -108,7 +106,7 @@ export function AlbumTab({
                   aria-label={selectedAlbumIds.size > 0 ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
                   className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
                 >
-                  <Download className="w-3 h-3" />
+                  <FileArchive className="w-3 h-3" />
                   <span className="hidden sm:inline">
                     {selectedAlbumIds.size > 0 ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
                   </span>

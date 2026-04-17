@@ -935,8 +935,10 @@ export interface InviteCode {
 
 export interface ExportTask {
   id: string;
-  projectId: string;
+  projectId?: string;
   projectName: string;
+  sourceType?: 'project' | 'library';
+  libraryId?: string;
   packageName?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   current: number;

@@ -3,7 +3,7 @@ import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, Li
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ExportTask, DeliveryStatus } from '../types';
-import { fetchAllExports, deleteProjectExport, uploadExportToDrive, fetchDeliveryStatus, fetchActiveDeliveries, disconnectGoogleDrive, fetchCurrentUser } from '../api';
+import { fetchAllExports, deleteExport, uploadExportToDrive, fetchDeliveryStatus, fetchActiveDeliveries, disconnectGoogleDrive, fetchCurrentUser } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -19,7 +19,7 @@ export function Exports() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [taskToDelete, setTaskToDelete] = useState<{ projectId: string, taskId: string } | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
 
   // deliveryId → DeliveryStatus for in-progress Drive uploads
@@ -165,16 +165,30 @@ export function Exports() {
     if (nextCursor) loadExports(nextCursor, true);
   };
 
-  const handleDelete = async (projectId: string, taskId: string) => {
-    setTaskToDelete({ projectId, taskId });
+  const getTaskTarget = (task: ExportTask): { to: string; labelPrefix: string } => {
+    if (task.sourceType === 'library' && task.libraryId) {
+      return {
+        to: `/library/${task.libraryId}`,
+        labelPrefix: t('libraries.title'),
+      };
+    }
+
+    return {
+      to: task.projectId ? `/project/${task.projectId}` : '/exports',
+      labelPrefix: t('projects.title'),
+    };
+  };
+
+  const handleDelete = async (taskId: string) => {
+    setTaskToDelete(taskId);
     setShowDeleteConfirm(true);
   };
 
   const confirmDelete = async () => {
     if (!taskToDelete) return;
     try {
-      await deleteProjectExport(taskToDelete.projectId, taskToDelete.taskId);
-      setExports(prev => prev.filter(t => t.id !== taskToDelete.taskId));
+      await deleteExport(taskToDelete);
+      setExports(prev => prev.filter(t => t.id !== taskToDelete));
     } catch (err: any) {
       toast.error(`Failed to delete export record: ${err.message}`);
     } finally {
@@ -265,6 +279,7 @@ export function Exports() {
       ) : (
         <div className="space-y-3">
           {exports.map((task) => {
+            const taskTarget = getTaskTarget(task);
             const driveDelivery = getDriveDelivery(task.id);
             const isDriveUploading = driveDelivery && (driveDelivery.status === 'pending' || driveDelivery.status === 'processing');
             const driveProgress = driveDelivery && driveDelivery.totalBytes
@@ -287,10 +302,10 @@ export function Exports() {
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
                       <Link
-                        to={`/project/${task.projectId}`}
+                        to={taskTarget.to}
                         className="w-fit text-[9px] font-black text-blue-600 dark:text-blue-500 hover:text-blue-500 transition-colors uppercase tracking-widest bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-500/20 flex items-center gap-1 group/project shadow-sm"
                       >
-                        {task.projectName}
+                        {taskTarget.labelPrefix}: {task.projectName}
                         <ArrowRight className="w-2.5 h-2.5 group-hover/project:translate-x-0.5 transition-transform" />
                       </Link>
                       <span className="text-[11px] sm:text-[10px] font-bold text-neutral-900 dark:text-white sm:text-neutral-400 truncate tracking-tight">
@@ -399,7 +414,7 @@ export function Exports() {
                       </button>
                     )}
                     <button
-                      onClick={() => handleDelete(task.projectId, task.id)}
+                      onClick={() => handleDelete(task.id)}
                       className="p-2 sm:p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all active:scale-90 border border-transparent hover:border-red-100"
                       title={t('exports.card.delete')}
                     >

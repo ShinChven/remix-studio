@@ -26,7 +26,7 @@ const REAPER_INTERVAL_MS = 60_000;
 
 export interface ExportTask {
   id: string;
-  projectId: string;
+  projectId?: string;
   projectName: string;
   packageName?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -71,10 +71,11 @@ export class ExportManager {
 
   async startExport(
     userId: string,
-    projectId: string,
+    projectId: string | undefined,
     projectName: string,
     items: AlbumItem[],
-    packageName?: string
+    packageName?: string,
+    metadata: Record<string, unknown> = {}
   ): Promise<string> {
     const taskId = crypto.randomUUID();
     const now = Date.now();
@@ -95,6 +96,7 @@ export class ExportManager {
     // Store items list in the data blob so the worker can read them back
     await this.repository.saveExportTask(userId, taskId, {
       ...taskData,
+      ...metadata,
       items,
     });
 

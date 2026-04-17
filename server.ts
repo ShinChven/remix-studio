@@ -163,7 +163,7 @@ async function startServer() {
 
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
-  app.route('/', createLibraryRouter(repository, storage, userRepository, exportStorage));
+  app.route('/', createLibraryRouter(repository, storage, userRepository, exportStorage, exportManager));
   app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager));
   app.route('/', createImageRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createVideoRouter(storage, exportStorage, repository, userRepository));

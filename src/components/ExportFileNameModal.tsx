@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, Loader2, X } from 'lucide-react';
+import { FileArchive, Loader2, X } from 'lucide-react';
 
 interface ExportFileNameModalProps {
   isOpen: boolean;
@@ -46,7 +46,7 @@ export function ExportFileNameModal({
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-5 min-w-0">
               <div className="p-4 rounded-3xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex-shrink-0">
-                <Download className="w-7 h-7" />
+                <FileArchive className="w-7 h-7" />
               </div>
               <div className="min-w-0">
                 <h3 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight">{t('libraryEditor.exportModal.title', 'Export Library')}</h3>

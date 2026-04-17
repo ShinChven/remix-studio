@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, LibraryItem } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileText } from 'lucide-react';
+import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { TagModal } from './TagModal';
 import { PageHeader } from './PageHeader';
@@ -365,8 +365,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     setExportingLibrary(true);
     try {
       await exportMediaLibraryZip(library.id, fileName);
-      toast.success(t('libraryEditor.exportModal.success', 'Library export started.'));
       setShowExportModal(false);
+      navigate('/exports');
+      toast.success(t('libraryEditor.exportModal.success', 'Library export queued.'));
     } catch (error: any) {
       toast.error(error?.message || t('libraryEditor.exportModal.error', 'Failed to export library'));
     } finally {
@@ -469,7 +470,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
                   title={t('libraryEditor.exportModal.trigger', 'Export ZIP')}
                 >
-                  <FileText className="w-5 h-5" />
+                  <FileArchive className="w-5 h-5" />
                 </button>
               )}
 

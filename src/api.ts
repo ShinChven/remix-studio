@@ -277,31 +277,13 @@ export async function duplicateLibrary(id: string, name: string): Promise<Librar
   return handleResponse<Library>(res, 'Failed to duplicate library');
 }
 
-export async function exportMediaLibraryZip(id: string, fileName: string): Promise<void> {
-  const params = new URLSearchParams();
-  params.set('fileName', fileName);
-  const res = await apiFetch(`/api/libraries/${id}/export?${params.toString()}`, { headers: getHeaders(false) });
-
-  if (!res.ok) {
-    let errorMsg = 'Failed to export library';
-    try {
-      const data = await res.json();
-      if (data?.error) errorMsg = data.error;
-    } catch {
-      // fall through to default error
-    }
-    throw new Error(errorMsg);
-  }
-
-  const blob = await res.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = objectUrl;
-  anchor.download = fileName.endsWith('.zip') ? fileName : `${fileName}.zip`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  URL.revokeObjectURL(objectUrl);
+export async function exportMediaLibraryZip(id: string, fileName: string): Promise<{ taskId: string }> {
+  const res = await apiFetch(`/api/libraries/${id}/export`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ packageName: fileName }),
+  });
+  return handleResponse<{ taskId: string }>(res, 'Failed to export library');
 }
 
 export async function fetchLibraryReferences(libraryId: string): Promise<{ id: string; name: string }[]> {
