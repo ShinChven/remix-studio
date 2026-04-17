@@ -33,11 +33,11 @@ export class LibraryRepository {
         where,
         skip,
         take: limit,
-        orderBy: { id: 'desc' },
+        orderBy: { createdAt: 'desc' },
         include: includeItems
           ? {
               items: {
-                orderBy: [{ order: 'asc' }, { id: 'asc' }],
+                orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
               },
               _count: { select: { items: true } },
             }
@@ -68,7 +68,7 @@ export class LibraryRepository {
       where: { id: libraryId, userId },
       include: {
         items: {
-          orderBy: [{ order: 'asc' }, { id: 'asc' }],
+          orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
         },
       },
     });
@@ -112,7 +112,7 @@ export class LibraryRepository {
 
     const items = await this.prisma.libraryItem.findMany({
       where: { libraryId },
-      orderBy: [{ order: 'asc' }, { id: 'asc' }],
+      orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
     });
     return items.map((item) => this.mapItem(item));
   }
@@ -158,7 +158,7 @@ export class LibraryRepository {
         where,
         skip,
         take: limit,
-        orderBy: [{ order: 'asc' }, { id: 'asc' }],
+        orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
       }),
     ]);
 
@@ -311,7 +311,7 @@ export class LibraryRepository {
         where,
         skip,
         take: limit,
-        orderBy: [{ order: 'asc' }, { id: 'asc' }],
+        orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
         include: { library: { select: { name: true } } },
       }),
     ]);
