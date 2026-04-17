@@ -5,7 +5,7 @@
     "libraries": "Libraries",
     "providers": "Providers",
     "mcp": "MCP",
-    "archive": "Archive",
+    "exports": "Exports",
     "recycleBin": "Recycle Bin",
     "storage": "Storage",
     "userManagement": "User Management"
@@ -492,6 +492,7 @@
     "addFragment": "Add Fragment",
     "editLibrarySettings": "Edit Library Settings",
     "importOutput": "Import / Output",
+    "exportLibrary": "Export Library",
     "deleteLibrary": "Delete Library",
     "selectAll": "Select All",
     "selectedCount": "{{count}} Selected",
@@ -540,6 +541,18 @@
       "batchDescription": "Add tags to {{count}} selected item(s).",
       "addTags": "Add Tags",
       "editTitle": "Edit Item Tags"
+    },
+    "exportModal": {
+      "trigger": "Export ZIP",
+      "title": "Export Library",
+      "description": "Confirm the ZIP filename before downloading this library.",
+      "fileName": "File Name",
+      "placeholder": "library_export.zip",
+      "cancel": "Cancel",
+      "confirm": "Export ZIP",
+      "exporting": "Exporting...",
+      "success": "Library ZIP downloaded",
+      "error": "Failed to export library"
     }
   },
   "providers": {
@@ -575,7 +588,7 @@
     }
   },
   "exports": {
-    "title": "Archive",
+    "title": "Exports",
     "description": "Manage your generated ZIP archives across all projects.",
     "drive": {
       "connected": "Drive Connected",
@@ -597,7 +610,7 @@
       "active": "Active"
     },
     "empty": {
-      "title": "Archive is empty",
+      "title": "Exports are empty",
       "description": "Generated project exports will appear here automatically",
       "viewProjects": "View Projects"
     },
@@ -612,7 +625,7 @@
       "download": "Download ZIP",
       "delete": "Delete record"
     },
-    "loadMore": "Load More Archives",
+    "loadMore": "Load More Exports",
     "deleteDialog": {
       "title": "Delete Export Record",
       "message": "Are you sure you want to delete this export record? This action cannot be undone.",

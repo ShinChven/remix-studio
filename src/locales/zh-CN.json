@@ -5,7 +5,7 @@
     "libraries": "库",
     "providers": "供应商",
     "mcp": "MCP",
-    "archive": "归档",
+    "exports": "导出",
     "recycleBin": "回收站",
     "storage": "存储",
     "userManagement": "用户管理"
@@ -159,6 +159,7 @@
     "addFragment": "添加片段",
     "editLibrarySettings": "编辑库设置",
     "importOutput": "导入 / 导出",
+    "exportLibrary": "导出媒体库",
     "deleteLibrary": "删除库",
     "selectAll": "全选",
     "selectedCount": "已选择 {{count}} 项",
@@ -207,6 +208,18 @@
       "batchDescription": "为 {{count}} 个所选项目添加标签。",
       "addTags": "添加标签",
       "editTitle": "编辑项目标签"
+    },
+    "exportModal": {
+      "trigger": "导出 ZIP",
+      "title": "导出媒体库",
+      "description": "下载前请确认 ZIP 文件名。",
+      "fileName": "文件名",
+      "placeholder": "library_export.zip",
+      "cancel": "取消",
+      "confirm": "导出 ZIP",
+      "exporting": "导出中...",
+      "success": "媒体库 ZIP 已下载",
+      "error": "导出媒体库失败"
     }
   },
   "providers": {
@@ -242,7 +255,7 @@
     }
   },
   "exports": {
-    "title": "导出归档",
+    "title": "导出",
     "description": "管理所有生成的项目 ZIP 归档。",
     "drive": {
       "connected": "Google Drive 已连接",
@@ -264,7 +277,7 @@
       "active": "活跃"
     },
     "empty": {
-      "title": "归档库为空",
+      "title": "导出为空",
       "description": "生成的项目导出将自动显示在这里",
       "viewProjects": "查看项目"
     },
@@ -279,7 +292,7 @@
       "download": "下载 ZIP",
       "delete": "删除记录"
     },
-    "loadMore": "加载更多归档",
+    "loadMore": "加载更多导出",
     "deleteDialog": {
       "title": "删除导出记录",
       "message": "确定要删除此导出记录吗？此操作无法撤销。",

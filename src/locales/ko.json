@@ -5,7 +5,7 @@
     "libraries": "라이브러리",
     "providers": "제공자",
     "mcp": "MCP",
-    "archive": "보관함",
+    "exports": "내보내기",
     "recycleBin": "휴지통",
     "storage": "저장공간",
     "userManagement": "사용자 관리"
@@ -384,6 +384,7 @@
     "addFragment": "프래그먼트 추가",
     "editLibrarySettings": "라이브러리 설정 편집",
     "importOutput": "가져오기 / 내보내기",
+    "exportLibrary": "라이브러리 내보내기",
     "deleteLibrary": "라이브러리 삭제",
     "selectAll": "전체 선택",
     "selectedCount": "{{count}}개 선택됨",
@@ -432,6 +433,18 @@
       "batchDescription": "{{count}}개 선택한 항목에 태그를 추가합니다.",
       "addTags": "태그 추가",
       "editTitle": "항목 태그 편집"
+    },
+    "exportModal": {
+      "trigger": "ZIP 내보내기",
+      "title": "라이브러리 내보내기",
+      "description": "다운로드 전에 ZIP 파일 이름을 확인하세요.",
+      "fileName": "파일 이름",
+      "placeholder": "library_export.zip",
+      "cancel": "취소",
+      "confirm": "ZIP 내보내기",
+      "exporting": "내보내는 중...",
+      "success": "라이브러리 ZIP을 다운로드했습니다",
+      "error": "라이브러리 내보내기에 실패했습니다"
     }
   },
   "providers": {
@@ -467,7 +480,7 @@
     }
   },
   "exports": {
-    "title": "보관함",
+    "title": "내보내기",
     "description": "모든 프로젝트에서 생성된 ZIP 보관 파일을 관리합니다.",
     "drive": {
       "connected": "Drive 연결됨",
@@ -489,7 +502,7 @@
       "active": "활성"
     },
     "empty": {
-      "title": "보관함이 비어 있습니다",
+      "title": "내보내기가 비어 있습니다",
       "description": "생성된 프로젝트 내보내기가 여기에 자동으로 표시됩니다",
       "viewProjects": "프로젝트 보기"
     },
@@ -504,7 +517,7 @@
       "download": "ZIP 다운로드",
       "delete": "기록 삭제"
     },
-    "loadMore": "보관 파일 더 불러오기",
+    "loadMore": "내보내기 더 불러오기",
     "deleteDialog": {
       "title": "내보내기 기록 삭제",
       "message": "이 내보내기 기록을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",

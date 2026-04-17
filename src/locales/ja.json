@@ -5,7 +5,7 @@
     "libraries": "ライブラリ",
     "providers": "プロバイダー",
     "mcp": "MCP",
-    "archive": "アーカイブ",
+    "exports": "エクスポート",
     "recycleBin": "ゴミ箱",
     "storage": "ストレージ",
     "userManagement": "ユーザー管理"
@@ -384,6 +384,7 @@
     "addFragment": "フラグメントを追加",
     "editLibrarySettings": "ライブラリ設定を編集",
     "importOutput": "インポート / エクスポート",
+    "exportLibrary": "ライブラリをエクスポート",
     "deleteLibrary": "ライブラリを削除",
     "selectAll": "すべて選択",
     "selectedCount": "{{count}} 個選択済み",
@@ -432,6 +433,18 @@
       "batchDescription": "{{count}} 個の選択したアイテムにタグを追加します。",
       "addTags": "タグを追加",
       "editTitle": "アイテムのタグを編集"
+    },
+    "exportModal": {
+      "trigger": "ZIP をエクスポート",
+      "title": "ライブラリをエクスポート",
+      "description": "ダウンロード前に ZIP ファイル名を確認してください。",
+      "fileName": "ファイル名",
+      "placeholder": "library_export.zip",
+      "cancel": "キャンセル",
+      "confirm": "ZIP をエクスポート",
+      "exporting": "エクスポート中...",
+      "success": "ライブラリ ZIP をダウンロードしました",
+      "error": "ライブラリのエクスポートに失敗しました"
     }
   },
   "providers": {
@@ -467,7 +480,7 @@
     }
   },
   "exports": {
-    "title": "アーカイブ",
+    "title": "エクスポート",
     "description": "すべてのプロジェクトで生成された ZIP アーカイブを管理します。",
     "drive": {
       "connected": "Drive 接続済み",
@@ -489,7 +502,7 @@
       "active": "アクティブ"
     },
     "empty": {
-      "title": "アーカイブは空です",
+      "title": "エクスポートは空です",
       "description": "生成されたプロジェクトのエクスポートが自動的にここに表示されます",
       "viewProjects": "プロジェクトを表示"
     },
@@ -504,7 +517,7 @@
       "download": "ZIP をダウンロード",
       "delete": "レコードを削除"
     },
-    "loadMore": "さらに読み込む",
+    "loadMore": "さらにエクスポートを読み込む",
     "deleteDialog": {
       "title": "エクスポートレコードの削除",
       "message": "このエクスポートレコードを削除してもよろしいですか？この操作は取り消せません。",

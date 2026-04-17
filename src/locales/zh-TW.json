@@ -5,7 +5,7 @@
     "libraries": "庫",
     "providers": "供應商",
     "mcp": "MCP",
-    "archive": "封存",
+    "exports": "匯出",
     "recycleBin": "資源回收筒",
     "storage": "存儲",
     "userManagement": "用戶管理"
@@ -384,6 +384,7 @@
     "addFragment": "添加片段",
     "editLibrarySettings": "編輯庫設置",
     "importOutput": "導入 / 匯出",
+    "exportLibrary": "匯出素材庫",
     "deleteLibrary": "刪除庫",
     "selectAll": "全選",
     "selectedCount": "已選擇 {{count}} 項",
@@ -432,6 +433,18 @@
       "batchDescription": "為 {{count}} 個所選項目添加標籤。",
       "addTags": "添加標籤",
       "editTitle": "編輯項目標籤"
+    },
+    "exportModal": {
+      "trigger": "匯出 ZIP",
+      "title": "匯出素材庫",
+      "description": "下載前請確認 ZIP 檔名。",
+      "fileName": "檔案名稱",
+      "placeholder": "library_export.zip",
+      "cancel": "取消",
+      "confirm": "匯出 ZIP",
+      "exporting": "匯出中...",
+      "success": "素材庫 ZIP 已下載",
+      "error": "素材庫匯出失敗"
     }
   },
   "providers": {
@@ -467,7 +480,7 @@
     }
   },
   "exports": {
-    "title": "匯出封存",
+    "title": "匯出",
     "description": "管理所有生成的專案 ZIP 封存。",
     "drive": {
       "connected": "Google Drive 已連接",
@@ -489,7 +502,7 @@
       "active": "活躍"
     },
     "empty": {
-      "title": "封存庫為空",
+      "title": "匯出為空",
       "description": "生成的專案匯出將自動顯示在這裡",
       "viewProjects": "查看專案"
     },
@@ -504,7 +517,7 @@
       "download": "下載 ZIP",
       "delete": "刪除紀錄"
     },
-    "loadMore": "載入更多封存",
+    "loadMore": "載入更多匯出",
     "deleteDialog": {
       "title": "刪除匯出紀錄",
       "message": "確定要刪除此匯出紀錄嗎？此操作無法撤銷。",

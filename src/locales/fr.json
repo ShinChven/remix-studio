@@ -5,7 +5,7 @@
     "libraries": "Bibliothèques",
     "providers": "Fournisseurs",
     "mcp": "MCP",
-    "archive": "Archives",
+    "exports": "Exports",
     "recycleBin": "Corbeille",
     "storage": "Stockage",
     "userManagement": "Gestion des utilisateurs"
@@ -384,6 +384,7 @@
     "addFragment": "Ajouter un fragment",
     "editLibrarySettings": "Modifier les paramètres de la bibliothèque",
     "importOutput": "Import / Export",
+    "exportLibrary": "Exporter la bibliothèque",
     "deleteLibrary": "Supprimer la bibliothèque",
     "selectAll": "Tout sélectionner",
     "selectedCount": "{{count}} sélectionné(s)",
@@ -432,6 +433,18 @@
       "batchDescription": "Ajouter des tags aux {{count}} éléments sélectionnés.",
       "addTags": "Ajouter des tags",
       "editTitle": "Modifier les tags de l'élément"
+    },
+    "exportModal": {
+      "trigger": "Exporter le ZIP",
+      "title": "Exporter la bibliothèque",
+      "description": "Confirmez le nom du fichier ZIP avant le téléchargement.",
+      "fileName": "Nom du fichier",
+      "placeholder": "library_export.zip",
+      "cancel": "Annuler",
+      "confirm": "Exporter le ZIP",
+      "exporting": "Export en cours...",
+      "success": "ZIP de la bibliothèque téléchargé",
+      "error": "Échec de l'export de la bibliothèque"
     }
   },
   "providers": {
@@ -467,7 +480,7 @@
     }
   },
   "exports": {
-    "title": "Archive",
+    "title": "Exports",
     "description": "Gérez vos archives ZIP générées pour tous les projets.",
     "drive": {
       "connected": "Drive connecté",
@@ -489,7 +502,7 @@
       "active": "Actif"
     },
     "empty": {
-      "title": "L'archive est vide",
+      "title": "Les exports sont vides",
       "description": "Les exports de projets générés apparaîtront ici automatiquement",
       "viewProjects": "Voir les projets"
     },
@@ -504,7 +517,7 @@
       "download": "Télécharger le ZIP",
       "delete": "Supprimer l'enregistrement"
     },
-    "loadMore": "Charger plus d'archives",
+    "loadMore": "Charger plus d'exports",
     "deleteDialog": {
       "title": "Supprimer l'enregistrement d'exportation",
       "message": "Êtes-vous sûr de vouloir supprimer cet enregistrement d'exportation ? Cette action ne peut pas être annulée.",

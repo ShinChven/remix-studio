@@ -1,5 +1,8 @@
 import { Hono } from 'hono';
 import { randomUUID } from 'node:crypto';
+import path from 'node:path';
+import { Readable, PassThrough } from 'node:stream';
+import archiver from 'archiver';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
@@ -17,6 +20,43 @@ function toSafeStorageKeyPart(value: string): string {
 function getKeyBasename(key: string): string {
   const parts = key.split('/');
   return parts[parts.length - 1] || key;
+}
+
+function normalizeZipFileName(value: string | null | undefined, fallbackName: string): string {
+  const raw = (value || '').trim() || fallbackName;
+  const withoutZip = raw.replace(/\.zip$/i, '').trim() || fallbackName;
+  const safeBase = withoutZip.replace(/[^a-zA-Z0-9-_]/g, '_').replace(/_+/g, '_').slice(0, 120) || fallbackName;
+  return `${safeBase}.zip`;
+}
+
+function mediaKeyFromItem(item: LibraryItem): string | null {
+  const candidates = [item.content, item.optimizedUrl, item.thumbnailUrl];
+  for (const value of candidates) {
+    if (typeof value === 'string' && value && !value.startsWith('http') && !value.startsWith('data:')) {
+      return value;
+    }
+  }
+  return null;
+}
+
+function buildZipEntryName(item: LibraryItem, fallbackIndex: number, usedNames: Set<string>): string {
+  const titleBase = (item.title || '').trim().replace(/[^a-zA-Z0-9-_\s]/g, '').trim();
+  const keyBase = item.content && !item.content.startsWith('http') && !item.content.startsWith('data:')
+    ? path.basename(item.content)
+    : '';
+
+  const extension = keyBase.includes('.') ? keyBase.split('.').pop() || '' : '';
+  const preferredBase = titleBase || (keyBase ? keyBase.replace(/\.[^.]+$/, '') : `item_${fallbackIndex + 1}`);
+  const safeBase = preferredBase.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9-_]/g, '_').replace(/_+/g, '_') || `item_${fallbackIndex + 1}`;
+
+  let candidate = extension ? `${safeBase}.${extension}` : safeBase;
+  let dedupe = 1;
+  while (usedNames.has(candidate)) {
+    const nextBase = `${safeBase}_${dedupe++}`;
+    candidate = extension ? `${nextBase}.${extension}` : nextBase;
+  }
+  usedNames.add(candidate);
+  return candidate;
 }
 
 async function estimateLibraryCopySize(library: Library, storage: S3Storage): Promise<number> {
@@ -318,6 +358,64 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
     }
   });
 
+  router.get('/api/libraries/:id/export', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const library = await repository.getLibrary(user.userId, c.req.param('id'));
+
+      if (!library) return c.json({ error: 'Not found' }, 404);
+      if (library.type !== 'image' && library.type !== 'video' && library.type !== 'audio') {
+        return c.json({ error: 'Only image, video, and audio libraries can be exported as ZIP.' }, 400);
+      }
+
+      const exportableItems = library.items
+        .map((item, index) => ({ item, key: mediaKeyFromItem(item), index }))
+        .filter((entry): entry is { item: LibraryItem; key: string; index: number } => Boolean(entry.key));
+
+      if (exportableItems.length === 0) {
+        return c.json({ error: 'This library has no exportable media files.' }, 400);
+      }
+
+      const fileName = normalizeZipFileName(c.req.query('fileName'), `${library.name || 'library'}_export`);
+      const passThrough = new PassThrough();
+      const archive = archiver('zip', { zlib: { level: 0 } });
+      const usedNames = new Set<string>();
+
+      archive.on('warning', (err) => {
+        console.warn('[GET /api/libraries/:id/export] Archiver warning:', err);
+      });
+
+      archive.on('error', (err) => {
+        console.error('[GET /api/libraries/:id/export] Archiver error:', err);
+        passThrough.destroy(err);
+      });
+
+      archive.pipe(passThrough);
+
+      void (async () => {
+        try {
+          for (const entry of exportableItems) {
+            const fileStream = await storage.readStream(entry.key);
+            const zipName = buildZipEntryName(entry.item, entry.index, usedNames);
+            archive.append(fileStream, { name: zipName });
+          }
+          await archive.finalize();
+        } catch (err) {
+          console.error('[GET /api/libraries/:id/export] Failed to build zip:', err);
+          passThrough.destroy(err as Error);
+        }
+      })();
+
+      return c.newResponse(Readable.toWeb(passThrough) as ReadableStream, 200, {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+      });
+    } catch (e) {
+      console.error('[GET /api/libraries/:id/export]', e);
+      return c.json({ error: formatError(e, 'Failed to export library') }, 500);
+    }
+  });
+
   // === Library Items ===
 
   router.get('/api/libraries/:libId/items', authMiddleware, async (c) => {
@@ -417,11 +515,11 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
     try {
       const user = c.get('user') as JwtPayload;
       const body = await c.req.json();
-      
+
       if (!Array.isArray(body)) {
         return c.json({ error: 'Expected an array of { id, order }' }, 400);
       }
-      
+
       await repository.reorderLibraryItems(user.userId, c.req.param('libId'), body);
       return c.json({ success: true });
     } catch (e: any) {

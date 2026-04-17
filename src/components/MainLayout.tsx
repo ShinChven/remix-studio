@@ -203,7 +203,7 @@ export function MainLayout() {
           <NavItem
             to="/exports"
             icon={<FileArchive className="w-5 h-5 flex-shrink-0" />}
-            label={t('sidebar.archive')}
+            label={t('sidebar.exports')}
             isActive={location.pathname === '/exports'}
             isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}

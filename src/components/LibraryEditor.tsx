@@ -7,10 +7,11 @@ import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search
 import { ConfirmModal } from './ConfirmModal';
 import { TagModal } from './TagModal';
 import { PageHeader } from './PageHeader';
-import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary, fetchLibraryItems, imageDisplayUrl } from '../api';
+import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary, fetchLibraryItems, imageDisplayUrl, exportMediaLibraryZip } from '../api';
 import { DuplicateLibraryDialog } from './DuplicateLibraryDialog';
 import { RenameItemModal } from './RenameItemModal';
 import { ImageLightbox } from './ProjectViewer/ImageLightbox';
+import { ExportFileNameModal } from './ExportFileNameModal';
 import { toast } from 'sonner';
 
 interface Props {
@@ -47,6 +48,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState('');
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFileName, setExportFileName] = useState(`${library.name}.zip`);
+  const [exportingLibrary, setExportingLibrary] = useState(false);
 
   // Server-side paginated items
   const [items, setItems] = useState<LibraryItem[]>([]);
@@ -113,15 +117,15 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
   const toggleItemSelection = (id: string, index: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     setSelectedItemIds(prev => {
       const next = new Set(prev);
-      
+
       if (e.shiftKey && lastSelectedIndex !== null) {
         const start = Math.min(lastSelectedIndex, index);
         const end = Math.max(lastSelectedIndex, index);
         const rangeIds = items.slice(start, end + 1).map(item => item.id);
-        
+
         // If the start item is being selected, select the range. Otherwise, deselect.
         const shouldSelect = !prev.has(id);
         rangeIds.forEach(rangeId => {
@@ -132,10 +136,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         if (next.has(id)) next.delete(id);
         else next.add(id);
       }
-      
+
       return next;
     });
-    
+
     setLastSelectedIndex(index);
   };
 
@@ -345,6 +349,19 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     setEditingTitleId(null);
   };
 
+  const handleConfirmExportLibrary = async (fileName: string) => {
+    setExportingLibrary(true);
+    try {
+      await exportMediaLibraryZip(library.id, fileName);
+      toast.success(t('libraryEditor.exportModal.success', 'Library export started.'));
+      setShowExportModal(false);
+    } catch (error: any) {
+      toast.error(error?.message || t('libraryEditor.exportModal.error', 'Failed to export library'));
+    } finally {
+      setExportingLibrary(false);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col p-4 md:p-8 w-full overflow-hidden animate-in fade-in duration-700">
       <PageHeader
@@ -382,25 +399,25 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 </button>
               ) : (
                 <label className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-xl transition-all border border-blue-700 active:scale-95 group shadow-lg shadow-blue-600/10 ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> :
                    library.type === 'audio' ? <Music className="w-4 h-4 transition-transform group-hover:scale-110" /> :
                    library.type === 'video' ? <Video className="w-4 h-4 transition-transform group-hover:scale-110" /> :
                    <ImageIcon className="w-4 h-4 transition-transform group-hover:scale-110" />}
                   <span className="text-xs font-bold uppercase tracking-widest">
                     {uploading ? t('libraryEditor.uploading') : t('libraryEditor.upload')}
                   </span>
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    multiple 
+                  <input
+                    type="file"
+                    className="hidden"
+                    multiple
                     accept={
-                      library.type === 'image' ? 'image/*' : 
-                      library.type === 'video' ? 'video/*' : 
-                      library.type === 'audio' ? 'audio/*' : 
+                      library.type === 'image' ? 'image/*' :
+                      library.type === 'video' ? 'video/*' :
+                      library.type === 'audio' ? 'audio/*' :
                       '*/*'
-                    } 
-                    onChange={handleFileUpload} 
-                    disabled={uploading} 
+                    }
+                    onChange={handleFileUpload}
+                    disabled={uploading}
                   />
                 </label>
               )}
@@ -420,7 +437,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               >
                 <Settings className="w-5 h-5" />
               </button>
-  
+
               {library.type === 'text' && (
                 <button
                   onClick={() => navigate(`/library/${library.id}/import-export`)}
@@ -428,6 +445,19 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   title={t('libraryEditor.importOutput')}
                 >
                   <UploadCloud className="w-5 h-5" />
+                </button>
+              )}
+
+              {(library.type === 'image' || library.type === 'video' || library.type === 'audio') && (
+                <button
+                  onClick={() => {
+                    setExportFileName(`${library.name}.zip`);
+                    setShowExportModal(true);
+                  }}
+                  className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
+                  title={t('libraryEditor.exportModal.trigger', 'Export ZIP')}
+                >
+                  <FileText className="w-5 h-5" />
                 </button>
               )}
 
@@ -449,13 +479,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         {items.length > -1 && (
           <div className={`
             sticky top-0 z-20 flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 shadow-xl
-            ${selectedItemIds.size > 0 
-              ? 'bg-blue-600 text-white border-blue-700' 
+            ${selectedItemIds.size > 0
+              ? 'bg-blue-600 text-white border-blue-700'
               : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800'}
           `}>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
-                <div 
+                <div
                   onClick={toggleSelectAll}
                   className="p-1 hover:bg-white/5 rounded transition-colors cursor-pointer"
                 >
@@ -485,8 +515,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   }`}
                 >
                   <TagIcon className="w-3.5 h-3.5" />
-                  {selectedFilterTags.length === 0 ? t('libraryEditor.filterByTag') : 
-                   selectedFilterTags.length === 1 ? selectedFilterTags[0] : 
+                  {selectedFilterTags.length === 0 ? t('libraryEditor.filterByTag') :
+                   selectedFilterTags.length === 1 ? selectedFilterTags[0] :
                    t('libraryEditor.tagsSelected', { count: selectedFilterTags.length })}
                   <ChevronDown className={`w-3 h-3 transition-transform ${showTagFilterDropdown ? 'rotate-180' : ''}`} />
                 </button>
@@ -525,20 +555,20 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
             {selectedItemIds.size > 0 && (
               <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
-                <button 
+                <button
                   onClick={() => setShowBatchTagModal(true)}
                   className="flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all font-bold text-[10px] uppercase tracking-[0.15em] border border-white/20"
                 >
                   <TagIcon className="w-3.5 h-3.5" /> {t('libraryEditor.batchTag')}
                 </button>
-                <button 
+                <button
                   onClick={() => setShowDeleteSelectedModal(true)}
                   className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-all font-bold text-[10px] uppercase tracking-[0.15em] border border-red-700 shadow-sm"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> {t('libraryEditor.delete')}
                 </button>
                 <div className="w-px h-4 bg-neutral-200/60 dark:bg-neutral-800/60 mx-1"></div>
-                <button 
+                <button
                   onClick={() => setSelectedItemIds(new Set())}
                   className="p-1 text-neutral-500 dark:text-neutral-500 hover:text-white transition-colors"
                 >
@@ -573,16 +603,16 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             >
                 <div className={`
                   group/item flex flex-col transition-all duration-300 border overflow-hidden
-                  ${isSelected 
-                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900 shadow-[0_0_20px_rgba(59,130,246,0.15)] z-10' 
+                  ${isSelected
+                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900 shadow-[0_0_20px_rgba(59,130,246,0.15)] z-10'
                     : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-400 dark:hover:border-neutral-700 shadow-sm'}
-                  ${library.type === 'image' 
-                    ? 'rounded-3xl aspect-square p-3' 
+                  ${library.type === 'image'
+                    ? 'rounded-3xl aspect-square p-3'
                     : 'rounded-2xl cursor-pointer'}
                 `}>
                   {library.type !== 'text' ? (
-                    <div className={`relative flex-1 rounded-xl overflow-hidden cursor-pointer transition-all ${isSelected ? 'ring-4 ring-blue-500/50 scale-95' : ''}`} onClick={(e) => { 
-                      if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, index, e); 
+                    <div className={`relative flex-1 rounded-xl overflow-hidden cursor-pointer transition-all ${isSelected ? 'ring-4 ring-blue-500/50 scale-95' : ''}`} onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, index, e);
                       else {
                         if (library.type === 'image') setLightboxIndex(index);
                         // For video/audio, expansion or separate player could be used, but for now let's just use the grid
@@ -648,15 +678,15 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                     </div>
                   ) : (
                     <>
-                      <div 
+                      <div
                         className={`p-4 md:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 ${isExpanded ? 'border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800/40' : ''}`}
-                        onClick={(e) => { 
-                          if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, index, e); 
+                        onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, index, e);
                           else toggleItemExpand(item.id, e);
                         }}
                       >
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                          <div 
+                          <div
                             onClick={(e) => toggleItemSelection(item.id, index, e)}
                             className="p-1 hover:bg-white/5 rounded transition-colors cursor-pointer"
                           >
@@ -888,7 +918,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         type="danger"
       />
 
-      <TagModal 
+      <TagModal
         isOpen={showBatchTagModal}
         onClose={() => setShowBatchTagModal(false)}
         onSave={handleBatchTagSave}
@@ -917,6 +947,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         currentName={library.name}
         onClose={() => setShowDuplicateDialog(false)}
         onConfirm={handleDuplicateLibrary}
+      />
+
+      <ExportFileNameModal
+        isOpen={showExportModal}
+        defaultName={exportFileName}
+        exporting={exportingLibrary}
+        onClose={() => setShowExportModal(false)}
+        onConfirm={handleConfirmExportLibrary}
       />
     </div>
   );

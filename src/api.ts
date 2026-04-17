@@ -223,7 +223,7 @@ export async function fetchLibraries(page: number = 1, limit: number = 50, q?: s
   if (limit) params.set('limit', limit.toString());
   if (q) params.set('q', q);
   if (includeItems) params.set('includeItems', 'true');
-  
+
   const res = await apiFetch(`/api/libraries?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Library>>(res, 'Failed to list libraries');
 }
@@ -275,6 +275,33 @@ export async function duplicateLibrary(id: string, name: string): Promise<Librar
     body: JSON.stringify({ name }),
   });
   return handleResponse<Library>(res, 'Failed to duplicate library');
+}
+
+export async function exportMediaLibraryZip(id: string, fileName: string): Promise<void> {
+  const params = new URLSearchParams();
+  params.set('fileName', fileName);
+  const res = await apiFetch(`/api/libraries/${id}/export?${params.toString()}`, { headers: getHeaders(false) });
+
+  if (!res.ok) {
+    let errorMsg = 'Failed to export library';
+    try {
+      const data = await res.json();
+      if (data?.error) errorMsg = data.error;
+    } catch {
+      // fall through to default error
+    }
+    throw new Error(errorMsg);
+  }
+
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = fileName.endsWith('.zip') ? fileName : `${fileName}.zip`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(objectUrl);
 }
 
 export async function fetchLibraryReferences(libraryId: string): Promise<{ id: string; name: string }[]> {
@@ -448,8 +475,8 @@ export async function deleteProjectOrphansBatch(projectId: string, keys: string[
 
 // ========== Image Storage ==========
 
-export async function saveImage(base64: string, projectId: string): Promise<{ 
-  key: string; 
+export async function saveImage(base64: string, projectId: string): Promise<{
+  key: string;
   url: string;
   thumbnailKey: string;
   thumbnailUrl: string;
@@ -462,8 +489,8 @@ export async function saveImage(base64: string, projectId: string): Promise<{
     headers: getHeaders(),
     body: JSON.stringify({ base64, projectId }),
   });
-  return handleResponse<{ 
-    key: string; 
+  return handleResponse<{
+    key: string;
     url: string;
     thumbnailKey: string;
     thumbnailUrl: string;
