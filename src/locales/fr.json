@@ -1199,6 +1199,8 @@
       "title": "Sélectionner une bibliothèque",
       "description": "Collections disponibles pour le workflow",
       "noLibraries": "Aucune bibliothèque créée pour le moment",
+      "noResults": "Aucune bibliothèque ne correspond à \"{{query}}\"",
+      "searchPlaceholder": "Rechercher des bibliothèques par nom...",
       "added": "Ajouté"
     },
     "libraryPreview": {
@@ -1209,7 +1211,8 @@
       "noItemsMatch": "Aucun élément correspondant",
       "clearAllFilters": "Effacer tous les filtres",
       "clickToSelect": "Cliquer pour sélectionner",
-      "closeViewer": "Fermer l'affichage"
+      "closeViewer": "Fermer l'affichage",
+      "searchPlaceholder": "Rechercher par titre, contenu ou tag..."
     },
     "promptModal": {
       "title": "Modifier le fragment de prompt",

@@ -1199,6 +1199,8 @@
       "title": "라이브러리 선택",
       "description": "워크플로에 사용할 수 있는 컬렉션",
       "noLibraries": "아직 생성된 라이브러리가 없습니다",
+      "noResults": "\"{{query}}\"와(과) 일치하는 라이브러리가 없습니다",
+      "searchPlaceholder": "이름으로 라이브러리 검색...",
       "added": "추가됨"
     },
     "libraryPreview": {
@@ -1209,7 +1211,8 @@
       "noItemsMatch": "일치하는 항목이 없습니다",
       "clearAllFilters": "모든 필터 지우기",
       "clickToSelect": "클릭하여 선택",
-      "closeViewer": "뷰어 닫기"
+      "closeViewer": "뷰어 닫기",
+      "searchPlaceholder": "제목, 내용 또는 태그로 검색..."
     },
     "promptModal": {
       "title": "프롬프트 조각 편집",

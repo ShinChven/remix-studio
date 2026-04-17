@@ -1199,6 +1199,8 @@
       "title": "選擇資料庫",
       "description": "可用於工作流程的集合",
       "noLibraries": "尚未建立資料庫",
+      "noResults": "沒有符合 \"{{query}}\" 的資料庫",
+      "searchPlaceholder": "依名稱搜尋資料庫...",
       "added": "已加入"
     },
     "libraryPreview": {
@@ -1209,7 +1211,8 @@
       "noItemsMatch": "沒有符合的項目",
       "clearAllFilters": "清除所有篩選",
       "clickToSelect": "點擊以選取",
-      "closeViewer": "關閉檢視器"
+      "closeViewer": "關閉檢視器",
+      "searchPlaceholder": "依標題、內容或標籤搜尋項目..."
     },
     "promptModal": {
       "title": "編輯提示詞片段",

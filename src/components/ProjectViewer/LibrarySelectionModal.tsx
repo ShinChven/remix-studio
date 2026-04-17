@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { X, Library as LibraryIcon } from 'lucide-react';
+import { X, Library as LibraryIcon, Search } from 'lucide-react';
 import { Library } from '../../types';
 
 interface LibrarySelectionModalProps {
@@ -20,6 +20,18 @@ export function LibrarySelectionModal({
   selectedLibraryIds
 }: LibrarySelectionModalProps) {
   const { t } = useTranslation();
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) setQuery('');
+  }, [isOpen]);
+
+  const filteredLibraries = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return libraries;
+    return libraries.filter((lib) => lib.name.toLowerCase().includes(q));
+  }, [libraries, query]);
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -45,15 +57,36 @@ export function LibrarySelectionModal({
           </button>
         </div>
 
+        {libraries.length > 0 && (
+          <div className="px-6 md:px-8 pt-6 md:pt-8">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500 pointer-events-none" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t('projectViewer.librarySelection.searchPlaceholder')}
+                autoFocus
+                className="w-full pl-11 pr-4 py-2.5 text-sm bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 focus:outline-none focus:border-emerald-500/40 transition-colors"
+              />
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
           {libraries.length === 0 ? (
             <div className="py-20 text-center">
               <LibraryIcon className="w-12 h-12 text-neutral-800 mx-auto mb-4" />
               <p className="text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-widest text-xs">{t('projectViewer.librarySelection.noLibraries')}</p>
             </div>
+          ) : filteredLibraries.length === 0 ? (
+            <div className="py-20 text-center">
+              <Search className="w-12 h-12 text-neutral-800 mx-auto mb-4" />
+              <p className="text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-widest text-xs">{t('projectViewer.librarySelection.noResults', { query })}</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {libraries.map(lib => {
+              {filteredLibraries.map(lib => {
                 const isSelected = selectedLibraryIds.includes(lib.id);
                 return (
                   <button

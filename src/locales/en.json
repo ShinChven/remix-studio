@@ -229,6 +229,8 @@
       "title": "Select Library",
       "description": "Collections available for workflow",
       "noLibraries": "No libraries created yet",
+      "noResults": "No libraries match \"{{query}}\"",
+      "searchPlaceholder": "Search libraries by name...",
       "added": "Added"
     },
     "libraryPreview": {
@@ -239,7 +241,8 @@
       "noItemsMatch": "No items match",
       "clearAllFilters": "Clear all filters",
       "clickToSelect": "Click to Select",
-      "closeViewer": "Close Viewer"
+      "closeViewer": "Close Viewer",
+      "searchPlaceholder": "Search items by title, content or tag..."
     },
     "promptModal": {
       "title": "Edit Prompt Fragment",

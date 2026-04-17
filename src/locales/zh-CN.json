@@ -1199,6 +1199,8 @@
       "title": "选择资料库",
       "description": "可用于工作流的集合",
       "noLibraries": "尚未创建资料库",
+      "noResults": "没有匹配 \"{{query}}\" 的资料库",
+      "searchPlaceholder": "按名称搜索资料库...",
       "added": "已添加"
     },
     "libraryPreview": {
@@ -1209,7 +1211,8 @@
       "noItemsMatch": "没有匹配的项目",
       "clearAllFilters": "清除所有筛选",
       "clickToSelect": "点击选择",
-      "closeViewer": "关闭查看器"
+      "closeViewer": "关闭查看器",
+      "searchPlaceholder": "按标题、内容或标签搜索项目..."
     },
     "promptModal": {
       "title": "编辑提示词片段",

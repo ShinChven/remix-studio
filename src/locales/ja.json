@@ -1199,6 +1199,8 @@
       "title": "ライブラリを選択",
       "description": "ワークフローで利用可能なコレクション",
       "noLibraries": "ライブラリはまだ作成されていません",
+      "noResults": "\"{{query}}\" に一致するライブラリがありません",
+      "searchPlaceholder": "名前でライブラリを検索...",
       "added": "追加済み"
     },
     "libraryPreview": {
@@ -1209,7 +1211,8 @@
       "noItemsMatch": "一致する項目がありません",
       "clearAllFilters": "すべてのフィルターをクリア",
       "clickToSelect": "クリックして選択",
-      "closeViewer": "ビューアーを閉じる"
+      "closeViewer": "ビューアーを閉じる",
+      "searchPlaceholder": "タイトル、内容、タグで検索..."
     },
     "promptModal": {
       "title": "プロンプト断片を編集",

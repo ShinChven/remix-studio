@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { X, ChevronDown, Library as LibraryIcon, Video as VideoIcon, Volume2 } from 'lucide-react';
+import { X, ChevronDown, Library as LibraryIcon, Video as VideoIcon, Volume2, Search } from 'lucide-react';
 import { Library, LibraryItem } from '../../types';
 import { imageDisplayUrl } from '../../api';
 import { ImageLightbox } from './ImageLightbox';
@@ -75,7 +75,12 @@ export function LibraryPreviewModal({
 }: LibraryPreviewModalProps) {
   const { t } = useTranslation();
   const [previewLightbox, setPreviewLightbox] = useState<{images: string[], index: number} | null>(null);
-  
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    setQuery('');
+  }, [library?.id]);
+
   const availableTags = React.useMemo(() => {
     if (!library) return [];
     const tagSet = new Set<string>();
@@ -87,11 +92,20 @@ export function LibraryPreviewModal({
 
   const filteredItems = React.useMemo(() => {
     if (!library) return [];
-    if (!selectedTags || selectedTags.length === 0) return library.items;
-    return library.items.filter(item => 
-      item.tags && item.tags.some(tag => selectedTags.includes(tag))
-    );
-  }, [library, selectedTags]);
+    const q = query.trim().toLowerCase();
+    return library.items.filter(item => {
+      if (selectedTags.length > 0) {
+        if (!item.tags || !item.tags.some(tag => selectedTags.includes(tag))) return false;
+      }
+      if (q) {
+        const inTitle = item.title?.toLowerCase().includes(q);
+        const inContent = library.type === 'text' && item.content?.toLowerCase().includes(q);
+        const inTags = item.tags?.some(tag => tag.toLowerCase().includes(q));
+        if (!inTitle && !inContent && !inTags) return false;
+      }
+      return true;
+    });
+  }, [library, selectedTags, query]);
 
   const toggleTag = (tag: string) => {
     const next = selectedTags.includes(tag) 
@@ -119,13 +133,29 @@ export function LibraryPreviewModal({
               </p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {library.items.length > 0 && (
+          <div className="px-6 pt-4 pb-2 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500 pointer-events-none" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t('projectViewer.libraryPreview.searchPlaceholder')}
+                autoFocus={isSelectionMode}
+                className="w-full pl-11 pr-4 py-2.5 text-sm bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 focus:outline-none focus:border-emerald-500/40 transition-colors"
+              />
+            </div>
+          </div>
+        )}
 
         {availableTags.length > 0 && (
           <div className="px-6 py-4 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap gap-2">
@@ -165,7 +195,7 @@ export function LibraryPreviewModal({
                <LibraryIcon className="w-12 h-12 stroke-[1px]" />
                <div className="text-center">
                  <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">{t('projectViewer.libraryPreview.noItemsMatch')}</p>
-                 <button onClick={() => onUpdateTags([])} className="text-[9px] font-bold text-blue-500/60 hover:text-blue-500 underline uppercase tracking-widest">{t('projectViewer.libraryPreview.clearAllFilters')}</button>
+                 <button onClick={() => { onUpdateTags([]); setQuery(''); }} className="text-[9px] font-bold text-blue-500/60 hover:text-blue-500 underline uppercase tracking-widest">{t('projectViewer.libraryPreview.clearAllFilters')}</button>
                </div>
              </div>
           ) : (
