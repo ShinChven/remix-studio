@@ -123,7 +123,10 @@
     },
     "toasts": {
       "uploadImageFailed": "Failed to upload image. Please try again.",
-      "addDraftsFailed": "Failed to add drafts. Please try again."
+      "addDraftsFailed": "Failed to add drafts. Please try again.",
+      "archived": "Archived \"{{name}}\"",
+      "unarchived": "Restored \"{{name}}\"",
+      "archiveFailed": "Failed to change archive status. Please try again."
     },
     "errors": {
       "missingWorkflowInfo_one": "Missing information in {{count}} workflow item.",
@@ -134,10 +137,13 @@
       "projectId": "ID: {{id}}",
       "autoSaved": "Auto-saved",
       "autoSavedTitle": "All changes are auto-saved",
-      "editProjectInfo": "Edit Project Information",
-      "manageOrphans": "Manage Orphan Files (Cleanup)",
-      "deleteProject": "Delete Project",
-      "duplicateProject": "Duplicate Project",
+      "editProjectInfo": "Edit",
+      "manageOrphans": "Orphans",
+      "deleteProject": "Delete",
+      "duplicateProject": "Duplicate",
+      "archiveProject": "Archive",
+      "unarchiveProject": "Restore",
+      "archivedBadge": "Archived",
       "buildWorkflow": "Build your workflow"
     },
     "drafts": {
@@ -417,6 +423,22 @@
     "searchPlaceholder": "Search projects by name or ID...",
     "newProject": "New Project",
     "noResultsFound": "No matching projects found",
+    "archiveProject": "Archive Project",
+    "unarchiveProject": "Unarchive Project",
+    "archivedBadge": "Archived",
+    "archivedToast": "Archived \"{{name}}\"",
+    "unarchivedToast": "Restored \"{{name}}\"",
+    "archiveFailed": "Failed to change archive status. Please try again.",
+    "statusFilter": {
+      "active": "Active",
+      "all": "All",
+      "archived": "Archived"
+    },
+    "statusHeading": {
+      "active": "Active Projects",
+      "all": "All Projects",
+      "archived": "Archived Projects"
+    },
     "noProjects": {
       "title": "No projects yet",
       "description": "Create a new project to start building your workflows."

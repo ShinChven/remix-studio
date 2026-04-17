@@ -90,6 +90,22 @@
     "searchPlaceholder": "搜索项目名称或 ID...",
     "newProject": "新建项目",
     "noResultsFound": "未找到匹配的项目",
+    "archiveProject": "归档项目",
+    "unarchiveProject": "取消归档",
+    "archivedBadge": "已归档",
+    "archivedToast": "已归档 “{{name}}”",
+    "unarchivedToast": "已恢复 “{{name}}”",
+    "archiveFailed": "更改归档状态失败，请重试。",
+    "statusFilter": {
+      "active": "进行中",
+      "all": "全部",
+      "archived": "已归档"
+    },
+    "statusHeading": {
+      "active": "进行中的项目",
+      "all": "所有项目",
+      "archived": "已归档的项目"
+    },
     "noProjects": {
       "title": "暂无项目",
       "description": "创建一个新项目开始构建您的工作流。"
@@ -1089,7 +1105,10 @@
     },
     "toasts": {
       "uploadImageFailed": "上传图片失败，请重试。",
-      "addDraftsFailed": "添加草稿失败，请重试。"
+      "addDraftsFailed": "添加草稿失败，请重试。",
+      "archived": "已归档 “{{name}}”",
+      "unarchived": "已恢复 “{{name}}”",
+      "archiveFailed": "更改归档状态失败，请重试。"
     },
     "errors": {
       "missingWorkflowInfo_one": "{{count}} 个工作流项目缺少信息。",
@@ -1100,10 +1119,13 @@
       "projectId": "ID: {{id}}",
       "autoSaved": "已自动保存",
       "autoSavedTitle": "所有更改都会自动保存",
-      "editProjectInfo": "编辑项目信息",
-      "manageOrphans": "管理孤立文件（清理）",
-      "deleteProject": "删除项目",
-      "duplicateProject": "复制项目",
+      "editProjectInfo": "编辑",
+      "manageOrphans": "孤儿文件",
+      "deleteProject": "删除",
+      "duplicateProject": "复制",
+      "archiveProject": "归档",
+      "unarchiveProject": "恢复",
+      "archivedBadge": "已归档",
       "buildWorkflow": "构建您的工作流"
     },
     "drafts": {

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
-import { Project, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/types';
+import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/types';
 
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
@@ -16,10 +16,13 @@ export class ProjectRepository {
     }
   }
 
-  async getUserProjects(userId: string, page: number = 1, limit: number = 50, q?: string): Promise<{ items: Project[], total: number, page: number, pages: number }> {
+  async getUserProjects(userId: string, page: number = 1, limit: number = 50, q?: string, status?: ProjectStatus | 'all'): Promise<{ items: Project[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
     const where: any = { userId };
+    if (status && status !== 'all') {
+      where.status = status;
+    }
     if (q) {
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
@@ -77,6 +80,7 @@ export class ProjectRepository {
       id: p.id,
       name: p.name,
       type: (p as any).type ?? 'image',
+      status: ((p as any).status ?? 'active') as ProjectStatus,
       createdAt: p.createdAt.getTime(),
       workflow: [],
       jobs: [],
@@ -117,6 +121,7 @@ export class ProjectRepository {
       id: p.id,
       name: p.name,
       type: (p as any).type ?? 'image',
+      status: ((p as any).status ?? 'active') as ProjectStatus,
       createdAt: p.createdAt.getTime(),
       providerId: p.providerId ?? undefined,
       aspectRatio: p.aspectRatio ?? undefined,
@@ -145,6 +150,7 @@ export class ProjectRepository {
         userId,
         name: project.name,
         type: project.type ?? 'image',
+        status: project.status ?? 'active',
         createdAt: project.createdAt ? new Date(project.createdAt) : new Date(),
         providerId: project.providerId ?? null,
         aspectRatio: project.aspectRatio ?? null,
@@ -172,6 +178,7 @@ export class ProjectRepository {
 
     const data: any = {};
     if (updates.name !== undefined) data.name = updates.name;
+    if (updates.status !== undefined) data.status = updates.status;
     if (updates.providerId !== undefined) data.providerId = updates.providerId ?? null;
     if (updates.aspectRatio !== undefined) data.aspectRatio = updates.aspectRatio ?? null;
     if (updates.quality !== undefined) data.quality = updates.quality ?? null;

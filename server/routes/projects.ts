@@ -208,8 +208,11 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const page = parseInt(c.req.query('page') || '1', 10);
       const limit = parseInt(c.req.query('limit') || '50', 10);
       const q = c.req.query('q');
+      const rawStatus = c.req.query('status');
+      const status: 'active' | 'archived' | 'all' | undefined =
+        rawStatus === 'archived' || rawStatus === 'all' || rawStatus === 'active' ? rawStatus : undefined;
 
-      const result = await repository.getUserProjects(user.userId, page, limit, q);
+      const result = await repository.getUserProjects(user.userId, page, limit, q, status);
       const signedItems = await Promise.all(result.items.map((p) => signProjectImages(p, storage)));
       
       return c.json({
@@ -246,10 +249,12 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const projectType: 'image' | 'text' | 'video' =
         body.type === 'text' ? 'text' : body.type === 'video' ? 'video' : 'image';
+      const projectStatus: 'active' | 'archived' = body.status === 'archived' ? 'archived' : 'active';
       const project = {
         id,
         name,
         type: projectType,
+        status: projectStatus,
         createdAt: typeof body.createdAt === 'number' ? body.createdAt : Date.now(),
         workflow: Array.isArray(body.workflow) ? body.workflow : [],
         jobs: Array.isArray(body.jobs) ? body.jobs : [],
@@ -287,6 +292,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const body = await c.req.json();
       const updates: Partial<Project> = {};
       if (typeof body?.name === 'string') updates.name = body.name.trim();
+      if (body?.status === 'active' || body?.status === 'archived') updates.status = body.status;
       if (Array.isArray(body?.workflow)) {
         // Strip presigned URLs back to bare S3 keys before storing
         const bucket = storage.getBucketName();

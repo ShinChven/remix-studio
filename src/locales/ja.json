@@ -315,6 +315,22 @@
     "searchPlaceholder": "名前またはIDでプロジェクトを検索...",
     "newProject": "新規プロジェクト",
     "noResultsFound": "名称またはIDに一致するプロジェクトは見つかりませんでした。",
+    "archiveProject": "プロジェクトをアーカイブ",
+    "unarchiveProject": "アーカイブ解除",
+    "archivedBadge": "アーカイブ済み",
+    "archivedToast": "「{{name}}」をアーカイブしました",
+    "unarchivedToast": "「{{name}}」を復元しました",
+    "archiveFailed": "アーカイブ状態の変更に失敗しました。もう一度お試しください。",
+    "statusFilter": {
+      "active": "進行中",
+      "all": "すべて",
+      "archived": "アーカイブ"
+    },
+    "statusHeading": {
+      "active": "進行中のプロジェクト",
+      "all": "すべてのプロジェクト",
+      "archived": "アーカイブされたプロジェクト"
+    },
     "noProjects": {
       "title": "プロジェクトがありません",
       "description": "新しいプロジェクトを作成してワークフローの構築を始めましょう。"
@@ -1089,7 +1105,10 @@
     },
     "toasts": {
       "uploadImageFailed": "画像のアップロードに失敗しました。もう一度お試しください。",
-      "addDraftsFailed": "下書きの追加に失敗しました。もう一度お試しください。"
+      "addDraftsFailed": "下書きの追加に失敗しました。もう一度お試しください。",
+      "archived": "「{{name}}」をアーカイブしました",
+      "unarchived": "「{{name}}」を復元しました",
+      "archiveFailed": "アーカイブ状態の変更に失敗しました。もう一度お試しください。"
     },
     "errors": {
       "missingWorkflowInfo_one": "{{count}} 件のワークフロー項目に情報がありません。",
@@ -1100,10 +1119,13 @@
       "projectId": "ID: {{id}}",
       "autoSaved": "自動保存済み",
       "autoSavedTitle": "すべての変更は自動保存されます",
-      "editProjectInfo": "プロジェクト情報を編集",
-      "manageOrphans": "孤立ファイルを管理（クリーンアップ）",
-      "deleteProject": "プロジェクトを削除",
-      "duplicateProject": "プロジェクトを複製",
+      "editProjectInfo": "編集",
+      "manageOrphans": "孤立ファイル",
+      "deleteProject": "削除",
+      "duplicateProject": "複製",
+      "archiveProject": "アーカイブ",
+      "unarchiveProject": "復元",
+      "archivedBadge": "アーカイブ済み",
       "buildWorkflow": "ワークフローを作成"
     },
     "drafts": {

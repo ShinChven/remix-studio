@@ -370,12 +370,14 @@ export async function deleteLibraryItem(libraryId: string, itemId: string): Prom
 export async function fetchProjects(
   page: number = 1,
   limit: number = 50,
-  q?: string
+  q?: string,
+  status?: 'active' | 'archived' | 'all'
 ): Promise<import('./types').PaginatedResult<Project>> {
   const params = new URLSearchParams();
   if (page) params.set('page', page.toString());
   if (limit) params.set('limit', limit.toString());
   if (q) params.set('q', q);
+  if (status) params.set('status', status);
 
   const res = await apiFetch(`/api/projects?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Project>>(res, 'Failed to list projects');

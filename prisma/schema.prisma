@@ -175,6 +175,7 @@ model Project {
   userId       String
   name         String
   type         String   @default("image") // "image", "text", or "video"
+  status       String   @default("active") // "active" or "archived"
   providerId   String?
   aspectRatio  String?
   quality      String?
@@ -199,6 +200,7 @@ model Project {
   exportTasks   ExportTask[]
 
   @@index([userId])
+  @@index([userId, status])
 }
 
 model Job {

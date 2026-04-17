@@ -33,6 +33,7 @@ export interface Library {
 }
 
 export type ProjectType = 'image' | 'text' | 'video';
+export type ProjectStatus = 'active' | 'archived';
 
 export interface ModelConfig {
   id: string; // Local UUID
@@ -799,6 +800,7 @@ export interface Project {
   id: string;
   name: string;
   type?: ProjectType; // 'image' (default), 'text', or 'video'
+  status?: ProjectStatus; // 'active' (default) or 'archived'
   createdAt: number;
   workflow: WorkflowItem[];
   jobs: Job[];

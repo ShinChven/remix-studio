@@ -315,6 +315,22 @@
     "searchPlaceholder": "搜尋專案名稱或 ID...",
     "newProject": "新建專案",
     "noResultsFound": "未找到相符的專案",
+    "archiveProject": "封存專案",
+    "unarchiveProject": "取消封存",
+    "archivedBadge": "已封存",
+    "archivedToast": "已封存「{{name}}」",
+    "unarchivedToast": "已還原「{{name}}」",
+    "archiveFailed": "變更封存狀態失敗，請再試一次。",
+    "statusFilter": {
+      "active": "進行中",
+      "all": "全部",
+      "archived": "已封存"
+    },
+    "statusHeading": {
+      "active": "進行中的專案",
+      "all": "所有專案",
+      "archived": "已封存的專案"
+    },
     "noProjects": {
       "title": "暫無專案",
       "description": "建立一個新專案開始構建您的工作流。"
@@ -1089,7 +1105,10 @@
     },
     "toasts": {
       "uploadImageFailed": "上傳圖片失敗，請再試一次。",
-      "addDraftsFailed": "新增草稿失敗，請再試一次。"
+      "addDraftsFailed": "新增草稿失敗，請再試一次。",
+      "archived": "已封存「{{name}}」",
+      "unarchived": "已還原「{{name}}」",
+      "archiveFailed": "變更封存狀態失敗，請再試一次。"
     },
     "errors": {
       "missingWorkflowInfo_one": "{{count}} 個工作流程項目缺少資訊。",
@@ -1100,10 +1119,13 @@
       "projectId": "ID: {{id}}",
       "autoSaved": "已自動儲存",
       "autoSavedTitle": "所有變更都會自動儲存",
-      "editProjectInfo": "編輯專案資訊",
-      "manageOrphans": "管理孤立檔案（清理）",
-      "deleteProject": "刪除專案",
-      "duplicateProject": "複製專案",
+      "editProjectInfo": "編輯",
+      "manageOrphans": "孤兒檔案",
+      "deleteProject": "刪除",
+      "duplicateProject": "複製",
+      "archiveProject": "封存",
+      "unarchiveProject": "還原",
+      "archivedBadge": "已封存",
       "buildWorkflow": "構建您的工作流"
     },
     "drafts": {

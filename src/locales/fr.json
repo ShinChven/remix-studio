@@ -315,6 +315,22 @@
     "searchPlaceholder": "Rechercher des projets par nom ou ID...",
     "newProject": "Nouveau projet",
     "noResultsFound": "Aucun projet correspondant trouvé",
+    "archiveProject": "Archiver le projet",
+    "unarchiveProject": "Désarchiver le projet",
+    "archivedBadge": "Archivé",
+    "archivedToast": "« {{name}} » archivé",
+    "unarchivedToast": "« {{name}} » restauré",
+    "archiveFailed": "Échec du changement de statut d'archive. Veuillez réessayer.",
+    "statusFilter": {
+      "active": "Actifs",
+      "all": "Tous",
+      "archived": "Archivés"
+    },
+    "statusHeading": {
+      "active": "Projets actifs",
+      "all": "Tous les projets",
+      "archived": "Projets archivés"
+    },
     "noProjects": {
       "title": "Aucun projet pour le moment",
       "description": "Créez un nouveau projet pour commencer à construire vos flux de travail."
@@ -1089,7 +1105,10 @@
     },
     "toasts": {
       "uploadImageFailed": "Échec du téléversement de l'image. Veuillez réessayer.",
-      "addDraftsFailed": "Échec de l'ajout des brouillons. Veuillez réessayer."
+      "addDraftsFailed": "Échec de l'ajout des brouillons. Veuillez réessayer.",
+      "archived": "« {{name}} » archivé",
+      "unarchived": "« {{name}} » restauré",
+      "archiveFailed": "Échec du changement de statut d'archive. Veuillez réessayer."
     },
     "errors": {
       "missingWorkflowInfo_one": "Informations manquantes dans {{count}} élément du workflow.",
@@ -1100,10 +1119,13 @@
       "projectId": "ID : {{id}}",
       "autoSaved": "Sauvegarde auto",
       "autoSavedTitle": "Toutes les modifications sont enregistrées automatiquement",
-      "editProjectInfo": "Modifier les informations du projet",
-      "manageOrphans": "Gérer les fichiers orphelins (nettoyage)",
-      "deleteProject": "Supprimer le projet",
-      "duplicateProject": "Dupliquer le projet",
+      "editProjectInfo": "Modifier",
+      "manageOrphans": "Orphelins",
+      "deleteProject": "Supprimer",
+      "duplicateProject": "Dupliquer",
+      "archiveProject": "Archiver",
+      "unarchiveProject": "Restaurer",
+      "archivedBadge": "Archivé",
       "buildWorkflow": "Construisez votre flux"
     },
     "drafts": {

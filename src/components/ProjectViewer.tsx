@@ -715,6 +715,26 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const queueJobs = localProject.jobs.filter(j => ['pending', 'processing', 'failed'].includes(j.status));
   const completedJobs = localProject.jobs.filter(j => j.status === 'completed');
   const albumItems = localProject.album || [];
+  const isArchived = localProject.status === 'archived';
+
+  const handleToggleArchive = async () => {
+    const nextStatus: 'active' | 'archived' = isArchived ? 'active' : 'archived';
+    const updated = { ...localProject, status: nextStatus };
+    setLocalProject(updated);
+    try {
+      await apiUpdateProject(localProject.id, { status: nextStatus });
+      toast.success(
+        nextStatus === 'archived'
+          ? t('projectViewer.toasts.archived', { name: localProject.name })
+          : t('projectViewer.toasts.unarchived', { name: localProject.name })
+      );
+      onUpdate(updated);
+    } catch (e) {
+      console.error('Failed to toggle archive status:', e);
+      setLocalProject(localProject);
+      toast.error(t('projectViewer.toasts.archiveFailed'));
+    }
+  };
 
   return (
     <div className="flex flex-col lg:flex-row h-full bg-transparent overflow-hidden lg:overflow-visible">
@@ -763,6 +783,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         onNavigateToOrphans={() => navigate(`/project/${project.id}/orphans`)}
         onNavigateToDuplicate={() => navigate(`/project/new`, { state: { copyFrom: project.id } })}
         onShowDeleteProject={() => setShowDeleteProjectModal(true)}
+        onToggleArchive={handleToggleArchive}
+        isArchived={isArchived}
         onAddWorkflowItem={addWorkflowItem}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}

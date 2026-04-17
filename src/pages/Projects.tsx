@@ -1,10 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Project, ProjectType } from '../types';
-import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video, Search, Copy } from 'lucide-react';
-import { fetchProjects } from '../api';
+import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video, Search, Copy, Archive, ArchiveRestore } from 'lucide-react';
+import { fetchProjects, updateProject } from '../api';
 import { PageHeader } from '../components/PageHeader';
+
+type StatusFilter = 'active' | 'archived' | 'all';
+
+function isStatusFilter(value: string | null): value is StatusFilter {
+  return value === 'active' || value === 'archived' || value === 'all';
+}
 
 function getProjectTypeMeta(type: ProjectType | undefined) {
   switch (type) {
@@ -47,21 +54,38 @@ export function Projects() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
   const q = searchParams.get('q') || '';
+  const statusParam = searchParams.get('status');
+  const status: StatusFilter = isStatusFilter(statusParam) ? statusParam : 'active';
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [searchInput, setSearchInput] = useState(q);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const navigate = useNavigate();
+
+  const loadProjects = async () => {
+    setIsLoading(true);
+    try {
+      const result = await fetchProjects(page, 24, q, status);
+      setProjects(result.items);
+      setTotal(result.total);
+      setPages(result.pages);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
     const load = async () => {
       setIsLoading(true);
       try {
-        const result = await fetchProjects(page, 24, q);
+        const result = await fetchProjects(page, 24, q, status);
         if (mounted) {
           setProjects(result.items);
           setTotal(result.total);
@@ -75,7 +99,7 @@ export function Projects() {
     };
     load();
     return () => { mounted = false; };
-  }, [page, q]);
+  }, [page, q, status]);
 
   const addProject = () => navigate('/project/new');
 
@@ -85,6 +109,38 @@ export function Projects() {
       next.set('page', newPage.toString());
       return next;
     });
+  };
+
+  const handleStatusChange = (newStatus: StatusFilter) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (newStatus === 'active') {
+        next.delete('status');
+      } else {
+        next.set('status', newStatus);
+      }
+      next.set('page', '1');
+      return next;
+    });
+  };
+
+  const handleToggleArchive = async (project: Project) => {
+    const nextStatus = project.status === 'archived' ? 'active' : 'archived';
+    setTogglingId(project.id);
+    try {
+      await updateProject(project.id, { status: nextStatus });
+      toast.success(
+        nextStatus === 'archived'
+          ? t('projects.archivedToast', { name: project.name })
+          : t('projects.unarchivedToast', { name: project.name })
+      );
+      await loadProjects();
+    } catch (e) {
+      console.error(e);
+      toast.error(t('projects.archiveFailed'));
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,10 +182,27 @@ export function Projects() {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 md:mb-8">
             <h3 className="text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
               <Clock className="w-5 h-5 text-green-500" />
-              {t('projects.allProjects')} {total > 0 && <span className="text-sm text-neutral-500 dark:text-neutral-500 font-normal">({total})</span>}
+              {t(`projects.statusHeading.${status}`)} {total > 0 && <span className="text-sm text-neutral-500 dark:text-neutral-500 font-normal">({total})</span>}
             </h3>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Status Filter Tabs */}
+              <div className="flex bg-neutral-100/30 dark:bg-black/40 border border-neutral-200/50 dark:border-white/5 rounded-xl p-1 shadow-inner backdrop-blur-md">
+                {(['active', 'all', 'archived'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleStatusChange(s)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                      status === s
+                        ? 'bg-white dark:bg-neutral-800 text-green-600 dark:text-white shadow-sm border border-neutral-200 dark:border-neutral-700'
+                        : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300 border border-transparent'
+                    }`}
+                  >
+                    {t(`projects.statusFilter.${s}`)}
+                  </button>
+                ))}
+              </div>
+
               {/* Search Input */}
               <div className="relative flex-1 sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500" />
@@ -164,18 +237,31 @@ export function Projects() {
                   const typeMeta = getProjectTypeMeta(project.type);
                   const ProjectIcon = typeMeta.icon;
                   const AssetIcon = typeMeta.assetIcon;
+                  const isArchived = project.status === 'archived';
+                  const isToggling = togglingId === project.id;
 
                   return (
                   <Link
                     key={project.id}
                     to={`/project/${project.id}`}
-                    className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-5 md:p-6 rounded-2xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300`}
+                    className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-5 md:p-6 rounded-2xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 ${isArchived ? 'opacity-75' : ''}`}
                   >
                     <div className="flex items-start justify-between mb-3 md:mb-4">
                       <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
                         <ProjectIcon className="w-5 h-5 md:w-6 md:h-6" />
                       </div>
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (!isToggling) handleToggleArchive(project);
+                          }}
+                          disabled={isToggling}
+                          className={`p-1.5 rounded-lg transition-all ${isArchived ? 'text-amber-500 hover:text-amber-400 hover:bg-amber-500/10' : 'text-neutral-500 hover:text-amber-500 hover:bg-amber-500/10'} disabled:opacity-50`}
+                          title={t(isArchived ? 'projects.unarchiveProject' : 'projects.archiveProject')}
+                        >
+                          {isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+                        </button>
                         <button
                           onClick={(e) => {
                             e.preventDefault();
@@ -192,7 +278,15 @@ export function Projects() {
                       </div>
                     </div>
 
-                    <h4 className="text-base md:text-lg font-semibold text-neutral-900 dark:text-white truncate mb-2">{project.name}</h4>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="text-base md:text-lg font-semibold text-neutral-900 dark:text-white truncate">{project.name}</h4>
+                      {isArchived && (
+                        <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 leading-none shrink-0">
+                          <Archive className="w-2.5 h-2.5" />
+                          {t('projects.archivedBadge')}
+                        </span>
+                      )}
+                    </div>
 
                     <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 dark:text-neutral-500 mb-4">
                       <div className="flex items-center gap-1.5">

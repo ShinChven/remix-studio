@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, Copy, Eraser, ImageIcon, Library as LibraryIcon, Settings, Trash2, Type, Video as VideoIcon, Volume2 } from 'lucide-react';
+import { Archive, ArchiveRestore, CheckCircle2, Copy, Eraser, ImageIcon, Library as LibraryIcon, MoreVertical, Settings, Trash2, Type, Video as VideoIcon, Volume2 } from 'lucide-react';
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
@@ -27,6 +27,8 @@ interface WorkflowPanelProps {
   onNavigateToOrphans: () => void;
   onNavigateToDuplicate: () => void;
   onShowDeleteProject: () => void;
+  onToggleArchive: () => void;
+  isArchived: boolean;
   onAddWorkflowItem: (type: 'text' | 'image' | 'video' | 'audio' | 'library') => void;
   onDragStart: (e: React.DragEvent, index: number) => void;
   onDragOver: (e: React.DragEvent, index: number) => void;
@@ -72,6 +74,8 @@ export function WorkflowPanel({
   onNavigateToOrphans,
   onNavigateToDuplicate,
   onShowDeleteProject,
+  onToggleArchive,
+  isArchived,
   onAddWorkflowItem,
   onDragStart,
   onDragOver,
@@ -95,14 +99,54 @@ export function WorkflowPanel({
   onAddDraftsToQueue,
 }: WorkflowPanelProps) {
   const { t } = useTranslation();
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+  const actionMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isActionMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!actionMenuRef.current) return;
+      if (!actionMenuRef.current.contains(event.target as Node)) {
+        setIsActionMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsActionMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isActionMenuOpen]);
+
+  const menuButtonBaseClass =
+    'w-full px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 border border-transparent';
+
+  const closeMenuAndRun = (action: () => void) => {
+    setIsActionMenuOpen(false);
+    action();
+  };
 
   return (
     <div className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/30 backdrop-blur-3xl flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
       <div className="p-3 border-b border-neutral-200/50 dark:border-white/5 bg-transparent shadow-sm relative z-10">
         <div className="min-h-[40px] flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-black text-neutral-900 dark:text-white truncate tracking-widest leading-none uppercase mb-1.5">
-              {localProject.name}
+            <div className="text-[10px] font-black text-neutral-900 dark:text-white truncate tracking-widest leading-none uppercase mb-1.5 flex items-center gap-2">
+              <span className="truncate">{localProject.name}</span>
+              {isArchived && (
+                <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 leading-none shrink-0">
+                  <Archive className="w-2.5 h-2.5" />
+                  {t('projectViewer.main.archivedBadge')}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-[8px] text-neutral-500 dark:text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-white/5 dark:bg-black/20 border border-neutral-200/50 dark:border-white/5 rounded truncate leading-none backdrop-blur-md">
@@ -114,29 +158,61 @@ export function WorkflowPanel({
             </div>
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="relative shrink-0" ref={actionMenuRef}>
             <button
-              onClick={onNavigateToEdit}
-              className="p-1.5 text-neutral-500 hover:text-white transition-all hover:bg-white/10 rounded-lg dark:hover:bg-white/10"
+              onClick={() => setIsActionMenuOpen((open) => !open)}
+              className="p-1.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 transition-all hover:bg-white/10 rounded-lg border border-transparent hover:border-neutral-200/50 dark:hover:border-white/10"
               title={t('projectViewer.main.editProjectInfo')}
-            ><Settings className="w-4 h-4" /></button>
-            <button
-              onClick={onNavigateToDuplicate}
-              className="p-1.5 text-neutral-500 hover:text-green-400 transition-all hover:bg-green-400/10 rounded-lg"
-              title={t('projectViewer.main.duplicateProject')}
-            ><Copy className="w-4 h-4" /></button>
-            <button
-              onClick={onNavigateToOrphans}
-              className="p-1.5 text-neutral-500 hover:text-blue-400 transition-all hover:bg-blue-400/10 rounded-lg"
-              title={t('projectViewer.main.manageOrphans')}
-            ><Eraser className="w-4 h-4" /></button>
-            <button
-              onClick={onShowDeleteProject}
-              className="p-1.5 text-neutral-500 hover:text-red-400 transition-all hover:bg-red-400/10 rounded-lg"
-              title={t('projectViewer.main.deleteProject')}
+              aria-haspopup="menu"
+              aria-expanded={isActionMenuOpen}
+              aria-label={t('projectViewer.main.editProjectInfo')}
             >
-              <Trash2 className="w-4 h-4" />
+              <MoreVertical className="w-4 h-4" />
             </button>
+
+            {isActionMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-52 p-2 rounded-xl border border-neutral-200/60 dark:border-white/10 bg-white/90 dark:bg-neutral-900/95 backdrop-blur-xl shadow-xl z-30">
+                <button
+                  onClick={() => closeMenuAndRun(onNavigateToEdit)}
+                  className={`${menuButtonBaseClass} text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/80 dark:hover:bg-neutral-800/80`}
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  {t('projectViewer.main.editProjectInfo')}
+                </button>
+
+                <button
+                  onClick={() => closeMenuAndRun(onNavigateToDuplicate)}
+                  className={`${menuButtonBaseClass} text-green-600/90 dark:text-green-400/90 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-500/10`}
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  {t('projectViewer.main.duplicateProject')}
+                </button>
+
+                <button
+                  onClick={() => closeMenuAndRun(onNavigateToOrphans)}
+                  className={`${menuButtonBaseClass} text-blue-600/90 dark:text-blue-400/90 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-500/10`}
+                >
+                  <Eraser className="w-3.5 h-3.5" />
+                  {t('projectViewer.main.manageOrphans')}
+                </button>
+
+                <button
+                  onClick={() => closeMenuAndRun(onToggleArchive)}
+                  className={`${menuButtonBaseClass} text-amber-600/90 dark:text-amber-400/90 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10`}
+                >
+                  {isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+                  {t(isArchived ? 'projectViewer.main.unarchiveProject' : 'projectViewer.main.archiveProject')}
+                </button>
+
+                <button
+                  onClick={() => closeMenuAndRun(onShowDeleteProject)}
+                  className={`${menuButtonBaseClass} text-red-600/90 dark:text-red-400/90 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-500/10`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {t('projectViewer.main.deleteProject')}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
