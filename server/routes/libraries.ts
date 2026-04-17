@@ -409,7 +409,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       const user = c.get('user') as JwtPayload;
       const libId = c.req.param('libId');
       const page = parseInt(c.req.query('page') || '1', 10);
-      const limit = parseInt(c.req.query('limit') || '24', 10);
+      const limit = parseInt(c.req.query('limit') || '25', 10);
       const q = c.req.query('q');
       const tags = c.req.queries('tag');
 

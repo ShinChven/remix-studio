@@ -70,7 +70,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [totalPages, setTotalPages] = useState(1);
   const [loadingItems, setLoadingItems] = useState(true);
 
-  const ITEMS_PER_PAGE = 24;
+  const ITEMS_PER_PAGE = 25;
   const selectedTagsKey = selectedFilterTags.join('\u0000');
 
   const setCurrentPage = useCallback((page: number | ((prev: number) => number)) => {

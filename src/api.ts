@@ -305,7 +305,7 @@ export async function removeLibraryReferences(libraryId: string, projectIds?: st
 
 // ========== Library Item CRUD ==========
 
-export async function fetchLibraryItems(libraryId: string, page: number = 1, limit: number = 24, q?: string, tags: string[] = []): Promise<PaginatedResult<LibraryItem>> {
+export async function fetchLibraryItems(libraryId: string, page: number = 1, limit: number = 25, q?: string, tags: string[] = []): Promise<PaginatedResult<LibraryItem>> {
   const params = new URLSearchParams();
   params.set('page', page.toString());
   params.set('limit', limit.toString());
