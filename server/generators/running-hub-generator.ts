@@ -7,6 +7,42 @@ const UPLOAD_URL = 'https://www.runninghub.cn/openapi/v2/media/upload/binary';
 const MAX_POLL_ATTEMPTS = 60;  // 60 × 5 s = 5 min
 const POLL_INTERVAL_MS  = 5_000;
 
+// Qwen Image 2 Pro accepts a discrete set of width*height values. Map our
+// (quality, aspectRatio) selections onto that enum.
+const QWEN_SIZE_MAP: Record<string, Record<string, string>> = {
+  '1K': {
+    '1:1': '1024*1024',
+    '4:3': '1280*960',
+    '3:4': '960*1280',
+    '16:9': '1280*720',
+    '9:16': '720*1280',
+    '3:2': '1152*768',
+    '2:3': '768*1152',
+    '21:9': '1344*576',
+  },
+  '2K': {
+    '1:1': '1536*1536',
+    '4:3': '1440*1080',
+    '3:4': '1080*1440',
+    '16:9': '1920*1080',
+    '9:16': '1080*1920',
+    '3:2': '1536*1024',
+    '2:3': '1024*1536',
+    '21:9': '2048*872',
+  },
+};
+
+function resolveQwenSize(aspectRatio?: string, imageSize?: string): string {
+  const quality = (imageSize || '1K').toUpperCase();
+  const bucket = QWEN_SIZE_MAP[quality] || QWEN_SIZE_MAP['1K'];
+  return bucket[aspectRatio || '1:1'] || bucket['1:1'];
+}
+
+function isQwenImage2Pro(modelId?: string, apiUrl?: string): boolean {
+  const target = `${modelId || ''} ${apiUrl || ''}`;
+  return target.includes('qwen-image-2.0-pro');
+}
+
 export class RunningHubGenerator extends ImageGenerator {
   private apiKey: string;
   private submitUrl: string;
@@ -74,7 +110,10 @@ export class RunningHubGenerator extends ImageGenerator {
     }
 
     const isTextToImage = imageUrls.length === 0;
-    const endpointType = isTextToImage ? 'text-to-image' : 'image-to-image';
+    const isQwen = isQwenImage2Pro(modelId, reqApiUrl);
+    // Qwen uses `/image-edit` while the rhart model uses `/image-to-image`.
+    const refEndpointType = isQwen ? 'image-edit' : 'image-to-image';
+    const endpointType = isTextToImage ? 'text-to-image' : refEndpointType;
 
     let actualSubmitUrl = reqApiUrl;
     if (!actualSubmitUrl) {
@@ -92,14 +131,25 @@ export class RunningHubGenerator extends ImageGenerator {
     }
 
     // --- Step 2: submit task ---
-    const payload: any = {
-      prompt,
-      aspectRatio,
-      resolution: imageSize.toLowerCase(), // API expects "1k", not "1K"
-    };
-
-    if (!isTextToImage) {
-      payload.imageUrls = imageUrls;
+    let payload: any;
+    if (isQwen) {
+      payload = {
+        prompt,
+        size: resolveQwenSize(aspectRatio, imageSize),
+        imageNum: '1',
+      };
+      if (!isTextToImage) {
+        payload.imageUrls = imageUrls;
+      }
+    } else {
+      payload = {
+        prompt,
+        aspectRatio,
+        resolution: imageSize.toLowerCase(), // API expects "1k", not "1K"
+      };
+      if (!isTextToImage) {
+        payload.imageUrls = imageUrls;
+      }
     }
 
     let taskId: string;
