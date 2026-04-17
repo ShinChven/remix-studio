@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { AppData, Library, LibraryItem, LibraryType, Project, AlbumItem, TrashItem } from '../../src/types';
+import { AppData, Library, LibraryItem, LibraryType, Project, ProjectStatus, AlbumItem, TrashItem } from '../../src/types';
 import { IRepository } from './repository';
 import { LibraryRepository } from './library-repository';
 import { ProjectRepository } from './project-repository';
@@ -39,7 +39,9 @@ export class PrismaRepository implements IRepository {
   reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]) { return this.libraries.reorderLibraryItems(userId, libraryId, updates); }
 
   // === Project CRUD ===
-  getUserProjects(userId: string, page?: number, limit?: number, q?: string) { return this.projects.getUserProjects(userId, page, limit, q); }
+  getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all') {
+    return this.projects.getUserProjects(userId, page, limit, q, status);
+  }
   getProject(userId: string, projectId: string) { return this.projects.getProject(userId, projectId); }
   createProject(userId: string, project: Project) { return this.projects.createProject(userId, project); }
   updateProject(userId: string, projectId: string, updates: Partial<Project>) { return this.projects.updateProject(userId, projectId, updates); }
