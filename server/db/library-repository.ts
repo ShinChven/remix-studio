@@ -16,10 +16,13 @@ export class LibraryRepository {
     }
   }
 
-  async getUserLibraries(userId: string, page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false): Promise<{ items: Library[], total: number, page: number, pages: number }> {
+  async getUserLibraries(userId: string, page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, type?: LibraryType): Promise<{ items: Library[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
     const where: any = { userId };
+    if (type) {
+      where.type = type;
+    }
     if (q) {
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
@@ -141,11 +144,7 @@ export class LibraryRepository {
     }
 
     if (tags && tags.length > 0) {
-      andClauses.push({
-        OR: tags.map((tag) => ({
-          tags: { array_contains: [tag] },
-        })),
-      });
+      andClauses.push({ tags: { array_contains: tags } });
     }
 
     if (andClauses.length > 0) {
@@ -305,13 +304,17 @@ export class LibraryRepository {
       where.tags = { array_contains: options.tags };
     }
 
+    const orderBy = options.libraryId
+      ? [{ order: { sort: 'asc' as const, nulls: 'last' as const } }, { createdAt: 'desc' as const }]
+      : [{ createdAt: 'desc' as const }];
+
     const [total, items] = await Promise.all([
       this.prisma.libraryItem.count({ where }),
       this.prisma.libraryItem.findMany({
         where,
         skip,
         take: limit,
-        orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
+        orderBy,
         include: { library: { select: { name: true } } },
       }),
     ]);

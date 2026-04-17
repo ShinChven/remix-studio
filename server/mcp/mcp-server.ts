@@ -84,15 +84,13 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
       },
     },
     async ({ page, limit }) => {
-      const result = await repository.getUserLibraries(userId, page, limit);
-      const textLibraries = result.items
-        .filter((lib) => lib.type === 'text')
-        .map((lib) => ({
-          id: lib.id,
-          name: lib.name,
-          type: lib.type,
-          itemCount: lib.items.length,
-        }));
+      const result = await repository.getUserLibraries(userId, page, limit, undefined, false, 'text');
+      const textLibraries = result.items.map((lib) => ({
+        id: lib.id,
+        name: lib.name,
+        type: lib.type,
+        itemCount: lib.itemCount ?? 0,
+      }));
 
       return {
         content: [
@@ -100,7 +98,7 @@ function createMcpServerInstance(repository: IRepository, userRepository: UserRe
             type: 'text' as const,
             text: JSON.stringify({
               libraries: textLibraries,
-              total: textLibraries.length,
+              total: result.total,
               page: result.page,
               pages: result.pages,
             }, null, 2),

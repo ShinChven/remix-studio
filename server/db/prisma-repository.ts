@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { AppData, Library, LibraryItem, Project, AlbumItem, TrashItem } from '../../src/types';
+import { AppData, Library, LibraryItem, LibraryType, Project, AlbumItem, TrashItem } from '../../src/types';
 import { IRepository } from './repository';
 import { LibraryRepository } from './library-repository';
 import { ProjectRepository } from './project-repository';
@@ -20,7 +20,7 @@ export class PrismaRepository implements IRepository {
   }
 
   // === Library CRUD ===
-  getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean) { return this.libraries.getUserLibraries(userId, page, limit, q, includeItems); }
+  getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType) { return this.libraries.getUserLibraries(userId, page, limit, q, includeItems, type); }
   getLibrary(userId: string, libraryId: string) { return this.libraries.getLibrary(userId, libraryId); }
   createLibrary(userId: string, library: Omit<Library, 'items'>) { return this.libraries.createLibrary(userId, library); }
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }) { return this.libraries.updateLibrary(userId, libraryId, updates); }

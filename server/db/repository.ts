@@ -1,8 +1,8 @@
-import { AppData, Library, LibraryItem, Project, AlbumItem, TrashItem } from '../../src/types';
+import { AppData, Library, LibraryItem, LibraryType, Project, AlbumItem, TrashItem } from '../../src/types';
 
 export interface IRepository {
   // === Library CRUD ===
-  getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean): Promise<{ items: Library[], total: number, page: number, pages: number }>;
+  getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType): Promise<{ items: Library[], total: number, page: number, pages: number }>;
   getLibrary(userId: string, libraryId: string): Promise<Library | null>;
   createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void>;
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }): Promise<void>;
