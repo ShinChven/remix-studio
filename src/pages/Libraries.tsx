@@ -2,18 +2,56 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
-import { Plus, Folder, LayoutGrid, Layers, ChevronRight, ChevronLeft, Loader2, Copy, Search } from 'lucide-react';
+import { Plus, Folder, LayoutGrid, ChevronRight, ChevronLeft, Loader2, Copy, Search, ImageIcon, Type, Video, Music } from 'lucide-react';
 import { duplicateLibrary, fetchLibraries } from '../api';
 import { DuplicateLibraryDialog } from '../components/DuplicateLibraryDialog';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
+
+function getLibraryTypeMeta(type: Library['type'] | undefined) {
+  switch (type) {
+    case 'image':
+      return {
+        icon: ImageIcon,
+        iconClassName: 'bg-green-500/10 text-green-500 shadow-green-500/5',
+        borderClassName: 'hover:border-green-500/50',
+        accentClassName: 'text-green-500',
+        glowClassName: 'via-green-500/20',
+      };
+    case 'video':
+      return {
+        icon: Video,
+        iconClassName: 'bg-purple-500/10 text-purple-500 shadow-purple-500/5',
+        borderClassName: 'hover:border-purple-500/50',
+        accentClassName: 'text-purple-500',
+        glowClassName: 'via-purple-500/20',
+      };
+    case 'audio':
+      return {
+        icon: Music,
+        iconClassName: 'bg-cyan-500/10 text-cyan-500 shadow-cyan-500/5',
+        borderClassName: 'hover:border-cyan-500/50',
+        accentClassName: 'text-cyan-500',
+        glowClassName: 'via-cyan-500/20',
+      };
+    case 'text':
+    default:
+      return {
+        icon: Type,
+        iconClassName: 'bg-blue-500/10 text-blue-500 shadow-blue-500/5',
+        borderClassName: 'hover:border-blue-500/50',
+        accentClassName: 'text-blue-500',
+        glowClassName: 'via-blue-500/20',
+      };
+  }
+}
 
 export function Libraries() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
   const q = searchParams.get('q') || '';
-  
+
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
@@ -138,16 +176,17 @@ export function Libraries() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {libraries.map(lib => {
-                  const isImage = lib.type === 'image';
+                  const typeMeta = getLibraryTypeMeta(lib.type);
+                  const TypeIcon = typeMeta.icon;
                   return (
                   <Link
                     key={lib.id}
                     to={`/library/${lib.id}`}
-                    className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${isImage ? 'hover:border-indigo-500/50' : 'hover:border-blue-500/50'} p-5 md:p-6 rounded-2xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300`}
+                    className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-5 md:p-6 rounded-2xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300`}
                   >
                     <div className="flex items-start justify-between mb-3 md:mb-4">
-                      <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${isImage ? 'bg-indigo-500/10 text-indigo-500 shadow-indigo-500/5' : 'bg-blue-500/10 text-blue-500 shadow-blue-500/5'}`}>
-                        {isImage ? <Layers className="w-5 h-5 md:w-6 md:h-6" /> : <Folder className="w-5 h-5 md:w-6 md:h-6" />}
+                      <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
+                        <TypeIcon className="w-5 h-5 md:w-6 md:h-6" />
                       </div>
                       <button
                         onClick={(e) => {
@@ -166,7 +205,7 @@ export function Libraries() {
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 dark:text-neutral-500 mb-4">
                       <div className="flex items-center gap-1.5 capitalize">
-                        <Folder className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <TypeIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         <span>{lib.type || 'text'}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -175,11 +214,11 @@ export function Libraries() {
                       </div>
                     </div>
 
-                    <div className={`pt-3 md:pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50 flex items-center justify-end text-[10px] md:text-xs font-black uppercase tracking-widest opacity-100 transition-opacity ${isImage ? 'text-indigo-500' : 'text-blue-500'}`}>
+                    <div className={`pt-3 md:pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50 flex items-center justify-end text-[10px] md:text-xs font-black uppercase tracking-widest opacity-100 transition-opacity ${typeMeta.accentClassName}`}>
                       {t('libraries.libraryCard.openEditor')}
                     </div>
 
-                    <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${isImage ? 'via-indigo-500/20' : 'via-blue-500/20'} to-transparent opacity-100 transition-opacity`} />
+                    <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
                   </Link>
                 )})}
 
@@ -195,7 +234,7 @@ export function Libraries() {
                   </div>
                 )}
               </div>
-              
+
               {pages > 1 && (
                 <div className="flex items-center justify-center gap-4 pt-8 pb-4">
                   <button
