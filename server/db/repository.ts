@@ -21,7 +21,7 @@ export interface IRepository {
   searchLibraryItems(userId: string, query: string, options?: { libraryId?: string; tags?: string[]; page?: number; limit?: number }): Promise<{ items: (LibraryItem & { libraryId: string; libraryName: string })[]; total: number; page: number; pages: number }>;
 
   // === Project CRUD ===
-  getUserProjects(userId: string, page?: number, limit?: number, sortBy?: 'createdAt' | 'totalSize', q?: string): Promise<{ items: Project[], total: number, page: number, pages: number }>;
+  getUserProjects(userId: string, page?: number, limit?: number, q?: string): Promise<{ items: Project[], total: number, page: number, pages: number }>;
   getProject(userId: string, projectId: string): Promise<Project | null>;
   createProject(userId: string, project: Project): Promise<void>;
   updateProject(userId: string, projectId: string, updates: Partial<Project>): Promise<void>;

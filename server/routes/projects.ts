@@ -207,10 +207,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const user = c.get('user') as JwtPayload;
       const page = parseInt(c.req.query('page') || '1', 10);
       const limit = parseInt(c.req.query('limit') || '50', 10);
-      const sortBy = c.req.query('sort') === 'totalSize' ? 'totalSize' : 'createdAt';
       const q = c.req.query('q');
 
-      const result = await repository.getUserProjects(user.userId, page, limit, sortBy, q);
+      const result = await repository.getUserProjects(user.userId, page, limit, q);
       const signedItems = await Promise.all(result.items.map((p) => signProjectImages(p, storage)));
       
       return c.json({

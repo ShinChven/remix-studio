@@ -16,7 +16,7 @@ export class ProjectRepository {
     }
   }
 
-  async getUserProjects(userId: string, page: number = 1, limit: number = 50, sortBy: 'createdAt' | 'totalSize' = 'createdAt', q?: string): Promise<{ items: Project[], total: number, page: number, pages: number }> {
+  async getUserProjects(userId: string, page: number = 1, limit: number = 50, q?: string): Promise<{ items: Project[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
     const where: any = { userId };
@@ -27,25 +27,49 @@ export class ProjectRepository {
       ];
     }
 
-    const [total, projects, allItems] = await Promise.all([
+    const [total, projects] = await Promise.all([
       this.prisma.project.count({ where }),
       this.prisma.project.findMany({
         where,
-        ...(sortBy === 'createdAt' ? { skip, take: limit } : {}),
+        skip,
+        take: limit,
         include: {
           _count: { select: { jobs: true, albumItems: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
-      this.getAllUserItems(userId),
     ]);
 
-    // Aggregate sizes by project
+    const projectIds = projects.map((p) => p.id);
     const projectSizes: Record<string, number> = {};
-    for (const item of allItems) {
-      if (item.projectId && item._type !== 'JOB') {
-        const itemSize = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
-        projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + itemSize;
+
+    if (projectIds.length > 0) {
+      const [albumItems, trashItems, exportTasks] = await Promise.all([
+        this.prisma.albumItem.findMany({
+          where: { userId, projectId: { in: projectIds } },
+          select: { projectId: true, size: true, optimizedSize: true, thumbnailSize: true },
+        }),
+        this.prisma.trashItem.findMany({
+          where: { userId, projectId: { in: projectIds } },
+          select: { projectId: true, size: true, optimizedSize: true, thumbnailSize: true },
+        }),
+        this.prisma.exportTask.findMany({
+          where: { userId, projectId: { in: projectIds } },
+          select: { projectId: true, size: true },
+        }),
+      ]);
+
+      for (const item of albumItems) {
+        const s = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
+        projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + s;
+      }
+      for (const item of trashItems) {
+        const s = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
+        projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + s;
+      }
+      for (const item of exportTasks) {
+        if (!item.projectId) continue;
+        projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + Number(item.size || 0);
       }
     }
 
@@ -70,14 +94,8 @@ export class ProjectRepository {
       background: (p as any).background ?? undefined,
     }));
 
-    const items = sortBy === 'totalSize'
-      ? mappedProjects
-          .sort((a, b) => (b.totalSize || 0) - (a.totalSize || 0) || b.createdAt - a.createdAt)
-          .slice(skip, skip + limit)
-      : mappedProjects;
-
     return {
-      items,
+      items: mappedProjects,
       total,
       page,
       pages: Math.max(1, Math.ceil(total / limit)),

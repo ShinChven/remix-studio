@@ -315,10 +315,6 @@
     "searchPlaceholder": "搜尋專案名稱或 ID...",
     "newProject": "新建專案",
     "noResultsFound": "未找到相符的專案",
-    "sort": {
-      "newest": "最新",
-      "largest": "最大"
-    },
     "noProjects": {
       "title": "暫無專案",
       "description": "建立一個新專案開始構建您的工作流。"

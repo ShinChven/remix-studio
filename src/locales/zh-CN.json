@@ -90,10 +90,6 @@
     "searchPlaceholder": "搜索项目名称或 ID...",
     "newProject": "新建项目",
     "noResultsFound": "未找到匹配的项目",
-    "sort": {
-      "newest": "最新",
-      "largest": "最大"
-    },
     "noProjects": {
       "title": "暂无项目",
       "description": "创建一个新项目开始构建您的工作流。"

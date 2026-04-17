@@ -6,12 +6,6 @@ import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, Chevr
 import { fetchProjects } from '../api';
 import { PageHeader } from '../components/PageHeader';
 
-type ProjectSort = 'createdAt' | 'totalSize';
-
-function isProjectSort(value: string | null): value is ProjectSort {
-  return value === 'createdAt' || value === 'totalSize';
-}
-
 function getProjectTypeMeta(type: ProjectType | undefined) {
   switch (type) {
     case 'text':
@@ -52,10 +46,8 @@ export function Projects() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
-  const rawSort = searchParams.get('sort');
-  const sort: ProjectSort = isProjectSort(rawSort) ? rawSort : 'createdAt';
   const q = searchParams.get('q') || '';
-  
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
@@ -69,7 +61,7 @@ export function Projects() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const result = await fetchProjects(page, 24, sort, q);
+        const result = await fetchProjects(page, 24, q);
         if (mounted) {
           setProjects(result.items);
           setTotal(result.total);
@@ -83,7 +75,7 @@ export function Projects() {
     };
     load();
     return () => { mounted = false; };
-  }, [page, sort, q]);
+  }, [page, q]);
 
   const addProject = () => navigate('/project/new');
 
@@ -91,15 +83,6 @@ export function Projects() {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       next.set('page', newPage.toString());
-      return next;
-    });
-  };
-
-  const handleSortChange = (nextSort: ProjectSort) => {
-    setSearchParams(prev => {
-      const next = new URLSearchParams(prev);
-      next.set('sort', nextSort);
-      next.set('page', '1');
       return next;
     });
   };
@@ -142,7 +125,7 @@ export function Projects() {
         <section>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 md:mb-8">
             <h3 className="text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-              {sort === 'totalSize' ? <HardDrive className="w-5 h-5 text-blue-500" /> : <Clock className="w-5 h-5 text-green-500" />}
+              <Clock className="w-5 h-5 text-green-500" />
               {t('projects.allProjects')} {total > 0 && <span className="text-sm text-neutral-500 dark:text-neutral-500 font-normal">({total})</span>}
             </h3>
 
@@ -160,40 +143,13 @@ export function Projects() {
                   />
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex flex-1 sm:flex-none rounded-xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-md p-1 shadow-inner">
-                  <button
-                    type="button"
-                    onClick={() => handleSortChange('createdAt')}
-                    className={`flex-1 sm:flex-none rounded-lg px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${
-                      sort === 'createdAt'
-                        ? 'bg-white dark:bg-green-500/20 text-green-700 dark:text-green-300 shadow-sm border border-neutral-200 dark:border-green-500/20'
-                        : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200'
-                    }`}
-                  >
-                    {t('projects.sort.newest')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSortChange('totalSize')}
-                    className={`flex-1 sm:flex-none rounded-lg px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${
-                      sort === 'totalSize'
-                        ? 'bg-white dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 shadow-sm border border-neutral-200 dark:border-blue-500/20'
-                        : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200'
-                    }`}
-                  >
-                    {t('projects.sort.largest')}
-                  </button>
-                </div>
-
-                {/* Desktop New Project Button */}
-                <button
-                  onClick={addProject}
-                  className="hidden sm:flex text-xs md:text-sm bg-green-600 text-white hover:bg-green-700 px-5 py-2.5 rounded-xl transition-all items-center gap-2 border border-green-700 font-black uppercase tracking-widest shadow-lg shadow-green-600/10 active:scale-95"
-                >
-                  <Plus className="w-4 h-4" /> <span>{t('projects.newProject')}</span>
-                </button>
-              </div>
+              {/* Desktop New Project Button */}
+              <button
+                onClick={addProject}
+                className="hidden sm:flex text-xs md:text-sm bg-green-600 text-white hover:bg-green-700 px-5 py-2.5 rounded-xl transition-all items-center gap-2 border border-green-700 font-black uppercase tracking-widest shadow-lg shadow-green-600/10 active:scale-95"
+              >
+                <Plus className="w-4 h-4" /> <span>{t('projects.newProject')}</span>
+              </button>
             </div>
           </div>
 

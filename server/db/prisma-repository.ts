@@ -39,7 +39,7 @@ export class PrismaRepository implements IRepository {
   reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]) { return this.libraries.reorderLibraryItems(userId, libraryId, updates); }
 
   // === Project CRUD ===
-  getUserProjects(userId: string, page?: number, limit?: number, sortBy?: 'createdAt' | 'totalSize', q?: string) { return this.projects.getUserProjects(userId, page, limit, sortBy, q); }
+  getUserProjects(userId: string, page?: number, limit?: number, q?: string) { return this.projects.getUserProjects(userId, page, limit, q); }
   getProject(userId: string, projectId: string) { return this.projects.getProject(userId, projectId); }
   createProject(userId: string, project: Project) { return this.projects.createProject(userId, project); }
   updateProject(userId: string, projectId: string, updates: Partial<Project>) { return this.projects.updateProject(userId, projectId, updates); }

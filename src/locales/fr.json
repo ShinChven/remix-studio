@@ -315,10 +315,6 @@
     "searchPlaceholder": "Rechercher des projets par nom ou ID...",
     "newProject": "Nouveau projet",
     "noResultsFound": "Aucun projet correspondant trouvé",
-    "sort": {
-      "newest": "Plus récents",
-      "largest": "Plus volumineux"
-    },
     "noProjects": {
       "title": "Aucun projet pour le moment",
       "description": "Créez un nouveau projet pour commencer à construire vos flux de travail."

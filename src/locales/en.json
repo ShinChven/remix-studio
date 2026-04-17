@@ -417,10 +417,6 @@
     "searchPlaceholder": "Search projects by name or ID...",
     "newProject": "New Project",
     "noResultsFound": "No matching projects found",
-    "sort": {
-      "newest": "Newest",
-      "largest": "Largest"
-    },
     "noProjects": {
       "title": "No projects yet",
       "description": "Create a new project to start building your workflows."

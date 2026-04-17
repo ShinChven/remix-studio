@@ -315,10 +315,6 @@
     "searchPlaceholder": "名前またはIDでプロジェクトを検索...",
     "newProject": "新規プロジェクト",
     "noResultsFound": "名称またはIDに一致するプロジェクトは見つかりませんでした。",
-    "sort": {
-      "newest": "最新",
-      "largest": "サイズ順"
-    },
     "noProjects": {
       "title": "プロジェクトがありません",
       "description": "新しいプロジェクトを作成してワークフローの構築を始めましょう。"
