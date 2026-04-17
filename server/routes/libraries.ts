@@ -376,7 +376,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
         return c.json({ error: 'This library has no exportable media files.' }, 400);
       }
 
-      const fileName = normalizeZipFileName(c.req.query('fileName'), `${library.name || 'library'}_export`);
+      const fileName = normalizeZipFileName(c.req.query('fileName'), `${library.name || 'Library'}_Library`);
       const passThrough = new PassThrough();
       const archive = archiver('zip', { zlib: { level: 0 } });
       const usedNames = new Set<string>();

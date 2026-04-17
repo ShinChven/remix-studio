@@ -20,6 +20,18 @@ interface Props {
   onDelete: () => void;
 }
 
+function getDefaultLibraryExportName(name: string): string {
+  const raw = (name || '').trim() || 'Library';
+  const withoutZip = raw.replace(/\.zip$/i, '').trim() || 'Library';
+  const withoutAlbumSuffix = withoutZip.replace(/[\s_-]*album$/i, '').trim();
+  const safeBase = (withoutAlbumSuffix || 'Library')
+    .replace(/[^a-zA-Z0-9-_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  const compactBase = safeBase || 'Library';
+  return `${compactBase}_Library.zip`;
+}
+
 export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -49,7 +61,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState('');
   const [showExportModal, setShowExportModal] = useState(false);
-  const [exportFileName, setExportFileName] = useState(`${library.name}.zip`);
+  const [exportFileName, setExportFileName] = useState(getDefaultLibraryExportName(library.name));
   const [exportingLibrary, setExportingLibrary] = useState(false);
 
   // Server-side paginated items
@@ -451,7 +463,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               {(library.type === 'image' || library.type === 'video' || library.type === 'audio') && (
                 <button
                   onClick={() => {
-                    setExportFileName(`${library.name}.zip`);
+                    setExportFileName(getDefaultLibraryExportName(library.name));
                     setShowExportModal(true);
                   }}
                   className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
