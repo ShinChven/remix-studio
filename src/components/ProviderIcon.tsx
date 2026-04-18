@@ -47,6 +47,12 @@ export function ProviderIcon({ type, className = "w-5 h-5" }: ProviderIconProps)
           <path d="M6 4.5A2.5 2.5 0 0 0 3.5 7v10A2.5 2.5 0 0 0 6 19.5h12A2.5 2.5 0 0 0 20.5 17V7A2.5 2.5 0 0 0 18 4.5H6Zm.5 3h4.7a3.9 3.9 0 1 1 0 7.8H9.6V17H6.5V7.5Zm3.1 5.1h1.2a1.2 1.2 0 0 0 0-2.4H9.6v2.4Z" />
         </svg>
       );
+    case 'BlackForestLabs':
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2 3 7v10l9 5 9-5V7l-9-5Zm0 2.3 6.5 3.6-6.5 3.6-6.5-3.6L12 4.3ZM5 9.4l6 3.3v7.7l-6-3.3V9.4Zm14 0v7.7l-6 3.3v-7.7l6-3.3Z" />
+        </svg>
+      );
     default:
       // Fallback key icon
       return (

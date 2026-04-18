@@ -51,7 +51,8 @@ export async function listProviderModels(
     case 'RunningHub':
     case 'KlingAI':
     case 'BytePlus':
-    case 'Replicate': {
+    case 'Replicate':
+    case 'BlackForestLabs': {
       // These providers have no model listing API — return our static supported models
       const staticModels: ProviderModel[] = (PROVIDER_MODELS_MAP[type] || []).map(c => ({
         id: c.modelId,

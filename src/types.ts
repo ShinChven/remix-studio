@@ -706,6 +706,94 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  BlackForestLabs: [
+    {
+      id: 'bfl-flux-2-max',
+      name: 'Flux 2 Max',
+      generatorId: 'BlackForestLabs',
+      modelId: 'flux-2-max',
+      category: 'image',
+      promptLimit: { value: 32768, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', '21:9', '9:21', 'match_input_image'],
+        qualities: ['0.25 MP', '0.5 MP', '1 MP', '2 MP', '4 MP'],
+      },
+    },
+    {
+      id: 'bfl-flux-2-pro-preview',
+      name: 'Flux 2 Pro (Preview)',
+      generatorId: 'BlackForestLabs',
+      modelId: 'flux-2-pro-preview',
+      category: 'image',
+      promptLimit: { value: 32768, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', '21:9', '9:21', 'match_input_image'],
+        qualities: ['0.25 MP', '0.5 MP', '1 MP', '2 MP', '4 MP'],
+      },
+    },
+    {
+      id: 'bfl-flux-2-pro',
+      name: 'Flux 2 Pro',
+      generatorId: 'BlackForestLabs',
+      modelId: 'flux-2-pro',
+      category: 'image',
+      promptLimit: { value: 32768, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', '21:9', '9:21', 'match_input_image'],
+        qualities: ['0.25 MP', '0.5 MP', '1 MP', '2 MP', '4 MP'],
+      },
+    },
+    {
+      id: 'bfl-flux-2-flex',
+      name: 'Flux 2 Flex',
+      generatorId: 'BlackForestLabs',
+      modelId: 'flux-2-flex',
+      category: 'image',
+      promptLimit: { value: 32768, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', '21:9', '9:21', 'match_input_image'],
+        qualities: ['0.25 MP', '0.5 MP', '1 MP', '2 MP', '4 MP'],
+        stepsOptions: [10, 20, 30, 40, 50],
+        guidanceOptions: [1.5, 2.5, 3.5, 4.5, 6.0, 8.0, 10.0],
+      },
+    },
+    {
+      id: 'bfl-flux-2-klein-9b-preview',
+      name: 'Flux 2 Klein 9B (Preview)',
+      generatorId: 'BlackForestLabs',
+      modelId: 'flux-2-klein-9b-preview',
+      category: 'image',
+      promptLimit: { value: 32768, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', '21:9', '9:21', 'match_input_image'],
+        qualities: ['0.25 MP', '0.5 MP', '1 MP', '2 MP', '4 MP'],
+      },
+    },
+    {
+      id: 'bfl-flux-2-klein-9b',
+      name: 'Flux 2 Klein 9B',
+      generatorId: 'BlackForestLabs',
+      modelId: 'flux-2-klein-9b',
+      category: 'image',
+      promptLimit: { value: 32768, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', '21:9', '9:21', 'match_input_image'],
+        qualities: ['0.25 MP', '0.5 MP', '1 MP', '2 MP', '4 MP'],
+      },
+    },
+    {
+      id: 'bfl-flux-2-klein-4b',
+      name: 'Flux 2 Klein 4B',
+      generatorId: 'BlackForestLabs',
+      modelId: 'flux-2-klein-4b',
+      category: 'image',
+      promptLimit: { value: 32768, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', '21:9', '9:21', 'match_input_image'],
+        qualities: ['0.25 MP', '0.5 MP', '1 MP', '2 MP', '4 MP'],
+      },
+    },
+  ],
 };
 
 /**
@@ -829,7 +917,7 @@ export interface Project {
   lastQueueCount?: number;
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs';
 
 /**
  * A custom model variant that inherits all options from a built-in base model

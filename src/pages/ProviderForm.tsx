@@ -6,18 +6,19 @@ import { ProviderType } from '../types';
 import { Save, Key, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { ProviderIcon } from '../components/ProviderIcon';
 
-const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'KlingAI', 'OpenAI', 'Grok', 'Claude', 'BytePlus', 'Replicate'];
+const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'KlingAI', 'OpenAI', 'Grok', 'Claude', 'BytePlus', 'Replicate', 'BlackForestLabs'];
 
 const TYPE_DESCRIPTIONS: Record<ProviderType, string> = {
-  GoogleAI:   'Google AI Studio — x-goog-api-key header',
-  VertexAI:   'Google Cloud Vertex AI — API key in URL',
-  RunningHub: 'RunningHub OpenAPI v2 — Bearer token',
-  KlingAI:    'Kling AI API — Access Key + Secret Key -> JWT Bearer',
-  OpenAI:     'OpenAI GPT Image 1.5 — Bearer token',
-  Grok:       'xAI Grok Imagine — Bearer token',
-  Claude:     'Anthropic Claude — x-api-key header',
-  BytePlus:   'BytePlus ModelArk Seedream — Bearer token',
-  Replicate:  'Replicate official models — Bearer token',
+  GoogleAI:        'Google AI Studio — x-goog-api-key header',
+  VertexAI:        'Google Cloud Vertex AI — API key in URL',
+  RunningHub:      'RunningHub OpenAPI v2 — Bearer token',
+  KlingAI:         'Kling AI API — Access Key + Secret Key -> JWT Bearer',
+  OpenAI:          'OpenAI GPT Image 1.5 — Bearer token',
+  Grok:            'xAI Grok Imagine — Bearer token',
+  Claude:          'Anthropic Claude — x-api-key header',
+  BytePlus:        'BytePlus ModelArk Seedream — Bearer token',
+  Replicate:       'Replicate official models — Bearer token',
+  BlackForestLabs: 'Black Forest Labs FLUX — x-key header',
 };
 
 export function ProviderForm() {

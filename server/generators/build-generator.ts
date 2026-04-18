@@ -8,6 +8,7 @@ import { OpenAIGenerator } from './openai-generator';
 import { GrokGenerator } from './grok-generator';
 import { BytePlusGenerator } from './byteplus-generator';
 import { ReplicateGenerator } from './replicate-generator';
+import { BlackForestLabsGenerator } from './black-forest-labs-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -40,6 +41,8 @@ export function buildGenerator(
       return new BytePlusGenerator(apiKey, safeApiUrl);
     case 'Replicate':
       return new ReplicateGenerator(apiKey, safeApiUrl);
+    case 'BlackForestLabs':
+      return new BlackForestLabsGenerator(apiKey, safeApiUrl);
     case 'Claude':
       throw new Error(`Provider type 'Claude' does not support image generation`);
     default: {

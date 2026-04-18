@@ -33,6 +33,7 @@ export function buildTextGenerator(
     case 'KlingAI':
     case 'BytePlus':
     case 'Replicate':
+    case 'BlackForestLabs':
       throw new Error(`Provider type '${type}' does not support text generation`);
     default:
       throw new Error(`Provider type '${type}' does not support text generation`);
