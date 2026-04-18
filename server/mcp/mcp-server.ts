@@ -576,11 +576,20 @@ Workflow item types:
 - "video": video context slot. Leave "value" empty, or set "value" to item.content from get_library_items to pin a specific video file.
 - "video_from_library" / "video_library": reference a video library. Requires "libraryId".
 
-Workflow:
-1. Call list_available_models → get modelConfigId and providerId.
-2. Call list_all_libraries → discover libraryId values.
-3. Call get_library_items(libraryId) → find specific items by name/title and get their content values.
-4. Call create_project_with_workflow with assembled data.`,
+IMPORTANT — Confirmation required before creating:
+Before calling this tool, present a full summary to the user and ask for explicit approval. The summary must include:
+- Project name, type, provider name, and model name
+- Each workflow item in order: its type, and either its text content preview or library/file name
+- All generation options (aspect ratio, quality, shuffle, prefix, etc.) that will be set
+
+Only proceed after the user confirms. If the user requests changes, update the plan and confirm again.
+
+Recommended workflow:
+1. Call list_available_models → choose and confirm provider + model with user.
+2. Call list_all_libraries → discover libraries; confirm selections with user.
+3. Call get_library_items(libraryId) → find items by name; confirm specific items with user.
+4. Present the complete project plan to the user and wait for approval.
+5. Call create_project_with_workflow only after explicit user confirmation.`,
       inputSchema: {
         name: z.string().min(1).max(256).describe('Project display name'),
         type: z.enum(['image', 'text', 'video', 'audio']).describe('Project generation type'),
