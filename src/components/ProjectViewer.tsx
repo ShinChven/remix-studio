@@ -133,7 +133,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           const jobsChanged = JSON.stringify(updated.jobs) !== JSON.stringify(localProject.jobs);
           const albumChanged = JSON.stringify(updated.album) !== JSON.stringify(localProject.album);
           if (jobsChanged || albumChanged) {
-            setLocalProject(updated);
+            setLocalProject(prev => ({ ...prev, jobs: updated.jobs, album: updated.album }));
           }
         } catch (e) {
           console.error('Polling for project updates failed:', e);
