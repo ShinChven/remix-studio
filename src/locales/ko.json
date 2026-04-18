@@ -711,14 +711,22 @@
       "created": "생성일",
       "lastUsedBy": "마지막 사용자",
       "lastUsedAt": "마지막 사용일",
-      "share": "공유"
+      "share": "공유",
+      "actions": "작업"
     },
     "copyCode": "초대 코드 복사",
     "codeCopied": "초대 코드가 복사됨",
     "noNote": "메모 없음",
     "unused": "미사용",
     "copyLink": "링크 복사",
+    "delete": "삭제",
+    "deleteDisabledUsed": "이미 사용된 초대 코드는 삭제할 수 없습니다",
     "linkCopied": "초대 링크가 복사됨",
+    "deleteModal": {
+      "title": "초대 코드 삭제",
+      "message": "초대 코드 {{code}} 를 삭제하시겠습니까? 사용되지 않은 초대 코드만 삭제할 수 있습니다.",
+      "confirm": "삭제"
+    },
     "createModal": {
       "title": "초대 코드 생성",
       "description": "이 초대 코드의 사용 횟수를 설정하고 선택적 메모를 추가합니다.",
@@ -731,11 +739,13 @@
     },
     "toasts": {
       "created": "초대 코드가 생성됨",
+      "deleted": "초대 코드가 삭제됨",
       "copyFailed": "복사 실패"
     },
     "errors": {
       "load": "초대 코드를 불러오지 못했습니다",
-      "create": "초대 코드 생성 실패"
+      "create": "초대 코드 생성 실패",
+      "delete": "초대 코드 삭제 실패"
     }
   },
   "libraryForm": {

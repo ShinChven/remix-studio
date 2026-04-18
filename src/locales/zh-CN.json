@@ -588,14 +588,22 @@
       "created": "创建时间",
       "lastUsedBy": "最后使用者",
       "lastUsedAt": "最后使用时间",
-      "share": "分享"
+      "share": "分享",
+      "actions": "操作"
     },
     "copyCode": "复制邀请码",
     "codeCopied": "邀请码已复制",
     "noNote": "无备注",
     "unused": "未使用",
     "copyLink": "复制链接",
+    "delete": "删除",
+    "deleteDisabledUsed": "已使用的邀请码无法删除",
     "linkCopied": "邀请链接已复制",
+    "deleteModal": {
+      "title": "删除邀请码",
+      "message": "要删除邀请码 {{code}} 吗？仅未使用的邀请码可以删除。",
+      "confirm": "删除"
+    },
     "createModal": {
       "title": "创建邀请码",
       "description": "设置此邀请码的使用次数并添加可选备注。",
@@ -608,11 +616,13 @@
     },
     "toasts": {
       "created": "邀请码已创建",
+      "deleted": "邀请码已删除",
       "copyFailed": "复制失败"
     },
     "errors": {
       "load": "加载邀请码失败",
-      "create": "创建邀请码失败"
+      "create": "创建邀请码失败",
+      "delete": "删除邀请码失败"
     }
   },
   "libraryForm": {

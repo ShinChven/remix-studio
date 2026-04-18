@@ -661,6 +661,17 @@ export async function createAdminInvite(input?: { note?: string; maxUses?: numbe
   return data.invite;
 }
 
+export async function deleteAdminInvite(id: string): Promise<void> {
+  const res = await apiFetch(`/api/admin/invites/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete invite code');
+  }
+}
+
 // ========== Providers ==========
 
 export async function fetchProviders(): Promise<Provider[]> {

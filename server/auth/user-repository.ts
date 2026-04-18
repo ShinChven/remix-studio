@@ -564,6 +564,37 @@ export class UserRepository {
     return invites.map((invite) => this.toInviteCode(invite));
   }
 
+  async deleteInviteCode(inviteId: string, createdByUserId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const invite = await tx.inviteCode.findFirst({
+        where: {
+          id: inviteId,
+          createdByUserId,
+        },
+        select: {
+          id: true,
+          _count: {
+            select: {
+              redemptions: true,
+            },
+          },
+        },
+      });
+
+      if (!invite) {
+        throw new Error('Invite code not found');
+      }
+
+      if (invite._count.redemptions > 0) {
+        throw new Error('Invite code has already been used and cannot be deleted');
+      }
+
+      await tx.inviteCode.delete({
+        where: { id: invite.id },
+      });
+    });
+  }
+
   async redeemInviteCode(code: string, data: { email: string; role?: UserRole; status?: UserStatus }) {
     const normalizedEmail = data.email.trim().toLowerCase();
     const normalizedCode = code.trim().toUpperCase();

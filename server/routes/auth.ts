@@ -833,6 +833,25 @@ export function createAuthRouter(userRepository: UserRepository) {
     }
   });
 
+  router.delete('/api/admin/invites/:id', authMiddleware, adminOnly, async (c) => {
+    try {
+      const currentUser = c.get('user') as JwtPayload;
+      const inviteId = c.req.param('id');
+      await userRepository.deleteInviteCode(inviteId, currentUser.userId);
+      return c.body(null, 204);
+    } catch (e: any) {
+      console.error('[DELETE /api/admin/invites/:id]', e);
+      const message = e?.message || 'Failed to delete invite code';
+      if (message === 'Invite code not found') {
+        return c.json({ error: message }, 404);
+      }
+      if (message === 'Invite code has already been used and cannot be deleted') {
+        return c.json({ error: message }, 409);
+      }
+      return c.json({ error: 'Failed to delete invite code' }, 500);
+    }
+  });
+
   router.get('/api/admin/users/:id', authMiddleware, adminOnly, async (c) => {
     try {
       const userId = c.req.param('id');

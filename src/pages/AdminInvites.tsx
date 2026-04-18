@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Copy, Link as LinkIcon, Loader2, Plus, Ticket } from 'lucide-react';
+import { Copy, Link as LinkIcon, Loader2, Plus, Ticket, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { createAdminInvite, getAdminInvites } from '../api';
+import { createAdminInvite, deleteAdminInvite, getAdminInvites } from '../api';
 import type { InviteCode } from '../types';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
 
@@ -32,6 +33,8 @@ export function AdminInvites() {
   const [maxUses, setMaxUses] = useState('1');
   const [membershipTier, setMembershipTier] = useState<InviteCode['membershipTier']>('free');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [inviteToDelete, setInviteToDelete] = useState<InviteCode | null>(null);
+  const [deletingInviteId, setDeletingInviteId] = useState<string | null>(null);
 
   const loadInvites = async () => {
     setLoading(true);
@@ -85,6 +88,24 @@ export function AdminInvites() {
     }
   };
 
+  const handleDeleteInvite = async () => {
+    if (!inviteToDelete) return;
+
+    setDeletingInviteId(inviteToDelete.id);
+    setError('');
+    try {
+      await deleteAdminInvite(inviteToDelete.id);
+      setInvites((current) => current.filter((invite) => invite.id !== inviteToDelete.id));
+      toast.success(t('adminInvites.toasts.deleted'));
+    } catch (err: any) {
+      setError(err.message || t('adminInvites.errors.delete'));
+      toast.error(err.message || t('adminInvites.errors.delete'));
+    } finally {
+      setDeletingInviteId(null);
+      setInviteToDelete(null);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-10">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -133,11 +154,14 @@ export function AdminInvites() {
                     <th className="px-4 py-3 font-medium">{t('adminInvites.table.lastUsedBy')}</th>
                     <th className="px-4 py-3 font-medium">{t('adminInvites.table.lastUsedAt')}</th>
                     <th className="px-4 py-3 font-medium">{t('adminInvites.table.share')}</th>
+                    <th className="px-4 py-3 font-medium">{t('adminInvites.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-800">
                   {invites.map((invite) => {
                     const inviteLink = `${inviteBaseUrl}?inviteCode=${encodeURIComponent(invite.code)}`;
+                    const canDelete = invite.usedCount === 0;
+                    const isDeleting = deletingInviteId === invite.id;
                     return (
                       <tr key={invite.id} className="text-neutral-200">
                         <td className="px-4 py-4">
@@ -173,6 +197,18 @@ export function AdminInvites() {
                           >
                             <LinkIcon className="h-3.5 w-3.5" />
                             {t('adminInvites.copyLink')}
+                          </button>
+                        </td>
+                        <td className="px-4 py-4">
+                          <button
+                            type="button"
+                            onClick={() => setInviteToDelete(invite)}
+                            disabled={!canDelete || isDeleting}
+                            className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            title={canDelete ? t('adminInvites.delete') : t('adminInvites.deleteDisabledUsed')}
+                          >
+                            {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                            {t('adminInvites.delete')}
                           </button>
                         </td>
                       </tr>
@@ -266,6 +302,20 @@ export function AdminInvites() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!inviteToDelete}
+        onClose={() => {
+          if (!deletingInviteId) {
+            setInviteToDelete(null);
+          }
+        }}
+        onConfirm={handleDeleteInvite}
+        title={t('adminInvites.deleteModal.title')}
+        message={t('adminInvites.deleteModal.message', { code: inviteToDelete?.code ?? '' })}
+        confirmText={t('adminInvites.deleteModal.confirm')}
+        type="danger"
+      />
     </div>
   );
 }

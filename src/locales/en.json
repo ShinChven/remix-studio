@@ -922,14 +922,22 @@
       "created": "Created",
       "lastUsedBy": "Last Used By",
       "lastUsedAt": "Last Used At",
-      "share": "Share"
+      "share": "Share",
+      "actions": "Actions"
     },
     "copyCode": "Copy invite code",
     "codeCopied": "Invite code copied",
     "noNote": "No note",
     "unused": "Unused",
     "copyLink": "Copy Link",
+    "delete": "Delete",
+    "deleteDisabledUsed": "Used invite codes cannot be deleted",
     "linkCopied": "Invite link copied",
+    "deleteModal": {
+      "title": "Delete Invite Code",
+      "message": "Delete invite code {{code}}? This only works for unused invite codes.",
+      "confirm": "Delete"
+    },
     "createModal": {
       "title": "Create Invite Code",
       "description": "Set how many people can use this invite code and add an optional note.",
@@ -942,11 +950,13 @@
     },
     "toasts": {
       "created": "Invite code created",
+      "deleted": "Invite code deleted",
       "copyFailed": "Failed to copy"
     },
     "errors": {
       "load": "Failed to load invite codes",
-      "create": "Failed to create invite code"
+      "create": "Failed to create invite code",
+      "delete": "Failed to delete invite code"
     }
   },
   "libraryForm": {

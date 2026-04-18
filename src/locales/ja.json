@@ -711,14 +711,22 @@
       "created": "作成日時",
       "lastUsedBy": "最終使用者",
       "lastUsedAt": "最終使用日時",
-      "share": "共有"
+      "share": "共有",
+      "actions": "操作"
     },
     "copyCode": "招待コードをコピー",
     "codeCopied": "招待コードをコピーしました",
     "noNote": "メモなし",
     "unused": "未使用",
     "copyLink": "リンクをコピー",
+    "delete": "削除",
+    "deleteDisabledUsed": "使用済みの招待コードは削除できません",
     "linkCopied": "招待リンクをコピーしました",
+    "deleteModal": {
+      "title": "招待コードを削除",
+      "message": "招待コード {{code}} を削除しますか？未使用の招待コードのみ削除できます。",
+      "confirm": "削除"
+    },
     "createModal": {
       "title": "招待コードを作成",
       "description": "この招待コードの使用回数を設定し、オプションでメモを追加します。",
@@ -731,11 +739,13 @@
     },
     "toasts": {
       "created": "招待コードを作成しました",
+      "deleted": "招待コードを削除しました",
       "copyFailed": "コピーに失敗しました"
     },
     "errors": {
       "load": "招待コードの読み込みに失敗しました",
-      "create": "招待コードの作成に失敗しました"
+      "create": "招待コードの作成に失敗しました",
+      "delete": "招待コードの削除に失敗しました"
     }
   },
   "libraryForm": {

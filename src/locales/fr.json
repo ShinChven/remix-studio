@@ -711,14 +711,22 @@
       "created": "Créé",
       "lastUsedBy": "Dernier utilisateur",
       "lastUsedAt": "Dernière utilisation",
-      "share": "Partager"
+      "share": "Partager",
+      "actions": "Actions"
     },
     "copyCode": "Copier le code d'invitation",
     "codeCopied": "Code d'invitation copié",
     "noNote": "Aucune note",
     "unused": "Inutilisé",
     "copyLink": "Copier le lien",
+    "delete": "Supprimer",
+    "deleteDisabledUsed": "Les codes déjà utilisés ne peuvent pas être supprimés",
     "linkCopied": "Lien d'invitation copié",
+    "deleteModal": {
+      "title": "Supprimer le code d'invitation",
+      "message": "Supprimer le code d'invitation {{code}} ? Cela fonctionne uniquement pour les codes non utilisés.",
+      "confirm": "Supprimer"
+    },
     "createModal": {
       "title": "Créer un code d'invitation",
       "description": "Définissez le nombre de personnes pouvant utiliser ce code et ajoutez une note optionnelle.",
@@ -731,11 +739,13 @@
     },
     "toasts": {
       "created": "Code d'invitation créé",
+      "deleted": "Code d'invitation supprimé",
       "copyFailed": "Échec de la copie"
     },
     "errors": {
       "load": "Échec du chargement des codes d'invitation",
-      "create": "Échec de la création du code d'invitation"
+      "create": "Échec de la création du code d'invitation",
+      "delete": "Échec de la suppression du code d'invitation"
     }
   },
   "libraryForm": {

@@ -711,14 +711,22 @@
       "created": "建立時間",
       "lastUsedBy": "最後使用者",
       "lastUsedAt": "最後使用時間",
-      "share": "分享"
+      "share": "分享",
+      "actions": "操作"
     },
     "copyCode": "複製邀請碼",
     "codeCopied": "邀請碼已複製",
     "noNote": "無備註",
     "unused": "未使用",
     "copyLink": "複製鏈結",
+    "delete": "刪除",
+    "deleteDisabledUsed": "已使用的邀請碼無法刪除",
     "linkCopied": "邀請鏈結已複製",
+    "deleteModal": {
+      "title": "刪除邀請碼",
+      "message": "要刪除邀請碼 {{code}} 嗎？只有未使用的邀請碼可以刪除。",
+      "confirm": "刪除"
+    },
     "createModal": {
       "title": "建立邀請碼",
       "description": "設置此邀請碼的使用次數並添加可選備註。",
@@ -731,11 +739,13 @@
     },
     "toasts": {
       "created": "邀請碼已建立",
+      "deleted": "邀請碼已刪除",
       "copyFailed": "複製失敗"
     },
     "errors": {
       "load": "加載邀請碼失敗",
-      "create": "建立邀請碼失敗"
+      "create": "建立邀請碼失敗",
+      "delete": "刪除邀請碼失敗"
     }
   },
   "libraryForm": {

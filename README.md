@@ -64,6 +64,7 @@ These are the built-in model profiles currently included in the app.
 | **RunningHub** | - | `nano banana 2` | `Seedance 2.0 Ref` |
 | **BytePlus** | - | `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I` | `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` |
 | **Kling AI** | - | `Kling Image O1`, `Kling V3 Omni`, `Kling V3 Standard`, `Kling V2.1 Standard`, `Kling V2 Standard`, `Kling V1.5 Standard`, `Kling V1 Standard` | `Kling Video O1`, `Kling V3 Omni Video` |
+| **Black Forest Labs** | - | `Flux 2 Max`, `Flux 2 Pro (Preview)`, `Flux 2 Pro`, `Flux 2 Flex`, `Flux 2 Klein 9B (Preview)`, `Flux 2 Klein 9B`, `Flux 2 Klein 4B` | - |
 | **Replicate** | - | `Flux 2 Pro`, `Flux 2 Flex`, `Flux 2 Max` | `Seedance 2.0 Fast`, `Seedance 2.0` |
 
 ## MCP Support
