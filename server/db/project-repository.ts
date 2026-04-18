@@ -1,9 +1,13 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/types';
 
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
+
+  private toNullableJsonArray(value: string[] | null | undefined): Prisma.InputJsonValue | typeof Prisma.DbNull {
+    return value == null ? Prisma.DbNull : value;
+  }
 
   private async assertOwnedProject(userId: string, projectId: string): Promise<void> {
     const project = await this.prisma.project.findFirst({
@@ -91,7 +95,7 @@ export class ProjectRepository {
       providerId: p.providerId ?? undefined,
       aspectRatio: p.aspectRatio ?? undefined,
       quality: p.quality ?? undefined,
-      format: p.format as 'png' | 'jpeg' | 'webp' | undefined ?? undefined,
+      format: p.format as Project['format'] ?? undefined,
       shuffle: p.shuffle ?? undefined,
       modelConfigId: p.modelConfigId ?? undefined,
       prefix: p.prefix ?? undefined,
@@ -250,9 +254,9 @@ export class ProjectRepository {
       jobId: item.jobId ?? null,
       prompt: item.prompt ?? null,
       textContent: item.textContent ?? null,
-      imageContexts: item.imageContexts ?? null,
-      videoContexts: item.videoContexts ?? null,
-      audioContexts: item.audioContexts ?? null,
+      imageContexts: this.toNullableJsonArray(item.imageContexts),
+      videoContexts: this.toNullableJsonArray(item.videoContexts),
+      audioContexts: this.toNullableJsonArray(item.audioContexts),
       imageUrl: item.imageUrl ?? null,
       thumbnailUrl: item.thumbnailUrl ?? null,
       optimizedUrl: item.optimizedUrl ?? null,
@@ -314,9 +318,9 @@ export class ProjectRepository {
         jobId: item.jobId ?? null,
         prompt: item.prompt ?? null,
         textContent: item.textContent ?? null,
-        imageContexts: item.imageContexts ?? null,
-        videoContexts: (item as any).videoContexts ?? null,
-        audioContexts: (item as any).audioContexts ?? null,
+        imageContexts: this.toNullableJsonArray(item.imageContexts as string[] | null | undefined),
+        videoContexts: this.toNullableJsonArray((item as any).videoContexts as string[] | null | undefined),
+        audioContexts: this.toNullableJsonArray((item as any).audioContexts as string[] | null | undefined),
         imageUrl: item.imageUrl ?? null,
         thumbnailUrl: item.thumbnailUrl ?? null,
         optimizedUrl: item.optimizedUrl ?? null,
@@ -341,29 +345,7 @@ export class ProjectRepository {
       where: { userId },
       orderBy: { deletedAt: 'desc' },
     });
-    return items.map((item) => ({
-      id: item.id,
-      userId: item.userId,
-      projectId: item.projectId,
-      projectName: item.projectName,
-      jobId: item.jobId ?? undefined,
-      prompt: item.prompt ?? undefined,
-      textContent: item.textContent ?? undefined,
-      imageContexts: (item.imageContexts as string[]) ?? [],
-      videoContexts: ((item as any).videoContexts as string[]) ?? [],
-      audioContexts: ((item as any).audioContexts as string[]) ?? [],
-      imageUrl: item.imageUrl ?? undefined,
-      thumbnailUrl: item.thumbnailUrl ?? undefined,
-      optimizedUrl: item.optimizedUrl ?? undefined,
-      providerId: item.providerId ?? undefined,
-      modelConfigId: item.modelConfigId ?? undefined,
-      aspectRatio: item.aspectRatio ?? undefined,
-      quality: item.quality ?? undefined,
-      format: item.format as 'png' | 'jpeg' | 'webp' | undefined ?? undefined,
-      size: item.size != null ? Number(item.size) : undefined,
-      createdAt: item.createdAt.getTime(),
-      deletedAt: item.deletedAt.getTime(),
-    }));
+    return items.map((item) => this.mapTrashItem(item));
   }
 
   async restoreTrashItem(userId: string, itemId: string): Promise<void> {
@@ -378,9 +360,9 @@ export class ProjectRepository {
         jobId: trashItem.jobId ?? null,
         prompt: trashItem.prompt ?? null,
         textContent: trashItem.textContent ?? null,
-        imageContexts: trashItem.imageContexts ?? null,
-        videoContexts: (trashItem as any).videoContexts ?? null,
-        audioContexts: (trashItem as any).audioContexts ?? null,
+        imageContexts: this.toNullableJsonArray(trashItem.imageContexts as string[] | null | undefined),
+        videoContexts: this.toNullableJsonArray((trashItem as any).videoContexts as string[] | null | undefined),
+        audioContexts: this.toNullableJsonArray((trashItem as any).audioContexts as string[] | null | undefined),
         imageUrl: trashItem.imageUrl ?? null,
         thumbnailUrl: trashItem.thumbnailUrl ?? null,
         optimizedUrl: trashItem.optimizedUrl ?? null,
@@ -674,13 +656,13 @@ export class ProjectRepository {
   private mapTrashItem(t: any): TrashItem {
     return {
       id: t.id,
-      jobId: t.jobId ?? undefined,
-      prompt: t.prompt ?? undefined,
+      jobId: t.jobId ?? '',
+      prompt: t.prompt ?? '',
       textContent: t.textContent ?? undefined,
       imageContexts: (t.imageContexts as string[]) ?? [],
       videoContexts: (t.videoContexts as string[]) ?? [],
       audioContexts: (t.audioContexts as string[]) ?? [],
-      imageUrl: t.imageUrl ?? undefined,
+      imageUrl: t.imageUrl ?? '',
       thumbnailUrl: t.thumbnailUrl ?? undefined,
       optimizedUrl: t.optimizedUrl ?? undefined,
       providerId: t.providerId ?? undefined,
@@ -688,6 +670,8 @@ export class ProjectRepository {
       aspectRatio: t.aspectRatio ?? undefined,
       quality: t.quality ?? undefined,
       format: t.format as any ?? undefined,
+      duration: t.duration ?? undefined,
+      resolution: t.resolution ?? undefined,
       size: t.size != null ? Number(t.size) : undefined,
       optimizedSize: t.optimizedSize != null ? Number(t.optimizedSize) : undefined,
       thumbnailSize: t.thumbnailSize != null ? Number(t.thumbnailSize) : undefined,
@@ -851,7 +835,7 @@ export class ProjectRepository {
       modelConfigId: j.modelConfigId ?? undefined,
       aspectRatio: j.aspectRatio ?? undefined,
       quality: j.quality ?? undefined,
-      format: j.format as 'png' | 'jpeg' | 'webp' | 'mp4' | undefined ?? undefined,
+      format: j.format as Job['format'] ?? undefined,
       duration: j.duration ?? undefined,
       resolution: j.resolution ?? undefined,
       sound: j.sound ?? undefined,
@@ -879,20 +863,20 @@ export class ProjectRepository {
   private mapAlbumItem(a: any): AlbumItem {
     return {
       id: a.id,
-      jobId: a.jobId ?? undefined,
-      prompt: a.prompt ?? undefined,
+      jobId: a.jobId ?? '',
+      prompt: a.prompt ?? '',
       textContent: a.textContent ?? undefined,
       imageContexts: (a.imageContexts as string[]) ?? [],
       videoContexts: (a.videoContexts as string[]) ?? [],
       audioContexts: (a.audioContexts as string[]) ?? [],
-      imageUrl: a.imageUrl ?? undefined,
+      imageUrl: a.imageUrl ?? '',
       thumbnailUrl: a.thumbnailUrl ?? undefined,
       optimizedUrl: a.optimizedUrl ?? undefined,
       providerId: a.providerId ?? undefined,
       modelConfigId: a.modelConfigId ?? undefined,
       aspectRatio: a.aspectRatio ?? undefined,
       quality: a.quality ?? undefined,
-      format: a.format as 'png' | 'jpeg' | 'webp' | 'mp4' | undefined ?? undefined,
+      format: a.format as AlbumItem['format'] ?? undefined,
       duration: a.duration ?? undefined,
       resolution: a.resolution ?? undefined,
       size: a.size != null ? Number(a.size) : undefined,

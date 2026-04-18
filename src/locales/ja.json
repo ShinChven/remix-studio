@@ -340,7 +340,8 @@
       "assets": {
         "images": "{{count}} 枚の画像",
         "texts": "{{count}} 件のテキスト",
-        "videos": "{{count}} 本の動画"
+        "videos": "{{count}} 本の動画",
+        "audios": "{{count}} 件の音声"
       },
       "openProject": "プロジェクトを開く →"
     },
@@ -771,13 +772,16 @@
     "typeImage": "画像",
     "typeText": "テキスト",
     "typeVideo": "動画",
+    "typeAudio": "音声",
     "nameLabel": "プロジェクト名",
     "namePlaceholderText": "例: 製品説明ジェネレーター...",
     "namePlaceholderImage": "例: サイバーパンクキャラクターシリーズ...",
+    "namePlaceholderAudio": "例: 2人トークのポッドキャスト...",
     "prefixLabel": "プロジェクト接頭辞",
     "prefixPlaceholder": "例: PJ01",
     "prefixDescriptionText": "出力名の接頭辞として使用されます",
     "prefixDescriptionImage": "画像ファイル名の生成に使用されます",
+    "prefixDescriptionAudio": "音声ファイル名の生成に使用されます",
     "customIdLabel": "カスタムID (任意)",
     "customIdPlaceholder": "プロジェクト識別子",
     "customIdDescription": "自動生成する場合は空欄のままにしてください",
@@ -862,7 +866,8 @@
     "categories": {
       "text": "テキスト生成",
       "image": "画像生成",
-      "video": "動画生成"
+      "video": "動画生成",
+      "audio": "音声生成"
     },
     "modelCount": "{{count}} モデル",
     "modelCount_plural": "{{count}} モデル",
@@ -964,6 +969,8 @@
       "clientRevoked": "クライアントアクセスを取り消しました",
       "clientCreated": "OAuth クライアントを作成しました",
       "clientCreateFailed": "OAuth クライアントの作成に失敗しました",
+      "clientUpdated": "OAuth コールバックを更新しました",
+      "clientUpdateFailed": "OAuth コールバックの更新に失敗しました",
       "clientRedirectRequired": "少なくとも 1 つのリダイレクト URI を追加してください",
       "clientIdCopied": "Client ID をクリップボードにコピーしました",
       "clientSecretCopied": "Client secret をクリップボードにコピーしました",
@@ -1051,6 +1058,11 @@
       "newClient": "新しいクライアント",
       "recommended": "簡単なサインインに推奨",
       "tip": "OAuth 2.1 コネクタで接続したアプリは自動的にここへ表示されます。ブラウザでアクセスを承認すると、そのアプリがここに表示されます。",
+      "edit": {
+        "title": "{{name}} のコールバック URL を編集",
+        "description": "この OAuth クライアントで使うコールバック URL を更新します。リダイレクト URI は 1 行に 1 つ入力してください。",
+        "save": "コールバック URL を保存"
+      },
       "form": {
         "clientName": "クライアント名",
         "clientNamePlaceholder": "例: Claude Desktop local",
@@ -1072,10 +1084,12 @@
         "desc": "AI アプリでサインインが完了すると、ここにアプリが表示されます。"
       },
       "card": {
+        "manualClient": "手動クライアント",
         "activeToken": "有効なトークン {{count}} 件",
         "activeToken_plural": "有効なトークン {{count}} 件",
         "noTokens": "有効なトークンはありません",
         "registered": "{{date}} に登録",
+        "editTitle": "コールバック URL を編集",
         "revokeTitle": "すべてのトークンを取り消す"
       }
     },
@@ -1124,7 +1138,8 @@
       "queue": "キュー",
       "done": "完了",
       "album": "アルバム",
-      "texts": "テキスト"
+      "texts": "テキスト",
+      "audios": "音声"
     },
     "toasts": {
       "uploadImageFailed": "画像のアップロードに失敗しました。もう一度お試しください。",
@@ -1155,6 +1170,7 @@
       "emptyCanvas": "空のキャンバス",
       "galleryReady": "すばらしい作品が準備できています。新しい下書きを始めるか、ギャラリーを確認してください。",
       "buildWorkflowHint": "左側でプロジェクトのワークフローを作成して画像生成を開始します。",
+      "buildAudioWorkflowHint": "左側でプロジェクトのワークフローを作成して音声生成を開始します。",
       "openAlbum": "アルバムを開く",
       "startSelected": "選択を開始",
       "startAllNow": "すべて今すぐ開始",
@@ -1206,6 +1222,14 @@
       "quality": "品質",
       "background": "背景",
       "format": "形式",
+      "outputMode": "出力モード",
+      "singleSpeaker": "単一話者",
+      "multiSpeaker": "複数話者",
+      "voice": "音声",
+      "speakerOneName": "話者1の名前",
+      "speakerTwoName": "話者2の名前",
+      "speakerOneVoice": "話者1の音声",
+      "speakerTwoVoice": "話者2の音声",
       "workflowOptions": "ワークフローオプション",
       "shuffleWorkflow": "ワークフローをシャッフル",
       "randomizeOrder": "組み合わせ順をランダム化",
@@ -1305,6 +1329,8 @@
       "videoItemCount_other": "{{count}} 本の動画",
       "imageItemCount_one": "{{count}} 枚の画像",
       "imageItemCount_other": "{{count}} 枚の画像",
+      "audioItemCount_one": "{{count}} 件の音声",
+      "audioItemCount_other": "{{count}} 件の音声",
       "loadLibrariesFailed": "ライブラリの読み込みに失敗しました: {{message}}",
       "enterLibraryName": "ライブラリ名を入力してください",
       "selectLibrary": "ライブラリを選択してください",
@@ -1334,9 +1360,11 @@
       "copyAllToLibrary": "すべてライブラリにコピー",
       "noTexts": "まだテキストがありません",
       "noVideos": "まだ動画がありません",
+      "noAudios": "まだ音声がありません",
       "galleryEmpty": "ギャラリーは空です",
       "collection": "コレクション",
       "reel": "リール",
+      "audioCollection": "音声コレクション",
       "emptyDescription": "生成を開始して {{target}} を作成します",
       "viewTextDetails": "クリックしてテキスト詳細を表示",
       "imageContexts": "+{{count}} 画像",

@@ -4,11 +4,13 @@ import { ProjectRepository } from '../db/project-repository';
 import { S3Storage } from '../storage/s3-storage';
 import { buildGenerator } from '../generators/build-generator';
 import { buildTextGenerator } from '../generators/build-text-generator';
+import { buildAudioGenerator } from '../generators/build-audio-generator';
 import { buildVideoGenerator } from '../generators/build-video-generator';
-import { Job, ProviderType, ProjectType, ModelConfig, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../src/types';
+import { Job, ProviderType, ProjectType, ModelConfig, PROVIDER_MODELS_MAP, parseAudioProjectConfig, resolveCustomModels } from '../../src/types';
 import { ImageProcessor } from './image-processor';
 import { TextProcessor } from './text-processor';
 import { VideoProcessor } from './video-processor';
+import { AudioProcessor } from './audio-processor';
 import { DetachedPoller } from './detached-poller';
 import { ImageGenerator } from '../generators/image-generator';
 import { VideoGenerator } from '../generators/video-generator';
@@ -62,6 +64,7 @@ export class QueueManager {
     private imageProcessor: ImageProcessor,
     private textProcessor: TextProcessor,
     private videoProcessor: VideoProcessor,
+    private audioProcessor: AudioProcessor,
     private detachedPoller: DetachedPoller
   ) {
     this.detachedPoller.start();
@@ -214,6 +217,8 @@ export class QueueManager {
       // Dispatch based on project type
       if (queued.projectType === 'text') {
         await this.executeTextJob(userId, projectId, job, queued, providerRecord, apiKey);
+      } else if (queued.projectType === 'audio') {
+        await this.executeAudioJob(userId, projectId, job, queued, providerRecord, apiKey);
       } else if (queued.projectType === 'video') {
         const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl, apiSecret);
         await this.executeVideoJob(userId, projectId, job, queued, videoGenerator, providerRecord);
@@ -413,6 +418,46 @@ export class QueueManager {
       await this.updateJobStatus(userId, projectId, job.id, {
         status: 'failed',
         error: e.message || 'Text generation failed',
+        taskId: null as any,
+      });
+    }
+  }
+
+  /**
+   * [Audio Generation Pipeline]
+   * Calls Gemini TTS and stores the resulting audio file.
+   */
+  private async executeAudioJob(userId: string, projectId: string, job: Job, queued: QueuedJob, providerRecord: any, apiKey: string) {
+    try {
+      const audioGenerator = buildAudioGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+      const modelConfig = getAllModels(providerRecord).find((m) => m.id === job.modelConfigId);
+      const audioConfig = parseAudioProjectConfig(queued.systemPrompt);
+
+      const result = await audioGenerator.generate({
+        prompt: job.prompt,
+        modelId: modelConfig?.modelId,
+        apiUrl: modelConfig?.apiUrl,
+        audioConfig,
+      });
+
+      if (result.ok === false) {
+        throw new Error(result.error);
+      }
+
+      await this.audioProcessor.processCompletedAudio({
+        userId,
+        projectId,
+        job,
+        audioBytes: result.audioBytes,
+        mimeType: result.mimeType,
+        modelConfigId: job.modelConfigId,
+        providerId: job.providerId,
+      });
+    } catch (e: any) {
+      console.error(`[QueueManager] Audio job ${job.id} failed:`, e.message);
+      await this.updateJobStatus(userId, projectId, job.id, {
+        status: 'failed',
+        error: e.message || 'Audio generation failed',
         taskId: null as any,
       });
     }

@@ -9,7 +9,7 @@
 [![S3 Compatible](https://img.shields.io/badge/Storage-S3%20compatible-16a34a?style=flat-square)](./README.md#deployment)
 [![i18n](https://img.shields.io/badge/i18n-English%20%7C%20%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%20%7C%20%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87%20%7C%20%E6%97%A5%E6%9C%AC%E8%AA%9E%20%7C%20%ED%95%9C%EA%B5%AD%EC%96%B4%20%7C%20Fran%C3%A7ais-7c3aed?style=flat-square)](./README.md#what-remix-studio-does)
 
-Remix Studio is a self-hosted multimodal AI workspace for managing text, image, and video generation workflows in one place. You can save prompt fragments and reference assets into reusable libraries, combine them into large sets of prompt variations, create drafts in bulk, and run those batches through a background queue instead of generating one by one. It also includes provider management, asset storage, export tools, and MCP access for prompt and library operations, so clients like Claude and Codex can help organize content around your workflows while generation itself continues to run through the app.
+Remix Studio is a self-hosted multimodal AI workspace for managing text, image, video, and audio generation workflows in one place. You can save prompt fragments and reference assets into reusable libraries, combine them into large sets of prompt variations, create drafts in bulk, and run those batches through a background queue instead of generating one by one. It also includes provider management, asset storage, export tools, and MCP access for prompt and library operations, so clients like Claude and Codex can help organize content around your workflows while generation itself continues to run through the app.
 
 Telegram channel: [t.me/RemixStudioApp](https://t.me/RemixStudioApp)
 
@@ -17,7 +17,7 @@ Telegram channel: [t.me/RemixStudioApp](https://t.me/RemixStudioApp)
 
 ## What Remix Studio Does
 
-- Manage text, image, and video generation projects in one workspace
+- Manage text, image, video, and audio generation projects in one workspace
 - Save reusable prompt fragments and reference assets in libraries
 - Combine workflow steps and library items into many prompt permutations automatically
 - Create drafts in bulk, then run all or selected jobs instead of generating one by one
@@ -44,6 +44,7 @@ Telegram channel: [t.me/RemixStudioApp](https://t.me/RemixStudioApp)
 - **Text to text**: Standard LLM generation
 - **Text to image**: Prompt-based image generation
 - **Text to video**: Prompt-based video generation
+- **Text to audio**: Scripted text-to-speech generation with Gemini TTS
 - **Image to text**: Describe or analyze images (multimodal)
 - **Image to image**: Stylize or transform images
 - **Image to video**: Animate images into video
@@ -54,18 +55,18 @@ Telegram channel: [t.me/RemixStudioApp](https://t.me/RemixStudioApp)
 
 These are the built-in model profiles currently included in the app.
 
-| Provider | Text Models | Image Models | Video Models |
-| :--- | :--- | :--- | :--- |
-| **Google AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | `Veo 3.1`, `Veo 3.1 Lite` |
-| **Vertex AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | - |
-| **OpenAI** | `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` | `GPT Image 1.5`, `GPT Image 1 Mini` | `Sora 2`, `Sora 2 Pro` |
-| **Grok** | `Grok 4.20`, `Grok 4.1 Fast` | `Grok Imagine`, `Grok Imagine Pro` | `Grok Imagine Video` |
-| **Claude** | `Claude Opus 4.6`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` | - | - |
-| **RunningHub** | - | `nano banana 2` | `Seedance 2.0 Ref` |
-| **BytePlus** | - | `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I` | `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` |
-| **Kling AI** | - | `Kling Image O1`, `Kling V3 Omni`, `Kling V3 Standard`, `Kling V2.1 Standard`, `Kling V2 Standard`, `Kling V1.5 Standard`, `Kling V1 Standard` | `Kling Video O1`, `Kling V3 Omni Video` |
-| **Black Forest Labs** | - | `Flux 2 Max`, `Flux 2 Pro (Preview)`, `Flux 2 Pro`, `Flux 2 Flex`, `Flux 2 Klein 9B (Preview)`, `Flux 2 Klein 9B`, `Flux 2 Klein 4B` | - |
-| **Replicate** | - | `Flux 2 Pro`, `Flux 2 Flex`, `Flux 2 Max` | `Seedance 2.0 Fast`, `Seedance 2.0` |
+| Provider | Text Models | Image Models | Video Models | Audio Models |
+| :--- | :--- | :--- | :--- | :--- |
+| **Google AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | `Veo 3.1`, `Veo 3.1 Lite` | `Gemini 3.1 Flash TTS Preview`, `Gemini 2.5 Flash Preview TTS`, `Gemini 2.5 Pro Preview TTS` |
+| **Vertex AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | - | `Gemini 3.1 Flash TTS Preview`, `Gemini 2.5 Flash Preview TTS`, `Gemini 2.5 Pro Preview TTS` |
+| **OpenAI** | `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` | `GPT Image 1.5`, `GPT Image 1 Mini` | `Sora 2`, `Sora 2 Pro` | - |
+| **Grok** | `Grok 4.20`, `Grok 4.1 Fast` | `Grok Imagine`, `Grok Imagine Pro` | `Grok Imagine Video` | - |
+| **Claude** | `Claude Opus 4.6`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` | - | - | - |
+| **RunningHub** | - | `nano banana 2` | `Seedance 2.0 Ref` | - |
+| **BytePlus** | - | `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I` | `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` | - |
+| **Kling AI** | - | `Kling Image O1`, `Kling V3 Omni`, `Kling V3 Standard`, `Kling V2.1 Standard`, `Kling V2 Standard`, `Kling V1.5 Standard`, `Kling V1 Standard` | `Kling Video O1`, `Kling V3 Omni Video` | - |
+| **Black Forest Labs** | - | `Flux 2 Max`, `Flux 2 Pro (Preview)`, `Flux 2 Pro`, `Flux 2 Flex`, `Flux 2 Klein 9B (Preview)`, `Flux 2 Klein 9B`, `Flux 2 Klein 4B` | - | - |
+| **Replicate** | - | `Flux 2 Pro`, `Flux 2 Flex`, `Flux 2 Max` | `Seedance 2.0 Fast`, `Seedance 2.0` | - |
 
 ## MCP Support
 

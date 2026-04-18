@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Trash2, List } from 'lucide-react';
 import { Job, ProjectType } from '../../types';
+import { imageDisplayUrl } from '../../api';
 import { SelectionToolbar } from './SelectionToolbar';
 import { JobListItem } from './JobListItem';
 import { InfoChip } from './InfoChip';
@@ -109,6 +110,15 @@ export function CompletedTab({
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.common.generatedText')}</label>
                           <div className="text-xs text-neutral-200 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border border-emerald-500/20 select-all whitespace-pre-wrap">
                             {job.resultText}
+                          </div>
+                        </div>
+                      )}
+
+                      {projectType === 'audio' && job.imageUrl && (
+                        <div className="space-y-2">
+                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.common.audio')}</label>
+                          <div className="bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border border-emerald-500/20">
+                            <audio src={imageDisplayUrl(job.imageUrl)} controls className="w-full" />
                           </div>
                         </div>
                       )}

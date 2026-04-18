@@ -340,7 +340,8 @@
       "assets": {
         "images": "{{count}}개 이미지",
         "texts": "{{count}}개 텍스트",
-        "videos": "{{count}}개 비디오"
+        "videos": "{{count}}개 비디오",
+        "audios": "{{count}}개 오디오"
       },
       "openProject": "프로젝트 열기 →"
     },
@@ -771,13 +772,16 @@
     "typeImage": "이미지",
     "typeText": "텍스트",
     "typeVideo": "비디오",
+    "typeAudio": "오디오",
     "nameLabel": "프로젝트 이름",
     "namePlaceholderText": "예: 제품 설명 생성기...",
     "namePlaceholderImage": "예: 사이버펑크 캐릭터 시리즈...",
+    "namePlaceholderAudio": "예: 2인 진행 팟캐스트...",
     "prefixLabel": "프로젝트 접두사",
     "prefixPlaceholder": "예: PJ01",
     "prefixDescriptionText": "출력 명명 시 접두사로 사용됩니다",
     "prefixDescriptionImage": "이미지 파일 이름 생성에 사용됩니다",
+    "prefixDescriptionAudio": "오디오 파일 이름 생성에 사용됩니다",
     "customIdLabel": "사용자 정의 ID (선택 사항)",
     "customIdPlaceholder": "프로젝트 식별자",
     "customIdDescription": "비워두면 자동으로 ID가 생성됩니다",
@@ -862,7 +866,8 @@
     "categories": {
       "text": "텍스트 생성",
       "image": "이미지 생성",
-      "video": "비디오 생성"
+      "video": "비디오 생성",
+      "audio": "오디오 생성"
     },
     "modelCount": "{{count}}개 모델",
     "modelCount_plural": "{{count}}개 모델",
@@ -964,6 +969,8 @@
       "clientRevoked": "클라이언트 접근 권한을 취소했습니다",
       "clientCreated": "OAuth 클라이언트를 생성했습니다",
       "clientCreateFailed": "OAuth 클라이언트 생성에 실패했습니다",
+      "clientUpdated": "OAuth 콜백이 업데이트되었습니다",
+      "clientUpdateFailed": "OAuth 콜백 업데이트에 실패했습니다",
       "clientRedirectRequired": "리디렉션 URI를 하나 이상 추가하세요",
       "clientIdCopied": "Client ID를 클립보드에 복사했습니다",
       "clientSecretCopied": "Client secret을 클립보드에 복사했습니다",
@@ -1051,6 +1058,11 @@
       "newClient": "새 클라이언트",
       "recommended": "간편 로그인에 권장",
       "tip": "OAuth 2.1 커넥터로 연결한 앱은 자동으로 여기에 표시됩니다. 브라우저에서 접근을 승인하면 앱이 여기에 나타납니다.",
+      "edit": {
+        "title": "{{name}}의 콜백 URL 편집",
+        "description": "이 OAuth 클라이언트에서 사용하는 콜백 URL을 업데이트합니다. 리디렉션 URI는 줄마다 하나씩 입력하세요.",
+        "save": "콜백 URL 저장"
+      },
       "form": {
         "clientName": "클라이언트 이름",
         "clientNamePlaceholder": "예: Claude Desktop local",
@@ -1072,10 +1084,12 @@
         "desc": "AI 앱에서 로그인이 완료되면 앱이 여기에 표시됩니다."
       },
       "card": {
+        "manualClient": "수동 클라이언트",
         "activeToken": "활성 토큰 {{count}}개",
         "activeToken_plural": "활성 토큰 {{count}}개",
         "noTokens": "활성 토큰 없음",
         "registered": "{{date}} 등록",
+        "editTitle": "콜백 URL 편집",
         "revokeTitle": "모든 토큰 취소"
       }
     },
@@ -1124,7 +1138,8 @@
       "queue": "대기열",
       "done": "완료",
       "album": "앨범",
-      "texts": "텍스트"
+      "texts": "텍스트",
+      "audios": "오디오"
     },
     "toasts": {
       "uploadImageFailed": "이미지 업로드에 실패했습니다. 다시 시도하세요.",
@@ -1155,6 +1170,7 @@
       "emptyCanvas": "빈 캔버스",
       "galleryReady": "멋진 결과물이 준비되어 있습니다. 새 초안을 시작하거나 갤러리를 둘러보세요.",
       "buildWorkflowHint": "왼쪽에서 프로젝트 워크플로를 구성해 이미지 생성을 시작하세요.",
+      "buildAudioWorkflowHint": "왼쪽에서 프로젝트 워크플로를 구성해 오디오 생성을 시작하세요.",
       "openAlbum": "앨범 열기",
       "startSelected": "선택 항목 시작",
       "startAllNow": "지금 모두 시작",
@@ -1206,6 +1222,14 @@
       "quality": "품질",
       "background": "배경",
       "format": "형식",
+      "outputMode": "출력 모드",
+      "singleSpeaker": "단일 화자",
+      "multiSpeaker": "다중 화자",
+      "voice": "음성",
+      "speakerOneName": "화자 1 이름",
+      "speakerTwoName": "화자 2 이름",
+      "speakerOneVoice": "화자 1 음성",
+      "speakerTwoVoice": "화자 2 음성",
       "workflowOptions": "워크플로 옵션",
       "shuffleWorkflow": "워크플로 섞기",
       "randomizeOrder": "조합 순서 무작위화",
@@ -1305,6 +1329,8 @@
       "videoItemCount_other": "비디오 {{count}}개",
       "imageItemCount_one": "이미지 {{count}}개",
       "imageItemCount_other": "이미지 {{count}}개",
+      "audioItemCount_one": "오디오 {{count}}개",
+      "audioItemCount_other": "오디오 {{count}}개",
       "loadLibrariesFailed": "라이브러리 로드 실패: {{message}}",
       "enterLibraryName": "라이브러리 이름을 입력하세요",
       "selectLibrary": "라이브러리를 선택하세요",
@@ -1334,9 +1360,11 @@
       "copyAllToLibrary": "모두 라이브러리로 복사",
       "noTexts": "아직 텍스트가 없습니다",
       "noVideos": "아직 비디오가 없습니다",
+      "noAudios": "아직 오디오가 없습니다",
       "galleryEmpty": "갤러리가 비어 있습니다",
       "collection": "컬렉션",
       "reel": "릴",
+      "audioCollection": "오디오 컬렉션",
       "emptyDescription": "생성을 시작해 {{target}}을(를) 만드세요",
       "viewTextDetails": "클릭하여 텍스트 세부 정보 보기",
       "imageContexts": "+{{count}} img",

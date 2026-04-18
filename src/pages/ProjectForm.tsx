@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Layers, Terminal, Play, ImageIcon, Type, Video } from 'lucide-react';
+import { Layers, Terminal, Play, ImageIcon, Type, Video, Music } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createProject, updateProject, fetchProject } from '../api';
 import type { Project, ProjectType, WorkflowItem } from '../types';
@@ -103,8 +103,8 @@ export function ProjectForm() {
     <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-50 dark:bg-neutral-950">
       <div className="w-full max-w-md bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center gap-3 mb-8">
-          <div className={`p-3 rounded-2xl ${projectType === 'text' ? 'bg-blue-600/10' : projectType === 'video' ? 'bg-purple-600/10' : 'bg-green-600/10'}`}>
-            <Layers className={`w-6 h-6 ${projectType === 'text' ? 'text-blue-500' : projectType === 'video' ? 'text-purple-500' : 'text-green-500'}`} />
+          <div className={`p-3 rounded-2xl ${projectType === 'text' ? 'bg-blue-600/10' : projectType === 'video' ? 'bg-purple-600/10' : projectType === 'audio' ? 'bg-cyan-600/10' : 'bg-green-600/10'}`}>
+            <Layers className={`w-6 h-6 ${projectType === 'text' ? 'text-blue-500' : projectType === 'video' ? 'text-purple-500' : projectType === 'audio' ? 'text-cyan-500' : 'text-green-500'}`} />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">
@@ -118,7 +118,7 @@ export function ProjectForm() {
           {isNew && (
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">{t('projectForm.typeLabel')}</label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setProjectType('image')}
@@ -155,6 +155,18 @@ export function ProjectForm() {
                   <Video className="w-6 h-6" />
                   <span className="text-xs font-bold uppercase tracking-wider">{t('projectForm.typeVideo')}</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setProjectType('audio')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                    projectType === 'audio'
+                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
+                      : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl shadow-sm text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
+                  }`}
+                >
+                  <Music className="w-6 h-6" />
+                  <span className="text-xs font-bold uppercase tracking-wider">{t('projectForm.typeAudio')}</span>
+                </button>
               </div>
             </div>
           )}
@@ -166,7 +178,13 @@ export function ProjectForm() {
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={projectType === 'text' ? t('projectForm.namePlaceholderText') : t('projectForm.namePlaceholderImage')}
+              placeholder={
+                projectType === 'text'
+                  ? t('projectForm.namePlaceholderText')
+                  : projectType === 'audio'
+                    ? t('projectForm.namePlaceholderAudio')
+                    : t('projectForm.namePlaceholderImage')
+              }
               className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-700"
               required
             />
@@ -181,7 +199,13 @@ export function ProjectForm() {
               placeholder={t('projectForm.prefixPlaceholder')}
               className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-700"
             />
-            <p className="text-[10px] text-neutral-600 ml-1 font-medium tracking-wide">{projectType === 'text' ? t('projectForm.prefixDescriptionText') : t('projectForm.prefixDescriptionImage')}</p>
+            <p className="text-[10px] text-neutral-600 ml-1 font-medium tracking-wide">
+              {projectType === 'text'
+                ? t('projectForm.prefixDescriptionText')
+                : projectType === 'audio'
+                  ? t('projectForm.prefixDescriptionAudio')
+                  : t('projectForm.prefixDescriptionImage')}
+            </p>
           </div>
 
           {isNew && (

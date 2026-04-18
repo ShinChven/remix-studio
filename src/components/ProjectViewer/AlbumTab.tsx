@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Video as VideoIcon, Copy } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Video as VideoIcon, Music, Copy } from 'lucide-react';
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
@@ -53,6 +53,7 @@ export function AlbumTab({
 
   const isTextProject = projectType === 'text';
   const isVideoProject = projectType === 'video';
+  const isAudioProject = projectType === 'audio';
   const [promptItem, setPromptItem] = useState<AlbumItem | null>(null);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [showCompareDialog, setShowCompareDialog] = useState(false);
@@ -155,10 +156,10 @@ export function AlbumTab({
 
         {albumItems.length === 0 ? (
           <div className="bg-white/40 dark:bg-neutral-900/40 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-xl p-12 md:p-24 text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner backdrop-blur-xl">
-            {isTextProject ? <FileText className="w-16 h-16 text-neutral-800 animate-pulse" /> : isVideoProject ? <VideoIcon className="w-16 h-16 text-neutral-800 animate-pulse" /> : <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />}
+            {isTextProject ? <FileText className="w-16 h-16 text-neutral-800 animate-pulse" /> : isVideoProject ? <VideoIcon className="w-16 h-16 text-neutral-800 animate-pulse" /> : isAudioProject ? <Music className="w-16 h-16 text-neutral-800 animate-pulse" /> : <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />}
             <div>
-              <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400 tracking-wider uppercase">{isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : t('projectViewer.album.galleryEmpty')}</p>
-              <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">{t('projectViewer.album.emptyDescription', { target: isTextProject ? t('projectViewer.album.collection') : isVideoProject ? t('projectViewer.album.reel') : t('projectViewer.tabs.album').toLowerCase() })}</p>
+              <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400 tracking-wider uppercase">{isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : isAudioProject ? t('projectViewer.album.noAudios') : t('projectViewer.album.galleryEmpty')}</p>
+              <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">{t('projectViewer.album.emptyDescription', { target: isTextProject ? t('projectViewer.album.collection') : isVideoProject ? t('projectViewer.album.reel') : isAudioProject ? t('projectViewer.album.audioCollection') : t('projectViewer.tabs.album').toLowerCase() })}</p>
             </div>
           </div>
         ) : isTextProject ? (
@@ -206,6 +207,62 @@ export function AlbumTab({
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
+                </div>
+              );
+            })}
+          </div>
+        ) : isAudioProject ? (
+          <div className="space-y-3 p-4">
+            {albumItems.map((item, index) => {
+              const isSelected = selectedAlbumIds.has(item.id);
+              return (
+                <div
+                  key={item.id}
+                  className={`group rounded-2xl border p-4 transition-all backdrop-blur-xl ${isSelected ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:border-cyan-500/30'}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
+                      className={`mt-1 flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700'}`}
+                    >
+                      {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                    </button>
+
+                    <div className="min-w-0 flex-1 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-500">#{(index + 1).toString().padStart(2, '0')}</div>
+                          <p className="mt-1 text-sm text-neutral-900 dark:text-white line-clamp-2">{item.prompt}</p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAlbumItemsToDelete([item]);
+                            setShowDeleteAlbumModal(true);
+                          }}
+                          className="flex-shrink-0 p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                          title={t('projectViewer.common.delete')}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="rounded-xl border border-neutral-200/50 dark:border-white/5 bg-neutral-50/50 dark:bg-neutral-950/50 p-3">
+                        <audio src={imageDisplayUrl(item.imageUrl)} controls className="w-full" />
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 text-[9px] font-black uppercase tracking-widest">
+                        <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{getProviderName(item.providerId)}</span>
+                        <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-cyan-500/70">{getModelName(item.providerId, item.modelConfigId)}</span>
+                        {item.format && (
+                          <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{item.format}</span>
+                        )}
+                        {item.size && (
+                          <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{(item.size / 1024).toFixed(1)} KB</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -413,7 +470,11 @@ export function AlbumTab({
           >
             <video
               src={imageDisplayUrl(videoPlayerItem.imageUrl)}
-              poster={imageDisplayUrl(videoPlayerItem.optimizedUrl || videoPlayerItem.thumbnailUrl)}
+              poster={
+                videoPlayerItem.optimizedUrl || videoPlayerItem.thumbnailUrl
+                  ? imageDisplayUrl(videoPlayerItem.optimizedUrl || videoPlayerItem.thumbnailUrl)
+                  : undefined
+              }
               controls
               autoPlay
               className="w-full max-h-[85vh] rounded-2xl bg-black shadow-2xl"

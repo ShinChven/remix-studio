@@ -119,7 +119,8 @@
       "queue": "Queue",
       "done": "Done",
       "album": "Album",
-      "texts": "Texts"
+      "texts": "Texts",
+      "audios": "Audios"
     },
     "toasts": {
       "uploadImageFailed": "Failed to upload image. Please try again.",
@@ -150,6 +151,7 @@
       "emptyCanvas": "Empty Canvas",
       "galleryReady": "You have beautiful creations ready. Start a new draft or explore your gallery.",
       "buildWorkflowHint": "Build your project workflow on the left to start generating images.",
+      "buildAudioWorkflowHint": "Build your project workflow on the left to start generating audio.",
       "openAlbum": "Open Album",
       "startSelected": "Start Selected",
       "startAllNow": "Start All Now",
@@ -201,6 +203,14 @@
       "quality": "Quality",
       "background": "Background",
       "format": "Format",
+      "outputMode": "Output Mode",
+      "singleSpeaker": "Single Speaker",
+      "multiSpeaker": "Multi Speaker",
+      "voice": "Voice",
+      "speakerOneName": "Speaker 1 Name",
+      "speakerTwoName": "Speaker 2 Name",
+      "speakerOneVoice": "Speaker 1 Voice",
+      "speakerTwoVoice": "Speaker 2 Voice",
       "workflowOptions": "Workflow Options",
       "shuffleWorkflow": "Shuffle Workflow",
       "randomizeOrder": "Randomize combinations order",
@@ -300,6 +310,8 @@
       "videoItemCount_other": "{{count}} videos",
       "imageItemCount_one": "{{count}} image",
       "imageItemCount_other": "{{count}} images",
+      "audioItemCount_one": "{{count}} audio item",
+      "audioItemCount_other": "{{count}} audio items",
       "loadLibrariesFailed": "Failed to load libraries: {{message}}",
       "enterLibraryName": "Please enter a library name",
       "selectLibrary": "Please select a library",
@@ -329,9 +341,11 @@
       "copyAllToLibrary": "Copy All to Library",
       "noTexts": "No texts yet",
       "noVideos": "No videos yet",
+      "noAudios": "No audios yet",
       "galleryEmpty": "Gallery is empty",
       "collection": "collection",
       "reel": "reel",
+      "audioCollection": "audio collection",
       "emptyDescription": "Start a generation to build your {{target}}",
       "viewTextDetails": "Click to view text details",
       "imageContexts": "+{{count}} img",
@@ -449,7 +463,8 @@
       "assets": {
         "images": "{{count}} images",
         "texts": "{{count}} texts",
-        "videos": "{{count}} videos"
+        "videos": "{{count}} videos",
+        "audios": "{{count}} audios"
       },
       "openProject": "Open Project →"
     },
@@ -982,13 +997,16 @@
     "typeImage": "Image",
     "typeText": "Text",
     "typeVideo": "Video",
+    "typeAudio": "Audio",
     "nameLabel": "Project Name",
     "namePlaceholderText": "e.g. Product Description Generator...",
     "namePlaceholderImage": "e.g. Cyberpunk Character Series...",
+    "namePlaceholderAudio": "e.g. Two-voice Podcast Segment...",
     "prefixLabel": "Project Prefix",
     "prefixPlaceholder": "e.g. PJ01",
     "prefixDescriptionText": "Used as prefix for output naming",
     "prefixDescriptionImage": "Used for image filename generation",
+    "prefixDescriptionAudio": "Used for audio filename generation",
     "customIdLabel": "Custom ID (Optional)",
     "customIdPlaceholder": "project-slug-id",
     "customIdDescription": "Leave blank for automatic ID generation",
@@ -1073,7 +1091,8 @@
     "categories": {
       "text": "Text Generation",
       "image": "Image Generation",
-      "video": "Video Generation"
+      "video": "Video Generation",
+      "audio": "Audio Generation"
     },
     "modelCount": "{{count}} model",
     "modelCount_plural": "{{count}} models",

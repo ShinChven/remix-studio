@@ -55,7 +55,7 @@ export function DraftsTab({
 
   const StackedGallery = () => (
     <div className="py-12 md:py-20 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-1000">
-      {projectType !== 'text' && (
+      {projectType !== 'text' && projectType !== 'audio' && (
         <div className="relative w-64 h-64 md:w-80 md:h-80 mb-12 group cursor-pointer" onClick={onSwitchToAlbum}>
           {displayAlbumItems.map((item, idx) => {
             const rotations = [-6, 4, -2, 5, -3];
@@ -97,7 +97,9 @@ export function DraftsTab({
         <p className="max-w-md text-[11px] font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-[0.2em] leading-relaxed">
           {displayAlbumItems.length > 0 
             ? t('projectViewer.drafts.galleryReady')
-            : t('projectViewer.drafts.buildWorkflowHint')}
+            : projectType === 'audio'
+              ? t('projectViewer.drafts.buildAudioWorkflowHint')
+              : t('projectViewer.drafts.buildWorkflowHint')}
         </p>
         
         <div className="flex items-center justify-center gap-3 pt-4">

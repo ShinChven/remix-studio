@@ -1,7 +1,15 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Layers, Shuffle, AlertCircle, Plus, Loader2 } from 'lucide-react';
-import { Project, Provider } from '../../types';
+import {
+  AudioProjectConfig,
+  DEFAULT_AUDIO_PROJECT_CONFIG,
+  GEMINI_TTS_VOICES,
+  Project,
+  Provider,
+  parseAudioProjectConfig,
+  serializeAudioProjectConfig,
+} from '../../types';
 
 const getRatioDimensions = (ratioStr: string) => {
   let w = 1, h = 1;
@@ -67,6 +75,22 @@ export function SettingsPanel({
   const hasSelectedModel = Boolean(selectedProviderId && selectedModelId && selectedModel);
   const isTextProject = localProject.type === 'text';
   const isVideoProject = localProject.type === 'video';
+  const isAudioProject = localProject.type === 'audio';
+  const audioConfig = isAudioProject ? parseAudioProjectConfig(localProject.systemPrompt) : DEFAULT_AUDIO_PROJECT_CONFIG;
+  const availableVoices = selectedModel?.options.voices || [...GEMINI_TTS_VOICES];
+  type AudioVoiceName = NonNullable<AudioProjectConfig['speakers'][number]>['voice'];
+  const primarySpeaker = audioConfig.speakers[0];
+  const secondarySpeaker = audioConfig.speakers[1] ?? { name: 'Speaker 2', voice: 'Puck' as AudioVoiceName };
+
+  const updateAudioConfig = (nextConfig: AudioProjectConfig) => {
+    const updated = {
+      ...localProject,
+      systemPrompt: serializeAudioProjectConfig(nextConfig),
+      format: localProject.format || 'wav',
+    };
+    setLocalProject(updated);
+    onUpdate(updated);
+  };
 
   return (
     <div className="shrink overflow-hidden flex flex-col p-4 border-t border-neutral-200/50 dark:border-white/5 bg-white/60 dark:bg-black/60 backdrop-blur-2xl shadow-[0_-12px_48px_rgba(0,0,0,0.2)] min-h-0">
@@ -95,6 +119,20 @@ export function SettingsPanel({
               <span className="text-[9px] font-bold text-neutral-600 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                 {t('projectViewer.settings.selectModelToConfigure')}
               </span>
+            ) : isAudioProject ? (
+              <>
+                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
+                  {audioConfig.mode === 'multi' ? t('projectViewer.settings.multiSpeaker') : t('projectViewer.settings.singleSpeaker')}
+                </span>
+                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
+                  {audioConfig.mode === 'multi'
+                    ? `${primarySpeaker.voice}/${secondarySpeaker.voice}`
+                    : primarySpeaker.voice}
+                </span>
+                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
+                  {localProject.format || 'wav'}
+                </span>
+              </>
             ) : isTextProject ? (
               <>
                 <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
@@ -306,6 +344,168 @@ export function SettingsPanel({
                   </div>
                 </div>
               )}
+            </>
+          ) : isAudioProject ? (
+            <>
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  {t('projectViewer.settings.outputMode')}
+                </label>
+                <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 shadow-inner">
+                  <button
+                    onClick={() => {
+                        updateAudioConfig({
+                          ...audioConfig,
+                          mode: 'single',
+                          speakers: [primarySpeaker],
+                        });
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                      audioConfig.mode === 'single'
+                        ? 'bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border border-neutral-200 dark:border-neutral-700'
+                        : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-400'
+                    }`}
+                  >
+                    {t('projectViewer.settings.singleSpeaker')}
+                  </button>
+                  {selectedModel?.options.supportsMultiSpeaker !== false && (
+                    <button
+                      onClick={() => {
+                        updateAudioConfig({
+                          ...audioConfig,
+                          mode: 'multi',
+                          speakers: [
+                            primarySpeaker,
+                            secondarySpeaker,
+                          ],
+                        });
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                        audioConfig.mode === 'multi'
+                          ? 'bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border border-neutral-200 dark:border-neutral-700'
+                          : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-400'
+                      }`}
+                    >
+                      {t('projectViewer.settings.multiSpeaker')}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {audioConfig.mode === 'multi' && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-2.5">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                        {t('projectViewer.settings.speakerOneName')}
+                      </label>
+                      <input
+                        type="text"
+                        value={primarySpeaker.name}
+                        onChange={(e) => {
+                          updateAudioConfig({
+                            ...audioConfig,
+                            speakers: [
+                              { ...primarySpeaker, name: e.target.value || 'Speaker 1' },
+                              secondarySpeaker,
+                            ],
+                          });
+                        }}
+                        className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 shadow-inner"
+                      />
+                    </div>
+                    <div className="space-y-2.5">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                        {t('projectViewer.settings.speakerTwoName')}
+                      </label>
+                      <input
+                        type="text"
+                        value={secondarySpeaker.name}
+                        onChange={(e) => {
+                          updateAudioConfig({
+                            ...audioConfig,
+                            speakers: [
+                              primarySpeaker,
+                              { ...secondarySpeaker, name: e.target.value || 'Speaker 2' },
+                            ],
+                          });
+                        }}
+                        className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 shadow-inner"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className={`grid grid-cols-1 gap-3 ${audioConfig.mode === 'multi' ? 'md:grid-cols-2' : ''}`}>
+                <div className="space-y-2.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                    {audioConfig.mode === 'multi' ? t('projectViewer.settings.speakerOneVoice') : t('projectViewer.settings.voice')}
+                  </label>
+                  <select
+                    value={primarySpeaker.voice}
+                    onChange={(e) => {
+                      const voice = e.target.value as AudioVoiceName;
+                      updateAudioConfig({
+                        ...audioConfig,
+                        speakers: [
+                          { ...primarySpeaker, voice },
+                          audioConfig.speakers[1],
+                        ],
+                      });
+                    }}
+                    className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 shadow-inner"
+                  >
+                    {availableVoices.map((voice) => (
+                      <option key={voice} value={voice}>{voice}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {audioConfig.mode === 'multi' && (
+                  <div className="space-y-2.5">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                      {t('projectViewer.settings.speakerTwoVoice')}
+                    </label>
+                    <select
+                      value={secondarySpeaker.voice}
+                      onChange={(e) => {
+                        const voice = e.target.value as AudioVoiceName;
+                        updateAudioConfig({
+                          ...audioConfig,
+                          speakers: [
+                            primarySpeaker,
+                            { ...secondarySpeaker, voice },
+                          ],
+                        });
+                      }}
+                      className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 shadow-inner"
+                    >
+                      {availableVoices.map((voice) => (
+                        <option key={voice} value={voice}>{voice}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                  {t('projectViewer.settings.format')}
+                </label>
+                <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 shadow-inner">
+                  <button
+                    onClick={() => {
+                      const updated = { ...localProject, format: 'wav' as const };
+                      setLocalProject(updated);
+                      onUpdate(updated);
+                    }}
+                    className="flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border border-neutral-200 dark:border-neutral-700"
+                  >
+                    wav
+                  </button>
+                </div>
+              </div>
             </>
           ) : isTextProject ? (
             <>

@@ -340,7 +340,8 @@
       "assets": {
         "images": "{{count}} 張圖片",
         "texts": "{{count}} 個文本",
-        "videos": "{{count}} 個影片"
+        "videos": "{{count}} 個影片",
+        "audios": "{{count}} 段音訊"
       },
       "openProject": "開啟專案 →"
     },
@@ -771,13 +772,16 @@
     "typeImage": "圖像",
     "typeText": "文本",
     "typeVideo": "影片",
+    "typeAudio": "音訊",
     "nameLabel": "專案名稱",
     "namePlaceholderText": "例如：產品描述生成器...",
     "namePlaceholderImage": "例如：賽博朋克角色系列...",
+    "namePlaceholderAudio": "例如：雙人播客片段...",
     "prefixLabel": "專案前綴",
     "prefixPlaceholder": "例如：PJ01",
     "prefixDescriptionText": "用作輸出命名的前綴",
     "prefixDescriptionImage": "用於圖像文件名生成",
+    "prefixDescriptionAudio": "用於音訊檔名生成",
     "customIdLabel": "自定義 ID (可選)",
     "customIdPlaceholder": "專案識別符",
     "customIdDescription": "留空則自動生成 ID",
@@ -862,7 +866,8 @@
     "categories": {
       "text": "文本生成",
       "image": "圖像生成",
-      "video": "影片生成"
+      "video": "影片生成",
+      "audio": "音訊生成"
     },
     "modelCount": "{{count}} 個模型",
     "modelCount_plural": "{{count}} 個模型",
@@ -964,6 +969,8 @@
       "clientRevoked": "已撤銷用戶端存取權限",
       "clientCreated": "已建立 OAuth 用戶端",
       "clientCreateFailed": "建立 OAuth 用戶端失敗",
+      "clientUpdated": "OAuth 回呼網址已更新",
+      "clientUpdateFailed": "更新 OAuth 回呼網址失敗",
       "clientRedirectRequired": "請至少新增一個重新導向 URI",
       "clientIdCopied": "Client ID 已複製到剪貼簿",
       "clientSecretCopied": "Client secret 已複製到剪貼簿",
@@ -1051,6 +1058,11 @@
       "newClient": "新用戶端",
       "recommended": "建議用於簡單登入",
       "tip": "使用 OAuth 2.1 連接器連線的應用會自動顯示在這裡。在瀏覽器中核准存取後，應用就會出現在此處。",
+      "edit": {
+        "title": "編輯 {{name}} 的回呼網址",
+        "description": "更新此 OAuth 用戶端使用的回呼 URL。每行保留一個重新導向 URI。",
+        "save": "儲存回呼網址"
+      },
       "form": {
         "clientName": "用戶端名稱",
         "clientNamePlaceholder": "例如：Claude Desktop local",
@@ -1072,10 +1084,12 @@
         "desc": "在 AI 應用中完成登入後，應用將顯示在這裡。"
       },
       "card": {
+        "manualClient": "手動用戶端",
         "activeToken": "{{count}} 個有效權杖",
         "activeToken_plural": "{{count}} 個有效權杖",
         "noTokens": "沒有有效權杖",
         "registered": "註冊於 {{date}}",
+        "editTitle": "編輯回呼網址",
         "revokeTitle": "撤銷所有權杖"
       }
     },
@@ -1124,7 +1138,8 @@
       "queue": "佇列",
       "done": "完成",
       "album": "相簿",
-      "texts": "文字"
+      "texts": "文字",
+      "audios": "音訊"
     },
     "toasts": {
       "uploadImageFailed": "上傳圖片失敗，請再試一次。",
@@ -1155,6 +1170,7 @@
       "emptyCanvas": "空白畫布",
       "galleryReady": "你的精彩作品已經準備好。開始新的草稿或瀏覽你的相簿。",
       "buildWorkflowHint": "在左側建立專案工作流程以開始生成圖片。",
+      "buildAudioWorkflowHint": "在左側建立專案工作流程以開始生成音訊。",
       "openAlbum": "開啟相簿",
       "startSelected": "開始所選",
       "startAllNow": "立即全部開始",
@@ -1206,6 +1222,14 @@
       "quality": "品質",
       "background": "背景",
       "format": "格式",
+      "outputMode": "輸出模式",
+      "singleSpeaker": "單人聲",
+      "multiSpeaker": "雙人聲",
+      "voice": "聲音",
+      "speakerOneName": "說話者 1 名稱",
+      "speakerTwoName": "說話者 2 名稱",
+      "speakerOneVoice": "說話者 1 聲音",
+      "speakerTwoVoice": "說話者 2 聲音",
       "workflowOptions": "工作流程選項",
       "shuffleWorkflow": "打亂工作流程",
       "randomizeOrder": "隨機化組合順序",
@@ -1305,6 +1329,8 @@
       "videoItemCount_other": "{{count}} 個影片",
       "imageItemCount_one": "{{count}} 張圖片",
       "imageItemCount_other": "{{count}} 張圖片",
+      "audioItemCount_one": "{{count}} 段音訊",
+      "audioItemCount_other": "{{count}} 段音訊",
       "loadLibrariesFailed": "載入資料庫失敗：{{message}}",
       "enterLibraryName": "請輸入資料庫名稱",
       "selectLibrary": "請選擇資料庫",
@@ -1334,9 +1360,11 @@
       "copyAllToLibrary": "全部複製到資料庫",
       "noTexts": "尚無文字",
       "noVideos": "尚無影片",
+      "noAudios": "尚無音訊",
       "galleryEmpty": "相簿是空的",
       "collection": "集合",
       "reel": "短片",
+      "audioCollection": "音訊集",
       "emptyDescription": "開始一次生成來建立你的{{target}}",
       "viewTextDetails": "點擊查看文字詳情",
       "imageContexts": "+{{count}} 圖",

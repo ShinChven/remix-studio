@@ -16,6 +16,8 @@ src/types.ts                          -- Model definitions (PROVIDER_MODELS_MAP)
 server/generators/                    -- One generator class per provider per category
     +-- build-text-generator.ts       -- Factory: provider type -> text generator
     +-- build-generator.ts            -- Factory: provider type -> image generator
+    +-- build-video-generator.ts      -- Factory: provider type -> video generator
+    +-- build-audio-generator.ts      -- Factory: provider type -> audio generator
     +-- claude-text-generator.ts      -- Default model: claude-sonnet-4-6
     +-- openai-text-generator.ts      -- Default model: gpt-5.4
     +-- grok-text-generator.ts        -- Default model: grok-4.20-0309-non-reasoning
@@ -23,9 +25,17 @@ server/generators/                    -- One generator class per provider per ca
     +-- vertex-ai-text-generator.ts   -- Default model: gemini-3-flash-preview
     +-- google-ai-generator.ts        -- Image gen (GoogleAI)
     +-- vertex-ai-generator.ts        -- Image gen (VertexAI)
+    +-- google-ai-audio-generator.ts  -- Gemini TTS (GoogleAI)
+    +-- vertex-ai-audio-generator.ts  -- Gemini TTS (VertexAI)
     +-- openai-generator.ts           -- Image gen (OpenAI)
     +-- grok-generator.ts             -- Image gen (Grok/xAI)
     +-- running-hub-generator.ts      -- Image gen (RunningHub)
+    |
+server/queue/                         -- Category-specific output processors
+    +-- image-processor.ts
+    +-- text-processor.ts
+    +-- video-processor.ts
+    +-- audio-processor.ts
     |
 server/services/provider-model-lister.ts -- Fetches models from provider APIs,
                                             filters to only supported ones
@@ -45,7 +55,7 @@ This is the single source of truth. Each entry is a `ModelConfig`:
   name: string;         // Display name shown in UI
   generatorId: ProviderType; // Which generator to use
   modelId: string;      // Exact API model ID string sent to the provider
-  category: 'image' | 'text'; // Determines which project type can use it
+  category: 'image' | 'text' | 'video' | 'audio'; // Determines which project type can use it
   options: {
     // Image models:
     aspectRatios?: string[];
@@ -54,6 +64,14 @@ This is the single source of truth. Each entry is a `ModelConfig`:
     // Text models:
     temperatures?: number[];
     maxTokenOptions?: number[];
+    // Video models:
+    durations?: number[];
+    resolutions?: string[];
+    supportsReferenceVideo?: boolean;
+    supportsReferenceAudio?: boolean;
+    // Audio/TTS models:
+    voices?: string[];
+    supportsMultiSpeaker?: boolean;
   };
 }
 ```
@@ -69,6 +87,9 @@ This is the single source of truth. Each entry is a `ModelConfig`:
 | `aspectRatios` | `SettingsPanel.tsx` | Aspect ratio grid (image projects) |
 | `qualities` | `SettingsPanel.tsx` | Quality picker (image projects) |
 | `backgrounds` | `SettingsPanel.tsx` | Background picker (OpenAI image only) |
+| `durations` / `resolutions` | `SettingsPanel.tsx` | Video controls |
+| `supportsReferenceVideo` / `supportsReferenceAudio` | `WorkflowPanel.tsx` | Enables video/audio reference inputs for video projects |
+| `voices` / `supportsMultiSpeaker` | `SettingsPanel.tsx` | Gemini TTS voice picker and single vs multi-speaker controls |
 
 ---
 
@@ -79,11 +100,12 @@ This is the single source of truth. Each entry is a `ModelConfig`:
 1. Add an entry to `PROVIDER_MODELS_MAP[ProviderType]` in `src/types.ts`
 2. That's it — the UI and generators pick it up automatically via `modelId`
 
-### Adding a new model category to a provider (e.g. adding text to an image-only provider)
+### Adding a new model category to a provider (e.g. adding audio to a text/image provider)
 
-1. Create `server/generators/<provider>-text-generator.ts` (implement `TextGenerator`)
-2. Add the case in `server/generators/build-text-generator.ts`
-3. Add text model entries to `PROVIDER_MODELS_MAP` in `src/types.ts`
+1. Create the matching generator class, e.g. `server/generators/<provider>-audio-generator.ts`
+2. Register it in the right factory, e.g. `build-audio-generator.ts`
+3. Add model entries to `PROVIDER_MODELS_MAP` in `src/types.ts`
+4. If the category introduces new output handling, add or reuse the matching queue processor
 
 ### Updating model IDs (e.g. new model version)
 
@@ -96,7 +118,7 @@ This is the single source of truth. Each entry is a `ModelConfig`:
 1. Add the type to `ProviderType` union in `src/types.ts`
 2. Add `PROVIDER_MODELS_MAP[NewProvider]` entries
 3. Create generator class(es) in `server/generators/`
-4. Register in `build-text-generator.ts` and/or `build-generator.ts`
+4. Register in the relevant factory files (`build-text-generator.ts`, `build-generator.ts`, `build-video-generator.ts`, `build-audio-generator.ts`)
 5. Add model listing in `server/services/provider-model-lister.ts`
 6. Add color config in `src/pages/Providers.tsx` (`TYPE_COLORS`) and `src/pages/ProviderProfile.tsx`
 7. Add to `VALID_TYPES` in `server/routes/providers.ts`
@@ -129,6 +151,9 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 | Gemini 3 Flash | `gemini-3-flash-preview` | text | 65,536 |
 | Gemini 3.1 Pro | `gemini-3.1-pro-preview` | text | 65,536 |
 | Gemini 3.1 Flash Lite | `gemini-3.1-flash-lite-preview` | text | 65,536 |
+| Gemini 3.1 Flash TTS Preview | `gemini-3.1-flash-tts-preview` | audio | 32k context window |
+| Gemini 2.5 Flash Preview TTS | `gemini-2.5-flash-preview-tts` | audio | 32k context window |
+| Gemini 2.5 Pro Preview TTS | `gemini-2.5-pro-preview-tts` | audio | 32k context window |
 
 ### OpenAI
 | Name | Model ID | Category | Max Output |

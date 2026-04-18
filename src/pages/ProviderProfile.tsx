@@ -7,8 +7,9 @@ import { ProviderIcon } from '../components/ProviderIcon';
 import { PageHeader } from '../components/PageHeader';
 import {
   Key, Globe, CheckCircle, AlertCircle, Pencil, ArrowLeft,
-  MessageSquare, Image, Video, Loader2, RefreshCw, Layers,
+  MessageSquare, Image, Video, Music, Loader2, RefreshCw, Layers,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
   GoogleAI:   { icon: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-500',   badge: 'bg-blue-100 dark:bg-blue-600/10 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-600/30' },
@@ -74,6 +75,7 @@ export function ProviderProfile() {
     text:  models.filter(m => m.category === 'text'),
     image: models.filter(m => m.category === 'image'),
     video: models.filter(m => m.category === 'video'),
+    audio: models.filter(m => m.category === 'audio'),
   };
 
   if (isLoadingProvider) {
@@ -101,10 +103,11 @@ export function ProviderProfile() {
     ? provider.hasKey && provider.hasSecret
     : provider.hasKey;
 
-  const CATEGORY_META: Record<string, { label: string; icon: typeof MessageSquare; color: string }> = {
+  const CATEGORY_META: Record<string, { label: string; icon: LucideIcon; color: string }> = {
     text:  { label: t('providerProfile.categories.text'),  icon: MessageSquare, color: 'text-sky-800 dark:text-sky-400 bg-sky-100 dark:bg-sky-500/10 border-sky-300 dark:border-sky-500/20 shadow-sm' },
     image: { label: t('providerProfile.categories.image'), icon: Image,         color: 'text-pink-800 dark:text-pink-400 bg-pink-100 dark:bg-pink-500/10 border-pink-300 dark:border-pink-500/20 shadow-sm' },
     video: { label: t('providerProfile.categories.video'), icon: Video,         color: 'text-violet-800 dark:text-violet-400 bg-violet-100 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/20 shadow-sm' },
+    audio: { label: t('providerProfile.categories.audio'), icon: Music,         color: 'text-cyan-800 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-500/10 border-cyan-300 dark:border-cyan-500/20 shadow-sm' },
   };
 
   return (
@@ -207,7 +210,7 @@ export function ProviderProfile() {
             </div>
           ) : (
             <div className="space-y-6">
-              {(['text', 'image', 'video'] as const).map(cat => {
+              {(['text', 'image', 'video', 'audio'] as const).map(cat => {
                 const items = grouped[cat];
                 if (items.length === 0) return null;
                 const meta = CATEGORY_META[cat];

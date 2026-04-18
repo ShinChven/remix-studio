@@ -732,7 +732,7 @@ export interface ProviderModelInfo {
   id: string;
   name: string;
   description?: string;
-  category: 'text' | 'image' | 'video';
+  category: 'text' | 'image' | 'video' | 'audio';
   supported: boolean;
 }
 

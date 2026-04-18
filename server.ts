@@ -34,6 +34,7 @@ import { DeliveryManager } from './server/queue/delivery-manager';
 import { ImageProcessor } from './server/queue/image-processor';
 import { TextProcessor } from './server/queue/text-processor';
 import { VideoProcessor } from './server/queue/video-processor';
+import { AudioProcessor } from './server/queue/audio-processor';
 import { DetachedPoller } from './server/queue/detached-poller';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -101,8 +102,9 @@ async function startServer() {
   const imageProcessor = new ImageProcessor(projectRepository, storage, userRepository, exportStorage);
   const textProcessor = new TextProcessor(projectRepository);
   const videoProcessor = new VideoProcessor(projectRepository, storage, userRepository, exportStorage);
+  const audioProcessor = new AudioProcessor(projectRepository, storage, userRepository, exportStorage);
   const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor, videoProcessor);
-  const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, textProcessor, videoProcessor, detachedPoller);
+  const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, textProcessor, videoProcessor, audioProcessor, detachedPoller);
   // Important: Recover tasks before starting the server to resume background work
   await queueManager.recoverTasks();
 

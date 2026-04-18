@@ -115,7 +115,8 @@
       "assets": {
         "images": "{{count}} 张图片",
         "texts": "{{count}} 个文本",
-        "videos": "{{count}} 个视频"
+        "videos": "{{count}} 个视频",
+        "audios": "{{count}} 个音频"
       },
       "openProject": "打开项目 →"
     },
@@ -648,13 +649,16 @@
     "typeImage": "图像",
     "typeText": "文本",
     "typeVideo": "视频",
+    "typeAudio": "音频",
     "nameLabel": "项目名称",
     "namePlaceholderText": "例如：产品描述生成器...",
     "namePlaceholderImage": "例如：赛博朋克角色系列...",
+    "namePlaceholderAudio": "例如：双人播客片段...",
     "prefixLabel": "项目前缀",
     "prefixPlaceholder": "例如：PJ01",
     "prefixDescriptionText": "用作输出命名的前缀",
     "prefixDescriptionImage": "用于图像文件名生成",
+    "prefixDescriptionAudio": "用于音频文件名生成",
     "customIdLabel": "自定义 ID (可选)",
     "customIdPlaceholder": "项目标识符",
     "customIdDescription": "留空则自动生成 ID",
@@ -739,7 +743,8 @@
     "categories": {
       "text": "文本生成",
       "image": "图像生成",
-      "video": "视频生成"
+      "video": "视频生成",
+      "audio": "音频生成"
     },
     "modelCount": "{{count}} 个模型",
     "modelCount_plural": "{{count}} 个模型",
@@ -841,6 +846,8 @@
       "clientRevoked": "已撤销客户端访问权限",
       "clientCreated": "已创建 OAuth 客户端",
       "clientCreateFailed": "创建 OAuth 客户端失败",
+      "clientUpdated": "OAuth 回调地址已更新",
+      "clientUpdateFailed": "更新 OAuth 回调地址失败",
       "clientRedirectRequired": "请至少添加一个重定向 URI",
       "clientIdCopied": "Client ID 已复制到剪贴板",
       "clientSecretCopied": "Client secret 已复制到剪贴板",
@@ -928,6 +935,11 @@
       "newClient": "新客户端",
       "recommended": "推荐用于简单登录",
       "tip": "您通过 OAuth 2.1 连接器连接的应用将自动显示在此处。在浏览器中批准访问后，应用将出现在这里。",
+      "edit": {
+        "title": "编辑 {{name}} 的回调地址",
+        "description": "更新此 OAuth 客户端使用的回调 URL。每行保留一个重定向 URI。",
+        "save": "保存回调地址"
+      },
       "form": {
         "clientName": "客户端名称",
         "clientNamePlaceholder": "例如：Claude Desktop local",
@@ -949,10 +961,12 @@
         "desc": "在您的 AI 应用中完成登录后，应用将显示在此处。"
       },
       "card": {
+        "manualClient": "手动客户端",
         "activeToken": "{{count}} 个活动令牌",
         "activeToken_plural": "{{count}} 个活动令牌",
         "noTokens": "无活动令牌",
         "registered": "注册于 {{date}}",
+        "editTitle": "编辑回调地址",
         "revokeTitle": "撤销所有令牌"
       }
     },
@@ -1124,7 +1138,8 @@
       "queue": "队列",
       "done": "完成",
       "album": "相册",
-      "texts": "文本"
+      "texts": "文本",
+      "audios": "音频"
     },
     "toasts": {
       "uploadImageFailed": "上传图片失败，请重试。",
@@ -1155,6 +1170,7 @@
       "emptyCanvas": "空白画布",
       "galleryReady": "你的精彩作品已经准备好。开始新的草稿或浏览你的相册。",
       "buildWorkflowHint": "在左侧构建项目工作流以开始生成图片。",
+      "buildAudioWorkflowHint": "在左侧构建项目工作流以开始生成音频。",
       "openAlbum": "打开相册",
       "startSelected": "开始所选",
       "startAllNow": "立即全部开始",
@@ -1206,6 +1222,14 @@
       "quality": "质量",
       "background": "背景",
       "format": "格式",
+      "outputMode": "输出模式",
+      "singleSpeaker": "单人声",
+      "multiSpeaker": "双人声",
+      "voice": "声音",
+      "speakerOneName": "说话者 1 名称",
+      "speakerTwoName": "说话者 2 名称",
+      "speakerOneVoice": "说话者 1 声音",
+      "speakerTwoVoice": "说话者 2 声音",
       "workflowOptions": "工作流选项",
       "shuffleWorkflow": "打乱工作流",
       "randomizeOrder": "随机组合顺序",
@@ -1305,6 +1329,8 @@
       "videoItemCount_other": "{{count}} 个视频",
       "imageItemCount_one": "{{count}} 张图片",
       "imageItemCount_other": "{{count}} 张图片",
+      "audioItemCount_one": "{{count}} 个音频",
+      "audioItemCount_other": "{{count}} 个音频",
       "loadLibrariesFailed": "加载资料库失败：{{message}}",
       "enterLibraryName": "请输入资料库名称",
       "selectLibrary": "请选择资料库",
@@ -1334,9 +1360,11 @@
       "copyAllToLibrary": "全部复制到资料库",
       "noTexts": "还没有文本",
       "noVideos": "还没有视频",
+      "noAudios": "还没有音频",
       "galleryEmpty": "相册为空",
       "collection": "集合",
       "reel": "短片",
+      "audioCollection": "音频集",
       "emptyDescription": "开始一次生成来构建你的{{target}}",
       "viewTextDetails": "点击查看文本详情",
       "imageContexts": "+{{count}} 图",

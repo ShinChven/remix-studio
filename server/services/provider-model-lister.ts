@@ -5,7 +5,7 @@ export interface ProviderModel {
   id: string;
   name: string;
   description?: string;
-  category: 'text' | 'image' | 'video';
+  category: 'text' | 'image' | 'video' | 'audio';
   supported: boolean;
 }
 
@@ -22,7 +22,7 @@ function getSupportedModelIds(type: ProviderType): Set<string> {
 
 /**
  * Fetch the list of available models from a provider's API,
- * categorised into text / image / video generation.
+ * categorised into text / image / video / audio generation.
  * Only returns models that we have configured support for.
  */
 export async function listProviderModels(
@@ -105,10 +105,11 @@ async function listGoogleAIModels(
   }
 }
 
-function categorizeGoogleModel(m: any): 'text' | 'image' | 'video' {
+function categorizeGoogleModel(m: any): 'text' | 'image' | 'video' | 'audio' {
   const methods: string[] = m.supportedGenerationMethods || [];
   const name = ((m.name || '') + ' ' + (m.displayName || '')).toLowerCase();
 
+  if (name.includes('tts') || name.includes('text-to-speech') || name.includes('speech')) return 'audio';
   if (name.includes('veo') || name.includes('video')) return 'video';
   if (name.includes('imagen') || name.includes('image-generation')) return 'image';
 
@@ -245,11 +246,11 @@ async function listOpenAIModels(
   }
 }
 
-function categorizeOpenAIModel(id: string): 'text' | 'image' | 'video' {
+function categorizeOpenAIModel(id: string): 'text' | 'image' | 'video' | 'audio' {
   const lower = id.toLowerCase();
   if (lower.includes('dall-e') || lower.includes('image') || lower.includes('imagen')) return 'image';
   if (lower.includes('sora') || lower.includes('video')) return 'video';
-  if (lower.includes('tts') || lower.includes('whisper') || lower.includes('transcribe') || lower.includes('realtime')) return 'text'; // audio models, categorize as text for now
+  if (lower.includes('tts') || lower.includes('whisper') || lower.includes('transcribe') || lower.includes('realtime')) return 'audio';
   return 'text';
 }
 
@@ -288,7 +289,7 @@ async function listGrokModels(
   }
 }
 
-function categorizeGrokModel(id: string): 'text' | 'image' | 'video' {
+function categorizeGrokModel(id: string): 'text' | 'image' | 'video' | 'audio' {
   const lower = id.toLowerCase();
   if (lower.includes('imagine-image') || lower.includes('aurora')) return 'image';
   if (lower.includes('imagine-video') || lower.includes('video')) return 'video';

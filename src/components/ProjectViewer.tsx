@@ -2,7 +2,22 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Project, Job, Library, WorkflowItem as WorkflowItemType, WorkflowItemType as WorkflowItemTypeKind, Provider, AlbumItem, estimatePromptLength, formatPromptLimit, isPromptOverLimit, truncatePromptToLimit } from '../types';
+import {
+  DEFAULT_AUDIO_PROJECT_CONFIG,
+  Project,
+  Job,
+  Library,
+  WorkflowItem as WorkflowItemType,
+  WorkflowItemType as WorkflowItemTypeKind,
+  Provider,
+  AlbumItem,
+  estimatePromptLength,
+  formatPromptLimit,
+  isPromptOverLimit,
+  parseAudioProjectConfig,
+  serializeAudioProjectConfig,
+  truncatePromptToLimit,
+} from '../types';
 import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -171,6 +186,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
 
   const selectedProvider = providers.find(p => p.id === selectedProviderId);
   const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
+  const isAudioProject = localProject.type === 'audio';
 
   const getProviderName = (id?: string) => id ? providers.find(p => p.id === id)?.name || id : t('projectViewer.common.unknownProvider');
   const getModelName = (providerId?: string, modelId?: string) => {
@@ -200,6 +216,18 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           updated.maxTokens = 2048;
           needsUpdate = true;
         }
+      } else if (selectedModel.category === 'audio') {
+        if (!localProject.format) {
+          updated.format = 'wav';
+          needsUpdate = true;
+        }
+        if (!localProject.systemPrompt) {
+          updated.systemPrompt = serializeAudioProjectConfig(DEFAULT_AUDIO_PROJECT_CONFIG);
+          needsUpdate = true;
+        } else if (parseAudioProjectConfig(localProject.systemPrompt).kind !== 'remix-audio-tts') {
+          updated.systemPrompt = serializeAudioProjectConfig(DEFAULT_AUDIO_PROJECT_CONFIG);
+          needsUpdate = true;
+        }
       } else {
         // Sync image-specific defaults
         if (selectedModel.options.aspectRatios && !selectedModel.options.aspectRatios.includes(localProject.aspectRatio || '')) {
@@ -225,6 +253,10 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const combinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
 
   const addWorkflowItem = (type: WorkflowItemTypeKind) => {
+    if (isAudioProject && (type === 'image' || type === 'video' || type === 'audio')) {
+      return;
+    }
+
     if (type === 'library') {
       setShowLibrarySelector(true);
       return;
@@ -237,6 +269,15 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const handleLibrarySelect = (libraryId: string) => {
+    const library = libraries.find((item) => item.id === libraryId);
+    if (!library) {
+      setShowLibrarySelector(false);
+      return;
+    }
+    if (isAudioProject && library.type !== 'text') {
+      setShowLibrarySelector(false);
+      return;
+    }
     if ((localProject.workflow || []).some(item => item.type === 'library' && item.value === libraryId)) {
       setShowLibrarySelector(false);
       return;
@@ -447,6 +488,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           const filename = parts.join('_').replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 200);
 
           const isTextProject = localProject.type === 'text';
+          const isAudioProject = localProject.type === 'audio';
+          const audioConfig = isAudioProject ? parseAudioProjectConfig(localProject.systemPrompt) : DEFAULT_AUDIO_PROJECT_CONFIG;
           newJobs.push({
             id: crypto.randomUUID(),
             prompt: combo.prompt,
@@ -456,12 +499,17 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             status: 'draft',
             providerId: selectedProviderId,
             modelConfigId: selectedModelId,
-            ...(isTextProject ? {} : {
+            ...(isTextProject || isAudioProject ? {} : {
               aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '1024x1024'),
               quality: localProject.quality || (selectedModel?.options.qualities?.[0] || 'standard'),
               background: localProject.background || (selectedModel?.options.backgrounds?.[0]),
               format: localProject.format || 'png',
             }),
+            ...(isAudioProject ? {
+              quality: audioConfig.speakers[0].voice,
+              background: audioConfig.mode,
+              format: 'wav' as const,
+            } : {}),
             ...(localProject.type === 'video' ? {
               duration: localProject.duration || selectedModel?.options.durations?.[0] || 4,
               resolution: localProject.resolution || selectedModel?.options.resolutions?.[0] || '720p',
@@ -828,7 +876,13 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
               </button>
               <button onClick={() => setActiveTab('album')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'album' ? 'bg-white dark:bg-neutral-800 text-blue-600 dark:text-white shadow-sm border border-neutral-200 dark:border-neutral-700' : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300 hover:bg-white/50 dark:hover:bg-neutral-900/50 border border-transparent'}`}>
                 <Grid className="w-3 h-3" />
-                <span className="text-[10px] font-black uppercase tracking-widest leading-none">{localProject.type === 'text' ? t('projectViewer.tabs.texts') : t('projectViewer.tabs.album')}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+                  {localProject.type === 'text'
+                    ? t('projectViewer.tabs.texts')
+                    : localProject.type === 'audio'
+                      ? t('projectViewer.tabs.audios')
+                      : t('projectViewer.tabs.album')}
+                </span>
                 <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({albumItems.length})</span>
               </button>
             </div>
@@ -927,9 +981,13 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
           }
         }}
         libraries={(() => {
-          if (!selectingLibraryForItemId) return libraries;
+          if (!selectingLibraryForItemId) {
+            return isAudioProject ? libraries.filter((library) => library.type === 'text') : libraries;
+          }
           const item = (localProject.workflow || []).find(i => i.id === selectingLibraryForItemId);
-          if (!item) return libraries;
+          if (!item) {
+            return isAudioProject ? libraries.filter((library) => library.type === 'text') : libraries;
+          }
           return libraries.filter(l => l.type === item.type);
         })()}
         selectedLibraryIds={(localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)}

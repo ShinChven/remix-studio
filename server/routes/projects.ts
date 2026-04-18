@@ -228,7 +228,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   router.get('/api/projects/:id', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      const project = await repository.getProject(user.userId, c.req.param('id'));
+      const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+      const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Not found' }, 404);
       return c.json(await signProjectImages(project, storage));
     } catch (e) {
@@ -247,8 +249,14 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (!id || !name) return c.json({ error: 'id and name are required' }, 400);
       if (id.length > 128 || name.length > 256) return c.json({ error: 'Field too long' }, 400);
 
-      const projectType: 'image' | 'text' | 'video' =
-        body.type === 'text' ? 'text' : body.type === 'video' ? 'video' : 'image';
+      const projectType: 'image' | 'text' | 'video' | 'audio' =
+        body.type === 'text'
+          ? 'text'
+          : body.type === 'video'
+            ? 'video'
+            : body.type === 'audio'
+              ? 'audio'
+              : 'image';
       const projectStatus: 'active' | 'archived' = body.status === 'archived' ? 'archived' : 'active';
       const project = {
         id,
@@ -287,6 +295,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     try {
       const user = c.get('user') as JwtPayload;
       const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
       const currentProject = await repository.getProject(user.userId, projectId);
       if (!currentProject) return c.json({ error: 'Not found' }, 404);
 
@@ -327,7 +336,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (typeof body?.providerId === 'string') updates.providerId = body.providerId;
       if (typeof body?.aspectRatio === 'string') updates.aspectRatio = body.aspectRatio;
       if (typeof body?.quality === 'string') updates.quality = body.quality;
-      if (typeof body?.format === 'string') updates.format = body.format as 'png' | 'jpeg' | 'webp' | 'mp4';
+      if (typeof body?.format === 'string') updates.format = body.format as 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'ogg' | 'webm';
       if (typeof body?.shuffle === 'boolean') updates.shuffle = body.shuffle;
       if (typeof body?.modelConfigId === 'string') updates.modelConfigId = body.modelConfigId;
       if (typeof body?.prefix === 'string') updates.prefix = body.prefix.trim();
@@ -377,6 +386,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     try {
       const user = c.get('user') as JwtPayload;
       const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
       const safeProjectId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const projectPrefix = `${user.userId}/${safeProjectId}/`;
 
@@ -422,7 +432,11 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   router.delete('/api/projects/:id/album/:itemId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      const deleted = await repository.deleteAlbumItem(user.userId, c.req.param('id'), c.req.param('itemId'));
+      const projectId = c.req.param('id');
+      const itemId = c.req.param('itemId');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+      if (!itemId) return c.json({ error: 'Item id is required' }, 400);
+      const deleted = await repository.deleteAlbumItem(user.userId, projectId, itemId);
       if (!deleted) return c.json({ error: 'Not found' }, 404);
       return c.json({ success: true });
     } catch (e) {
@@ -440,6 +454,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     try {
       const user = c.get('user') as JwtPayload;
       const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
       const body = await c.req.json();
       
       const itemIds: string[] = body.itemIds || [];
@@ -456,7 +471,14 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
-      const targetLibraryType = project.type === 'text' ? 'text' : project.type === 'video' ? 'video' : 'image';
+      const targetLibraryType =
+        project.type === 'text'
+          ? 'text'
+          : project.type === 'video'
+            ? 'video'
+            : project.type === 'audio'
+              ? 'audio'
+              : 'image';
 
       const itemsToCopy = (project.album || []).filter(item => itemIds.includes(item.id));
       if (itemsToCopy.length === 0) return c.json({ error: 'No matching items found' }, 400);
@@ -464,14 +486,16 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const bucket = storage.getBucketName();
 
       let requiredSize = 0;
-      if (targetLibraryType === 'image' || targetLibraryType === 'video') {
+      if (targetLibraryType === 'image' || targetLibraryType === 'video' || targetLibraryType === 'audio') {
         for (const item of itemsToCopy) {
-          if (version === 'raw') {
+          if (targetLibraryType === 'audio' || version === 'raw') {
             requiredSize += Number(item.size) || 0;
           } else {
             requiredSize += Number(item.optimizedSize || item.size) || 0;
           }
-          requiredSize += Number(item.thumbnailSize) || 0;
+          if (targetLibraryType !== 'audio') {
+            requiredSize += Number(item.thumbnailSize) || 0;
+          }
         }
       }
 
@@ -530,9 +554,13 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         }
       } else {
         for (const item of itemsToCopy) {
-          const sourceMainUrl = version === 'raw' ? item.imageUrl : (item.optimizedUrl || item.imageUrl);
+          const sourceMainUrl = targetLibraryType === 'audio'
+            ? item.imageUrl
+            : version === 'raw'
+              ? item.imageUrl
+              : (item.optimizedUrl || item.imageUrl);
           const sourceMainKey = stripToKey(sourceMainUrl, bucket);
-          const sourceThumbKey = stripToKey(item.thumbnailUrl, bucket);
+          const sourceThumbKey = targetLibraryType === 'audio' ? undefined : stripToKey(item.thumbnailUrl, bucket);
 
           let destMainKey: string | undefined;
           let destThumbKey: string | undefined;
@@ -569,8 +597,8 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
             title: basename || jobFilename || undefined,
             content: destMainKey || '',
             thumbnailUrl: destThumbKey,
-            optimizedUrl: version === 'raw' ? destMainKey : undefined,
-            size: version === 'raw' ? item.size : (item.optimizedSize || item.size)
+            optimizedUrl: targetLibraryType === 'audio' ? undefined : (version === 'raw' ? destMainKey : undefined),
+            size: targetLibraryType === 'audio' ? item.size : (version === 'raw' ? item.size : (item.optimizedSize || item.size))
           });
         }
       }
@@ -595,6 +623,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     try {
       const user = c.get('user') as JwtPayload;
       const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
 
@@ -674,7 +703,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const { keys } = await c.req.json();
       if (!Array.isArray(keys)) return c.json({ error: 'Expected an array of keys' }, 400);
 
-      const safeProjectId = c.req.param('id').replace(/[^a-zA-Z0-9-_]/g, '_');
+      const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+      const safeProjectId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const projectPrefix = `${user.userId}/${safeProjectId}/`;
 
       for (const key of keys) {
@@ -702,6 +733,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     try {
       const user = c.get('user') as JwtPayload;
       const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
 
@@ -752,6 +784,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     try {
       const user = c.get('user') as JwtPayload;
       const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
       const body = await c.req.json();
       const itemIds = body.itemIds as string[];
       const packageName = typeof body.packageName === 'string' ? body.packageName : undefined;
@@ -795,6 +828,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     try {
       const user = c.get('user') as JwtPayload;
       const taskId = c.req.param('taskId');
+      if (!taskId) return c.json({ error: 'Task id is required' }, 400);
       const task = await exportManager.getTask(user.userId, taskId);
       if (!task) return c.json({ error: 'Task not found' }, 404);
       return c.json(task);
@@ -828,6 +862,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     try {
       const user = c.get('user') as JwtPayload;
       const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
       const exports = await repository.getExportTasks(user.userId, projectId);
       return c.json(exports);
     } catch (e) {

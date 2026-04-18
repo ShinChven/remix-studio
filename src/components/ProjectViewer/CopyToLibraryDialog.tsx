@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Copy, FolderPlus, Library as LibraryIcon, Loader2, X, CheckSquare, Square, FileText, Video as VideoIcon } from 'lucide-react';
+import { Copy, FolderPlus, Library as LibraryIcon, Loader2, X, CheckSquare, Square, FileText, Video as VideoIcon, Music } from 'lucide-react';
 import { Library, ProjectType } from '../../types';
 import { fetchLibraries, copyAlbumToLibrary } from '../../api';
 import { toast } from 'sonner';
@@ -27,23 +27,28 @@ export function CopyToLibraryDialog({
   const { t } = useTranslation();
   const isTextProject = projectType === 'text';
   const isVideoProject = projectType === 'video';
-  const targetLibraryType = isTextProject ? 'text' : isVideoProject ? 'video' : 'image';
+  const isAudioProject = projectType === 'audio';
+  const targetLibraryType = isTextProject ? 'text' : isVideoProject ? 'video' : isAudioProject ? 'audio' : 'image';
   const defaultLibraryName = `${projectName} ${
     isTextProject
       ? t('projectViewer.copyToLibrary.texts')
       : isVideoProject
         ? t('projectViewer.copyToLibrary.videos')
-        : t('projectViewer.tabs.album')
+        : isAudioProject
+          ? t('projectViewer.copyToLibrary.audios')
+          : t('projectViewer.tabs.album')
   }`;
   const itemSummary = t(
     isTextProject
       ? 'projectViewer.copyToLibrary.textItemCount'
       : projectType === 'video'
         ? 'projectViewer.copyToLibrary.videoItemCount'
+        : projectType === 'audio'
+          ? 'projectViewer.copyToLibrary.audioItemCount'
         : 'projectViewer.copyToLibrary.imageItemCount',
     { count: itemIds.length }
   );
-  const AccentIcon = isTextProject ? FileText : isVideoProject ? VideoIcon : LibraryIcon;
+  const AccentIcon = isTextProject ? FileText : isVideoProject ? VideoIcon : isAudioProject ? Music : LibraryIcon;
 
   const [mode, setMode] = useState<'new' | 'existing'>('new');
   const [newLibraryName, setNewLibraryName] = useState(defaultLibraryName);
@@ -101,7 +106,7 @@ export function CopyToLibraryDialog({
     try {
       const result = await copyAlbumToLibrary(projectId, {
         itemIds,
-        version: isTextProject ? undefined : version,
+        version: isTextProject || isAudioProject ? undefined : version,
         destinationLibraryId: mode === 'existing' ? selectedLibraryId : undefined,
         newLibraryName: mode === 'new' ? newLibraryName.trim() : undefined,
       });
@@ -214,7 +219,7 @@ export function CopyToLibraryDialog({
             )}
           </div>
 
-          {!isTextProject && (
+          {!isTextProject && !isAudioProject && (
             <div className="space-y-4">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">{t('projectViewer.copyToLibrary.versionToCopy')}</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">

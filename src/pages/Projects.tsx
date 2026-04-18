@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Project, ProjectType } from '../types';
-import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video, Search, Copy, Archive, ArchiveRestore } from 'lucide-react';
+import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video, Music, Search, Copy, Archive, ArchiveRestore } from 'lucide-react';
 import { fetchProjects, updateProject } from '../api';
 import { PageHeader } from '../components/PageHeader';
 
@@ -34,6 +34,16 @@ function getProjectTypeMeta(type: ProjectType | undefined) {
         glowClassName: 'via-purple-500/20',
         assetIcon: Video,
         assetLabel: 'videos',
+      };
+    case 'audio':
+      return {
+        icon: Music,
+        iconClassName: 'bg-cyan-500/10 text-cyan-500 shadow-cyan-500/5',
+        borderClassName: 'hover:border-cyan-500/50',
+        accentClassName: 'text-cyan-500/80',
+        glowClassName: 'via-cyan-500/20',
+        assetIcon: Music,
+        assetLabel: 'audios',
       };
     case 'image':
     default:

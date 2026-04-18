@@ -340,7 +340,8 @@
       "assets": {
         "images": "{{count}} images",
         "texts": "{{count}} textes",
-        "videos": "{{count}} vidéos"
+        "videos": "{{count}} vidéos",
+        "audios": "{{count}} fichiers audio"
       },
       "openProject": "Ouvrir le projet →"
     },
@@ -771,13 +772,16 @@
     "typeImage": "Image",
     "typeText": "Texte",
     "typeVideo": "Vidéo",
+    "typeAudio": "Audio",
     "nameLabel": "Nom du projet",
     "namePlaceholderText": "ex: Générateur de descriptions de produits...",
     "namePlaceholderImage": "ex: Série de personnages cyberpunk...",
+    "namePlaceholderAudio": "ex: Extrait de podcast à deux voix...",
     "prefixLabel": "Préfixe du projet",
     "prefixPlaceholder": "ex: PJ01",
     "prefixDescriptionText": "Utilisé comme préfixe pour le nommage de sortie",
     "prefixDescriptionImage": "Utilisé pour la génération des noms de fichiers images",
+    "prefixDescriptionAudio": "Utilisé pour la génération des noms de fichiers audio",
     "customIdLabel": "ID personnalisé (optionnel)",
     "customIdPlaceholder": "identifiant-du-projet",
     "customIdDescription": "Laisser vide pour une génération automatique d'ID",
@@ -862,7 +866,8 @@
     "categories": {
       "text": "Génération de texte",
       "image": "Génération d'image",
-      "video": "Génération de vidéo"
+      "video": "Génération de vidéo",
+      "audio": "Génération audio"
     },
     "modelCount": "{{count}} modèle",
     "modelCount_plural": "{{count}} modèles",
@@ -964,6 +969,8 @@
       "clientRevoked": "Accès client révoqué",
       "clientCreated": "Client OAuth créé",
       "clientCreateFailed": "Impossible de créer le client OAuth",
+      "clientUpdated": "Callback OAuth mis à jour",
+      "clientUpdateFailed": "Impossible de mettre à jour le callback OAuth",
       "clientRedirectRequired": "Ajoutez au moins une URI de redirection",
       "clientIdCopied": "Client ID copié dans le presse-papiers",
       "clientSecretCopied": "Client secret copié dans le presse-papiers",
@@ -1051,6 +1058,11 @@
       "newClient": "Nouveau client",
       "recommended": "Recommandé pour une connexion simple",
       "tip": "Les applications connectées avec le connecteur OAuth 2.1 apparaîtront automatiquement ici. Après avoir approuvé l'accès dans le navigateur, l'application apparaîtra ici.",
+      "edit": {
+        "title": "Modifier les callbacks pour {{name}}",
+        "description": "Mettez à jour les URL de callback utilisées par ce client OAuth. Conservez une URI de redirection par ligne.",
+        "save": "Enregistrer les URL de callback"
+      },
       "form": {
         "clientName": "Nom du client",
         "clientNamePlaceholder": "ex. Claude Desktop local",
@@ -1072,10 +1084,12 @@
         "desc": "Les applications apparaîtront ici une fois la connexion terminée dans votre application IA."
       },
       "card": {
+        "manualClient": "Client manuel",
         "activeToken": "{{count}} jeton actif",
         "activeToken_plural": "{{count}} jetons actifs",
         "noTokens": "Aucun jeton actif",
         "registered": "Enregistré le {{date}}",
+        "editTitle": "Modifier les URL de callback",
         "revokeTitle": "Révoquer tous les jetons"
       }
     },
@@ -1124,7 +1138,8 @@
       "queue": "File",
       "done": "Terminé",
       "album": "Album",
-      "texts": "Textes"
+      "texts": "Textes",
+      "audios": "Audios"
     },
     "toasts": {
       "uploadImageFailed": "Échec du téléversement de l'image. Veuillez réessayer.",
@@ -1155,6 +1170,7 @@
       "emptyCanvas": "Toile vide",
       "galleryReady": "De belles créations vous attendent. Lancez un nouveau brouillon ou explorez votre galerie.",
       "buildWorkflowHint": "Construisez le workflow de votre projet à gauche pour commencer à générer des images.",
+      "buildAudioWorkflowHint": "Construisez le workflow de votre projet à gauche pour commencer à générer de l'audio.",
       "openAlbum": "Ouvrir l'album",
       "startSelected": "Lancer la sélection",
       "startAllNow": "Tout lancer maintenant",
@@ -1206,6 +1222,14 @@
       "quality": "Qualité",
       "background": "Arrière-plan",
       "format": "Format",
+      "outputMode": "Mode de sortie",
+      "singleSpeaker": "Voix unique",
+      "multiSpeaker": "Deux voix",
+      "voice": "Voix",
+      "speakerOneName": "Nom de l'intervenant 1",
+      "speakerTwoName": "Nom de l'intervenant 2",
+      "speakerOneVoice": "Voix de l'intervenant 1",
+      "speakerTwoVoice": "Voix de l'intervenant 2",
       "workflowOptions": "Options du workflow",
       "shuffleWorkflow": "Mélanger le workflow",
       "randomizeOrder": "Randomiser l'ordre des combinaisons",
@@ -1305,6 +1329,8 @@
       "videoItemCount_other": "{{count}} vidéos",
       "imageItemCount_one": "{{count}} image",
       "imageItemCount_other": "{{count}} images",
+      "audioItemCount_one": "{{count}} fichier audio",
+      "audioItemCount_other": "{{count}} fichiers audio",
       "loadLibrariesFailed": "Échec du chargement des bibliothèques : {{message}}",
       "enterLibraryName": "Veuillez saisir un nom de bibliothèque",
       "selectLibrary": "Veuillez sélectionner une bibliothèque",
@@ -1334,9 +1360,11 @@
       "copyAllToLibrary": "Tout copier vers la bibliothèque",
       "noTexts": "Aucun texte pour le moment",
       "noVideos": "Aucune vidéo pour le moment",
+      "noAudios": "Aucun audio pour le moment",
       "galleryEmpty": "La galerie est vide",
       "collection": "collection",
       "reel": "reel",
+      "audioCollection": "collection audio",
       "emptyDescription": "Lancez une génération pour créer votre {{target}}",
       "viewTextDetails": "Cliquer pour voir les détails du texte",
       "imageContexts": "+{{count}} img",

@@ -32,7 +32,7 @@ export interface Library {
   itemCount?: number;
 }
 
-export type ProjectType = 'image' | 'text' | 'video';
+export type ProjectType = 'image' | 'text' | 'video' | 'audio';
 export type ProjectStatus = 'active' | 'archived';
 
 export interface ModelConfig {
@@ -40,13 +40,14 @@ export interface ModelConfig {
   name: string; // Display name e.g. "nano banana 2"
   generatorId: ProviderType; // Which generator type to use
   modelId: string; // The actual API model string (e.g. 'gemini-3.1-flash-image-preview')
-  category: ProjectType; // 'image' | 'text' | 'video'
+  category: ProjectType; // 'image' | 'text' | 'video' | 'audio'
   apiUrl?: string; // Optional override
   promptLimit?: PromptLimitMeta;
   options: {
     aspectRatios?: string[];
     qualities?: string[];
     backgrounds?: string[];
+    voices?: string[];
     // Text generation options
     temperatures?: number[];
     maxTokenOptions?: number[];
@@ -54,6 +55,8 @@ export interface ModelConfig {
     durations?: number[]; // seconds
     resolutions?: string[]; // e.g. '720p', '1080p', '4k'
     sounds?: ('on' | 'off')[];
+    // Audio generation options
+    supportsMultiSpeaker?: boolean;
      // Advanced image generation options
     stepsOptions?: number[];
     guidanceOptions?: number[];
@@ -69,6 +72,103 @@ export interface PromptLimitMeta {
 }
 
 const APPROX_CHARS_PER_TOKEN = 4;
+
+export const GEMINI_TTS_VOICES = [
+  'Zephyr',
+  'Puck',
+  'Charon',
+  'Kore',
+  'Fenrir',
+  'Leda',
+  'Orus',
+  'Aoede',
+  'Callirrhoe',
+  'Autonoe',
+  'Enceladus',
+  'Iapetus',
+  'Umbriel',
+  'Algieba',
+  'Despina',
+  'Erinome',
+  'Algenib',
+  'Rasalgethi',
+  'Laomedeia',
+  'Achernar',
+  'Alnilam',
+  'Schedar',
+  'Gacrux',
+  'Pulcherrima',
+  'Achird',
+  'Zubenelgenubi',
+  'Vindemiatrix',
+  'Sadachbia',
+  'Sadaltager',
+  'Sulafat',
+] as const;
+
+export type GeminiTtsVoiceName = typeof GEMINI_TTS_VOICES[number];
+
+export interface AudioSpeakerConfig {
+  name: string;
+  voice: GeminiTtsVoiceName;
+}
+
+export interface AudioProjectConfig {
+  kind: 'remix-audio-tts';
+  mode: 'single' | 'multi';
+  speakers: [AudioSpeakerConfig, AudioSpeakerConfig?];
+}
+
+export const DEFAULT_AUDIO_PROJECT_CONFIG: AudioProjectConfig = {
+  kind: 'remix-audio-tts',
+  mode: 'single',
+  speakers: [
+    {
+      name: 'Narrator',
+      voice: 'Kore',
+    },
+  ],
+};
+
+export function parseAudioProjectConfig(value?: string): AudioProjectConfig {
+  if (!value) return DEFAULT_AUDIO_PROJECT_CONFIG;
+
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed?.kind !== 'remix-audio-tts') return DEFAULT_AUDIO_PROJECT_CONFIG;
+
+    const speakers = Array.isArray(parsed.speakers)
+      ? parsed.speakers.slice(0, 2).map((speaker: any, index: number) => ({
+          name: typeof speaker?.name === 'string' && speaker.name.trim()
+            ? speaker.name.trim()
+            : index === 0
+              ? 'Narrator'
+              : `Speaker ${index + 1}`,
+          voice: GEMINI_TTS_VOICES.includes(speaker?.voice)
+            ? speaker.voice
+            : index === 0
+              ? 'Kore'
+              : 'Puck',
+        }))
+      : DEFAULT_AUDIO_PROJECT_CONFIG.speakers;
+
+    if (speakers.length === 0) {
+      return DEFAULT_AUDIO_PROJECT_CONFIG;
+    }
+
+    return {
+      kind: 'remix-audio-tts',
+      mode: parsed.mode === 'multi' && speakers.length > 1 ? 'multi' : 'single',
+      speakers: speakers as [AudioSpeakerConfig, AudioSpeakerConfig?],
+    };
+  } catch {
+    return DEFAULT_AUDIO_PROJECT_CONFIG;
+  }
+}
+
+export function serializeAudioProjectConfig(config: AudioProjectConfig): string {
+  return JSON.stringify(config);
+}
 
 export function estimatePromptLength(prompt: string, limit?: PromptLimitMeta): number {
   if (!limit) return prompt.length;
@@ -169,6 +269,42 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         durations: [4, 6, 8],
       },
     },
+    {
+      id: 'google-gemini-3.1-flash-tts-audio',
+      name: 'Gemini 3.1 Flash TTS',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-3.1-flash-tts-preview',
+      category: 'audio',
+      promptLimit: { value: 32000, unit: 'tokens' },
+      options: {
+        voices: [...GEMINI_TTS_VOICES],
+        supportsMultiSpeaker: true,
+      },
+    },
+    {
+      id: 'google-gemini-2.5-flash-tts-audio',
+      name: 'Gemini 2.5 Flash TTS',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-2.5-flash-preview-tts',
+      category: 'audio',
+      promptLimit: { value: 32000, unit: 'tokens' },
+      options: {
+        voices: [...GEMINI_TTS_VOICES],
+        supportsMultiSpeaker: true,
+      },
+    },
+    {
+      id: 'google-gemini-2.5-pro-tts-audio',
+      name: 'Gemini 2.5 Pro TTS',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-2.5-pro-preview-tts',
+      category: 'audio',
+      promptLimit: { value: 32000, unit: 'tokens' },
+      options: {
+        voices: [...GEMINI_TTS_VOICES],
+        supportsMultiSpeaker: true,
+      },
+    },
   ],
   VertexAI: [
     {
@@ -217,6 +353,42 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'vertex-gemini-3.1-flash-tts-audio',
+      name: 'Gemini 3.1 Flash TTS',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-3.1-flash-tts-preview',
+      category: 'audio',
+      promptLimit: { value: 32000, unit: 'tokens' },
+      options: {
+        voices: [...GEMINI_TTS_VOICES],
+        supportsMultiSpeaker: true,
+      },
+    },
+    {
+      id: 'vertex-gemini-2.5-flash-tts-audio',
+      name: 'Gemini 2.5 Flash TTS',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-2.5-flash-preview-tts',
+      category: 'audio',
+      promptLimit: { value: 32000, unit: 'tokens' },
+      options: {
+        voices: [...GEMINI_TTS_VOICES],
+        supportsMultiSpeaker: true,
+      },
+    },
+    {
+      id: 'vertex-gemini-2.5-pro-tts-audio',
+      name: 'Gemini 2.5 Pro TTS',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-2.5-pro-preview-tts',
+      category: 'audio',
+      promptLimit: { value: 32000, unit: 'tokens' },
+      options: {
+        voices: [...GEMINI_TTS_VOICES],
+        supportsMultiSpeaker: true,
       },
     },
   ],
@@ -841,7 +1013,7 @@ export interface Job {
   aspectRatio?: string;
   quality?: string;
   background?: string;
-  format?: 'png' | 'jpeg' | 'webp' | 'mp4';
+  format?: 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'ogg' | 'webm';
   taskId?: string; // For long-running remote tasks (e.g. RunningHub)
   filename?: string; // Custom filename for S3 storage (ProjectPrefix_Tags_Title_shortuuid)
   // Video generation
@@ -868,7 +1040,7 @@ export interface AlbumItem {
   aspectRatio?: string;
   quality?: string;
   background?: string;
-  format?: 'png' | 'jpeg' | 'webp' | 'mp4';
+  format?: 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'ogg' | 'webm';
   size?: number; // Size in bytes
   optimizedSize?: number; // Size in bytes
   thumbnailSize?: number; // Size in bytes
@@ -887,7 +1059,7 @@ export interface TrashItem extends AlbumItem {
 export interface Project {
   id: string;
   name: string;
-  type?: ProjectType; // 'image' (default), 'text', or 'video'
+  type?: ProjectType; // 'image' (default), 'text', 'video', or 'audio'
   status?: ProjectStatus; // 'active' (default) or 'archived'
   createdAt: number;
   workflow: WorkflowItem[];
@@ -899,7 +1071,7 @@ export interface Project {
   aspectRatio?: string;
   quality?: string;
   background?: string;
-  format?: 'png' | 'jpeg' | 'webp' | 'mp4';
+  format?: 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'ogg' | 'webm';
   shuffle?: boolean;
   modelConfigId?: string;
   prefix?: string; // Project prefix for file naming
