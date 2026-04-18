@@ -22,7 +22,7 @@ interface WorkflowPanelProps {
   uploadingItemIds: Set<string>;
   isAddingDrafts: boolean;
   draftsProgress: { current: number; total: number; stage: 'composing' | 'saving' } | null;
-  combinations: any[];
+  combinationsCount: number;
   onNavigateToEdit: () => void;
   onNavigateToOrphans: () => void;
   onNavigateToDuplicate: () => void;
@@ -68,7 +68,7 @@ export function WorkflowPanel({
   uploadingItemIds,
   isAddingDrafts,
   draftsProgress,
-  combinations,
+  combinationsCount,
   onNavigateToEdit,
   onNavigateToOrphans,
   onNavigateToDuplicate,
@@ -298,7 +298,7 @@ export function WorkflowPanel({
         setIsSettingsCollapsed={setIsSettingsCollapsed}
         queueCount={queueCount}
         setQueueCount={setQueueCount}
-        combinations={combinations}
+        combinationsCount={combinationsCount}
         setIsModelSelectorOpen={setIsModelSelectorOpen}
         workflowError={workflowError}
         uploadingItemIds={uploadingItemIds}

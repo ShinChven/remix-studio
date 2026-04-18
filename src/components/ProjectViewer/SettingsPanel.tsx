@@ -41,7 +41,7 @@ interface SettingsPanelProps {
   setIsSettingsCollapsed: (collapsed: boolean) => void;
   queueCount: number;
   setQueueCount: (count: number) => void;
-  combinations: any[];
+  combinationsCount: number;
   setIsModelSelectorOpen: (open: boolean) => void;
   workflowError: string | null;
   uploadingItemIds: Set<string>;
@@ -61,7 +61,7 @@ export function SettingsPanel({
   setIsSettingsCollapsed,
   queueCount,
   setQueueCount,
-  combinations,
+  combinationsCount,
   setIsModelSelectorOpen,
   workflowError,
   uploadingItemIds,
@@ -808,12 +808,12 @@ export function SettingsPanel({
           />
           <button
             type="button"
-            onClick={() => setQueueCount(Math.max(1, combinations.length))}
-            disabled={combinations.length === 0}
+            onClick={() => setQueueCount(Math.max(1, combinationsCount))}
+            disabled={combinationsCount === 0}
             className="text-[10px] text-neutral-600 hover:text-blue-600 dark:hover:text-blue-400 font-bold tracking-tighter transition-colors disabled:hover:text-neutral-600 disabled:cursor-not-allowed"
             title={t('projectViewer.settings.setToMaxCombinations')}
           >
-            {t('projectViewer.settings.ofTotal', { count: combinations.length })}
+            {t('projectViewer.settings.ofTotal', { count: combinationsCount })}
           </button>
         </div>
       </div>

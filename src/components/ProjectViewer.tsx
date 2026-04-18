@@ -21,7 +21,7 @@ import {
 import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateWorkflowCombinations, generateJobs } from '../lib/remixEngine';
+import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
 
 // Sub-components
@@ -250,7 +250,10 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     }
   }, [selectedModelId, selectedModel]);
 
-  const combinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
+  const combinationsCount = React.useMemo(
+    () => countWorkflowCombinations(localProject.workflow || [], libraries),
+    [localProject.workflow, libraries]
+  );
 
   const addWorkflowItem = (type: WorkflowItemTypeKind) => {
     if (isAudioProject && (type === 'image' || type === 'video' || type === 'audio')) {
@@ -820,7 +823,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         uploadingItemIds={uploadingItemIds}
         isAddingDrafts={isAddingDrafts}
         draftsProgress={draftsProgress}
-        combinations={combinations}
+        combinationsCount={combinationsCount}
         onNavigateToEdit={() => navigate(`/project/${project.id}/edit`)}
         onNavigateToOrphans={() => navigate(`/project/${project.id}/orphans`)}
         onNavigateToDuplicate={() => navigate(`/project/new`, { state: { copyFrom: project.id } })}
