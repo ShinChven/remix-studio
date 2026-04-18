@@ -336,7 +336,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (typeof body?.providerId === 'string') updates.providerId = body.providerId;
       if (typeof body?.aspectRatio === 'string') updates.aspectRatio = body.aspectRatio;
       if (typeof body?.quality === 'string') updates.quality = body.quality;
-      if (typeof body?.format === 'string') updates.format = body.format as 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'ogg' | 'webm';
+      if (typeof body?.format === 'string') updates.format = body.format as 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'aac' | 'ogg' | 'webm';
       if (typeof body?.shuffle === 'boolean') updates.shuffle = body.shuffle;
       if (typeof body?.modelConfigId === 'string') updates.modelConfigId = body.modelConfigId;
       if (typeof body?.prefix === 'string') updates.prefix = body.prefix.trim();

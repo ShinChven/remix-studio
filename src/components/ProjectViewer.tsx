@@ -508,7 +508,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
             ...(isAudioProject ? {
               quality: audioConfig.speakers[0].voice,
               background: audioConfig.mode,
-              format: 'wav' as const,
+              format: (localProject.format || 'wav') as 'wav' | 'mp3' | 'aac',
             } : {}),
             ...(localProject.type === 'video' ? {
               duration: localProject.duration || selectedModel?.options.durations?.[0] || 4,

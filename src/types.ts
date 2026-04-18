@@ -1013,7 +1013,7 @@ export interface Job {
   aspectRatio?: string;
   quality?: string;
   background?: string;
-  format?: 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'ogg' | 'webm';
+  format?: 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'aac' | 'ogg' | 'webm';
   taskId?: string; // For long-running remote tasks (e.g. RunningHub)
   filename?: string; // Custom filename for S3 storage (ProjectPrefix_Tags_Title_shortuuid)
   // Video generation
@@ -1040,7 +1040,7 @@ export interface AlbumItem {
   aspectRatio?: string;
   quality?: string;
   background?: string;
-  format?: 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'ogg' | 'webm';
+  format?: 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'aac' | 'ogg' | 'webm';
   size?: number; // Size in bytes
   optimizedSize?: number; // Size in bytes
   thumbnailSize?: number; // Size in bytes
@@ -1071,7 +1071,7 @@ export interface Project {
   aspectRatio?: string;
   quality?: string;
   background?: string;
-  format?: 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'ogg' | 'webm';
+  format?: 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'aac' | 'ogg' | 'webm';
   shuffle?: boolean;
   modelConfigId?: string;
   prefix?: string; // Project prefix for file naming

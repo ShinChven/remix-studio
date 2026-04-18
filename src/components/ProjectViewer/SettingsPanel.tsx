@@ -77,6 +77,7 @@ export function SettingsPanel({
   const isVideoProject = localProject.type === 'video';
   const isAudioProject = localProject.type === 'audio';
   const audioConfig = isAudioProject ? parseAudioProjectConfig(localProject.systemPrompt) : DEFAULT_AUDIO_PROJECT_CONFIG;
+  const audioFormats = ['wav', 'mp3', 'aac'] as const;
   const availableVoices = selectedModel?.options.voices || [...GEMINI_TTS_VOICES];
   type AudioVoiceName = NonNullable<AudioProjectConfig['speakers'][number]>['voice'];
   const primarySpeaker = audioConfig.speakers[0];
@@ -494,16 +495,23 @@ export function SettingsPanel({
                   {t('projectViewer.settings.format')}
                 </label>
                 <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 shadow-inner">
-                  <button
-                    onClick={() => {
-                      const updated = { ...localProject, format: 'wav' as const };
-                      setLocalProject(updated);
-                      onUpdate(updated);
-                    }}
-                    className="flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border border-neutral-200 dark:border-neutral-700"
-                  >
-                    wav
-                  </button>
+                  {audioFormats.map((format) => (
+                    <button
+                      key={format}
+                      onClick={() => {
+                        const updated = { ...localProject, format };
+                        setLocalProject(updated);
+                        onUpdate(updated);
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase border transition-colors ${
+                        (localProject.format || 'wav') === format
+                          ? 'bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border-neutral-200 dark:border-neutral-700'
+                          : 'text-neutral-500 dark:text-neutral-400 border-transparent hover:bg-neutral-100/70 dark:hover:bg-neutral-900'
+                      }`}
+                    >
+                      {format}
+                    </button>
+                  ))}
                 </div>
               </div>
             </>

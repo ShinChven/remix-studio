@@ -4,6 +4,7 @@ import { ProjectRepository } from '../db/project-repository';
 import { AlbumItem, Job } from '../../src/types';
 import { getUserStorageUsage } from '../utils/storage-check';
 import { formatError } from '../utils/error-handler';
+import { resolveAudioOutput, transcodeAudioBuffer } from '../utils/audio-utils';
 
 export interface ProcessCompletedAudioParams {
   userId: string;
@@ -13,23 +14,6 @@ export interface ProcessCompletedAudioParams {
   mimeType?: string;
   modelConfigId?: string;
   providerId?: string;
-}
-
-function resolveAudioFormat(mimeType?: string): { ext: 'wav' | 'mp3' | 'm4a' | 'ogg' | 'webm'; mimeType: string } {
-  switch (mimeType) {
-    case 'audio/mpeg':
-      return { ext: 'mp3', mimeType };
-    case 'audio/mp4':
-      return { ext: 'm4a', mimeType };
-    case 'audio/ogg':
-      return { ext: 'ogg', mimeType };
-    case 'audio/webm':
-      return { ext: 'webm', mimeType };
-    case 'audio/wav':
-    case 'audio/x-wav':
-    default:
-      return { ext: 'wav', mimeType: 'audio/wav' };
-  }
 }
 
 export class AudioProcessor {
@@ -44,20 +28,24 @@ export class AudioProcessor {
     const { userId, projectId, job, audioBytes, mimeType, modelConfigId, providerId } = params;
 
     try {
-      const { ext, mimeType: resolvedMimeType } = resolveAudioFormat(mimeType);
+      const requestedFormat = job.format === 'mp3' || job.format === 'aac' || job.format === 'wav'
+        ? job.format
+        : 'wav';
+      const { ext, mimeType: resolvedMimeType } = resolveAudioOutput(requestedFormat);
+      const finalAudioBytes = await transcodeAudioBuffer(audioBytes, requestedFormat, mimeType);
       const idPart = job.filename || job.id;
       const filename = `${userId}/${projectId}/${idPart}`;
       const audioKey = `${filename}.${ext}`;
 
-      await this.storage.save(audioKey, audioBytes, resolvedMimeType);
+      await this.storage.save(audioKey, finalAudioBytes, resolvedMimeType);
 
       const user = await this.userRepository.findById(userId);
       const limit = user?.storageLimit || 5 * 1024 * 1024 * 1024;
       const currentUsage = await getUserStorageUsage(userId, this.storage, this.exportStorage, this.projectRepo as any);
 
-      if (currentUsage + audioBytes.length > limit) {
+      if (currentUsage + finalAudioBytes.length > limit) {
         try { await this.storage.delete(audioKey); } catch (_) {}
-        throw new Error(`Storage quota exceeded (${((currentUsage + audioBytes.length - limit) / (1024 * 1024)).toFixed(1)}MB over limit). Generated audio was discarded.`);
+        throw new Error(`Storage quota exceeded (${((currentUsage + finalAudioBytes.length - limit) / (1024 * 1024)).toFixed(1)}MB over limit). Generated audio was discarded.`);
       }
 
       const albumItem: AlbumItem = {
@@ -70,7 +58,7 @@ export class AudioProcessor {
         quality: job.quality,
         background: job.background,
         format: ext,
-        size: audioBytes.length,
+        size: finalAudioBytes.length,
         createdAt: Date.now(),
       };
       await this.projectRepo.addAlbumItem(userId, projectId, albumItem);
@@ -79,7 +67,7 @@ export class AudioProcessor {
         status: 'completed',
         imageUrl: audioKey,
         format: ext,
-        size: audioBytes.length,
+        size: finalAudioBytes.length,
         error: undefined,
         taskId: null as any,
       });

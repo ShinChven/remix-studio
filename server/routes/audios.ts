@@ -28,6 +28,7 @@ export function createAudioRouter(storage: S3Storage, exportStorage: S3Storage, 
       const mimeType = mimeMatch ? mimeMatch[1] : 'audio/mpeg';
       const extMap: Record<string, string> = {
         'audio/mpeg': 'mp3',
+        'audio/aac': 'aac',
         'audio/mp4': 'm4a',
         'audio/wav': 'wav',
         'audio/x-wav': 'wav',
