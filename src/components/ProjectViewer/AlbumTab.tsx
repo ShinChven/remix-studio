@@ -63,15 +63,16 @@ export function AlbumTab({
   const [videoPlayerItem, setVideoPlayerItem] = useState<AlbumItem | null>(null);
   const [expandedAudioIds, setExpandedAudioIds] = useState<Set<string>>(new Set());
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
-  const [audioSort, setAudioSort] = useState<'newest' | 'oldest'>('newest');
+  const [albumSort, setAlbumSort] = useState<'newest' | 'oldest'>('newest');
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
-  const audioDisplayItems = useMemo(() => {
-    if (!isAudioProject) return albumItems;
-    return [...albumItems].sort((a, b) =>
-      audioSort === 'newest' ? b.createdAt - a.createdAt : a.createdAt - b.createdAt,
-    );
-  }, [albumItems, audioSort, isAudioProject]);
+  const displayItems = useMemo(() => {
+    return [...albumItems].sort((a, b) => {
+      const aTs = a.createdAt ?? 0;
+      const bTs = b.createdAt ?? 0;
+      return albumSort === 'newest' ? bTs - aTs : aTs - bTs;
+    });
+  }, [albumItems, albumSort]);
 
   const toggleAudioExpand = (id: string) => {
     setExpandedAudioIds((prev) => {
@@ -194,23 +195,21 @@ export function AlbumTab({
                     <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
                   </button>
                 )}
-                {isAudioProject && (
-                  <button
-                    onClick={() => setAudioSort((s) => (s === 'newest' ? 'oldest' : 'newest'))}
-                    title={audioSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
-                    aria-label={audioSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
-                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
-                  >
-                    {audioSort === 'newest' ? (
-                      <ArrowDownWideNarrow className="w-3 h-3" />
-                    ) : (
-                      <ArrowUpWideNarrow className="w-3 h-3" />
-                    )}
-                    <span className="hidden sm:inline">
-                      {audioSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
-                    </span>
-                  </button>
-                )}
+                <button
+                  onClick={() => setAlbumSort((s) => (s === 'newest' ? 'oldest' : 'newest'))}
+                  title={albumSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                  aria-label={albumSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
+                >
+                  {albumSort === 'newest' ? (
+                    <ArrowDownWideNarrow className="w-3 h-3" />
+                  ) : (
+                    <ArrowUpWideNarrow className="w-3 h-3" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {albumSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                  </span>
+                </button>
               </>
             }
           />
@@ -226,7 +225,7 @@ export function AlbumTab({
           </div>
         ) : isTextProject ? (
           <div className="overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-900/40 rounded-none border-x-0 border-t-0">
-            {albumItems.map((item, index) => {
+            {displayItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               return (
                 <div
@@ -275,7 +274,7 @@ export function AlbumTab({
           </div>
         ) : isAudioProject ? (
           <div className="space-y-3 p-4">
-            {audioDisplayItems.map((item, index) => {
+            {displayItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               const isExpanded = expandedAudioIds.has(item.id);
               const isPlaying = playingAudioId === item.id;
@@ -386,7 +385,7 @@ export function AlbumTab({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-            {albumItems.map((item, index) => {
+            {displayItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = item.aspectRatio?.replace(':', '/') || '1/1';
               return (
@@ -439,7 +438,7 @@ export function AlbumTab({
                           setVideoPlayerItem(item);
                           return;
                         }
-                        const validItems = albumItems.filter(a => a.imageUrl);
+                        const validItems = displayItems.filter(a => a.imageUrl);
                         const imgUrls = validItems.map(a => imageDisplayUrl(a.optimizedUrl || a.imageUrl));
                         const idx = validItems.findIndex(a => a.id === item.id);
                         setLightboxData({
@@ -609,7 +608,7 @@ export function AlbumTab({
       )}
       <AlbumPromptModal item={promptItem} onClose={() => setPromptItem(null)} />
       {showCompareDialog && <TextAlbumCompareDialog items={selectedTextItems} setLightboxData={setLightboxData} onClose={() => setShowCompareDialog(false)} />}
-      <TextAlbumDetailDialog items={albumItems} startIndex={detailIndex} setLightboxData={setLightboxData} onClose={() => setDetailIndex(null)} />
+      <TextAlbumDetailDialog items={displayItems} startIndex={detailIndex} setLightboxData={setLightboxData} onClose={() => setDetailIndex(null)} />
       <ExportPackageDialog
         isOpen={isExportDialogOpen}
         defaultValue={getDefaultExportPackageName(projectName)}
