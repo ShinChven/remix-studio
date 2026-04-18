@@ -33,7 +33,6 @@ interface SettingsPanelProps {
   setIsSettingsCollapsed: (collapsed: boolean) => void;
   queueCount: number;
   setQueueCount: (count: number) => void;
-  setHasManuallySetQueueCount: (manual: boolean) => void;
   combinations: any[];
   setIsModelSelectorOpen: (open: boolean) => void;
   workflowError: string | null;
@@ -54,7 +53,6 @@ export function SettingsPanel({
   setIsSettingsCollapsed,
   queueCount,
   setQueueCount,
-  setHasManuallySetQueueCount,
   combinations,
   setIsModelSelectorOpen,
   workflowError,
@@ -596,14 +594,19 @@ export function SettingsPanel({
               const val = parseInt(e.target.value);
               if (!isNaN(val)) {
                 setQueueCount(val);
-                setHasManuallySetQueueCount(true);
               }
             }}
             className="w-10 bg-transparent text-xs text-blue-600 dark:text-blue-400 font-black focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
           />
-          <span className="text-[10px] text-neutral-600 font-bold tracking-tighter" title={t('projectViewer.settings.totalUniqueCombinations')}>
+          <button
+            type="button"
+            onClick={() => setQueueCount(Math.max(1, combinations.length))}
+            disabled={combinations.length === 0}
+            className="text-[10px] text-neutral-600 hover:text-blue-600 dark:hover:text-blue-400 font-bold tracking-tighter transition-colors disabled:hover:text-neutral-600 disabled:cursor-not-allowed"
+            title={t('projectViewer.settings.setToMaxCombinations')}
+          >
             {t('projectViewer.settings.ofTotal', { count: combinations.length })}
-          </span>
+          </button>
         </div>
       </div>
 

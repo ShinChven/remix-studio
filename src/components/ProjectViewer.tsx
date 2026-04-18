@@ -67,8 +67,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [selectedProviderId, setSelectedProviderId] = useState<string>(project.providerId || '');
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(true);
-  const [queueCount, setQueueCount] = useState<number>(0);
-  const [hasManuallySetQueueCount, setHasManuallySetQueueCount] = useState(false);
+  const [queueCount, setQueueCount] = useState<number>(project.lastQueueCount ?? 1);
   const [workflowError, setWorkflowError] = useState<string | null>(null);
   const [uploadingItemIds, setUploadingItemIds] = useState<Set<string>>(new Set());
   const [selectingLibraryForItemId, setSelectingLibraryForItemId] = useState<string | null>(null);
@@ -224,12 +223,6 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   }, [selectedModelId, selectedModel]);
 
   const combinations = generateWorkflowCombinations(localProject.workflow || [], libraries);
-
-  useEffect(() => {
-    if (!hasManuallySetQueueCount) {
-      setQueueCount(combinations.length);
-    }
-  }, [combinations.length]);
 
   const addWorkflowItem = (type: WorkflowItemTypeKind) => {
     if (type === 'library') {
@@ -516,7 +509,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         }
       }
 
-      const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...finalizedJobs] };
+      const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...finalizedJobs], lastQueueCount: queueCount };
       setDraftsProgress({ current: total, total, stage: 'saving' });
 
       await apiUpdateProject(updatedProject.id, {
@@ -525,6 +518,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         aspectRatio: localProject.aspectRatio, quality: localProject.quality, background: localProject.background, format: localProject.format || 'png', shuffle: localProject.shuffle,
         systemPrompt: localProject.systemPrompt, temperature: localProject.temperature, maxTokens: localProject.maxTokens,
         duration: localProject.duration, resolution: localProject.resolution, sound: localProject.sound,
+        lastQueueCount: queueCount,
       });
 
       setLocalProject(updatedProject);
@@ -647,7 +641,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     setSelectedQueueIds(new Set());
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
-  
+
   const toggleCompletedSelection = (jobId: string) => {
     setSelectedCompletedIds(prev => {
       const next = new Set(prev);
@@ -809,7 +803,6 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         onUpdate={onUpdate}
         setIsSettingsCollapsed={setIsSettingsCollapsed}
         setQueueCount={setQueueCount}
-        setHasManuallySetQueueCount={setHasManuallySetQueueCount}
         setIsModelSelectorOpen={setIsModelSelectorOpen}
         onAddDraftsToQueue={addDraftsToQueue}
       />
@@ -962,26 +955,26 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         }}
       />
       {lightboxData && <ImageLightbox images={lightboxData.images} startIndex={lightboxData.index} onClose={() => setLightboxData(null)} onDelete={lightboxData.onDelete} onIndexChange={lightboxData.onIndexChange} />}
-      <ConfirmModal 
-        isOpen={showDeleteAlbumModal} 
-        onClose={() => { setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); }} 
-        onConfirm={async () => { 
-          if (albumItemsToDelete) { 
+      <ConfirmModal
+        isOpen={showDeleteAlbumModal}
+        onClose={() => { setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); }}
+        onConfirm={async () => {
+          if (albumItemsToDelete) {
             const urlsToRemove = albumItemsToDelete.map(i => apiImageDisplayUrl(i.optimizedUrl || i.imageUrl));
-            await deleteAlbumItems(albumItemsToDelete); 
+            await deleteAlbumItems(albumItemsToDelete);
             if (lightboxData) {
               const newImages = lightboxData.images.filter(img => !urlsToRemove.includes(img));
               if (newImages.length === 0) setLightboxData(null);
               else setLightboxData({ ...lightboxData, images: newImages });
             }
-            setShowDeleteAlbumModal(false); 
-            setAlbumItemsToDelete(null); 
-          } 
-        }} 
-        title={t('projectViewer.confirm.moveToRecycleBin.title')} 
-        message={t('projectViewer.confirm.moveToRecycleBin.message', { count: albumItemsToDelete?.length || 0 })} 
-        confirmText={t('projectViewer.confirm.moveToRecycleBin.confirm')} 
-        type="danger" 
+            setShowDeleteAlbumModal(false);
+            setAlbumItemsToDelete(null);
+          }
+        }}
+        title={t('projectViewer.confirm.moveToRecycleBin.title')}
+        message={t('projectViewer.confirm.moveToRecycleBin.message', { count: albumItemsToDelete?.length || 0 })}
+        confirmText={t('projectViewer.confirm.moveToRecycleBin.confirm')}
+        type="danger"
       />
       <ConfirmModal isOpen={showDeleteCompletedSelectedModal} onClose={() => setShowDeleteCompletedSelectedModal(false)} onConfirm={deleteSelectedCompleted} title={t('projectViewer.confirm.removeFinishedRecords.title')} message={t('projectViewer.confirm.removeFinishedRecords.message', { count: selectedCompletedIds.size })} confirmText={t('projectViewer.confirm.removeFinishedRecords.confirm')} type="danger" />
       <ConfirmModal isOpen={showDeleteQueueSelectedModal} onClose={() => setShowDeleteQueueSelectedModal(false)} onConfirm={deleteSelectedQueue} title={t('projectViewer.confirm.deleteSelectedJobs.title')} message={t('projectViewer.confirm.deleteSelectedJobs.message', { count: selectedQueueIds.size })} confirmText={t('projectViewer.confirm.deleteSelectedJobs.confirm')} type="danger" />

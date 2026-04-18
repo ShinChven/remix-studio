@@ -206,6 +206,7 @@
       "randomizeOrder": "Randomize combinations order",
       "jobQuantity": "Job Quantity",
       "totalUniqueCombinations": "Total unique combinations",
+      "setToMaxCombinations": "Click to set to maximum combinations",
       "ofTotal": "OF {{count}}",
       "selectProviderAndModel": "Please select an AI provider and model to continue.",
       "uploadingImages": "Uploading Images...",

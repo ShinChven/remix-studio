@@ -47,7 +47,6 @@ interface WorkflowPanelProps {
   onUpdate: (project: Project) => void;
   setIsSettingsCollapsed: (collapsed: boolean) => void;
   setQueueCount: (count: number) => void;
-  setHasManuallySetQueueCount: (manual: boolean) => void;
   setIsModelSelectorOpen: (open: boolean) => void;
   onAddDraftsToQueue: () => void;
 }
@@ -94,7 +93,6 @@ export function WorkflowPanel({
   onUpdate,
   setIsSettingsCollapsed,
   setQueueCount,
-  setHasManuallySetQueueCount,
   setIsModelSelectorOpen,
   onAddDraftsToQueue,
 }: WorkflowPanelProps) {
@@ -297,7 +295,6 @@ export function WorkflowPanel({
         setIsSettingsCollapsed={setIsSettingsCollapsed}
         queueCount={queueCount}
         setQueueCount={setQueueCount}
-        setHasManuallySetQueueCount={setHasManuallySetQueueCount}
         combinations={combinations}
         setIsModelSelectorOpen={setIsModelSelectorOpen}
         workflowError={workflowError}

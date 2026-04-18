@@ -826,6 +826,7 @@ export interface Project {
   sound?: 'on' | 'off';
   steps?: number;
   guidance?: number;
+  lastQueueCount?: number;
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate';

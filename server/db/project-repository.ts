@@ -137,6 +137,7 @@ export class ProjectRepository {
       duration: (p as any).duration ?? undefined,
       resolution: (p as any).resolution ?? undefined,
       sound: (p as any).sound ?? undefined,
+      lastQueueCount: (p as any).lastQueueCount ?? undefined,
       jobs: p.jobs.map((j) => this.mapJob(j)),
       workflow: p.workflowItems.map((w) => this.mapWorkflow(w)),
       album: p.albumItems.map((a) => this.mapAlbumItem(a)),
@@ -166,6 +167,7 @@ export class ProjectRepository {
         duration: project.duration ?? null,
         resolution: project.resolution ?? null,
         sound: project.sound ?? null,
+        lastQueueCount: project.lastQueueCount ?? null,
       } as any,
     });
 
@@ -193,6 +195,7 @@ export class ProjectRepository {
     if (updates.duration !== undefined) data.duration = updates.duration ?? null;
     if (updates.resolution !== undefined) data.resolution = updates.resolution ?? null;
     if (updates.sound !== undefined) data.sound = updates.sound ?? null;
+    if (updates.lastQueueCount !== undefined) data.lastQueueCount = updates.lastQueueCount ?? null;
 
     if (Object.keys(data).length > 0) {
       await this.prisma.project.updateMany({ where: { id: projectId, userId }, data: data as any });

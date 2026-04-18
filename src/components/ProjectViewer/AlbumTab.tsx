@@ -310,12 +310,19 @@ export function AlbumTab({
                       #{(index + 1).toString().padStart(2, '0')}
                     </div>
 
-                    {/* Aspect Ratio Pill */}
-                    {item.aspectRatio && (
-                      <div className="absolute bottom-4 left-4 z-10 opacity-100 transition-opacity duration-500 delay-75 pointer-events-none">
-                        <span className="px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-bold text-white/60 border border-white/5 uppercase tracking-widest leading-none">
-                          {item.aspectRatio}
-                        </span>
+                    {/* Aspect Ratio + Date Pill */}
+                    {(item.aspectRatio || item.createdAt) && (
+                      <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5 opacity-100 transition-opacity duration-500 delay-75 pointer-events-none">
+                        {item.aspectRatio && (
+                          <span className="px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-bold text-white/60 border border-white/5 uppercase tracking-widest leading-none">
+                            {item.aspectRatio}
+                          </span>
+                        )}
+                        {item.createdAt && (
+                          <span className="px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-bold text-white/60 border border-white/5 tracking-widest leading-none">
+                            {new Date(item.createdAt).toLocaleString(undefined, { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
                       </div>
                     )}
 

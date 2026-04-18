@@ -1201,6 +1201,7 @@
       "randomizeOrder": "隨機化組合順序",
       "jobQuantity": "任務數量",
       "totalUniqueCombinations": "唯一組合總數",
+      "setToMaxCombinations": "點擊以設為最大組合數",
       "ofTotal": "共 {{count}}",
       "selectProviderAndModel": "請選擇 AI 提供者與模型以繼續。",
       "uploadingImages": "正在上傳圖片...",

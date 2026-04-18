@@ -1201,6 +1201,7 @@
       "randomizeOrder": "組み合わせ順をランダム化",
       "jobQuantity": "ジョブ数",
       "totalUniqueCombinations": "一意な組み合わせ総数",
+      "setToMaxCombinations": "クリックして最大組み合わせ数に設定",
       "ofTotal": "全 {{count}}",
       "selectProviderAndModel": "続行するには AI プロバイダーとモデルを選択してください。",
       "uploadingImages": "画像をアップロード中...",

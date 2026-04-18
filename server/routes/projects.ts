@@ -272,6 +272,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         duration: typeof body.duration === 'number' ? body.duration : undefined,
         resolution: typeof body.resolution === 'string' ? body.resolution : undefined,
         sound: body.sound === 'on' || body.sound === 'off' ? body.sound : undefined,
+        lastQueueCount: typeof body.lastQueueCount === 'number' ? body.lastQueueCount : undefined,
       };
 
       await repository.createProject(user.userId, project);
@@ -336,6 +337,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (typeof body?.duration === 'number') updates.duration = body.duration;
       if (typeof body?.resolution === 'string') updates.resolution = body.resolution;
       if (body?.sound === 'on' || body?.sound === 'off') updates.sound = body.sound;
+      if (typeof body?.lastQueueCount === 'number') updates.lastQueueCount = body.lastQueueCount;
       
       // Storage check for new jobs (Drafts)
       if (updates.jobs) {

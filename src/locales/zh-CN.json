@@ -1201,6 +1201,7 @@
       "randomizeOrder": "随机组合顺序",
       "jobQuantity": "任务数量",
       "totalUniqueCombinations": "唯一组合总数",
+      "setToMaxCombinations": "点击设为最大组合数",
       "ofTotal": "共 {{count}}",
       "selectProviderAndModel": "请选择一个 AI 提供商和模型以继续。",
       "uploadingImages": "正在上传图片...",

@@ -1201,6 +1201,7 @@
       "randomizeOrder": "조합 순서 무작위화",
       "jobQuantity": "작업 수",
       "totalUniqueCombinations": "총 고유 조합 수",
+      "setToMaxCombinations": "클릭하여 최대 조합 수로 설정",
       "ofTotal": "총 {{count}}개",
       "selectProviderAndModel": "계속하려면 AI 제공자와 모델을 선택하세요.",
       "uploadingImages": "이미지 업로드 중...",

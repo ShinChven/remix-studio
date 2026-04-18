@@ -1201,6 +1201,7 @@
       "randomizeOrder": "Randomiser l'ordre des combinaisons",
       "jobQuantity": "Nombre de tâches",
       "totalUniqueCombinations": "Nombre total de combinaisons uniques",
+      "setToMaxCombinations": "Cliquez pour définir au maximum de combinaisons",
       "ofTotal": "SUR {{count}}",
       "selectProviderAndModel": "Veuillez sélectionner un fournisseur IA et un modèle pour continuer.",
       "uploadingImages": "Téléversement des images...",

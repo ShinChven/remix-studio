@@ -191,6 +191,7 @@ model Project {
   duration     Int?     // seconds
   resolution   String?  // '720p' | '1080p' | '4k'
   sound        String?  // 'on' | 'off'
+  lastQueueCount Int?
   createdAt    DateTime @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
