@@ -355,7 +355,13 @@
       "viewFullPrompt": "Click to view full prompt",
       "raw": "RAW",
       "optimized": "OPT",
-      "thumbnail": "THMB"
+      "thumbnail": "THMB",
+      "playAudio": "Play",
+      "pauseAudio": "Pause",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "sortNewest": "Newest",
+      "sortOldest": "Oldest"
     },
     "compare": {
       "title": "Compare Texts",

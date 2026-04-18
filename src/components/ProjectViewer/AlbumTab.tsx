@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Video as VideoIcon, Music, Copy } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown } from 'lucide-react';
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
@@ -61,6 +61,51 @@ export function AlbumTab({
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [videoPlayerItem, setVideoPlayerItem] = useState<AlbumItem | null>(null);
+  const [expandedAudioIds, setExpandedAudioIds] = useState<Set<string>>(new Set());
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [audioSort, setAudioSort] = useState<'newest' | 'oldest'>('newest');
+  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+
+  const audioDisplayItems = useMemo(() => {
+    if (!isAudioProject) return albumItems;
+    return [...albumItems].sort((a, b) =>
+      audioSort === 'newest' ? b.createdAt - a.createdAt : a.createdAt - b.createdAt,
+    );
+  }, [albumItems, audioSort, isAudioProject]);
+
+  const toggleAudioExpand = (id: string) => {
+    setExpandedAudioIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAudioPlayback = (id: string) => {
+    const target = audioRefs.current[id];
+    if (!target) return;
+    if (!target.paused) {
+      target.pause();
+      return;
+    }
+    if (playingAudioId && playingAudioId !== id) {
+      const prev = audioRefs.current[playingAudioId];
+      if (prev) prev.pause();
+    }
+    target.play().catch(() => {});
+  };
+
+  const formatAudioTimestamp = (ts?: number) => {
+    if (!ts) return '';
+    return new Date(ts).toLocaleString(undefined, {
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
   const selectedTextItems = albumItems.filter((item) => selectedAlbumIds.has(item.id));
   const copyItemIds = selectedAlbumIds.size > 0 ? Array.from(selectedAlbumIds) : albumItems.map((item) => item.id);
 
@@ -149,6 +194,23 @@ export function AlbumTab({
                     <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
                   </button>
                 )}
+                {isAudioProject && (
+                  <button
+                    onClick={() => setAudioSort((s) => (s === 'newest' ? 'oldest' : 'newest'))}
+                    title={audioSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                    aria-label={audioSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
+                  >
+                    {audioSort === 'newest' ? (
+                      <ArrowDownWideNarrow className="w-3 h-3" />
+                    ) : (
+                      <ArrowUpWideNarrow className="w-3 h-3" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {audioSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                    </span>
+                  </button>
+                )}
               </>
             }
           />
@@ -213,56 +275,111 @@ export function AlbumTab({
           </div>
         ) : isAudioProject ? (
           <div className="space-y-3 p-4">
-            {albumItems.map((item, index) => {
+            {audioDisplayItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
+              const isExpanded = expandedAudioIds.has(item.id);
+              const isPlaying = playingAudioId === item.id;
               return (
                 <div
                   key={item.id}
-                  className={`group rounded-2xl border p-4 transition-all backdrop-blur-xl ${isSelected ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:border-cyan-500/30'}`}
+                  className={`group rounded-2xl border px-4 py-3 transition-all backdrop-blur-xl ${isSelected ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:border-cyan-500/30'}`}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
-                      className={`mt-1 flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700'}`}
+                      className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700'}`}
                     >
                       {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                     </button>
 
-                    <div className="min-w-0 flex-1 space-y-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-500">#{(index + 1).toString().padStart(2, '0')}</div>
-                          <p className="mt-1 text-sm text-neutral-900 dark:text-white line-clamp-2">{item.prompt}</p>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAlbumItemsToDelete([item]);
-                            setShowDeleteAlbumModal(true);
-                          }}
-                          className="flex-shrink-0 p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title={t('projectViewer.common.delete')}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                    <span className="flex-shrink-0 text-[10px] font-mono text-neutral-500 dark:text-neutral-500">#{(index + 1).toString().padStart(2, '0')}</span>
 
-                      <div className="rounded-xl border border-neutral-200/50 dark:border-white/5 bg-neutral-50/50 dark:bg-neutral-950/50 p-3">
-                        <audio src={imageDisplayUrl(item.imageUrl)} controls className="w-full" />
-                      </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleAudioExpand(item.id)}
+                      className="min-w-0 flex-1 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
+                      title={isExpanded ? t('projectViewer.album.collapse') : t('projectViewer.album.expand')}
+                    >
+                      <p className="truncate text-sm text-neutral-900 dark:text-white">{item.prompt}</p>
+                    </button>
 
-                      <div className="flex flex-wrap items-center gap-2 text-[9px] font-black uppercase tracking-widest">
-                        <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{getProviderName(item.providerId)}</span>
-                        <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-cyan-500/70">{getModelName(item.providerId, item.modelConfigId)}</span>
-                        {item.format && (
-                          <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{item.format}</span>
-                        )}
-                        {item.size && (
-                          <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{(item.size / 1024).toFixed(1)} KB</span>
-                        )}
-                      </div>
+                    {item.createdAt && (
+                      <span className="hidden sm:inline flex-shrink-0 text-[9px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 whitespace-nowrap">
+                        {formatAudioTimestamp(item.createdAt)}
+                      </span>
+                    )}
+
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleAudioPlayback(item.id); }}
+                      className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border transition-all ${isPlaying ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-white hover:border-neutral-700'}`}
+                      title={isPlaying ? t('projectViewer.album.pauseAudio') : t('projectViewer.album.playAudio')}
+                      aria-label={isPlaying ? t('projectViewer.album.pauseAudio') : t('projectViewer.album.playAudio')}
+                    >
+                      {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAlbumItemsToDelete([item]);
+                        setShowDeleteAlbumModal(true);
+                      }}
+                      className="flex-shrink-0 p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                      title={t('projectViewer.common.delete')}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleAudioExpand(item.id)}
+                      className="flex-shrink-0 p-1 text-neutral-500 dark:text-neutral-500 hover:text-white transition-colors"
+                      title={isExpanded ? t('projectViewer.album.collapse') : t('projectViewer.album.expand')}
+                      aria-label={isExpanded ? t('projectViewer.album.collapse') : t('projectViewer.album.expand')}
+                    >
+                      <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+
+                  <div className={isExpanded ? 'mt-3 space-y-3' : 'hidden'}>
+                    <p className="text-sm text-neutral-900 dark:text-white whitespace-pre-wrap">{item.prompt}</p>
+                    <div className="rounded-xl border border-neutral-200/50 dark:border-white/5 bg-neutral-50/50 dark:bg-neutral-950/50 p-3">
+                      <audio
+                        ref={(el) => { audioRefs.current[item.id] = el; }}
+                        src={imageDisplayUrl(item.imageUrl)}
+                        controls
+                        className="w-full"
+                        onPlay={() => setPlayingAudioId(item.id)}
+                        onPause={() => setPlayingAudioId((cur) => (cur === item.id ? null : cur))}
+                        onEnded={() => setPlayingAudioId((cur) => (cur === item.id ? null : cur))}
+                      />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-[9px] font-black uppercase tracking-widest">
+                      <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{getProviderName(item.providerId)}</span>
+                      <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-cyan-500/70">{getModelName(item.providerId, item.modelConfigId)}</span>
+                      {item.format && (
+                        <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{item.format}</span>
+                      )}
+                      {item.size && (
+                        <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{(item.size / 1024).toFixed(1)} KB</span>
+                      )}
+                      {item.createdAt && (
+                        <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{formatAudioTimestamp(item.createdAt)}</span>
+                      )}
                     </div>
                   </div>
+
+                  {!isExpanded && (
+                    <audio
+                      ref={(el) => { audioRefs.current[item.id] = el; }}
+                      src={imageDisplayUrl(item.imageUrl)}
+                      preload="none"
+                      className="hidden"
+                      onPlay={() => setPlayingAudioId(item.id)}
+                      onPause={() => setPlayingAudioId((cur) => (cur === item.id ? null : cur))}
+                      onEnded={() => setPlayingAudioId((cur) => (cur === item.id ? null : cur))}
+                    />
+                  )}
                 </div>
               );
             })}

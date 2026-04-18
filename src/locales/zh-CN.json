@@ -1374,7 +1374,13 @@
       "viewFullPrompt": "点击查看完整提示词",
       "raw": "原始",
       "optimized": "优化",
-      "thumbnail": "缩略图"
+      "thumbnail": "缩略图",
+      "playAudio": "播放",
+      "pauseAudio": "暂停",
+      "expand": "展开",
+      "collapse": "收起",
+      "sortNewest": "最新",
+      "sortOldest": "最早"
     },
     "compare": {
       "title": "比较文本",
