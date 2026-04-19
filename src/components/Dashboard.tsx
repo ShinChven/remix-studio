@@ -72,6 +72,7 @@ export function Dashboard() {
     const text = inputText.trim();
     if (!text) return;
     
+    localStorage.removeItem('assistant_last_conversation');
     navigate('/assistant', { 
       state: { 
         initialMessage: text,

@@ -261,6 +261,7 @@ export function AssistantPage() {
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [editingTitleValue, setEditingTitleValue] = useState('');
 
+  const justCreatedIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -289,22 +290,7 @@ export function AssistantPage() {
     loadConversations();
   }, [loadConversations]);
 
-  // Handle initial message from dashboard
-  const handledInitialRef = useRef(false);
-  useEffect(() => {
-    if (handledInitialRef.current) return;
-    const state = location.state as { initialMessage?: string; providerId?: string; modelId?: string } | null;
-    if (state?.initialMessage) {
-      handledInitialRef.current = true;
-      const { initialMessage, providerId, modelId } = state;
-      if (providerId) setSelectedProviderId(providerId);
-      if (modelId) setSelectedModelId(modelId);
-      // We'll call handleSend with manual values to ensure it works even if state hasn't updated yet
-      handleSend(initialMessage, providerId, modelId);
-      // Clear location state to prevent re-sending on refresh
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [location, navigate]);
+  const initializedRef = useRef(false);
 
   // ─── Load conversation messages ───
   const loadConversation = useCallback(async (id: string) => {
@@ -319,8 +305,6 @@ export function AssistantPage() {
         (m) => m.role === 'assistant' && m.status === 'awaiting_confirmation',
       );
       if (lastAssistant) {
-        // We don't have the confirmation object from the list endpoint,
-        // so we rely on the send/confirm response to set it.
         setPendingConfirmation(null);
       } else {
         setPendingConfirmation(null);
@@ -330,22 +314,48 @@ export function AssistantPage() {
     }
   }, []);
 
-  const initializedRef = useRef(false);
+  // Handle initial message from dashboard
+  const handledInitialRef = useRef(false);
+  useEffect(() => {
+    if (handledInitialRef.current) return;
+    const state = location.state as { initialMessage?: string; providerId?: string; modelId?: string } | null;
+    if (state?.initialMessage) {
+      handledInitialRef.current = true;
+      initializedRef.current = true; // Mark as initialized to prevent auto-select from running
+      const { initialMessage, providerId, modelId } = state;
+      if (providerId) setSelectedProviderId(providerId);
+      if (modelId) setSelectedModelId(modelId);
+      handleSend(initialMessage, providerId, modelId);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
+    // If we're coming from dashboard with an initial message, definitely don't auto-jump
+    const state = location.state as { initialMessage?: string } | null;
+    if (state?.initialMessage) {
+      initializedRef.current = true;
+      return;
+    }
+
     if (!initializedRef.current && conversations.length > 0) {
       initializedRef.current = true;
       const lastId = localStorage.getItem('assistant_last_conversation');
-      const targetId = conversations.find((c) => c.id === lastId)?.id || conversations[0].id;
+      const targetId = conversations.find((c) => c.id === lastId)?.id;
       if (targetId && !activeConversationId) {
         navigate(`/assistant/${targetId}`, { replace: true });
       }
     }
-  }, [conversations, activeConversationId, navigate]);
+  }, [conversations, activeConversationId, navigate, location.state]);
 
   useEffect(() => {
     if (activeConversationId) {
       localStorage.setItem('assistant_last_conversation', activeConversationId);
+      if (justCreatedIdRef.current === activeConversationId) {
+        // Skip initial load for brand new conversation to avoid race with optimistic message
+        justCreatedIdRef.current = null;
+        return;
+      }
       loadConversation(activeConversationId);
     } else {
       setMessages([]);
@@ -413,6 +423,7 @@ export function AssistantPage() {
         });
         setConversations((prev) => [newConv.conversation, ...prev]);
         currentConversationId = newConv.conversation.id;
+        justCreatedIdRef.current = currentConversationId;
         navigate(`/assistant/${currentConversationId}`, { replace: true });
         setPendingConfirmation(null);
       } catch (e: any) {
@@ -581,67 +592,78 @@ export function AssistantPage() {
   };
 
   const renderComposer = () => (
-    <div className="w-full">
-      <div className="flex items-center gap-2 mb-2 px-1">
-        <select
-          value={selectedProviderId && selectedModelId ? `${selectedProviderId}::${selectedModelId}` : ''}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (!val) {
-              setSelectedProviderId('');
-              setSelectedModelId('');
-              return;
-            }
-            const [pId, mId] = val.split('::');
-            setSelectedProviderId(pId);
-            setSelectedModelId(mId);
-          }}
-          className="text-xs bg-transparent border-none text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 outline-none cursor-pointer p-0 appearance-none font-medium"
-        >
-          <option value="">{t('assistant.selectModel', 'Select a model')}</option>
-          {providers.map((p) => {
-            const models = getTextModelsForProvider(p.type);
-            if (models.length === 0) return null;
-            return (
-              <optgroup key={p.id} label={p.name}>
-                {models.map((m) => (
-                  <option key={`${p.id}::${m.id}`} value={`${p.id}::${m.id}`}>
-                    {m.name}
-                  </option>
-                ))}
-              </optgroup>
-            );
-          })}
-        </select>
-      </div>
-      <div className="flex items-end gap-2 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm rounded-2xl border border-neutral-200/50 dark:border-white/10 shadow-sm px-4 py-2 focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/50 transition-all">
-        <textarea
-          ref={textareaRef}
-          value={inputText}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          placeholder={t('assistant.typePlaceholder')}
-          rows={1}
-          disabled={isSending}
-          className="flex-1 resize-none bg-transparent border-none outline-none text-sm text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 dark:placeholder-neutral-500 max-h-[200px] py-1"
-        />
-        {isSending ? (
-          <button
-            className="flex-shrink-0 p-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors"
-            title={t('assistant.stop')}
-          >
-            <Square className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={() => handleSend()}
-            disabled={!inputText.trim()}
-            className="flex-shrink-0 p-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            title={t('assistant.send')}
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        )}
+    <div className="w-full relative group">
+      {/* Glassmorphic Container with depth */}
+      <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000 group-focus-within:duration-200"></div>
+
+      <div className="relative bg-white/80 dark:bg-neutral-900/80 backdrop-blur-2xl border border-neutral-200/50 dark:border-white/10 rounded-2xl shadow-2xl p-4 transition-all duration-300 group-focus-within:shadow-indigo-500/10">
+        <div className="space-y-4">
+          {/* Model Selector */}
+          <div className="flex items-center gap-2 px-1">
+            <Bot className="w-4 h-4 text-indigo-500" />
+            <select
+              value={selectedProviderId && selectedModelId ? `${selectedProviderId}::${selectedModelId}` : ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) {
+                  setSelectedProviderId('');
+                  setSelectedModelId('');
+                  return;
+                }
+                const [pId, mId] = val.split('::');
+                setSelectedProviderId(pId);
+                setSelectedModelId(mId);
+              }}
+              className="text-xs bg-transparent border-none text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 outline-none cursor-pointer p-0 appearance-none font-medium transition-colors"
+            >
+              <option value="">{t('assistant.selectModel', 'Select a model')}</option>
+              {providers.map((p) => {
+                const models = getTextModelsForProvider(p.type);
+                if (models.length === 0) return null;
+                return (
+                  <optgroup key={p.id} label={p.name}>
+                    {models.map((m) => (
+                      <option key={`${p.id}::${m.id}`} value={`${p.id}::${m.id}`}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* Input Area */}
+          <div className="flex items-end gap-3">
+            <textarea
+              ref={textareaRef}
+              value={inputText}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder={t('assistant.typePlaceholder')}
+              rows={1}
+              disabled={isSending}
+              className="flex-1 resize-none bg-transparent border-none outline-none text-base text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 dark:placeholder-neutral-500 max-h-[200px] py-1 custom-scrollbar"
+            />
+            {isSending ? (
+              <button
+                className="flex-shrink-0 p-3 rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-600/20 transition-all active:scale-95 group/btn"
+                title={t('assistant.stop')}
+              >
+                <Square className="w-5 h-5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => handleSend()}
+                disabled={!inputText.trim()}
+                className="flex-shrink-0 p-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed group/btn"
+                title={t('assistant.send')}
+              >
+                <Send className="w-5 h-5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1003,7 +1025,7 @@ export function AssistantPage() {
 
         {/* Composer */}
         {activeConversationId && (
-          <div className="flex-shrink-0 border-t border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/20 backdrop-blur-sm p-4">
+          <div className="flex-shrink-0 p-4 pt-2">
             <div className="max-w-3xl mx-auto">
               {renderComposer()}
             </div>
