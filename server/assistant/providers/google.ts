@@ -57,6 +57,14 @@ export class GoogleAIChatProvider implements ChatProvider {
       ...(tools ? { tools } : {}),
     };
 
+    if (
+      realModelId.includes('gemini-3') ||
+      realModelId.includes('gemini-2.5') ||
+      realModelId.includes('thinking')
+    ) {
+      config.thinkingConfig = { includeThoughts: true };
+    }
+
     const res = await this.ai.models.generateContent({
       model: realModelId,
       contents,
@@ -77,7 +85,11 @@ export class GoogleAIChatProvider implements ChatProvider {
     
     for (const part of parts) {
       if (part.text) {
-        text += part.text;
+        if ((part as any).thought) {
+          text += `<think>\n${part.text}\n</think>\n\n`;
+        } else {
+          text += part.text;
+        }
       } else if (part.functionCall) {
         const id = `call_${crypto.randomUUID()}`;
         toolCalls.push({

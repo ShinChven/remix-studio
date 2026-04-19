@@ -16,6 +16,7 @@ import {
   AssistantConversation,
   AssistantMessage,
   AssistantPendingConfirmation,
+  AssistantStatusEvent,
 } from '../api';
 import type { Provider, ProviderType, ModelConfig } from '../types';
 import { PROVIDER_MODELS_MAP } from '../types';
@@ -647,7 +648,7 @@ export function AssistantPage() {
                               case 'provider_call_started':
                                 return t('assistant.thinking', 'Thinking...');
                               case 'tool_call_started': {
-                                const toolName = currentStatus.call.name;
+                                const toolName = String((currentStatus as any).call?.name || 'tool');
                                 const toolTitle = toolName.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                                 return t('assistant.workingOn', 'Working on {{tool}}...', { tool: toolTitle });
                               }
