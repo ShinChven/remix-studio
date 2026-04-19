@@ -117,7 +117,7 @@ export function WorkflowItem({
           className="group/library relative cursor-pointer"
         >
           <div className="w-full bg-white/40 dark:bg-black/40 border border-neutral-200/50 dark:border-white/5 rounded-xl p-4 text-xs flex items-center justify-between transition-all hover:border-emerald-500/30 hover:bg-white/60 dark:hover:bg-neutral-900/60 shadow-inner backdrop-blur-md">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               {(() => {
                 const firstImage = library?.type === 'image' && library.items[0]?.content;
                 return firstImage ? (
