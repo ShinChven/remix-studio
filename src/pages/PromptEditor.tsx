@@ -32,10 +32,9 @@ export function PromptEditor() {
     fetchLibrary(id).then(lib => {
       setLibrary(lib);
       if (!isNew) {
-        const parsedIndex = Number.parseInt(itemToken, 10);
-        const resolvedIndex = Number.isNaN(parsedIndex)
-          ? lib.items.findIndex((item) => item.id === itemToken)
-          : parsedIndex;
+        const resolvedIndex = /^\d+$/.test(itemToken)
+          ? Number.parseInt(itemToken, 10)
+          : lib.items.findIndex((item) => item.id === itemToken);
         const item = resolvedIndex >= 0 ? lib.items[resolvedIndex] : undefined;
         if (item === undefined) {
           navigate(`/library/${id}`);
