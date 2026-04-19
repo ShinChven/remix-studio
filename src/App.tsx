@@ -33,6 +33,7 @@ import { Exports } from './pages/Exports.tsx';
 import { Account } from './pages/Account.tsx';
 import { AccountTwoFactorSetup } from './pages/AccountTwoFactorSetup.tsx';
 import { McpConnections } from './pages/McpConnections.tsx';
+import { AssistantPage } from './pages/AssistantPage.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -80,6 +81,7 @@ export default function App() {
               <Route path="account" element={<Account />} />
               <Route path="account/security/2fa" element={<AccountTwoFactorSetup />} />
               <Route path="account/mcp" element={<McpConnections />} />
+              <Route path="assistant" element={<AssistantPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

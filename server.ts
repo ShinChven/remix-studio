@@ -28,6 +28,9 @@ import { ProjectRepository } from './server/db/project-repository';
 import { createStorageRouter } from './server/routes/storage-router';
 import { createOAuthRouter } from './server/routes/oauth';
 import { createMcpRouter } from './server/mcp/mcp-server';
+import { createAssistantRouter } from './server/routes/assistant';
+import { AssistantRepository } from './server/db/assistant-repository';
+import { AssistantRunner } from './server/assistant/assistant-runner';
 import { QueueManager } from './server/queue/queue-manager';
 import { ExportManager } from './server/queue/export-manager';
 import { DeliveryManager } from './server/queue/delivery-manager';
@@ -177,6 +180,16 @@ async function startServer() {
   app.route('/', createOAuthRouter(prisma));
   app.route('/', createMcpRouter(prisma, repository, userRepository, providerRepository));
 
+  // === Assistant chat runtime ===
+  const assistantRepo = new AssistantRepository(prisma);
+  const assistantRunner = new AssistantRunner(assistantRepo, providerRepository, {
+    repository,
+    userRepository,
+    prisma,
+    providerRepository,
+  });
+  app.route('/', createAssistantRouter(assistantRepo, assistantRunner, providerRepository));
+
   // Shared legacy path (can be refactored eventually)
   app.get('/api/data', authMiddleware, async (c) => {
     try {
@@ -201,7 +214,7 @@ async function startServer() {
 
     const server = http.createServer((req, res) => {
       const url = req.url || '';
-      if (url.startsWith('/api/') || url.startsWith('/mcp') || url.startsWith('/authorize') || url.startsWith('/register') || url.startsWith('/token') || url.startsWith('/.well-known/') || url.startsWith('/healthz') || url.startsWith('/readyz')) {
+      if (url.startsWith('/api/') || url.startsWith('/mcp') || url.startsWith('/authorize') || url.startsWith('/register') || url.startsWith('/token') || url.startsWith('/.well-known/') || url.startsWith('/healthz') || url.startsWith('/readyz') || url.startsWith('/api/assistant')) {
         honoListener(req, res);
       } else {
         vite.middlewares(req, res);

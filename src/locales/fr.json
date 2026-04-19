@@ -5,6 +5,7 @@
     "libraries": "Bibliothèques",
     "providers": "Fournisseurs",
     "mcp": "MCP",
+    "assistant": "Assistant",
     "exports": "Exports",
     "recycleBin": "Corbeille",
     "storage": "Stockage",
@@ -1374,7 +1375,13 @@
       "viewFullPrompt": "Cliquer pour voir le prompt complet",
       "raw": "BRUT",
       "optimized": "OPT",
-      "thumbnail": "MINI"
+      "thumbnail": "MINI",
+      "playAudio": "Lecture",
+      "pauseAudio": "Pause",
+      "expand": "Développer",
+      "collapse": "Réduire",
+      "sortNewest": "Plus récent",
+      "sortOldest": "Plus ancien"
     },
     "compare": {
       "title": "Comparer les textes",
@@ -1449,5 +1456,35 @@
         "confirm": "Tout effacer"
       }
     }
+  },
+  "assistant": {
+    "title": "Assistant",
+    "newChat": "Nouvelle discussion",
+    "conversations": "Discussions",
+    "noConversations": "Aucune discussion pour le moment",
+    "selectProvider": "Sélectionner un fournisseur",
+    "selectModel": "Sélectionner un modèle",
+    "typePlaceholder": "Saisissez un message...",
+    "send": "Envoyer",
+    "stop": "Arrêter",
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "confirmAction": "Confirmer cette action ?",
+    "cancelAction": "Annuler cette action",
+    "toolRunning": "Exécution de {{tool}}...",
+    "toolCompleted": "{{tool}} terminé",
+    "toolFailed": "{{tool}} a échoué",
+    "errorOccurred": "Une erreur est survenue. Réessayez.",
+    "circuitOpen": "Limite de sécurité atteinte",
+    "deleteConversation": "Supprimer la discussion",
+    "deleteConfirm": "Voulez-vous vraiment supprimer cette discussion ?",
+    "renameConversation": "Renommer",
+    "archiveConversation": "Archiver",
+    "unarchiveConversation": "Désarchiver",
+    "noProvider": "Sélectionnez un fournisseur et un modèle pour démarrer",
+    "providerNotConfigured": "Aucun fournisseur de chat configuré. Ajoutez d'abord un fournisseur OpenAI, Claude, Google AI ou Grok.",
+    "emptyChat": "Démarrer une conversation avec votre assistant",
+    "confirmationExpired": "Cette confirmation a expiré",
+    "loading": "Réflexion..."
   }
 }

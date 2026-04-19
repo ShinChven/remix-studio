@@ -5,6 +5,7 @@
     "libraries": "라이브러리",
     "providers": "제공자",
     "mcp": "MCP",
+    "assistant": "어시스턴트",
     "exports": "내보내기",
     "recycleBin": "휴지통",
     "storage": "저장공간",
@@ -1374,7 +1375,13 @@
       "viewFullPrompt": "클릭하여 전체 프롬프트 보기",
       "raw": "원본",
       "optimized": "최적화",
-      "thumbnail": "썸네일"
+      "thumbnail": "썸네일",
+      "playAudio": "재생",
+      "pauseAudio": "일시정지",
+      "expand": "펼치기",
+      "collapse": "접기",
+      "sortNewest": "최신순",
+      "sortOldest": "오래된 순"
     },
     "compare": {
       "title": "텍스트 비교",
@@ -1449,5 +1456,35 @@
         "confirm": "모두 지우기"
       }
     }
+  },
+  "assistant": {
+    "title": "어시스턴트",
+    "newChat": "새 대화",
+    "conversations": "대화 목록",
+    "noConversations": "대화가 없습니다",
+    "selectProvider": "제공업체 선택",
+    "selectModel": "모델 선택",
+    "typePlaceholder": "메시지를 입력하세요...",
+    "send": "보내기",
+    "stop": "정지",
+    "confirm": "확인",
+    "cancel": "취소",
+    "confirmAction": "이 작업을 실행하시겠습니까?",
+    "cancelAction": "이 작업 취소",
+    "toolRunning": "{{tool}} 실행 중...",
+    "toolCompleted": "{{tool}} 완료",
+    "toolFailed": "{{tool}} 실패",
+    "errorOccurred": "오류가 발생했습니다. 다시 시도해 주세요.",
+    "circuitOpen": "안전 한도에 도달했습니다",
+    "deleteConversation": "대화 삭제",
+    "deleteConfirm": "이 대화를 삭제하시겠습니까?",
+    "renameConversation": "이름 변경",
+    "archiveConversation": "보관",
+    "unarchiveConversation": "보관 해제",
+    "noProvider": "제공업체와 모델을 선택해 주세요",
+    "providerNotConfigured": "채팅 가능한 제공업체가 설정되지 않았습니다. 먼저 OpenAI, Claude, Google AI 또는 Grok 제공업체를 추가하세요.",
+    "emptyChat": "어시스턴트와 대화 시작",
+    "confirmationExpired": "이 확인이 만료되었습니다",
+    "loading": "생각 중..."
   }
 }

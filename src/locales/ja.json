@@ -5,6 +5,7 @@
     "libraries": "ライブラリ",
     "providers": "プロバイダー",
     "mcp": "MCP",
+    "assistant": "アシスタント",
     "exports": "エクスポート",
     "recycleBin": "ゴミ箱",
     "storage": "ストレージ",
@@ -1374,7 +1375,13 @@
       "viewFullPrompt": "クリックして完全なプロンプトを表示",
       "raw": "RAW",
       "optimized": "最適化",
-      "thumbnail": "サムネイル"
+      "thumbnail": "サムネイル",
+      "playAudio": "再生",
+      "pauseAudio": "一時停止",
+      "expand": "展開",
+      "collapse": "折りたたみ",
+      "sortNewest": "新しい順",
+      "sortOldest": "古い順"
     },
     "compare": {
       "title": "テキストを比較",
@@ -1449,5 +1456,35 @@
         "confirm": "すべてクリア"
       }
     }
+  },
+  "assistant": {
+    "title": "アシスタント",
+    "newChat": "新しいチャット",
+    "conversations": "会話一覧",
+    "noConversations": "会話はまだありません",
+    "selectProvider": "プロバイダーを選択",
+    "selectModel": "モデルを選択",
+    "typePlaceholder": "メッセージを入力...",
+    "send": "送信",
+    "stop": "停止",
+    "confirm": "確認",
+    "cancel": "キャンセル",
+    "confirmAction": "この操作を実行しますか？",
+    "cancelAction": "この操作をキャンセル",
+    "toolRunning": "{{tool}} を実行中...",
+    "toolCompleted": "{{tool}} 完了",
+    "toolFailed": "{{tool}} 失敗",
+    "errorOccurred": "エラーが発生しました。再試行してください。",
+    "circuitOpen": "安全制限に達しました",
+    "deleteConversation": "会話を削除",
+    "deleteConfirm": "この会話を削除しますか？",
+    "renameConversation": "名前を変更",
+    "archiveConversation": "アーカイブ",
+    "unarchiveConversation": "アーカイブ解除",
+    "noProvider": "プロバイダーとモデルを選択してください",
+    "providerNotConfigured": "チャット対応のプロバイダーが設定されていません。まず OpenAI、Claude、Google AI、または Grok プロバイダーを追加してください。",
+    "emptyChat": "アシスタントとの会話を開始",
+    "confirmationExpired": "この確認は期限切れです",
+    "loading": "考え中..."
   }
 }

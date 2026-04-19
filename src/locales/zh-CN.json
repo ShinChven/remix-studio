@@ -5,6 +5,7 @@
     "libraries": "库",
     "providers": "供应商",
     "mcp": "MCP",
+    "assistant": "助手",
     "exports": "导出",
     "recycleBin": "回收站",
     "storage": "存储",
@@ -1455,5 +1456,35 @@
         "confirm": "清除所有失败项"
       }
     }
+  },
+  "assistant": {
+    "title": "助手",
+    "newChat": "新建对话",
+    "conversations": "对话列表",
+    "noConversations": "暂无对话",
+    "selectProvider": "选择服务商",
+    "selectModel": "选择模型",
+    "typePlaceholder": "输入消息...",
+    "send": "发送",
+    "stop": "停止",
+    "confirm": "确认",
+    "cancel": "取消",
+    "confirmAction": "确认执行此操作？",
+    "cancelAction": "取消此操作",
+    "toolRunning": "正在执行 {{tool}}...",
+    "toolCompleted": "{{tool}} 已完成",
+    "toolFailed": "{{tool}} 失败",
+    "errorOccurred": "发生错误，请重试。",
+    "circuitOpen": "已达到安全限制",
+    "deleteConversation": "删除对话",
+    "deleteConfirm": "确定要删除此对话吗？",
+    "renameConversation": "重命名",
+    "archiveConversation": "存档",
+    "unarchiveConversation": "取消存档",
+    "noProvider": "请选择服务商和模型以开始对话",
+    "providerNotConfigured": "未配置可用于对话的服务商。请先添加 OpenAI、Claude、Google AI 或 Grok 服务商。",
+    "emptyChat": "开始与助手对话",
+    "confirmationExpired": "此确认已过期",
+    "loading": "思考中..."
   }
 }

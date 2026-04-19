@@ -5,6 +5,7 @@
     "libraries": "Libraries",
     "providers": "Providers",
     "mcp": "MCP",
+    "assistant": "Assistant",
     "exports": "Exports",
     "recycleBin": "Recycle Bin",
     "storage": "Storage",
@@ -1455,5 +1456,35 @@
       "removePasswordMessage": "This will remove your password. You will only be able to sign in using passkeys. Enter your current password to confirm.",
       "removePasswordPlaceholder": "Current password"
     }
+  },
+  "assistant": {
+    "title": "Assistant",
+    "newChat": "New Chat",
+    "conversations": "Conversations",
+    "noConversations": "No conversations yet",
+    "selectProvider": "Select Provider",
+    "selectModel": "Select Model",
+    "typePlaceholder": "Type a message...",
+    "send": "Send",
+    "stop": "Stop",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "confirmAction": "Confirm this action?",
+    "cancelAction": "Cancel this action",
+    "toolRunning": "Running {{tool}}...",
+    "toolCompleted": "{{tool}} completed",
+    "toolFailed": "{{tool}} failed",
+    "errorOccurred": "An error occurred. You can try again.",
+    "circuitOpen": "Safety limit reached",
+    "deleteConversation": "Delete Conversation",
+    "deleteConfirm": "Are you sure you want to delete this conversation?",
+    "renameConversation": "Rename",
+    "archiveConversation": "Archive",
+    "unarchiveConversation": "Unarchive",
+    "noProvider": "Select a provider and model to start chatting",
+    "providerNotConfigured": "No chat-capable providers configured. Add an OpenAI, Claude, Google AI, or Grok provider first.",
+    "emptyChat": "Start a conversation with your assistant",
+    "confirmationExpired": "This confirmation has expired",
+    "loading": "Thinking..."
   }
 }
