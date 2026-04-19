@@ -76,12 +76,20 @@ export function ProjectRoute() {
         name: updatedProject.name,
         status: updatedProject.status,
         workflow: updatedProject.workflow,
-        jobs: updatedProject.jobs,
+        providerId: updatedProject.providerId,
+        modelConfigId: updatedProject.modelConfigId,
         aspectRatio: updatedProject.aspectRatio,
         quality: updatedProject.quality,
+        background: updatedProject.background,
         format: updatedProject.format,
         shuffle: updatedProject.shuffle,
-        modelConfigId: updatedProject.modelConfigId,
+        systemPrompt: updatedProject.systemPrompt,
+        temperature: updatedProject.temperature,
+        maxTokens: updatedProject.maxTokens,
+        duration: updatedProject.duration,
+        resolution: updatedProject.resolution,
+        sound: updatedProject.sound,
+        prefix: updatedProject.prefix,
       });
       setProject(updatedProject);
     } catch (e) {

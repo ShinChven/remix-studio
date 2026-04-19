@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -54,7 +54,7 @@ interface PromptLimitDialogState {
   resolve: (decision: PromptLimitDecision) => void;
 }
 
-export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props) {
+export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDelete }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -66,6 +66,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const [localProject, setLocalProject] = useState<Project>(project);
+  const [localJobs, setLocalJobs] = useState<Job[]>(project.jobs || []);
+  const [localAlbum, setLocalAlbum] = useState<AlbumItem[]>(project.album || []);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -105,9 +107,15 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const [promptLimitDialog, setPromptLimitDialog] = useState<PromptLimitDialogState | null>(null);
 
   const projectRef = useRef(localProject);
+  const localJobsRef = useRef<Job[]>(localJobs);
+  const localAlbumRef = useRef<AlbumItem[]>(localAlbum);
   const skipProjectSyncRef = useRef(false);
   const workflowListRef = useRef<HTMLDivElement | null>(null);
-  const isProcessing = localProject.jobs.some(j => j.status === 'pending' || j.status === 'processing');
+  const isProcessing = localJobs.some(j => j.status === 'pending' || j.status === 'processing');
+
+  const onUpdate = useCallback((updated: Project) => {
+    onUpdateProp(updated);
+  }, [onUpdateProp]);
 
   const scrollWorkflowToBottom = () => {
     requestAnimationFrame(() => {
@@ -133,6 +141,16 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   }, [localProject]);
 
   useEffect(() => {
+    localJobsRef.current = localJobs;
+  }, [localJobs]);
+
+  useEffect(() => {
+    localAlbumRef.current = localAlbum;
+  }, [localAlbum]);
+
+
+
+  useEffect(() => {
     if (rawTab) {
       setMobileView('jobs');
     }
@@ -144,10 +162,11 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       interval = setInterval(async () => {
         try {
           const updated = await apiFetchProject(localProject.id);
-          const jobsChanged = JSON.stringify(updated.jobs) !== JSON.stringify(localProject.jobs);
-          const albumChanged = JSON.stringify(updated.album) !== JSON.stringify(localProject.album);
-          if (jobsChanged || albumChanged) {
-            setLocalProject(prev => ({ ...prev, jobs: updated.jobs, album: updated.album }));
+          if (JSON.stringify(updated.jobs) !== JSON.stringify(localJobsRef.current)) {
+            setLocalJobs(updated.jobs || []);
+          }
+          if (JSON.stringify(updated.album) !== JSON.stringify(localAlbumRef.current)) {
+            setLocalAlbum(updated.album || []);
           }
         } catch (e) {
           console.error('Polling for project updates failed:', e);
@@ -155,7 +174,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       }, 10000);
     }
     return () => clearInterval(interval);
-  }, [isProcessing, localProject.id, localProject.jobs, localProject.album]);
+  }, [isProcessing, localProject.id]);
 
   useEffect(() => {
     (async () => {
@@ -560,11 +579,12 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
         }
       }
 
-      const updatedProject = { ...localProject, jobs: [...localProject.jobs, ...finalizedJobs], lastQueueCount: queueCount };
+      const nextJobs = [...localJobs, ...finalizedJobs];
+      const updatedProject = { ...localProject, lastQueueCount: queueCount };
       setDraftsProgress({ current: total, total, stage: 'saving' });
 
       await apiUpdateProject(updatedProject.id, {
-        jobs: updatedProject.jobs, workflow: updatedProject.workflow, providerId: selectedProviderId,
+        jobs: nextJobs, workflow: updatedProject.workflow, providerId: selectedProviderId,
         modelConfigId: selectedModelId,
         aspectRatio: localProject.aspectRatio, quality: localProject.quality, background: localProject.background, format: localProject.format || 'png', shuffle: localProject.shuffle,
         systemPrompt: localProject.systemPrompt, temperature: localProject.temperature, maxTokens: localProject.maxTokens,
@@ -573,6 +593,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       });
 
       setLocalProject(updatedProject);
+      setLocalJobs(nextJobs);
       setActiveTab('draft');
       if (typeof window !== 'undefined' && window.innerWidth < 1024) {
         setMobileView('jobs');
@@ -589,8 +610,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const toggleJobExpand = (jobId: string) => setExpandedJobId(prev => prev === jobId ? null : jobId);
 
   const runJob = async (jobId: string) => {
-    const updatedJobs = localProject.jobs.map(j => j.id === jobId ? { ...j, status: 'pending' as const } : j);
-    setLocalProject({ ...localProject, jobs: updatedJobs });
+    const updatedJobs = localJobs.map(j => j.id === jobId ? { ...j, status: 'pending' as const } : j);
+    setLocalJobs(updatedJobs);
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
     try {
       await apiRunWorkflow(localProject.id);
@@ -601,8 +622,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const runAllDrafts = async () => {
-    const updatedJobs = localProject.jobs.map(j => j.status === 'draft' ? { ...j, status: 'pending' as const } : j);
-    setLocalProject({ ...localProject, jobs: updatedJobs });
+    const updatedJobs = localJobs.map(j => j.status === 'draft' ? { ...j, status: 'pending' as const } : j);
+    setLocalJobs(updatedJobs);
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
     try {
       await apiRunWorkflow(localProject.id);
@@ -613,8 +634,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const runSelectedDrafts = async () => {
-    const updatedJobs = localProject.jobs.map(j => selectedDraftIds.has(j.id) ? { ...j, status: 'pending' as const } : j);
-    setLocalProject({ ...localProject, jobs: updatedJobs });
+    const updatedJobs = localJobs.map(j => selectedDraftIds.has(j.id) ? { ...j, status: 'pending' as const } : j);
+    setLocalJobs(updatedJobs);
     setSelectedDraftIds(new Set());
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
     try {
@@ -626,21 +647,21 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const deleteJob = async (jobId: string) => {
-    const updatedJobs = localProject.jobs.filter(j => j.id !== jobId);
-    setLocalProject({ ...localProject, jobs: updatedJobs });
+    const updatedJobs = localJobs.filter(j => j.id !== jobId);
+    setLocalJobs(updatedJobs);
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
 
   const deleteSelectedDrafts = async () => {
-    const updatedJobs = localProject.jobs.filter(j => !selectedDraftIds.has(j.id));
-    setLocalProject({ ...localProject, jobs: updatedJobs });
+    const updatedJobs = localJobs.filter(j => !selectedDraftIds.has(j.id));
+    setLocalJobs(updatedJobs);
     setSelectedDraftIds(new Set());
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
 
   const deleteAllDrafts = async () => {
-    const updatedJobs = localProject.jobs.filter(j => j.status !== 'draft');
-    setLocalProject({ ...localProject, jobs: updatedJobs });
+    const updatedJobs = localJobs.filter(j => j.status !== 'draft');
+    setLocalJobs(updatedJobs);
     setSelectedDraftIds(new Set());
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
@@ -654,7 +675,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const toggleSelectAllDrafts = () => {
-    const draftIds = localProject.jobs.filter(j => j.status === 'draft').map(j => j.id);
+    const draftIds = localJobs.filter(j => j.status === 'draft').map(j => j.id);
     setSelectedDraftIds(selectedDraftIds.size === draftIds.length ? new Set() : new Set(draftIds));
   };
 
@@ -667,28 +688,28 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const toggleSelectAllQueue = () => {
-    const queueIds = localProject.jobs.filter(j => j.status === 'pending' || j.status === 'processing' || j.status === 'failed').map(j => j.id);
+    const queueIds = localJobs.filter(j => j.status === 'pending' || j.status === 'processing' || j.status === 'failed').map(j => j.id);
     setSelectedQueueIds(selectedQueueIds.size === queueIds.length ? new Set() : new Set(queueIds));
   };
 
   const retrySelectedQueue = async () => {
-    const updatedJobs = localProject.jobs.map(j => (selectedQueueIds.has(j.id) && (j.status === 'failed' || j.status === 'pending')) ? { ...j, status: 'pending' as const, error: undefined } : j);
-    setLocalProject({ ...localProject, jobs: updatedJobs });
+    const updatedJobs = localJobs.map(j => (selectedQueueIds.has(j.id) && (j.status === 'failed' || j.status === 'pending')) ? { ...j, status: 'pending' as const, error: undefined } : j);
+    setLocalJobs(updatedJobs);
     setSelectedQueueIds(new Set());
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
     try { await apiRunWorkflow(localProject.id); } catch (e) { console.error("Failed to retry selected:", e); }
   };
 
   const deleteSelectedQueue = async () => {
-    const updatedJobs = localProject.jobs.filter(j => !selectedQueueIds.has(j.id));
-    setLocalProject({ ...localProject, jobs: updatedJobs });
+    const updatedJobs = localJobs.filter(j => !selectedQueueIds.has(j.id));
+    setLocalJobs(updatedJobs);
     setSelectedQueueIds(new Set());
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
 
   const clearAllFailed = async () => {
-    const updatedJobs = localProject.jobs.filter(j => j.status !== 'failed');
-    setLocalProject({ ...localProject, jobs: updatedJobs });
+    const updatedJobs = localJobs.filter(j => j.status !== 'failed');
+    setLocalJobs(updatedJobs);
     setSelectedQueueIds(new Set());
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
@@ -702,13 +723,13 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const toggleSelectAllCompleted = () => {
-    const completedIds = localProject.jobs.filter(j => j.status === 'completed').map(j => j.id);
+    const completedIds = localJobs.filter(j => j.status === 'completed').map(j => j.id);
     setSelectedCompletedIds(selectedCompletedIds.size === completedIds.length ? new Set() : new Set(completedIds));
   };
 
   const deleteSelectedCompleted = async () => {
-    const updatedJobs = localProject.jobs.filter(j => !selectedCompletedIds.has(j.id));
-    setLocalProject({ ...localProject, jobs: updatedJobs });
+    const updatedJobs = localJobs.filter(j => !selectedCompletedIds.has(j.id));
+    setLocalJobs(updatedJobs);
     setSelectedCompletedIds(new Set());
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
@@ -716,7 +737,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   const toggleAlbumSelection = (id: string, isShiftPressed: boolean) => {
     setSelectedAlbumIds(prev => {
       const next = new Set(prev);
-      const album = localProject.album || [];
+      const album = localAlbum;
       if (isShiftPressed && lastSelectedAlbumId && next.has(lastSelectedAlbumId)) {
         const lastIndex = album.findIndex(item => item.id === lastSelectedAlbumId);
         const currentIndex = album.findIndex(item => item.id === id);
@@ -734,7 +755,7 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
   };
 
   const toggleSelectAllAlbum = () => {
-    const albumIds = (localProject.album || []).map(item => item.id);
+    const albumIds = localAlbum.map(item => item.id);
     setSelectedAlbumIds(selectedAlbumIds.size === albumIds.length ? new Set() : new Set(albumIds));
   };
 
@@ -743,8 +764,8 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
       const itemIds = items.map(i => i.id);
       if (itemIds.length === 1) await moveToTrash(localProject.id, itemIds[0]); else await moveToTrashBatch(localProject.id, itemIds);
       const itemIdsSet = new Set(itemIds);
-      const updatedAlbum = (localProject.album || []).filter(item => !itemIdsSet.has(item.id));
-      setLocalProject({ ...localProject, album: updatedAlbum });
+      const updatedAlbum = localAlbum.filter(item => !itemIdsSet.has(item.id));
+      setLocalAlbum(updatedAlbum);
       setSelectedAlbumIds(prev => {
         const next = new Set(prev);
         itemIdsSet.forEach(id => next.delete(id));
@@ -756,10 +777,10 @@ export function ProjectViewer({ project, libraries, onUpdate, onDelete }: Props)
     }
   };
 
-  const draftJobs = localProject.jobs.filter(j => j.status === 'draft');
-  const queueJobs = localProject.jobs.filter(j => ['pending', 'processing', 'failed'].includes(j.status));
-  const completedJobs = localProject.jobs.filter(j => j.status === 'completed');
-  const albumItems = localProject.album || [];
+  const draftJobs = localJobs.filter(j => j.status === 'draft');
+  const queueJobs = localJobs.filter(j => ['pending', 'processing', 'failed'].includes(j.status));
+  const completedJobs = localJobs.filter(j => j.status === 'completed');
+  const albumItems = localAlbum;
   const isArchived = localProject.status === 'archived';
 
   const handleToggleArchive = async () => {
