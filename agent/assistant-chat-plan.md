@@ -6,6 +6,52 @@ Owner: TBD.
 
 ---
 
+## Progress Checklist
+
+Use this section as the source of truth for implementation progress. Update checkboxes and the short notes inline so another agent can see current status without diffing the whole file.
+
+Status legend:
+
+- `[ ]` not started
+- `[-]` in progress
+- `[x]` completed
+- `[!]` blocked / needs decision
+
+### Current Snapshot
+
+- Overall status: `[ ]` Not started
+- Last updated: `2026-04-19`
+- Active owner: `TBD`
+- Notes: `Fill in active work, blockers, and handoff notes here.`
+
+### Execution Checklist
+
+- [ ] 1. Extract shared MCP tool definitions from `server/mcp/mcp-server.ts`
+  Notes: create `server/mcp/tool-definitions.ts`, move inline tool definitions, keep `mcp-server.ts` as a thin transport adapter, add pagination for large read tools.
+- [ ] 2. Add assistant database schema and repository
+  Notes: add assistant-specific tables/entities for conversations, messages, and tool events; keep state separate from generation jobs.
+- [ ] 3. Add assistant provider types and provider adapters
+  Notes: create `server/assistant/providers/{openai,anthropic,google,grok}.ts`, normalize tool calling, reuse provider credentials and safe URL validation.
+- [ ] 4. Draft the system prompt and tool-output wrapping policy
+  Notes: create `server/assistant/system-prompt.md`, define tool-result delimiters, and document prompt-injection handling rules.
+- [ ] 5. Build the assistant runner
+  Notes: implement loop orchestration, circuit breaker limits, confirmation gating, retry rules, context truncation, and status-event emission in `server/assistant/assistant-runner.ts`.
+- [ ] 6. Add assistant API routes
+  Notes: implement authenticated `/api/assistant` routes for conversation CRUD, message send, confirmation, and stop/cancel handling.
+- [ ] 7. Add `/assistant` UI
+  Notes: add transcript, composer with Stop button, inline tool status, confirmation cards, conversation list/history panel, provider/model selection, and auto-title behavior.
+- [ ] 8. Add logging and basic operational metrics
+  Notes: record provider failures, circuit-breaker stops, tool execution traces, and key turn lifecycle metrics.
+
+### Handoff Notes
+
+- Current branch / PR: `TBD`
+- Files in active work: `TBD`
+- Open questions: `TBD`
+- Blockers: `TBD`
+
+---
+
 ## 1. Goal
 
 Add an in-app **Assistant** that behaves like a real chatbot for the signed-in user:
@@ -560,14 +606,7 @@ v1 can return one complete assistant message after tools settle. Token streaming
 
 ## 19. Implementation Order
 
-1. Extract shared MCP tool definitions from `server/mcp/mcp-server.ts` (with pagination on large read tools).
-2. Add assistant database schema and repository.
-3. Add assistant provider types and provider adapters.
-4. Draft the system prompt and tool-output wrapping policy (sections 12–13).
-5. Build assistant runner with circuit breaker, confirmation, provider retry, head+tail context truncation, and status-event emission.
-6. Add assistant API routes (including cancel/stop and confirm endpoints).
-7. Add `/assistant` UI: transcript, composer with Stop, status rendering, confirmation cards, conversation list, auto-title.
-8. Add logging and basic operational metrics.
+Tracked above in `Progress Checklist`. Keep this section aligned if the sequence changes.
 
 ---
 
