@@ -19,15 +19,15 @@ Status legend:
 
 ### Current Snapshot
 
-- Overall status: `[ ]` Not started
+- Overall status: `[-]` In progress — step 1 done
 - Last updated: `2026-04-19`
 - Active owner: `TBD`
-- Notes: `Fill in active work, blockers, and handoff notes here.`
+- Notes: Step 1 extracted the tool registry into `server/mcp/tool-definitions.ts`. `mcp-server.ts` now registers from the shared list and is transport-only. Paginated read tools return `hasMore` + `nextPage` alongside existing `page`/`pages`. Typecheck (`npm run lint`) clean. Ready to start step 2 (assistant persistence schema).
 
 ### Execution Checklist
 
-- [ ] 1. Extract shared MCP tool definitions from `server/mcp/mcp-server.ts`
-  Notes: create `server/mcp/tool-definitions.ts`, move inline tool definitions, keep `mcp-server.ts` as a thin transport adapter, add pagination for large read tools.
+- [x] 1. Extract shared MCP tool definitions from `server/mcp/mcp-server.ts`
+  Notes: created `server/mcp/tool-definitions.ts` exporting `AssistantToolDefinition` + `createAssistantToolDefinitions()`; `mcp-server.ts` now only wires auth, transport, and registration. Paginated read tools (`list_libraries`, `list_all_libraries`, `get_library_items`, `search_library_items`, `list_albums`) return `hasMore`/`nextPage` so the model has an explicit "fetch more" signal. `create_project_with_workflow` carries `requiresConfirmation: true` for the assistant runner to enforce later.
 - [ ] 2. Add assistant database schema and repository
   Notes: add assistant-specific tables/entities for conversations, messages, and tool events; keep state separate from generation jobs.
 - [ ] 3. Add assistant provider types and provider adapters
