@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon } from 'lucide-react';
+import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon, FolderOpen, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -96,6 +96,100 @@ function prettyToolData(value: unknown) {
   } catch {
     return String(value);
   }
+}
+
+type AssistantMutationTarget = {
+  entityType: 'library' | 'project';
+  id: string;
+  name: string | null;
+  href: string;
+  summary: string;
+};
+
+function getToolResultPayload(message: AssistantMessage) {
+  if (message.toolResultJson && typeof message.toolResultJson === 'object') {
+    return message.toolResultJson as Record<string, unknown>;
+  }
+
+  const raw = unwrapToolResult(message.content);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
+}
+
+function getStringField(record: Record<string, unknown> | null, key: string) {
+  const value = record?.[key];
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function extractMutationTarget(
+  toolName: string | null | undefined,
+  toolArgsJson: unknown,
+  toolResultJson: unknown,
+): AssistantMutationTarget | null {
+  const args = toolArgsJson && typeof toolArgsJson === 'object'
+    ? toolArgsJson as Record<string, unknown>
+    : null;
+  const result = toolResultJson && typeof toolResultJson === 'object'
+    ? toolResultJson as Record<string, unknown>
+    : null;
+  const normalizedToolName = String(toolName || '');
+
+  const projectId = getStringField(result, 'projectId') ?? getStringField(args, 'projectId');
+  if (projectId) {
+    const name = getStringField(result, 'name') ?? getStringField(args, 'name');
+    return {
+      entityType: 'project',
+      id: projectId,
+      name,
+      href: `/project/${projectId}`,
+      summary: name ? `Project "${name}" is ready.` : 'Project is ready.',
+    };
+  }
+
+  const libraryId = getStringField(result, 'library_id')
+    ?? getStringField(result, 'libraryId')
+    ?? getStringField(args, 'library_id')
+    ?? getStringField(args, 'libraryId');
+  const libraryName = getStringField(result, 'name') ?? getStringField(args, 'name');
+
+  if (normalizedToolName === 'create_library' && getStringField(result, 'id')) {
+    const id = getStringField(result, 'id')!;
+    return {
+      entityType: 'library',
+      id,
+      name: libraryName,
+      href: `/library/${id}`,
+      summary: libraryName ? `Library "${libraryName}" is ready.` : 'Library is ready.',
+    };
+  }
+
+  if (libraryId && ['create_prompt', 'batch_create_prompts'].includes(normalizedToolName)) {
+    return {
+      entityType: 'library',
+      id: libraryId,
+      name: libraryName,
+      href: `/library/${libraryId}`,
+      summary: libraryName ? `Library "${libraryName}" was updated.` : 'Library was updated.',
+    };
+  }
+
+  if (libraryId && normalizedToolName.includes('library')) {
+    return {
+      entityType: 'library',
+      id: libraryId,
+      name: libraryName,
+      href: `/library/${libraryId}`,
+      summary: libraryName ? `Library "${libraryName}" is ready.` : 'Library is ready.',
+    };
+  }
+
+  return null;
 }
 
 function summarizePendingConfirmation(
@@ -567,52 +661,93 @@ export function AssistantPage() {
           const isError = toolMessage.status === 'error';
           const toolTitle = formatToolTitle(tc.name);
           const argsText = prettyToolData(toolMessage.toolArgsJson);
+          const toolResultPayload = getToolResultPayload(toolMessage);
           const resultText = toolMessage.toolResultJson != null
             ? prettyToolData(toolMessage.toolResultJson)
             : prettyToolData(unwrapToolResult(toolMessage.content));
+          const target = !isError && toolMessage.status !== 'cancelled'
+            ? extractMutationTarget(tc.name, toolMessage.toolArgsJson, toolResultPayload)
+            : null;
 
           return (
-            <details
-              key={tc.id}
-              className={`group border rounded-xl overflow-hidden transition-all duration-300 ${
-                isError
-                  ? 'border-red-200/70 dark:border-red-800/40 bg-red-50/50 dark:bg-red-950/10'
-                  : 'border-neutral-200/50 dark:border-white/10 bg-neutral-50/50 dark:bg-black/20'
-              }`}
-            >
-              <summary className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none text-xs font-bold transition-colors ${
-                isError
-                  ? 'text-red-600 dark:text-red-400 hover:bg-red-100/60 dark:hover:bg-red-900/20'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100/50 dark:hover:bg-white/5'
-              }`}>
-                <span className="group-open:rotate-90 transition-transform duration-200">
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </span>
-                <div className="opacity-80 group-hover:opacity-100 transition-opacity">
-                  <span className="group-open:bg-clip-text group-open:text-transparent group-open:bg-gradient-to-r group-open:from-indigo-500 group-open:via-purple-500 group-open:to-indigo-500 group-open:animate-text-gradient group-open:bg-[size:200%_auto]">
-                    {toolTitle}
+            <div key={tc.id} className="space-y-2">
+              <details
+                className={`group border rounded-xl overflow-hidden transition-all duration-300 ${
+                  isError
+                    ? 'border-red-200/70 dark:border-red-800/40 bg-red-50/50 dark:bg-red-950/10'
+                    : 'border-neutral-200/50 dark:border-white/10 bg-neutral-50/50 dark:bg-black/20'
+                }`}
+              >
+                <summary className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none text-xs font-bold transition-colors ${
+                  isError
+                    ? 'text-red-600 dark:text-red-400 hover:bg-red-100/60 dark:hover:bg-red-900/20'
+                    : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100/50 dark:hover:bg-white/5'
+                }`}>
+                  <span className="group-open:rotate-90 transition-transform duration-200">
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </span>
+                  <div className="opacity-80 group-hover:opacity-100 transition-opacity">
+                    <span className="group-open:bg-clip-text group-open:text-transparent group-open:bg-gradient-to-r group-open:from-indigo-500 group-open:via-purple-500 group-open:to-indigo-500 group-open:animate-text-gradient group-open:bg-[size:200%_auto]">
+                      {toolTitle}
+                    </span>
+                  </div>
+                </summary>
+                <div className="border-t border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/30 backdrop-blur-sm">
+                  {argsText && (
+                    <div className="px-4 pt-3">
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                        {t('assistant.toolArguments', 'Arguments')}
+                      </p>
+                      <JsonView data={toolMessage.toolArgsJson} />
+                    </div>
+                  )}
+                  {resultText && (
+                    <div className="px-4 py-3">
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                        {t('assistant.toolResult', 'Result')}
+                      </p>
+                      <JsonView data={toolMessage.toolResultJson != null ? toolMessage.toolResultJson : unwrapToolResult(toolMessage.content)} />
+                    </div>
+                  )}
                 </div>
-              </summary>
-              <div className="border-t border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/30 backdrop-blur-sm">
-                {argsText && (
-                  <div className="px-4 pt-3">
-                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                      {t('assistant.toolArguments', 'Arguments')}
-                    </p>
-                    <JsonView data={toolMessage.toolArgsJson} />
+              </details>
+              {target && (
+                <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-xl bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400">
+                      {target.entityType === 'project' ? (
+                        <Sparkles className="w-4 h-4" />
+                      ) : (
+                        <FolderOpen className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-700/80 dark:text-emerald-300/80">
+                        {target.entityType === 'project'
+                          ? t('assistant.targetProject', 'Project target')
+                          : t('assistant.targetLibrary', 'Library target')}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-neutral-900 dark:text-white">
+                        {target.name || target.id}
+                      </p>
+                      <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-300">
+                        {target.summary}
+                      </p>
+                      <Link
+                        to={target.href}
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
+                      >
+                        {t(
+                          target.entityType === 'project' ? 'assistant.openProject' : 'assistant.openLibrary',
+                          target.entityType === 'project' ? 'Open project' : 'Open library',
+                        )}
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
-                )}
-                {resultText && (
-                  <div className="px-4 py-3">
-                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                      {t('assistant.toolResult', 'Result')}
-                    </p>
-                    <JsonView data={toolMessage.toolResultJson != null ? toolMessage.toolResultJson : unwrapToolResult(toolMessage.content)} />
-                  </div>
-                )}
-              </div>
-            </details>
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
