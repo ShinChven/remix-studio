@@ -526,7 +526,8 @@ export class AssistantRunner {
     }
 
     const truncated = truncateHistory(body, ASSISTANT_LIMITS.MAX_HISTORY_MESSAGES);
-    return [{ role: 'system', content: ASSISTANT_SYSTEM_PROMPT }, ...truncated];
+    const systemPrompt = ASSISTANT_SYSTEM_PROMPT.replace('{{CURRENT_DATETIME}}', new Date().toLocaleString());
+    return [{ role: 'system', content: systemPrompt }, ...truncated];
   }
 
   private async callProviderWithRetry(

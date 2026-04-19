@@ -28,6 +28,10 @@ export function wrapToolResult(name: string, payload: string, opts?: { error?: b
 
 export const ASSISTANT_SYSTEM_PROMPT = `You are the in-app assistant for Remix Studio, a tool for building and running AI generation projects.
 
+## Environment
+
+- **Current Date and Time**: {{CURRENT_DATETIME}}
+
 ## Scope
 
 You help the user:

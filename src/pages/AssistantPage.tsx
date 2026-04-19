@@ -4,6 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   fetchAssistantConversations,
   createAssistantConversation,
@@ -38,6 +40,37 @@ const MaterialSpinner = ({ className }: { className?: string }) => (
     />
   </svg>
 );
+
+function formatToolTitle(toolName: string | null | undefined) {
+  const raw = String(toolName || 'tool');
+  return raw
+    .split(/[_-]/g)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+function unwrapToolResult(content: string | null | undefined) {
+  if (!content) return '';
+  const match = content.match(/<tool_result\b[^>]*>([\s\S]*?)<\/tool_result>/i);
+  return (match?.[1] ?? content).trim();
+}
+
+function prettyToolData(value: unknown) {
+  if (value == null) return '';
+  if (typeof value === 'string') {
+    try {
+      return JSON.stringify(JSON.parse(value), null, 2);
+    } catch {
+      return value;
+    }
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
 
 function getTextModelsForProvider(providerType: ProviderType): ModelConfig[] {
   return (PROVIDER_MODELS_MAP[providerType] || []).filter((m) => m.category === 'text');
@@ -425,38 +458,72 @@ export function AssistantPage() {
   );
 
   // ─── Render helpers ───
-  const renderToolCallSummary = (msg: AssistantMessage) => {
-    if (msg.role !== 'tool') return null;
-    const isError = msg.status === 'error';
-    return (
-      <div className={`flex items-start gap-2 px-3 py-2 rounded-lg text-xs font-mono ${
-        isError
-          ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/40'
-          : 'bg-neutral-100 dark:bg-neutral-800/50 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700/50'
-      }`}>
-        <Wrench className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-        <div className="min-w-0 flex-1">
-          <span className="font-semibold">{msg.toolName || 'tool'}</span>
-          {msg.content && (
-            <pre className="mt-1 whitespace-pre-wrap text-[11px] opacity-80 max-h-40 overflow-y-auto">
-              {msg.content.length > 500 ? msg.content.slice(0, 500) + '...' : msg.content}
-            </pre>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   const renderAssistantToolCalls = (msg: AssistantMessage) => {
     if (!msg.toolCalls || msg.toolCalls.length === 0) return null;
+
+    const hasAssistantContent = hasRenderableAssistantContent(msg);
+
     return (
-      <div className="mt-2 space-y-1">
-        {msg.toolCalls.map((tc) => (
-          <div key={tc.id} className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400">
-            <Wrench className="w-3 h-3" />
-            <span className="font-medium">{tc.name}</span>
-          </div>
-        ))}
+      <div className={`${hasAssistantContent ? 'mt-3' : ''} space-y-2`}>
+        {msg.toolCalls.map((tc) => {
+          const toolMessage = messages.find((entry) => entry.role === 'tool' && entry.toolCallId === tc.id);
+          if (!toolMessage) return null;
+
+          const isError = toolMessage.status === 'error';
+          const toolTitle = formatToolTitle(tc.name);
+          const argsText = prettyToolData(toolMessage.toolArgsJson);
+          const resultText = toolMessage.toolResultJson != null
+            ? prettyToolData(toolMessage.toolResultJson)
+            : prettyToolData(unwrapToolResult(toolMessage.content));
+
+          return (
+            <details
+              key={tc.id}
+              className={`group border rounded-xl overflow-hidden transition-all duration-300 ${
+                isError
+                  ? 'border-red-200/70 dark:border-red-800/40 bg-red-50/50 dark:bg-red-950/10'
+                  : 'border-neutral-200/50 dark:border-white/10 bg-neutral-50/50 dark:bg-black/20'
+              }`}
+            >
+              <summary className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none text-xs font-bold transition-colors ${
+                isError
+                  ? 'text-red-600 dark:text-red-400 hover:bg-red-100/60 dark:hover:bg-red-900/20'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100/50 dark:hover:bg-white/5'
+              }`}>
+                <span className="group-open:rotate-90 transition-transform duration-200">
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </span>
+                <div className="opacity-80 group-hover:opacity-100 transition-opacity">
+                  <span className="group-open:bg-clip-text group-open:text-transparent group-open:bg-gradient-to-r group-open:from-indigo-500 group-open:via-purple-500 group-open:to-indigo-500 group-open:animate-text-gradient group-open:bg-[size:200%_auto]">
+                    {toolTitle}
+                  </span>
+                </div>
+              </summary>
+              <div className="border-t border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/30 backdrop-blur-sm">
+                {argsText && (
+                  <div className="px-4 pt-3">
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                      {t('assistant.toolArguments', 'Arguments')}
+                    </p>
+                    <pre className="whitespace-pre-wrap text-xs text-neutral-600 dark:text-neutral-400 font-mono leading-relaxed">
+                      {argsText}
+                    </pre>
+                  </div>
+                )}
+                {resultText && (
+                  <div className="px-4 py-3">
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                      {t('assistant.toolResult', 'Result')}
+                    </p>
+                    <pre className="whitespace-pre-wrap text-xs text-neutral-600 dark:text-neutral-400 font-mono leading-relaxed">
+                      {resultText}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </details>
+          );
+        })}
       </div>
     );
   };
@@ -528,19 +595,25 @@ export function AssistantPage() {
             </div>
           </details>
           {restContent && (
-            <p className="text-sm whitespace-pre-wrap text-neutral-800 dark:text-neutral-200 leading-relaxed">
-              {restContent}
-            </p>
+            <div className="markdown-content text-neutral-800 dark:text-neutral-200">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{restContent}</ReactMarkdown>
+            </div>
           )}
         </div>
       );
     }
 
     return (
-      <p className="text-sm whitespace-pre-wrap text-neutral-800 dark:text-neutral-200 leading-relaxed">
-        {content}
-      </p>
+      <div className="markdown-content text-neutral-800 dark:text-neutral-200">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      </div>
     );
+  };
+
+  const hasRenderableAssistantContent = (msg: AssistantMessage) => {
+    if (msg.role !== 'assistant') return false;
+    if (msg.content && msg.content.trim().length > 0) return true;
+    return false;
   };
 
   if (isLoading) {
@@ -604,12 +677,14 @@ export function AssistantPage() {
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {activeConversationId ? (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-              {messages.filter((m) => m.role !== 'system').map((msg) => (
+              {messages.filter((m) => m.role !== 'system' && m.role !== 'tool').map((msg) => (
                 <div key={msg.id}>
                   {msg.role === 'user' && (
                     <div className="flex justify-end">
                       <div className="max-w-[80%] bg-indigo-600 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        <div className="markdown-content-user">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -619,68 +694,46 @@ export function AssistantPage() {
                         <Bot className="w-4 h-4 text-white" />
                       </div>
                       <div className="max-w-[80%]">
-                        <div className={`bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-neutral-200/30 dark:border-white/5 ${
-                          msg.status === 'error' ? 'border-red-300 dark:border-red-800/40' : ''
-                        }`}>
-                          {renderMessageContent(msg.content)}
-                          {renderAssistantToolCalls(msg)}
-                        </div>
+                        {hasRenderableAssistantContent(msg) && (
+                          <div className={`bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-neutral-200/30 dark:border-white/5 ${
+                            msg.status === 'error' ? 'border-red-300 dark:border-red-800/40' : ''
+                          }`}>
+                            {renderMessageContent(msg.content)}
+                          </div>
+                        )}
+                        {renderAssistantToolCalls(msg)}
                         {msg.inputTokens != null && msg.outputTokens != null && (
                           <p className="text-[10px] text-neutral-400 mt-1 ml-1">
-                            {msg.inputTokens}↓ {msg.outputTokens}↑ tokens
+                            {msg.inputTokens}↑ {msg.outputTokens}↓ tokens
                           </p>
                         )}
                       </div>
-                    </div>
-                  )}
-                  {msg.role === 'tool' && (
-                    <div className="ml-10 max-w-[80%]">
-                      {renderToolCallSummary(msg)}
                     </div>
                   )}
                 </div>
               ))}
 
               {isSending && (
-                <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm animate-pulse">
-                    <Bot className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="max-w-[80%]">
-                    <div className="bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-neutral-200/30 dark:border-white/5">
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <MaterialSpinner className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                          <span className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
-                            {(() => {
-                              if (currentThinkingTitle) return currentThinkingTitle;
-                              if (!currentStatus) return t('assistant.thinking', 'Thinking...');
-                              switch (currentStatus.type) {
-                                case 'provider_call_started':
-                                case 'provider_thinking':
-                                  return t('assistant.thinking', 'Thinking...');
-                                case 'tool_call_started': {
-                                  const toolName = String((currentStatus as any).call?.name || 'tool');
-                                  const toolTitle = toolName.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                                  return t('assistant.workingOn', 'Working on {{tool}}...', { tool: toolTitle });
-                                }
-                                case 'tool_call_finished':
-                                  return t('assistant.finishingTool', 'Finishing step...');
-                                case 'confirmation_required':
-                                  return t('assistant.awaitingConfirmation', 'Awaiting confirmation...');
-                                default:
-                                  return t('assistant.thinking', 'Thinking...');
-                              }
-                            })()}
-                          </span>
-                        </div>
-                        {currentThinkingTitle && currentStatus?.type !== 'provider_thinking' && (
-                          <p className="pl-6 text-xs text-neutral-500 dark:text-neutral-400">
-                            {currentThinkingTitle}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                <div className="ml-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-center gap-2 py-1.5 text-sm">
+                    <MaterialSpinner className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                    <span className="font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
+                      {(() => {
+                        if (!currentStatus) return t('assistant.thinking', 'Thinking...');
+                        switch (currentStatus.type) {
+                          case 'tool_call_started':
+                          case 'tool_call_finished':
+                          case 'confirmation_required':
+                            return formatToolTitle((currentStatus as any).call?.name);
+                          case 'provider_call_started':
+                            return currentThinkingTitle || t('assistant.thinking', 'Thinking...');
+                          case 'provider_thinking':
+                            return currentThinkingTitle || t('assistant.thinking', 'Thinking...');
+                          default:
+                            return currentThinkingTitle || t('assistant.thinking', 'Thinking...');
+                        }
+                      })()}
+                    </span>
                   </div>
                 </div>
               )}
