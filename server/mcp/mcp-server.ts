@@ -103,7 +103,7 @@ export function createMcpRouter(
 ) {
   const router = new Hono<{ Variables: Variables }>();
 
-  router.use('/mcp/*', async (c, next) => {
+  const authMiddleware = async (c: any, next: any) => {
     const authHeader = c.req.header('authorization');
     const userId = await resolveBearer(prisma, authHeader);
     if (!userId) {
@@ -112,18 +112,10 @@ export function createMcpRouter(
     }
     c.set('mcpUserId', userId);
     return next();
-  });
+  };
 
-  router.use('/mcp', async (c, next) => {
-    const authHeader = c.req.header('authorization');
-    const userId = await resolveBearer(prisma, authHeader);
-    if (!userId) {
-      setOAuthChallengeHeader(c);
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-    c.set('mcpUserId', userId);
-    return next();
-  });
+  router.use('/mcp/*', authMiddleware);
+  router.use('/mcp', authMiddleware);
 
   router.all('/mcp', async (c) => {
     const userId = c.get('mcpUserId');

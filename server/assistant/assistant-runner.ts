@@ -457,8 +457,17 @@ export class AssistantRunner {
       });
       return false;
     }
+    // This path only runs after the user has already confirmed via the
+    // assistant's confirmation flow. For tools whose handlers additionally
+    // enforce a server-side `confirmed: true` gate (used by the external MCP
+    // transport), inject that flag here so the handler knows the user has
+    // already approved and proceeds with the mutation instead of returning a
+    // plan preview.
+    const handlerArgs = tool.requiresConfirmation
+      ? { ...(parsed.value as Record<string, unknown>), confirmed: true }
+      : parsed.value;
     emit(onStatusEvent, { type: 'tool_call_started', call });
-    const isError = await this.executeToolCallInner(userId, conversationId, tool, { ...call, arguments: parsed.value });
+    const isError = await this.executeToolCallInner(userId, conversationId, tool, { ...call, arguments: handlerArgs });
     emit(onStatusEvent, { type: 'tool_call_finished', call, isError });
     return !isError;
   }

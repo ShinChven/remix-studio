@@ -633,6 +633,76 @@ export class ProjectRepository {
 
 
 
+  /**
+   * Per-project album statistics aggregated in SQL. Replaces the N+1 pattern
+   * of fetching album items per project.
+   */
+  async getAlbumStatsByProject(
+    userId: string,
+    projectIds: string[],
+  ): Promise<Record<string, { itemCount: number; totalSize: number }>> {
+    if (projectIds.length === 0) return {};
+
+    const rows = await this.prisma.albumItem.groupBy({
+      by: ['projectId'],
+      where: { userId, projectId: { in: projectIds } },
+      _count: { _all: true },
+      _sum: { size: true, optimizedSize: true, thumbnailSize: true },
+    });
+
+    const result: Record<string, { itemCount: number; totalSize: number }> = {};
+    for (const r of rows) {
+      const totalSize =
+        Number(r._sum.size || 0) +
+        Number(r._sum.optimizedSize || 0) +
+        Number(r._sum.thumbnailSize || 0);
+      result[r.projectId] = { itemCount: r._count._all, totalSize };
+    }
+    return result;
+  }
+
+  /**
+   * Per-category storage usage computed via SQL aggregates — one query per
+   * category, no row materialization. Sums DB size fields (no S3 HeadObject).
+   */
+  async getStorageUsageAggregate(userId: string): Promise<{
+    projects: number;
+    libraries: number;
+    archives: number;
+    trash: number;
+  }> {
+    const [albumAgg, libAgg, exportAgg, trashAgg] = await Promise.all([
+      this.prisma.albumItem.aggregate({
+        where: { userId },
+        _sum: { size: true, optimizedSize: true, thumbnailSize: true },
+      }),
+      this.prisma.libraryItem.aggregate({
+        where: { library: { userId } },
+        _sum: { size: true },
+      }),
+      this.prisma.exportTask.aggregate({
+        where: { userId, status: 'completed' },
+        _sum: { size: true },
+      }),
+      this.prisma.trashItem.aggregate({
+        where: { userId },
+        _sum: { size: true, optimizedSize: true, thumbnailSize: true },
+      }),
+    ]);
+
+    const sum3 = (agg: { _sum: { size?: bigint | null; optimizedSize?: bigint | null; thumbnailSize?: bigint | null } }) =>
+      Number(agg._sum.size || 0) +
+      Number(agg._sum.optimizedSize || 0) +
+      Number(agg._sum.thumbnailSize || 0);
+
+    return {
+      projects: sum3(albumAgg),
+      libraries: Number(libAgg._sum.size || 0),
+      archives: Number(exportAgg._sum.size || 0),
+      trash: sum3(trashAgg),
+    };
+  }
+
   async getAllUserItems(userId: string): Promise<any[]> {
     const [jobs, albumItems, trashItems, exportTasks, libraryItems, workflowItems] = await Promise.all([
       this.prisma.job.findMany({ where: { userId } }),

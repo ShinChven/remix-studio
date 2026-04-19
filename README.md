@@ -88,7 +88,7 @@ Example:
 }
 ```
 
-Replace `http://localhost:3000` with your deployed origin. All tools are user-scoped, use the `mcp:tools` OAuth scope, and currently include `list_libraries`, `create_library`, `create_prompt`, `search_library_items`, `get_storage_usage`, and `list_albums`.
+Replace `http://localhost:3000` with your deployed origin. All tools are user-scoped and use the `mcp:tools` OAuth scope. See `server/mcp/tool-definitions.ts` for the full tool catalog.
 
 ## Architecture At a Glance
 
