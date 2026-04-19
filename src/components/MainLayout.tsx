@@ -205,7 +205,7 @@ export function MainLayout() {
 
           <NavItem
             to="/assistant"
-            icon={<Sparkles className="w-5 h-5 flex-shrink-0 text-indigo-500" />}
+            icon={<Sparkles className="w-5 h-5 flex-shrink-0" />}
             label={t('sidebar.assistant')}
             isActive={location.pathname === '/assistant'}
             isCollapsed={isCollapsed}
