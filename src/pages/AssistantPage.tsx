@@ -23,6 +23,7 @@ import {
 import type { Provider, ProviderType, ModelConfig } from '../types';
 import { PROVIDER_MODELS_MAP, getTextModelsForProvider } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { JsonView } from '../components/JsonView';
 
 const MaterialSpinner = ({ className }: { className?: string }) => (
   <svg className={`animate-material-spinner ${className}`} viewBox="0 0 50 50">
@@ -524,9 +525,7 @@ export function AssistantPage() {
                     <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                       {t('assistant.toolArguments', 'Arguments')}
                     </p>
-                    <pre className="whitespace-pre-wrap text-xs text-neutral-600 dark:text-neutral-400 font-mono leading-relaxed">
-                      {argsText}
-                    </pre>
+                    <JsonView data={toolMessage.toolArgsJson} />
                   </div>
                 )}
                 {resultText && (
@@ -534,9 +533,7 @@ export function AssistantPage() {
                     <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                       {t('assistant.toolResult', 'Result')}
                     </p>
-                    <pre className="whitespace-pre-wrap text-xs text-neutral-600 dark:text-neutral-400 font-mono leading-relaxed">
-                      {resultText}
-                    </pre>
+                    <JsonView data={toolMessage.toolResultJson != null ? toolMessage.toolResultJson : unwrapToolResult(toolMessage.content)} />
                   </div>
                 )}
               </div>
@@ -562,9 +559,9 @@ export function AssistantPage() {
             <span className="font-mono font-medium">{pendingConfirmation.toolName}</span>
           </div>
           {pendingConfirmation.toolArgsJson && (
-            <pre className="text-xs bg-amber-100 dark:bg-amber-900/30 rounded p-2 mb-3 max-h-32 overflow-y-auto text-amber-800 dark:text-amber-300">
-              {JSON.stringify(pendingConfirmation.toolArgsJson, null, 2)}
-            </pre>
+            <div className="bg-amber-100 dark:bg-amber-900/30 rounded p-2 mb-3 max-h-48 overflow-y-auto">
+              <JsonView data={pendingConfirmation.toolArgsJson} />
+            </div>
           )}
           <div className="flex gap-2">
             <button

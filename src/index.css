@@ -190,3 +190,28 @@ button:disabled,
 .markdown-content-user a {
   @apply text-white underline underline-offset-4 decoration-2;
 }
+
+/* JSON Syntax Highlighting */
+.json-token {
+  @apply transition-colors duration-200;
+}
+
+.json-key {
+  @apply text-indigo-600 dark:text-indigo-400 font-semibold;
+}
+
+.json-string {
+  @apply text-emerald-600 dark:text-emerald-400;
+}
+
+.json-number {
+  @apply text-sky-600 dark:text-sky-400;
+}
+
+.json-boolean {
+  @apply text-amber-600 dark:text-amber-500 font-medium;
+}
+
+.json-null {
+  @apply text-rose-500 dark:text-rose-400 italic;
+}
