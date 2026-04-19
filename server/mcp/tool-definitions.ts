@@ -735,5 +735,225 @@ Recommended workflow:
     },
   });
 
+  // ─── update_project ───
+  tools.push({
+    name: 'update_project',
+    title: 'Update Project',
+    description: 'Update an existing project\'s metadata, settings, or workflow. Only provided fields will be updated. If workflowItems is provided, it completely replaces the existing workflow.',
+    inputSchema: {
+      projectId: z.string().describe('The ID of the project to update'),
+      name: z.string().min(1).max(256).optional().describe('New project display name'),
+      status: z.enum(['active', 'archived']).optional().describe('Update project status'),
+      type: z.enum(['image', 'text', 'video', 'audio']).optional().describe('Update project generation type'),
+      providerId: z.string().optional().describe('Update saved provider ID'),
+      modelConfigId: z.string().optional().describe('Update model config ID'),
+      aspectRatio: z.string().optional().describe('Update aspect ratio'),
+      quality: z.string().optional().describe('Update quality level'),
+      format: z.enum(['png', 'jpeg', 'webp']).optional().describe('Update output image format'),
+      shuffle: z.boolean().optional().describe('Update shuffle setting'),
+      prefix: z.string().optional().describe('Update text prefix'),
+      systemPrompt: z.string().optional().describe('Update system prompt'),
+      temperature: z.number().min(0).max(2).optional().describe('Update generation temperature'),
+      maxTokens: z.number().int().optional().describe('Update max output tokens'),
+      duration: z.number().int().optional().describe('Update video duration'),
+      resolution: z.string().optional().describe('Update video resolution'),
+      sound: z.enum(['on', 'off']).optional().describe('Update video sound setting'),
+      workflowItems: z.array(z.object({
+        itemType: z.enum(WORKFLOW_ITEM_TYPES).describe('Workflow item type'),
+        value: z.string().optional().describe('For "text": the prompt text. For "image"/"audio"/"video": file storage key to pin a file.'),
+        libraryId: z.string().optional().describe('Library ID (required for *_from_library types)'),
+        selectedTags: z.array(z.string()).optional().describe('Optional tag filter for library items'),
+      })).optional().describe('If provided, replaces the existing workflow with this new ordered list'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    category: 'mutate',
+    handler: async (userId, input) => {
+      const {
+        projectId, name, status, type, providerId, modelConfigId, aspectRatio, quality, format,
+        shuffle, prefix, systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems,
+      } = input as {
+        projectId: string;
+        name?: string;
+        status?: 'active' | 'archived';
+        type?: 'image' | 'text' | 'video' | 'audio';
+        providerId?: string;
+        modelConfigId?: string;
+        aspectRatio?: string;
+        quality?: string;
+        format?: 'png' | 'jpeg' | 'webp';
+        shuffle?: boolean;
+        prefix?: string;
+        systemPrompt?: string;
+        temperature?: number;
+        maxTokens?: number;
+        duration?: number;
+        resolution?: string;
+        sound?: 'on' | 'off';
+        workflowItems?: {
+          itemType: (typeof WORKFLOW_ITEM_TYPES)[number];
+          value?: string;
+          libraryId?: string;
+          selectedTags?: string[];
+        }[];
+      };
+
+      const existingProject = await repository.getProject(userId, projectId);
+      if (!existingProject) {
+        return {
+          text: JSON.stringify({ error: `Project "${projectId}" not found.` }),
+          isError: true,
+        };
+      }
+
+      const updates: any = {};
+      if (name !== undefined) updates.name = name;
+      if (status !== undefined) updates.status = status;
+      if (type !== undefined) updates.type = type;
+      if (providerId !== undefined) updates.providerId = providerId;
+      if (modelConfigId !== undefined) updates.modelConfigId = modelConfigId;
+      if (aspectRatio !== undefined) updates.aspectRatio = aspectRatio;
+      if (quality !== undefined) updates.quality = quality;
+      if (format !== undefined) updates.format = format;
+      if (shuffle !== undefined) updates.shuffle = shuffle;
+      if (prefix !== undefined) updates.prefix = prefix.trim() || null;
+      if (systemPrompt !== undefined) updates.systemPrompt = systemPrompt;
+      if (temperature !== undefined) updates.temperature = temperature;
+      if (maxTokens !== undefined) updates.maxTokens = maxTokens;
+      if (duration !== undefined) updates.duration = duration;
+      if (resolution !== undefined) updates.resolution = resolution;
+      if (sound !== undefined) updates.sound = sound;
+
+      // Validate provider/model if changed
+      const effectiveProviderId = providerId ?? existingProject.providerId;
+      const effectiveModelConfigId = modelConfigId ?? existingProject.modelConfigId;
+      const effectiveType = type ?? existingProject.type;
+
+      if (providerId || modelConfigId || type) {
+        let providerRecord = null;
+        if (effectiveProviderId) {
+          providerRecord = await providerRepository.getPublicProvider(userId, effectiveProviderId);
+          if (!providerRecord) {
+            return {
+              text: JSON.stringify({ error: `providerId "${effectiveProviderId}" not found.` }),
+              isError: true,
+            };
+          }
+        }
+
+        let modelMeta: { id: string; name: string; category: string; providerType: string } | null = null;
+        if (effectiveModelConfigId) {
+          for (const [providerType, models] of Object.entries(PROVIDER_MODELS_MAP)) {
+            const match = models.find((m) => m.id === effectiveModelConfigId);
+            if (match) {
+              modelMeta = { id: match.id, name: match.name, category: match.category, providerType };
+              break;
+            }
+          }
+          if (!modelMeta) {
+            return {
+              text: JSON.stringify({ error: `modelConfigId "${effectiveModelConfigId}" not found.` }),
+              isError: true,
+            };
+          }
+        }
+
+        if (providerRecord && modelMeta && providerRecord.type !== modelMeta.providerType) {
+          return {
+            text: JSON.stringify({
+              error: `Provider/model mismatch: provider "${providerRecord.name}" (${providerRecord.type}) vs model "${modelMeta.name}" (${modelMeta.providerType}).`,
+            }),
+            isError: true,
+          };
+        }
+
+        if (modelMeta && effectiveType && modelMeta.category !== effectiveType) {
+          return {
+            text: JSON.stringify({
+              error: `Project type "${effectiveType}" does not match model category "${modelMeta.category}".`,
+            }),
+            isError: true,
+          };
+        }
+      }
+
+      if (workflowItems) {
+        for (let i = 0; i < workflowItems.length; i++) {
+          const item = workflowItems[i];
+          const needsLibrary = item.itemType.endsWith('_from_library') || item.itemType.endsWith('_library');
+          if (needsLibrary && !item.libraryId) {
+            return {
+              text: JSON.stringify({ error: `workflowItems[${i}] has itemType "${item.itemType}" but no libraryId.` }),
+              isError: true,
+            };
+          }
+        }
+
+        updates.workflow = workflowItems.map((item, idx) => {
+          let internalType: 'text' | 'library' | 'image' | 'video' | 'audio';
+          let internalValue: string;
+
+          switch (item.itemType) {
+            case 'text':
+              internalType = 'text';
+              internalValue = item.value || '';
+              break;
+            case 'text_from_library':
+            case 'text_library':
+              internalType = 'library';
+              internalValue = item.libraryId || '';
+              break;
+            case 'image':
+              internalType = 'image';
+              internalValue = item.value || '';
+              break;
+            case 'image_from_library':
+            case 'image_library':
+              internalType = 'library';
+              internalValue = item.libraryId || '';
+              break;
+            case 'audio':
+              internalType = 'audio';
+              internalValue = item.value || '';
+              break;
+            case 'audio_from_library':
+            case 'audio_library':
+              internalType = 'library';
+              internalValue = item.libraryId || '';
+              break;
+            case 'video':
+              internalType = 'video';
+              internalValue = item.value || '';
+              break;
+            case 'video_from_library':
+            case 'video_library':
+              internalType = 'library';
+              internalValue = item.libraryId || '';
+              break;
+            default:
+              throw new Error(`Unknown workflow itemType: ${item.itemType}`);
+          }
+
+          return {
+            id: crypto.randomUUID(),
+            type: internalType,
+            value: internalValue,
+            order: idx,
+            selectedTags: item.selectedTags,
+          };
+        });
+      }
+
+      await repository.updateProject(userId, projectId, updates);
+
+      return {
+        text: JSON.stringify({
+          projectId,
+          updatedFields: Object.keys(updates),
+          message: 'Project updated successfully.',
+        }),
+      };
+    },
+  });
+
   return tools;
 }
