@@ -82,7 +82,9 @@
     "libraries": "库",
     "newLibrary": "新库",
     "noLibraries": "暂无库。创建一个库来存储可重用的提示词。",
-    "projectStats": "{{jobCount}} 个作业 • {{imageCount}} 张图片 • {{date}}"
+    "projectStats": "{{jobCount}} 个作业 • {{imageCount}} 张图片 • {{date}}",
+    "aiChat": "AI助手",
+    "aiChatDescription": "今天有什么可以帮您的吗？"
   },
   "projects": {
     "title": "项目",

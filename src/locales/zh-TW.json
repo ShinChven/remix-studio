@@ -307,7 +307,9 @@
     "libraries": "庫",
     "newLibrary": "新庫",
     "noLibraries": "暫無庫。建立一個庫來存儲可重用的提示詞。",
-    "projectStats": "{{jobCount}} 個作業 • {{imageCount}} 張圖片 • {{date}}"
+    "projectStats": "{{jobCount}} 個作業 • {{imageCount}} 張圖片 • {{date}}",
+    "aiChat": "AI助手",
+    "aiChatDescription": "今天有什麼可以幫您的嗎？"
   },
   "projects": {
     "title": "專案",

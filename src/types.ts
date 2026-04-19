@@ -971,6 +971,13 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
 };
 
 /**
+ * Helper to get all text-category models for a given provider type.
+ */
+export function getTextModelsForProvider(providerType: ProviderType): ModelConfig[] {
+  return (PROVIDER_MODELS_MAP[providerType] || []).filter((m) => m.category === 'text');
+}
+
+/**
  * Resolve custom model variants into full ModelConfig entries.
  * Each variant clones the base model's options but uses its own name and modelId.
  */

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,7 +21,7 @@ import {
   AssistantStatusEvent,
 } from '../api';
 import type { Provider, ProviderType, ModelConfig } from '../types';
-import { PROVIDER_MODELS_MAP } from '../types';
+import { PROVIDER_MODELS_MAP, getTextModelsForProvider } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 
 const MaterialSpinner = ({ className }: { className?: string }) => (
@@ -70,14 +70,13 @@ function prettyToolData(value: unknown) {
   }
 }
 
-function getTextModelsForProvider(providerType: ProviderType): ModelConfig[] {
-  return (PROVIDER_MODELS_MAP[providerType] || []).filter((m) => m.category === 'text');
-}
+
 
 export function AssistantPage() {
   const { t } = useTranslation();
   const { id: routeId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // ─── State ───
   const [conversations, setConversations] = useState<AssistantConversation[]>([]);
@@ -141,6 +140,23 @@ export function AssistantPage() {
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
+
+  // Handle initial message from dashboard
+  const handledInitialRef = useRef(false);
+  useEffect(() => {
+    if (handledInitialRef.current) return;
+    const state = location.state as { initialMessage?: string; providerId?: string; modelId?: string } | null;
+    if (state?.initialMessage) {
+      handledInitialRef.current = true;
+      const { initialMessage, providerId, modelId } = state;
+      if (providerId) setSelectedProviderId(providerId);
+      if (modelId) setSelectedModelId(modelId);
+      // We'll call handleSend with manual values to ensure it works even if state hasn't updated yet
+      handleSend(initialMessage, providerId, modelId);
+      // Clear location state to prevent re-sending on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   // ─── Load conversation messages ───
   const loadConversation = useCallback(async (id: string) => {
@@ -214,20 +230,25 @@ export function AssistantPage() {
   };
 
   // ─── Send message ───
-  const handleSend = async () => {
-    const text = inputText.trim();
+  const handleSend = async (manualText?: string, manualProviderId?: string, manualModelId?: string) => {
+    const text = (manualText ?? inputText).trim();
     if (!text || isSending) return;
 
+    const pId = manualProviderId ?? selectedProviderId;
+    const mId = manualModelId ?? selectedModelId;
+
     if (!activeConversationId) {
-      if (!selectedProviderId || !selectedModelId) {
+      if (!pId || !mId) {
         toast.error(t('assistant.noProvider'));
         return;
       }
     }
 
-    setInputText('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+    if (!manualText) {
+      setInputText('');
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
     }
 
     setIsSending(true);
@@ -239,8 +260,8 @@ export function AssistantPage() {
     if (!currentConversationId) {
       try {
         const newConv = await createAssistantConversation({
-          providerId: selectedProviderId,
-          modelConfigId: selectedModelId,
+          providerId: pId!,
+          modelConfigId: mId!,
         });
         setConversations((prev) => [newConv.conversation, ...prev]);
         currentConversationId = newConv.conversation.id;
@@ -443,7 +464,7 @@ export function AssistantPage() {
           </button>
         ) : (
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!inputText.trim()}
             className="flex-shrink-0 p-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             title={t('assistant.send')}

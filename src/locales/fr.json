@@ -307,7 +307,9 @@
     "libraries": "Bibliothèques",
     "newLibrary": "Nouvelle bibliothèque",
     "noLibraries": "Aucune bibliothèque pour le moment. Créez-en une pour stocker des prompts réutilisables.",
-    "projectStats": "{{jobCount}} tâches • {{imageCount}} images • {{date}}"
+    "projectStats": "{{jobCount}} tâches • {{imageCount}} images • {{date}}",
+    "aiChat": "Assistant IA",
+    "aiChatDescription": "Comment puis-je vous aider aujourd'hui ?"
   },
   "projects": {
     "title": "Projets",

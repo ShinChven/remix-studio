@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, Project } from '../types';
-import { Plus, Play, Folder, LayoutGrid, Clock, Loader2, Copy } from 'lucide-react';
+import { Plus, Play, Folder, LayoutGrid, Clock, Loader2, Copy, MessageCircle, Send, Bot, Sparkles } from 'lucide-react';
 import { PageHeader } from './PageHeader';
-import { fetchProjects, fetchLibraries } from '../api';
+import { fetchProjects, fetchLibraries, fetchAssistantProviders } from '../api';
+import { getTextModelsForProvider, Provider } from '../types';
 
 export function Dashboard() {
   const { t } = useTranslation();
@@ -14,18 +15,44 @@ export function Dashboard() {
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // AI Chat State
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string>(() => localStorage.getItem('assistant_last_provider') || '');
+  const [selectedModelId, setSelectedModelId] = useState<string>(() => localStorage.getItem('assistant_last_model') || '');
+  const [inputText, setInputText] = useState('');
+
+  useEffect(() => {
+    if (selectedProviderId) localStorage.setItem('assistant_last_provider', selectedProviderId);
+  }, [selectedProviderId]);
+
+  useEffect(() => {
+    if (selectedModelId) localStorage.setItem('assistant_last_model', selectedModelId);
+  }, [selectedModelId]);
+
   useEffect(() => {
     let mounted = true;
     const load = async () => {
       setIsLoading(true);
       try {
-        const [projRes, libRes] = await Promise.all([
+        const [projRes, libRes, provRes] = await Promise.all([
           fetchProjects(1, 6),
           fetchLibraries(1, 8),
+          fetchAssistantProviders(),
         ]);
         if (mounted) {
           setProjects(projRes.items);
           setLibraries(libRes.items);
+          setProviders(provRes.providers);
+          
+          // Set default provider/model if none selected
+          if (!selectedProviderId && provRes.providers.length > 0) {
+            const firstWithModels = provRes.providers.find(p => getTextModelsForProvider(p.type).length > 0);
+            if (firstWithModels) {
+              const models = getTextModelsForProvider(firstWithModels.type);
+              setSelectedProviderId(firstWithModels.id);
+              if (models.length > 0) setSelectedModelId(models[0].id);
+            }
+          }
         }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
@@ -40,6 +67,27 @@ export function Dashboard() {
   const addProject = () => navigate('/project/new');
   const addLibrary = () => navigate('/library/new');
 
+  const handleStartChat = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const text = inputText.trim();
+    if (!text) return;
+    
+    navigate('/assistant', { 
+      state: { 
+        initialMessage: text,
+        providerId: selectedProviderId,
+        modelId: selectedModelId
+      } 
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleStartChat();
+    }
+  };
+
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full space-y-8">
@@ -47,6 +95,88 @@ export function Dashboard() {
           title={t('dashboard.welcome')}
           description={t('dashboard.description')}
         />
+
+        {/* AI Chat Hero Section */}
+        <section className="flex flex-col items-center justify-center py-4 md:py-8">
+          <div className="w-full max-w-2xl space-y-6">
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{t('dashboard.aiChat')}</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-neutral-900 dark:text-white tracking-tight">
+                {t('dashboard.aiChatDescription')}
+              </h2>
+            </div>
+
+            <div className="relative group">
+              {/* Glassmorphic Container with depth */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000 group-focus-within:duration-200"></div>
+              
+              <div className="relative bg-white/80 dark:bg-neutral-900/80 backdrop-blur-2xl border border-neutral-200/50 dark:border-white/10 rounded-2xl shadow-2xl p-4 transition-all duration-300 group-focus-within:shadow-indigo-500/10">
+                <div className="space-y-4">
+                  {/* Model Selector */}
+                  <div className="flex items-center gap-2 px-1">
+                    <Bot className="w-4 h-4 text-indigo-500" />
+                    <select
+                      value={selectedProviderId && selectedModelId ? `${selectedProviderId}::${selectedModelId}` : ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) {
+                          setSelectedProviderId('');
+                          setSelectedModelId('');
+                          return;
+                        }
+                        const [pId, mId] = val.split('::');
+                        setSelectedProviderId(pId);
+                        setSelectedModelId(mId);
+                      }}
+                      className="text-xs bg-transparent border-none text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 outline-none cursor-pointer p-0 appearance-none font-medium transition-colors"
+                    >
+                      <option value="">{t('assistant.selectModel', 'Select a model')}</option>
+                      {providers.map((p) => {
+                        const models = getTextModelsForProvider(p.type);
+                        if (models.length === 0) return null;
+                        return (
+                          <optgroup key={p.id} label={p.name}>
+                            {models.map((m) => (
+                              <option key={`${p.id}::${m.id}`} value={`${p.id}::${m.id}`}>
+                                {m.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Input Area */}
+                  <div className="flex items-end gap-3">
+                    <textarea
+                      value={inputText}
+                      onChange={(e) => {
+                        setInputText(e.target.value);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                      }}
+                      onKeyDown={handleKeyDown}
+                      placeholder={t('assistant.typePlaceholder')}
+                      rows={1}
+                      className="flex-1 bg-transparent border-none outline-none text-base text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 dark:placeholder-neutral-500 resize-none py-1 min-h-[40px] max-h-[120px] custom-scrollbar"
+                    />
+                    <button
+                      onClick={() => handleStartChat()}
+                      disabled={!inputText.trim()}
+                      className="flex-shrink-0 p-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed group/btn"
+                    >
+                      <Send className="w-5 h-5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-24">

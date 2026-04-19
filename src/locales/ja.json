@@ -307,7 +307,9 @@
     "libraries": "ライブラリ",
     "newLibrary": "新規ライブラリ",
     "noLibraries": "ライブラリはまだありません。再利用可能なプロンプトを保存するために作成してください。",
-    "projectStats": "{{jobCount}} ジョブ • {{imageCount}} 画像 • {{date}}"
+    "projectStats": "{{jobCount}} ジョブ • {{imageCount}} 画像 • {{date}}",
+    "aiChat": "AIアシスタント",
+    "aiChatDescription": "今日は何をお手伝いしましょうか？"
   },
   "projects": {
     "title": "プロジェクト",

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Unplug, MessageCircle } from 'lucide-react';
+import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Unplug, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
@@ -205,7 +205,7 @@ export function MainLayout() {
 
           <NavItem
             to="/assistant"
-            icon={<MessageCircle className="w-5 h-5 flex-shrink-0" />}
+            icon={<Sparkles className="w-5 h-5 flex-shrink-0 text-indigo-500" />}
             label={t('sidebar.assistant')}
             isActive={location.pathname === '/assistant'}
             isCollapsed={isCollapsed}

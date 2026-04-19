@@ -307,7 +307,9 @@
     "libraries": "라이브러리",
     "newLibrary": "새 라이브러리",
     "noLibraries": "아직 라이브러리가 없습니다. 재사용 가능한 프롬프트를 저장하려면 하나를 만드세요.",
-    "projectStats": "{{jobCount}} 작업 • {{imageCount}} 이미지 • {{date}}"
+    "projectStats": "{{jobCount}} 작업 • {{imageCount}} 이미지 • {{date}}",
+    "aiChat": "AI 어시스턴트",
+    "aiChatDescription": "오늘은 어떻게 도와드릴까요?"
   },
   "projects": {
     "title": "프로젝트",

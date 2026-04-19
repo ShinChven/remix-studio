@@ -82,7 +82,9 @@
     "libraries": "Libraries",
     "newLibrary": "New Library",
     "noLibraries": "No libraries yet. Create one to store reusable prompts.",
-    "projectStats": "{{jobCount}} jobs • {{imageCount}} images • {{date}}"
+    "projectStats": "{{jobCount}} jobs • {{imageCount}} images • {{date}}",
+    "aiChat": "AI Assistant",
+    "aiChatDescription": "How can I help you today?"
   },
   "projectViewer": {
     "common": {
