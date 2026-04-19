@@ -21,6 +21,7 @@ import type {
   ToolCall,
 } from './providers/types';
 import { ASSISTANT_SYSTEM_PROMPT, wrapToolResult } from './system-prompt';
+import { PROVIDER_MODELS_MAP } from '../../src/types';
 
 /**
  * Assistant runner — the only place that loops between model and tools.
@@ -213,15 +214,22 @@ export class AssistantRunner {
     abortSignal?: AbortSignal;
     onStatusEvent?: (event: AssistantStatusEvent) => void;
   }): Promise<TurnResult> {
-    const { userId, conversationId, providerId, modelId, abortSignal, onStatusEvent } = input;
+    const { userId, conversationId, providerId: providerIdOriginal, modelId: modelConfigId, abortSignal, onStatusEvent } = input;
 
-    let providerHandle: { provider: ChatProvider };
+    let providerHandle: { provider: ChatProvider; type: string };
     try {
-      providerHandle = await resolveChatProvider(this.providerRepo, userId, providerId);
+      providerHandle = await resolveChatProvider(this.providerRepo, userId, providerIdOriginal);
     } catch (e: any) {
       return errorResult(`Could not load chat provider: ${e?.message ?? 'unknown error'}`);
     }
-    const { provider } = providerHandle;
+    const { provider, type: providerType } = providerHandle;
+
+    const availableModels = PROVIDER_MODELS_MAP[providerType as keyof typeof PROVIDER_MODELS_MAP] || [];
+    const modelConfig = availableModels.find(m => m.id === modelConfigId);
+    if (!modelConfig) {
+      return errorResult(`Model config '${modelConfigId}' is not available for provider '${providerType}'`);
+    }
+    const realModelId = modelConfig.modelId;
 
     let toolCallBudget = ASSISTANT_LIMITS.MAX_TOOL_CALLS;
     const recentCallHashes: string[] = [];
@@ -247,7 +255,7 @@ export class AssistantRunner {
       let response: ChatResponse;
       try {
         response = await this.callProviderWithRetry(provider, {
-          modelId,
+          modelId: realModelId,
           messages,
           tools: this.tools,
           abortSignal,

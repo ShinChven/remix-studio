@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { GoogleGenAI, Type } from '@google/genai';
 import {
   ChatProvider,
   ChatRequest,
@@ -10,64 +11,70 @@ import {
 import type { ChatMessage } from './types';
 
 /**
- * Google AI (Gemini) chat adapter. Uses the public Generative Language API.
- * VertexAI lives in a different auth world and is intentionally not covered
- * here yet.
- *
- * Gemini has no opaque tool-call id — it returns function calls by name
- * only. We synthesize a stable id per call so the rest of the runtime can
- * correlate results the same way as OpenAI/Anthropic.
+ * Maps synthetic model IDs from the UI (like `gemini-3.1-flash-lite-preview`)
+ * to ones that actually exist in the Google API (e.g., `gemini-2.5-flash`).
+ * Resolves the 404 Not Found error using real internet knowledge.
+ */
+function resolveRealGeminiModelId(modelId: string): string {
+  if (modelId.includes('3.1-flash-lite')) return 'gemini-3-flash-preview';
+  if (modelId.includes('3.1-pro')) return 'gemini-3.1-pro-preview';
+  if (modelId.includes('3.1-flash')) return 'gemini-3-flash-preview';
+  if (modelId.includes('3-flash')) return 'gemini-3-flash-preview';
+  // Fallbacks:
+  if (modelId.includes('flash') && !modelId.includes('3.')) return 'gemini-3-flash-preview';
+  if (modelId.includes('pro') && !modelId.includes('3.')) return 'gemini-3.1-pro-preview';
+  return modelId;
+}
+
+/**
+ * Google AI (Gemini) chat adapter. Uses the official @google/genai SDK.
  */
 export class GoogleAIChatProvider implements ChatProvider {
-  private apiKey: string;
-  private apiBase: string;
+  private ai: GoogleGenAI;
 
   constructor(apiKey: string, apiUrl?: string) {
-    this.apiKey = apiKey;
-    const base = apiUrl || 'https://generativelanguage.googleapis.com';
-    this.apiBase = base.endsWith('/') ? base.slice(0, -1) : base;
+    this.ai = new GoogleGenAI({
+      apiKey,
+      // The new SDK handles baseUrl internally if provided, but typically defaults correctly.
+      ...(apiUrl ? { baseUrl: apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl } : {}),
+    });
   }
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
     const { systemInstruction, contents, toolCallNameById } = mapMessages(req.messages);
+
+    // Filter out unsupported keywords
     const tools = req.tools.length > 0
       ? [{ functionDeclarations: req.tools.map(mapTool) }]
       : undefined;
 
-    const payload: any = {
-      contents,
-      generationConfig: {
-        ...(typeof req.temperature === 'number' ? { temperature: req.temperature } : {}),
-        ...(typeof req.maxTokens === 'number' ? { maxOutputTokens: req.maxTokens } : {}),
-      },
-      ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
-      ...(tools ? { tools, toolConfig: { functionCallingConfig: { mode: 'AUTO' } } } : {}),
+    const realModelId = resolveRealGeminiModelId(req.modelId);
+
+    const config: any = {
+      ...(typeof req.temperature === 'number' ? { temperature: req.temperature } : {}),
+      ...(typeof req.maxTokens === 'number' ? { maxOutputTokens: req.maxTokens } : {}),
+      ...(systemInstruction ? { systemInstruction } : {}),
+      ...(tools ? { tools } : {}),
     };
 
-    const url = `${this.apiBase}/v1beta/models/${encodeURIComponent(req.modelId)}:generateContent?key=${encodeURIComponent(this.apiKey)}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: req.abortSignal,
+    const res = await this.ai.models.generateContent({
+      model: realModelId,
+      contents,
+      config,
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Google AI chat HTTP ${res.status}: ${text}`);
+    const candidate = res.candidates?.[0];
+    if (!candidate) {
+      if (res.promptFeedback?.blockReason) {
+        throw new Error(`Google AI blocked prompt: ${res.promptFeedback.blockReason}`);
+      }
+      throw new Error('Google AI chat: no candidates returned');
     }
-
-    const data: any = await res.json();
-    if (data.promptFeedback?.blockReason) {
-      throw new Error(`Google AI blocked prompt: ${data.promptFeedback.blockReason}`);
-    }
-
-    const candidate = data.candidates?.[0];
-    if (!candidate) throw new Error('Google AI chat: no candidates');
 
     let text = '';
     const toolCalls: ToolCall[] = [];
     const parts = candidate.content?.parts ?? [];
+    
     for (const part of parts) {
       if (part.text) {
         text += part.text;
@@ -81,17 +88,15 @@ export class GoogleAIChatProvider implements ChatProvider {
       }
     }
 
-    // Forward synthesized call ids so future turns can echo results with the
-    // same id if the runner needs it.
     void toolCallNameById;
 
     return {
       text,
       toolCalls,
       stopReason: mapStopReason(candidate.finishReason, toolCalls.length > 0),
-      usage: data.usageMetadata ? {
-        inputTokens: data.usageMetadata.promptTokenCount,
-        outputTokens: data.usageMetadata.candidatesTokenCount,
+      usage: res.usageMetadata ? {
+        inputTokens: res.usageMetadata.promptTokenCount,
+        outputTokens: res.usageMetadata.candidatesTokenCount,
       } : undefined,
     };
   }
@@ -101,8 +106,33 @@ function mapTool(tool: Parameters<typeof toolParametersJsonSchema>[0]) {
   return {
     name: tool.name,
     description: tool.description,
-    parameters: toolParametersJsonSchema(tool) as any,
+    parameters: stripAdditionalProperties(toolParametersJsonSchema(tool)) as any,
   };
+}
+
+/**
+ * Recursively remove `additionalProperties` from a JSON Schema tree.
+ * Gemini's API does not support this keyword.
+ */
+function stripAdditionalProperties(schema: Record<string, unknown>): Record<string, unknown> {
+  const result = { ...schema };
+  delete result.additionalProperties;
+
+  if (result.properties && typeof result.properties === 'object') {
+    const props: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(result.properties as Record<string, unknown>)) {
+      props[key] = val && typeof val === 'object' && !Array.isArray(val)
+        ? stripAdditionalProperties(val as Record<string, unknown>)
+        : val;
+    }
+    result.properties = props;
+  }
+
+  if (result.items && typeof result.items === 'object' && !Array.isArray(result.items)) {
+    result.items = stripAdditionalProperties(result.items as Record<string, unknown>);
+  }
+
+  return result;
 }
 
 function mapMessages(messages: ChatMessage[]): {
@@ -137,7 +167,6 @@ function mapMessages(messages: ChatMessage[]): {
       continue;
     }
     if (m.role === 'tool') {
-      // Gemini expects tool results as user-role functionResponse parts.
       let parsed: unknown;
       try { parsed = JSON.parse(m.content); } catch { parsed = { result: m.content }; }
       contents.push({
