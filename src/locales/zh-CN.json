@@ -1482,7 +1482,7 @@
     "archiveConversation": "存档",
     "unarchiveConversation": "取消存档",
     "noProvider": "请选择服务商和模型以开始对话",
-    "providerNotConfigured": "未配置可用于对话的服务商。请先添加 OpenAI、Claude、Google AI 或 Grok 服务商。",
+    "providerNotConfigured": "未配置可用于对话的服务商。请先添加 OpenAI、Claude 或 Google AI 服务商。",
     "emptyChat": "开始与助手对话",
     "confirmationExpired": "此确认已过期",
     "loading": "思考中..."

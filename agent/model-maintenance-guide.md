@@ -175,7 +175,7 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 ### Claude (Anthropic)
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
-| Claude Opus 4.6 | `claude-opus-4-6` | text | 128,000 |
+| Claude Opus 4.7 | `claude-opus-4-7` | text | 128,000 |
 | Claude Sonnet 4.6 | `claude-sonnet-4-6` | text | 64,000 |
 | Claude Haiku 4.5 | `claude-haiku-4-5-20251001` | text | 64,000 |
 

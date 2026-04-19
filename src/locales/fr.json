@@ -1482,7 +1482,7 @@
     "archiveConversation": "Archiver",
     "unarchiveConversation": "Désarchiver",
     "noProvider": "Sélectionnez un fournisseur et un modèle pour démarrer",
-    "providerNotConfigured": "Aucun fournisseur de chat configuré. Ajoutez d'abord un fournisseur OpenAI, Claude, Google AI ou Grok.",
+    "providerNotConfigured": "Aucun fournisseur de chat configuré. Ajoutez d'abord un fournisseur OpenAI, Claude ou Google AI.",
     "emptyChat": "Démarrer une conversation avec votre assistant",
     "confirmationExpired": "Cette confirmation a expiré",
     "loading": "Réflexion..."

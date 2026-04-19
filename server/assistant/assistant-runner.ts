@@ -108,7 +108,11 @@ export class AssistantRunner {
       const conversation = await this.repo.getConversation(input.userId, input.conversationId);
       if (!conversation) return errorResult('Conversation not found');
       if (!conversation.providerId || !conversation.modelConfigId) {
-        return errorResult('Conversation is missing a provider or model selection');
+        const partial = await this.recordConfigurationError(
+          input.conversationId,
+          'Conversation is missing a provider or model selection',
+        );
+        return { kind: 'error', error: 'Conversation is missing a provider or model selection', partialMessage: partial };
       }
 
       await this.repo.appendMessage({
@@ -134,7 +138,11 @@ export class AssistantRunner {
       const conversation = await this.repo.getConversation(input.userId, input.conversationId);
       if (!conversation) return errorResult('Conversation not found');
       if (!conversation.providerId || !conversation.modelConfigId) {
-        return errorResult('Conversation is missing a provider or model selection');
+        const partial = await this.recordConfigurationError(
+          input.conversationId,
+          'Conversation is missing a provider or model selection',
+        );
+        return { kind: 'error', error: 'Conversation is missing a provider or model selection', partialMessage: partial };
       }
 
       const confirmation = await this.repo.getPendingConfirmation(input.confirmationId);
@@ -248,14 +256,18 @@ export class AssistantRunner {
     try {
       providerHandle = await resolveChatProvider(this.providerRepo, userId, providerIdOriginal);
     } catch (e: any) {
-      return errorResult(`Could not load chat provider: ${e?.message ?? 'unknown error'}`);
+      const rawError = `Could not load chat provider: ${e?.message ?? 'unknown error'}`;
+      const partial = await this.recordConfigurationError(conversationId, rawError);
+      return { kind: 'error', error: rawError, partialMessage: partial };
     }
     const { provider, type: providerType } = providerHandle;
 
     const availableModels = PROVIDER_MODELS_MAP[providerType as keyof typeof PROVIDER_MODELS_MAP] || [];
     const modelConfig = availableModels.find(m => m.id === modelConfigId);
     if (!modelConfig) {
-      return errorResult(`Model config '${modelConfigId}' is not available for provider '${providerType}'`);
+      const rawError = `Model config '${modelConfigId}' is not available for provider '${providerType}'`;
+      const partial = await this.recordConfigurationError(conversationId, rawError);
+      return { kind: 'error', error: rawError, partialMessage: partial };
     }
     const realModelId = modelConfig.modelId;
 
@@ -566,6 +578,17 @@ export class AssistantRunner {
       conversationId,
       role: 'assistant',
       content: "The model couldn't finish this turn. You can try again.",
+      status: 'error',
+      stopReason: 'error',
+      errorText: rawError.slice(0, 4000),
+    });
+  }
+
+  private async recordConfigurationError(conversationId: string, rawError: string): Promise<AssistantMessageRecord> {
+    return this.repo.appendMessage({
+      conversationId,
+      role: 'assistant',
+      content: "This chat can't continue because its provider or model is unavailable or no longer supported.",
       status: 'error',
       stopReason: 'error',
       errorText: rawError.slice(0, 4000),

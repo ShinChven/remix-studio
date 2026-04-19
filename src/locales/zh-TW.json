@@ -1482,7 +1482,7 @@
     "archiveConversation": "封存",
     "unarchiveConversation": "取消封存",
     "noProvider": "請選擇供應商和模型以開始對話",
-    "providerNotConfigured": "未設定可用於對話的供應商。請先新增 OpenAI、Claude、Google AI 或 Grok 供應商。",
+    "providerNotConfigured": "未設定可用於對話的供應商。請先新增 OpenAI、Claude 或 Google AI 供應商。",
     "emptyChat": "開始與助手對話",
     "confirmationExpired": "此確認已過期",
     "loading": "思考中..."

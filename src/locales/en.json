@@ -1482,7 +1482,7 @@
     "archiveConversation": "Archive",
     "unarchiveConversation": "Unarchive",
     "noProvider": "Select a provider and model to start chatting",
-    "providerNotConfigured": "No chat-capable providers configured. Add an OpenAI, Claude, Google AI, or Grok provider first.",
+    "providerNotConfigured": "No chat-capable providers configured. Add an OpenAI, Claude, or Google AI provider first.",
     "emptyChat": "Start a conversation with your assistant",
     "confirmationExpired": "This confirmation has expired",
     "loading": "Thinking..."

@@ -24,8 +24,6 @@ import type { Provider, ProviderType, ModelConfig } from '../types';
 import { PROVIDER_MODELS_MAP } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 
-const CHAT_CAPABLE_TYPES: ProviderType[] = ['OpenAI', 'Claude', 'GoogleAI', 'Grok'];
-
 const MaterialSpinner = ({ className }: { className?: string }) => (
   <svg className={`animate-material-spinner ${className}`} viewBox="0 0 50 50">
     <circle
