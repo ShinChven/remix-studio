@@ -145,11 +145,25 @@ export class AssistantRunner {
       }
       if (confirmation.expiresAt < Date.now()) {
         await this.repo.updatePendingConfirmationStatus(confirmation.id, 'expired');
+        await this.repo.updateMessageStatus(confirmation.messageId, 'completed');
+        await this.repo.appendMessage({
+          conversationId: conversation.id,
+          role: 'tool',
+          toolCallId: confirmation.toolCallId,
+          toolName: confirmation.toolName,
+          toolArgsJson: confirmation.toolArgsJson,
+          content: wrapToolResult(confirmation.toolName, JSON.stringify({
+            expired: true,
+            message: 'Confirmation expired before user responded.',
+          })),
+          status: 'error',
+        });
         return errorResult('Confirmation expired');
       }
 
       if (input.decision === 'cancel') {
         await this.repo.updatePendingConfirmationStatus(confirmation.id, 'cancelled');
+        await this.repo.updateMessageStatus(confirmation.messageId, 'completed');
         await this.repo.appendMessage({
           conversationId: conversation.id,
           role: 'tool',
@@ -176,9 +190,22 @@ export class AssistantRunner {
 
       // Confirmed — execute the tool now, then continue the loop.
       await this.repo.updatePendingConfirmationStatus(confirmation.id, 'confirmed');
+      await this.repo.updateMessageStatus(confirmation.messageId, 'completed');
 
       const tool = this.toolsByName.get(confirmation.toolName);
       if (!tool) {
+        await this.repo.appendMessage({
+          conversationId: conversation.id,
+          role: 'tool',
+          toolCallId: confirmation.toolCallId,
+          toolName: confirmation.toolName,
+          toolArgsJson: confirmation.toolArgsJson,
+          content: wrapToolResult(confirmation.toolName, JSON.stringify({
+            error: true,
+            message: `Tool '${confirmation.toolName}' no longer exists`,
+          })),
+          status: 'error',
+        });
         return errorResult(`Tool '${confirmation.toolName}' no longer exists`);
       }
 
@@ -635,10 +662,17 @@ function truncateHistory(messages: ChatMessage[], max: number): ChatMessage[] {
 
   const firstUserIdx = messages.findIndex((m) => m.role === 'user');
   const head: ChatMessage[] = firstUserIdx >= 0 ? [messages[firstUserIdx]] : [];
-  const tailStart = Math.max(
+  let tailStart = Math.max(
     messages.length - (max - head.length - 1),
-    firstUserIdx + 1,
+    firstUserIdx >= 0 ? firstUserIdx + 1 : 0,
   );
+
+  // Avoid splitting tool call sequences: if the tail starts on a tool response,
+  // walk backward to include the assistant message that spawned it.
+  while (tailStart > 0 && tailStart < messages.length && messages[tailStart].role === 'tool') {
+    tailStart--;
+  }
+
   const tail = messages.slice(tailStart);
   const placeholder: ChatMessage = {
     role: 'system',
