@@ -7,8 +7,13 @@ import type { IRepository } from '../db/repository';
 import type { UserRepository } from '../auth/user-repository';
 import type { ProviderRepository } from '../db/provider-repository';
 import { createAssistantToolDefinitions, AssistantToolDefinition } from './tool-definitions';
+import { getTransportInputSchema, resolveExternalToolCall } from './tool-confirmation';
 
 type Variables = { mcpUserId: string };
+
+function isStructuredContent(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
 
 function sha256(value: string): string {
   return crypto.createHash('sha256').update(value).digest('hex');
@@ -56,7 +61,7 @@ function registerToolOnServer(server: McpServer, tool: AssistantToolDefinition, 
     tool.name,
     {
       description: tool.description,
-      inputSchema: tool.inputSchema,
+      inputSchema: getTransportInputSchema(tool),
       annotations: {
         title: tool.title,
         readOnlyHint: tool.annotations.readOnlyHint,
@@ -66,9 +71,17 @@ function registerToolOnServer(server: McpServer, tool: AssistantToolDefinition, 
       },
     },
     async (input: unknown) => {
-      const result = await tool.handler(userId, input);
+      const resolution = resolveExternalToolCall(tool, input);
+      const result =
+        resolution.kind === 'execute'
+          ? await tool.handler(userId, resolution.input)
+          : resolution.result;
+      const structuredContent = isStructuredContent(result.structuredContent)
+        ? result.structuredContent
+        : undefined;
       return {
         content: [{ type: 'text' as const, text: result.text }],
+        ...(structuredContent ? { structuredContent } : {}),
         ...(result.isError ? { isError: true } : {}),
       };
     },

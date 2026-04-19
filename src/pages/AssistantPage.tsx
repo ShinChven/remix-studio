@@ -70,6 +70,32 @@ function prettyToolData(value: unknown) {
   }
 }
 
+function summarizePendingConfirmation(
+  pendingConfirmation: AssistantPendingConfirmation | null,
+) {
+  if (!pendingConfirmation) return '';
+  const args = pendingConfirmation.toolArgsJson && typeof pendingConfirmation.toolArgsJson === 'object'
+    ? pendingConfirmation.toolArgsJson as Record<string, unknown>
+    : {};
+
+  switch (pendingConfirmation.toolName) {
+    case 'create_library':
+      return `Create a text library named "${String(args.name ?? '')}".`;
+    case 'create_prompt':
+      return `Create one prompt in library "${String(args.library_id ?? '')}".`;
+    case 'batch_create_prompts': {
+      const count = Array.isArray(args.items) ? args.items.length : 0;
+      return `Create ${count} prompt${count === 1 ? '' : 's'} in library "${String(args.library_id ?? '')}".`;
+    }
+    case 'create_project_with_workflow': {
+      const workflowCount = Array.isArray(args.workflowItems) ? args.workflowItems.length : 0;
+      return `Create a ${String(args.type ?? 'new')} project named "${String(args.name ?? '')}" with ${workflowCount} workflow item${workflowCount === 1 ? '' : 's'}.`;
+    }
+    default:
+      return `Apply ${pendingConfirmation.toolName}.`;
+  }
+}
+
 
 
 export function AssistantPage() {
@@ -559,6 +585,7 @@ export function AssistantPage() {
 
   const renderConfirmationCard = () => {
     if (!pendingConfirmation) return null;
+    const proposalSummary = summarizePendingConfirmation(pendingConfirmation);
     return (
       <div className="mx-auto max-w-2xl mb-4">
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/50 rounded-xl p-4 shadow-sm">
@@ -568,9 +595,14 @@ export function AssistantPage() {
               {t('assistant.confirmAction')}
             </span>
           </div>
-          <div className="text-sm text-amber-700 dark:text-amber-400 mb-1">
-            <span className="font-mono font-medium">{pendingConfirmation.toolName}</span>
-          </div>
+          {proposalSummary && (
+            <div className="bg-white/70 dark:bg-black/20 rounded-lg border border-amber-200/80 dark:border-amber-800/40 px-3 py-2.5 mb-3">
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                {t('assistant.proposedChange', 'Proposed change')}
+              </p>
+              <p className="text-sm text-neutral-800 dark:text-neutral-200">{proposalSummary}</p>
+            </div>
+          )}
           {pendingConfirmation.toolArgsJson && (
             <div className="bg-amber-100 dark:bg-amber-900/30 rounded p-2 mb-3 max-h-48 overflow-y-auto">
               <JsonView data={pendingConfirmation.toolArgsJson} />

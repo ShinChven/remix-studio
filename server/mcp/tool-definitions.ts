@@ -43,10 +43,8 @@ export interface AssistantToolDefinition<Shape extends z.ZodRawShape = z.ZodRawS
     openWorldHint?: boolean;
   };
   category: ToolCategory;
-  /** When true, the assistant runner must obtain explicit user confirmation
-   *  for the exact normalized args before invoking the handler. Over the
-   *  external MCP transport the handler enforces this server-side via an
-   *  explicit `confirmed: true` input flag. */
+  /** Optional explicit override. When omitted, non-read tools are gated for
+   *  confirmation by the assistant runner and external MCP transport. */
   requiresConfirmation?: boolean;
   handler: (userId: string, input: any) => Promise<ToolResult>;
 }
@@ -523,17 +521,12 @@ Workflow item types:
 - "video": video context slot. Leave "value" empty, or set "value" to item.storageKey from get_library_items to pin a specific video file.
 - "video_from_library" / "video_library": reference a video library. Requires "libraryId".
 
-IMPORTANT — Two-step confirmation:
-This tool is gated server-side. On first call, leave "confirmed" unset (or pass false). The server returns a plan summary and does NOT create the project. Show the plan to the user; on explicit approval, re-call with the exact same args plus "confirmed": true to create the project.
-
 Recommended workflow:
 1. Call list_available_models → pick one usableModels entry (copy providerId + modelConfigId verbatim).
 2. Call list_all_libraries → discover libraries.
 3. Call get_library_items(libraryId) → find items by name.
-4. Call create_project_with_workflow WITHOUT confirmed → present returned plan to user.
-5. On user approval, call create_project_with_workflow WITH confirmed: true.`,
+4. Present the full plan to the user before creating the project.`,
     inputSchema: {
-      confirmed: z.boolean().optional().describe('Set to true to actually create the project. When false or omitted, the server returns a plan preview without creating anything.'),
       name: z.string().min(1).max(256).describe('Project display name'),
       type: z.enum(['image', 'text', 'video', 'audio']).describe('Project generation type'),
       providerId: z.string().optional().describe('Saved provider ID (from list_available_models usableModels[].providerId)'),
@@ -557,14 +550,11 @@ Recommended workflow:
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     category: 'mutate',
-    requiresConfirmation: true,
     handler: async (userId, input) => {
       const {
-        confirmed,
         name, type, providerId, modelConfigId, aspectRatio, quality, shuffle, prefix,
         systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems,
       } = input as {
-        confirmed?: boolean;
         name: string;
         type: 'image' | 'text' | 'video' | 'audio';
         providerId?: string;
@@ -702,33 +692,6 @@ Recommended workflow:
           selectedTags: item.selectedTags,
         };
       });
-
-      // ─── Confirmation gate ───
-      // If confirmed is not true, return a plan preview without persisting.
-      if (confirmed !== true) {
-        const plan = {
-          requiresConfirmation: true,
-          message: 'Review this plan with the user, then re-call create_project_with_workflow with the exact same arguments plus "confirmed": true to actually create the project.',
-          plan: {
-            name,
-            type,
-            provider: providerRecord ? { id: providerRecord.id, name: providerRecord.name, type: providerRecord.type } : null,
-            model: modelMeta ? { id: modelMeta.id, name: modelMeta.name, category: modelMeta.category } : null,
-            options: {
-              aspectRatio, quality, shuffle, prefix, systemPrompt,
-              temperature, maxTokens, duration, resolution, sound,
-            },
-            workflowItems: workflowItems.map((item, idx) => ({
-              order: idx,
-              itemType: item.itemType,
-              value: item.value,
-              libraryId: item.libraryId,
-              selectedTags: item.selectedTags,
-            })),
-          },
-        };
-        return { text: JSON.stringify(plan, null, 2) };
-      }
 
       // ─── Create ───
       const projectId = crypto.randomUUID();

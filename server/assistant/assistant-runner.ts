@@ -12,6 +12,7 @@ import {
   ToolDependencies,
   createAssistantToolDefinitions,
 } from '../mcp/tool-definitions';
+import { summarizeToolEffect, toolRequiresConfirmation } from '../mcp/tool-confirmation';
 import { resolveChatProvider } from './chat-provider-factory';
 import type {
   ChatMessage,
@@ -317,7 +318,7 @@ export class AssistantRunner {
 
       // Persist the assistant message — we may later rewrite its `toolCalls`
       // to reflect the halt point, so keep the id.
-      const assistantMessage = await this.repo.appendMessage({
+      let assistantMessage = await this.repo.appendMessage({
         conversationId,
         role: 'assistant',
         content: response.text,
@@ -390,13 +391,27 @@ export class AssistantRunner {
           continue;
         }
 
-        if (tool.requiresConfirmation) {
+        if (toolRequiresConfirmation(tool)) {
+          const latestUserMessage = findLatestUserMessageContent(messages);
+          const proposal = buildConfirmationProposalText(
+            assistantMessage.content,
+            latestUserMessage,
+            tool,
+            parsed.value,
+          );
+          if (proposal !== assistantMessage.content) {
+            await this.rewriteAssistantMessage(assistantMessage.id, {
+              content: proposal,
+            });
+            assistantMessage = { ...assistantMessage, content: proposal };
+          }
+
           // Rewrite the assistant message so its toolCalls array only lists
           // what we've already processed plus this halted call. Calls after
           // this one in the response are dropped — the model will re-plan
           // after the user decides.
           const trimmedToolCalls = [...processedCalls, call];
-          await this.rewriteAssistantToolCalls(assistantMessage.id, trimmedToolCalls);
+          await this.rewriteAssistantMessage(assistantMessage.id, { toolCalls: trimmedToolCalls });
           const confirmation = await this.repo.createPendingConfirmation({
             conversationId,
             messageId: assistantMessage.id,
@@ -457,17 +472,8 @@ export class AssistantRunner {
       });
       return false;
     }
-    // This path only runs after the user has already confirmed via the
-    // assistant's confirmation flow. For tools whose handlers additionally
-    // enforce a server-side `confirmed: true` gate (used by the external MCP
-    // transport), inject that flag here so the handler knows the user has
-    // already approved and proceeds with the mutation instead of returning a
-    // plan preview.
-    const handlerArgs = tool.requiresConfirmation
-      ? { ...(parsed.value as Record<string, unknown>), confirmed: true }
-      : parsed.value;
     emit(onStatusEvent, { type: 'tool_call_started', call });
-    const isError = await this.executeToolCallInner(userId, conversationId, tool, { ...call, arguments: handlerArgs });
+    const isError = await this.executeToolCallInner(userId, conversationId, tool, { ...call, arguments: parsed.value });
     emit(onStatusEvent, { type: 'tool_call_finished', call, isError });
     return !isError;
   }
@@ -515,11 +521,24 @@ export class AssistantRunner {
   }
 
   private async rewriteAssistantToolCalls(messageId: string, toolCalls: ToolCall[]): Promise<void> {
+    await this.rewriteAssistantMessage(messageId, { toolCalls });
+  }
+
+  private async rewriteAssistantMessage(
+    messageId: string,
+    updates: {
+      content?: string;
+      toolCalls?: ToolCall[];
+    },
+  ): Promise<void> {
     // Prisma's assistant message doesn't expose an update helper in our repo yet;
     // do a direct update via a small method on the repo. Fall back to inline.
     await (this.repo as any)['prisma']?.assistantMessage?.update?.({
       where: { id: messageId },
-      data: { toolCalls: toolCalls as any },
+      data: {
+        ...(updates.content !== undefined ? { content: updates.content } : {}),
+        ...(updates.toolCalls !== undefined ? { toolCalls: updates.toolCalls as any } : {}),
+      },
     }).catch(() => {});
   }
 
@@ -691,6 +710,137 @@ function safeParseToolInput(
   } catch (e: any) {
     return { ok: false as const, error: e?.message ?? 'Invalid tool arguments' };
   }
+}
+
+function shouldReplaceProposalText(content: string): boolean {
+  const trimmed = content.trim();
+  if (!trimmed) return true;
+
+  const internalPlanningSignals = [
+    /\bI need to\b/i,
+    /\bI now realize\b/i,
+    /\bI should\b/i,
+    /\bI['’]m currently\b/i,
+    /\bI was going to\b/i,
+    /\bI['’]ll need to\b/i,
+    /\bThe instructions\b/i,
+    /\bcreate_library\b/,
+    /\bbatch_create_prompts\b/,
+    /\bcreate_project_with_workflow\b/,
+    /\bcall [`']?[a-z_]+[`']?/i,
+  ];
+
+  return internalPlanningSignals.some((pattern) => pattern.test(trimmed));
+}
+
+function findLatestUserMessageContent(messages: ChatMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'user') return messages[i].content;
+  }
+  return '';
+}
+
+function buildConfirmationProposalText(
+  currentContent: string,
+  latestUserMessage: string,
+  tool: AssistantToolDefinition,
+  args: unknown,
+): string {
+  const richerProposal = synthesizeMultiStepProposal(tool, args, latestUserMessage);
+  if (richerProposal && (shouldReplaceProposalText(currentContent) || isProposalTooNarrow(currentContent, latestUserMessage, tool))) {
+    return richerProposal;
+  }
+  if (shouldReplaceProposalText(currentContent)) {
+    return `${summarizeToolEffect(tool, args)}\n\nReview the details below and confirm if you want me to apply this change.`;
+  }
+  return currentContent;
+}
+
+function isProposalTooNarrow(
+  currentContent: string,
+  latestUserMessage: string,
+  tool: AssistantToolDefinition,
+): boolean {
+  if (tool.name !== 'create_library') return false;
+  const promptIntent = extractPromptCreationIntent(latestUserMessage);
+  if (!promptIntent) return false;
+
+  if (promptIntent.count != null && !new RegExp(`\\b${promptIntent.count}\\b`).test(currentContent)) {
+    return true;
+  }
+
+  if (/\bprompts?\b/i.test(latestUserMessage) && !/\bprompts?\b/i.test(currentContent)) {
+    return true;
+  }
+
+  if (promptIntent.topic) {
+    const escapedTopic = escapeRegExp(promptIntent.topic);
+    if (!new RegExp(escapedTopic, 'i').test(currentContent)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function synthesizeMultiStepProposal(
+  tool: AssistantToolDefinition,
+  args: unknown,
+  latestUserMessage: string,
+): string | null {
+  if (tool.name !== 'create_library') return null;
+  const promptIntent = extractPromptCreationIntent(latestUserMessage);
+  if (!promptIntent) return null;
+
+  const objectArgs = (args && typeof args === 'object' && !Array.isArray(args))
+    ? args as Record<string, unknown>
+    : {};
+  const libraryName = String(objectArgs.name ?? 'the new library');
+  const countText = promptIntent.count != null
+    ? `${promptIntent.count} `
+    : '';
+  const topicText = promptIntent.topic
+    ? `${promptIntent.topic} `
+    : '';
+  const promptNoun = promptIntent.count === 1 ? 'prompt' : 'prompts';
+
+  return `I will create a new text library named "${libraryName}" first. Once it exists, I will add ${countText}${topicText}${promptNoun} to it.\n\nReview the details below and confirm if you want me to start with the library creation step.`;
+}
+
+function extractPromptCreationIntent(userMessage: string): { count: number | null; topic: string | null } | null {
+  const trimmed = userMessage.trim();
+  if (!trimmed || !/\bprompts?\b/i.test(trimmed)) return null;
+
+  const directMatch = trimmed.match(/\b(\d+)\s+(.+?)\s+prompts?\b/i);
+  if (directMatch) {
+    return {
+      count: Number.parseInt(directMatch[1], 10),
+      topic: normalizePromptTopic(directMatch[2]),
+    };
+  }
+
+  const countOnlyMatch = trimmed.match(/\b(\d+)\s+prompts?\b/i);
+  if (countOnlyMatch) {
+    return {
+      count: Number.parseInt(countOnlyMatch[1], 10),
+      topic: null,
+    };
+  }
+
+  return { count: null, topic: null };
+}
+
+function normalizePromptTopic(rawTopic: string): string | null {
+  const topic = rawTopic
+    .replace(/\b(?:that|which|who)\b.*$/i, '')
+    .replace(/\b(?:about|of|for)\b\s*$/i, '')
+    .replace(/^[\s"'`]+|[\s"'`.,!?]+$/g, '')
+    .trim();
+  return topic || null;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
