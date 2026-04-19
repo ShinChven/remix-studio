@@ -62,23 +62,35 @@ function parseAssistantContent(content: string | null | undefined) {
     };
   }
 
-  const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
-  const match = content.match(thinkRegex);
+  let thoughtParts: string[] = [];
+  let cleanResponse = content;
 
-  if (!match) {
-    const trimmedContent = content.trim();
-    return {
-      thoughtContent: null,
-      responseContent: trimmedContent || null,
-    };
+  // 1. Extract closed <think>...</think> blocks
+  const thinkClosedRegex = /<think>([\s\S]*?)<\/think>/gi;
+  let match;
+  while ((match = thinkClosedRegex.exec(content)) !== null) {
+    thoughtParts.push(match[1].trim());
+  }
+  cleanResponse = cleanResponse.replace(thinkClosedRegex, '');
+
+  // 2. Extract unclosed <think> block (happens during streaming or incomplete response)
+  const unclosedThinkRegex = /<think>([\s\S]*)$/i;
+  const unclosedMatch = cleanResponse.match(unclosedThinkRegex);
+  if (unclosedMatch) {
+    thoughtParts.push(unclosedMatch[1].trim());
+    cleanResponse = cleanResponse.replace(unclosedThinkRegex, '');
   }
 
-  const thoughtContent = match[1]?.trim() || null;
-  const responseContent = content.replace(thinkRegex, '').trim() || null;
+  // 3. Clean up stray tags and normalize whitespace
+  let thoughtContent = thoughtParts.length > 0 
+    ? thoughtParts.join('\n\n').replace(/<\/?think>/gi, '').replace(/\n{3,}/g, '\n\n').trim() 
+    : null;
+
+  cleanResponse = cleanResponse.replace(/<\/?think>/gi, '').trim() || null;
 
   return {
-    thoughtContent,
-    responseContent,
+    thoughtContent: thoughtContent || null,
+    responseContent: cleanResponse,
   };
 }
 
