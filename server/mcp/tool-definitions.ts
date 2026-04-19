@@ -94,18 +94,19 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'create_library',
     title: 'Create Library',
-    description: 'Create a new text library.',
+    description: 'Create a new library of a specific type (text, image, audio, video).',
     inputSchema: {
       name: z.string().min(1).max(256).describe('Library name'),
+      type: z.enum(['text', 'image', 'audio', 'video']).default('text').describe('Library type (default "text")'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     category: 'mutate',
     handler: async (userId, input) => {
-      const { name } = input as { name: string };
+      const { name, type } = input as { name: string; type: 'text' | 'image' | 'audio' | 'video' };
       const id = crypto.randomUUID();
-      await repository.createLibrary(userId, { id, name, type: 'text' });
+      await repository.createLibrary(userId, { id, name, type });
       return {
-        text: JSON.stringify({ id, name, type: 'text', message: 'Library created successfully' }),
+        text: JSON.stringify({ id, name, type, message: 'Library created successfully' }),
       };
     },
   });
@@ -533,6 +534,7 @@ Recommended workflow:
       modelConfigId: z.string().optional().describe('Model config ID (from list_available_models usableModels[].modelConfigId)'),
       aspectRatio: z.string().optional().describe('Aspect ratio (e.g. "16:9", "1:1") — available options depend on the selected model'),
       quality: z.string().optional().describe('Quality level — available options depend on the selected model'),
+      format: z.enum(['png', 'jpeg', 'webp']).optional().describe('Output image format (png, jpeg, webp)'),
       shuffle: z.boolean().optional().describe('Shuffle workflow text items on each generation run'),
       prefix: z.string().optional().describe('Text prefix prepended to every generated prompt'),
       systemPrompt: z.string().optional().describe('System prompt for text projects'),
@@ -552,7 +554,7 @@ Recommended workflow:
     category: 'mutate',
     handler: async (userId, input) => {
       const {
-        name, type, providerId, modelConfigId, aspectRatio, quality, shuffle, prefix,
+        name, type, providerId, modelConfigId, aspectRatio, quality, format, shuffle, prefix,
         systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems,
       } = input as {
         name: string;
@@ -561,6 +563,7 @@ Recommended workflow:
         modelConfigId?: string;
         aspectRatio?: string;
         quality?: string;
+        format?: 'png' | 'jpeg' | 'webp';
         shuffle?: boolean;
         prefix?: string;
         systemPrompt?: string;
@@ -689,7 +692,6 @@ Recommended workflow:
           type: internalType,
           value: internalValue,
           order: idx,
-          selectedTags: item.selectedTags,
         };
       });
 
@@ -708,6 +710,7 @@ Recommended workflow:
         modelConfigId: modelConfigId || undefined,
         aspectRatio: aspectRatio || undefined,
         quality: quality || undefined,
+        format: format || undefined,
         shuffle: shuffle ?? undefined,
         prefix: prefix?.trim() || undefined,
         systemPrompt: systemPrompt || undefined,
