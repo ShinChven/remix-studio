@@ -52,6 +52,7 @@ export const ASSISTANT_LIMITS = {
 
 export type AssistantStatusEvent =
   | { type: 'provider_call_started'; iteration: number }
+  | { type: 'provider_thinking'; iteration: number; title: string; content?: string }
   | { type: 'provider_call_finished'; iteration: number; stopReason: ChatStopReason }
   | { type: 'tool_call_started'; call: ToolCall }
   | { type: 'tool_call_finished'; call: ToolCall; isError: boolean }
@@ -286,6 +287,14 @@ export class AssistantRunner {
           messages,
           tools: this.tools,
           abortSignal,
+          onThought: (update) => {
+            emit(onStatusEvent, {
+              type: 'provider_thinking',
+              iteration: iter,
+              title: update.title,
+              content: update.content,
+            });
+          },
         });
       } catch (e: any) {
         console.error(`[Assistant] Provider error: conversation=${conversationId} iter=${iter} error=${e?.message}`);

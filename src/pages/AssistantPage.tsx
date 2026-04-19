@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon, Sparkles } from 'lucide-react';
+import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   fetchAssistantConversations,
@@ -67,6 +67,7 @@ export function AssistantPage() {
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<AssistantStatusEvent | null>(null);
+  const [currentThinkingTitle, setCurrentThinkingTitle] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(() => {
     const saved = localStorage.getItem('assistant-right-panel-open');
@@ -200,6 +201,7 @@ export function AssistantPage() {
 
     setIsSending(true);
     setCurrentStatus(null);
+    setCurrentThinkingTitle('');
 
     let currentConversationId = activeConversationId;
 
@@ -243,6 +245,9 @@ export function AssistantPage() {
     try {
       const result = await sendAssistantMessage(currentConversationId, text, (event) => {
         setCurrentStatus(event);
+        if (event.type === 'provider_thinking' && typeof event.title === 'string') {
+          setCurrentThinkingTitle(event.title);
+        }
       });
       // Reload full message list for consistency
       const data = await fetchAssistantConversation(currentConversationId);
@@ -274,6 +279,7 @@ export function AssistantPage() {
     } finally {
       setIsSending(false);
       setCurrentStatus(null);
+      setCurrentThinkingTitle('');
     }
   };
 
@@ -282,6 +288,7 @@ export function AssistantPage() {
     if (!activeConversationId || !pendingConfirmation) return;
     setIsSending(true);
     setCurrentStatus(null);
+    setCurrentThinkingTitle('');
     try {
       const result = await confirmAssistantTool(
         activeConversationId,
@@ -289,6 +296,9 @@ export function AssistantPage() {
         decision,
         (event) => {
           setCurrentStatus(event);
+          if (event.type === 'provider_thinking' && typeof event.title === 'string') {
+            setCurrentThinkingTitle(event.title);
+          }
         },
       );
       setPendingConfirmation(null);
@@ -304,6 +314,7 @@ export function AssistantPage() {
     } finally {
       setIsSending(false);
       setCurrentStatus(null);
+      setCurrentThinkingTitle('');
     }
   };
 
@@ -506,9 +517,7 @@ export function AssistantPage() {
           <details className="group border border-neutral-200/50 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-50/50 dark:bg-black/20 transition-all duration-300">
             <summary className="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100/50 dark:hover:bg-white/5 transition-colors">
               <span className="group-open:rotate-90 transition-transform duration-200"><ChevronRight className="w-3.5 h-3.5" /></span>
-              <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                <MaterialSpinner className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 group-open:block hidden" />
-                <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 group-open:hidden" />
+              <div className="opacity-80 group-hover:opacity-100 transition-opacity">
                 <span className="group-open:bg-clip-text group-open:text-transparent group-open:bg-gradient-to-r group-open:from-indigo-500 group-open:via-purple-500 group-open:to-indigo-500 group-open:animate-text-gradient group-open:bg-[size:200%_auto]">
                   {t('assistant.thoughtProcess', 'Thought process')}
                 </span>
@@ -639,28 +648,37 @@ export function AssistantPage() {
                   </div>
                   <div className="max-w-[80%]">
                     <div className="bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-neutral-200/30 dark:border-white/5">
-                      <div className="flex items-center gap-2">
-                        <MaterialSpinner className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                        <span className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
-                          {(() => {
-                            if (!currentStatus) return t('assistant.thinking', 'Thinking...');
-                            switch (currentStatus.type) {
-                              case 'provider_call_started':
-                                return t('assistant.thinking', 'Thinking...');
-                              case 'tool_call_started': {
-                                const toolName = String((currentStatus as any).call?.name || 'tool');
-                                const toolTitle = toolName.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                                return t('assistant.workingOn', 'Working on {{tool}}...', { tool: toolTitle });
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <MaterialSpinner className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                          <span className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
+                            {(() => {
+                              if (currentThinkingTitle) return currentThinkingTitle;
+                              if (!currentStatus) return t('assistant.thinking', 'Thinking...');
+                              switch (currentStatus.type) {
+                                case 'provider_call_started':
+                                case 'provider_thinking':
+                                  return t('assistant.thinking', 'Thinking...');
+                                case 'tool_call_started': {
+                                  const toolName = String((currentStatus as any).call?.name || 'tool');
+                                  const toolTitle = toolName.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                                  return t('assistant.workingOn', 'Working on {{tool}}...', { tool: toolTitle });
+                                }
+                                case 'tool_call_finished':
+                                  return t('assistant.finishingTool', 'Finishing step...');
+                                case 'confirmation_required':
+                                  return t('assistant.awaitingConfirmation', 'Awaiting confirmation...');
+                                default:
+                                  return t('assistant.thinking', 'Thinking...');
                               }
-                              case 'tool_call_finished':
-                                return t('assistant.finishingTool', 'Finishing step...');
-                              case 'confirmation_required':
-                                return t('assistant.awaitingConfirmation', 'Awaiting confirmation...');
-                              default:
-                                return t('assistant.thinking', 'Thinking...');
-                            }
-                          })()}
-                        </span>
+                            })()}
+                          </span>
+                        </div>
+                        {currentThinkingTitle && currentStatus?.type !== 'provider_thinking' && (
+                          <p className="pl-6 text-xs text-neutral-500 dark:text-neutral-400">
+                            {currentThinkingTitle}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

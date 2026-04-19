@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import {
   ChatProvider,
   ChatRequest,
@@ -65,11 +65,20 @@ export class GoogleAIChatProvider implements ChatProvider {
       config.thinkingConfig = { includeThoughts: true };
     }
 
-    const res = await this.ai.models.generateContent({
-      model: realModelId,
-      contents,
-      config,
-    });
+    const shouldStreamThoughts = typeof req.onThought === 'function'
+      && (
+        realModelId.includes('gemini-3') ||
+        realModelId.includes('gemini-2.5') ||
+        realModelId.includes('thinking')
+      );
+
+    const res = shouldStreamThoughts
+      ? await this.generateContentWithThoughtStreaming(realModelId, contents, config, req.onThought!)
+      : await this.ai.models.generateContent({
+        model: realModelId,
+        contents,
+        config,
+      });
 
     const candidate = res.candidates?.[0];
     if (!candidate) {
@@ -113,6 +122,135 @@ export class GoogleAIChatProvider implements ChatProvider {
       } : undefined,
     };
   }
+
+  private async generateContentWithThoughtStreaming(
+    model: string,
+    contents: any[],
+    config: any,
+    onThought: NonNullable<ChatRequest['onThought']>,
+  ) {
+    const stream = await this.ai.models.generateContentStream({
+      model,
+      contents,
+      config,
+    });
+
+    let visibleText = '';
+    let thoughtText = '';
+    const toolCallsByKey = new Map<string, ToolCall>();
+    let lastChunk: any = null;
+    let lastThoughtTitle = '';
+
+    for await (const chunk of stream) {
+      lastChunk = chunk;
+      const parts = chunk.candidates?.[0]?.content?.parts ?? [];
+      for (const part of parts) {
+        if (part.text) {
+          if ((part as any).thought) {
+            thoughtText = appendIncrementalText(thoughtText, part.text);
+            const title = deriveThinkingTitle(thoughtText);
+            if (title && title !== lastThoughtTitle) {
+              lastThoughtTitle = title;
+              onThought({ title, content: thoughtText });
+            }
+          } else {
+            visibleText = appendIncrementalText(visibleText, part.text);
+          }
+          continue;
+        }
+        if (part.functionCall) {
+          const key = JSON.stringify([
+            part.functionCall.name ?? '',
+            part.functionCall.args ?? {},
+            part.thoughtSignature ?? '',
+          ]);
+          if (!toolCallsByKey.has(key)) {
+            toolCallsByKey.set(key, {
+              id: `call_${crypto.randomUUID()}`,
+              name: part.functionCall.name,
+              arguments: part.functionCall.args ?? {},
+              thoughtSignature: typeof part.thoughtSignature === 'string' ? part.thoughtSignature : undefined,
+            });
+          }
+        }
+      }
+    }
+
+    if (!lastChunk) {
+      throw new Error('Google AI chat: no chunks returned');
+    }
+
+    const candidate = lastChunk.candidates?.[0];
+    if (!candidate) {
+      if (lastChunk.promptFeedback?.blockReason) {
+        throw new Error(`Google AI blocked prompt: ${lastChunk.promptFeedback.blockReason}`);
+      }
+      throw new Error('Google AI chat: no candidates returned');
+    }
+
+    candidate.content = {
+      ...(candidate.content ?? {}),
+      parts: [
+        ...(thoughtText ? [{ text: thoughtText, thought: true }] : []),
+        ...(visibleText ? [{ text: visibleText }] : []),
+        ...Array.from(toolCallsByKey.values()).map((call) => ({
+          functionCall: { name: call.name, args: call.arguments ?? {} },
+          ...(call.thoughtSignature ? { thoughtSignature: call.thoughtSignature } : {}),
+        })),
+      ],
+    };
+
+    return lastChunk;
+  }
+}
+
+function appendIncrementalText(current: string, incoming: string): string {
+  if (!incoming) return current;
+  if (!current) return incoming;
+  if (incoming.startsWith(current)) return incoming;
+  if (current.endsWith(incoming)) return current;
+  return current + incoming;
+}
+
+function deriveThinkingTitle(thoughtText: string): string {
+  const markdownTitle = extractLastMarkdownTitle(thoughtText);
+  if (markdownTitle) return markdownTitle;
+
+  const normalized = thoughtText
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^[-*#>\s]+/, '').trim())
+    .filter(Boolean);
+  const latestLine = normalized.at(-1);
+  if (latestLine) return truncateTitle(latestLine);
+
+  const sentenceParts = thoughtText
+    .split(/(?<=[.!?])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const latestSentence = sentenceParts.at(-1);
+  if (latestSentence) return truncateTitle(latestSentence);
+
+  return '';
+}
+
+function truncateTitle(title: string): string {
+  return title.length > 96 ? `${title.slice(0, 93).trimEnd()}...` : title;
+}
+
+function extractLastMarkdownTitle(thoughtText: string): string {
+  const titleMatches = Array.from(
+    thoughtText.matchAll(/(?:^|\n)\s*\*\*([^*\n][^*\n]{0,200}?)\*\*\s*(?=\n|$)/g),
+  );
+  const lastBoldTitle = titleMatches.at(-1)?.[1]?.trim();
+  if (lastBoldTitle) return truncateTitle(lastBoldTitle);
+
+  const headingMatches = Array.from(
+    thoughtText.matchAll(/(?:^|\n)\s*#{1,6}\s+([^\n#][^\n]{0,200}?)(?=\n|$)/g),
+  );
+  const lastHeadingTitle = headingMatches.at(-1)?.[1]?.trim();
+  if (lastHeadingTitle) return truncateTitle(lastHeadingTitle);
+
+  return '';
 }
 
 function mapTool(tool: Parameters<typeof toolParametersJsonSchema>[0]) {

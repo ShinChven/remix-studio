@@ -32,6 +32,7 @@ export interface ChatRequest {
   temperature?: number;
   maxTokens?: number;
   abortSignal?: AbortSignal;
+  onThought?: (update: ThoughtUpdate) => void;
 }
 
 export type ChatStopReason = 'end_turn' | 'tool_use' | 'max_tokens' | 'error';
@@ -44,6 +45,11 @@ export interface ChatResponse {
     inputTokens?: number;
     outputTokens?: number;
   };
+}
+
+export interface ThoughtUpdate {
+  title: string;
+  content?: string;
 }
 
 export interface ChatProvider {
