@@ -39,6 +39,7 @@ model User {
   oauthClients            OAuthClient[]
   personalAccessTokens    PersonalAccessToken[]
   sessions              UserSession[]
+  assistantConversations AssistantConversation[]
   createdByUser User? @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdUsers  User[] @relation("UserCreation")
   createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
@@ -454,4 +455,76 @@ model PersonalAccessToken {
 
   @@index([tokenHash])
   @@index([userId])
+}
+
+// === Assistant (standalone chat runtime) ===
+// Persistence lives separately from queued generation jobs so the chat
+// runtime is not entangled with project/job state.
+
+model AssistantConversation {
+  id            String    @id @default(uuid())
+  userId        String
+  title         String    @default("New chat")
+  providerId    String?
+  modelConfigId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  archivedAt    DateTime?
+
+  user                   User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages               AssistantMessage[]
+  pendingConfirmations   AssistantPendingConfirmation[]
+
+  @@index([userId])
+  @@index([userId, updatedAt])
+}
+
+model AssistantMessage {
+  id             String   @id @default(uuid())
+  conversationId String
+  // 'system' | 'user' | 'assistant' | 'tool'
+  role           String
+  content        String   @default("") @db.Text
+  // For role='assistant': array of proposed tool calls { id, name, arguments }.
+  toolCalls      Json?
+  // For role='tool': link back to the assistant's proposed call.
+  toolCallId     String?
+  toolName       String?
+  // Normalized args snapshot (used for tool rows and for confirmation binding).
+  toolArgsJson   Json?
+  // Structured tool result payload (parallel to content).
+  toolResultJson Json?
+  // 'completed' | 'error' | 'awaiting_confirmation' | 'cancelled' | 'truncated' | null
+  status         String?
+  // For role='assistant': 'end_turn' | 'tool_use' | 'max_tokens' | 'error' | null
+  stopReason     String?
+  inputTokens    Int?
+  outputTokens   Int?
+  errorText      String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
+}
+
+model AssistantPendingConfirmation {
+  id             String   @id @default(uuid())
+  conversationId String
+  // The assistant message that proposed this call.
+  messageId      String
+  // Matches one entry in AssistantMessage.toolCalls.
+  toolCallId     String
+  toolName       String
+  toolArgsJson   Json
+  // 'pending' | 'confirmed' | 'cancelled' | 'expired'
+  status         String   @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([conversationId, status])
 }

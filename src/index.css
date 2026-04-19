@@ -4,6 +4,47 @@
 @theme {
   --color-white: #ffffff;
   --color-neutral-50: #f4f4f4;
+
+  --animate-text-gradient: text-gradient 3s linear infinite;
+  --animate-spin-slow: spin-slow 4s linear infinite;
+  --animate-material-spinner: material-spinner-spin 1.4s linear infinite;
+  --animate-material-dash: material-spinner-dash 1.4s ease-in-out infinite;
+
+  @keyframes text-gradient {
+    to {
+      background-position: 200% center;
+    }
+  }
+
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes material-spinner-spin {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes material-spinner-dash {
+    0% {
+      stroke-dasharray: 1, 150;
+      stroke-dashoffset: 0;
+    }
+    50% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -35;
+    }
+    100% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -124;
+    }
+  }
 }
 html, body {
   overflow-x: hidden;
@@ -35,4 +76,142 @@ summary {
 button:disabled,
 [aria-disabled="true"] {
   cursor: not-allowed;
+}
+
+/* Markdown Content Styling */
+.markdown-content {
+  @apply text-sm leading-relaxed break-words;
+}
+
+.markdown-content h1 {
+  @apply text-xl font-bold mt-6 mb-4 pb-2 border-b border-neutral-200/50 dark:border-white/10 text-neutral-900 dark:text-white;
+}
+
+.markdown-content h2 {
+  @apply text-lg font-bold mt-5 mb-3 text-neutral-800 dark:text-neutral-100;
+}
+
+.markdown-content h3 {
+  @apply text-base font-bold mt-4 mb-2 text-neutral-700 dark:text-neutral-200;
+}
+
+.markdown-content p {
+  @apply mb-4 last:mb-0;
+}
+
+.markdown-content ul {
+  @apply list-disc pl-5 mb-4 space-y-1;
+}
+
+.markdown-content ol {
+  @apply list-decimal pl-5 mb-4 space-y-1;
+}
+
+.markdown-content li {
+  @apply leading-relaxed;
+}
+
+.markdown-content strong {
+  @apply font-bold text-neutral-900 dark:text-white;
+}
+
+.markdown-content em {
+  @apply italic text-neutral-700 dark:text-neutral-300;
+}
+
+.markdown-content blockquote {
+  @apply border-l-4 border-indigo-500/50 pl-4 py-1 my-4 italic text-neutral-600 dark:text-neutral-400 bg-neutral-100/30 dark:bg-white/5 rounded-r-lg;
+}
+
+.markdown-content code {
+  @apply font-mono text-[0.9em] px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-white/10 text-indigo-600 dark:text-indigo-300 border border-neutral-200/50 dark:border-white/5;
+}
+
+.markdown-content pre {
+  @apply my-4 p-4 rounded-xl bg-neutral-900/90 dark:bg-black/40 backdrop-blur-md border border-neutral-200/20 dark:border-white/10 overflow-x-auto text-neutral-100;
+}
+
+.markdown-content pre code {
+  @apply bg-transparent p-0 border-0 text-inherit text-sm;
+}
+
+.markdown-content a {
+  @apply text-indigo-600 dark:text-indigo-400 hover:underline underline-offset-4 decoration-2;
+}
+
+.markdown-content hr {
+  @apply my-6 border-0 border-t border-neutral-200 dark:border-white/10;
+}
+
+.markdown-content table {
+  @apply w-full border-collapse mb-4 text-left overflow-hidden rounded-xl border border-neutral-200 dark:border-white/10;
+}
+
+.markdown-content th {
+  @apply bg-neutral-100 dark:bg-white/5 px-4 py-2 font-bold text-neutral-700 dark:text-neutral-200 border-b border-neutral-200 dark:border-white/10;
+}
+
+.markdown-content td {
+  @apply px-4 py-2 border-b border-neutral-100 dark:border-white/5 text-neutral-600 dark:text-neutral-400;
+}
+
+.markdown-content tr:last-child td {
+  @apply border-b-0;
+}
+
+.markdown-content-user {
+  @apply text-sm leading-relaxed break-words text-white;
+}
+
+.markdown-content-user p {
+  @apply mb-4 last:mb-0;
+}
+
+.markdown-content-user code {
+  @apply font-mono text-[0.9em] px-1.5 py-0.5 rounded-md bg-white/20 text-white border border-white/10;
+}
+
+.markdown-content-user pre {
+  @apply my-4 p-4 rounded-xl bg-black/30 backdrop-blur-md border border-white/10 overflow-x-auto text-white;
+}
+
+.markdown-content-user pre code {
+  @apply bg-transparent p-0 border-0 text-inherit text-sm;
+}
+
+.markdown-content-user ul {
+  @apply list-disc pl-5 mb-4 space-y-1;
+}
+
+.markdown-content-user ol {
+  @apply list-decimal pl-5 mb-4 space-y-1;
+}
+
+.markdown-content-user a {
+  @apply text-white underline underline-offset-4 decoration-2;
+}
+
+/* JSON Syntax Highlighting */
+.json-token {
+  @apply transition-colors duration-200;
+}
+
+.json-key {
+  @apply text-indigo-600 dark:text-indigo-400 font-semibold;
+}
+
+.json-string {
+  @apply text-emerald-600 dark:text-emerald-400;
+}
+
+.json-number {
+  @apply text-sky-600 dark:text-sky-400;
+}
+
+.json-boolean {
+  @apply text-amber-600 dark:text-amber-500 font-medium;
+}
+
+.json-null {
+  @apply text-rose-500 dark:text-rose-400 italic;
 }

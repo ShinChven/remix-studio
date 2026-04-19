@@ -5,6 +5,7 @@
     "libraries": "Libraries",
     "providers": "Providers",
     "mcp": "MCP",
+    "assistant": "Assistant",
     "exports": "Exports",
     "recycleBin": "Recycle Bin",
     "storage": "Storage",
@@ -81,7 +82,9 @@
     "libraries": "Libraries",
     "newLibrary": "New Library",
     "noLibraries": "No libraries yet. Create one to store reusable prompts.",
-    "projectStats": "{{jobCount}} jobs • {{imageCount}} images • {{date}}"
+    "projectStats": "{{jobCount}} jobs • {{imageCount}} images • {{date}}",
+    "aiChat": "AI Assistant",
+    "aiChatDescription": "How can I help you today?"
   },
   "projectViewer": {
     "common": {
@@ -1455,5 +1458,37 @@
       "removePasswordMessage": "This will remove your password. You will only be able to sign in using passkeys. Enter your current password to confirm.",
       "removePasswordPlaceholder": "Current password"
     }
+  },
+  "assistant": {
+    "title": "Assistant",
+    "newChat": "New Chat",
+    "conversations": "Conversations",
+    "noConversations": "No conversations yet",
+    "selectProvider": "Select Provider",
+    "selectModel": "Select Model",
+    "typePlaceholder": "Type a message...",
+    "send": "Send",
+    "stop": "Stop",
+    "confirm": "Confirm",
+    "confirmTool": "Approve this tool in this session",
+    "cancel": "Cancel",
+    "confirmAction": "Confirm this action?",
+    "cancelAction": "Cancel this action",
+    "toolApprovalEnabled": "Future {{tool}} actions in this conversation will auto-approve for this session.",
+    "toolRunning": "Running {{tool}}...",
+    "toolCompleted": "{{tool}} completed",
+    "toolFailed": "{{tool}} failed",
+    "errorOccurred": "An error occurred. You can try again.",
+    "circuitOpen": "Safety limit reached",
+    "deleteConversation": "Delete Conversation",
+    "deleteConfirm": "Are you sure you want to delete this conversation?",
+    "renameConversation": "Rename",
+    "archiveConversation": "Archive",
+    "unarchiveConversation": "Unarchive",
+    "noProvider": "Select a provider and model to start chatting",
+    "providerNotConfigured": "No chat-capable providers configured. Add an OpenAI, Claude, or Google AI provider first.",
+    "emptyChat": "Start a conversation with your assistant",
+    "confirmationExpired": "This confirmation has expired",
+    "loading": "Thinking..."
   }
 }

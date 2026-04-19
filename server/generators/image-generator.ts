@@ -4,6 +4,7 @@ export interface GenerateRequest {
   apiUrl?: string;        // Optional override URL
   aspectRatio?: string;   // e.g. "2:3", "1:1", "16:9"
   imageSize?: string;     // e.g. "1K", "4K"
+  format?: string;        // e.g. "png", "jpeg", "webp"
   refImagesBase64?: string[]; // base64-encoded PNGs for img2img sequentially
   refImageUrls?: string[]; // remote or presigned URLs for providers that require URL references
   targetPath?: string;    // hint for async generators (RunningHub)

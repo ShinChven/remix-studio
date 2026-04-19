@@ -32,10 +32,9 @@ export function PromptEditor() {
     fetchLibrary(id).then(lib => {
       setLibrary(lib);
       if (!isNew) {
-        const parsedIndex = Number.parseInt(itemToken, 10);
-        const resolvedIndex = Number.isNaN(parsedIndex)
-          ? lib.items.findIndex((item) => item.id === itemToken)
-          : parsedIndex;
+        const resolvedIndex = /^\d+$/.test(itemToken)
+          ? Number.parseInt(itemToken, 10)
+          : lib.items.findIndex((item) => item.id === itemToken);
         const item = resolvedIndex >= 0 ? lib.items[resolvedIndex] : undefined;
         if (item === undefined) {
           navigate(`/library/${id}`);
@@ -203,7 +202,7 @@ export function PromptEditor() {
                     {t('promptEditor.dynamicPreview')}
                   </span>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 prose prose-invert prose-neutral max-w-none prose-pre:bg-neutral-900 prose-pre:border prose-pre:border-neutral-800 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 markdown-content custom-scrollbar">
                    {content.trim() === '' ? (
                      <div className="h-full flex items-center justify-center text-neutral-700 italic font-medium">
                         {t('promptEditor.previewPlaceholder')}
@@ -233,26 +232,6 @@ export function PromptEditor() {
         </div>
       </div>
 
-      <style>{`
-        .prose {
-          color: #d4d4d4;
-          line-height: 1.75;
-        }
-        .prose h1 { color: #ffffff; font-weight: 900; font-size: 2.25rem; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 1px solid #262626; padding-bottom: 0.5rem; }
-        .prose h2 { color: #ffffff; font-weight: 800; font-size: 1.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; }
-        .prose h3 { color: #f5f5f5; font-weight: 700; font-size: 1.25rem; margin-top: 1.25rem; margin-bottom: 0.5rem; }
-        .prose p { margin-bottom: 1.25rem; font-weight: 400; }
-        .prose strong { color: #ffffff; font-weight: 700; }
-        .prose code { color: #3b82f6; background-color: rgba(59, 130, 246, 0.1); padding: 0.2rem 0.4rem; border-radius: 0.4rem; font-size: 0.9em; }
-        .prose pre { padding: 1rem; border-radius: 1rem; }
-        .prose ul, .prose ol { margin-bottom: 1.25rem; padding-left: 1.5rem; }
-        .prose li { margin-bottom: 0.5rem; }
-        .prose blockquote { border-left: 4px solid #3b82f6; padding-left: 1.5rem; font-style: italic; color: #a3a3a3; margin: 1.5rem 0; }
-        .prose a { color: #3b82f6; text-decoration: none; }
-        .prose a:hover { text-decoration: underline; }
-        .prose hr { border: 0; border-top: 1px solid #262626; margin: 2rem 0; }
-      `}</style>
-      
       <TagModal 
         isOpen={showTagModal} 
         onClose={() => setShowTagModal(false)}

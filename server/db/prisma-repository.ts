@@ -83,4 +83,6 @@ export class PrismaRepository implements IRepository {
   saveAllData(data: AppData) { return this.data.saveAllData(data); }
   autoImportJson(dataDir: string) { return this.data.autoImportJson(dataDir); }
   getAllUserItems(userId: string) { return this.projects.getAllUserItems(userId); }
+  getStorageUsageAggregate(userId: string) { return this.projects.getStorageUsageAggregate(userId); }
+  getAlbumStatsByProject(userId: string, projectIds: string[]) { return this.projects.getAlbumStatsByProject(userId, projectIds); }
 }

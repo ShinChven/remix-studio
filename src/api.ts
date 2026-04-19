@@ -73,6 +73,52 @@ async function handleResponse<T>(res: Response, defaultError: string): Promise<T
   return res.json();
 }
 
+async function handleNdjsonResponse<T>(
+  res: Response,
+  onUpdate: (data: any) => void,
+): Promise<T> {
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Request failed');
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error('No response body');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalResult: T | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const data = JSON.parse(line);
+        if (data.type === 'status') {
+          onUpdate(data.event);
+        } else if (data.type === 'result') {
+          finalResult = data as T;
+        } else if (data.type === 'error') {
+          throw new Error(data.error);
+        }
+      } catch (e: any) {
+        console.error('Failed to parse NDJSON line', line, e);
+        if (e.message) throw e;
+      }
+    }
+  }
+
+  if (!finalResult) throw new Error('Incomplete response');
+  return finalResult;
+}
+
 // ========== Auth / Account ==========
 
 export async function fetchCurrentUser(): Promise<User> {
@@ -1076,4 +1122,156 @@ export async function fetchStorageAnalysis(options?: { includeProjects?: boolean
   const query = params.toString();
   const res = await apiFetch(`/api/storage/analysis${query ? `?${query}` : ''}`, { headers: getHeaders(false) });
   return handleResponse<StorageAnalysis>(res, 'Failed to analyze storage');
+}
+
+// ========== Assistant Chat ==========
+
+export interface AssistantConversation {
+  id: string;
+  userId: string;
+  title: string;
+  providerId: string | null;
+  modelConfigId: string | null;
+  createdAt: number;
+  updatedAt: number;
+  archivedAt: number | null;
+}
+
+export interface AssistantToolCallData {
+  id: string;
+  name: string;
+  arguments: unknown;
+  thoughtSignature?: string;
+}
+
+export interface AssistantMessage {
+  id: string;
+  conversationId: string;
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+  toolCalls: AssistantToolCallData[] | null;
+  toolCallId: string | null;
+  toolName: string | null;
+  toolArgsJson: unknown | null;
+  toolResultJson: unknown | null;
+  status: string | null;
+  stopReason: string | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  errorText: string | null;
+  createdAt: number;
+}
+
+export interface AssistantPendingConfirmation {
+  id: string;
+  conversationId: string;
+  messageId: string;
+  toolCallId: string;
+  toolName: string;
+  toolArgsJson: unknown;
+  status: string;
+  expiresAt: number;
+  createdAt: number;
+}
+
+export interface AssistantStatusEvent {
+  type: string;
+  [key: string]: unknown;
+}
+
+export type AssistantTurnResult =
+  | { kind: 'final'; message: AssistantMessage; statusEvents: AssistantStatusEvent[] }
+  | { kind: 'awaiting_confirmation'; message: AssistantMessage; confirmation: AssistantPendingConfirmation; statusEvents: AssistantStatusEvent[] }
+  | { kind: 'error'; error: string; message: AssistantMessage | null; statusEvents: AssistantStatusEvent[] };
+
+export async function fetchAssistantConversations(cursor?: string, limit?: number): Promise<{ conversations: AssistantConversation[] }> {
+  const params = new URLSearchParams();
+  if (cursor) params.set('cursor', cursor);
+  if (limit) params.set('limit', limit.toString());
+  const res = await apiFetch(`/api/assistant/conversations?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<{ conversations: AssistantConversation[] }>(res, 'Failed to list conversations');
+}
+
+export async function createAssistantConversation(data: {
+  providerId?: string;
+  modelConfigId?: string;
+  title?: string;
+}): Promise<{ conversation: AssistantConversation }> {
+  const res = await apiFetch('/api/assistant/conversations', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<{ conversation: AssistantConversation }>(res, 'Failed to create conversation');
+}
+
+export async function fetchAssistantConversation(id: string): Promise<{
+  conversation: AssistantConversation;
+  messages: AssistantMessage[];
+}> {
+  const res = await apiFetch(`/api/assistant/conversations/${id}`, { headers: getHeaders(false) });
+  return handleResponse<{ conversation: AssistantConversation; messages: AssistantMessage[] }>(res, 'Failed to get conversation');
+}
+
+export async function updateAssistantConversation(id: string, updates: {
+  title?: string;
+  providerId?: string | null;
+  modelConfigId?: string | null;
+  archived?: boolean;
+}): Promise<{ conversation: AssistantConversation }> {
+  const res = await apiFetch(`/api/assistant/conversations/${id}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(updates),
+  });
+  return handleResponse<{ conversation: AssistantConversation }>(res, 'Failed to update conversation');
+}
+
+export async function deleteAssistantConversation(id: string): Promise<void> {
+  const res = await apiFetch(`/api/assistant/conversations/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete conversation');
+  }
+}
+
+export async function sendAssistantMessage(
+  conversationId: string,
+  content: string,
+  onStatusEvent?: (event: AssistantStatusEvent) => void,
+): Promise<AssistantTurnResult> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ content }),
+  });
+  if (onStatusEvent) {
+    return handleNdjsonResponse<AssistantTurnResult>(res, onStatusEvent);
+  }
+  return handleResponse<AssistantTurnResult>(res, 'Failed to send message');
+}
+
+export async function confirmAssistantTool(
+  conversationId: string,
+  confirmationId: string,
+  decision: 'confirm' | 'confirm_tool' | 'cancel',
+  onStatusEvent?: (event: AssistantStatusEvent) => void,
+): Promise<AssistantTurnResult> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/confirm`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ confirmationId, decision }),
+  });
+  if (onStatusEvent) {
+    return handleNdjsonResponse<AssistantTurnResult>(res, onStatusEvent);
+  }
+  return handleResponse<AssistantTurnResult>(res, 'Failed to process confirmation');
+}
+
+export async function fetchAssistantProviders(): Promise<{ providers: Provider[] }> {
+  const res = await apiFetch('/api/assistant/providers', { headers: getHeaders(false) });
+  return handleResponse<{ providers: Provider[] }>(res, 'Failed to list assistant providers');
 }

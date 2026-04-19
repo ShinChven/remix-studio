@@ -65,9 +65,23 @@ export interface IRepository {
   saveAllData(data: AppData): Promise<void>;
   autoImportJson(dataDir: string): Promise<void>;
 
-  /** 
+  /**
    * Fetches all items in a user's partition for storage analysis.
    * This is more efficient than fetching projects, libraries, and trash separately.
    */
   getAllUserItems(userId: string): Promise<any[]>;
+
+  /** Per-category storage usage computed via SQL aggregates. */
+  getStorageUsageAggregate(userId: string): Promise<{
+    projects: number;
+    libraries: number;
+    archives: number;
+    trash: number;
+  }>;
+
+  /** Per-project album stats (count + size) aggregated in SQL. */
+  getAlbumStatsByProject(
+    userId: string,
+    projectIds: string[],
+  ): Promise<Record<string, { itemCount: number; totalSize: number }>>;
 }

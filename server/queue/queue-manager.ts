@@ -629,6 +629,7 @@ export class QueueManager {
       apiUrl: modelConfig?.apiUrl,
       aspectRatio: job.aspectRatio || '1:1',
       imageSize: job.quality || '1K',
+      format: job.format,
       background: queued.background || job.background,
       refImagesBase64: refImages,
       refImageUrls

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Unplug } from 'lucide-react';
+import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Unplug, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
@@ -106,10 +106,13 @@ export function MainLayout() {
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
-        <Link to="/" className="flex items-center px-2 gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-          <img src="/favicon.svg" alt="Remix Studio" className="w-6 h-6 flex-shrink-0" />
-          <h1 className="text-lg font-bold text-neutral-900 dark:text-white whitespace-nowrap tracking-tight">Remix Studio</h1>
-        </Link>
+        {!location.pathname.startsWith('/assistant') && (
+          <Link to="/" className="flex items-center px-2 gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+            <img src="/favicon.svg" alt="Remix Studio" className="w-6 h-6 flex-shrink-0" />
+            <h1 className="text-lg font-bold text-neutral-900 dark:text-white whitespace-nowrap tracking-tight">Remix Studio</h1>
+          </Link>
+        )}
+        <div id="mobile-header-assistant-title" className="flex-1 flex items-center px-2 gap-2 min-w-0"></div>
         <div id="mobile-header-actions" className="ml-auto flex items-center px-2"></div>
       </header>
 
@@ -196,6 +199,15 @@ export function MainLayout() {
             icon={<Unplug className="w-5 h-5 flex-shrink-0" />}
             label={t('sidebar.mcp')}
             isActive={location.pathname === '/account/mcp'}
+            isCollapsed={isCollapsed}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          <NavItem
+            to="/assistant"
+            icon={<Sparkles className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.assistant')}
+            isActive={location.pathname === '/assistant'}
             isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
           />

@@ -685,10 +685,11 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   ],
   Claude: [
     {
+      // Keep the stable local config id so saved projects and custom-model aliases continue to resolve.
       id: 'claude-opus-4-6-text',
-      name: 'Claude Opus 4.6',
+      name: 'Claude Opus 4.7',
       generatorId: 'Claude',
-      modelId: 'claude-opus-4-6',
+      modelId: 'claude-opus-4-7',
       category: 'text',
       promptLimit: { value: 1000000, unit: 'tokens' },
       options: {
@@ -968,6 +969,13 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
   ],
 };
+
+/**
+ * Helper to get all text-category models for a given provider type.
+ */
+export function getTextModelsForProvider(providerType: ProviderType): ModelConfig[] {
+  return (PROVIDER_MODELS_MAP[providerType] || []).filter((m) => m.category === 'text');
+}
 
 /**
  * Resolve custom model variants into full ModelConfig entries.
