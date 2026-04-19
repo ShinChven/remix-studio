@@ -5,6 +5,7 @@ export interface WorkflowItem {
   type: WorkflowItemType;
   value: string; // text content, library ID, or base64 image data URL
   order?: number;
+  disabled?: boolean;
   thumbnailUrl?: string;
   optimizedUrl?: string;
   size?: number;

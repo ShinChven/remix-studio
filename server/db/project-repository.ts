@@ -814,6 +814,7 @@ export class ProjectRepository {
         order: item.order,
         thumbnailUrl: item.thumbnailUrl ?? null,
         optimizedUrl: item.optimizedUrl ?? null,
+        disabled: item.disabled ?? false,
       })),
     });
   }
@@ -857,6 +858,7 @@ export class ProjectRepository {
       order: w.order,
       thumbnailUrl: w.thumbnailUrl ?? undefined,
       optimizedUrl: w.optimizedUrl ?? undefined,
+      disabled: w.disabled ?? false,
     };
   }
 

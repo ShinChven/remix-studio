@@ -802,6 +802,17 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   };
 
+  const handleToggleItemDisable = (id: string) => {
+    const updated = {
+      ...localProject,
+      workflow: (localProject.workflow || []).map(item =>
+        item.id === id ? { ...item, disabled: !item.disabled } : item
+      )
+    };
+    setLocalProject(updated);
+    onUpdate(updated);
+  };
+
   return (
     <div className="flex flex-col lg:flex-row h-full bg-transparent overflow-hidden lg:overflow-visible">
       <ModelSelectorModal
@@ -877,6 +888,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         setQueueCount={setQueueCount}
         setIsModelSelectorOpen={setIsModelSelectorOpen}
         onAddDraftsToQueue={addDraftsToQueue}
+        onToggleDisable={handleToggleItemDisable}
       />
 
       <div className={`flex-1 flex-col overflow-hidden min-h-0 ${mobileView === 'jobs' ? 'flex h-full' : 'hidden lg:flex'}`}>

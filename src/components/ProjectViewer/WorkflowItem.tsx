@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Type, Library as LibraryIcon, ImageIcon, Trash2, GripVertical, Maximize2, Loader2, Video as VideoIcon, Volume2 } from 'lucide-react';
+import { Type, Library as LibraryIcon, ImageIcon, Trash2, GripVertical, Maximize2, Loader2, Video as VideoIcon, Volume2, Eye, EyeOff } from 'lucide-react';
 import { WorkflowItem as WorkflowItemType, Library } from '../../types';
 import { imageDisplayUrl } from '../../api';
 
@@ -24,6 +24,7 @@ interface WorkflowItemProps {
   onUpdateTags: (id: string, tags: string[]) => void;
   onSelectFromLibrary: (id: string) => void;
   libraries: Library[];
+  onToggleDisable?: (id: string) => void;
 }
 
 export function WorkflowItem({
@@ -45,7 +46,8 @@ export function WorkflowItem({
   onLightbox,
   onUpdateTags,
   onSelectFromLibrary,
-  libraries
+  libraries,
+  onToggleDisable
 }: WorkflowItemProps) {
   const { t } = useTranslation();
   const isLibrary = item.type === 'library';
@@ -58,7 +60,7 @@ export function WorkflowItem({
       onDragOver={(e) => onDragOver(e, index)}
       onDrop={(e) => onDrop(e, index)}
       onDragEnd={onDragEnd}
-      className={`bg-white/70 dark:bg-neutral-950/70 border rounded-xl p-4 group transition-all backdrop-blur-xl ${
+      className={`bg-white/70 dark:bg-neutral-950/70 border rounded-xl p-4 group transition-all backdrop-blur-xl ${item.disabled ? 'opacity-40 grayscale-[0.5]' : ''} ${
         draggedIndex === index ? 'opacity-50 border-blue-500' : 
         dragOverIndex === index ? 'border-blue-400 border-dashed bg-white/40 dark:bg-neutral-800/40' : 
         'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/50 shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5'
@@ -69,7 +71,7 @@ export function WorkflowItem({
           <div className="cursor-grab active:cursor-grabbing text-neutral-600 hover:text-neutral-400 transition-colors">
             <GripVertical className="w-4 h-4" />
           </div>
-          <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+          <span className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${item.disabled ? 'text-neutral-400 dark:text-neutral-600 line-through' : 'text-neutral-500 dark:text-neutral-500'}`}>
             {item.type === 'audio' && <Volume2 className="w-3 h-3 text-cyan-400" />}
             {item.type === 'text' ? t('projectViewer.common.text') :
              item.type === 'image' ? t('projectViewer.common.imageShort') :
@@ -78,9 +80,16 @@ export function WorkflowItem({
              item.type}
           </span>
         </div>
-        <button onClick={() => onRemove(item.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all p-1.5 rounded-lg border border-transparent hover:border-red-200">
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          {onToggleDisable && (
+            <button onClick={() => onToggleDisable(item.id)} className={`transition-all p-1.5 rounded-lg border border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 ${item.disabled ? 'text-neutral-400 hover:text-neutral-600' : 'text-blue-500 hover:text-blue-600'}`}>
+              {item.disabled ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          )}
+          <button onClick={() => onRemove(item.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all p-1.5 rounded-lg border border-transparent hover:border-red-200">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {item.type === 'text' && (

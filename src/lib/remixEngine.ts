@@ -14,6 +14,8 @@ function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): C
   const allChoices: Choice[][] = [];
 
   for (const item of workflow) {
+    if (item.disabled) continue;
+
     if (item.type === 'text') {
       if (item.value.trim()) allChoices.push([{ type: 'text', value: item.value.trim() }]);
     } else if (item.type === 'image') {
@@ -96,6 +98,8 @@ function generateRandomCombination(workflow: WorkflowItem[], libraries: Library[
   const stepParts: string[] = [];
 
   for (const item of workflow) {
+    if (item.disabled) continue;
+
     if (item.type === 'text') {
       if (item.value.trim()) texts.push(item.value.trim());
     } else if (item.type === 'image') {

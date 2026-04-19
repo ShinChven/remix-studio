@@ -49,6 +49,7 @@ interface WorkflowPanelProps {
   setQueueCount: (count: number) => void;
   setIsModelSelectorOpen: (open: boolean) => void;
   onAddDraftsToQueue: () => void;
+  onToggleDisable?: (id: string) => void;
 }
 
 export function WorkflowPanel({
@@ -95,6 +96,7 @@ export function WorkflowPanel({
   setQueueCount,
   setIsModelSelectorOpen,
   onAddDraftsToQueue,
+  onToggleDisable,
 }: WorkflowPanelProps) {
   const { t } = useTranslation();
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
@@ -280,6 +282,7 @@ export function WorkflowPanel({
             onLightbox={onLightbox}
             onUpdateTags={onUpdateTags}
             onSelectFromLibrary={onSelectFromLibrary}
+            onToggleDisable={onToggleDisable}
           />
         ))}
         {(localProject.workflow || []).length === 0 && (
