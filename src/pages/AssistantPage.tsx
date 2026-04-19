@@ -18,7 +18,6 @@ import {
   AssistantConversation,
   AssistantMessage,
   AssistantPendingConfirmation,
-  AssistantStatusEvent,
 } from '../api';
 import type { Provider, ProviderType, ModelConfig } from '../types';
 import { PROVIDER_MODELS_MAP, getTextModelsForProvider } from '../types';
@@ -97,8 +96,8 @@ export function AssistantPage() {
   }, [selectedModelId]);
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [currentStatus, setCurrentStatus] = useState<AssistantStatusEvent | null>(null);
   const [currentThinkingTitle, setCurrentThinkingTitle] = useState('');
+  const [currentToolTitle, setCurrentToolTitle] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(() => {
     const saved = localStorage.getItem('assistant-right-panel-open');
@@ -253,8 +252,8 @@ export function AssistantPage() {
     }
 
     setIsSending(true);
-    setCurrentStatus(null);
     setCurrentThinkingTitle('');
+    setCurrentToolTitle('');
 
     let currentConversationId = activeConversationId;
 
@@ -297,9 +296,16 @@ export function AssistantPage() {
 
     try {
       const result = await sendAssistantMessage(currentConversationId, text, (event) => {
-        setCurrentStatus(event);
         if (event.type === 'provider_thinking' && typeof event.title === 'string') {
           setCurrentThinkingTitle(event.title);
+          setCurrentToolTitle('');
+        }
+        if (
+          event.type === 'tool_call_started' ||
+          event.type === 'tool_call_finished' ||
+          event.type === 'confirmation_required'
+        ) {
+          setCurrentToolTitle(formatToolTitle((event as any).call?.name));
         }
       });
       // Reload full message list for consistency
@@ -331,8 +337,8 @@ export function AssistantPage() {
       setMessages((prev) => prev.filter((m) => m.id !== optimisticUserMsg.id));
     } finally {
       setIsSending(false);
-      setCurrentStatus(null);
       setCurrentThinkingTitle('');
+      setCurrentToolTitle('');
     }
   };
 
@@ -340,17 +346,24 @@ export function AssistantPage() {
   const handleConfirmation = async (decision: 'confirm' | 'cancel') => {
     if (!activeConversationId || !pendingConfirmation) return;
     setIsSending(true);
-    setCurrentStatus(null);
     setCurrentThinkingTitle('');
+    setCurrentToolTitle('');
     try {
       const result = await confirmAssistantTool(
         activeConversationId,
         pendingConfirmation.id,
         decision,
         (event) => {
-          setCurrentStatus(event);
           if (event.type === 'provider_thinking' && typeof event.title === 'string') {
             setCurrentThinkingTitle(event.title);
+            setCurrentToolTitle('');
+          }
+          if (
+            event.type === 'tool_call_started' ||
+            event.type === 'tool_call_finished' ||
+            event.type === 'confirmation_required'
+          ) {
+            setCurrentToolTitle(formatToolTitle((event as any).call?.name));
           }
         },
       );
@@ -366,8 +379,8 @@ export function AssistantPage() {
       toast.error(e?.message || 'Failed to process confirmation');
     } finally {
       setIsSending(false);
-      setCurrentStatus(null);
       setCurrentThinkingTitle('');
+      setCurrentToolTitle('');
     }
   };
 
@@ -734,21 +747,7 @@ export function AssistantPage() {
                   <div className="flex items-center gap-2 py-1.5 text-sm">
                     <MaterialSpinner className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                     <span className="font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
-                      {(() => {
-                        if (!currentStatus) return t('assistant.thinking', 'Thinking...');
-                        switch (currentStatus.type) {
-                          case 'tool_call_started':
-                          case 'tool_call_finished':
-                          case 'confirmation_required':
-                            return formatToolTitle((currentStatus as any).call?.name);
-                          case 'provider_call_started':
-                            return currentThinkingTitle || t('assistant.thinking', 'Thinking...');
-                          case 'provider_thinking':
-                            return currentThinkingTitle || t('assistant.thinking', 'Thinking...');
-                          default:
-                            return currentThinkingTitle || t('assistant.thinking', 'Thinking...');
-                        }
-                      })()}
+                      {currentToolTitle || currentThinkingTitle || t('assistant.thinking', 'Thinking...')}
                     </span>
                   </div>
                 </div>
