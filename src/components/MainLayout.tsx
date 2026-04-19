@@ -106,10 +106,13 @@ export function MainLayout() {
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
-        <Link to="/" className="flex items-center px-2 gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-          <img src="/favicon.svg" alt="Remix Studio" className="w-6 h-6 flex-shrink-0" />
-          <h1 className="text-lg font-bold text-neutral-900 dark:text-white whitespace-nowrap tracking-tight">Remix Studio</h1>
-        </Link>
+        {!location.pathname.startsWith('/assistant') && (
+          <Link to="/" className="flex items-center px-2 gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+            <img src="/favicon.svg" alt="Remix Studio" className="w-6 h-6 flex-shrink-0" />
+            <h1 className="text-lg font-bold text-neutral-900 dark:text-white whitespace-nowrap tracking-tight">Remix Studio</h1>
+          </Link>
+        )}
+        <div id="mobile-header-assistant-title" className="flex-1 flex items-center px-2 gap-2 min-w-0"></div>
         <div id="mobile-header-actions" className="ml-auto flex items-center px-2"></div>
       </header>
 

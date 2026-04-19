@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -27,10 +29,12 @@ function getTextModelsForProvider(providerType: ProviderType): ModelConfig[] {
 
 export function AssistantPage() {
   const { t } = useTranslation();
+  const { id: routeId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   // ─── State ───
   const [conversations, setConversations] = useState<AssistantConversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const activeConversationId = routeId || null;
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = useState<AssistantPendingConfirmation | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -47,7 +51,16 @@ export function AssistantPage() {
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(() => {
+    const saved = localStorage.getItem('assistant-right-panel-open');
+    if (window.innerWidth < 1024) return false;
+    return saved !== 'false';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('assistant-right-panel-open', String(rightPanelOpen));
+  }, [rightPanelOpen]);
+
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [editingTitleValue, setEditingTitleValue] = useState('');
@@ -67,8 +80,10 @@ export function AssistantPage() {
     try {
       const data = await fetchAssistantConversations();
       setConversations(data.conversations);
+      return data.conversations;
     } catch {
       // silent
+      return [];
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +98,6 @@ export function AssistantPage() {
     try {
       const data = await fetchAssistantConversation(id);
       setMessages(data.messages);
-      setActiveConversationId(id);
       // Restore provider/model selection
       if (data.conversation.providerId) setSelectedProviderId(data.conversation.providerId);
       if (data.conversation.modelConfigId) setSelectedModelId(data.conversation.modelConfigId);
@@ -102,6 +116,29 @@ export function AssistantPage() {
       toast.error('Failed to load conversation');
     }
   }, []);
+
+  const initializedRef = useRef(false);
+
+  useEffect(() => {
+    if (!initializedRef.current && conversations.length > 0) {
+      initializedRef.current = true;
+      const lastId = localStorage.getItem('assistant_last_conversation');
+      const targetId = conversations.find((c) => c.id === lastId)?.id || conversations[0].id;
+      if (targetId && !activeConversationId) {
+        navigate(`/assistant/${targetId}`, { replace: true });
+      }
+    }
+  }, [conversations, activeConversationId, navigate]);
+
+  useEffect(() => {
+    if (activeConversationId) {
+      localStorage.setItem('assistant_last_conversation', activeConversationId);
+      loadConversation(activeConversationId);
+    } else {
+      setMessages([]);
+      setPendingConfirmation(null);
+    }
+  }, [activeConversationId, loadConversation]);
 
   // ─── Auto-scroll ───
   useEffect(() => {
@@ -124,9 +161,7 @@ export function AssistantPage() {
 
   // ─── New conversation (handled implicitly in send) ───
   const handleNewConversationClick = () => {
-    setActiveConversationId(null);
-    setMessages([]);
-    setPendingConfirmation(null);
+    navigate('/assistant');
   };
 
   // ─── Send message ───
@@ -158,7 +193,7 @@ export function AssistantPage() {
         });
         setConversations((prev) => [newConv.conversation, ...prev]);
         currentConversationId = newConv.conversation.id;
-        setActiveConversationId(currentConversationId);
+        navigate(`/assistant/${currentConversationId}`, { replace: true });
         setPendingConfirmation(null);
       } catch (e: any) {
         toast.error(e?.message || 'Failed to create conversation');
@@ -252,7 +287,7 @@ export function AssistantPage() {
       await deleteAssistantConversation(id);
       setConversations((prev) => prev.filter((c) => c.id !== id));
       if (activeConversationId === id) {
-        setActiveConversationId(null);
+        navigate('/assistant');
         setMessages([]);
         setPendingConfirmation(null);
       }
@@ -431,6 +466,42 @@ export function AssistantPage() {
     );
   };
 
+  const renderMessageContent = (content: string | null | undefined) => {
+    if (!content) return null;
+    const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
+    const match = content.match(thinkRegex);
+    
+    if (match) {
+      const thinkContent = match[1].trim();
+      const restContent = content.replace(thinkRegex, '').trim();
+      
+      return (
+        <div className="space-y-3">
+          <details className="group border border-neutral-200/50 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-50/50 dark:bg-black/20">
+            <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer select-none text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100/50 dark:hover:bg-white/5 transition-colors">
+              <span className="group-open:rotate-90 transition-transform duration-200"><ChevronRight className="w-3.5 h-3.5" /></span>
+              {t('assistant.thoughtProcess', 'Thought process')}
+            </summary>
+            <div className="px-3 py-3 text-xs text-neutral-600 dark:text-neutral-400 border-t border-neutral-200/50 dark:border-white/5 whitespace-pre-wrap font-mono leading-relaxed">
+              {thinkContent}
+            </div>
+          </details>
+          {restContent && (
+            <p className="text-sm whitespace-pre-wrap text-neutral-800 dark:text-neutral-200 leading-relaxed">
+              {restContent}
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <p className="text-sm whitespace-pre-wrap text-neutral-800 dark:text-neutral-200 leading-relaxed">
+        {content}
+      </p>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full text-neutral-500">
@@ -443,12 +514,12 @@ export function AssistantPage() {
     <div className="flex h-full overflow-hidden">
       {/* ─── Center: Chat Area ─── */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="flex-shrink-0 px-6 py-4 border-b border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/20 backdrop-blur-sm">
+        {/* Header - Desktop */}
+        <div className="hidden lg:block flex-shrink-0 px-6 py-4 border-b border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/20 backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Bot className="w-5 h-5 text-indigo-500" />
-              <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              <Bot className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+              <h1 className="text-lg font-semibold text-neutral-900 dark:text-white truncate">
                 {activeConversationId
                   ? conversations.find((c) => c.id === activeConversationId)?.title || t('assistant.title')
                   : t('assistant.title')}
@@ -456,13 +527,37 @@ export function AssistantPage() {
             </div>
             <button
               onClick={() => setRightPanelOpen(!rightPanelOpen)}
-              className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors lg:hidden"
+              className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors flex-shrink-0"
               title={t('assistant.conversations')}
             >
               {rightPanelOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
             </button>
           </div>
         </div>
+
+        {/* Mobile Header Portals */}
+        {document.getElementById('mobile-header-assistant-title') && createPortal(
+          <>
+            <Bot className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+            <h1 className="text-base font-semibold text-neutral-900 dark:text-white truncate">
+              {activeConversationId
+                ? conversations.find((c) => c.id === activeConversationId)?.title || t('assistant.title')
+                : t('assistant.title')}
+            </h1>
+          </>,
+          document.getElementById('mobile-header-assistant-title')!
+        )}
+
+        {document.getElementById('mobile-header-actions') && createPortal(
+          <button
+            onClick={() => setRightPanelOpen(!rightPanelOpen)}
+            className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors lg:hidden"
+            title={t('assistant.conversations')}
+          >
+            {rightPanelOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+          </button>,
+          document.getElementById('mobile-header-actions')!
+        )}
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -486,11 +581,7 @@ export function AssistantPage() {
                         <div className={`bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-neutral-200/30 dark:border-white/5 ${
                           msg.status === 'error' ? 'border-red-300 dark:border-red-800/40' : ''
                         }`}>
-                          {msg.content && (
-                            <p className="text-sm whitespace-pre-wrap text-neutral-800 dark:text-neutral-200">
-                              {msg.content}
-                            </p>
-                          )}
+                          {renderMessageContent(msg.content)}
                           {renderAssistantToolCalls(msg)}
                         </div>
                         {msg.inputTokens != null && msg.outputTokens != null && (
@@ -553,16 +644,24 @@ export function AssistantPage() {
         )}
       </div>
 
+      {/* Mobile Overlay */}
+      {rightPanelOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm lg:hidden animate-in fade-in duration-300"
+          onClick={() => setRightPanelOpen(false)}
+        />
+      )}
+
       {/* ─── Right Panel: Conversations & Config ─── */}
       <div className={`
-        ${rightPanelOpen ? 'w-72 lg:w-64' : 'w-0 overflow-hidden'}
+        fixed inset-y-0 right-0 z-40 lg:static
+        ${rightPanelOpen ? 'translate-x-0 w-[85vw] sm:w-80 lg:w-64' : 'translate-x-full lg:translate-x-0 w-[85vw] sm:w-80 lg:w-0 lg:overflow-hidden'}
         flex-shrink-0 border-l border-neutral-200/50 dark:border-white/5
-        bg-white/10 dark:bg-black/10 backdrop-blur-xl
-        transition-all duration-300 flex flex-col
+        bg-white dark:bg-neutral-950 lg:bg-white/10 lg:dark:bg-black/10 backdrop-blur-xl
+        transition-all duration-300 flex flex-col shadow-2xl lg:shadow-none
       `}>
-        {rightPanelOpen && (
-          <>
-            {/* Conversation List */}
+        <div className="flex flex-col h-full w-[85vw] sm:w-80 lg:w-64">
+          {/* Conversation List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
               <div className="flex items-center justify-between px-2 py-2 mb-2">
                 <h3 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
@@ -590,7 +689,7 @@ export function AssistantPage() {
                         : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
                     }`}
                     onClick={() => {
-                      if (conv.id !== activeConversationId) loadConversation(conv.id);
+                      if (conv.id !== activeConversationId) navigate(`/assistant/${conv.id}`);
                     }}
                   >
                     <MessageCircle className="w-4 h-4 flex-shrink-0 opacity-60" />
@@ -637,8 +736,7 @@ export function AssistantPage() {
                 ))
               )}
             </div>
-          </>
-        )}
+        </div>
       </div>
 
       {/* Delete confirmation */}

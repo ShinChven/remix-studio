@@ -82,6 +82,7 @@ export default function App() {
               <Route path="account/security/2fa" element={<AccountTwoFactorSetup />} />
               <Route path="account/mcp" element={<McpConnections />} />
               <Route path="assistant" element={<AssistantPage />} />
+              <Route path="assistant/:id" element={<AssistantPage />} />
             </Route>
           </Routes>
         </BrowserRouter>
