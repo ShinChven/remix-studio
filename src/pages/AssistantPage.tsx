@@ -54,6 +54,34 @@ function unwrapToolResult(content: string | null | undefined) {
   return (match?.[1] ?? content).trim();
 }
 
+function parseAssistantContent(content: string | null | undefined) {
+  if (!content) {
+    return {
+      thoughtContent: null,
+      responseContent: null,
+    };
+  }
+
+  const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
+  const match = content.match(thinkRegex);
+
+  if (!match) {
+    const trimmedContent = content.trim();
+    return {
+      thoughtContent: null,
+      responseContent: trimmedContent || null,
+    };
+  }
+
+  const thoughtContent = match[1]?.trim() || null;
+  const responseContent = content.replace(thinkRegex, '').trim() || null;
+
+  return {
+    thoughtContent,
+    responseContent,
+  };
+}
+
 function prettyToolData(value: unknown) {
   if (value == null) return '';
   if (typeof value === 'string') {
@@ -632,14 +660,9 @@ export function AssistantPage() {
   };
 
   const renderMessageContent = (content: string | null | undefined) => {
-    if (!content) return null;
-    const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
-    const match = content.match(thinkRegex);
-    
-    if (match) {
-      const thinkContent = match[1].trim();
-      const restContent = content.replace(thinkRegex, '').trim();
-      
+    const { thoughtContent, responseContent } = parseAssistantContent(content);
+
+    if (thoughtContent) {
       return (
         <div className="space-y-3">
           <details className="group border border-neutral-200/50 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-50/50 dark:bg-black/20 transition-all duration-300">
@@ -652,27 +675,39 @@ export function AssistantPage() {
               </div>
             </summary>
             <div className="px-4 py-3 text-xs text-neutral-600 dark:text-neutral-400 border-t border-neutral-200/50 dark:border-white/5 whitespace-pre-wrap font-mono leading-relaxed bg-white/30 dark:bg-black/30 backdrop-blur-sm">
-              {thinkContent}
+              {thoughtContent}
             </div>
           </details>
-          {restContent && (
+          {responseContent && (
             <div className="markdown-content text-neutral-800 dark:text-neutral-200">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{restContent}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{responseContent}</ReactMarkdown>
             </div>
           )}
         </div>
       );
     }
 
+    if (!responseContent) return null;
+
     return (
       <div className="markdown-content text-neutral-800 dark:text-neutral-200">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{responseContent}</ReactMarkdown>
       </div>
     );
   };
 
+  const hasRenderableAssistantBubble = (msg: AssistantMessage) => {
+    if (msg.role !== 'assistant') return false;
+    const { thoughtContent, responseContent } = parseAssistantContent(msg.content);
+    if (responseContent) return true;
+    if (!thoughtContent && msg.content && msg.content.trim().length > 0) return true;
+    return false;
+  };
+
   const hasRenderableAssistantContent = (msg: AssistantMessage) => {
     if (msg.role !== 'assistant') return false;
+    const { thoughtContent, responseContent } = parseAssistantContent(msg.content);
+    if (thoughtContent || responseContent) return true;
     if (msg.content && msg.content.trim().length > 0) return true;
     return false;
   };
@@ -755,13 +790,23 @@ export function AssistantPage() {
                         <Bot className="w-4 h-4 text-white" />
                       </div>
                       <div className="max-w-[80%]">
-                        {hasRenderableAssistantContent(msg) && (
-                          <div className={`bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-neutral-200/30 dark:border-white/5 ${
-                            msg.status === 'error' ? 'border-red-300 dark:border-red-800/40' : ''
-                          }`}>
-                            {renderMessageContent(msg.content)}
-                          </div>
-                        )}
+                        {(() => {
+                          const { thoughtContent, responseContent } = parseAssistantContent(msg.content);
+                          const shouldRenderThoughtOutsideBubble = Boolean(thoughtContent && !responseContent);
+
+                          return (
+                            <>
+                              {shouldRenderThoughtOutsideBubble && renderMessageContent(msg.content)}
+                              {hasRenderableAssistantBubble(msg) && (
+                                <div className={`bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-neutral-200/30 dark:border-white/5 ${
+                                  msg.status === 'error' ? 'border-red-300 dark:border-red-800/40' : ''
+                                }`}>
+                                  {renderMessageContent(msg.content)}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                         {renderAssistantToolCalls(msg)}
                         {msg.inputTokens != null && msg.outputTokens != null && (
                           <p className="text-[10px] text-neutral-400 mt-1 ml-1">
