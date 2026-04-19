@@ -84,6 +84,7 @@ export class GoogleAIChatProvider implements ChatProvider {
           id,
           name: part.functionCall.name,
           arguments: part.functionCall.args ?? {},
+          thoughtSignature: typeof part.thoughtSignature === 'string' ? part.thoughtSignature : undefined,
         });
       }
     }
@@ -143,23 +144,37 @@ function mapMessages(messages: ChatMessage[]): {
   const systemParts: string[] = [];
   const contents: any[] = [];
   const toolCallNameById = new Map<string, string>();
+  let pendingToolResponses: any[] = [];
+
+  const flushPendingToolResponses = () => {
+    if (pendingToolResponses.length === 0) return;
+    contents.push({ role: 'user', parts: pendingToolResponses });
+    pendingToolResponses = [];
+  };
 
   for (const m of messages) {
     if (m.role === 'system') {
+      flushPendingToolResponses();
       if (m.content) systemParts.push(m.content);
       continue;
     }
     if (m.role === 'user') {
+      flushPendingToolResponses();
       contents.push({ role: 'user', parts: [{ text: m.content }] });
       continue;
     }
     if (m.role === 'assistant') {
+      flushPendingToolResponses();
       const parts: any[] = [];
       if (m.content) parts.push({ text: m.content });
       if (m.toolCalls) {
         for (const tc of m.toolCalls) {
           toolCallNameById.set(tc.id, tc.name);
-          parts.push({ functionCall: { name: tc.name, args: tc.arguments ?? {} } });
+          const part: any = { functionCall: { name: tc.name, args: tc.arguments ?? {} } };
+          if (typeof tc.thoughtSignature === 'string' && tc.thoughtSignature.length > 0) {
+            part.thoughtSignature = tc.thoughtSignature;
+          }
+          parts.push(part);
         }
       }
       if (parts.length === 0) parts.push({ text: '' });
@@ -169,12 +184,11 @@ function mapMessages(messages: ChatMessage[]): {
     if (m.role === 'tool') {
       let parsed: unknown;
       try { parsed = JSON.parse(m.content); } catch { parsed = { result: m.content }; }
-      contents.push({
-        role: 'user',
-        parts: [{ functionResponse: { name: m.name, response: parsed } }],
-      });
+      pendingToolResponses.push({ functionResponse: { name: m.name, response: parsed } });
     }
   }
+
+  flushPendingToolResponses();
 
   return {
     systemInstruction: systemParts.length > 0 ? systemParts.join('\n\n') : undefined,

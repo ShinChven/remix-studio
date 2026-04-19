@@ -22,6 +22,7 @@ export interface ToolCall {
   id: string;
   name: string;
   arguments: unknown;
+  thoughtSignature?: string;
 }
 
 export interface ChatRequest {

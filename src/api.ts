@@ -1095,6 +1095,7 @@ export interface AssistantToolCallData {
   id: string;
   name: string;
   arguments: unknown;
+  thoughtSignature?: string;
 }
 
 export interface AssistantMessage {

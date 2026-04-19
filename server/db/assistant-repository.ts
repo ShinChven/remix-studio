@@ -26,6 +26,7 @@ export interface AssistantToolCall {
   id: string;
   name: string;
   arguments: unknown;
+  thoughtSignature?: string;
 }
 
 export interface AssistantConversationRecord {
