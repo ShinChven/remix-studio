@@ -1257,7 +1257,7 @@ export async function sendAssistantMessage(
 export async function confirmAssistantTool(
   conversationId: string,
   confirmationId: string,
-  decision: 'confirm' | 'cancel',
+  decision: 'confirm' | 'confirm_tool' | 'cancel',
   onStatusEvent?: (event: AssistantStatusEvent) => void,
 ): Promise<AssistantTurnResult> {
   const res = await apiFetch(`/api/assistant/conversations/${conversationId}/confirm`, {

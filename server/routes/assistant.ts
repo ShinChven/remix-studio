@@ -121,6 +121,7 @@ export function createAssistantRouter(
       const user = c.get('user') as JwtPayload;
       const conversationId = c.req.param('id');
       await repo.deleteConversation(user.userId, conversationId);
+      runner.clearConversationSessionApproval(conversationId);
       return c.json({ success: true });
     } catch (e: any) {
       if (e?.message === 'Conversation not found') return c.json({ error: 'Conversation not found' }, 404);
@@ -167,7 +168,13 @@ export function createAssistantRouter(
     const conversationId = c.req.param('id');
     const body = await c.req.json();
     const confirmationId = typeof body?.confirmationId === 'string' ? body.confirmationId : '';
-    const decision = body?.decision === 'cancel' ? 'cancel' as const : 'confirm' as const;
+    const decision = body?.decision === 'cancel'
+      ? 'cancel' as const
+      : body?.decision === 'confirm_tool'
+        ? 'confirm_tool' as const
+      : body?.decision === 'confirm_session'
+        ? 'confirm_tool' as const
+        : 'confirm' as const;
     if (!confirmationId) return c.json({ error: 'confirmationId is required' }, 400);
 
     c.header('Content-Type', 'application/x-ndjson');

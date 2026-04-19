@@ -81,7 +81,7 @@ export interface ResumeInput {
   userId: string;
   conversationId: string;
   confirmationId: string;
-  decision: 'confirm' | 'cancel';
+  decision: 'confirm' | 'confirm_tool' | 'confirm_session' | 'cancel';
   abortSignal?: AbortSignal;
   onStatusEvent?: (event: AssistantStatusEvent) => void;
 }
@@ -93,6 +93,7 @@ const activeTurnsByUser = new Map<string, number>();
 export class AssistantRunner {
   private tools: AssistantToolDefinition[];
   private toolsByName: Map<string, AssistantToolDefinition>;
+  private sessionApprovedToolsByConversation = new Map<string, Set<string>>();
 
   constructor(
     private repo: AssistantRepository,
@@ -198,11 +199,15 @@ export class AssistantRunner {
         });
       }
 
+      const tool = this.toolsByName.get(confirmation.toolName);
+      if ((input.decision === 'confirm_tool' || input.decision === 'confirm_session') && tool?.category === 'mutate') {
+        this.rememberSessionApprovedTool(conversation.id, tool.name);
+      }
+
       // Confirmed — execute the tool now, then continue the loop.
       await this.repo.updatePendingConfirmationStatus(confirmation.id, 'confirmed');
       await this.repo.updateMessageStatus(confirmation.messageId, 'completed');
 
-      const tool = this.toolsByName.get(confirmation.toolName);
       if (!tool) {
         await this.repo.appendMessage({
           conversationId: conversation.id,
@@ -392,6 +397,16 @@ export class AssistantRunner {
         }
 
         if (toolRequiresConfirmation(tool)) {
+          if (this.shouldAutoApproveWriteActions(conversationId, tool)) {
+            emit(onStatusEvent, { type: 'tool_call_started', call });
+            const startMs = Date.now();
+            const isError = await this.executeToolCallInner(userId, conversationId, tool, { ...call, arguments: parsed.value });
+            console.log(`[Assistant] Tool auto-approved for session: ${call.name} in ${Date.now() - startMs}ms conversation=${conversationId}`);
+            emit(onStatusEvent, { type: 'tool_call_finished', call, isError });
+            processedCalls.push(call);
+            continue;
+          }
+
           const latestUserMessage = findLatestUserMessageContent(messages);
           const proposal = buildConfirmationProposalText(
             assistantMessage.content,
@@ -520,6 +535,10 @@ export class AssistantRunner {
     }
   }
 
+  clearConversationSessionApproval(conversationId: string): void {
+    this.sessionApprovedToolsByConversation.delete(conversationId);
+  }
+
   private async rewriteAssistantToolCalls(messageId: string, toolCalls: ToolCall[]): Promise<void> {
     await this.rewriteAssistantMessage(messageId, { toolCalls });
   }
@@ -636,6 +655,20 @@ export class AssistantRunner {
       if (next <= 0) activeTurnsByUser.delete(userId);
       else activeTurnsByUser.set(userId, next);
     }
+  }
+
+  private shouldAutoApproveWriteActions(
+    conversationId: string,
+    tool: Pick<AssistantToolDefinition, 'name' | 'category'>,
+  ): boolean {
+    if (tool.category !== 'mutate') return false;
+    return this.sessionApprovedToolsByConversation.get(conversationId)?.has(tool.name) ?? false;
+  }
+
+  private rememberSessionApprovedTool(conversationId: string, toolName: string): void {
+    const approvedTools = this.sessionApprovedToolsByConversation.get(conversationId) ?? new Set<string>();
+    approvedTools.add(toolName);
+    this.sessionApprovedToolsByConversation.set(conversationId, approvedTools);
   }
 }
 

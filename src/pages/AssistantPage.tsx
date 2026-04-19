@@ -397,7 +397,7 @@ export function AssistantPage() {
   };
 
   // ─── Confirmation handling ───
-  const handleConfirmation = async (decision: 'confirm' | 'cancel') => {
+  const handleConfirmation = async (decision: 'confirm' | 'confirm_tool' | 'cancel') => {
     if (!activeConversationId || !pendingConfirmation) return;
     setIsSending(true);
     setCurrentThinkingTitle('');
@@ -427,6 +427,14 @@ export function AssistantPage() {
 
       if (result.kind === 'awaiting_confirmation' && 'confirmation' in result) {
         setPendingConfirmation(result.confirmation);
+      }
+      if (decision === 'confirm_tool') {
+        toast.success(
+          t('assistant.toolApprovalEnabled', {
+            defaultValue: 'Future {{tool}} actions in this conversation will auto-approve for this session.',
+            tool: formatToolTitle(pendingConfirmation?.toolName),
+          }),
+        );
       }
       loadConversations();
     } catch (e: any) {
@@ -636,7 +644,7 @@ export function AssistantPage() {
               <JsonView data={pendingConfirmation.toolArgsJson} />
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleConfirmation('confirm')}
               disabled={isSending}
@@ -644,6 +652,14 @@ export function AssistantPage() {
             >
               <Check className="w-3.5 h-3.5" />
               {t('assistant.confirm')}
+            </button>
+            <button
+              onClick={() => handleConfirmation('confirm_tool')}
+              disabled={isSending}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              <Check className="w-3.5 h-3.5" />
+              {t('assistant.confirmTool', 'Approve this tool in this session')}
             </button>
             <button
               onClick={() => handleConfirmation('cancel')}
