@@ -4,6 +4,47 @@
 @theme {
   --color-white: #ffffff;
   --color-neutral-50: #f4f4f4;
+
+  --animate-text-gradient: text-gradient 3s linear infinite;
+  --animate-spin-slow: spin-slow 4s linear infinite;
+  --animate-material-spinner: material-spinner-spin 1.4s linear infinite;
+  --animate-material-dash: material-spinner-dash 1.4s ease-in-out infinite;
+
+  @keyframes text-gradient {
+    to {
+      background-position: 200% center;
+    }
+  }
+
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes material-spinner-spin {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes material-spinner-dash {
+    0% {
+      stroke-dasharray: 1, 150;
+      stroke-dashoffset: 0;
+    }
+    50% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -35;
+    }
+    100% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -124;
+    }
+  }
 }
 html, body {
   overflow-x: hidden;

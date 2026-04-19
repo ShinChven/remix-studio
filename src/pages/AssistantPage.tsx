@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon } from 'lucide-react';
+import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   fetchAssistantConversations,
@@ -22,6 +22,21 @@ import { PROVIDER_MODELS_MAP } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 
 const CHAT_CAPABLE_TYPES: ProviderType[] = ['OpenAI', 'Claude', 'GoogleAI', 'Grok'];
+
+const MaterialSpinner = ({ className }: { className?: string }) => (
+  <svg className={`animate-material-spinner ${className}`} viewBox="0 0 50 50">
+    <circle
+      className="animate-material-dash"
+      cx="25"
+      cy="25"
+      r="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
 
 function getTextModelsForProvider(providerType: ProviderType): ModelConfig[] {
   return (PROVIDER_MODELS_MAP[providerType] || []).filter((m) => m.category === 'text');
@@ -50,6 +65,7 @@ export function AssistantPage() {
   }, [selectedModelId]);
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<AssistantStatusEvent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(() => {
     const saved = localStorage.getItem('assistant-right-panel-open');
@@ -182,6 +198,7 @@ export function AssistantPage() {
     }
 
     setIsSending(true);
+    setCurrentStatus(null);
 
     let currentConversationId = activeConversationId;
 
@@ -223,7 +240,9 @@ export function AssistantPage() {
     setMessages((prev) => [...prev, optimisticUserMsg]);
 
     try {
-      const result = await sendAssistantMessage(currentConversationId, text);
+      const result = await sendAssistantMessage(currentConversationId, text, (event) => {
+        setCurrentStatus(event);
+      });
       // Reload full message list for consistency
       const data = await fetchAssistantConversation(currentConversationId);
       setMessages(data.messages);
@@ -253,6 +272,7 @@ export function AssistantPage() {
       setMessages((prev) => prev.filter((m) => m.id !== optimisticUserMsg.id));
     } finally {
       setIsSending(false);
+      setCurrentStatus(null);
     }
   };
 
@@ -260,11 +280,15 @@ export function AssistantPage() {
   const handleConfirmation = async (decision: 'confirm' | 'cancel') => {
     if (!activeConversationId || !pendingConfirmation) return;
     setIsSending(true);
+    setCurrentStatus(null);
     try {
       const result = await confirmAssistantTool(
         activeConversationId,
         pendingConfirmation.id,
         decision,
+        (event) => {
+          setCurrentStatus(event);
+        },
       );
       setPendingConfirmation(null);
       const data = await fetchAssistantConversation(activeConversationId);
@@ -278,6 +302,7 @@ export function AssistantPage() {
       toast.error(e?.message || 'Failed to process confirmation');
     } finally {
       setIsSending(false);
+      setCurrentStatus(null);
     }
   };
 
@@ -477,12 +502,18 @@ export function AssistantPage() {
       
       return (
         <div className="space-y-3">
-          <details className="group border border-neutral-200/50 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-50/50 dark:bg-black/20">
-            <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer select-none text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100/50 dark:hover:bg-white/5 transition-colors">
+          <details className="group border border-neutral-200/50 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-50/50 dark:bg-black/20 transition-all duration-300">
+            <summary className="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100/50 dark:hover:bg-white/5 transition-colors">
               <span className="group-open:rotate-90 transition-transform duration-200"><ChevronRight className="w-3.5 h-3.5" /></span>
-              {t('assistant.thoughtProcess', 'Thought process')}
+              <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                <MaterialSpinner className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 group-open:block hidden" />
+                <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 group-open:hidden" />
+                <span className="group-open:bg-clip-text group-open:text-transparent group-open:bg-gradient-to-r group-open:from-indigo-500 group-open:via-purple-500 group-open:to-indigo-500 group-open:animate-text-gradient group-open:bg-[size:200%_auto]">
+                  {t('assistant.thoughtProcess', 'Thought process')}
+                </span>
+              </div>
             </summary>
-            <div className="px-3 py-3 text-xs text-neutral-600 dark:text-neutral-400 border-t border-neutral-200/50 dark:border-white/5 whitespace-pre-wrap font-mono leading-relaxed">
+            <div className="px-4 py-3 text-xs text-neutral-600 dark:text-neutral-400 border-t border-neutral-200/50 dark:border-white/5 whitespace-pre-wrap font-mono leading-relaxed bg-white/30 dark:bg-black/30 backdrop-blur-sm">
               {thinkContent}
             </div>
           </details>
@@ -601,14 +632,35 @@ export function AssistantPage() {
               ))}
 
               {isSending && (
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
+                <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm animate-pulse">
                     <Bot className="w-4 h-4 text-white" />
                   </div>
-                  <div className="bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-neutral-200/30 dark:border-white/5">
-                    <div className="flex items-center gap-2 text-sm text-neutral-500">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>{t('assistant.loading')}</span>
+                  <div className="max-w-[80%]">
+                    <div className="bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-neutral-200/30 dark:border-white/5">
+                      <div className="flex items-center gap-2">
+                        <MaterialSpinner className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                        <span className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
+                          {(() => {
+                            if (!currentStatus) return t('assistant.thinking', 'Thinking...');
+                            switch (currentStatus.type) {
+                              case 'provider_call_started':
+                                return t('assistant.thinking', 'Thinking...');
+                              case 'tool_call_started': {
+                                const toolName = currentStatus.call.name;
+                                const toolTitle = toolName.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                                return t('assistant.workingOn', 'Working on {{tool}}...', { tool: toolTitle });
+                              }
+                              case 'tool_call_finished':
+                                return t('assistant.finishingTool', 'Finishing step...');
+                              case 'confirmation_required':
+                                return t('assistant.awaitingConfirmation', 'Awaiting confirmation...');
+                              default:
+                                return t('assistant.thinking', 'Thinking...');
+                            }
+                          })()}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

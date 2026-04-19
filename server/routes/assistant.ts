@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { stream } from 'hono/streaming';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { AssistantRepository } from '../db/assistant-repository';
 import { AssistantRunner, AssistantStatusEvent, TurnResult } from '../assistant/assistant-runner';
@@ -130,56 +131,68 @@ export function createAssistantRouter(
 
   // ─── Send message ───
   router.post('/api/assistant/conversations/:id/messages', authMiddleware, async (c) => {
-    try {
-      const user = c.get('user') as JwtPayload;
-      const conversationId = c.req.param('id');
-      const body = await c.req.json();
-      const content = typeof body?.content === 'string' ? body.content.trim() : '';
-      if (!content) return c.json({ error: 'Message content is required' }, 400);
+    const user = c.get('user') as JwtPayload;
+    const conversationId = c.req.param('id');
+    const body = await c.req.json();
+    const content = typeof body?.content === 'string' ? body.content.trim() : '';
+    if (!content) return c.json({ error: 'Message content is required' }, 400);
 
-      const statusEvents: AssistantStatusEvent[] = [];
-      const result = await runner.sendUserMessage({
-        userId: user.userId,
-        conversationId,
-        content,
-        onStatusEvent: (event) => statusEvents.push(event),
-      });
-      return c.json(turnResultToJson(result, statusEvents));
-    } catch (e: any) {
-      console.error('[POST /api/assistant/conversations/:id/messages]', e);
-      const message = e?.message?.includes('concurrent')
-        ? e.message
-        : 'Failed to process message';
-      return c.json({ error: message }, e?.message?.includes('concurrent') ? 429 : 500);
-    }
+    c.header('Content-Type', 'application/x-ndjson');
+    c.header('Transfer-Encoding', 'chunked');
+
+    return stream(c, async (stream) => {
+      try {
+        const result = await runner.sendUserMessage({
+          userId: user.userId,
+          conversationId,
+          content,
+          onStatusEvent: (event) => {
+            stream.write(JSON.stringify({ type: 'status', event }) + '\n');
+          },
+        });
+        stream.write(JSON.stringify({ type: 'result', ...turnResultToJson(result, []) }) + '\n');
+      } catch (e: any) {
+        console.error('[POST /api/assistant/conversations/:id/messages]', e);
+        const message = e?.message?.includes('concurrent')
+          ? e.message
+          : 'Failed to process message';
+        stream.write(JSON.stringify({ type: 'error', error: message }) + '\n');
+      }
+    });
   });
 
   // ─── Confirm / cancel pending tool ───
   router.post('/api/assistant/conversations/:id/confirm', authMiddleware, async (c) => {
-    try {
-      const user = c.get('user') as JwtPayload;
-      const conversationId = c.req.param('id');
-      const body = await c.req.json();
-      const confirmationId = typeof body?.confirmationId === 'string' ? body.confirmationId : '';
-      const decision = body?.decision === 'cancel' ? 'cancel' as const : 'confirm' as const;
-      if (!confirmationId) return c.json({ error: 'confirmationId is required' }, 400);
+    const user = c.get('user') as JwtPayload;
+    const conversationId = c.req.param('id');
+    const body = await c.req.json();
+    const confirmationId = typeof body?.confirmationId === 'string' ? body.confirmationId : '';
+    const decision = body?.decision === 'cancel' ? 'cancel' as const : 'confirm' as const;
+    if (!confirmationId) return c.json({ error: 'confirmationId is required' }, 400);
 
-      const statusEvents: AssistantStatusEvent[] = [];
-      const result = await runner.resumeAfterConfirmation({
-        userId: user.userId,
-        conversationId,
-        confirmationId,
-        decision,
-        onStatusEvent: (event) => statusEvents.push(event),
-      });
-      return c.json(turnResultToJson(result, statusEvents));
-    } catch (e: any) {
-      console.error('[POST /api/assistant/conversations/:id/confirm]', e);
-      const message = e?.message?.includes('concurrent')
-        ? e.message
-        : 'Failed to process confirmation';
-      return c.json({ error: message }, e?.message?.includes('concurrent') ? 429 : 500);
-    }
+    c.header('Content-Type', 'application/x-ndjson');
+    c.header('Transfer-Encoding', 'chunked');
+
+    return stream(c, async (stream) => {
+      try {
+        const result = await runner.resumeAfterConfirmation({
+          userId: user.userId,
+          conversationId,
+          confirmationId,
+          decision,
+          onStatusEvent: (event) => {
+            stream.write(JSON.stringify({ type: 'status', event }) + '\n');
+          },
+        });
+        stream.write(JSON.stringify({ type: 'result', ...turnResultToJson(result, []) }) + '\n');
+      } catch (e: any) {
+        console.error('[POST /api/assistant/conversations/:id/confirm]', e);
+        const message = e?.message?.includes('concurrent')
+          ? e.message
+          : 'Failed to process confirmation';
+        stream.write(JSON.stringify({ type: 'error', error: message }) + '\n');
+      }
+    });
   });
 
   // ─── List assistant-capable providers ───

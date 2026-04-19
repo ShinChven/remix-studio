@@ -73,6 +73,52 @@ async function handleResponse<T>(res: Response, defaultError: string): Promise<T
   return res.json();
 }
 
+async function handleNdjsonResponse<T>(
+  res: Response,
+  onUpdate: (data: any) => void,
+): Promise<T> {
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Request failed');
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error('No response body');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalResult: T | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const data = JSON.parse(line);
+        if (data.type === 'status') {
+          onUpdate(data.event);
+        } else if (data.type === 'result') {
+          finalResult = data as T;
+        } else if (data.type === 'error') {
+          throw new Error(data.error);
+        }
+      } catch (e: any) {
+        console.error('Failed to parse NDJSON line', line, e);
+        if (e.message) throw e;
+      }
+    }
+  }
+
+  if (!finalResult) throw new Error('Incomplete response');
+  return finalResult;
+}
+
 // ========== Auth / Account ==========
 
 export async function fetchCurrentUser(): Promise<User> {
@@ -1192,12 +1238,19 @@ export async function deleteAssistantConversation(id: string): Promise<void> {
   }
 }
 
-export async function sendAssistantMessage(conversationId: string, content: string): Promise<AssistantTurnResult> {
+export async function sendAssistantMessage(
+  conversationId: string,
+  content: string,
+  onStatusEvent?: (event: AssistantStatusEvent) => void,
+): Promise<AssistantTurnResult> {
   const res = await apiFetch(`/api/assistant/conversations/${conversationId}/messages`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ content }),
   });
+  if (onStatusEvent) {
+    return handleNdjsonResponse<AssistantTurnResult>(res, onStatusEvent);
+  }
   return handleResponse<AssistantTurnResult>(res, 'Failed to send message');
 }
 
@@ -1205,12 +1258,16 @@ export async function confirmAssistantTool(
   conversationId: string,
   confirmationId: string,
   decision: 'confirm' | 'cancel',
+  onStatusEvent?: (event: AssistantStatusEvent) => void,
 ): Promise<AssistantTurnResult> {
   const res = await apiFetch(`/api/assistant/conversations/${conversationId}/confirm`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ confirmationId, decision }),
   });
+  if (onStatusEvent) {
+    return handleNdjsonResponse<AssistantTurnResult>(res, onStatusEvent);
+  }
   return handleResponse<AssistantTurnResult>(res, 'Failed to process confirmation');
 }
 
