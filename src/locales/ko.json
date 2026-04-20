@@ -1281,7 +1281,8 @@
       "clearAllFilters": "모든 필터 지우기",
       "clickToSelect": "클릭하여 선택",
       "closeViewer": "뷰어 닫기",
-      "searchPlaceholder": "제목, 내용 또는 태그로 검색..."
+      "searchPlaceholder": "제목, 내용 또는 태그로 항목 검색...",
+      "openFullLibrary": "전체 라이브러리 열기"
     },
     "promptModal": {
       "title": "프롬프트 조각 편집",
@@ -1470,9 +1471,11 @@
     "send": "보내기",
     "stop": "정지",
     "confirm": "확인",
+    "confirmTool": "이 세션에서 이 도구 승인",
     "cancel": "취소",
-    "confirmAction": "이 작업을 실행하시겠습니까?",
+    "confirmAction": "이 작업을 확인하시겠습니까?",
     "cancelAction": "이 작업 취소",
+    "toolApprovalEnabled": "이 대화의 향후 {{tool}} 작업은 이 세션에 대해 자동으로 승인됩니다.",
     "toolRunning": "{{tool}} 실행 중...",
     "toolCompleted": "{{tool}} 완료",
     "toolFailed": "{{tool}} 실패",

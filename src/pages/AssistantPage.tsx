@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon, FolderOpen, Sparkles } from 'lucide-react';
+import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon, FolderOpen, Sparkles, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -17,14 +17,18 @@ import {
   fetchAssistantProviders,
   fetchProjects,
   fetchLibraries,
+  fetchProject,
+  fetchLibrary,
   AssistantConversation,
   AssistantMessage,
   AssistantPendingConfirmation,
 } from '../api';
-import type { Provider, ProviderType, ModelConfig } from '../types';
+import type { Provider, ProviderType, ModelConfig, Project, Library } from '../types';
 import { PROVIDER_MODELS_MAP, getTextModelsForProvider } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { JsonView } from '../components/JsonView';
+import { ProjectPreviewModal } from '../components/ProjectViewer/ProjectPreviewModal';
+import { LibraryPreviewModal } from '../components/ProjectViewer/LibraryPreviewModal';
 
 type BoundContext = {
   id: string;
@@ -271,6 +275,10 @@ export function AssistantPage() {
   const [boundContexts, setBoundContexts] = useState<BoundContext[]>([]);
   const [currentThinkingTitle, setCurrentThinkingTitle] = useState('');
   const [currentToolTitle, setCurrentToolTitle] = useState('');
+  const [previewProject, setPreviewProject] = useState<Project | null>(null);
+  const [previewLibrary, setPreviewLibrary] = useState<Library | null>(null);
+  const [previewSelectedTags, setPreviewSelectedTags] = useState<string[]>([]);
+  const [isFetchingPreview, setIsFetchingPreview] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(() => {
     const saved = localStorage.getItem('assistant-right-panel-open');
@@ -310,6 +318,24 @@ export function AssistantPage() {
       setIsLoading(false);
     }
   }, []);
+
+  const handleOpenPreview = async (type: 'project' | 'library', id: string) => {
+    if (isFetchingPreview) return;
+    setIsFetchingPreview(true);
+    try {
+      if (type === 'project') {
+        const proj = await fetchProject(id);
+        setPreviewProject(proj);
+      } else {
+        const lib = await fetchLibrary(id);
+        setPreviewLibrary(lib);
+      }
+    } catch (e: any) {
+      toast.error(e?.message || `Failed to fetch ${type} details`);
+    } finally {
+      setIsFetchingPreview(false);
+    }
+  };
 
   useEffect(() => {
     loadConversations();
@@ -1097,11 +1123,24 @@ export function AssistantPage() {
                                       if (lineMatch) {
                                         const type = lineMatch[1];
                                         const name = lineMatch[2];
+                                        const id = line.match(/ID: ([a-f0-9\-]+)/)?.[1] || '';
                                         return (
-                                          <span key={i} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/20 border border-white/20 text-[11px] font-medium text-white shadow-sm">
-                                            {type === 'Project' ? <Sparkles className="w-3 h-3" /> : <FolderOpen className="w-3 h-3" />}
-                                            {name}
-                                          </span>
+                                          <div key={i} className="flex items-center gap-1">
+                                            <button 
+                                              onClick={() => handleOpenPreview(type.toLowerCase() as any, id)}
+                                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-l-full bg-white/20 border border-white/30 border-r-0 text-[11px] font-medium text-white shadow-sm hover:bg-white/30 active:bg-white/40 transition-all"
+                                            >
+                                              {type === 'Project' ? <Sparkles className="w-3.5 h-3.5" /> : <FolderOpen className="w-3.5 h-3.5" />}
+                                              {name}
+                                            </button>
+                                            <Link
+                                              to={type === 'Project' ? `/project/${id}` : `/library/${id}`}
+                                              className="inline-flex items-center justify-center w-8 h-[26px] rounded-r-full bg-white/10 border border-white/30 text-white/60 hover:text-white hover:bg-white/30 transition-all"
+                                              title={`Open ${type}`}
+                                            >
+                                              <ExternalLink className="w-3 h-3" />
+                                            </Link>
+                                          </div>
                                         );
                                       }
                                       return null;
@@ -1284,6 +1323,27 @@ export function AssistantPage() {
             </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {previewProject && (
+        <ProjectPreviewModal 
+          project={previewProject} 
+          libraries={[]} // Libraries will be matched by ID in the modal
+          onClose={() => setPreviewProject(null)} 
+        />
+      )}
+
+      {previewLibrary && (
+        <LibraryPreviewModal 
+          library={previewLibrary}
+          selectedTags={previewSelectedTags}
+          onUpdateTags={setPreviewSelectedTags}
+          onClose={() => {
+            setPreviewLibrary(null);
+            setPreviewSelectedTags([]);
+          }}
+        />
+      )}
 
       {/* Delete confirmation */}
       <ConfirmModal

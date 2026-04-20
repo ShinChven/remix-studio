@@ -1281,7 +1281,8 @@
       "clearAllFilters": "Effacer tous les filtres",
       "clickToSelect": "Cliquer pour sélectionner",
       "closeViewer": "Fermer l'affichage",
-      "searchPlaceholder": "Rechercher par titre, contenu ou tag..."
+      "searchPlaceholder": "Rechercher par titre, contenu ou tag...",
+      "openFullLibrary": "Ouvrir la bibliothèque complète"
     },
     "promptModal": {
       "title": "Modifier le fragment de prompt",
@@ -1470,9 +1471,11 @@
     "send": "Envoyer",
     "stop": "Arrêter",
     "confirm": "Confirmer",
+    "confirmTool": "Approuver cet outil dans cette session",
     "cancel": "Annuler",
     "confirmAction": "Confirmer cette action ?",
     "cancelAction": "Annuler cette action",
+    "toolApprovalEnabled": "Les futures actions {{tool}} dans cette conversation seront automatiquement approuvées pour cette session.",
     "toolRunning": "Exécution de {{tool}}...",
     "toolCompleted": "{{tool}} terminé",
     "toolFailed": "{{tool}} a échoué",

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { X, ChevronDown, Library as LibraryIcon, Video as VideoIcon, Volume2, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { X, ChevronDown, Library as LibraryIcon, Video as VideoIcon, Volume2, Search, ExternalLink } from 'lucide-react';
 import { Library, LibraryItem } from '../../types';
 import { imageDisplayUrl } from '../../api';
 import { ImageLightbox } from './ImageLightbox';
@@ -81,6 +82,14 @@ export function LibraryPreviewModal({
     setQuery('');
   }, [library?.id]);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   const availableTags = React.useMemo(() => {
     if (!library) return [];
     const tagSet = new Set<string>();
@@ -99,7 +108,7 @@ export function LibraryPreviewModal({
       }
       if (q) {
         const inTitle = item.title?.toLowerCase().includes(q);
-        const inContent = library.type === 'text' && item.content?.toLowerCase().includes(q);
+        const inContent = item.content?.toLowerCase().includes(q);
         const inTags = item.tags?.some(tag => tag.toLowerCase().includes(q));
         if (!inTitle && !inContent && !inTags) return false;
       }
@@ -313,12 +322,24 @@ export function LibraryPreviewModal({
         </div>
 
         <div className="p-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 flex justify-end">
-          <button 
-            onClick={onClose}
-            className="px-8 py-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-neutral-700"
-          >
-            {t('projectViewer.libraryPreview.closeViewer')}
-          </button>
+          <div className="flex gap-3">
+            {!isSelectionMode && (
+              <Link
+                to={`/library/${library.id}`}
+                onClick={onClose}
+                className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-emerald-500 shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                {t('projectViewer.libraryPreview.openFullLibrary')}
+              </Link>
+            )}
+            <button 
+              onClick={onClose}
+              className="px-8 py-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-neutral-300 dark:border-neutral-700"
+            >
+              {t('projectViewer.libraryPreview.closeViewer')}
+            </button>
+          </div>
         </div>
       </div>
       {previewLightbox && (

@@ -262,7 +262,8 @@
       "clearAllFilters": "Clear all filters",
       "clickToSelect": "Click to Select",
       "closeViewer": "Close Viewer",
-      "searchPlaceholder": "Search items by title, content or tag..."
+      "searchPlaceholder": "Search items by title, content or tag...",
+      "openFullLibrary": "Open Full Library"
     },
     "promptModal": {
       "title": "Edit Prompt Fragment",

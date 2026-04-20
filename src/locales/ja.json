@@ -1281,7 +1281,8 @@
       "clearAllFilters": "すべてのフィルターをクリア",
       "clickToSelect": "クリックして選択",
       "closeViewer": "ビューアーを閉じる",
-      "searchPlaceholder": "タイトル、内容、タグで検索..."
+      "searchPlaceholder": "タイトル、内容、またはタグでアイテムを検索...",
+      "openFullLibrary": "ライブラリ全体を開く"
     },
     "promptModal": {
       "title": "プロンプト断片を編集",
@@ -1470,9 +1471,11 @@
     "send": "送信",
     "stop": "停止",
     "confirm": "確認",
+    "confirmTool": "このセッションでこのツールを承認する",
     "cancel": "キャンセル",
-    "confirmAction": "この操作を実行しますか？",
-    "cancelAction": "この操作をキャンセル",
+    "confirmAction": "このアクションを確定しますか？",
+    "cancelAction": "このアクションをキャンセル",
+    "toolApprovalEnabled": "この会話での将来の {{tool}} アクションは、このセッションで自動的に承認されます。",
     "toolRunning": "{{tool}} を実行中...",
     "toolCompleted": "{{tool}} 完了",
     "toolFailed": "{{tool}} 失敗",
