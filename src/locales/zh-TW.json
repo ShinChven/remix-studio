@@ -366,8 +366,8 @@
       "items": "{{count}} 個項目",
       "openEditor": "開啟編輯器 →",
       "duplicate": "複製資源庫",
-      "pin": "Pin Library",
-      "unpin": "Unpin Library"
+      "pin": "固定庫",
+      "unpin": "取消固定"
     },
     "duplicateDialog": {
       "title": "複製資源庫",
@@ -378,7 +378,7 @@
       "success": "已複製 \"{{name}}\"",
       "error": "複製資源庫失敗"
     },
-    "pinLimitReached": "You can pin at most {{max}} libraries."
+    "pinLimitReached": "您最多只能固定 {{max}} 個庫。"
   },
   "libraryEditor": {
     "toasts": {
@@ -825,15 +825,15 @@
     "nameLabel": "供應商名稱",
     "namePlaceholder": "例如：工作帳戶、個人密鑰...",
     "typeLabel": "供應商類型",
-    "apiKeyLabel": "API Key",
-    "accessKeyLabel": "Access Key",
-    "secretKeyLabel": "Secret Key",
+    "apiKeyLabel": "API 金鑰",
+    "accessKeyLabel": "訪問金鑰 (Access Key)",
+    "secretKeyLabel": "秘密金鑰 (Secret Key)",
     "leaveBlankToKeep": "— 留空以保持現有設置",
     "apiKeyPlaceholder": "貼上您的 API Key...",
     "accessKeyPlaceholder": "貼上您的 Access Key...",
     "secretKeyPlaceholder": "貼上您的 Secret Key...",
     "stored": "•••••••• (已存儲)",
-    "apiUrlLabel": "API URL",
+    "apiUrlLabel": "API 位址",
     "apiUrlOptional": "— 可選覆蓋",
     "apiUrlPlaceholder": "https://... (留空使用默認值)",
     "parallelTasksLabel": "並行任務",
@@ -956,8 +956,8 @@
     }
   },
   "mcpConnections": {
-    "title": "MCP 連線",
-    "description": "透過 MCP 協議安全連接 AI 應用",
+    "title": "MCP 連接",
+    "description": "管理 Model Context Protocol 服務器以擴展您的助手能力。",
     "justNow": "剛剛",
     "relativeTime": {
       "m": "{{count}} 分鐘前",
@@ -1106,6 +1106,11 @@
       "revokeTokenMessage": "確定要撤銷權杖 \"{{name}}\" 嗎？任何使用此權杖的 MCP 用戶端都會立即失去存取權限。",
       "revoking": "正在撤銷...",
       "revoke": "撤銷"
+    },
+    "status": {
+      "connected": "已連接",
+      "disconnected": "已斷開",
+      "error": "錯誤"
     }
   },
   "projectViewer": {
@@ -1191,7 +1196,7 @@
       "failed": "失敗",
       "retryJob": "重試任務",
       "visualContexts": "視覺上下文",
-      "contextShort": "C_{{index}}",
+      "contextShort": "上下文",
       "contextAlt": "上下文 {{index}}",
       "errorDetails": "錯誤詳情",
       "unknownError": "發生未知錯誤",

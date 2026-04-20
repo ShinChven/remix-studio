@@ -141,8 +141,8 @@
       "items": "{{count}} 个项目",
       "openEditor": "打开编辑器 →",
       "duplicate": "复制资源库",
-      "pin": "Pin Library",
-      "unpin": "Unpin Library"
+      "pin": "固定库",
+      "unpin": "取消固定"
     },
     "duplicateDialog": {
       "title": "复制资源库",
@@ -153,7 +153,7 @@
       "success": "已复制 \"{{name}}\"",
       "error": "复制资源库失败"
     },
-    "pinLimitReached": "You can pin at most {{max}} libraries."
+    "pinLimitReached": "您最多只能固定 {{max}} 个库。"
   },
   "libraryEditor": {
     "toasts": {
@@ -703,8 +703,8 @@
     "namePlaceholder": "例如：工作账户、个人密钥...",
     "typeLabel": "供应商类型",
     "apiKeyLabel": "API 密钥",
-    "accessKeyLabel": "Access Key",
-    "secretKeyLabel": "Secret Key",
+    "accessKeyLabel": "访问密钥 (Access Key)",
+    "secretKeyLabel": "秘密密钥 (Secret Key)",
     "leaveBlankToKeep": "— 留空以保持现有值",
     "apiKeyPlaceholder": "粘贴您的 API 密钥...",
     "accessKeyPlaceholder": "粘贴您的 access key...",
@@ -834,7 +834,7 @@
   },
   "mcpConnections": {
     "title": "MCP 连接",
-    "description": "通过 MCP 协议安全连接 AI 应用",
+    "description": "管理 Model Context Protocol 服务器以扩展您的助手能力。",
     "justNow": "刚刚",
     "relativeTime": {
       "m": "{{count}} 分钟前",
@@ -983,6 +983,11 @@
       "revokeTokenMessage": "确定要撤销令牌 \"{{name}}\" 吗？任何使用此令牌的 MCP 客户端都将立即失去访问权限。",
       "revoking": "正在撤销...",
       "revoke": "撤销"
+    },
+    "status": {
+      "connected": "已连接",
+      "disconnected": "已断开",
+      "error": "错误"
     }
   },
   "account": {
@@ -1191,7 +1196,7 @@
       "failed": "失败",
       "retryJob": "重试任务",
       "visualContexts": "视觉上下文",
-      "contextShort": "C_{{index}}",
+      "contextShort": "上下文",
       "contextAlt": "上下文 {{index}}",
       "errorDetails": "错误详情",
       "unknownError": "发生未知错误",

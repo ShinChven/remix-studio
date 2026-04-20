@@ -196,28 +196,28 @@
     }
   },
   "accountTwoFactorSetup": {
-    "backToSecurity": "Back to Security",
-    "title": "Two-Factor Setup",
-    "description": "Configure your authenticator app for {{email}}.",
-    "thisAccount": "this account",
-    "enabled": "Enabled",
-    "currentPassword": "Current password",
-    "scanQr": "Scan QR Code",
-    "qrAlt": "Two-factor authentication QR code",
-    "qrUnavailable": "QR unavailable",
-    "expiresAt": "Expires {{time}}.",
-    "openOtpauth": "Open otpauth URI",
-    "verificationCode": "Verification code",
-    "enable": "Enable 2FA",
+    "backToSecurity": "セキュリティに戻る",
+    "title": "2段階認証の設定",
+    "description": "{{email}} の認証アプリを設定します。",
+    "thisAccount": "このアカウント",
+    "enabled": "有効",
+    "currentPassword": "現在のパスワード",
+    "scanQr": "QRコードをスキャン",
+    "qrAlt": "2段階認証のQRコード",
+    "qrUnavailable": "QRコードを利用できません",
+    "expiresAt": "{{time}} に期限切れになります。",
+    "openOtpauth": "otpauth URIを開く",
+    "verificationCode": "認証コード",
+    "enable": "2FAを有効にする",
     "step1": {
-      "title": "Step 1: Generate authenticator secret",
-      "withPassword": "Confirm your password before creating a new 2FA setup.",
-      "noPassword": "Generate a new authenticator secret for your account.",
-      "action": "Generate authenticator secret"
+      "title": "ステップ1：認証キーを生成",
+      "withPassword": "新しい2FA設定を作成する前にパスワードを確認してください。",
+      "noPassword": "アカウントの新しい認証キーを生成します。",
+      "action": "認証キーを生成"
     },
     "step2": {
-      "title": "Step 2: Scan and verify",
-      "description": "Scan the QR code with Google Authenticator, 1Password, Authy, or another TOTP app. If scanning is unavailable, enter the setup key manually."
+      "title": "ステップ2：スキャンして確認",
+      "description": "Google Authenticator、1Password、AuthyなどのTOTPアプリでQRコードをスキャンしてください。スキャンできない場合は、セットアップキーを手動で入力してください。"
     },
     "errors": {
       "loadAccount": "Failed to load account",
@@ -230,19 +230,19 @@
     }
   },
   "libraryImportExport": {
-    "badge": "Text Library Workspace",
-    "title": "Import & Output",
-    "description": "Bulk load prompt fragments, preserve tags in output, and keep a clean import format for editing outside the app.",
+    "badge": "テキストライブラリワークスペース",
+    "title": "インポートと出力",
+    "description": "プロンプトフラグメントを一括読み込みし、出力時にタグを保持します。アプリ外での編集用にクリーンなインポート形式を維持します。",
     "toasts": {
-      "importFailed": "Failed to import items.",
-      "outputCopied": "Library output copied to clipboard",
-      "copyFailed": "Failed to copy output."
+      "importFailed": "項目のインポートに失敗しました。",
+      "outputCopied": "ライブラリの出力がクリップボードにコピーされました",
+      "copyFailed": "出力のコピーに失敗しました。"
     },
     "stats": {
-      "library": "Library",
-      "currentItems": "Current Items",
-      "currentTags": "Current Tags",
-      "readyToImport": "Ready To Import"
+      "library": "ライブラリ",
+      "currentItems": "現在の項目数",
+      "currentTags": "現在のタグ数",
+      "readyToImport": "インポート準備完了"
     },
     "importSource": {
       "label": "Import Source",
@@ -366,8 +366,8 @@
       "items": "{{count}} アイテム",
       "openEditor": "エディタを開く →",
       "duplicate": "ライブラリを複製",
-      "pin": "Pin Library",
-      "unpin": "Unpin Library"
+      "pin": "ライブラリを固定",
+      "unpin": "固定を解除"
     },
     "duplicateDialog": {
       "title": "ライブラリを複製",
@@ -378,7 +378,7 @@
       "success": "\"{{name}}\" をコピーしました",
       "error": "ライブラリの複製に失敗しました"
     },
-    "pinLimitReached": "You can pin at most {{max}} libraries."
+    "pinLimitReached": "最大 {{max}} 個のライブラリを固定できます。"
   },
   "libraryEditor": {
     "toasts": {
@@ -956,8 +956,8 @@
     }
   },
   "mcpConnections": {
-    "title": "MCP 接続",
-    "description": "MCP プロトコルを通じて AI アプリを安全に接続します",
+    "title": "MCP接続",
+    "description": "Model Context Protocolサーバーを管理して、アシスタントの機能を拡張します。",
     "justNow": "たった今",
     "relativeTime": {
       "m": "{{count}}分前",
@@ -1106,6 +1106,11 @@
       "revokeTokenMessage": "トークン \"{{name}}\" を取り消しますか？ このトークンを使っている MCP クライアントは直ちにアクセスを失います。",
       "revoking": "取り消し中...",
       "revoke": "取り消す"
+    },
+    "status": {
+      "connected": "接続済み",
+      "disconnected": "切断済み",
+      "error": "エラー"
     }
   },
   "projectViewer": {
