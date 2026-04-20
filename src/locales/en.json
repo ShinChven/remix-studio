@@ -1469,7 +1469,7 @@
   "assistant": {
     "title": "Assistant",
     "newChat": "New Chat",
-    "conversations": "Conversations",
+    "conversations": "Chats",
     "noConversations": "No conversations yet",
     "selectProvider": "Select Provider",
     "selectModel": "Select Model",

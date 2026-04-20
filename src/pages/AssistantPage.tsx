@@ -1380,7 +1380,7 @@ export function AssistantPage() {
             <div className={`flex items-center h-full ${rightPanelOpen ? 'justify-between gap-2' : 'justify-center'}`}>
               {rightPanelOpen && (
                 <div className="min-w-0 px-3">
-                  <h3 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-white truncate">
                     {t('assistant.conversations')}
                   </h3>
                 </div>
