@@ -33,7 +33,7 @@ type SkillTriggerMatch = {
   start: number;
 };
 
-interface AssistantComposerProps {
+export interface AssistantComposerProps {
   inputText: string;
   setInputText: (val: string) => void;
   selectedProviderId: string;
