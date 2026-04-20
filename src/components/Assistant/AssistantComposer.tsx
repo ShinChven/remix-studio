@@ -44,10 +44,12 @@ export function AssistantComposer({
 }: AssistantComposerProps) {
   const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const [mentionOptions, setMentionOptions] = useState<BoundContext[]>([]);
   const [isSearchingMentions, setIsSearchingMentions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // ─── Auto-resize textarea ───
   useEffect(() => {
@@ -56,6 +58,16 @@ export function AssistantComposer({
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
     }
   }, [inputText]);
+
+  // ─── Auto-scroll mention selection ───
+  useEffect(() => {
+    if (mentionSearch !== null && dropdownRef.current) {
+      const activeItem = dropdownRef.current.querySelector(`[data-index="${selectedIndex}"]`);
+      if (activeItem) {
+        activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [selectedIndex, mentionSearch]);
 
   // ─── @ Mentions Search ───
   useEffect(() => {
@@ -73,6 +85,7 @@ export function AssistantComposer({
         projRes.items.forEach((p: any) => options.push({ id: p.id, name: p.name, type: 'project', subType: p.type }));
         libRes.items.forEach((l: any) => options.push({ id: l.id, name: l.name, type: 'library', subType: l.type }));
         setMentionOptions(options);
+        setSelectedIndex(0); // Reset selection on new results
       } catch (e) {
         // silent
       } finally {
@@ -81,6 +94,24 @@ export function AssistantComposer({
     }, 300);
     return () => { active = false; clearTimeout(timer); };
   }, [mentionSearch]);
+
+  const selectOption = (opt: BoundContext) => {
+    if (!boundContexts.find(b => b.id === opt.id)) {
+      setBoundContexts(prev => [...prev, opt]);
+    }
+    const match = inputText.match(/@([a-zA-Z0-9_\-\u4e00-\u9fa5\s]*)$/);
+    if (match) {
+      const newValue = inputText.slice(0, inputText.length - match[0].length) + ' ';
+      setInputText(newValue);
+      if (textareaRef.current) {
+         textareaRef.current.focus();
+         setTimeout(() => {
+           if (textareaRef.current) textareaRef.current.selectionStart = newValue.length;
+         }, 0);
+      }
+    }
+    setMentionSearch(null);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
@@ -98,6 +129,29 @@ export function AssistantComposer({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionSearch !== null && mentionOptions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev + 1) % mentionOptions.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev - 1 + mentionOptions.length) % mentionOptions.length);
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        selectOption(mentionOptions[selectedIndex]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMentionSearch(null);
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       if (mentionSearch === null) {
         e.preventDefault();
@@ -152,37 +206,29 @@ export function AssistantComposer({
           {/* Context Options & Selected Contexts */}
           <div className="relative">
             {mentionSearch !== null && (
-              <div className="absolute left-0 bottom-full mb-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl w-72 max-h-60 overflow-y-auto p-1 z-50">
+              <div 
+                ref={dropdownRef}
+                className="absolute left-0 bottom-full mb-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl w-72 max-h-60 overflow-y-auto p-1 z-50 custom-scrollbar"
+              >
                  <div className="px-2 py-1.5 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
                    {isSearchingMentions ? t('assistant.searching', 'Searching...') : t('assistant.selectResource', 'Select Resource')}
                  </div>
                  {!isSearchingMentions && mentionOptions.length === 0 && (
                    <div className="px-3 py-2 text-sm text-neutral-500">{t('assistant.noMatches', 'No matches found.')}</div>
                  )}
-                 {mentionOptions.map(opt => (
+                 {mentionOptions.map((opt, index) => (
                    <button
                      key={opt.id}
-                     onClick={() => {
-                       if (!boundContexts.find(b => b.id === opt.id)) {
-                         setBoundContexts(prev => [...prev, opt]);
-                       }
-                       const match = inputText.match(/@([a-zA-Z0-9_\-\u4e00-\u9fa5\s]*)$/);
-                       if (match) {
-                         const newValue = inputText.slice(0, inputText.length - match[0].length) + ' ';
-                         setInputText(newValue);
-                         if (textareaRef.current) {
-                            textareaRef.current.focus();
-                            setTimeout(() => {
-                              if (textareaRef.current) textareaRef.current.selectionStart = newValue.length;
-                            }, 0);
-                         }
-                       }
-                       setMentionSearch(null);
-                     }}
-                     className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex flex-col"
+                     data-index={index}
+                     onClick={() => selectOption(opt)}
+                     className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex flex-col ${
+                       index === selectedIndex 
+                         ? 'bg-indigo-600' 
+                         : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                     }`}
                    >
-                      <span className="font-semibold text-sm text-neutral-800 dark:text-neutral-200">{opt.name}</span>
-                      <span className="text-xs text-neutral-500 capitalize">{opt.type}{opt.subType ? ` • ${opt.subType}` : ''}</span>
+                      <span className={`font-semibold text-sm ${index === selectedIndex ? 'text-white' : 'text-neutral-800 dark:text-neutral-200'}`}>{opt.name}</span>
+                      <span className={`text-xs capitalize ${index === selectedIndex ? 'text-indigo-100' : 'text-neutral-500'}`}>{opt.type}{opt.subType ? ` • ${opt.subType}` : ''}</span>
                    </button>
                  ))}
               </div>
