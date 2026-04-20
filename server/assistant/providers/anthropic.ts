@@ -110,6 +110,8 @@ function splitSystemAndMessages(messages: ChatMessage[]): { system: string | und
     }
     if (m.role === 'tool') {
       // Anthropic expects tool results as user messages with tool_result blocks.
+      // m.content already contains the serialized JSON string from wrapToolResult;
+      // use it directly rather than re-stringifying toolResultJson.
       out.push({
         role: 'user',
         content: [{

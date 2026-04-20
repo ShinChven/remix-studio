@@ -584,6 +584,7 @@ export class AssistantRunner {
           toolCallId: m.toolCallId ?? '',
           name: m.toolName ?? '',
           content: m.content,
+          toolResultJson: m.toolResultJson,
         });
       }
     }

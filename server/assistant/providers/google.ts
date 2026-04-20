@@ -333,7 +333,11 @@ function mapMessages(messages: ChatMessage[]): {
     }
     if (m.role === 'tool') {
       let parsed: unknown;
-      try { parsed = JSON.parse(m.content); } catch { parsed = { result: m.content }; }
+      if (m.toolResultJson != null) {
+        parsed = m.toolResultJson;
+      } else {
+        try { parsed = JSON.parse(m.content); } catch { parsed = { result: m.content }; }
+      }
       pendingToolResponses.push({ functionResponse: { name: m.name, response: parsed } });
     }
   }
