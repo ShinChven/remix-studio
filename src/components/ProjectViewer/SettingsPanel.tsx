@@ -8,6 +8,7 @@ import {
   Project,
   Provider,
   parseAudioProjectConfig,
+  resolveAudioGenerationKind,
   serializeAudioProjectConfig,
 } from '../../types';
 
@@ -76,18 +77,25 @@ export function SettingsPanel({
   const isTextProject = localProject.type === 'text';
   const isVideoProject = localProject.type === 'video';
   const isAudioProject = localProject.type === 'audio';
+  const audioGenerationKind = resolveAudioGenerationKind(selectedModel);
   const audioConfig = isAudioProject ? parseAudioProjectConfig(localProject.systemPrompt) : DEFAULT_AUDIO_PROJECT_CONFIG;
-  const audioFormats = ['wav', 'mp3', 'aac'] as const;
+  const isMusicAudio = audioConfig.kind === 'remix-audio-music';
+  const audioFormats = (selectedModel?.options.audioFormats
+    || (audioGenerationKind === 'music' ? ['mp3'] : ['wav', 'mp3', 'aac'])) as Array<'wav' | 'mp3' | 'aac'>;
   const availableVoices = selectedModel?.options.voices || [...GEMINI_TTS_VOICES];
-  type AudioVoiceName = NonNullable<AudioProjectConfig['speakers'][number]>['voice'];
-  const primarySpeaker = audioConfig.speakers[0];
-  const secondarySpeaker = audioConfig.speakers[1] ?? { name: 'Speaker 2', voice: 'Puck' as AudioVoiceName };
+  type AudioVoiceName = typeof GEMINI_TTS_VOICES[number];
+  const primarySpeaker = !isMusicAudio
+    ? audioConfig.speakers[0]
+    : { name: 'Narrator', voice: 'Kore' as AudioVoiceName };
+  const secondarySpeaker = !isMusicAudio && audioConfig.speakers[1]
+    ? audioConfig.speakers[1]
+    : { name: 'Speaker 2', voice: 'Puck' as AudioVoiceName };
 
   const updateAudioConfig = (nextConfig: AudioProjectConfig) => {
     const updated = {
       ...localProject,
       systemPrompt: serializeAudioProjectConfig(nextConfig),
-      format: localProject.format || 'wav',
+      format: localProject.format || audioFormats[0] || (audioGenerationKind === 'music' ? 'mp3' : 'wav'),
     };
     setLocalProject(updated);
     onUpdate(updated);
@@ -122,16 +130,26 @@ export function SettingsPanel({
               </span>
             ) : isAudioProject ? (
               <>
+                {isMusicAudio ? (
+                  <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
+                    {audioConfig.mode === 'instrumental'
+                      ? t('projectViewer.settings.instrumentalOnly')
+                      : t('projectViewer.settings.withLyrics')}
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
+                      {audioConfig.mode === 'multi' ? t('projectViewer.settings.multiSpeaker') : t('projectViewer.settings.singleSpeaker')}
+                    </span>
+                    <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
+                      {audioConfig.mode === 'multi'
+                        ? `${primarySpeaker.voice}/${secondarySpeaker.voice}`
+                        : primarySpeaker.voice}
+                    </span>
+                  </>
+                )}
                 <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
-                  {audioConfig.mode === 'multi' ? t('projectViewer.settings.multiSpeaker') : t('projectViewer.settings.singleSpeaker')}
-                </span>
-                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
-                  {audioConfig.mode === 'multi'
-                    ? `${primarySpeaker.voice}/${secondarySpeaker.voice}`
-                    : primarySpeaker.voice}
-                </span>
-                <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
-                  {localProject.format || 'wav'}
+                  {localProject.format || audioFormats[0] || 'wav'}
                 </span>
               </>
             ) : isTextProject ? (
@@ -348,147 +366,191 @@ export function SettingsPanel({
             </>
           ) : isAudioProject ? (
             <>
-              <div className="space-y-2.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                  {t('projectViewer.settings.outputMode')}
-                </label>
-                <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 shadow-inner">
-                  <button
-                    onClick={() => {
-                        updateAudioConfig({
-                          ...audioConfig,
-                          mode: 'single',
-                          speakers: [primarySpeaker],
-                        });
-                    }}
-                    className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
-                      audioConfig.mode === 'single'
-                        ? 'bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border border-neutral-200 dark:border-neutral-700'
-                        : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-400'
-                    }`}
-                  >
-                    {t('projectViewer.settings.singleSpeaker')}
-                  </button>
-                  {selectedModel?.options.supportsMultiSpeaker !== false && (
+              {isMusicAudio ? (
+                <div className="space-y-2.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                    {t('projectViewer.settings.musicMode')}
+                  </label>
+                  <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 shadow-inner">
                     <button
                       onClick={() => {
                         updateAudioConfig({
-                          ...audioConfig,
-                          mode: 'multi',
-                          speakers: [
-                            primarySpeaker,
-                            secondarySpeaker,
-                          ],
+                          kind: 'remix-audio-music',
+                          mode: 'with-lyrics',
                         });
                       }}
                       className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
-                        audioConfig.mode === 'multi'
+                        audioConfig.mode === 'with-lyrics'
                           ? 'bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border border-neutral-200 dark:border-neutral-700'
                           : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-400'
                       }`}
                     >
-                      {t('projectViewer.settings.multiSpeaker')}
+                      {t('projectViewer.settings.withLyrics')}
                     </button>
-                  )}
+                    <button
+                      onClick={() => {
+                        updateAudioConfig({
+                          kind: 'remix-audio-music',
+                          mode: 'instrumental',
+                        });
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                        audioConfig.mode === 'instrumental'
+                          ? 'bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border border-neutral-200 dark:border-neutral-700'
+                          : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-400'
+                      }`}
+                    >
+                      {t('projectViewer.settings.instrumentalOnly')}
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              {audioConfig.mode === 'multi' && (
+              ) : (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-2.5">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                      {t('projectViewer.settings.outputMode')}
+                    </label>
+                    <div className="flex bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1 shadow-inner">
+                      <button
+                        onClick={() => {
+                          updateAudioConfig({
+                            kind: 'remix-audio-tts',
+                            mode: 'single',
+                            speakers: [primarySpeaker],
+                          });
+                        }}
+                        className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                          audioConfig.mode === 'single'
+                            ? 'bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border border-neutral-200 dark:border-neutral-700'
+                            : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-400'
+                        }`}
+                      >
+                        {t('projectViewer.settings.singleSpeaker')}
+                      </button>
+                      {selectedModel?.options.supportsMultiSpeaker !== false && (
+                        <button
+                          onClick={() => {
+                            updateAudioConfig({
+                              kind: 'remix-audio-tts',
+                              mode: 'multi',
+                              speakers: [
+                                primarySpeaker,
+                                secondarySpeaker,
+                              ],
+                            });
+                          }}
+                          className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                            audioConfig.mode === 'multi'
+                              ? 'bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border border-neutral-200 dark:border-neutral-700'
+                              : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-400'
+                          }`}
+                        >
+                          {t('projectViewer.settings.multiSpeaker')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {audioConfig.mode === 'multi' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-2.5">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                          {t('projectViewer.settings.speakerOneName')}
+                        </label>
+                        <input
+                          type="text"
+                          value={primarySpeaker.name}
+                          onChange={(e) => {
+                            updateAudioConfig({
+                              kind: 'remix-audio-tts',
+                              mode: 'multi',
+                              speakers: [
+                                { ...primarySpeaker, name: e.target.value || 'Speaker 1' },
+                                secondarySpeaker,
+                              ],
+                            });
+                          }}
+                          className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 shadow-inner"
+                        />
+                      </div>
+                      <div className="space-y-2.5">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                          {t('projectViewer.settings.speakerTwoName')}
+                        </label>
+                        <input
+                          type="text"
+                          value={secondarySpeaker.name}
+                          onChange={(e) => {
+                            updateAudioConfig({
+                              kind: 'remix-audio-tts',
+                              mode: 'multi',
+                              speakers: [
+                                primarySpeaker,
+                                { ...secondarySpeaker, name: e.target.value || 'Speaker 2' },
+                              ],
+                            });
+                          }}
+                          className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 shadow-inner"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={`grid grid-cols-1 gap-3 ${audioConfig.mode === 'multi' ? 'md:grid-cols-2' : ''}`}>
                     <div className="space-y-2.5">
                       <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                        {t('projectViewer.settings.speakerOneName')}
+                        {audioConfig.mode === 'multi' ? t('projectViewer.settings.speakerOneVoice') : t('projectViewer.settings.voice')}
                       </label>
-                      <input
-                        type="text"
-                        value={primarySpeaker.name}
+                      <select
+                        value={primarySpeaker.voice}
                         onChange={(e) => {
+                          const voice = e.target.value as AudioVoiceName;
                           updateAudioConfig({
-                            ...audioConfig,
+                            kind: 'remix-audio-tts',
+                            mode: audioConfig.mode,
                             speakers: [
-                              { ...primarySpeaker, name: e.target.value || 'Speaker 1' },
-                              secondarySpeaker,
+                              { ...primarySpeaker, voice },
+                              audioConfig.mode === 'multi' ? secondarySpeaker : undefined,
                             ],
                           });
                         }}
                         className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 shadow-inner"
-                      />
+                      >
+                        {availableVoices.map((voice) => (
+                          <option key={voice} value={voice}>{voice}</option>
+                        ))}
+                      </select>
                     </div>
-                    <div className="space-y-2.5">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                        {t('projectViewer.settings.speakerTwoName')}
-                      </label>
-                      <input
-                        type="text"
-                        value={secondarySpeaker.name}
-                        onChange={(e) => {
-                          updateAudioConfig({
-                            ...audioConfig,
-                            speakers: [
-                              primarySpeaker,
-                              { ...secondarySpeaker, name: e.target.value || 'Speaker 2' },
-                            ],
-                          });
-                        }}
-                        className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 shadow-inner"
-                      />
-                    </div>
+
+                    {audioConfig.mode === 'multi' && (
+                      <div className="space-y-2.5">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
+                          {t('projectViewer.settings.speakerTwoVoice')}
+                        </label>
+                        <select
+                          value={secondarySpeaker.voice}
+                          onChange={(e) => {
+                            const voice = e.target.value as AudioVoiceName;
+                            updateAudioConfig({
+                              kind: 'remix-audio-tts',
+                              mode: 'multi',
+                              speakers: [
+                                primarySpeaker,
+                                { ...secondarySpeaker, voice },
+                              ],
+                            });
+                          }}
+                          className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 shadow-inner"
+                        >
+                          {availableVoices.map((voice) => (
+                            <option key={voice} value={voice}>{voice}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
-
-              <div className={`grid grid-cols-1 gap-3 ${audioConfig.mode === 'multi' ? 'md:grid-cols-2' : ''}`}>
-                <div className="space-y-2.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                    {audioConfig.mode === 'multi' ? t('projectViewer.settings.speakerOneVoice') : t('projectViewer.settings.voice')}
-                  </label>
-                  <select
-                    value={primarySpeaker.voice}
-                    onChange={(e) => {
-                      const voice = e.target.value as AudioVoiceName;
-                      updateAudioConfig({
-                        ...audioConfig,
-                        speakers: [
-                          { ...primarySpeaker, voice },
-                          audioConfig.speakers[1],
-                        ],
-                      });
-                    }}
-                    className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 shadow-inner"
-                  >
-                    {availableVoices.map((voice) => (
-                      <option key={voice} value={voice}>{voice}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {audioConfig.mode === 'multi' && (
-                  <div className="space-y-2.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
-                      {t('projectViewer.settings.speakerTwoVoice')}
-                    </label>
-                    <select
-                      value={secondarySpeaker.voice}
-                      onChange={(e) => {
-                        const voice = e.target.value as AudioVoiceName;
-                        updateAudioConfig({
-                          ...audioConfig,
-                          speakers: [
-                            primarySpeaker,
-                            { ...secondarySpeaker, voice },
-                          ],
-                        });
-                      }}
-                      className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 shadow-inner"
-                    >
-                      {availableVoices.map((voice) => (
-                        <option key={voice} value={voice}>{voice}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
 
               <div className="space-y-2.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
@@ -504,7 +566,7 @@ export function SettingsPanel({
                         onUpdate(updated);
                       }}
                       className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase border transition-colors ${
-                        (localProject.format || 'wav') === format
+                        (localProject.format || audioFormats[0] || 'wav') === format
                           ? 'bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border-neutral-200 dark:border-neutral-700'
                           : 'text-neutral-500 dark:text-neutral-400 border-transparent hover:bg-neutral-100/70 dark:hover:bg-neutral-900'
                       }`}

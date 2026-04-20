@@ -11,6 +11,7 @@ export interface ProcessCompletedAudioParams {
   projectId: string;
   job: Job;
   audioBytes: Buffer;
+  text?: string;
   mimeType?: string;
   modelConfigId?: string;
   providerId?: string;
@@ -25,7 +26,7 @@ export class AudioProcessor {
   ) {}
 
   async processCompletedAudio(params: ProcessCompletedAudioParams) {
-    const { userId, projectId, job, audioBytes, mimeType, modelConfigId, providerId } = params;
+    const { userId, projectId, job, audioBytes, text, mimeType, modelConfigId, providerId } = params;
 
     try {
       const requestedFormat = job.format === 'mp3' || job.format === 'aac' || job.format === 'wav'
@@ -52,6 +53,7 @@ export class AudioProcessor {
         id: job.id,
         jobId: job.id,
         prompt: job.prompt,
+        textContent: text,
         imageUrl: audioKey,
         providerId: providerId || job.providerId,
         modelConfigId: modelConfigId || job.modelConfigId,
@@ -66,6 +68,7 @@ export class AudioProcessor {
       await this.projectRepo.updateJob(userId, projectId, job.id, {
         status: 'completed',
         imageUrl: audioKey,
+        resultText: text,
         format: ext,
         size: finalAudioBytes.length,
         error: undefined,

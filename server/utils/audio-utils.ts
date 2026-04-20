@@ -85,6 +85,7 @@ export function resolveAudioOutput(format?: string): { format: AudioOutputFormat
 function extFromMimeType(mimeType?: string): string {
   switch (mimeType) {
     case 'audio/mpeg':
+    case 'audio/mp3':
       return 'mp3';
     case 'audio/aac':
       return 'aac';
@@ -106,22 +107,34 @@ export async function transcodeAudioBuffer(
   targetFormat: AudioOutputFormat,
   mimeType?: string
 ): Promise<Buffer> {
-  if (targetFormat === 'wav') {
-    return ensureWavBuffer(audioBytes, { sampleRate: 24000, channels: 1, bitsPerSample: 16 });
+  const alreadyTargetFormat =
+    (targetFormat === 'wav' && isWavBuffer(audioBytes)) ||
+    (targetFormat === 'mp3' && (mimeType === 'audio/mpeg' || mimeType === 'audio/mp3')) ||
+    (targetFormat === 'aac' && (mimeType === 'audio/aac' || mimeType === 'audio/mp4'));
+
+  if (alreadyTargetFormat) {
+    return targetFormat === 'wav'
+      ? ensureWavBuffer(audioBytes, { sampleRate: 24000, channels: 1, bitsPerSample: 16 })
+      : audioBytes;
   }
 
-  const inputBuffer = isWavBuffer(audioBytes)
-    ? audioBytes
-    : ensureWavBuffer(audioBytes, { sampleRate: 24000, channels: 1, bitsPerSample: 16 });
+  const inputExt = isWavBuffer(audioBytes) ? 'wav' : extFromMimeType(mimeType);
+  const inputBuffer = (inputExt === 'wav' && !isWavBuffer(audioBytes))
+    ? ensureWavBuffer(audioBytes, { sampleRate: 24000, channels: 1, bitsPerSample: 16 })
+    : audioBytes;
 
-  const input = await writeTempAudio(inputBuffer, extFromMimeType(mimeType));
+  const input = await writeTempAudio(inputBuffer, inputExt);
   const output = path.join(os.tmpdir(), `remix-audio-out-${randomUUID()}.${targetFormat}`);
 
   try {
     await new Promise<void>((resolve, reject) => {
       const command = ffmpeg(input).noVideo();
 
-      if (targetFormat === 'mp3') {
+      if (targetFormat === 'wav') {
+        command
+          .audioCodec('pcm_s16le')
+          .format('wav');
+      } else if (targetFormat === 'mp3') {
         command
           .audioCodec('libmp3lame')
           .format('mp3')

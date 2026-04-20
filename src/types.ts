@@ -57,8 +57,11 @@ export interface ModelConfig {
     resolutions?: string[]; // e.g. '720p', '1080p', '4k'
     sounds?: ('on' | 'off')[];
     // Audio generation options
+    audioFormats?: ('wav' | 'mp3' | 'aac')[];
+    audioGenerationKind?: 'tts' | 'music';
     supportsMultiSpeaker?: boolean;
-     // Advanced image generation options
+    supportsReferenceImages?: boolean;
+    // Advanced image generation options
     stepsOptions?: number[];
     guidanceOptions?: number[];
     // Capability flags
@@ -108,19 +111,28 @@ export const GEMINI_TTS_VOICES = [
 ] as const;
 
 export type GeminiTtsVoiceName = typeof GEMINI_TTS_VOICES[number];
+export type AudioGenerationKind = 'tts' | 'music';
+export type AudioMusicMode = 'with-lyrics' | 'instrumental';
 
 export interface AudioSpeakerConfig {
   name: string;
   voice: GeminiTtsVoiceName;
 }
 
-export interface AudioProjectConfig {
+export interface AudioTtsProjectConfig {
   kind: 'remix-audio-tts';
   mode: 'single' | 'multi';
   speakers: [AudioSpeakerConfig, AudioSpeakerConfig?];
 }
 
-export const DEFAULT_AUDIO_PROJECT_CONFIG: AudioProjectConfig = {
+export interface AudioMusicProjectConfig {
+  kind: 'remix-audio-music';
+  mode: AudioMusicMode;
+}
+
+export type AudioProjectConfig = AudioTtsProjectConfig | AudioMusicProjectConfig;
+
+export const DEFAULT_AUDIO_TTS_PROJECT_CONFIG: AudioTtsProjectConfig = {
   kind: 'remix-audio-tts',
   mode: 'single',
   speakers: [
@@ -131,11 +143,36 @@ export const DEFAULT_AUDIO_PROJECT_CONFIG: AudioProjectConfig = {
   ],
 };
 
+export const DEFAULT_AUDIO_MUSIC_PROJECT_CONFIG: AudioMusicProjectConfig = {
+  kind: 'remix-audio-music',
+  mode: 'with-lyrics',
+};
+
+export const DEFAULT_AUDIO_PROJECT_CONFIG: AudioProjectConfig = DEFAULT_AUDIO_TTS_PROJECT_CONFIG;
+
+export function createDefaultAudioProjectConfig(kind: AudioGenerationKind = 'tts'): AudioProjectConfig {
+  return kind === 'music'
+    ? DEFAULT_AUDIO_MUSIC_PROJECT_CONFIG
+    : DEFAULT_AUDIO_TTS_PROJECT_CONFIG;
+}
+
+export function getAudioGenerationKindFromConfig(config: AudioProjectConfig): AudioGenerationKind {
+  return config.kind === 'remix-audio-music' ? 'music' : 'tts';
+}
+
 export function parseAudioProjectConfig(value?: string): AudioProjectConfig {
   if (!value) return DEFAULT_AUDIO_PROJECT_CONFIG;
 
   try {
     const parsed = JSON.parse(value);
+
+    if (parsed?.kind === 'remix-audio-music') {
+      return {
+        kind: 'remix-audio-music',
+        mode: parsed.mode === 'instrumental' ? 'instrumental' : 'with-lyrics',
+      };
+    }
+
     if (parsed?.kind !== 'remix-audio-tts') return DEFAULT_AUDIO_PROJECT_CONFIG;
 
     const speakers = Array.isArray(parsed.speakers)
@@ -151,7 +188,7 @@ export function parseAudioProjectConfig(value?: string): AudioProjectConfig {
               ? 'Kore'
               : 'Puck',
         }))
-      : DEFAULT_AUDIO_PROJECT_CONFIG.speakers;
+      : DEFAULT_AUDIO_TTS_PROJECT_CONFIG.speakers;
 
     if (speakers.length === 0) {
       return DEFAULT_AUDIO_PROJECT_CONFIG;
@@ -169,6 +206,12 @@ export function parseAudioProjectConfig(value?: string): AudioProjectConfig {
 
 export function serializeAudioProjectConfig(config: AudioProjectConfig): string {
   return JSON.stringify(config);
+}
+
+export function resolveAudioGenerationKind(
+  model?: Pick<ModelConfig, 'options'> | null
+): AudioGenerationKind {
+  return model?.options.audioGenerationKind === 'music' ? 'music' : 'tts';
 }
 
 export function estimatePromptLength(prompt: string, limit?: PromptLimitMeta): number {
@@ -271,6 +314,30 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'google-lyria-3-clip-audio',
+      name: 'Lyria 3 Clip',
+      generatorId: 'GoogleAI',
+      modelId: 'lyria-3-clip-preview',
+      category: 'audio',
+      options: {
+        audioFormats: ['mp3'],
+        audioGenerationKind: 'music',
+        supportsReferenceImages: true,
+      },
+    },
+    {
+      id: 'google-lyria-3-pro-audio',
+      name: 'Lyria 3 Pro',
+      generatorId: 'GoogleAI',
+      modelId: 'lyria-3-pro-preview',
+      category: 'audio',
+      options: {
+        audioFormats: ['mp3', 'wav'],
+        audioGenerationKind: 'music',
+        supportsReferenceImages: true,
+      },
+    },
+    {
       id: 'google-gemini-3.1-flash-tts-audio',
       name: 'Gemini 3.1 Flash TTS',
       generatorId: 'GoogleAI',
@@ -278,6 +345,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'audio',
       promptLimit: { value: 32000, unit: 'tokens' },
       options: {
+        audioFormats: ['wav', 'mp3', 'aac'],
+        audioGenerationKind: 'tts',
         voices: [...GEMINI_TTS_VOICES],
         supportsMultiSpeaker: true,
       },
@@ -290,6 +359,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'audio',
       promptLimit: { value: 32000, unit: 'tokens' },
       options: {
+        audioFormats: ['wav', 'mp3', 'aac'],
+        audioGenerationKind: 'tts',
         voices: [...GEMINI_TTS_VOICES],
         supportsMultiSpeaker: true,
       },
@@ -302,6 +373,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'audio',
       promptLimit: { value: 32000, unit: 'tokens' },
       options: {
+        audioFormats: ['wav', 'mp3', 'aac'],
+        audioGenerationKind: 'tts',
         voices: [...GEMINI_TTS_VOICES],
         supportsMultiSpeaker: true,
       },
@@ -357,6 +430,30 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'vertex-lyria-3-clip-audio',
+      name: 'Lyria 3 Clip',
+      generatorId: 'VertexAI',
+      modelId: 'lyria-3-clip-preview',
+      category: 'audio',
+      options: {
+        audioFormats: ['mp3'],
+        audioGenerationKind: 'music',
+        supportsReferenceImages: true,
+      },
+    },
+    {
+      id: 'vertex-lyria-3-pro-audio',
+      name: 'Lyria 3 Pro',
+      generatorId: 'VertexAI',
+      modelId: 'lyria-3-pro-preview',
+      category: 'audio',
+      options: {
+        audioFormats: ['mp3', 'wav'],
+        audioGenerationKind: 'music',
+        supportsReferenceImages: true,
+      },
+    },
+    {
       id: 'vertex-gemini-3.1-flash-tts-audio',
       name: 'Gemini 3.1 Flash TTS',
       generatorId: 'VertexAI',
@@ -364,6 +461,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'audio',
       promptLimit: { value: 32000, unit: 'tokens' },
       options: {
+        audioFormats: ['wav', 'mp3', 'aac'],
+        audioGenerationKind: 'tts',
         voices: [...GEMINI_TTS_VOICES],
         supportsMultiSpeaker: true,
       },
@@ -376,6 +475,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'audio',
       promptLimit: { value: 32000, unit: 'tokens' },
       options: {
+        audioFormats: ['wav', 'mp3', 'aac'],
+        audioGenerationKind: 'tts',
         voices: [...GEMINI_TTS_VOICES],
         supportsMultiSpeaker: true,
       },
@@ -388,6 +489,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'audio',
       promptLimit: { value: 32000, unit: 'tokens' },
       options: {
+        audioFormats: ['wav', 'mp3', 'aac'],
+        audioGenerationKind: 'tts',
         voices: [...GEMINI_TTS_VOICES],
         supportsMultiSpeaker: true,
       },

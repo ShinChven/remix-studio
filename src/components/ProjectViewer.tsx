@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
+  createDefaultAudioProjectConfig,
   DEFAULT_AUDIO_PROJECT_CONFIG,
   Project,
   Job,
@@ -15,6 +16,7 @@ import {
   formatPromptLimit,
   isPromptOverLimit,
   parseAudioProjectConfig,
+  resolveAudioGenerationKind,
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
@@ -236,15 +238,22 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           needsUpdate = true;
         }
       } else if (selectedModel.category === 'audio') {
-        if (!localProject.format) {
-          updated.format = 'wav';
+        const audioGenerationKind = resolveAudioGenerationKind(selectedModel);
+        const allowedFormats = selectedModel.options.audioFormats
+          || (audioGenerationKind === 'music' ? ['mp3'] : ['wav', 'mp3', 'aac']);
+        const defaultFormat = allowedFormats[0];
+
+        if (!localProject.format || !allowedFormats.includes(localProject.format as any)) {
+          updated.format = defaultFormat as Project['format'];
           needsUpdate = true;
         }
         if (!localProject.systemPrompt) {
-          updated.systemPrompt = serializeAudioProjectConfig(DEFAULT_AUDIO_PROJECT_CONFIG);
+          updated.systemPrompt = serializeAudioProjectConfig(createDefaultAudioProjectConfig(audioGenerationKind));
           needsUpdate = true;
-        } else if (parseAudioProjectConfig(localProject.systemPrompt).kind !== 'remix-audio-tts') {
-          updated.systemPrompt = serializeAudioProjectConfig(DEFAULT_AUDIO_PROJECT_CONFIG);
+        } else if (
+          audioGenerationKind !== (parseAudioProjectConfig(localProject.systemPrompt).kind === 'remix-audio-music' ? 'music' : 'tts')
+        ) {
+          updated.systemPrompt = serializeAudioProjectConfig(createDefaultAudioProjectConfig(audioGenerationKind));
           needsUpdate = true;
         }
       } else {
@@ -275,7 +284,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   );
 
   const addWorkflowItem = (type: WorkflowItemTypeKind) => {
-    if (isAudioProject && (type === 'image' || type === 'video' || type === 'audio')) {
+    if (isAudioProject && (type === 'video' || type === 'audio')) {
+      return;
+    }
+
+    if (isAudioProject && type === 'image' && selectedModel?.options.supportsReferenceImages !== true) {
       return;
     }
 
@@ -512,6 +525,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           const isTextProject = localProject.type === 'text';
           const isAudioProject = localProject.type === 'audio';
           const audioConfig = isAudioProject ? parseAudioProjectConfig(localProject.systemPrompt) : DEFAULT_AUDIO_PROJECT_CONFIG;
+          const audioFormat = (localProject.format
+            || selectedModel?.options.audioFormats?.[0]
+            || (audioConfig.kind === 'remix-audio-music' ? 'mp3' : 'wav')) as 'wav' | 'mp3' | 'aac';
           newJobs.push({
             id: crypto.randomUUID(),
             prompt: combo.prompt,
@@ -528,9 +544,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               format: localProject.format || 'png',
             }),
             ...(isAudioProject ? {
-              quality: audioConfig.speakers[0].voice,
-              background: audioConfig.mode,
-              format: (localProject.format || 'wav') as 'wav' | 'mp3' | 'aac',
+              quality: audioConfig.kind === 'remix-audio-music'
+                ? (audioConfig.mode === 'instrumental' ? 'instrumental' : 'with-lyrics')
+                : audioConfig.speakers[0].voice,
+              background: audioConfig.kind === 'remix-audio-music' ? 'music' : audioConfig.mode,
+              format: audioFormat,
             } : {}),
             ...(localProject.type === 'video' ? {
               duration: localProject.duration || selectedModel?.options.durations?.[0] || 4,
