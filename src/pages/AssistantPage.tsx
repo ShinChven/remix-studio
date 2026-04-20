@@ -455,6 +455,7 @@ export function AssistantPage() {
     setIsSending(true);
     setCurrentThinkingTitle('');
     setCurrentToolTitle('');
+    setPendingConfirmation(null);
 
     let currentConversationId = activeConversationId;
 
@@ -547,13 +548,15 @@ export function AssistantPage() {
   // ─── Confirmation handling ───
   const handleConfirmation = async (decision: 'confirm' | 'confirm_tool' | 'cancel') => {
     if (!activeConversationId || !pendingConfirmation) return;
+    const activeConfirmation = pendingConfirmation;
+    setPendingConfirmation(null);
     setIsSending(true);
     setCurrentThinkingTitle('');
     setCurrentToolTitle('');
     try {
       const result = await confirmAssistantTool(
         activeConversationId,
-        pendingConfirmation.id,
+        activeConfirmation.id,
         decision,
         (event) => {
           if (event.type === 'provider_thinking' && typeof event.title === 'string') {
@@ -569,7 +572,6 @@ export function AssistantPage() {
           }
         },
       );
-      setPendingConfirmation(null);
       const data = await fetchAssistantConversation(activeConversationId);
       setMessages(data.messages);
 
@@ -580,13 +582,14 @@ export function AssistantPage() {
         toast.success(
           t('assistant.toolApprovalEnabled', {
             defaultValue: 'Future {{tool}} actions in this conversation will auto-approve for this session.',
-            tool: formatToolTitle(pendingConfirmation?.toolName),
+            tool: formatToolTitle(activeConfirmation.toolName),
           }),
         );
       }
       loadConversations();
     } catch (e: any) {
       toast.error(e?.message || 'Failed to process confirmation');
+      setPendingConfirmation(activeConfirmation);
     } finally {
       setIsSending(false);
       setCurrentThinkingTitle('');
