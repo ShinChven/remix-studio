@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bot, Sparkles, FolderOpen, X, Send, Square } from 'lucide-react';
+import { Bot, Sparkles, FolderOpen, X, Send, Square, ImagePlus } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { fetchLibraries, fetchLibraryItems, fetchProjects } from '../../api';
 import { resolveAssistantSkillsLibraryId } from '../../lib/assistant-skills';
@@ -12,6 +13,12 @@ export type BoundContext = {
   name: string;
   type: 'project' | 'library';
   subType?: string;
+};
+
+export type AttachedImage = {
+  id: string;
+  preview: string; // data URI for display
+  base64: string;  // data URI for sending (compressed)
 };
 
 type SkillOption = {
@@ -26,7 +33,7 @@ type SkillTriggerMatch = {
   start: number;
 };
 
-interface AssistantComposerProps {
+export interface AssistantComposerProps {
   inputText: string;
   setInputText: (val: string) => void;
   selectedProviderId: string;
@@ -35,12 +42,19 @@ interface AssistantComposerProps {
   setSelectedModelId: (id: string) => void;
   boundContexts: BoundContext[];
   setBoundContexts: React.Dispatch<React.SetStateAction<BoundContext[]>>;
+  attachedImages: AttachedImage[];
+  setAttachedImages: React.Dispatch<React.SetStateAction<AttachedImage[]>>;
   providers: Provider[];
   isSending: boolean;
   onSend: () => void;
   onStop?: () => void;
   placeholder?: string;
 }
+
+const MAX_IMAGES = 5;
+const MAX_COMPRESS_DIM = 1024;
+const COMPRESS_QUALITY = 0.7;
+const COMPRESS_MIME = 'image/jpeg';
 
 function summarizeSkillTitle(title: string | undefined, content: string) {
   if (title?.trim()) return title.trim();
@@ -65,6 +79,40 @@ function getSkillTriggerMatch(textBeforeCursor: string): SkillTriggerMatch | nul
   };
 }
 
+/**
+ * Compress an image File to a JPEG data URI with max dimension `MAX_COMPRESS_DIM`.
+ */
+async function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { width, height } = img;
+      let targetW = width;
+      let targetH = height;
+      if (Math.max(width, height) > MAX_COMPRESS_DIM) {
+        if (width >= height) {
+          targetW = MAX_COMPRESS_DIM;
+          targetH = Math.round((height / width) * MAX_COMPRESS_DIM);
+        } else {
+          targetH = MAX_COMPRESS_DIM;
+          targetW = Math.round((width / height) * MAX_COMPRESS_DIM);
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas not available')); return; }
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+      resolve(canvas.toDataURL(COMPRESS_MIME, COMPRESS_QUALITY));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+    img.src = url;
+  });
+}
+
 export function AssistantComposer({
   inputText,
   setInputText,
@@ -74,6 +122,8 @@ export function AssistantComposer({
   setSelectedModelId,
   boundContexts,
   setBoundContexts,
+  attachedImages,
+  setAttachedImages,
   providers,
   isSending,
   onSend,
@@ -83,6 +133,8 @@ export function AssistantComposer({
   const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const [mentionOptions, setMentionOptions] = useState<BoundContext[]>([]);
@@ -219,6 +271,91 @@ export function AssistantComposer({
     setSkillSearch(null);
   };
 
+  // ─── Image handling ───
+
+  const processImageFiles = useCallback(async (files: File[]) => {
+    const imageFiles = files.filter((f) => f.type.startsWith('image/'));
+    if (imageFiles.length !== files.length) {
+      toast.warning(t('assistant.invalidImageType'));
+    }
+    if (imageFiles.length === 0) return;
+
+    const remaining = MAX_IMAGES - attachedImages.length;
+    if (remaining <= 0) {
+      toast.warning(t('assistant.maxImagesReached'));
+      return;
+    }
+
+    const toAdd = imageFiles.slice(0, remaining);
+    if (toAdd.length < imageFiles.length) {
+      toast.warning(t('assistant.maxImagesReached'));
+    }
+
+    const results: AttachedImage[] = [];
+    for (const file of toAdd) {
+      try {
+        const compressed = await compressImage(file);
+        results.push({
+          id: `img-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          preview: compressed,
+          base64: compressed,
+        });
+      } catch {
+        toast.error(t('assistant.imageTooLarge'));
+      }
+    }
+
+    if (results.length > 0) {
+      setAttachedImages((prev) => [...prev, ...results]);
+    }
+  }, [attachedImages.length, setAttachedImages, t]);
+
+  const handleFilePickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length > 0) processImageFiles(files);
+    // Reset so the same file can be re-selected
+    e.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (isSending) return;
+    const hasImages = Array.from(e.dataTransfer.types).includes('Files');
+    if (hasImages) {
+      e.preventDefault();
+      setIsDraggingOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // only clear if leaving the composer container entirely
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDraggingOver(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    if (isSending) return;
+    const files = Array.from(e.dataTransfer.files);
+    processImageFiles(files);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(e.clipboardData.items);
+    const imageItems = items.filter((item) => item.type.startsWith('image/'));
+    if (imageItems.length === 0) return;
+    e.preventDefault();
+    const files = imageItems.map((item) => item.getAsFile()).filter(Boolean) as File[];
+    processImageFiles(files);
+  };
+
+  const removeImage = (id: string) => {
+    setAttachedImages((prev) => prev.filter((img) => img.id !== id));
+  };
+
+  // ─── Mention / skill pickers ───
+
   const selectResource = (option: BoundContext) => {
     if (!boundContexts.find((entry) => entry.id === option.id)) {
       setBoundContexts((current) => [...current, option]);
@@ -343,12 +480,30 @@ export function AssistantComposer({
     }
   };
 
+  const canSend = (inputText.trim().length > 0 || boundContexts.length > 0 || attachedImages.length > 0) && !isSending;
+
   return (
-    <div className="group relative w-full">
+    <div
+      className={`group relative w-full transition-all duration-200 ${isDraggingOver ? 'scale-[1.01]' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 opacity-20 blur transition duration-1000 group-focus-within:opacity-40 group-focus-within:duration-200" />
+
+      {/* Drag overlay */}
+      {isDraggingOver && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl border-2 border-dashed border-indigo-400 bg-indigo-50/90 dark:bg-indigo-950/90 backdrop-blur-sm pointer-events-none">
+          <div className="flex flex-col items-center gap-2 text-indigo-600 dark:text-indigo-300">
+            <ImagePlus className="h-8 w-8" />
+            <span className="text-sm font-semibold">{t('assistant.dropImagesHere')}</span>
+          </div>
+        </div>
+      )}
 
       <div className="relative rounded-2xl border border-neutral-200/50 bg-white/80 p-4 shadow-2xl backdrop-blur-2xl transition-all duration-300 group-focus-within:shadow-indigo-500/10 dark:border-white/10 dark:bg-neutral-900/80">
         <div className="space-y-4">
+          {/* Model selector row */}
           <div className="flex items-center gap-2 px-1">
             <div className="flex h-5 w-5 items-center justify-center text-neutral-500 dark:text-neutral-400">
               {selectedProvider ? (
@@ -392,6 +547,7 @@ export function AssistantComposer({
             </select>
           </div>
 
+          {/* Picker dropdowns + bound context chips */}
           <div className="relative">
             {activePicker && (
               <div
@@ -476,6 +632,7 @@ export function AssistantComposer({
               </div>
             )}
 
+            {/* Bound context chips */}
             {boundContexts.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2 px-1">
                 {boundContexts.map((context) => (
@@ -497,18 +654,70 @@ export function AssistantComposer({
                 ))}
               </div>
             )}
+
+            {/* Attached image thumbnails */}
+            {attachedImages.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2 px-1">
+                {attachedImages.map((img) => (
+                  <div key={img.id} className="relative group/thumb flex-shrink-0">
+                    <img
+                      src={img.preview}
+                      alt=""
+                      className="h-16 w-16 rounded-xl object-cover border border-neutral-200/60 dark:border-white/10 shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(img.id)}
+                      disabled={isSending}
+                      title={t('assistant.removeImage')}
+                      className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-800/80 text-white opacity-0 group-hover/thumb:opacity-100 transition-opacity shadow-sm disabled:cursor-not-allowed hover:bg-red-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+
+              </div>
+            )}
           </div>
 
+          {/* Textarea + action buttons */}
           <div className="flex items-end gap-3">
             <textarea
               ref={textareaRef}
               value={inputText}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder={placeholder || t('assistant.typePlaceholder')}
               rows={1}
               disabled={isSending}
               className="custom-scrollbar max-h-[200px] flex-1 resize-none border-none bg-transparent py-1 text-base text-neutral-800 outline-none placeholder-neutral-400 disabled:opacity-50 dark:text-neutral-200 dark:placeholder-neutral-500"
+            />
+
+            {/* Image attach button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isSending || attachedImages.length >= MAX_IMAGES}
+              title={t('assistant.attachImage')}
+              className={`flex-shrink-0 rounded-xl p-2.5 transition-all ${
+                attachedImages.length > 0
+                  ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-500/30'
+                  : 'text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-600 dark:hover:text-neutral-300'
+              } disabled:cursor-not-allowed disabled:opacity-40`}
+            >
+              <ImagePlus className="h-5 w-5" />
+            </button>
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFilePickerChange}
             />
 
             {isSending ? (
@@ -524,7 +733,7 @@ export function AssistantComposer({
               <button
                 type="button"
                 onClick={onSend}
-                disabled={!inputText.trim() && boundContexts.length === 0}
+                disabled={!canSend}
                 className="group/btn flex-shrink-0 rounded-xl bg-indigo-600 p-3 text-white shadow-lg shadow-indigo-600/20 transition-all active:scale-95 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-40"
                 title={t('assistant.send')}
               >

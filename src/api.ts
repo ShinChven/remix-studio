@@ -1267,6 +1267,23 @@ export async function sendAssistantMessage(
   return handleResponse<AssistantTurnResult>(res, 'Failed to send message');
 }
 
+export async function editAssistantMessage(
+  conversationId: string,
+  messageId: string,
+  content: string,
+  onStatusEvent?: (event: AssistantStatusEvent) => void,
+): Promise<AssistantTurnResult> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/messages/${messageId}/edit`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ content }),
+  });
+  if (onStatusEvent) {
+    return handleNdjsonResponse<AssistantTurnResult>(res, onStatusEvent);
+  }
+  return handleResponse<AssistantTurnResult>(res, 'Failed to edit message');
+}
+
 export async function confirmAssistantTool(
   conversationId: string,
   confirmationId: string,

@@ -140,7 +140,9 @@
     "libraryCard": {
       "items": "{{count}} 个项目",
       "openEditor": "打开编辑器 →",
-      "duplicate": "复制资源库"
+      "duplicate": "复制资源库",
+      "pin": "固定库",
+      "unpin": "取消固定"
     },
     "duplicateDialog": {
       "title": "复制资源库",
@@ -150,7 +152,8 @@
       "confirm": "复制",
       "success": "已复制 \"{{name}}\"",
       "error": "复制资源库失败"
-    }
+    },
+    "pinLimitReached": "您最多只能固定 {{max}} 个库。"
   },
   "libraryEditor": {
     "toasts": {
@@ -700,8 +703,8 @@
     "namePlaceholder": "例如：工作账户、个人密钥...",
     "typeLabel": "供应商类型",
     "apiKeyLabel": "API 密钥",
-    "accessKeyLabel": "Access Key",
-    "secretKeyLabel": "Secret Key",
+    "accessKeyLabel": "访问密钥 (Access Key)",
+    "secretKeyLabel": "秘密密钥 (Secret Key)",
     "leaveBlankToKeep": "— 留空以保持现有值",
     "apiKeyPlaceholder": "粘贴您的 API 密钥...",
     "accessKeyPlaceholder": "粘贴您的 access key...",
@@ -831,7 +834,7 @@
   },
   "mcpConnections": {
     "title": "MCP 连接",
-    "description": "通过 MCP 协议安全连接 AI 应用",
+    "description": "管理 Model Context Protocol 服务器以扩展您的助手能力。",
     "justNow": "刚刚",
     "relativeTime": {
       "m": "{{count}} 分钟前",
@@ -980,6 +983,11 @@
       "revokeTokenMessage": "确定要撤销令牌 \"{{name}}\" 吗？任何使用此令牌的 MCP 客户端都将立即失去访问权限。",
       "revoking": "正在撤销...",
       "revoke": "撤销"
+    },
+    "status": {
+      "connected": "已连接",
+      "disconnected": "已断开",
+      "error": "错误"
     }
   },
   "account": {
@@ -1188,7 +1196,7 @@
       "failed": "失败",
       "retryJob": "重试任务",
       "visualContexts": "视觉上下文",
-      "contextShort": "C_{{index}}",
+      "contextShort": "上下文",
       "contextAlt": "上下文 {{index}}",
       "errorDetails": "错误详情",
       "unknownError": "发生未知错误",
@@ -1493,6 +1501,27 @@
     "providerNotConfigured": "未配置可用于对话的服务商。请先添加 OpenAI、Claude 或 Google AI 服务商。",
     "emptyChat": "开始与助手对话",
     "confirmationExpired": "此确认已过期",
-    "loading": "思考中..."
+    "loading": "思考中...",
+    "attachImage": "附加图片",
+    "dropImagesHere": "将图片拖放至此",
+    "maxImagesReached": "每条消息最多5张图片",
+    "imageAttached_one": "已附加{{count}}张图片",
+    "imageAttached_other": "已附加{{count}}张图片",
+    "pasteImage": "图片已粘贴",
+    "imageTooLarge": "图片太大，无法处理",
+    "invalidImageType": "仅支持图片文件",
+    "removeImage": "删除图片",
+    "greetings": {
+      "0": "您有什么想法？",
+      "1": "今天您想创造什么？",
+      "2": "我该如何协助您的工作流？",
+      "3": "准备好见证奇迹了吗？",
+      "4": "跟随白兔。",
+      "5": "红色药丸还是蓝色药丸？",
+      "6": "勺子并不存在。",
+      "7": "醒醒，尼奥...",
+      "8": "欢迎来到真实世界的荒漠。",
+      "9": "您完全正确！"
+    }
   }
 }

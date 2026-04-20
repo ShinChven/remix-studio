@@ -6,7 +6,7 @@
     "providers": "Fournisseurs",
     "mcp": "MCP",
     "assistant": "Assistant",
-    "exports": "Exports",
+    "exports": "Exportations",
     "recycleBin": "Corbeille",
     "storage": "Stockage",
     "userManagement": "Gestion des utilisateurs"
@@ -196,28 +196,28 @@
     }
   },
   "accountTwoFactorSetup": {
-    "backToSecurity": "Back to Security",
-    "title": "Two-Factor Setup",
-    "description": "Configure your authenticator app for {{email}}.",
-    "thisAccount": "this account",
-    "enabled": "Enabled",
-    "currentPassword": "Current password",
-    "scanQr": "Scan QR Code",
-    "qrAlt": "Two-factor authentication QR code",
-    "qrUnavailable": "QR unavailable",
-    "expiresAt": "Expires {{time}}.",
-    "openOtpauth": "Open otpauth URI",
-    "verificationCode": "Verification code",
-    "enable": "Enable 2FA",
+    "backToSecurity": "Retour à la sécurité",
+    "title": "Configuration de la 2FA",
+    "description": "Configurez votre application d'authentification pour {{email}}.",
+    "thisAccount": "ce compte",
+    "enabled": "Activé",
+    "currentPassword": "Mot de passe actuel",
+    "scanQr": "Scanner le code QR",
+    "qrAlt": "Code QR d'authentification à deux facteurs",
+    "qrUnavailable": "QR non disponible",
+    "expiresAt": "Expire à {{time}}.",
+    "openOtpauth": "Ouvrir l'URI otpauth",
+    "verificationCode": "Code de vérification",
+    "enable": "Activer la 2FA",
     "step1": {
-      "title": "Step 1: Generate authenticator secret",
-      "withPassword": "Confirm your password before creating a new 2FA setup.",
-      "noPassword": "Generate a new authenticator secret for your account.",
-      "action": "Generate authenticator secret"
+      "title": "Étape 1 : Générer le secret de l'authentificateur",
+      "withPassword": "Confirmez votre mot de passe avant de créer une nouvelle configuration 2FA.",
+      "noPassword": "Générez un nouveau secret d'authentificateur pour votre compte.",
+      "action": "Générer le secret"
     },
     "step2": {
-      "title": "Step 2: Scan and verify",
-      "description": "Scan the QR code with Google Authenticator, 1Password, Authy, or another TOTP app. If scanning is unavailable, enter the setup key manually."
+      "title": "Étape 2 : Scanner et vérifier",
+      "description": "Scannez le code QR avec Google Authenticator, 1Password, Authy ou une autre application TOTP. Si le balayage n'est pas disponible, saisissez manuellement la clé de configuration."
     },
     "errors": {
       "loadAccount": "Failed to load account",
@@ -230,19 +230,19 @@
     }
   },
   "libraryImportExport": {
-    "badge": "Text Library Workspace",
-    "title": "Import & Output",
-    "description": "Bulk load prompt fragments, preserve tags in output, and keep a clean import format for editing outside the app.",
+    "badge": "Espace de travail de la bibliothèque de texte",
+    "title": "Importation et Sortie",
+    "description": "Chargez en masse des fragments d'invites, préservez les tags à la sortie et maintenez un format d'importation propre pour l'édition en dehors de l'application.",
     "toasts": {
-      "importFailed": "Failed to import items.",
-      "outputCopied": "Library output copied to clipboard",
-      "copyFailed": "Failed to copy output."
+      "importFailed": "Échec de l'importation des éléments.",
+      "outputCopied": "Sortie de la bibliothèque copiée dans le presse-papiers",
+      "copyFailed": "Échec de la copie de la sortie."
     },
     "stats": {
-      "library": "Library",
-      "currentItems": "Current Items",
-      "currentTags": "Current Tags",
-      "readyToImport": "Ready To Import"
+      "library": "Bibliothèque",
+      "currentItems": "Éléments actuels",
+      "currentTags": "Tags actuels",
+      "readyToImport": "Prêt à importer"
     },
     "importSource": {
       "label": "Import Source",
@@ -365,7 +365,9 @@
     "libraryCard": {
       "items": "{{count}} éléments",
       "openEditor": "Ouvrir l'éditeur →",
-      "duplicate": "Dupliquer la bibliothèque"
+      "duplicate": "Dupliquer la bibliothèque",
+      "pin": "Épingler la bibliothèque",
+      "unpin": "Désépingler la bibliothèque"
     },
     "duplicateDialog": {
       "title": "Dupliquer la bibliothèque",
@@ -375,7 +377,8 @@
       "confirm": "Dupliquer",
       "success": "Copié \"{{name}}\"",
       "error": "Échec de la duplication de la bibliothèque"
-    }
+    },
+    "pinLimitReached": "Vous pouvez épingler au maximum {{max}} bibliothèques."
   },
   "libraryEditor": {
     "toasts": {
@@ -954,7 +957,7 @@
   },
   "mcpConnections": {
     "title": "Connexions MCP",
-    "description": "Connectez des applications IA en toute sécurité via le protocole MCP",
+    "description": "Gérez les serveurs du Model Context Protocol pour étendre les capacités de votre assistant.",
     "justNow": "à l'instant",
     "relativeTime": {
       "m": "il y a {{count}} min",
@@ -1103,6 +1106,11 @@
       "revokeTokenMessage": "Révoquer le jeton \"{{name}}\" ? Tout client MCP utilisant ce jeton perdra immédiatement l'accès.",
       "revoking": "Révocation...",
       "revoke": "Révoquer"
+    },
+    "status": {
+      "connected": "Connecté",
+      "disconnected": "Déconnecté",
+      "error": "Erreur"
     }
   },
   "projectViewer": {
@@ -1113,7 +1121,7 @@
       "model": "Modèle",
       "back": "Retour",
       "text": "Texte",
-      "imageShort": "Img",
+      "imageShort": "Image",
       "videoShort": "Vidéo",
       "audioShort": "Audio",
       "libraryShort": "Biblio",
@@ -1130,7 +1138,7 @@
       "deleteSelected": "Supprimer la sélection",
       "deleteJob": "Supprimer la tâche",
       "upload": "Téléverser",
-      "prompt": "Prompt",
+      "prompt": "Invite",
       "video": "Vidéo",
       "audio": "Audio",
       "generatedText": "Texte généré",
@@ -1188,7 +1196,7 @@
       "failed": "Échec",
       "retryJob": "Réessayer la tâche",
       "visualContexts": "Contextes visuels",
-      "contextShort": "C_{{index}}",
+      "contextShort": "Ctx",
       "contextAlt": "Contexte {{index}}",
       "errorDetails": "Détails de l'erreur",
       "unknownError": "Une erreur inconnue s'est produite",
@@ -1493,6 +1501,27 @@
     "providerNotConfigured": "Aucun fournisseur de chat configuré. Ajoutez d'abord un fournisseur OpenAI, Claude ou Google AI.",
     "emptyChat": "Démarrer une conversation avec votre assistant",
     "confirmationExpired": "Cette confirmation a expiré",
-    "loading": "Réflexion..."
+    "loading": "Réflexion...",
+    "attachImage": "Joindre une image",
+    "dropImagesHere": "Déposez les images ici",
+    "maxImagesReached": "Maximum 5 images par message",
+    "imageAttached_one": "{{count}} image jointe",
+    "imageAttached_other": "{{count}} images jointes",
+    "pasteImage": "Image collée",
+    "imageTooLarge": "Image trop grande pour être traitée",
+    "invalidImageType": "Seuls les fichiers image sont acceptés",
+    "removeImage": "Supprimer l'image",
+    "greetings": {
+      "0": "Qu'avez-vous en tête ?",
+      "1": "Que voulez-vous créer aujourd'hui ?",
+      "2": "Comment puis-je assister votre flux de travail ?",
+      "3": "Prêt à faire de la magie ?",
+      "4": "Suis le lapin blanc.",
+      "5": "Pilule rouge ou pilule bleue ?",
+      "6": "La cuillère n'existe pas.",
+      "7": "Réveille-toi, Néo...",
+      "8": "Bienvenue dans le désert du réel.",
+      "9": "Vous avez tout à fait raison !"
+    }
   }
 }

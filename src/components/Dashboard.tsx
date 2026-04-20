@@ -6,11 +6,12 @@ import { Plus, Play, Folder, LayoutGrid, Clock, Loader2, Copy, MessageCircle, Se
 import { PageHeader } from './PageHeader';
 import { fetchProjects, fetchLibraries, fetchAssistantProviders } from '../api';
 import { Provider } from '../types';
-import { AssistantComposer, BoundContext } from './Assistant/AssistantComposer';
+import { AssistantComposer, BoundContext, AttachedImage } from './Assistant/AssistantComposer';
 import {
   filterEnabledAssistantProviders,
   normalizeAssistantProviderSelection,
 } from '../lib/assistant-provider-settings';
+import { AssistantHero } from './Assistant/AssistantHero';
 
 export function Dashboard() {
   const { t } = useTranslation();
@@ -26,6 +27,7 @@ export function Dashboard() {
   const [selectedModelId, setSelectedModelId] = useState<string>(() => localStorage.getItem('assistant_last_model') || '');
   const [inputText, setInputText] = useState('');
   const [boundContexts, setBoundContexts] = useState<BoundContext[]>([]);
+  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
 
   useEffect(() => {
     if (selectedProviderId) localStorage.setItem('assistant_last_provider', selectedProviderId);
@@ -75,7 +77,7 @@ export function Dashboard() {
   const handleStartChat = (e?: React.FormEvent) => {
     e?.preventDefault();
     const text = inputText.trim();
-    if (!text) return;
+    if (!text && boundContexts.length === 0 && attachedImages.length === 0) return;
     
     localStorage.removeItem('assistant_last_conversation');
     navigate('/assistant', { 
@@ -83,7 +85,8 @@ export function Dashboard() {
         initialMessage: text,
         providerId: selectedProviderId,
         modelId: selectedModelId,
-        boundContexts: boundContexts
+        boundContexts: boundContexts,
+        attachedImages: attachedImages,
       } 
     });
   };
@@ -93,39 +96,24 @@ export function Dashboard() {
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full space-y-8">
-        <PageHeader
-          title={t('dashboard.welcome')}
-          description={t('dashboard.description')}
-        />
-
-        {/* AI Chat Hero Section */}
-        <section className="flex flex-col items-center justify-center py-4 md:py-8">
-          <div className="w-full max-w-2xl space-y-6">
-            <div className="text-center space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{t('dashboard.aiChat')}</span>
-              </div>
-              <h2 className="text-2xl md:text-3xl font-black text-neutral-900 dark:text-white tracking-tight">
-                {t('dashboard.aiChatDescription')}
-              </h2>
-            </div>
-
-            <AssistantComposer
-              inputText={inputText}
-              setInputText={setInputText}
-              selectedProviderId={selectedProviderId}
-              setSelectedProviderId={setSelectedProviderId}
-              selectedModelId={selectedModelId}
-              setSelectedModelId={setSelectedModelId}
-              boundContexts={boundContexts}
-              setBoundContexts={setBoundContexts}
-              providers={providers}
-              isSending={false}
-              onSend={handleStartChat}
-              placeholder={t('dashboard.aiChatPromptPlaceholder', 'How can I help you?')}
-            />
-          </div>
+        {/* Unified Hero Section - Matrix Style */}
+        <section className="flex flex-col items-center justify-center py-8 md:py-16">
+          <AssistantHero
+            inputText={inputText}
+            setInputText={setInputText}
+            selectedProviderId={selectedProviderId}
+            setSelectedProviderId={setSelectedProviderId}
+            selectedModelId={selectedModelId}
+            setSelectedModelId={setSelectedModelId}
+            boundContexts={boundContexts}
+            setBoundContexts={setBoundContexts}
+            attachedImages={attachedImages}
+            setAttachedImages={setAttachedImages}
+            providers={providers}
+            isSending={false}
+            onSend={handleStartChat}
+            placeholder={t('assistant.typePlaceholder', 'Type a message...')}
+          />
         </section>
 
         {isLoading ? (

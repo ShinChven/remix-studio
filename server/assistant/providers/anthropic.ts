@@ -87,7 +87,27 @@ function splitSystemAndMessages(messages: ChatMessage[]): { system: string | und
       continue;
     }
     if (m.role === 'user') {
-      out.push({ role: 'user', content: [{ type: 'text', text: m.content }] });
+      const userContentBlocks: any[] = [];
+      // Prepend inline images as Anthropic image content blocks
+      if (m.images && m.images.length > 0) {
+        for (const dataUri of m.images) {
+          const match = dataUri.match(/^data:(image\/\w+);base64,(.+)$/);
+          if (match) {
+            userContentBlocks.push({
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: match[1] as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+                data: match[2],
+              },
+            });
+          }
+        }
+      }
+      if (m.content) {
+        userContentBlocks.push({ type: 'text', text: m.content });
+      }
+      out.push({ role: 'user', content: userContentBlocks.length > 0 ? userContentBlocks : [{ type: 'text', text: '' }] });
       continue;
     }
     if (m.role === 'assistant') {
