@@ -4,7 +4,8 @@ import { Bot, Sparkles, FolderOpen, X, Send, Square } from 'lucide-react';
 
 import { fetchLibraries, fetchLibraryItems, fetchProjects } from '../../api';
 import { resolveAssistantSkillsLibraryId } from '../../lib/assistant-skills';
-import { getTextModelsForProvider, Provider } from '../../types';
+import { getTextModelsForProvider, Provider, ProviderType } from '../../types';
+import { ProviderIcon } from '../ProviderIcon';
 
 export type BoundContext = {
   id: string;
@@ -101,6 +102,8 @@ export function AssistantComposer({
       : null;
   const activeOptions = activePicker === 'skill' ? skillOptions : mentionOptions;
   const isSearchingActivePicker = activePicker === 'skill' ? isSearchingSkills : isSearchingMentions;
+
+  const selectedProvider = providers.find((p) => p.id === selectedProviderId);
 
   useEffect(() => {
     if (!textareaRef.current) return;
@@ -347,7 +350,13 @@ export function AssistantComposer({
       <div className="relative rounded-2xl border border-neutral-200/50 bg-white/80 p-4 shadow-2xl backdrop-blur-2xl transition-all duration-300 group-focus-within:shadow-indigo-500/10 dark:border-white/10 dark:bg-neutral-900/80">
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
-            <Bot className="h-4 w-4 text-indigo-500" />
+            <div className="flex h-5 w-5 items-center justify-center text-neutral-500 dark:text-neutral-400">
+              {selectedProvider ? (
+                <ProviderIcon type={selectedProvider.type} className="h-4 w-4" />
+              ) : (
+                <Bot className="h-4 w-4" />
+              )}
+            </div>
             <select
               value={selectedProviderId && selectedModelId ? `${selectedProviderId}::${selectedModelId}` : ''}
               onChange={(event) => {

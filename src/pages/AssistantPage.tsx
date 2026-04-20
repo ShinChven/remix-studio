@@ -919,7 +919,6 @@ export function AssistantPage() {
         <div className="hidden lg:block flex-shrink-0 px-6 py-4 border-b border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/20 backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Bot className="w-5 h-5 text-indigo-500 flex-shrink-0" />
               <h1 className="text-lg font-semibold text-neutral-900 dark:text-white truncate">{assistantTitle}</h1>
             </div>
             <button
@@ -935,7 +934,6 @@ export function AssistantPage() {
         {/* Mobile Header Portals */}
         {document.getElementById('mobile-header-assistant-title') && createPortal(
           <>
-            <Bot className="w-5 h-5 text-indigo-500 flex-shrink-0" />
             <h1 className="text-base font-semibold text-neutral-900 dark:text-white truncate">{assistantTitle}</h1>
           </>,
           document.getElementById('mobile-header-assistant-title')!
@@ -965,7 +963,7 @@ export function AssistantPage() {
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {activeConversationId ? (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-              {messages.filter((m) => m.role !== 'system' && m.role !== 'tool').map((msg) => (
+              {messages.filter((m) => m.role !== 'system' && m.role !== 'tool').map((msg, idx, arr) => (
                 <div key={msg.id}>
                   {msg.role === 'user' && (
                     <div className="flex justify-end">
@@ -1028,8 +1026,30 @@ export function AssistantPage() {
                   )}
                   {msg.role === 'assistant' && (
                     <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
-                        <Bot className="w-4 h-4 text-white" />
+                      <div className="relative flex-shrink-0">
+                        <div className="flex w-9 h-9 items-center justify-center rounded-full bg-slate-900/80 backdrop-blur-sm shadow-sm relative z-10 border border-white/10 dark:border-white/5">
+                          <img src="/assistant-avatar.svg" alt="Assistant" className="w-8 h-8 object-contain" />
+                        </div>
+                        {isSending && idx === arr.length - 1 && (
+                          <svg className="absolute inset-0 w-full h-full animate-material-spinner pointer-events-none z-20" viewBox="0 0 50 50">
+                            <circle
+                              className="animate-material-dash"
+                              cx="25"
+                              cy="25"
+                              r="24"
+                              fill="none"
+                              stroke="url(#avatarSpinnerGradient)"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            />
+                            <defs>
+                              <linearGradient id="avatarSpinnerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#6366f1" />
+                                <stop offset="100%" stopColor="#a855f7" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                        )}
                       </div>
                       <div className="max-w-[80%]">
                         {(() => {
@@ -1039,13 +1059,13 @@ export function AssistantPage() {
                           return (
                             <>
                               {shouldRenderThoughtOutsideBubble && renderMessageContent(msg.content)}
-                              {hasRenderableAssistantBubble(msg) && (
-                                <div className={`bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-neutral-200/30 dark:border-white/5 ${
-                                  msg.status === 'error' ? 'border-red-300 dark:border-red-800/40' : ''
-                                }`}>
-                                  {renderMessageContent(msg.content)}
-                                </div>
-                              )}
+                                {hasRenderableAssistantBubble(msg) && (
+                                  <div className={`bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-white/40 dark:border-white/10 ${
+                                    msg.status === 'error' ? 'border-red-300 dark:border-red-800/40' : ''
+                                  }`}>
+                                    {renderMessageContent(msg.content)}
+                                  </div>
+                                )}
                             </>
                           );
                         })()}
@@ -1063,11 +1083,30 @@ export function AssistantPage() {
 
               {isSending && (
                 <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
-                    <Bot className="w-4 h-4 text-white" />
+                  <div className="relative flex-shrink-0">
+                    <div className="flex w-9 h-9 items-center justify-center rounded-full bg-slate-900/80 backdrop-blur-sm shadow-sm relative z-10 border border-white/10 dark:border-white/5">
+                      <img src="/assistant-avatar.svg" alt="Assistant" className="w-8 h-8 object-contain" />
+                    </div>
+                    <svg className="absolute inset-0 w-full h-full animate-material-spinner pointer-events-none z-20" viewBox="0 0 50 50">
+                      <circle
+                        className="animate-material-dash"
+                        cx="25"
+                        cy="25"
+                        r="24"
+                        fill="none"
+                        stroke="url(#avatarSpinnerGradientThinking)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <defs>
+                        <linearGradient id="avatarSpinnerGradientThinking" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#6366f1" />
+                          <stop offset="100%" stopColor="#a855f7" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
                   </div>
                   <div className="flex items-center gap-2 py-1.5 text-sm">
-                    <MaterialSpinner className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                     <span className="font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
                       {currentToolTitle || currentThinkingTitle || t('assistant.thinking', 'Thinking...')}
                     </span>
