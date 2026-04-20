@@ -365,7 +365,9 @@
     "libraryCard": {
       "items": "{{count}} éléments",
       "openEditor": "Ouvrir l'éditeur →",
-      "duplicate": "Dupliquer la bibliothèque"
+      "duplicate": "Dupliquer la bibliothèque",
+      "pin": "Pin Library",
+      "unpin": "Unpin Library"
     },
     "duplicateDialog": {
       "title": "Dupliquer la bibliothèque",
@@ -375,7 +377,8 @@
       "confirm": "Dupliquer",
       "success": "Copié \"{{name}}\"",
       "error": "Échec de la duplication de la bibliothèque"
-    }
+    },
+    "pinLimitReached": "You can pin at most {{max}} libraries."
   },
   "libraryEditor": {
     "toasts": {
@@ -1502,6 +1505,13 @@
     "pasteImage": "Image collée",
     "imageTooLarge": "Image trop grande pour être traitée",
     "invalidImageType": "Seuls les fichiers image sont acceptés",
-    "removeImage": "Supprimer l'image"
+    "removeImage": "Supprimer l'image",
+    "greetings": {
+      "0": "Qu'avez-vous en tête ?",
+      "1": "Suis le lapin blanc.",
+      "2": "Pilule rouge ou pilule bleue ?",
+      "3": "La cuillère n'existe pas.",
+      "4": "Réveille-toi, Néo..."
+    }
   }
 }

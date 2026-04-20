@@ -365,7 +365,9 @@
     "libraryCard": {
       "items": "{{count}} アイテム",
       "openEditor": "エディタを開く →",
-      "duplicate": "ライブラリを複製"
+      "duplicate": "ライブラリを複製",
+      "pin": "Pin Library",
+      "unpin": "Unpin Library"
     },
     "duplicateDialog": {
       "title": "ライブラリを複製",
@@ -375,7 +377,8 @@
       "confirm": "複製",
       "success": "\"{{name}}\" をコピーしました",
       "error": "ライブラリの複製に失敗しました"
-    }
+    },
+    "pinLimitReached": "You can pin at most {{max}} libraries."
   },
   "libraryEditor": {
     "toasts": {
@@ -1502,6 +1505,13 @@
     "pasteImage": "画像を貼り付けました",
     "imageTooLarge": "画像が大きすぎて処理できません",
     "invalidImageType": "画像ファイルのみサポートされています",
-    "removeImage": "画像を削除"
+    "removeImage": "画像を削除",
+    "greetings": {
+      "0": "何か考えていることはありますか？",
+      "1": "白ウサギを追え。",
+      "2": "赤の薬か、青の薬か？",
+      "3": "スプーンなど存在しない。",
+      "4": "目覚めよ、ネオ…"
+    }
   }
 }

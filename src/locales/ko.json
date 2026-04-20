@@ -365,7 +365,9 @@
     "libraryCard": {
       "items": "{{count}}개 항목",
       "openEditor": "편집기 열기 →",
-      "duplicate": "라이브러리 복제"
+      "duplicate": "라이브러리 복제",
+      "pin": "Pin Library",
+      "unpin": "Unpin Library"
     },
     "duplicateDialog": {
       "title": "라이브러리 복제",
@@ -375,7 +377,8 @@
       "confirm": "복제",
       "success": "\"{{name}}\"을(를) 복사했습니다",
       "error": "라이브러리 복제 실패"
-    }
+    },
+    "pinLimitReached": "You can pin at most {{max}} libraries."
   },
   "libraryEditor": {
     "toasts": {
@@ -1502,6 +1505,13 @@
     "pasteImage": "이미지 붙여넣기됨",
     "imageTooLarge": "이미지가 너무 커서 처리할 수 없습니다",
     "invalidImageType": "이미지 파일만 지원됩니다",
-    "removeImage": "이미지 삭제"
+    "removeImage": "이미지 삭제",
+    "greetings": {
+      "0": "어떤 생각을 가지고 계신가요?",
+      "1": "흰 토끼를 따라가라.",
+      "2": "빨간 약인가, 파란 약인가?",
+      "3": "숟가락은 없다.",
+      "4": "일어나라, 네오..."
+    }
   }
 }

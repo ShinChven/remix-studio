@@ -365,7 +365,9 @@
     "libraryCard": {
       "items": "{{count}} 個項目",
       "openEditor": "開啟編輯器 →",
-      "duplicate": "複製資源庫"
+      "duplicate": "複製資源庫",
+      "pin": "Pin Library",
+      "unpin": "Unpin Library"
     },
     "duplicateDialog": {
       "title": "複製資源庫",
@@ -375,7 +377,8 @@
       "confirm": "複製",
       "success": "已複製 \"{{name}}\"",
       "error": "複製資源庫失敗"
-    }
+    },
+    "pinLimitReached": "You can pin at most {{max}} libraries."
   },
   "libraryEditor": {
     "toasts": {
@@ -1502,6 +1505,13 @@
     "pasteImage": "圖片已貼上",
     "imageTooLarge": "圖片太大，無法處理",
     "invalidImageType": "僅支援圖片檔案",
-    "removeImage": "刪除圖片"
+    "removeImage": "刪除圖片",
+    "greetings": {
+      "0": "您有什麼想法？",
+      "1": "跟隨白兔。",
+      "2": "紅色藥丸還是藍色藥丸？",
+      "3": "勺子並不存在。",
+      "4": "醒醒，尼奧..."
+    }
   }
 }

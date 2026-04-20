@@ -140,7 +140,9 @@
     "libraryCard": {
       "items": "{{count}} 个项目",
       "openEditor": "打开编辑器 →",
-      "duplicate": "复制资源库"
+      "duplicate": "复制资源库",
+      "pin": "Pin Library",
+      "unpin": "Unpin Library"
     },
     "duplicateDialog": {
       "title": "复制资源库",
@@ -150,7 +152,8 @@
       "confirm": "复制",
       "success": "已复制 \"{{name}}\"",
       "error": "复制资源库失败"
-    }
+    },
+    "pinLimitReached": "You can pin at most {{max}} libraries."
   },
   "libraryEditor": {
     "toasts": {
@@ -1502,6 +1505,13 @@
     "pasteImage": "图片已粘贴",
     "imageTooLarge": "图片太大，无法处理",
     "invalidImageType": "仅支持图片文件",
-    "removeImage": "删除图片"
+    "removeImage": "删除图片",
+    "greetings": {
+      "0": "您有什么想法？",
+      "1": "跟随白兔。",
+      "2": "红色药丸还是蓝色药丸？",
+      "3": "勺子并不存在。",
+      "4": "醒醒，尼奥..."
+    }
   }
 }

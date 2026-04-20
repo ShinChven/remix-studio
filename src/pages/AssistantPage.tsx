@@ -36,6 +36,7 @@ import {
   filterEnabledAssistantProviders,
   normalizeAssistantProviderSelection,
 } from '../lib/assistant-provider-settings';
+import { MatrixText } from '../components/MatrixText';
 
 // BoundContext moved to AssistantComposer.tsx
 
@@ -1307,13 +1308,17 @@ export function AssistantPage() {
           ) : (
             <div className="flex flex-col items-center justify-center h-full px-4">
               <div className="w-full max-w-2xl mx-auto -mt-20">
-                <div className="flex justify-center mb-6">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-600/20 flex items-center justify-center shadow-sm border border-indigo-500/20">
-                    <MessageCircle className="w-8 h-8 text-indigo-500" />
-                  </div>
-                </div>
-                <h2 className="text-2xl font-semibold text-center text-neutral-800 dark:text-neutral-200 mb-8">
-                  {t('assistant.howCanIHelp', 'How can I help you today?')}
+                <h2 className="text-2xl font-semibold text-center text-neutral-800 dark:text-neutral-200 mb-16 min-h-[3rem] flex items-center justify-center">
+                  <MatrixText
+                    texts={[
+                      t('assistant.greetings.0', 'What do you have in mind?'),
+                      t('assistant.greetings.1', 'Follow the white rabbit.'),
+                      t('assistant.greetings.2', 'Red pill or blue pill?'),
+                      t('assistant.greetings.3', 'There is no spoon.'),
+                      t('assistant.greetings.4', 'Wake up, Neo...')
+                    ]}
+                    interval={8000}
+                  />
                 </h2>
                 <AssistantComposer
                   inputText={inputText}

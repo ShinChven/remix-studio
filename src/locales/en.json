@@ -1468,6 +1468,13 @@
   },
   "assistant": {
     "title": "Assistant",
+    "greetings": {
+      "0": "What do you have in mind?",
+      "1": "Follow the white rabbit.",
+      "2": "Red pill or blue pill?",
+      "3": "There is no spoon.",
+      "4": "Wake up, Neo..."
+    },
     "newChat": "New Chat",
     "conversations": "Chats",
     "noConversations": "No conversations yet",
