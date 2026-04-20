@@ -115,7 +115,23 @@ export function createAssistantRouter(
     }
   });
 
+  // ─── Summarize conversation title ───
+  router.post('/api/assistant/conversations/:id/summarize', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const conversationId = c.req.param('id');
+      const title = await runner.summarizeConversation(user.userId, conversationId);
+      if (!title) return c.json({ error: 'Summarization failed' }, 500);
+      return c.json({ title });
+    } catch (e: any) {
+      if (e?.message === 'Conversation not found') return c.json({ error: 'Conversation not found' }, 404);
+      console.error('[POST /api/assistant/conversations/:id/summarize]', e);
+      return c.json({ error: 'Failed to summarize conversation' }, 500);
+    }
+  });
+
   // ─── Delete conversation ───
+
   router.delete('/api/assistant/conversations/:id', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

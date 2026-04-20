@@ -1288,3 +1288,10 @@ export async function fetchAssistantProviders(): Promise<{ providers: Provider[]
   const res = await apiFetch('/api/assistant/providers', { headers: getHeaders(false) });
   return handleResponse<{ providers: Provider[] }>(res, 'Failed to list assistant providers');
 }
+export async function summarizeAssistantConversationTitle(id: string): Promise<{ title: string }> {
+  const res = await apiFetch(`/api/assistant/conversations/${id}/summarize`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  return handleResponse<{ title: string }>(res, 'Failed to summarize conversation');
+}

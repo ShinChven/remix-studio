@@ -12,6 +12,7 @@ import {
   fetchAssistantConversation,
   updateAssistantConversation,
   deleteAssistantConversation,
+  summarizeAssistantConversationTitle,
   sendAssistantMessage,
   confirmAssistantTool,
   fetchAssistantProviders,
@@ -561,17 +562,19 @@ export function AssistantPage() {
         setPendingConfirmation(result.confirmation);
       }
 
-      // Auto-title: if this was the first user message, update title
+      // AI-Title: if this was the first user message, summarize title using LLM
+      // Do this asynchronously to avoid blocking the isSending state (which would keep the Thinking indicator visible)
       if (!activeConversationId || conversations.find((c) => c.id === currentConversationId)?.title === 'New chat') {
-        const title = text.length > 50 ? text.slice(0, 47) + '...' : text;
-        try {
-          await updateAssistantConversation(currentConversationId, { title });
-          setConversations((prev) =>
-            prev.map((c) => (c.id === currentConversationId ? { ...c, title } : c)),
-          );
-        } catch {
-          // non-critical
-        }
+        summarizeAssistantConversationTitle(currentConversationId)
+          .then(({ title }) => {
+            setConversations((prev) => prev.map((c) => (c.id === currentConversationId ? { ...c, title } : c)));
+          })
+          .catch(() => {
+            // fallback to simple truncation if AI summarization fails
+            const title = text.length > 50 ? text.slice(0, 47) + '...' : text;
+            updateAssistantConversation(currentConversationId, { title }).catch(() => {});
+            setConversations((prev) => prev.map((c) => (c.id === currentConversationId ? { ...c, title } : c)));
+          });
       }
 
       // Bump conversation to top
@@ -1029,27 +1032,27 @@ export function AssistantPage() {
                       <div className="relative flex-shrink-0">
                         <div className="flex w-9 h-9 items-center justify-center rounded-full bg-slate-900/80 backdrop-blur-sm shadow-sm relative z-10 border border-white/10 dark:border-white/5">
                           <img src="/assistant-avatar.svg" alt="Assistant" className="w-8 h-8 object-contain" />
+                          {isSending && idx === arr.length - 1 && (
+                            <svg className="absolute -inset-[1px] w-[36px] h-[36px] animate-material-spinner pointer-events-none z-20" viewBox="0 0 50 50">
+                              <circle
+                                className="animate-material-dash"
+                                cx="25"
+                                cy="25"
+                                r="23"
+                                fill="none"
+                                stroke="url(#avatarSpinnerGradient)"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                              />
+                              <defs>
+                                <linearGradient id="avatarSpinnerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                  <stop offset="0%" stopColor="#6366f1" />
+                                  <stop offset="100%" stopColor="#a855f7" />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+                          )}
                         </div>
-                        {isSending && idx === arr.length - 1 && (
-                          <svg className="absolute inset-0 w-full h-full animate-material-spinner pointer-events-none z-20" viewBox="0 0 50 50">
-                            <circle
-                              className="animate-material-dash"
-                              cx="25"
-                              cy="25"
-                              r="24"
-                              fill="none"
-                              stroke="url(#avatarSpinnerGradient)"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                            />
-                            <defs>
-                              <linearGradient id="avatarSpinnerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#6366f1" />
-                                <stop offset="100%" stopColor="#a855f7" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                        )}
                       </div>
                       <div className="max-w-[80%]">
                         {(() => {
@@ -1085,26 +1088,26 @@ export function AssistantPage() {
                 <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="relative flex-shrink-0">
                     <div className="flex w-9 h-9 items-center justify-center rounded-full bg-slate-900/80 backdrop-blur-sm shadow-sm relative z-10 border border-white/10 dark:border-white/5">
-                      <img src="/assistant-avatar.svg" alt="Assistant" className="w-8 h-8 object-contain" />
+                      <img src="/assistant-avatar.svg" alt="Assistant" className="w-8 h-8 object-contain relative z-10" />
+                      <svg className="absolute -inset-[1px] w-[36px] h-[36px] animate-material-spinner pointer-events-none z-20" viewBox="0 0 50 50">
+                        <circle
+                          className="animate-material-dash"
+                          cx="25"
+                          cy="25"
+                          r="23"
+                          fill="none"
+                          stroke="url(#avatarSpinnerGradientThinking)"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                        <defs>
+                          <linearGradient id="avatarSpinnerGradientThinking" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#6366f1" />
+                            <stop offset="100%" stopColor="#a855f7" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
                     </div>
-                    <svg className="absolute inset-0 w-full h-full animate-material-spinner pointer-events-none z-20" viewBox="0 0 50 50">
-                      <circle
-                        className="animate-material-dash"
-                        cx="25"
-                        cy="25"
-                        r="24"
-                        fill="none"
-                        stroke="url(#avatarSpinnerGradientThinking)"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <defs>
-                        <linearGradient id="avatarSpinnerGradientThinking" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#6366f1" />
-                          <stop offset="100%" stopColor="#a855f7" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
                   </div>
                   <div className="flex items-center gap-2 py-1.5 text-sm">
                     <span className="font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
