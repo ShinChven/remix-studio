@@ -36,7 +36,10 @@ export class LibraryRepository {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [
+          { pinnedAt: { sort: 'desc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ],
         include: includeItems
           ? {
               items: {
@@ -56,6 +59,7 @@ export class LibraryRepository {
       type: lib.type as LibraryType,
       items: 'items' in lib && Array.isArray(lib.items) ? lib.items.map((item) => this.mapItem(item)) : [],
       itemCount: lib._count.items,
+      pinnedAt: lib.pinnedAt ? lib.pinnedAt.toISOString() : null,
     }));
 
     return {
@@ -82,6 +86,7 @@ export class LibraryRepository {
       name: lib.name,
       type: lib.type as LibraryType,
       items: lib.items.map((item) => this.mapItem(item)),
+      pinnedAt: lib.pinnedAt ? lib.pinnedAt.toISOString() : null,
     };
   }
 
@@ -107,6 +112,20 @@ export class LibraryRepository {
     if (result.count === 0) {
       throw new Error('Library not found');
     }
+  }
+
+  async setLibraryPinned(userId: string, libraryId: string, pinned: boolean): Promise<void> {
+    const result = await this.prisma.library.updateMany({
+      where: { id: libraryId, userId },
+      data: { pinnedAt: pinned ? new Date() : null },
+    });
+    if (result.count === 0) {
+      throw new Error('Library not found');
+    }
+  }
+
+  async countPinnedLibraries(userId: string): Promise<number> {
+    return this.prisma.library.count({ where: { userId, pinnedAt: { not: null } } });
   }
 
   async getLibraryItems(userId: string, libraryId: string): Promise<LibraryItem[]> {

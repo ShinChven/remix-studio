@@ -7,6 +7,8 @@ export interface IRepository {
   createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void>;
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }): Promise<void>;
   deleteLibrary(userId: string, libraryId: string): Promise<void>;
+  setLibraryPinned(userId: string, libraryId: string, pinned: boolean): Promise<void>;
+  countPinnedLibraries(userId: string): Promise<number>;
 
   // === Library Item CRUD ===
   getLibraryItems(userId: string, libraryId: string): Promise<LibraryItem[]>;

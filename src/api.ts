@@ -323,6 +323,18 @@ export async function duplicateLibrary(id: string, name: string): Promise<Librar
   return handleResponse<Library>(res, 'Failed to duplicate library');
 }
 
+export async function setLibraryPinned(id: string, pinned: boolean): Promise<void> {
+  const res = await apiFetch(`/api/libraries/${id}/pin`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ pinned }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update pin state');
+  }
+}
+
 export async function exportMediaLibraryZip(id: string, fileName: string): Promise<{ taskId: string }> {
   const res = await apiFetch(`/api/libraries/${id}/export`, {
     method: 'POST',
