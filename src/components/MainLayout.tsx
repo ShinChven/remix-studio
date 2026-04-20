@@ -169,6 +169,15 @@ export function MainLayout() {
           />
 
           <NavItem
+            to="/assistant"
+            icon={<Sparkles className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.assistant')}
+            isActive={location.pathname === '/assistant' || location.pathname.startsWith('/assistant/')}
+            isCollapsed={isCollapsed}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          <NavItem
             to="/projects"
             icon={<Play className="w-5 h-5 flex-shrink-0" />}
             label={t('sidebar.projects')}
@@ -200,15 +209,6 @@ export function MainLayout() {
             icon={<Unplug className="w-5 h-5 flex-shrink-0" />}
             label={t('sidebar.mcp')}
             isActive={location.pathname === '/account/mcp'}
-            isCollapsed={isCollapsed}
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-
-          <NavItem
-            to="/assistant"
-            icon={<Sparkles className="w-5 h-5 flex-shrink-0" />}
-            label={t('sidebar.assistant')}
-            isActive={location.pathname === '/assistant' || location.pathname.startsWith('/assistant/')}
             isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
           />

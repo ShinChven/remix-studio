@@ -246,7 +246,86 @@ export class AssistantRunner {
     });
   }
 
+  async summarizeConversation(userId: string, conversationId: string): Promise<string | null> {
+    const conversation = await this.repo.getConversation(userId, conversationId);
+    if (!conversation) return null;
+
+    // Use the same provider as the conversation
+    const providerId = conversation.providerId;
+    if (!providerId) return null;
+
+    let provider: ChatProvider;
+    let providerType: string;
+    try {
+      const handle = await resolveChatProvider(this.providerRepo, userId, providerId);
+      provider = handle.provider;
+      providerType = handle.type;
+    } catch (e) {
+      console.error('[AssistantRunner] Failed to resolve provider for summarization', e);
+      return null;
+    }
+
+    // Determine the lightweight model ID based on the provider type
+    let modelId: string;
+    switch (providerType) {
+      case 'GoogleAI':
+        modelId = 'gemini-3.1-flash-lite-preview';
+        break;
+      case 'Claude':
+        modelId = 'claude-haiku-4-5-20251001';
+        break;
+      case 'OpenAI':
+        modelId = 'gpt-5.4-nano';
+        break;
+      default:
+        return null;
+    }
+
+    const messages = await this.repo.listMessages(conversationId);
+    if (messages.length === 0) return null;
+
+    // Format a brief history for summarization
+    const historyText = messages
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .slice(0, 10) // Only need the first few exchanges for a title
+      .map((m) => `${m.role}: ${m.content}`)
+      .join('\n');
+
+    const prompt = `Summarize the following chat conversation into a concise, professional title (maximum 6 words). Do not use any quotes, prefixes (like "Title:"), or markdown. Return ONLY the title text.\n\nCONVERSATION:\n${historyText}\n\nTITLE:`;
+
+    try {
+      const response = await this.callProviderWithRetry(provider, {
+        modelId,
+        messages: [{ role: 'user', content: prompt }],
+        tools: [],
+      });
+
+      if (response.text) {
+        let title = response.text.trim();
+        // Remove any <think> blocks that might be returned by reasoning models
+        title = title.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+        title = title.replace(/<think>[\s\S]*/gi, '').trim(); // in case of truncated tag
+        
+        // Clean up common LLM artifacts
+        title = title.replace(/^["']|["']$/g, '').trim();
+        title = title.replace(/^Title:\s*/i, '').trim();
+        
+        if (title.length > 100) title = title.slice(0, 97) + '...';
+
+        if (title) {
+          await this.repo.updateConversation(userId, conversationId, { title });
+          return title;
+        }
+      }
+    } catch (e) {
+      console.error('[AssistantRunner] Summarization failed', e);
+    }
+
+    return null;
+  }
+
   // ─── internals ───
+
 
   private async runLoop(input: {
     userId: string;
@@ -584,6 +663,7 @@ export class AssistantRunner {
           toolCallId: m.toolCallId ?? '',
           name: m.toolName ?? '',
           content: m.content,
+          toolResultJson: m.toolResultJson,
         });
       }
     }

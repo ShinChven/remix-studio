@@ -94,6 +94,7 @@ function mapMessages(messages: ChatMessage[]): any[] {
       }
       out.push(entry);
     } else if (m.role === 'tool') {
+      // m.content already contains the serialized JSON string from wrapToolResult.
       out.push({
         role: 'tool',
         tool_call_id: m.toolCallId,

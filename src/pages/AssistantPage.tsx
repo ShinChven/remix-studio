@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon, FolderOpen, Sparkles, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, AlertTriangle, Bot, FolderOpen, Sparkles, ExternalLink, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,6 +12,7 @@ import {
   fetchAssistantConversation,
   updateAssistantConversation,
   deleteAssistantConversation,
+  summarizeAssistantConversationTitle,
   sendAssistantMessage,
   confirmAssistantTool,
   fetchAssistantProviders,
@@ -30,6 +31,10 @@ import { JsonView } from '../components/JsonView';
 import { ProjectPreviewModal } from '../components/ProjectViewer/ProjectPreviewModal';
 import { LibraryPreviewModal } from '../components/ProjectViewer/LibraryPreviewModal';
 import { AssistantComposer, BoundContext } from '../components/Assistant/AssistantComposer';
+import {
+  filterEnabledAssistantProviders,
+  normalizeAssistantProviderSelection,
+} from '../lib/assistant-provider-settings';
 
 // BoundContext moved to AssistantComposer.tsx
 
@@ -295,9 +300,24 @@ export function AssistantPage() {
   // ─── Load providers ───
   useEffect(() => {
     fetchAssistantProviders()
-      .then((data) => setProviders(data.providers))
+      .then((data) => setProviders(filterEnabledAssistantProviders(data.providers)))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const normalizedSelection = normalizeAssistantProviderSelection(
+      providers,
+      selectedProviderId,
+      selectedModelId,
+    );
+
+    if (normalizedSelection.providerId !== selectedProviderId) {
+      setSelectedProviderId(normalizedSelection.providerId);
+    }
+    if (normalizedSelection.modelId !== selectedModelId) {
+      setSelectedModelId(normalizedSelection.modelId);
+    }
+  }, [providers, selectedModelId, selectedProviderId]);
 
   // ─── Load conversations ───
   const loadConversations = useCallback(async () => {
@@ -341,10 +361,33 @@ export function AssistantPage() {
   const loadConversation = useCallback(async (id: string) => {
     try {
       const data = await fetchAssistantConversation(id);
+      let conversation = data.conversation;
+
+      if (providers.length > 0) {
+        const normalizedSelection = normalizeAssistantProviderSelection(
+          providers,
+          conversation.providerId || '',
+          conversation.modelConfigId || '',
+        );
+
+        const shouldUpdateConversation = normalizedSelection.providerId
+          && (
+            conversation.providerId !== normalizedSelection.providerId
+            || conversation.modelConfigId !== normalizedSelection.modelId
+          );
+
+        if (shouldUpdateConversation) {
+          const updated = await updateAssistantConversation(id, {
+            providerId: normalizedSelection.providerId,
+            modelConfigId: normalizedSelection.modelId,
+          });
+          conversation = updated.conversation;
+        }
+      }
+
       setMessages(data.messages);
-      // Restore provider/model selection
-      if (data.conversation.providerId) setSelectedProviderId(data.conversation.providerId);
-      if (data.conversation.modelConfigId) setSelectedModelId(data.conversation.modelConfigId);
+      if (conversation.providerId) setSelectedProviderId(conversation.providerId);
+      if (conversation.modelConfigId) setSelectedModelId(conversation.modelConfigId);
       // Check for pending confirmation in last assistant message
       const lastAssistant = [...data.messages].reverse().find(
         (m) => m.role === 'assistant' && m.status === 'awaiting_confirmation',
@@ -357,7 +400,7 @@ export function AssistantPage() {
     } catch {
       toast.error('Failed to load conversation');
     }
-  }, []);
+  }, [providers]);
 
   // Handle initial message from dashboard
   const handledInitialRef = useRef(false);
@@ -455,6 +498,7 @@ export function AssistantPage() {
     setIsSending(true);
     setCurrentThinkingTitle('');
     setCurrentToolTitle('');
+    setPendingConfirmation(null);
 
     let currentConversationId = activeConversationId;
 
@@ -518,17 +562,19 @@ export function AssistantPage() {
         setPendingConfirmation(result.confirmation);
       }
 
-      // Auto-title: if this was the first user message, update title
+      // AI-Title: if this was the first user message, summarize title using LLM
+      // Do this asynchronously to avoid blocking the isSending state (which would keep the Thinking indicator visible)
       if (!activeConversationId || conversations.find((c) => c.id === currentConversationId)?.title === 'New chat') {
-        const title = text.length > 50 ? text.slice(0, 47) + '...' : text;
-        try {
-          await updateAssistantConversation(currentConversationId, { title });
-          setConversations((prev) =>
-            prev.map((c) => (c.id === currentConversationId ? { ...c, title } : c)),
-          );
-        } catch {
-          // non-critical
-        }
+        summarizeAssistantConversationTitle(currentConversationId)
+          .then(({ title }) => {
+            setConversations((prev) => prev.map((c) => (c.id === currentConversationId ? { ...c, title } : c)));
+          })
+          .catch(() => {
+            // fallback to simple truncation if AI summarization fails
+            const title = text.length > 50 ? text.slice(0, 47) + '...' : text;
+            updateAssistantConversation(currentConversationId, { title }).catch(() => {});
+            setConversations((prev) => prev.map((c) => (c.id === currentConversationId ? { ...c, title } : c)));
+          });
       }
 
       // Bump conversation to top
@@ -547,13 +593,15 @@ export function AssistantPage() {
   // ─── Confirmation handling ───
   const handleConfirmation = async (decision: 'confirm' | 'confirm_tool' | 'cancel') => {
     if (!activeConversationId || !pendingConfirmation) return;
+    const activeConfirmation = pendingConfirmation;
+    setPendingConfirmation(null);
     setIsSending(true);
     setCurrentThinkingTitle('');
     setCurrentToolTitle('');
     try {
       const result = await confirmAssistantTool(
         activeConversationId,
-        pendingConfirmation.id,
+        activeConfirmation.id,
         decision,
         (event) => {
           if (event.type === 'provider_thinking' && typeof event.title === 'string') {
@@ -569,7 +617,6 @@ export function AssistantPage() {
           }
         },
       );
-      setPendingConfirmation(null);
       const data = await fetchAssistantConversation(activeConversationId);
       setMessages(data.messages);
 
@@ -580,13 +627,14 @@ export function AssistantPage() {
         toast.success(
           t('assistant.toolApprovalEnabled', {
             defaultValue: 'Future {{tool}} actions in this conversation will auto-approve for this session.',
-            tool: formatToolTitle(pendingConfirmation?.toolName),
+            tool: formatToolTitle(activeConfirmation.toolName),
           }),
         );
       }
       loadConversations();
     } catch (e: any) {
       toast.error(e?.message || 'Failed to process confirmation');
+      setPendingConfirmation(activeConfirmation);
     } finally {
       setIsSending(false);
       setCurrentThinkingTitle('');
@@ -859,6 +907,13 @@ export function AssistantPage() {
     );
   }
 
+  const assistantTitle = activeConversationId
+    ? conversations.find((c) => c.id === activeConversationId)?.title || t('assistant.title')
+    : t('assistant.title');
+  const settingsPath = activeConversationId
+    ? `/assistant/${activeConversationId}/settings`
+    : '/assistant/settings';
+
   return (
     <div className="flex h-full overflow-hidden">
       {/* ─── Center: Chat Area ─── */}
@@ -867,19 +922,14 @@ export function AssistantPage() {
         <div className="hidden lg:block flex-shrink-0 px-6 py-4 border-b border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/20 backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Bot className="w-5 h-5 text-indigo-500 flex-shrink-0" />
-              <h1 className="text-lg font-semibold text-neutral-900 dark:text-white truncate">
-                {activeConversationId
-                  ? conversations.find((c) => c.id === activeConversationId)?.title || t('assistant.title')
-                  : t('assistant.title')}
-              </h1>
+              <h1 className="text-lg font-semibold text-neutral-900 dark:text-white truncate">{assistantTitle}</h1>
             </div>
             <button
-              onClick={() => setRightPanelOpen(!rightPanelOpen)}
+              onClick={() => navigate(settingsPath)}
               className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors flex-shrink-0"
-              title={t('assistant.conversations')}
+              title={t('assistant.chatSettings', { defaultValue: 'Chat settings' })}
             >
-              {rightPanelOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+              <Settings2 className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -887,24 +937,28 @@ export function AssistantPage() {
         {/* Mobile Header Portals */}
         {document.getElementById('mobile-header-assistant-title') && createPortal(
           <>
-            <Bot className="w-5 h-5 text-indigo-500 flex-shrink-0" />
-            <h1 className="text-base font-semibold text-neutral-900 dark:text-white truncate">
-              {activeConversationId
-                ? conversations.find((c) => c.id === activeConversationId)?.title || t('assistant.title')
-                : t('assistant.title')}
-            </h1>
+            <h1 className="text-base font-semibold text-neutral-900 dark:text-white truncate">{assistantTitle}</h1>
           </>,
           document.getElementById('mobile-header-assistant-title')!
         )}
 
         {document.getElementById('mobile-header-actions') && createPortal(
-          <button
-            onClick={() => setRightPanelOpen(!rightPanelOpen)}
-            className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors lg:hidden"
-            title={t('assistant.conversations')}
-          >
-            {rightPanelOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
-          </button>,
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate(settingsPath)}
+              className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
+              title={t('assistant.chatSettings', { defaultValue: 'Chat settings' })}
+            >
+              <Settings2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setRightPanelOpen(!rightPanelOpen)}
+              className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors lg:hidden"
+              title={t('assistant.conversations')}
+            >
+              {rightPanelOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+            </button>
+          </div>,
           document.getElementById('mobile-header-actions')!
         )}
 
@@ -912,7 +966,7 @@ export function AssistantPage() {
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {activeConversationId ? (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-              {messages.filter((m) => m.role !== 'system' && m.role !== 'tool').map((msg) => (
+              {messages.filter((m) => m.role !== 'system' && m.role !== 'tool').map((msg, idx, arr) => (
                 <div key={msg.id}>
                   {msg.role === 'user' && (
                     <div className="flex justify-end">
@@ -975,8 +1029,30 @@ export function AssistantPage() {
                   )}
                   {msg.role === 'assistant' && (
                     <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
-                        <Bot className="w-4 h-4 text-white" />
+                      <div className="relative flex-shrink-0">
+                        <div className="flex w-9 h-9 items-center justify-center rounded-full bg-slate-900/80 backdrop-blur-sm shadow-sm relative z-10 border border-white/10 dark:border-white/5">
+                          <img src="/assistant-avatar.svg" alt="Assistant" className="w-8 h-8 object-contain" />
+                          {isSending && idx === arr.length - 1 && (
+                            <svg className="absolute -inset-[1px] w-[36px] h-[36px] animate-material-spinner pointer-events-none z-20" viewBox="0 0 50 50">
+                              <circle
+                                className="animate-material-dash"
+                                cx="25"
+                                cy="25"
+                                r="23"
+                                fill="none"
+                                stroke="url(#avatarSpinnerGradient)"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                              />
+                              <defs>
+                                <linearGradient id="avatarSpinnerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                  <stop offset="0%" stopColor="#6366f1" />
+                                  <stop offset="100%" stopColor="#a855f7" />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+                          )}
+                        </div>
                       </div>
                       <div className="max-w-[80%]">
                         {(() => {
@@ -986,13 +1062,13 @@ export function AssistantPage() {
                           return (
                             <>
                               {shouldRenderThoughtOutsideBubble && renderMessageContent(msg.content)}
-                              {hasRenderableAssistantBubble(msg) && (
-                                <div className={`bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-neutral-200/30 dark:border-white/5 ${
-                                  msg.status === 'error' ? 'border-red-300 dark:border-red-800/40' : ''
-                                }`}>
-                                  {renderMessageContent(msg.content)}
-                                </div>
-                              )}
+                                {hasRenderableAssistantBubble(msg) && (
+                                  <div className={`bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-white/40 dark:border-white/10 ${
+                                    msg.status === 'error' ? 'border-red-300 dark:border-red-800/40' : ''
+                                  }`}>
+                                    {renderMessageContent(msg.content)}
+                                  </div>
+                                )}
                             </>
                           );
                         })()}
@@ -1009,9 +1085,31 @@ export function AssistantPage() {
               ))}
 
               {isSending && (
-                <div className="ml-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="relative flex-shrink-0">
+                    <div className="flex w-9 h-9 items-center justify-center rounded-full bg-slate-900/80 backdrop-blur-sm shadow-sm relative z-10 border border-white/10 dark:border-white/5">
+                      <img src="/assistant-avatar.svg" alt="Assistant" className="w-8 h-8 object-contain relative z-10" />
+                      <svg className="absolute -inset-[1px] w-[36px] h-[36px] animate-material-spinner pointer-events-none z-20" viewBox="0 0 50 50">
+                        <circle
+                          className="animate-material-dash"
+                          cx="25"
+                          cy="25"
+                          r="23"
+                          fill="none"
+                          stroke="url(#avatarSpinnerGradientThinking)"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                        <defs>
+                          <linearGradient id="avatarSpinnerGradientThinking" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#6366f1" />
+                            <stop offset="100%" stopColor="#a855f7" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
+                  </div>
                   <div className="flex items-center gap-2 py-1.5 text-sm">
-                    <MaterialSpinner className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                     <span className="font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
                       {currentToolTitle || currentThinkingTitle || t('assistant.thinking', 'Thinking...')}
                     </span>
@@ -1084,26 +1182,46 @@ export function AssistantPage() {
       {/* ─── Right Panel: Conversations & Config ─── */}
       <div className={`
         fixed inset-y-0 right-0 z-40 lg:static
-        ${rightPanelOpen ? 'translate-x-0 w-[85vw] sm:w-80 lg:w-64' : 'translate-x-full lg:translate-x-0 w-[85vw] sm:w-80 lg:w-0 lg:overflow-hidden'}
+        ${rightPanelOpen ? 'translate-x-0 w-[85vw] sm:w-80 lg:w-64' : 'translate-x-full lg:translate-x-0 w-[85vw] sm:w-80 lg:w-16'}
         flex-shrink-0 border-l border-neutral-200/50 dark:border-white/5
         bg-white dark:bg-neutral-950 lg:bg-white/10 lg:dark:bg-black/10 backdrop-blur-xl
         transition-all duration-300 flex flex-col shadow-2xl lg:shadow-none
       `}>
-        <div className="flex flex-col h-full w-[85vw] sm:w-80 lg:w-64">
-          {/* Conversation List */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
-              <div className="flex items-center justify-between px-2 py-2 mb-2">
-                <h3 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  {t('assistant.conversations')}
-                </h3>
+        <div className={`flex h-full min-h-0 flex-col ${rightPanelOpen ? 'w-[85vw] sm:w-80 lg:w-64' : 'w-[85vw] sm:w-80 lg:w-16'}`}>
+          <div className="sticky top-0 z-10 flex-shrink-0 border-b border-neutral-200/50 bg-white/80 p-2 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/80 lg:bg-white/20 lg:dark:bg-black/20">
+            <div className={`flex items-center ${rightPanelOpen ? 'justify-between gap-2' : 'justify-center'}`}>
+              {rightPanelOpen && (
+                <div className="min-w-0 px-1">
+                  <h3 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                    {t('assistant.conversations')}
+                  </h3>
+                </div>
+              )}
+              <div className="flex items-center gap-1">
+                {rightPanelOpen && (
+                  <button
+                    onClick={handleNewConversationClick}
+                    className="flex items-center justify-center p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+                    title={t('assistant.newChat')}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                )}
                 <button
-                  onClick={handleNewConversationClick}
-                  className="flex items-center justify-center p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
-                  title={t('assistant.newChat')}
+                  onClick={() => setRightPanelOpen(!rightPanelOpen)}
+                  className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
+                  title={rightPanelOpen
+                    ? t('assistant.collapseConversations', { defaultValue: 'Collapse conversations' })
+                    : t('assistant.expandConversations', { defaultValue: 'Expand conversations' })}
                 >
-                  <Plus className="w-4 h-4" />
+                  {rightPanelOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
                 </button>
               </div>
+            </div>
+          </div>
+
+          {rightPanelOpen && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
               {conversations.length === 0 ? (
                 <p className="px-2 py-4 text-xs text-neutral-400 dark:text-neutral-500 text-center">
                   {t('assistant.noConversations')}
@@ -1165,6 +1283,7 @@ export function AssistantPage() {
                 ))
               )}
             </div>
+          )}
         </div>
       </div>
 

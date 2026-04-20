@@ -5,8 +5,12 @@ import { Library, Project } from '../types';
 import { Plus, Play, Folder, LayoutGrid, Clock, Loader2, Copy, MessageCircle, Send, Bot, Sparkles } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { fetchProjects, fetchLibraries, fetchAssistantProviders } from '../api';
-import { getTextModelsForProvider, Provider } from '../types';
+import { Provider } from '../types';
 import { AssistantComposer, BoundContext } from './Assistant/AssistantComposer';
+import {
+  filterEnabledAssistantProviders,
+  normalizeAssistantProviderSelection,
+} from '../lib/assistant-provider-settings';
 
 export function Dashboard() {
   const { t } = useTranslation();
@@ -42,19 +46,18 @@ export function Dashboard() {
           fetchAssistantProviders(),
         ]);
         if (mounted) {
+          const enabledProviders = filterEnabledAssistantProviders(provRes.providers);
           setProjects(projRes.items);
           setLibraries(libRes.items);
-          setProviders(provRes.providers);
-          
-          // Set default provider/model if none selected
-          if (!selectedProviderId && provRes.providers.length > 0) {
-            const firstWithModels = provRes.providers.find(p => getTextModelsForProvider(p.type).length > 0);
-            if (firstWithModels) {
-              const models = getTextModelsForProvider(firstWithModels.type);
-              setSelectedProviderId(firstWithModels.id);
-              if (models.length > 0) setSelectedModelId(models[0].id);
-            }
-          }
+          setProviders(enabledProviders);
+
+          const normalizedSelection = normalizeAssistantProviderSelection(
+            enabledProviders,
+            selectedProviderId,
+            selectedModelId,
+          );
+          setSelectedProviderId(normalizedSelection.providerId);
+          setSelectedModelId(normalizedSelection.modelId);
         }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);

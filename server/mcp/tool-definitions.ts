@@ -214,26 +214,29 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         page,
         limit,
       });
+      const items = result.items.map((item) => {
+        const preview = truncateContent(item.content ?? '');
+        return {
+          id: item.id,
+          libraryId: item.libraryId,
+          libraryName: item.libraryName,
+          content: preview.text,
+          contentTruncated: preview.truncated,
+          contentLength: preview.originalLength,
+          title: item.title,
+          tags: item.tags,
+        };
+      });
+      const response = {
+        items,
+        total: result.total,
+        page: result.page,
+        pages: result.pages,
+        ...paginationHints(result.page, result.pages),
+      };
       return {
-        text: JSON.stringify({
-          items: result.items.map((item) => {
-            const preview = truncateContent(item.content ?? '');
-            return {
-              id: item.id,
-              libraryId: item.libraryId,
-              libraryName: item.libraryName,
-              content: preview.text,
-              contentTruncated: preview.truncated,
-              contentLength: preview.originalLength,
-              title: item.title,
-              tags: item.tags,
-            };
-          }),
-          total: result.total,
-          page: result.page,
-          pages: result.pages,
-          ...paginationHints(result.page, result.pages),
-        }, null, 2),
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
       };
     },
   });
@@ -489,20 +492,22 @@ Use this tool to find an item by name/title before composing a workflow. Combine
         };
       });
 
+      const response = {
+        libraryId: library_id,
+        libraryName: library.name,
+        libraryType: library.type,
+        items,
+        total: result.total,
+        page: result.page,
+        pages: result.pages,
+        ...paginationHints(result.page, result.pages),
+        hint: isText
+          ? 'Use item.text as the "value" of a "text" workflow item.'
+          : `Use item.storageKey as the "value" of an "${library.type}" workflow item to pin this specific file.`,
+      };
       return {
-        text: JSON.stringify({
-          libraryId: library_id,
-          libraryName: library.name,
-          libraryType: library.type,
-          items,
-          total: result.total,
-          page: result.page,
-          pages: result.pages,
-          ...paginationHints(result.page, result.pages),
-          hint: isText
-            ? 'Use item.text as the "value" of a "text" workflow item.'
-            : `Use item.storageKey as the "value" of an "${library.type}" workflow item to pin this specific file.`,
-        }, null, 2),
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
       };
     },
   });

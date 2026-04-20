@@ -44,10 +44,12 @@ This project is built with **Google AI Studio** and **Antigravity**.
 - **Text to text**: Standard LLM generation
 - **Text to image**: Prompt-based image generation
 - **Text to video**: Prompt-based video generation
-- **Text to audio**: Scripted text-to-speech generation with Gemini TTS
+- **Text to audio**: Scripted text-to-speech generation (TTS)
+- **Text to music**: Prompt-based music generation (e.g. with Lyria models)
 - **Image to text**: Describe or analyze images (multimodal)
-- **Image to image**: Stylize or transform images
+- **Image to image**: Stylize or transform images using reference images
 - **Image to video**: Animate images into video
+- **Image to music**: Generate music using reference image context
 - **Video to video**: Transform or edit videos using reference video context
 - **Audio to video**: Generate video using reference audio context (e.g. for lip-sync or music)
 
@@ -57,12 +59,12 @@ These are the built-in model profiles currently included in the app.
 
 | Provider | Text Models | Image Models | Video Models | Audio Models |
 | :--- | :--- | :--- | :--- | :--- |
-| **Google AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | `Veo 3.1`, `Veo 3.1 Lite` | `Gemini 3.1 Flash TTS Preview`, `Gemini 2.5 Flash Preview TTS`, `Gemini 2.5 Pro Preview TTS` |
-| **Vertex AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | - | `Gemini 3.1 Flash TTS Preview`, `Gemini 2.5 Flash Preview TTS`, `Gemini 2.5 Pro Preview TTS` |
+| **Google AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | `Veo 3.1`, `Veo 3.1 Lite` | `Gemini 3.1 Flash TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS`, `Lyria 3 Clip`, `Lyria 3 Pro` |
+| **Vertex AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | - | `Gemini 3.1 Flash TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS`, `Lyria 3 Clip`, `Lyria 3 Pro` |
 | **OpenAI** | `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` | `GPT Image 1.5`, `GPT Image 1 Mini` | `Sora 2`, `Sora 2 Pro` | - |
 | **Grok** | `Grok 4.20`, `Grok 4.1 Fast` | `Grok Imagine`, `Grok Imagine Pro` | `Grok Imagine Video` | - |
 | **Claude** | `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` | - | - | - |
-| **RunningHub** | - | `nano banana 2` | `Seedance 2.0 Ref` | - |
+| **RunningHub** | - | `nano banana 2`, `Qwen Image 2 Pro` | `Seedance 2.0 Ref` | - |
 | **BytePlus** | - | `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I` | `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` | - |
 | **Kling AI** | - | `Kling Image O1`, `Kling V3 Omni`, `Kling V3 Standard`, `Kling V2.1 Standard`, `Kling V2 Standard`, `Kling V1.5 Standard`, `Kling V1 Standard` | `Kling Video O1`, `Kling V3 Omni Video` | - |
 | **Black Forest Labs** | - | `Flux 2 Max`, `Flux 2 Pro (Preview)`, `Flux 2 Pro`, `Flux 2 Flex`, `Flux 2 Klein 9B (Preview)`, `Flux 2 Klein 9B`, `Flux 2 Klein 4B` | - | - |
