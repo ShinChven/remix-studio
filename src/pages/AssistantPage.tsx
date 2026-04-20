@@ -29,13 +29,9 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { JsonView } from '../components/JsonView';
 import { ProjectPreviewModal } from '../components/ProjectViewer/ProjectPreviewModal';
 import { LibraryPreviewModal } from '../components/ProjectViewer/LibraryPreviewModal';
+import { AssistantComposer, BoundContext } from '../components/Assistant/AssistantComposer';
 
-type BoundContext = {
-  id: string;
-  name: string;
-  type: 'project' | 'library';
-  subType?: string;
-};
+// BoundContext moved to AssistantComposer.tsx
 
 const MaterialSpinner = ({ className }: { className?: string }) => (
   <svg className={`animate-material-spinner ${className}`} viewBox="0 0 50 50">
@@ -269,9 +265,6 @@ export function AssistantPage() {
   }, [selectedModelId]);
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [mentionSearch, setMentionSearch] = useState<string | null>(null);
-  const [mentionOptions, setMentionOptions] = useState<BoundContext[]>([]);
-  const [isSearchingMentions, setIsSearchingMentions] = useState(false);
   const [boundContexts, setBoundContexts] = useState<BoundContext[]>([]);
   const [currentThinkingTitle, setCurrentThinkingTitle] = useState('');
   const [currentToolTitle, setCurrentToolTitle] = useState('');
@@ -296,7 +289,6 @@ export function AssistantPage() {
 
   const justCreatedIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // ─── Load providers ───
   useEffect(() => {
@@ -369,14 +361,15 @@ export function AssistantPage() {
   const handledInitialRef = useRef(false);
   useEffect(() => {
     if (handledInitialRef.current) return;
-    const state = location.state as { initialMessage?: string; providerId?: string; modelId?: string } | null;
+    const state = location.state as { initialMessage?: string; providerId?: string; modelId?: string; boundContexts?: BoundContext[] } | null;
     if (state?.initialMessage) {
       handledInitialRef.current = true;
       initializedRef.current = true; // Mark as initialized to prevent auto-select from running
-      const { initialMessage, providerId, modelId } = state;
+      const { initialMessage, providerId, modelId, boundContexts: initialContexts } = state;
       if (providerId) setSelectedProviderId(providerId);
       if (modelId) setSelectedModelId(modelId);
-      handleSend(initialMessage, providerId, modelId);
+      if (initialContexts) setBoundContexts(initialContexts);
+      handleSend(initialMessage, providerId, modelId, initialContexts);
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
@@ -419,48 +412,6 @@ export function AssistantPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isSending]);
 
-  useEffect(() => {
-    if (mentionSearch === null) return;
-    let active = true;
-    setIsSearchingMentions(true);
-    const timer = setTimeout(async () => {
-      try {
-        const [projRes, libRes] = await Promise.all([
-          fetchProjects(1, 10, mentionSearch, 'active'),
-          fetchLibraries(1, 10, mentionSearch, false)
-        ]);
-        if (!active) return;
-        const options: BoundContext[] = [];
-        projRes.items.forEach((p: any) => options.push({ id: p.id, name: p.name, type: 'project', subType: p.type }));
-        libRes.items.forEach((l: any) => options.push({ id: l.id, name: l.name, type: 'library', subType: l.type }));
-        setMentionOptions(options);
-      } catch (e) {
-        // silent
-      } finally {
-        if (active) setIsSearchingMentions(false);
-      }
-    }, 300);
-    return () => { active = false; clearTimeout(timer); };
-  }, [mentionSearch]);
-
-  // ─── Auto-resize textarea ───
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setInputText(val);
-    const el = e.target;
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
-
-    const cursorPosition = el.selectionStart;
-    const textBeforeCursor = val.slice(0, cursorPosition);
-    const match = textBeforeCursor.match(/@([a-zA-Z0-9_\-\u4e00-\u9fa5\s]*)$/);
-    if (match && !match[1].includes('\n')) {
-      setMentionSearch(match[1]);
-    } else {
-      setMentionSearch(null);
-    }
-  };
-
   // ─── Available text models for the selected provider ───
   const selectedProvider = providers.find((p) => p.id === selectedProviderId);
   const availableModels = selectedProvider
@@ -473,13 +424,14 @@ export function AssistantPage() {
   };
 
   // ─── Send message ───
-  const handleSend = async (manualText?: string, manualProviderId?: string, manualModelId?: string) => {
+  const handleSend = async (manualText?: string, manualProviderId?: string, manualModelId?: string, manualBoundContexts?: BoundContext[]) => {
     const text = (manualText ?? inputText).trim();
-    if (!text && boundContexts.length === 0 || isSending) return;
+    const finalContexts = manualBoundContexts ?? boundContexts;
+    if (!text && finalContexts.length === 0 || isSending) return;
 
     let finalContent = text;
-    if (boundContexts.length > 0) {
-      const contextStr = boundContexts.map(b => `- ${b.type === 'project' ? 'Project' : 'Library'}: "${b.name}" (ID: ${b.id}${b.subType ? `, Type: ${b.subType}` : ''})`).join('\n');
+    if (finalContexts.length > 0) {
+      const contextStr = finalContexts.map(b => `- ${b.type === 'project' ? 'Project' : 'Library'}: "${b.name}" (ID: ${b.id}${b.subType ? `, Type: ${b.subType}` : ''})`).join('\n');
       finalContent = text ? `${text}\n\n<bound_context>\n${contextStr}\n</bound_context>` : `<bound_context>\n${contextStr}\n</bound_context>`;
     }
 
@@ -496,9 +448,6 @@ export function AssistantPage() {
     if (!manualText) {
       setInputText('');
       setBoundContexts([]);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
     }
 
     setIsSending(true);
@@ -682,137 +631,6 @@ export function AssistantPage() {
       handleSend();
     }
   };
-
-  const renderComposer = () => (
-    <div className="w-full relative group">
-      {/* Glassmorphic Container with depth */}
-      <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000 group-focus-within:duration-200"></div>
-
-      <div className="relative bg-white/80 dark:bg-neutral-900/80 backdrop-blur-2xl border border-neutral-200/50 dark:border-white/10 rounded-2xl shadow-2xl p-4 transition-all duration-300 group-focus-within:shadow-indigo-500/10">
-        <div className="space-y-4">
-          {/* Model Selector */}
-          <div className="flex items-center gap-2 px-1">
-            <Bot className="w-4 h-4 text-indigo-500" />
-            <select
-              value={selectedProviderId && selectedModelId ? `${selectedProviderId}::${selectedModelId}` : ''}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (!val) {
-                  setSelectedProviderId('');
-                  setSelectedModelId('');
-                  return;
-                }
-                const [pId, mId] = val.split('::');
-                setSelectedProviderId(pId);
-                setSelectedModelId(mId);
-              }}
-              className="text-xs bg-transparent border-none text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 outline-none cursor-pointer p-0 appearance-none font-medium transition-colors"
-            >
-              <option value="">{t('assistant.selectModel', 'Select a model')}</option>
-              {providers.map((p) => {
-                const models = getTextModelsForProvider(p.type);
-                if (models.length === 0) return null;
-                return (
-                  <optgroup key={p.id} label={p.name}>
-                    {models.map((m) => (
-                      <option key={`${p.id}::${m.id}`} value={`${p.id}::${m.id}`}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                );
-              })}
-            </select>
-          </div>
-
-          {/* Context Options & Selected Contexts */}
-          <div className="relative">
-            {mentionSearch !== null && (
-              <div className="absolute left-0 bottom-full mb-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl w-72 max-h-60 overflow-y-auto p-1 z-50">
-                 <div className="px-2 py-1.5 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                   {isSearchingMentions ? t('assistant.searching', 'Searching...') : t('assistant.selectResource', 'Select Resource')}
-                 </div>
-                 {!isSearchingMentions && mentionOptions.length === 0 && (
-                   <div className="px-3 py-2 text-sm text-neutral-500">{t('assistant.noMatches', 'No matches found.')}</div>
-                 )}
-                 {mentionOptions.map(opt => (
-                   <button
-                     key={opt.id}
-                     onClick={() => {
-                       if (!boundContexts.find(b => b.id === opt.id)) {
-                         setBoundContexts(prev => [...prev, opt]);
-                       }
-                       const match = inputText.match(/@([a-zA-Z0-9_\-\u4e00-\u9fa5\s]*)$/);
-                       if (match) {
-                         const newValue = inputText.slice(0, inputText.length - match[0].length) + ' ';
-                         setInputText(newValue);
-                         if (textareaRef.current) {
-                            textareaRef.current.focus();
-                            setTimeout(() => {
-                              if (textareaRef.current) textareaRef.current.selectionStart = newValue.length;
-                            }, 0);
-                         }
-                       }
-                       setMentionSearch(null);
-                     }}
-                     className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex flex-col"
-                   >
-                      <span className="font-semibold text-sm text-neutral-800 dark:text-neutral-200">{opt.name}</span>
-                      <span className="text-xs text-neutral-500 capitalize">{opt.type}{opt.subType ? ` • ${opt.subType}` : ''}</span>
-                   </button>
-                 ))}
-              </div>
-            )}
-  
-            {boundContexts.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2 px-1">
-                {boundContexts.map(b => (
-                  <span key={b.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                    {b.type === 'project' ? <Sparkles className="w-3 h-3" /> : <FolderOpen className="w-3 h-3" />}
-                    {b.name}
-                    <button onClick={() => setBoundContexts(prev => prev.filter(item => item.id !== b.id))} className="ml-1 hover:text-indigo-900 dark:hover:text-indigo-100 focus:outline-none">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Input Area */}
-          <div className="flex items-end gap-3">
-            <textarea
-              ref={textareaRef}
-              value={inputText}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder={t('assistant.typePlaceholder')}
-              rows={1}
-              disabled={isSending}
-              className="flex-1 resize-none bg-transparent border-none outline-none text-base text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 dark:placeholder-neutral-500 max-h-[200px] py-1 custom-scrollbar"
-            />
-            {isSending ? (
-              <button
-                className="flex-shrink-0 p-3 rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-600/20 transition-all active:scale-95 group/btn"
-                title={t('assistant.stop')}
-              >
-                <Square className="w-5 h-5" />
-              </button>
-            ) : (
-              <button
-                onClick={() => handleSend()}
-                disabled={(!inputText.trim() && boundContexts.length === 0)}
-                className="flex-shrink-0 p-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed group/btn"
-                title={t('assistant.send')}
-              >
-                <Send className="w-5 h-5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   // ─── Render helpers ───
   const renderAssistantToolCalls = (msg: AssistantMessage) => {
@@ -1213,7 +1031,19 @@ export function AssistantPage() {
                 <h2 className="text-2xl font-semibold text-center text-neutral-800 dark:text-neutral-200 mb-8">
                   {t('assistant.howCanIHelp', 'How can I help you today?')}
                 </h2>
-                {renderComposer()}
+                <AssistantComposer
+                  inputText={inputText}
+                  setInputText={setInputText}
+                  selectedProviderId={selectedProviderId}
+                  setSelectedProviderId={setSelectedProviderId}
+                  selectedModelId={selectedModelId}
+                  setSelectedModelId={setSelectedModelId}
+                  boundContexts={boundContexts}
+                  setBoundContexts={setBoundContexts}
+                  providers={providers}
+                  isSending={isSending}
+                  onSend={handleSend}
+                />
               </div>
             </div>
           )}
@@ -1223,7 +1053,19 @@ export function AssistantPage() {
         {activeConversationId && (
           <div className="flex-shrink-0 p-4 pt-2">
             <div className="max-w-3xl mx-auto">
-              {renderComposer()}
+              <AssistantComposer
+                inputText={inputText}
+                setInputText={setInputText}
+                selectedProviderId={selectedProviderId}
+                setSelectedProviderId={setSelectedProviderId}
+                selectedModelId={selectedModelId}
+                setSelectedModelId={setSelectedModelId}
+                boundContexts={boundContexts}
+                setBoundContexts={setBoundContexts}
+                providers={providers}
+                isSending={isSending}
+                onSend={handleSend}
+              />
             </div>
           </div>
         )}

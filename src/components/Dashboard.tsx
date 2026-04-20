@@ -6,6 +6,7 @@ import { Plus, Play, Folder, LayoutGrid, Clock, Loader2, Copy, MessageCircle, Se
 import { PageHeader } from './PageHeader';
 import { fetchProjects, fetchLibraries, fetchAssistantProviders } from '../api';
 import { getTextModelsForProvider, Provider } from '../types';
+import { AssistantComposer, BoundContext } from './Assistant/AssistantComposer';
 
 export function Dashboard() {
   const { t } = useTranslation();
@@ -20,6 +21,7 @@ export function Dashboard() {
   const [selectedProviderId, setSelectedProviderId] = useState<string>(() => localStorage.getItem('assistant_last_provider') || '');
   const [selectedModelId, setSelectedModelId] = useState<string>(() => localStorage.getItem('assistant_last_model') || '');
   const [inputText, setInputText] = useState('');
+  const [boundContexts, setBoundContexts] = useState<BoundContext[]>([]);
 
   useEffect(() => {
     if (selectedProviderId) localStorage.setItem('assistant_last_provider', selectedProviderId);
@@ -77,17 +79,13 @@ export function Dashboard() {
       state: { 
         initialMessage: text,
         providerId: selectedProviderId,
-        modelId: selectedModelId
+        modelId: selectedModelId,
+        boundContexts: boundContexts
       } 
     });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleStartChat();
-    }
-  };
+  // Key handler removed - handled by AssistantComposer
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
@@ -110,72 +108,20 @@ export function Dashboard() {
               </h2>
             </div>
 
-            <div className="relative group">
-              {/* Glassmorphic Container with depth */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000 group-focus-within:duration-200"></div>
-              
-              <div className="relative bg-white/80 dark:bg-neutral-900/80 backdrop-blur-2xl border border-neutral-200/50 dark:border-white/10 rounded-2xl shadow-2xl p-4 transition-all duration-300 group-focus-within:shadow-indigo-500/10">
-                <div className="space-y-4">
-                  {/* Model Selector */}
-                  <div className="flex items-center gap-2 px-1">
-                    <Bot className="w-4 h-4 text-indigo-500" />
-                    <select
-                      value={selectedProviderId && selectedModelId ? `${selectedProviderId}::${selectedModelId}` : ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (!val) {
-                          setSelectedProviderId('');
-                          setSelectedModelId('');
-                          return;
-                        }
-                        const [pId, mId] = val.split('::');
-                        setSelectedProviderId(pId);
-                        setSelectedModelId(mId);
-                      }}
-                      className="text-xs bg-transparent border-none text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 outline-none cursor-pointer p-0 appearance-none font-medium transition-colors"
-                    >
-                      <option value="">{t('assistant.selectModel', 'Select a model')}</option>
-                      {providers.map((p) => {
-                        const models = getTextModelsForProvider(p.type);
-                        if (models.length === 0) return null;
-                        return (
-                          <optgroup key={p.id} label={p.name}>
-                            {models.map((m) => (
-                              <option key={`${p.id}::${m.id}`} value={`${p.id}::${m.id}`}>
-                                {m.name}
-                              </option>
-                            ))}
-                          </optgroup>
-                        );
-                      })}
-                    </select>
-                  </div>
-
-                  {/* Input Area */}
-                  <div className="flex items-end gap-3">
-                    <textarea
-                      value={inputText}
-                      onChange={(e) => {
-                        setInputText(e.target.value);
-                        e.target.style.height = 'auto';
-                        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                      }}
-                      onKeyDown={handleKeyDown}
-                      placeholder={t('assistant.typePlaceholder')}
-                      rows={1}
-                      className="flex-1 bg-transparent border-none outline-none text-base text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 dark:placeholder-neutral-500 resize-none py-1 min-h-[40px] max-h-[120px] custom-scrollbar"
-                    />
-                    <button
-                      onClick={() => handleStartChat()}
-                      disabled={!inputText.trim()}
-                      className="flex-shrink-0 p-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed group/btn"
-                    >
-                      <Send className="w-5 h-5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AssistantComposer
+              inputText={inputText}
+              setInputText={setInputText}
+              selectedProviderId={selectedProviderId}
+              setSelectedProviderId={setSelectedProviderId}
+              selectedModelId={selectedModelId}
+              setSelectedModelId={setSelectedModelId}
+              boundContexts={boundContexts}
+              setBoundContexts={setBoundContexts}
+              providers={providers}
+              isSending={false}
+              onSend={handleStartChat}
+              placeholder={t('dashboard.aiChatPromptPlaceholder', 'How can I help you?')}
+            />
           </div>
         </section>
 
