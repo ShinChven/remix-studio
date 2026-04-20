@@ -18,15 +18,14 @@ export const AssistantHero: React.FC<AssistantHeroProps> = ({
   const greetings = [
     t('assistant.greetings.0', 'What do you have in mind?'),
     t('assistant.greetings.1', 'What do you want to create today?'),
-    t('assistant.greetings.2', "Let's build something amazing together."),
-    t('assistant.greetings.3', 'How can I assist your workflow?'),
-    t('assistant.greetings.4', 'Ready to make some magic happen?'),
-    t('assistant.greetings.5', 'Follow the white rabbit.'),
-    t('assistant.greetings.6', 'Red pill or blue pill?'),
-    t('assistant.greetings.7', 'There is no spoon.'),
-    t('assistant.greetings.8', 'Wake up, Neo...'),
-    t('assistant.greetings.9', 'Welcome to the Desert of the Real.'),
-    t('assistant.greetings.10', "You're absolutely right!")
+    t('assistant.greetings.2', 'How can I assist your workflow?'),
+    t('assistant.greetings.3', 'Ready to make some magic happen?'),
+    t('assistant.greetings.4', 'Follow the white rabbit.'),
+    t('assistant.greetings.5', 'Red pill or blue pill?'),
+    t('assistant.greetings.6', 'There is no spoon.'),
+    t('assistant.greetings.7', 'Wake up, Neo...'),
+    t('assistant.greetings.8', 'Welcome to the Desert of the Real.'),
+    t('assistant.greetings.9', "You're absolutely right!")
   ];
 
   return (

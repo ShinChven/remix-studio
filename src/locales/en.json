@@ -1471,15 +1471,14 @@
     "greetings": {
       "0": "What do you have in mind?",
       "1": "What do you want to create today?",
-      "2": "Let's build something amazing together.",
-      "3": "How can I assist your workflow?",
-      "4": "Ready to make some magic happen?",
-      "5": "Follow the white rabbit.",
-      "6": "Red pill or blue pill?",
-      "7": "There is no spoon.",
-      "8": "Wake up, Neo...",
-      "9": "Welcome to the Desert of the Real.",
-      "10": "You're absolutely right!"
+      "2": "How can I assist your workflow?",
+      "3": "Ready to make some magic happen?",
+      "4": "Follow the white rabbit.",
+      "5": "Red pill or blue pill?",
+      "6": "There is no spoon.",
+      "7": "Wake up, Neo...",
+      "8": "Welcome to the Desert of the Real.",
+      "9": "You're absolutely right!"
     },
     "newChat": "New Chat",
     "conversations": "Chats",

@@ -1514,15 +1514,14 @@
     "greetings": {
       "0": "Qu'avez-vous en tête ?",
       "1": "Que voulez-vous créer aujourd'hui ?",
-      "2": "Construisons quelque chose d'incroyable ensemble.",
-      "3": "Comment puis-je assister votre flux de travail ?",
-      "4": "Prêt à faire de la magie ?",
-      "5": "Suis le lapin blanc.",
-      "6": "Pilule rouge ou pilule bleue ?",
-      "7": "La cuillère n'existe pas.",
-      "8": "Réveille-toi, Néo...",
-      "9": "Bienvenue dans le désert du réel.",
-      "10": "Vous avez tout à fait raison !"
+      "2": "Comment puis-je assister votre flux de travail ?",
+      "3": "Prêt à faire de la magie ?",
+      "4": "Suis le lapin blanc.",
+      "5": "Pilule rouge ou pilule bleue ?",
+      "6": "La cuillère n'existe pas.",
+      "7": "Réveille-toi, Néo...",
+      "8": "Bienvenue dans le désert du réel.",
+      "9": "Vous avez tout à fait raison !"
     }
   }
 }
