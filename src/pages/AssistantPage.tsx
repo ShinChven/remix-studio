@@ -30,7 +30,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { JsonView } from '../components/JsonView';
 import { ProjectPreviewModal } from '../components/ProjectViewer/ProjectPreviewModal';
 import { LibraryPreviewModal } from '../components/ProjectViewer/LibraryPreviewModal';
-import { AssistantComposer, BoundContext } from '../components/Assistant/AssistantComposer';
+import { AssistantComposer, BoundContext, AttachedImage } from '../components/Assistant/AssistantComposer';
 import {
   filterEnabledAssistantProviders,
   normalizeAssistantProviderSelection,
@@ -106,6 +106,18 @@ function parseAssistantContent(content: string | null | undefined) {
     thoughtContent: thoughtContent || null,
     responseContent: cleanResponse,
   };
+}
+
+/**
+ * Extract embedded [IMAGE_ATTACHMENTS] base64 data URIs from user message content.
+ * Returns clean text (block removed) and an array of data URIs for rendering.
+ */
+function parseUserMessageImages(content: string): { textContent: string; images: string[] } {
+  const blockMatch = content.match(/\[IMAGE_ATTACHMENTS\]([\s\S]*?)\[\/IMAGE_ATTACHMENTS\]\n?/);
+  if (!blockMatch) return { textContent: content, images: [] };
+  const imageLines = blockMatch[1].trim().split('\n').map((l) => l.trim()).filter((l) => l.startsWith('data:image/'));
+  const textContent = content.replace(blockMatch[0], '').trim();
+  return { textContent, images: imageLines };
 }
 
 function prettyToolData(value: unknown) {
@@ -273,6 +285,8 @@ export function AssistantPage() {
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [boundContexts, setBoundContexts] = useState<BoundContext[]>([]);
+  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [currentThinkingTitle, setCurrentThinkingTitle] = useState('');
   const [currentToolTitle, setCurrentToolTitle] = useState('');
   const [previewProject, setPreviewProject] = useState<Project | null>(null);
@@ -402,27 +416,38 @@ export function AssistantPage() {
     }
   }, [providers]);
 
+  // ─── Image Lightbox ESC handler ───
+  useEffect(() => {
+    if (!lightboxImage) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxImage(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxImage]);
+
   // Handle initial message from dashboard
   const handledInitialRef = useRef(false);
   useEffect(() => {
     if (handledInitialRef.current) return;
-    const state = location.state as { initialMessage?: string; providerId?: string; modelId?: string; boundContexts?: BoundContext[] } | null;
-    if (state?.initialMessage) {
+    const state = location.state as { initialMessage?: string; providerId?: string; modelId?: string; boundContexts?: BoundContext[]; attachedImages?: AttachedImage[] } | null;
+    if (state && (state.initialMessage !== undefined || (state.attachedImages && state.attachedImages.length > 0))) {
       handledInitialRef.current = true;
       initializedRef.current = true; // Mark as initialized to prevent auto-select from running
-      const { initialMessage, providerId, modelId, boundContexts: initialContexts } = state;
+      const { initialMessage, providerId, modelId, boundContexts: initialContexts, attachedImages: initialImages } = state;
       if (providerId) setSelectedProviderId(providerId);
       if (modelId) setSelectedModelId(modelId);
       if (initialContexts) setBoundContexts(initialContexts);
-      handleSend(initialMessage, providerId, modelId, initialContexts);
+      if (initialImages && initialImages.length > 0) setAttachedImages(initialImages);
+      handleSend(initialMessage, providerId, modelId, initialContexts, initialImages ?? []);
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
 
   useEffect(() => {
     // If we're coming from dashboard with an initial message, definitely don't auto-jump
-    const state = location.state as { initialMessage?: string } | null;
-    if (state?.initialMessage) {
+    const state = location.state as { initialMessage?: string; attachedImages?: AttachedImage[] } | null;
+    if (state && (state.initialMessage !== undefined || (state.attachedImages && state.attachedImages.length > 0))) {
       initializedRef.current = true;
       return;
     }
@@ -469,15 +494,21 @@ export function AssistantPage() {
   };
 
   // ─── Send message ───
-  const handleSend = async (manualText?: string, manualProviderId?: string, manualModelId?: string, manualBoundContexts?: BoundContext[]) => {
+  const handleSend = async (manualText?: string, manualProviderId?: string, manualModelId?: string, manualBoundContexts?: BoundContext[], manualImages?: AttachedImage[]) => {
     const text = (manualText ?? inputText).trim();
     const finalContexts = manualBoundContexts ?? boundContexts;
-    if (!text && finalContexts.length === 0 || isSending) return;
+    const finalImages = manualImages ?? attachedImages;
+    if (!text && finalContexts.length === 0 && finalImages.length === 0 || isSending) return;
 
     let finalContent = text;
+    // Embed images as [IMAGE_ATTACHMENTS] block at the start
+    if (finalImages.length > 0) {
+      const imageBlock = `[IMAGE_ATTACHMENTS]\n${finalImages.map((img) => img.base64).join('\n')}\n[/IMAGE_ATTACHMENTS]`;
+      finalContent = imageBlock + (finalContent ? `\n${finalContent}` : '');
+    }
     if (finalContexts.length > 0) {
       const contextStr = finalContexts.map(b => `- ${b.type === 'project' ? 'Project' : 'Library'}: "${b.name}" (ID: ${b.id}${b.subType ? `, Type: ${b.subType}` : ''})`).join('\n');
-      finalContent = text ? `${text}\n\n<bound_context>\n${contextStr}\n</bound_context>` : `<bound_context>\n${contextStr}\n</bound_context>`;
+      finalContent = finalContent ? `${finalContent}\n\n<bound_context>\n${contextStr}\n</bound_context>` : `<bound_context>\n${contextStr}\n</bound_context>`;
     }
 
     const pId = manualProviderId ?? selectedProviderId;
@@ -493,6 +524,7 @@ export function AssistantPage() {
     if (!manualText) {
       setInputText('');
       setBoundContexts([]);
+      setAttachedImages([]);
     }
 
     setIsSending(true);
@@ -539,6 +571,8 @@ export function AssistantPage() {
       createdAt: Date.now(),
     };
     setMessages((prev) => [...prev, optimisticUserMsg]);
+    // Clear images immediately so UI feels responsive
+    setAttachedImages([]);
 
     try {
       const result = await sendAssistantMessage(currentConversationId, finalContent, (event) => {
@@ -919,8 +953,8 @@ export function AssistantPage() {
       {/* ─── Center: Chat Area ─── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header - Desktop */}
-        <div className="hidden lg:block flex-shrink-0 px-6 py-4 border-b border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/20 backdrop-blur-sm">
-          <div className="flex items-center justify-between">
+        <div className="hidden lg:block h-16 flex-shrink-0 px-6 border-b border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/20 backdrop-blur-sm">
+          <div className="flex items-center justify-between h-full">
             <div className="flex items-center gap-3">
               <h1 className="text-lg font-semibold text-neutral-900 dark:text-white truncate">{assistantTitle}</h1>
             </div>
@@ -972,12 +1006,31 @@ export function AssistantPage() {
                     <div className="flex justify-end">
                       <div className="max-w-[80%] bg-indigo-600 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
                         {(() => {
-                           const match = msg.content.match(/<bound_context>([\s\S]*?)<\/bound_context>/);
-                           const cleanContent = msg.content.replace(/<bound_context>[\s\S]*?<\/bound_context>/g, '').trim();
-                           const contextLines = match ? match[1].trim().split('\n').filter(l => l.trim().startsWith('-')) : [];
-                           
+                           const { textContent: rawText, images: msgImages } = parseUserMessageImages(msg.content);
+                           const boundContextMatch = rawText.match(/<bound_context>([\s\S]*?)<\/bound_context>/);
+                           const cleanContent = rawText.replace(/<bound_context>[\s\S]*?<\/bound_context>/g, '').trim();
+                           const contextLines = boundContextMatch ? boundContextMatch[1].trim().split('\n').filter(l => l.trim().startsWith('-')) : [];
+                            
                            return (
                              <div className="space-y-2">
+                               {/* Attached images */}
+                               {msgImages.length > 0 && (
+                                 <div className="flex flex-wrap gap-2 pb-1">
+                                   {msgImages.map((src, i) => (
+                                     <button
+                                       key={i}
+                                       onClick={() => setLightboxImage(src)}
+                                       className="block flex-shrink-0 transition-transform hover:scale-[1.02] active:scale-95"
+                                     >
+                                       <img
+                                         src={src}
+                                         alt={`Attached ${i + 1}`}
+                                         className="h-24 w-24 rounded-xl object-cover border-2 border-white/30 shadow-sm hover:brightness-110"
+                                       />
+                                     </button>
+                                   ))}
+                                 </div>
+                               )}
                                {cleanContent && (
                                  <div className="markdown-content-user">
                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -985,7 +1038,7 @@ export function AssistantPage() {
                                    </ReactMarkdown>
                                  </div>
                                )}
-                               {!cleanContent && contextLines.length === 0 && (
+                               {!cleanContent && contextLines.length === 0 && msgImages.length === 0 && (
                                  <div className="markdown-content-user text-indigo-100">
                                    {t('assistant.boundResourcesSent', 'Bound resources referenced.')}
                                  </div>
@@ -1140,6 +1193,8 @@ export function AssistantPage() {
                   setSelectedModelId={setSelectedModelId}
                   boundContexts={boundContexts}
                   setBoundContexts={setBoundContexts}
+                  attachedImages={attachedImages}
+                  setAttachedImages={setAttachedImages}
                   providers={providers}
                   isSending={isSending}
                   onSend={handleSend}
@@ -1162,6 +1217,8 @@ export function AssistantPage() {
                 setSelectedModelId={setSelectedModelId}
                 boundContexts={boundContexts}
                 setBoundContexts={setBoundContexts}
+                attachedImages={attachedImages}
+                setAttachedImages={setAttachedImages}
                 providers={providers}
                 isSending={isSending}
                 onSend={handleSend}
@@ -1188,8 +1245,8 @@ export function AssistantPage() {
         transition-all duration-300 flex flex-col shadow-2xl lg:shadow-none
       `}>
         <div className={`flex h-full min-h-0 flex-col ${rightPanelOpen ? 'w-[85vw] sm:w-80 lg:w-64' : 'w-[85vw] sm:w-80 lg:w-16'}`}>
-          <div className="sticky top-0 z-10 flex-shrink-0 border-b border-neutral-200/50 bg-white/80 p-2 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/80 lg:bg-white/20 lg:dark:bg-black/20">
-            <div className={`flex items-center ${rightPanelOpen ? 'justify-between gap-2' : 'justify-center'}`}>
+          <div className="sticky top-0 z-10 h-16 flex-shrink-0 border-b border-neutral-200/50 bg-white/80 px-2 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/80 lg:bg-white/20 lg:dark:bg-black/20">
+            <div className={`flex items-center h-full ${rightPanelOpen ? 'justify-between gap-2' : 'justify-center'}`}>
               {rightPanelOpen && (
                 <div className="min-w-0 px-1">
                   <h3 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
@@ -1318,6 +1375,31 @@ export function AssistantPage() {
         onConfirm={() => deleteTarget && handleDeleteConversation(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
       />
+
+      {/* Image Lightbox */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button 
+            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            onClick={() => setLightboxImage(null)}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <div 
+            className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center p-4 animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={lightboxImage} 
+              alt="Lightbox" 
+              className="max-w-full max-h-full rounded-lg shadow-2xl object-contain border border-white/10"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

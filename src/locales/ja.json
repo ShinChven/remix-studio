@@ -1493,6 +1493,15 @@
     "providerNotConfigured": "チャット対応のプロバイダーが設定されていません。まず OpenAI、Claude、または Google AI プロバイダーを追加してください。",
     "emptyChat": "アシスタントとの会話を開始",
     "confirmationExpired": "この確認は期限切れです",
-    "loading": "考え中..."
+    "loading": "考え中...",
+    "attachImage": "画像を添付",
+    "dropImagesHere": "ここに画像をドロップ",
+    "maxImagesReached": "1メッセージにつき最大5枚まで",
+    "imageAttached_one": "{{count}}枚の画像添付済み",
+    "imageAttached_other": "{{count}}枚の画像添付済み",
+    "pasteImage": "画像を貼り付けました",
+    "imageTooLarge": "画像が大きすぎて処理できません",
+    "invalidImageType": "画像ファイルのみサポートされています",
+    "removeImage": "画像を削除"
   }
 }

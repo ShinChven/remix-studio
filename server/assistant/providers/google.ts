@@ -310,7 +310,20 @@ function mapMessages(messages: ChatMessage[]): {
     }
     if (m.role === 'user') {
       flushPendingToolResponses();
-      contents.push({ role: 'user', parts: [{ text: m.content }] });
+      const userParts: any[] = [];
+      // Prepend inline images as Gemini inlineData parts
+      if (m.images && m.images.length > 0) {
+        for (const dataUri of m.images) {
+          const match = dataUri.match(/^data:(image\/\w+);base64,(.+)$/);
+          if (match) {
+            userParts.push({ inlineData: { mimeType: match[1], data: match[2] } });
+          }
+        }
+      }
+      if (m.content) {
+        userParts.push({ text: m.content });
+      }
+      contents.push({ role: 'user', parts: userParts.length > 0 ? userParts : [{ text: '' }] });
       continue;
     }
     if (m.role === 'assistant') {

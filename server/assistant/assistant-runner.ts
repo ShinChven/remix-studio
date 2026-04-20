@@ -649,8 +649,12 @@ export class AssistantRunner {
     const body: ChatMessage[] = [];
     for (const m of records) {
       if (m.status === 'awaiting_confirmation') continue; // skip halted-turn stubs
-      if (m.role === 'user') body.push({ role: 'user', content: m.content });
-      else if (m.role === 'assistant') {
+      if (m.role === 'user') {
+        const { textContent, images } = parseUserMessageImages(m.content);
+        const userMsg: ChatMessage = { role: 'user', content: textContent };
+        if (images.length > 0) (userMsg as any).images = images;
+        body.push(userMsg);
+      } else if (m.role === 'assistant') {
         const entry: ChatMessage = {
           role: 'assistant',
           content: m.content,
@@ -800,6 +804,19 @@ export class AssistantRunner {
 }
 
 // ─── helpers ───
+
+/**
+ * Parse [IMAGE_ATTACHMENTS]...[/IMAGE_ATTACHMENTS] blocks out of user message content.
+ * Returns the clean text content (block removed) and an array of base64 data URIs.
+ */
+function parseUserMessageImages(content: string): { textContent: string; images: string[] } {
+  const blockMatch = content.match(/\[IMAGE_ATTACHMENTS\]([\s\S]*?)\[\/IMAGE_ATTACHMENTS\]\n?/);
+  if (!blockMatch) return { textContent: content, images: [] };
+
+  const imageLines = blockMatch[1].trim().split('\n').map((l) => l.trim()).filter((l) => l.startsWith('data:image/'));
+  const textContent = content.replace(blockMatch[0], '').trim();
+  return { textContent, images: imageLines };
+}
 
 function emit(
   cb: ((event: AssistantStatusEvent) => void) | undefined,

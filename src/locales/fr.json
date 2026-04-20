@@ -1493,6 +1493,15 @@
     "providerNotConfigured": "Aucun fournisseur de chat configuré. Ajoutez d'abord un fournisseur OpenAI, Claude ou Google AI.",
     "emptyChat": "Démarrer une conversation avec votre assistant",
     "confirmationExpired": "Cette confirmation a expiré",
-    "loading": "Réflexion..."
+    "loading": "Réflexion...",
+    "attachImage": "Joindre une image",
+    "dropImagesHere": "Déposez les images ici",
+    "maxImagesReached": "Maximum 5 images par message",
+    "imageAttached_one": "{{count}} image jointe",
+    "imageAttached_other": "{{count}} images jointes",
+    "pasteImage": "Image collée",
+    "imageTooLarge": "Image trop grande pour être traitée",
+    "invalidImageType": "Seuls les fichiers image sont acceptés",
+    "removeImage": "Supprimer l'image"
   }
 }

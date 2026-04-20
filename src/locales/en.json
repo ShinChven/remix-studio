@@ -1496,6 +1496,15 @@
     "providerNotConfigured": "No chat-capable providers configured. Add an OpenAI, Claude, or Google AI provider first.",
     "emptyChat": "Start a conversation with your assistant",
     "confirmationExpired": "This confirmation has expired",
-    "loading": "Thinking..."
+    "loading": "Thinking...",
+    "attachImage": "Attach image",
+    "dropImagesHere": "Drop images here",
+    "maxImagesReached": "Maximum 5 images per message",
+    "imageAttached_one": "{{count}} image attached",
+    "imageAttached_other": "{{count}} images attached",
+    "pasteImage": "Image pasted",
+    "imageTooLarge": "Image too large to process",
+    "invalidImageType": "Only image files are supported",
+    "removeImage": "Remove image"
   }
 }

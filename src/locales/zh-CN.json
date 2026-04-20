@@ -1493,6 +1493,15 @@
     "providerNotConfigured": "未配置可用于对话的服务商。请先添加 OpenAI、Claude 或 Google AI 服务商。",
     "emptyChat": "开始与助手对话",
     "confirmationExpired": "此确认已过期",
-    "loading": "思考中..."
+    "loading": "思考中...",
+    "attachImage": "附加图片",
+    "dropImagesHere": "将图片拖放至此",
+    "maxImagesReached": "每条消息最多5张图片",
+    "imageAttached_one": "已附加{{count}}张图片",
+    "imageAttached_other": "已附加{{count}}张图片",
+    "pasteImage": "图片已粘贴",
+    "imageTooLarge": "图片太大，无法处理",
+    "invalidImageType": "仅支持图片文件",
+    "removeImage": "删除图片"
   }
 }

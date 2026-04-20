@@ -6,7 +6,7 @@ import { Plus, Play, Folder, LayoutGrid, Clock, Loader2, Copy, MessageCircle, Se
 import { PageHeader } from './PageHeader';
 import { fetchProjects, fetchLibraries, fetchAssistantProviders } from '../api';
 import { Provider } from '../types';
-import { AssistantComposer, BoundContext } from './Assistant/AssistantComposer';
+import { AssistantComposer, BoundContext, AttachedImage } from './Assistant/AssistantComposer';
 import {
   filterEnabledAssistantProviders,
   normalizeAssistantProviderSelection,
@@ -26,6 +26,7 @@ export function Dashboard() {
   const [selectedModelId, setSelectedModelId] = useState<string>(() => localStorage.getItem('assistant_last_model') || '');
   const [inputText, setInputText] = useState('');
   const [boundContexts, setBoundContexts] = useState<BoundContext[]>([]);
+  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
 
   useEffect(() => {
     if (selectedProviderId) localStorage.setItem('assistant_last_provider', selectedProviderId);
@@ -75,7 +76,7 @@ export function Dashboard() {
   const handleStartChat = (e?: React.FormEvent) => {
     e?.preventDefault();
     const text = inputText.trim();
-    if (!text) return;
+    if (!text && boundContexts.length === 0 && attachedImages.length === 0) return;
     
     localStorage.removeItem('assistant_last_conversation');
     navigate('/assistant', { 
@@ -83,7 +84,8 @@ export function Dashboard() {
         initialMessage: text,
         providerId: selectedProviderId,
         modelId: selectedModelId,
-        boundContexts: boundContexts
+        boundContexts: boundContexts,
+        attachedImages: attachedImages,
       } 
     });
   };
@@ -120,6 +122,8 @@ export function Dashboard() {
               setSelectedModelId={setSelectedModelId}
               boundContexts={boundContexts}
               setBoundContexts={setBoundContexts}
+              attachedImages={attachedImages}
+              setAttachedImages={setAttachedImages}
               providers={providers}
               isSending={false}
               onSend={handleStartChat}

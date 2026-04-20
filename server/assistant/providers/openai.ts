@@ -82,7 +82,20 @@ function mapMessages(messages: ChatMessage[]): any[] {
     if (m.role === 'system') {
       out.push({ role: 'system', content: m.content });
     } else if (m.role === 'user') {
-      out.push({ role: 'user', content: m.content });
+      // If there are images, use the content array format
+      if (m.images && m.images.length > 0) {
+        const contentParts: any[] = [];
+        // Prepend images as image_url blocks
+        for (const dataUri of m.images) {
+          contentParts.push({ type: 'image_url', image_url: { url: dataUri } });
+        }
+        if (m.content) {
+          contentParts.push({ type: 'text', text: m.content });
+        }
+        out.push({ role: 'user', content: contentParts });
+      } else {
+        out.push({ role: 'user', content: m.content });
+      }
     } else if (m.role === 'assistant') {
       const entry: any = { role: 'assistant', content: m.content || null };
       if (m.toolCalls && m.toolCalls.length > 0) {

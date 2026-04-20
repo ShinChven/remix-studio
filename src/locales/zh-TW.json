@@ -1493,6 +1493,15 @@
     "providerNotConfigured": "未設定可用於對話的供應商。請先新增 OpenAI、Claude 或 Google AI 供應商。",
     "emptyChat": "開始與助手對話",
     "confirmationExpired": "此確認已過期",
-    "loading": "思考中..."
+    "loading": "思考中...",
+    "attachImage": "附加圖片",
+    "dropImagesHere": "將圖片拖放至此",
+    "maxImagesReached": "每條訊息最多5張圖片",
+    "imageAttached_one": "已附加{{count}}張圖片",
+    "imageAttached_other": "已附加{{count}}張圖片",
+    "pasteImage": "圖片已貼上",
+    "imageTooLarge": "圖片太大，無法處理",
+    "invalidImageType": "僅支援圖片檔案",
+    "removeImage": "刪除圖片"
   }
 }
