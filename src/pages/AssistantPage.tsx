@@ -217,6 +217,8 @@ function summarizePendingConfirmation(
   pendingConfirmation: AssistantPendingConfirmation | null,
 ) {
   if (!pendingConfirmation) return '';
+  if (pendingConfirmation.summary) return pendingConfirmation.summary;
+  
   const args = pendingConfirmation.toolArgsJson && typeof pendingConfirmation.toolArgsJson === 'object'
     ? pendingConfirmation.toolArgsJson as Record<string, unknown>
     : {};

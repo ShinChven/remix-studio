@@ -67,6 +67,7 @@ export interface AssistantPendingConfirmationRecord {
   toolCallId: string;
   toolName: string;
   toolArgsJson: unknown;
+  summary: string | null;
   status: AssistantPendingConfirmationStatus;
   expiresAt: number;
   createdAt: number;
@@ -108,6 +109,7 @@ export interface CreatePendingConfirmationInput {
   toolCallId: string;
   toolName: string;
   toolArgsJson: unknown;
+  summary?: string;
   expiresAt: Date;
 }
 
@@ -163,6 +165,7 @@ function toPendingConfirmation(record: any): AssistantPendingConfirmationRecord 
     toolCallId: record.toolCallId,
     toolName: record.toolName,
     toolArgsJson: record.toolArgsJson,
+    summary: record.summary ?? null,
     status: record.status as AssistantPendingConfirmationStatus,
     expiresAt: toDateMs(record.expiresAt),
     createdAt: toDateMs(record.createdAt),
@@ -303,6 +306,7 @@ export class AssistantRepository {
         toolCallId: input.toolCallId,
         toolName: input.toolName,
         toolArgsJson: input.toolArgsJson as any,
+        summary: input.summary ?? null,
         expiresAt: input.expiresAt,
       },
     });

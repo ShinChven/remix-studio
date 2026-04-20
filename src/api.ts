@@ -1168,7 +1168,8 @@ export interface AssistantPendingConfirmation {
   messageId: string;
   toolCallId: string;
   toolName: string;
-  toolArgsJson: unknown;
+  toolArgsJson: any;
+  summary: string | null;
   status: string;
   expiresAt: number;
   createdAt: number;

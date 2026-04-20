@@ -131,10 +131,14 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         title?: string;
         tags?: string[];
       };
+      const library = await repository.getLibrary(userId, library_id);
+      if (!library) {
+        return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
+      }
       const id = crypto.randomUUID();
       await repository.createLibraryItem(userId, library_id, { id, content, title, tags });
       return {
-        text: JSON.stringify({ id, library_id, title, tags, message: 'Prompt created successfully' }),
+        text: JSON.stringify({ id, library_id, name: library.name, title, tags, message: 'Prompt created successfully' }),
       };
     },
   });
@@ -159,6 +163,10 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         library_id: string;
         items: { content: string; title?: string; tags?: string[] }[];
       };
+      const library = await repository.getLibrary(userId, library_id);
+      if (!library) {
+        return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
+      }
       const libraryItems = items.map((item) => ({
         id: crypto.randomUUID(),
         content: item.content,
@@ -169,6 +177,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       return {
         text: JSON.stringify({
           library_id,
+          name: library.name,
           created: libraryItems.map((item) => ({ id: item.id, title: item.title })),
           count: libraryItems.length,
           message: `${libraryItems.length} prompts created successfully`,
@@ -944,10 +953,12 @@ Recommended workflow:
       }
 
       await repository.updateProject(userId, projectId, updates);
+      const updatedName = name ?? existingProject.name;
 
       return {
         text: JSON.stringify({
           projectId,
+          name: updatedName,
           updatedFields: Object.keys(updates),
           message: 'Project updated successfully.',
         }),
