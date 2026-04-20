@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon, FolderOpen, Sparkles, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, AlertTriangle, Bot, FolderOpen, Sparkles, ExternalLink, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -30,6 +30,10 @@ import { JsonView } from '../components/JsonView';
 import { ProjectPreviewModal } from '../components/ProjectViewer/ProjectPreviewModal';
 import { LibraryPreviewModal } from '../components/ProjectViewer/LibraryPreviewModal';
 import { AssistantComposer, BoundContext } from '../components/Assistant/AssistantComposer';
+import {
+  filterEnabledAssistantProviders,
+  normalizeAssistantProviderSelection,
+} from '../lib/assistant-provider-settings';
 
 // BoundContext moved to AssistantComposer.tsx
 
@@ -295,9 +299,24 @@ export function AssistantPage() {
   // ─── Load providers ───
   useEffect(() => {
     fetchAssistantProviders()
-      .then((data) => setProviders(data.providers))
+      .then((data) => setProviders(filterEnabledAssistantProviders(data.providers)))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const normalizedSelection = normalizeAssistantProviderSelection(
+      providers,
+      selectedProviderId,
+      selectedModelId,
+    );
+
+    if (normalizedSelection.providerId !== selectedProviderId) {
+      setSelectedProviderId(normalizedSelection.providerId);
+    }
+    if (normalizedSelection.modelId !== selectedModelId) {
+      setSelectedModelId(normalizedSelection.modelId);
+    }
+  }, [providers, selectedModelId, selectedProviderId]);
 
   // ─── Load conversations ───
   const loadConversations = useCallback(async () => {
@@ -341,10 +360,33 @@ export function AssistantPage() {
   const loadConversation = useCallback(async (id: string) => {
     try {
       const data = await fetchAssistantConversation(id);
+      let conversation = data.conversation;
+
+      if (providers.length > 0) {
+        const normalizedSelection = normalizeAssistantProviderSelection(
+          providers,
+          conversation.providerId || '',
+          conversation.modelConfigId || '',
+        );
+
+        const shouldUpdateConversation = normalizedSelection.providerId
+          && (
+            conversation.providerId !== normalizedSelection.providerId
+            || conversation.modelConfigId !== normalizedSelection.modelId
+          );
+
+        if (shouldUpdateConversation) {
+          const updated = await updateAssistantConversation(id, {
+            providerId: normalizedSelection.providerId,
+            modelConfigId: normalizedSelection.modelId,
+          });
+          conversation = updated.conversation;
+        }
+      }
+
       setMessages(data.messages);
-      // Restore provider/model selection
-      if (data.conversation.providerId) setSelectedProviderId(data.conversation.providerId);
-      if (data.conversation.modelConfigId) setSelectedModelId(data.conversation.modelConfigId);
+      if (conversation.providerId) setSelectedProviderId(conversation.providerId);
+      if (conversation.modelConfigId) setSelectedModelId(conversation.modelConfigId);
       // Check for pending confirmation in last assistant message
       const lastAssistant = [...data.messages].reverse().find(
         (m) => m.role === 'assistant' && m.status === 'awaiting_confirmation',
@@ -357,7 +399,7 @@ export function AssistantPage() {
     } catch {
       toast.error('Failed to load conversation');
     }
-  }, []);
+  }, [providers]);
 
   // Handle initial message from dashboard
   const handledInitialRef = useRef(false);
@@ -862,6 +904,13 @@ export function AssistantPage() {
     );
   }
 
+  const assistantTitle = activeConversationId
+    ? conversations.find((c) => c.id === activeConversationId)?.title || t('assistant.title')
+    : t('assistant.title');
+  const settingsPath = activeConversationId
+    ? `/assistant/${activeConversationId}/settings`
+    : '/assistant/settings';
+
   return (
     <div className="flex h-full overflow-hidden">
       {/* ─── Center: Chat Area ─── */}
@@ -871,18 +920,14 @@ export function AssistantPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Bot className="w-5 h-5 text-indigo-500 flex-shrink-0" />
-              <h1 className="text-lg font-semibold text-neutral-900 dark:text-white truncate">
-                {activeConversationId
-                  ? conversations.find((c) => c.id === activeConversationId)?.title || t('assistant.title')
-                  : t('assistant.title')}
-              </h1>
+              <h1 className="text-lg font-semibold text-neutral-900 dark:text-white truncate">{assistantTitle}</h1>
             </div>
             <button
-              onClick={() => setRightPanelOpen(!rightPanelOpen)}
+              onClick={() => navigate(settingsPath)}
               className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors flex-shrink-0"
-              title={t('assistant.conversations')}
+              title={t('assistant.chatSettings', { defaultValue: 'Chat settings' })}
             >
-              {rightPanelOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+              <Settings2 className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -891,23 +936,28 @@ export function AssistantPage() {
         {document.getElementById('mobile-header-assistant-title') && createPortal(
           <>
             <Bot className="w-5 h-5 text-indigo-500 flex-shrink-0" />
-            <h1 className="text-base font-semibold text-neutral-900 dark:text-white truncate">
-              {activeConversationId
-                ? conversations.find((c) => c.id === activeConversationId)?.title || t('assistant.title')
-                : t('assistant.title')}
-            </h1>
+            <h1 className="text-base font-semibold text-neutral-900 dark:text-white truncate">{assistantTitle}</h1>
           </>,
           document.getElementById('mobile-header-assistant-title')!
         )}
 
         {document.getElementById('mobile-header-actions') && createPortal(
-          <button
-            onClick={() => setRightPanelOpen(!rightPanelOpen)}
-            className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors lg:hidden"
-            title={t('assistant.conversations')}
-          >
-            {rightPanelOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
-          </button>,
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate(settingsPath)}
+              className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
+              title={t('assistant.chatSettings', { defaultValue: 'Chat settings' })}
+            >
+              <Settings2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setRightPanelOpen(!rightPanelOpen)}
+              className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors lg:hidden"
+              title={t('assistant.conversations')}
+            >
+              {rightPanelOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+            </button>
+          </div>,
           document.getElementById('mobile-header-actions')!
         )}
 
@@ -1090,26 +1140,46 @@ export function AssistantPage() {
       {/* ─── Right Panel: Conversations & Config ─── */}
       <div className={`
         fixed inset-y-0 right-0 z-40 lg:static
-        ${rightPanelOpen ? 'translate-x-0 w-[85vw] sm:w-80 lg:w-64' : 'translate-x-full lg:translate-x-0 w-[85vw] sm:w-80 lg:w-0 lg:overflow-hidden'}
+        ${rightPanelOpen ? 'translate-x-0 w-[85vw] sm:w-80 lg:w-64' : 'translate-x-full lg:translate-x-0 w-[85vw] sm:w-80 lg:w-16'}
         flex-shrink-0 border-l border-neutral-200/50 dark:border-white/5
         bg-white dark:bg-neutral-950 lg:bg-white/10 lg:dark:bg-black/10 backdrop-blur-xl
         transition-all duration-300 flex flex-col shadow-2xl lg:shadow-none
       `}>
-        <div className="flex flex-col h-full w-[85vw] sm:w-80 lg:w-64">
-          {/* Conversation List */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
-              <div className="flex items-center justify-between px-2 py-2 mb-2">
-                <h3 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  {t('assistant.conversations')}
-                </h3>
+        <div className={`flex h-full min-h-0 flex-col ${rightPanelOpen ? 'w-[85vw] sm:w-80 lg:w-64' : 'w-[85vw] sm:w-80 lg:w-16'}`}>
+          <div className="sticky top-0 z-10 flex-shrink-0 border-b border-neutral-200/50 bg-white/80 p-2 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/80 lg:bg-white/20 lg:dark:bg-black/20">
+            <div className={`flex items-center ${rightPanelOpen ? 'justify-between gap-2' : 'justify-center'}`}>
+              {rightPanelOpen && (
+                <div className="min-w-0 px-1">
+                  <h3 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                    {t('assistant.conversations')}
+                  </h3>
+                </div>
+              )}
+              <div className="flex items-center gap-1">
+                {rightPanelOpen && (
+                  <button
+                    onClick={handleNewConversationClick}
+                    className="flex items-center justify-center p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+                    title={t('assistant.newChat')}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                )}
                 <button
-                  onClick={handleNewConversationClick}
-                  className="flex items-center justify-center p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
-                  title={t('assistant.newChat')}
+                  onClick={() => setRightPanelOpen(!rightPanelOpen)}
+                  className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
+                  title={rightPanelOpen
+                    ? t('assistant.collapseConversations', { defaultValue: 'Collapse conversations' })
+                    : t('assistant.expandConversations', { defaultValue: 'Expand conversations' })}
                 >
-                  <Plus className="w-4 h-4" />
+                  {rightPanelOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
                 </button>
               </div>
+            </div>
+          </div>
+
+          {rightPanelOpen && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
               {conversations.length === 0 ? (
                 <p className="px-2 py-4 text-xs text-neutral-400 dark:text-neutral-500 text-center">
                   {t('assistant.noConversations')}
@@ -1171,6 +1241,7 @@ export function AssistantPage() {
                 ))
               )}
             </div>
+          )}
         </div>
       </div>
 
