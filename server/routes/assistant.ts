@@ -178,6 +178,41 @@ export function createAssistantRouter(
     });
   });
 
+  // ─── Edit user message and resume ───
+  router.post('/api/assistant/conversations/:id/messages/:messageId/edit', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const conversationId = c.req.param('id');
+    const messageId = c.req.param('messageId');
+    const body = await c.req.json();
+    const content = typeof body?.content === 'string' ? body.content.trim() : '';
+    if (!content) return c.json({ error: 'Message content is required' }, 400);
+
+    c.header('Content-Type', 'application/x-ndjson');
+    c.header('Transfer-Encoding', 'chunked');
+
+    return stream(c, async (stream) => {
+      try {
+        await repo.deleteMessagesFrom(conversationId, messageId);
+
+        const result = await runner.sendUserMessage({
+          userId: user.userId,
+          conversationId,
+          content,
+          onStatusEvent: (event) => {
+            stream.write(JSON.stringify({ type: 'status', event }) + '\n');
+          },
+        });
+        stream.write(JSON.stringify({ type: 'result', ...turnResultToJson(result, []) }) + '\n');
+      } catch (e: any) {
+        console.error('[POST /api/assistant/conversations/:id/messages/:messageId/edit]', e);
+        const message = e?.message?.includes('concurrent')
+          ? e.message
+          : 'Failed to process message edit';
+        stream.write(JSON.stringify({ type: 'error', error: message }) + '\n');
+      }
+    });
+  });
+
   // ─── Confirm / cancel pending tool ───
   router.post('/api/assistant/conversations/:id/confirm', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;

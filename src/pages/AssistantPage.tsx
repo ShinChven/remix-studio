@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, AlertTriangle, Bot, FolderOpen, Sparkles, ExternalLink, Settings2 } from 'lucide-react';
+import { Plus, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, AlertTriangle, Bot, FolderOpen, Sparkles, ExternalLink, Settings2, Copy, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,6 +14,7 @@ import {
   deleteAssistantConversation,
   summarizeAssistantConversationTitle,
   sendAssistantMessage,
+  editAssistantMessage,
   confirmAssistantTool,
   fetchAssistantProviders,
   fetchProjects,
@@ -307,6 +308,8 @@ export function AssistantPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [editingTitleValue, setEditingTitleValue] = useState('');
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingMessageContent, setEditingMessageContent] = useState('');
 
   const justCreatedIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -708,6 +711,58 @@ export function AssistantPage() {
     setEditingTitle(null);
   };
 
+  // ─── Edit message ───
+  const handleEditSubmit = async (messageId: string) => {
+    const text = editingMessageContent.trim();
+    if (!text || !activeConversationId || isSending) return;
+
+    setIsSending(true);
+    setEditingMessageId(null);
+    setCurrentThinkingTitle('');
+    setCurrentToolTitle('');
+    setPendingConfirmation(null);
+
+    const msgIndex = messages.findIndex(m => m.id === messageId);
+    if (msgIndex !== -1) {
+       const priorMessages = messages.slice(0, msgIndex);
+       const optimisticMsg: AssistantMessage = {
+          ...messages[msgIndex],
+          content: text
+       };
+       setMessages([...priorMessages, optimisticMsg]);
+    }
+
+    try {
+      const result = await editAssistantMessage(activeConversationId, messageId, text, (event) => {
+        if (event.type === 'provider_thinking' && typeof event.title === 'string') {
+          setCurrentThinkingTitle(event.title);
+          setCurrentToolTitle('');
+        }
+        if (
+          event.type === 'tool_call_started' ||
+          event.type === 'tool_call_finished' ||
+          event.type === 'confirmation_required'
+        ) {
+          setCurrentToolTitle(formatToolTitle((event as any).call?.name));
+        }
+      });
+      const data = await fetchAssistantConversation(activeConversationId);
+      setMessages(data.messages);
+
+      if (result.kind === 'awaiting_confirmation' && 'confirmation' in result) {
+        setPendingConfirmation(result.confirmation);
+      }
+      
+      loadConversations();
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to edit message');
+    } finally {
+      setIsSending(false);
+      setCurrentThinkingTitle('');
+      setCurrentToolTitle('');
+    }
+  };
+
   // ─── Key handler ───
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1003,85 +1058,141 @@ export function AssistantPage() {
               {messages.filter((m) => m.role !== 'system' && m.role !== 'tool').map((msg, idx, arr) => (
                 <div key={msg.id}>
                   {msg.role === 'user' && (
-                    <div className="flex justify-end">
-                      <div className="max-w-[80%] bg-indigo-600 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
-                        {(() => {
-                           const { textContent: rawText, images: msgImages } = parseUserMessageImages(msg.content);
-                           const boundContextMatch = rawText.match(/<bound_context>([\s\S]*?)<\/bound_context>/);
-                           const cleanContent = rawText.replace(/<bound_context>[\s\S]*?<\/bound_context>/g, '').trim();
-                           const contextLines = boundContextMatch ? boundContextMatch[1].trim().split('\n').filter(l => l.trim().startsWith('-')) : [];
-                            
-                           return (
-                             <div className="space-y-2">
-                               {/* Attached images */}
-                               {msgImages.length > 0 && (
-                                 <div className="flex flex-wrap gap-2 pb-1">
-                                   {msgImages.map((src, i) => (
-                                     <button
-                                       key={i}
-                                       onClick={() => setLightboxImage(src)}
-                                       className="block flex-shrink-0 transition-transform hover:scale-[1.02] active:scale-95"
-                                     >
-                                       <img
-                                         src={src}
-                                         alt={`Attached ${i + 1}`}
-                                         className="h-24 w-24 rounded-xl object-cover border-2 border-white/30 shadow-sm hover:brightness-110"
-                                       />
-                                     </button>
-                                   ))}
+                    <div className="flex justify-end group/message">
+                      {editingMessageId === msg.id ? (
+                        <div className="max-w-[80%] w-full flex flex-col gap-2 bg-neutral-100 dark:bg-neutral-800 rounded-2xl rounded-br-md px-4 py-3 shadow-sm relative">
+                           <textarea
+                             autoFocus
+                             className="w-full bg-transparent text-neutral-900 dark:text-white placeholder-neutral-500 outline-none resize-y text-sm min-h-[100px]"
+                             value={editingMessageContent}
+                             onChange={(e) => setEditingMessageContent(e.target.value)}
+                           />
+                           <div className="flex justify-end gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-700">
+                             <button
+                               onClick={() => { setEditingMessageId(null); setEditingMessageContent(''); }}
+                               className="px-3 py-1.5 text-xs text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                             >
+                               {t('assistant.cancel', 'Cancel')}
+                             </button>
+                             <button
+                               onClick={() => handleEditSubmit(msg.id)}
+                               disabled={isSending || !editingMessageContent.trim()}
+                               className="px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                             >
+                               {t('assistant.saveAndSubmit', 'Save & Submit')}
+                             </button>
+                           </div>
+                        </div>
+                      ) : (
+                        <div className="max-w-[80%] flex flex-col items-end gap-1">
+                          <div className="bg-indigo-600 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm w-full">
+                            {(() => {
+                               const { textContent: rawText, images: msgImages } = parseUserMessageImages(msg.content);
+                               const boundContextMatch = rawText.match(/<bound_context>([\s\S]*?)<\/bound_context>/);
+                               const cleanContent = rawText.replace(/<bound_context>[\s\S]*?<\/bound_context>/g, '').trim();
+                               const contextLines = boundContextMatch ? boundContextMatch[1].trim().split('\n').filter(l => l.trim().startsWith('-')) : [];
+                                
+                               return (
+                                 <div className="space-y-2">
+                                   {/* Attached images */}
+                                   {msgImages.length > 0 && (
+                                     <div className="flex flex-wrap gap-2 pb-1">
+                                       {msgImages.map((src, i) => (
+                                         <button
+                                           key={i}
+                                           onClick={() => setLightboxImage(src)}
+                                           className="block flex-shrink-0 transition-transform hover:scale-[1.02] active:scale-95"
+                                         >
+                                           <img
+                                             src={src}
+                                             alt={`Attached ${i + 1}`}
+                                             className="h-24 w-24 rounded-xl object-cover border-2 border-white/30 shadow-sm hover:brightness-110"
+                                           />
+                                         </button>
+                                       ))}
+                                     </div>
+                                   )}
+                                   {cleanContent && (
+                                     <div className="markdown-content-user">
+                                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                         {cleanContent}
+                                       </ReactMarkdown>
+                                     </div>
+                                   )}
+                                   {!cleanContent && contextLines.length === 0 && msgImages.length === 0 && (
+                                     <div className="markdown-content-user text-indigo-100">
+                                       {t('assistant.boundResourcesSent', 'Bound resources referenced.')}
+                                     </div>
+                                   )}
+                                   {contextLines.length > 0 && (
+                                     <div className="flex flex-wrap gap-1.5 pt-1">
+                                       {contextLines.map((line, i) => {
+                                          const lineMatch = line.match(/- (Project|Library): "([^"]+)"/);
+                                          if (lineMatch) {
+                                            const type = lineMatch[1];
+                                            const name = lineMatch[2];
+                                            const id = line.match(/ID: ([a-f0-9\-]+)/)?.[1] || '';
+                                            return (
+                                              <div key={i} className="flex items-center gap-1">
+                                                <button 
+                                                  onClick={() => handleOpenPreview(type.toLowerCase() as any, id)}
+                                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-l-full bg-white/20 border border-white/30 border-r-0 text-[11px] font-medium text-white shadow-sm hover:bg-white/30 active:bg-white/40 transition-all"
+                                                >
+                                                  {type === 'Project' ? <Sparkles className="w-3.5 h-3.5" /> : <FolderOpen className="w-3.5 h-3.5" />}
+                                                  {name}
+                                                </button>
+                                                <Link
+                                                  to={type === 'Project' ? `/project/${id}` : `/library/${id}`}
+                                                  className="inline-flex items-center justify-center w-8 h-[26px] rounded-r-full bg-white/10 border border-white/30 text-white/60 hover:text-white hover:bg-white/30 transition-all"
+                                                  title={`Open ${type}`}
+                                                >
+                                                  <ExternalLink className="w-3 h-3" />
+                                                </Link>
+                                              </div>
+                                            );
+                                          }
+                                          return null;
+                                       })}
+                                     </div>
+                                   )}
                                  </div>
-                               )}
-                               {cleanContent && (
-                                 <div className="markdown-content-user">
-                                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                     {cleanContent}
-                                   </ReactMarkdown>
-                                 </div>
-                               )}
-                               {!cleanContent && contextLines.length === 0 && msgImages.length === 0 && (
-                                 <div className="markdown-content-user text-indigo-100">
-                                   {t('assistant.boundResourcesSent', 'Bound resources referenced.')}
-                                 </div>
-                               )}
-                               {contextLines.length > 0 && (
-                                 <div className="flex flex-wrap gap-1.5 pt-1">
-                                   {contextLines.map((line, i) => {
-                                      const lineMatch = line.match(/- (Project|Library): "([^"]+)"/);
-                                      if (lineMatch) {
-                                        const type = lineMatch[1];
-                                        const name = lineMatch[2];
-                                        const id = line.match(/ID: ([a-f0-9\-]+)/)?.[1] || '';
-                                        return (
-                                          <div key={i} className="flex items-center gap-1">
-                                            <button 
-                                              onClick={() => handleOpenPreview(type.toLowerCase() as any, id)}
-                                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-l-full bg-white/20 border border-white/30 border-r-0 text-[11px] font-medium text-white shadow-sm hover:bg-white/30 active:bg-white/40 transition-all"
-                                            >
-                                              {type === 'Project' ? <Sparkles className="w-3.5 h-3.5" /> : <FolderOpen className="w-3.5 h-3.5" />}
-                                              {name}
-                                            </button>
-                                            <Link
-                                              to={type === 'Project' ? `/project/${id}` : `/library/${id}`}
-                                              className="inline-flex items-center justify-center w-8 h-[26px] rounded-r-full bg-white/10 border border-white/30 text-white/60 hover:text-white hover:bg-white/30 transition-all"
-                                              title={`Open ${type}`}
-                                            >
-                                              <ExternalLink className="w-3 h-3" />
-                                            </Link>
-                                          </div>
-                                        );
-                                      }
-                                      return null;
-                                   })}
-                                 </div>
-                               )}
-                             </div>
-                           );
-                        })()}
-                      </div>
+                               );
+                            })()}
+                          </div>
+                          <div className="flex items-center gap-1 opacity-0 group-hover/message:opacity-100 transition-opacity mt-0.5 mr-1">
+                            <button
+                              onClick={() => {
+                                const { textContent: rawText } = parseUserMessageImages(msg.content);
+                                const cleanContent = rawText.replace(/<bound_context>[\s\S]*?<\/bound_context>/g, '').trim();
+                                if (cleanContent) {
+                                  navigator.clipboard.writeText(cleanContent);
+                                  toast.success(t('assistant.copied', { defaultValue: 'Copied to clipboard' }));
+                                }
+                              }}
+                              className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
+                              title={t('assistant.copy', { defaultValue: 'Copy text' })}
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                const { textContent: rawText } = parseUserMessageImages(msg.content);
+                                const cleanContent = rawText.replace(/<bound_context>[\s\S]*?<\/bound_context>/g, '').trim();
+                                setEditingMessageId(msg.id);
+                                setEditingMessageContent(cleanContent);
+                              }}
+                              className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
+                              title={t('assistant.edit', { defaultValue: 'Edit message' })}
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {msg.role === 'assistant' && (
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 group/message">
                       <div className="relative flex-shrink-0">
                         <div className="flex w-9 h-9 items-center justify-center rounded-full bg-slate-900/80 backdrop-blur-sm shadow-sm relative z-10 border border-white/10 dark:border-white/5">
                           <img src="/assistant-avatar.svg" alt="Assistant" className="w-8 h-8 object-contain" />
@@ -1126,11 +1237,31 @@ export function AssistantPage() {
                           );
                         })()}
                         {renderAssistantToolCalls(msg)}
-                        {msg.inputTokens != null && msg.outputTokens != null && (
-                          <p className="text-[10px] text-neutral-400 mt-1 ml-1">
-                            {msg.inputTokens}↑ {msg.outputTokens}↓ tokens
-                          </p>
-                        )}
+                        <div className="flex items-center justify-between mt-1 mx-1 gap-2">
+                          <div className="flex items-center gap-2">
+                            {msg.inputTokens != null && msg.outputTokens != null && (
+                              <p className="text-[10px] text-neutral-400">
+                                {msg.inputTokens}↑ {msg.outputTokens}↓ tokens
+                              </p>
+                            )}
+                          </div>
+                          
+                          {hasRenderableAssistantBubble(msg) && (
+                            <button
+                              onClick={() => {
+                                const { responseContent } = parseAssistantContent(msg.content);
+                                if (responseContent) {
+                                  navigator.clipboard.writeText(responseContent);
+                                  toast.success(t('assistant.copied', { defaultValue: 'Copied to clipboard' }));
+                                }
+                              }}
+                              className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-all opacity-0 group-hover/message:opacity-100"
+                              title={t('assistant.copy', { defaultValue: 'Copy text' })}
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1248,7 +1379,7 @@ export function AssistantPage() {
           <div className="sticky top-0 z-10 h-16 flex-shrink-0 border-b border-neutral-200/50 bg-white/80 px-2 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/80 lg:bg-white/20 lg:dark:bg-black/20">
             <div className={`flex items-center h-full ${rightPanelOpen ? 'justify-between gap-2' : 'justify-center'}`}>
               {rightPanelOpen && (
-                <div className="min-w-0 px-1">
+                <div className="min-w-0 px-3">
                   <h3 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                     {t('assistant.conversations')}
                   </h3>
@@ -1258,10 +1389,10 @@ export function AssistantPage() {
                 {rightPanelOpen && (
                   <button
                     onClick={handleNewConversationClick}
-                    className="flex items-center justify-center p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+                    className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
                     title={t('assistant.newChat')}
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-5 h-5" />
                   </button>
                 )}
                 <button

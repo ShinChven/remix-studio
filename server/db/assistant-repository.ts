@@ -255,6 +255,29 @@ export class AssistantRepository {
 
   // ─── Messages ───
 
+  async deleteMessagesFrom(conversationId: string, messageId: string): Promise<void> {
+    const msg = await this.prisma.assistantMessage.findUnique({
+      where: { id: messageId },
+    });
+    if (!msg || msg.conversationId !== conversationId) {
+      throw new Error('Message not found');
+    }
+
+    await this.prisma.assistantMessage.deleteMany({
+      where: {
+        conversationId,
+        createdAt: { gte: msg.createdAt },
+      },
+    });
+
+    await this.prisma.assistantPendingConfirmation.deleteMany({
+      where: {
+        conversationId,
+        createdAt: { gte: msg.createdAt },
+      },
+    });
+  }
+
   async listMessages(
     conversationId: string,
     options: { limit?: number } = {},
