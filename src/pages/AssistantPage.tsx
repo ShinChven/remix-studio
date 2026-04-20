@@ -1009,7 +1009,10 @@ export function AssistantPage() {
               ))}
 
               {isSending && (
-                <div className="ml-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
+                    <Bot className="w-4 h-4 text-white" />
+                  </div>
                   <div className="flex items-center gap-2 py-1.5 text-sm">
                     <MaterialSpinner className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                     <span className="font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
