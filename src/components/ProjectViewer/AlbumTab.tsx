@@ -216,7 +216,7 @@ export function AlbumTab({
         )}
 
         {albumItems.length === 0 ? (
-          <div className="bg-white/40 dark:bg-neutral-900/40 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-xl p-12 md:p-24 text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner backdrop-blur-xl">
+          <div className="bg-white/40 dark:bg-neutral-900/40 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-xl p-12 md:p-24 m-4 md:m-8 text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner backdrop-blur-xl">
             {isTextProject ? <FileText className="w-16 h-16 text-neutral-800 animate-pulse" /> : isVideoProject ? <VideoIcon className="w-16 h-16 text-neutral-800 animate-pulse" /> : isAudioProject ? <Music className="w-16 h-16 text-neutral-800 animate-pulse" /> : <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />}
             <div>
               <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400 tracking-wider uppercase">{isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : isAudioProject ? t('projectViewer.album.noAudios') : t('projectViewer.album.galleryEmpty')}</p>
@@ -342,6 +342,16 @@ export function AlbumTab({
 
                   <div className={isExpanded ? 'mt-3 space-y-3' : 'hidden'}>
                     <p className="text-sm text-neutral-900 dark:text-white whitespace-pre-wrap">{item.prompt}</p>
+                    {item.textContent && (
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">
+                          {t('projectViewer.common.generatedText')}
+                        </label>
+                        <div className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 whitespace-pre-wrap">
+                          {item.textContent}
+                        </div>
+                      </div>
+                    )}
                     <div className="rounded-xl border border-neutral-200/50 dark:border-white/5 bg-neutral-50/50 dark:bg-neutral-950/50 p-3">
                       <audio
                         ref={(el) => { audioRefs.current[item.id] = el; }}

@@ -236,7 +236,7 @@ export function QueueTab({
               );
             })}
             {queueJobs.length === 0 && (
-              <div className="py-24 text-center text-neutral-600">
+              <div className="py-24 m-4 md:m-8 text-center text-neutral-600 border-2 border-dashed border-neutral-200/50 dark:border-neutral-800/50 rounded-2xl bg-white/5 dark:bg-neutral-900/5">
                 <List className="w-12 h-12 mx-auto opacity-10 mb-4" />
                 <div className="text-[10px] font-bold uppercase tracking-[0.2em]">{t('projectViewer.queue.emptyTitle')}</div>
                 <div className="text-[9px] opacity-40 mt-2">{t('projectViewer.queue.emptyDescription')}</div>

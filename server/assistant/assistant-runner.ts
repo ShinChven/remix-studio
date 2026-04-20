@@ -365,76 +365,80 @@ export class AssistantRunner {
           return { kind: 'error', error: 'Repeated tool call detected', partialMessage: partial };
         }
 
-        const tool = this.toolsByName.get(call.name);
-        if (!tool) {
-          await this.repo.appendMessage({
-            conversationId,
-            role: 'tool',
-            toolCallId: call.id,
-            toolName: call.name,
-            toolArgsJson: call.arguments,
-            content: wrapToolResult(call.name, JSON.stringify({ error: `Unknown tool '${call.name}'` }), { error: true }),
-            status: 'error',
-          });
-          processedCalls.push(call);
-          continue;
-        }
-
-        const parsed = safeParseToolInput(tool, call.arguments);
-        if (!parsed.ok) {
-          const errMsg = (parsed as { ok: false; error: string }).error;
-          await this.repo.appendMessage({
-            conversationId,
-            role: 'tool',
-            toolCallId: call.id,
-            toolName: call.name,
-            toolArgsJson: call.arguments,
-            content: wrapToolResult(call.name, JSON.stringify({ error: errMsg }), { error: true }),
-            status: 'error',
-          });
-          processedCalls.push(call);
-          continue;
-        }
-
-        if (toolRequiresConfirmation(tool)) {
-          if (this.shouldAutoApproveWriteActions(conversationId, tool)) {
-            emit(onStatusEvent, { type: 'tool_call_started', call });
-            const startMs = Date.now();
-            const isError = await this.executeToolCallInner(userId, conversationId, tool, { ...call, arguments: parsed.value });
-            console.log(`[Assistant] Tool auto-approved for session: ${call.name} in ${Date.now() - startMs}ms conversation=${conversationId}`);
-            emit(onStatusEvent, { type: 'tool_call_finished', call, isError });
+          const tool = this.toolsByName.get(call.name);
+          if (!tool) {
+            await this.repo.appendMessage({
+              conversationId,
+              role: 'tool',
+              toolCallId: call.id,
+              toolName: call.name,
+              toolArgsJson: call.arguments,
+              content: wrapToolResult(call.name, JSON.stringify({ error: `Unknown tool '${call.name}'` }), { error: true }),
+              status: 'error',
+            });
             processedCalls.push(call);
             continue;
           }
 
-          const latestUserMessage = findLatestUserMessageContent(messages);
-          const proposal = buildConfirmationProposalText(
-            assistantMessage.content,
-            latestUserMessage,
-            tool,
-            parsed.value,
-          );
-          if (proposal !== assistantMessage.content) {
-            await this.rewriteAssistantMessage(assistantMessage.id, {
-              content: proposal,
+          const parsed = safeParseToolInput(tool, call.arguments);
+          if (!parsed.ok) {
+            const errMsg = (parsed as { ok: false; error: string }).error;
+            await this.repo.appendMessage({
+              conversationId,
+              role: 'tool',
+              toolCallId: call.id,
+              toolName: call.name,
+              toolArgsJson: call.arguments,
+              content: wrapToolResult(call.name, JSON.stringify({ error: errMsg }), { error: true }),
+              status: 'error',
             });
-            assistantMessage = { ...assistantMessage, content: proposal };
+            processedCalls.push(call);
+            continue;
           }
 
-          // Rewrite the assistant message so its toolCalls array only lists
-          // what we've already processed plus this halted call. Calls after
-          // this one in the response are dropped — the model will re-plan
-          // after the user decides.
-          const trimmedToolCalls = [...processedCalls, call];
-          await this.rewriteAssistantMessage(assistantMessage.id, { toolCalls: trimmedToolCalls });
-          const confirmation = await this.repo.createPendingConfirmation({
-            conversationId,
-            messageId: assistantMessage.id,
-            toolCallId: call.id,
-            toolName: call.name,
-            toolArgsJson: parsed.value,
-            expiresAt: new Date(Date.now() + ASSISTANT_LIMITS.CONFIRMATION_TTL_MS),
-          });
+          if (toolRequiresConfirmation(tool)) {
+            if (this.shouldAutoApproveWriteActions(conversationId, tool)) {
+              emit(onStatusEvent, { type: 'tool_call_started', call });
+              const startMs = Date.now();
+              const isError = await this.executeToolCallInner(userId, conversationId, tool, { ...call, arguments: parsed.value });
+              console.log(`[Assistant] Tool auto-approved for session: ${call.name} in ${Date.now() - startMs}ms conversation=${conversationId}`);
+              emit(onStatusEvent, { type: 'tool_call_finished', call, isError });
+              processedCalls.push(call);
+              continue;
+            }
+
+            const latestUserMessage = findLatestUserMessageContent(messages);
+            const labels = await this.resolveLabelsForArgs(userId, parsed.value);
+            const proposal = buildConfirmationProposalText(
+              assistantMessage.content,
+              latestUserMessage,
+              tool,
+              parsed.value,
+              labels
+            );
+            if (proposal !== assistantMessage.content) {
+              await this.rewriteAssistantMessage(assistantMessage.id, {
+                content: proposal,
+              });
+              assistantMessage = { ...assistantMessage, content: proposal };
+            }
+
+            // Rewrite the assistant message so its toolCalls array only lists
+            // what we've already processed plus this halted call. Calls after
+            // this one in the response are dropped — the model will re-plan
+            // after the user decides.
+            const trimmedToolCalls = [...processedCalls, call];
+            await this.rewriteAssistantMessage(assistantMessage.id, { toolCalls: trimmedToolCalls });
+            const finalSummary = summarizeToolEffect(tool, parsed.value, labels);
+            const confirmation = await this.repo.createPendingConfirmation({
+              conversationId,
+              messageId: assistantMessage.id,
+              toolCallId: call.id,
+              toolName: call.name,
+              toolArgsJson: parsed.value,
+              summary: finalSummary,
+              expiresAt: new Date(Date.now() + ASSISTANT_LIMITS.CONFIRMATION_TTL_MS),
+            });
           emit(onStatusEvent, { type: 'confirmation_required', call, confirmationId: confirmation.id });
           await this.repo.updateMessageStatus(assistantMessage.id, 'awaiting_confirmation');
           await this.repo.touchConversation(conversationId);
@@ -670,6 +674,49 @@ export class AssistantRunner {
     approvedTools.add(toolName);
     this.sessionApprovedToolsByConversation.set(conversationId, approvedTools);
   }
+
+  private async resolveLabelsForArgs(userId: string, args: unknown): Promise<Record<string, string>> {
+    if (args == null || typeof args !== 'object') return {};
+    const obj = args as Record<string, unknown>;
+    const labels: Record<string, string> = {};
+
+    const idsToResolve: { id: string; type: 'project' | 'library' }[] = [];
+    if (typeof obj.library_id === 'string') idsToResolve.push({ id: obj.library_id, type: 'library' });
+    if (typeof obj.libraryId === 'string') idsToResolve.push({ id: obj.libraryId, type: 'library' });
+    if (typeof obj.projectId === 'string') idsToResolve.push({ id: obj.projectId, type: 'project' });
+
+    // Also look into workflowItems if present
+    if (Array.isArray(obj.workflowItems)) {
+      for (const item of obj.workflowItems) {
+        if (typeof item.libraryId === 'string') idsToResolve.push({ id: item.libraryId, type: 'library' });
+      }
+    }
+
+    if (idsToResolve.length === 0) return labels;
+
+    await Promise.all(idsToResolve.map(async ({ id, type }) => {
+      try {
+        if (type === 'library') {
+          // Use internal prisma client since we have direct access in the runner deps
+          const lib = await (this.repo as any).prisma.library.findFirst({
+             where: { id, userId },
+             select: { name: true }
+          });
+          if (lib) labels[id] = lib.name;
+        } else {
+          const proj = await (this.repo as any).prisma.project.findFirst({
+            where: { id, userId },
+            select: { name: true }
+          });
+          if (proj) labels[id] = proj.name;
+        }
+      } catch {
+        // ignore
+      }
+    }));
+
+    return labels;
+  }
 }
 
 // ─── helpers ───
@@ -778,13 +825,14 @@ function buildConfirmationProposalText(
   latestUserMessage: string,
   tool: AssistantToolDefinition,
   args: unknown,
+  labels?: Record<string, string>,
 ): string {
   const richerProposal = synthesizeMultiStepProposal(tool, args, latestUserMessage);
   if (richerProposal && (shouldReplaceProposalText(currentContent) || isProposalTooNarrow(currentContent, latestUserMessage, tool))) {
     return richerProposal;
   }
   if (shouldReplaceProposalText(currentContent)) {
-    return `${summarizeToolEffect(tool, args)}\n\nReview the details below and confirm if you want me to apply this change.`;
+    return `${summarizeToolEffect(tool, args, labels)}\n\nReview the details below and confirm if you want me to apply this change.`;
   }
   return currentContent;
 }

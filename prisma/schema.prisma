@@ -518,6 +518,8 @@ model AssistantPendingConfirmation {
   toolCallId     String
   toolName       String
   toolArgsJson   Json
+  // Human-readable summary generated at creation time to avoid UUIDs in the UI.
+  summary        String?
   // 'pending' | 'confirmed' | 'cancelled' | 'expired'
   status         String   @default("pending")
   expiresAt      DateTime

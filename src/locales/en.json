@@ -207,8 +207,11 @@
       "background": "Background",
       "format": "Format",
       "outputMode": "Output Mode",
+      "musicMode": "Music Mode",
       "singleSpeaker": "Single Speaker",
       "multiSpeaker": "Multi Speaker",
+      "withLyrics": "With Lyrics",
+      "instrumentalOnly": "Instrumental Only",
       "voice": "Voice",
       "speakerOneName": "Speaker 1 Name",
       "speakerTwoName": "Speaker 2 Name",
@@ -262,7 +265,8 @@
       "clearAllFilters": "Clear all filters",
       "clickToSelect": "Click to Select",
       "closeViewer": "Close Viewer",
-      "searchPlaceholder": "Search items by title, content or tag..."
+      "searchPlaceholder": "Search items by title, content or tag...",
+      "openFullLibrary": "Open Full Library"
     },
     "promptModal": {
       "title": "Edit Prompt Fragment",

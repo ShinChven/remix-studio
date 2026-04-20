@@ -50,6 +50,38 @@ function getAllModels(providerRecord: any): ModelConfig[] {
   return [...baseModels, ...resolveCustomModels(providerType, customAliases)];
 }
 
+function inferImageMimeType(value: string): string {
+  const dataUrlMatch = value.match(/^data:(image\/[\w+.-]+);base64,/i);
+  if (dataUrlMatch?.[1]) return dataUrlMatch[1].toLowerCase();
+
+  try {
+    const pathname = value.startsWith('http') ? new URL(value).pathname : value;
+    const ext = pathname.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'webp':
+        return 'image/webp';
+      case 'gif':
+        return 'image/gif';
+      case 'bmp':
+        return 'image/bmp';
+      case 'svg':
+        return 'image/svg+xml';
+      case 'heic':
+        return 'image/heic';
+      case 'heif':
+        return 'image/heif';
+      case 'png':
+      default:
+        return 'image/png';
+    }
+  } catch {
+    return 'image/png';
+  }
+}
+
 export class QueueManager {
   private activeJobs: Map<string, number> = new Map(); // providerId -> active count
   private queues: Map<string, QueuedJob[]> = new Map(); // providerId -> pending jobs
@@ -425,19 +457,53 @@ export class QueueManager {
 
   /**
    * [Audio Generation Pipeline]
-   * Calls Gemini TTS and stores the resulting audio file.
+   * Calls the configured audio model (TTS or music generation) and stores the result.
    */
   private async executeAudioJob(userId: string, projectId: string, job: Job, queued: QueuedJob, providerRecord: any, apiKey: string) {
     try {
       const audioGenerator = buildAudioGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
       const modelConfig = getAllModels(providerRecord).find((m) => m.id === job.modelConfigId);
       const audioConfig = parseAudioProjectConfig(queued.systemPrompt);
+      let refImages: Array<{ data: string; mimeType: string }> | undefined;
+
+      if (job.imageContexts && job.imageContexts.length > 0) {
+        refImages = [];
+
+        for (const ctx of job.imageContexts) {
+          const mimeType = inferImageMimeType(ctx);
+
+          if (ctx.startsWith('data:')) {
+            refImages.push({
+              data: ctx.replace(/^data:[^;]+;base64,/, ''),
+              mimeType,
+            });
+            continue;
+          }
+
+          let buffer: Buffer;
+          if (ctx.startsWith('http')) {
+            await assertSafeReferenceImageUrl(ctx);
+            const response = await fetch(ctx);
+            if (!response.ok) throw new Error(`Failed to download reference image: ${response.status}`);
+            buffer = Buffer.from(await response.arrayBuffer());
+          } else {
+            buffer = await this.storage.read(ctx);
+          }
+
+          refImages.push({
+            data: buffer.toString('base64'),
+            mimeType,
+          });
+        }
+      }
 
       const result = await audioGenerator.generate({
         prompt: job.prompt,
         modelId: modelConfig?.modelId,
         apiUrl: modelConfig?.apiUrl,
         audioConfig,
+        outputFormat: job.format === 'wav' || job.format === 'mp3' || job.format === 'aac' ? job.format : undefined,
+        refImages,
       });
 
       if (result.ok === false) {
@@ -449,6 +515,7 @@ export class QueueManager {
         projectId,
         job,
         audioBytes: result.audioBytes,
+        text: result.text,
         mimeType: result.mimeType,
         modelConfigId: job.modelConfigId,
         providerId: job.providerId,

@@ -104,7 +104,7 @@ export function CompletedTab({
                         </div>
                       </div>
 
-                      {projectType === 'text' && job.resultText && (
+                      {(projectType === 'text' || projectType === 'audio') && job.resultText && (
                         <div className="space-y-2">
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.common.generatedText')}</label>
                           <div className="text-xs text-neutral-200 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border border-emerald-500/20 select-all whitespace-pre-wrap">

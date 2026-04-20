@@ -128,7 +128,13 @@ export function WorkflowPanel({
 
   const menuButtonBaseClass =
     'w-full px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 border border-transparent';
-  const supportsImageInput = localProject.type !== 'audio';
+  const selectedProviderRecord = providers.find((p) => p.id === selectedProviderId);
+  const selectedProviderType = selectedProviderRecord?.type as ProviderType;
+  const selectedBaseModels = PROVIDER_MODELS_MAP[selectedProviderType] || [];
+  const selectedCustomAliases = Array.isArray(selectedProviderRecord?.customModels) ? selectedProviderRecord.customModels : [];
+  const selectedAllModels = [...selectedBaseModels, ...resolveCustomModels(selectedProviderType, selectedCustomAliases)];
+  const selectedModel = selectedAllModels.find((m) => m.id === selectedModelId);
+  const supportsImageInput = localProject.type !== 'audio' || selectedModel?.options.supportsReferenceImages === true;
 
   const closeMenuAndRun = (action: () => void) => {
     setIsActionMenuOpen(false);
@@ -233,13 +239,6 @@ export function WorkflowPanel({
         {localProject.type === 'video' && (
           <>
             {(() => {
-              const provider = providers.find((p) => p.id === selectedProviderId);
-              const providerType = provider?.type as ProviderType;
-              const baseModels = PROVIDER_MODELS_MAP[providerType] || [];
-              const customAliases = Array.isArray(provider?.customModels) ? provider.customModels : [];
-              const allModels = [...baseModels, ...resolveCustomModels(providerType, customAliases)];
-              const selectedModel = allModels.find((m) => m.id === selectedModelId);
-
               return (
                 <>
                   {selectedModel?.options.supportsReferenceVideo && (

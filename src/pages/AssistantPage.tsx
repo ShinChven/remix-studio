@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon, FolderOpen, Sparkles } from 'lucide-react';
+import { Plus, Send, Square, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, Wrench, AlertTriangle, Bot, User as UserIcon, FolderOpen, Sparkles, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,14 +15,23 @@ import {
   sendAssistantMessage,
   confirmAssistantTool,
   fetchAssistantProviders,
+  fetchProjects,
+  fetchLibraries,
+  fetchProject,
+  fetchLibrary,
   AssistantConversation,
   AssistantMessage,
   AssistantPendingConfirmation,
 } from '../api';
-import type { Provider, ProviderType, ModelConfig } from '../types';
+import type { Provider, ProviderType, ModelConfig, Project, Library } from '../types';
 import { PROVIDER_MODELS_MAP, getTextModelsForProvider } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { JsonView } from '../components/JsonView';
+import { ProjectPreviewModal } from '../components/ProjectViewer/ProjectPreviewModal';
+import { LibraryPreviewModal } from '../components/ProjectViewer/LibraryPreviewModal';
+import { AssistantComposer, BoundContext } from '../components/Assistant/AssistantComposer';
+
+// BoundContext moved to AssistantComposer.tsx
 
 const MaterialSpinner = ({ className }: { className?: string }) => (
   <svg className={`animate-material-spinner ${className}`} viewBox="0 0 50 50">
@@ -62,23 +71,35 @@ function parseAssistantContent(content: string | null | undefined) {
     };
   }
 
-  const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
-  const match = content.match(thinkRegex);
+  let thoughtParts: string[] = [];
+  let cleanResponse = content;
 
-  if (!match) {
-    const trimmedContent = content.trim();
-    return {
-      thoughtContent: null,
-      responseContent: trimmedContent || null,
-    };
+  // 1. Extract closed <think>...</think> blocks
+  const thinkClosedRegex = /<think>([\s\S]*?)<\/think>/gi;
+  let match;
+  while ((match = thinkClosedRegex.exec(content)) !== null) {
+    thoughtParts.push(match[1].trim());
+  }
+  cleanResponse = cleanResponse.replace(thinkClosedRegex, '');
+
+  // 2. Extract unclosed <think> block (happens during streaming or incomplete response)
+  const unclosedThinkRegex = /<think>([\s\S]*)$/i;
+  const unclosedMatch = cleanResponse.match(unclosedThinkRegex);
+  if (unclosedMatch) {
+    thoughtParts.push(unclosedMatch[1].trim());
+    cleanResponse = cleanResponse.replace(unclosedThinkRegex, '');
   }
 
-  const thoughtContent = match[1]?.trim() || null;
-  const responseContent = content.replace(thinkRegex, '').trim() || null;
+  // 3. Clean up stray tags and normalize whitespace
+  let thoughtContent = thoughtParts.length > 0 
+    ? thoughtParts.join('\n\n').replace(/<\/?think>/gi, '').replace(/\n{3,}/g, '\n\n').trim() 
+    : null;
+
+  cleanResponse = cleanResponse.replace(/<\/?think>/gi, '').trim() || null;
 
   return {
-    thoughtContent,
-    responseContent,
+    thoughtContent: thoughtContent || null,
+    responseContent: cleanResponse,
   };
 }
 
@@ -196,6 +217,8 @@ function summarizePendingConfirmation(
   pendingConfirmation: AssistantPendingConfirmation | null,
 ) {
   if (!pendingConfirmation) return '';
+  if (pendingConfirmation.summary) return pendingConfirmation.summary;
+  
   const args = pendingConfirmation.toolArgsJson && typeof pendingConfirmation.toolArgsJson === 'object'
     ? pendingConfirmation.toolArgsJson as Record<string, unknown>
     : {};
@@ -244,8 +267,13 @@ export function AssistantPage() {
   }, [selectedModelId]);
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [boundContexts, setBoundContexts] = useState<BoundContext[]>([]);
   const [currentThinkingTitle, setCurrentThinkingTitle] = useState('');
   const [currentToolTitle, setCurrentToolTitle] = useState('');
+  const [previewProject, setPreviewProject] = useState<Project | null>(null);
+  const [previewLibrary, setPreviewLibrary] = useState<Library | null>(null);
+  const [previewSelectedTags, setPreviewSelectedTags] = useState<string[]>([]);
+  const [isFetchingPreview, setIsFetchingPreview] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(() => {
     const saved = localStorage.getItem('assistant-right-panel-open');
@@ -261,8 +289,8 @@ export function AssistantPage() {
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [editingTitleValue, setEditingTitleValue] = useState('');
 
+  const justCreatedIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // ─── Load providers ───
   useEffect(() => {
@@ -285,26 +313,29 @@ export function AssistantPage() {
     }
   }, []);
 
+  const handleOpenPreview = async (type: 'project' | 'library', id: string) => {
+    if (isFetchingPreview) return;
+    setIsFetchingPreview(true);
+    try {
+      if (type === 'project') {
+        const proj = await fetchProject(id);
+        setPreviewProject(proj);
+      } else {
+        const lib = await fetchLibrary(id);
+        setPreviewLibrary(lib);
+      }
+    } catch (e: any) {
+      toast.error(e?.message || `Failed to fetch ${type} details`);
+    } finally {
+      setIsFetchingPreview(false);
+    }
+  };
+
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
 
-  // Handle initial message from dashboard
-  const handledInitialRef = useRef(false);
-  useEffect(() => {
-    if (handledInitialRef.current) return;
-    const state = location.state as { initialMessage?: string; providerId?: string; modelId?: string } | null;
-    if (state?.initialMessage) {
-      handledInitialRef.current = true;
-      const { initialMessage, providerId, modelId } = state;
-      if (providerId) setSelectedProviderId(providerId);
-      if (modelId) setSelectedModelId(modelId);
-      // We'll call handleSend with manual values to ensure it works even if state hasn't updated yet
-      handleSend(initialMessage, providerId, modelId);
-      // Clear location state to prevent re-sending on refresh
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [location, navigate]);
+  const initializedRef = useRef(false);
 
   // ─── Load conversation messages ───
   const loadConversation = useCallback(async (id: string) => {
@@ -319,8 +350,6 @@ export function AssistantPage() {
         (m) => m.role === 'assistant' && m.status === 'awaiting_confirmation',
       );
       if (lastAssistant) {
-        // We don't have the confirmation object from the list endpoint,
-        // so we rely on the send/confirm response to set it.
         setPendingConfirmation(null);
       } else {
         setPendingConfirmation(null);
@@ -330,22 +359,49 @@ export function AssistantPage() {
     }
   }, []);
 
-  const initializedRef = useRef(false);
+  // Handle initial message from dashboard
+  const handledInitialRef = useRef(false);
+  useEffect(() => {
+    if (handledInitialRef.current) return;
+    const state = location.state as { initialMessage?: string; providerId?: string; modelId?: string; boundContexts?: BoundContext[] } | null;
+    if (state?.initialMessage) {
+      handledInitialRef.current = true;
+      initializedRef.current = true; // Mark as initialized to prevent auto-select from running
+      const { initialMessage, providerId, modelId, boundContexts: initialContexts } = state;
+      if (providerId) setSelectedProviderId(providerId);
+      if (modelId) setSelectedModelId(modelId);
+      if (initialContexts) setBoundContexts(initialContexts);
+      handleSend(initialMessage, providerId, modelId, initialContexts);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
+    // If we're coming from dashboard with an initial message, definitely don't auto-jump
+    const state = location.state as { initialMessage?: string } | null;
+    if (state?.initialMessage) {
+      initializedRef.current = true;
+      return;
+    }
+
     if (!initializedRef.current && conversations.length > 0) {
       initializedRef.current = true;
       const lastId = localStorage.getItem('assistant_last_conversation');
-      const targetId = conversations.find((c) => c.id === lastId)?.id || conversations[0].id;
+      const targetId = conversations.find((c) => c.id === lastId)?.id;
       if (targetId && !activeConversationId) {
         navigate(`/assistant/${targetId}`, { replace: true });
       }
     }
-  }, [conversations, activeConversationId, navigate]);
+  }, [conversations, activeConversationId, navigate, location.state]);
 
   useEffect(() => {
     if (activeConversationId) {
       localStorage.setItem('assistant_last_conversation', activeConversationId);
+      if (justCreatedIdRef.current === activeConversationId) {
+        // Skip initial load for brand new conversation to avoid race with optimistic message
+        justCreatedIdRef.current = null;
+        return;
+      }
       loadConversation(activeConversationId);
     } else {
       setMessages([]);
@@ -357,14 +413,6 @@ export function AssistantPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isSending]);
-
-  // ─── Auto-resize textarea ───
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputText(e.target.value);
-    const el = e.target;
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
-  };
 
   // ─── Available text models for the selected provider ───
   const selectedProvider = providers.find((p) => p.id === selectedProviderId);
@@ -378,9 +426,16 @@ export function AssistantPage() {
   };
 
   // ─── Send message ───
-  const handleSend = async (manualText?: string, manualProviderId?: string, manualModelId?: string) => {
+  const handleSend = async (manualText?: string, manualProviderId?: string, manualModelId?: string, manualBoundContexts?: BoundContext[]) => {
     const text = (manualText ?? inputText).trim();
-    if (!text || isSending) return;
+    const finalContexts = manualBoundContexts ?? boundContexts;
+    if (!text && finalContexts.length === 0 || isSending) return;
+
+    let finalContent = text;
+    if (finalContexts.length > 0) {
+      const contextStr = finalContexts.map(b => `- ${b.type === 'project' ? 'Project' : 'Library'}: "${b.name}" (ID: ${b.id}${b.subType ? `, Type: ${b.subType}` : ''})`).join('\n');
+      finalContent = text ? `${text}\n\n<bound_context>\n${contextStr}\n</bound_context>` : `<bound_context>\n${contextStr}\n</bound_context>`;
+    }
 
     const pId = manualProviderId ?? selectedProviderId;
     const mId = manualModelId ?? selectedModelId;
@@ -394,9 +449,7 @@ export function AssistantPage() {
 
     if (!manualText) {
       setInputText('');
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
+      setBoundContexts([]);
     }
 
     setIsSending(true);
@@ -413,6 +466,7 @@ export function AssistantPage() {
         });
         setConversations((prev) => [newConv.conversation, ...prev]);
         currentConversationId = newConv.conversation.id;
+        justCreatedIdRef.current = currentConversationId;
         navigate(`/assistant/${currentConversationId}`, { replace: true });
         setPendingConfirmation(null);
       } catch (e: any) {
@@ -427,7 +481,7 @@ export function AssistantPage() {
       id: `temp-${Date.now()}`,
       conversationId: currentConversationId,
       role: 'user',
-      content: text,
+      content: finalContent,
       toolCalls: null,
       toolCallId: null,
       toolName: null,
@@ -443,7 +497,7 @@ export function AssistantPage() {
     setMessages((prev) => [...prev, optimisticUserMsg]);
 
     try {
-      const result = await sendAssistantMessage(currentConversationId, text, (event) => {
+      const result = await sendAssistantMessage(currentConversationId, finalContent, (event) => {
         if (event.type === 'provider_thinking' && typeof event.title === 'string') {
           setCurrentThinkingTitle(event.title);
           setCurrentToolTitle('');
@@ -579,72 +633,6 @@ export function AssistantPage() {
       handleSend();
     }
   };
-
-  const renderComposer = () => (
-    <div className="w-full">
-      <div className="flex items-center gap-2 mb-2 px-1">
-        <select
-          value={selectedProviderId && selectedModelId ? `${selectedProviderId}::${selectedModelId}` : ''}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (!val) {
-              setSelectedProviderId('');
-              setSelectedModelId('');
-              return;
-            }
-            const [pId, mId] = val.split('::');
-            setSelectedProviderId(pId);
-            setSelectedModelId(mId);
-          }}
-          className="text-xs bg-transparent border-none text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 outline-none cursor-pointer p-0 appearance-none font-medium"
-        >
-          <option value="">{t('assistant.selectModel', 'Select a model')}</option>
-          {providers.map((p) => {
-            const models = getTextModelsForProvider(p.type);
-            if (models.length === 0) return null;
-            return (
-              <optgroup key={p.id} label={p.name}>
-                {models.map((m) => (
-                  <option key={`${p.id}::${m.id}`} value={`${p.id}::${m.id}`}>
-                    {m.name}
-                  </option>
-                ))}
-              </optgroup>
-            );
-          })}
-        </select>
-      </div>
-      <div className="flex items-end gap-2 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm rounded-2xl border border-neutral-200/50 dark:border-white/10 shadow-sm px-4 py-2 focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/50 transition-all">
-        <textarea
-          ref={textareaRef}
-          value={inputText}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          placeholder={t('assistant.typePlaceholder')}
-          rows={1}
-          disabled={isSending}
-          className="flex-1 resize-none bg-transparent border-none outline-none text-sm text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 dark:placeholder-neutral-500 max-h-[200px] py-1"
-        />
-        {isSending ? (
-          <button
-            className="flex-shrink-0 p-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors"
-            title={t('assistant.stop')}
-          >
-            <Square className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={() => handleSend()}
-            disabled={!inputText.trim()}
-            className="flex-shrink-0 p-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            title={t('assistant.send')}
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-    </div>
-  );
 
   // ─── Render helpers ───
   const renderAssistantToolCalls = (msg: AssistantMessage) => {
@@ -929,9 +917,59 @@ export function AssistantPage() {
                   {msg.role === 'user' && (
                     <div className="flex justify-end">
                       <div className="max-w-[80%] bg-indigo-600 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
-                        <div className="markdown-content-user">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-                        </div>
+                        {(() => {
+                           const match = msg.content.match(/<bound_context>([\s\S]*?)<\/bound_context>/);
+                           const cleanContent = msg.content.replace(/<bound_context>[\s\S]*?<\/bound_context>/g, '').trim();
+                           const contextLines = match ? match[1].trim().split('\n').filter(l => l.trim().startsWith('-')) : [];
+                           
+                           return (
+                             <div className="space-y-2">
+                               {cleanContent && (
+                                 <div className="markdown-content-user">
+                                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                     {cleanContent}
+                                   </ReactMarkdown>
+                                 </div>
+                               )}
+                               {!cleanContent && contextLines.length === 0 && (
+                                 <div className="markdown-content-user text-indigo-100">
+                                   {t('assistant.boundResourcesSent', 'Bound resources referenced.')}
+                                 </div>
+                               )}
+                               {contextLines.length > 0 && (
+                                 <div className="flex flex-wrap gap-1.5 pt-1">
+                                   {contextLines.map((line, i) => {
+                                      const lineMatch = line.match(/- (Project|Library): "([^"]+)"/);
+                                      if (lineMatch) {
+                                        const type = lineMatch[1];
+                                        const name = lineMatch[2];
+                                        const id = line.match(/ID: ([a-f0-9\-]+)/)?.[1] || '';
+                                        return (
+                                          <div key={i} className="flex items-center gap-1">
+                                            <button 
+                                              onClick={() => handleOpenPreview(type.toLowerCase() as any, id)}
+                                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-l-full bg-white/20 border border-white/30 border-r-0 text-[11px] font-medium text-white shadow-sm hover:bg-white/30 active:bg-white/40 transition-all"
+                                            >
+                                              {type === 'Project' ? <Sparkles className="w-3.5 h-3.5" /> : <FolderOpen className="w-3.5 h-3.5" />}
+                                              {name}
+                                            </button>
+                                            <Link
+                                              to={type === 'Project' ? `/project/${id}` : `/library/${id}`}
+                                              className="inline-flex items-center justify-center w-8 h-[26px] rounded-r-full bg-white/10 border border-white/30 text-white/60 hover:text-white hover:bg-white/30 transition-all"
+                                              title={`Open ${type}`}
+                                            >
+                                              <ExternalLink className="w-3 h-3" />
+                                            </Link>
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                   })}
+                                 </div>
+                               )}
+                             </div>
+                           );
+                        })()}
                       </div>
                     </div>
                   )}
@@ -995,7 +1033,19 @@ export function AssistantPage() {
                 <h2 className="text-2xl font-semibold text-center text-neutral-800 dark:text-neutral-200 mb-8">
                   {t('assistant.howCanIHelp', 'How can I help you today?')}
                 </h2>
-                {renderComposer()}
+                <AssistantComposer
+                  inputText={inputText}
+                  setInputText={setInputText}
+                  selectedProviderId={selectedProviderId}
+                  setSelectedProviderId={setSelectedProviderId}
+                  selectedModelId={selectedModelId}
+                  setSelectedModelId={setSelectedModelId}
+                  boundContexts={boundContexts}
+                  setBoundContexts={setBoundContexts}
+                  providers={providers}
+                  isSending={isSending}
+                  onSend={handleSend}
+                />
               </div>
             </div>
           )}
@@ -1003,9 +1053,21 @@ export function AssistantPage() {
 
         {/* Composer */}
         {activeConversationId && (
-          <div className="flex-shrink-0 border-t border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/20 backdrop-blur-sm p-4">
+          <div className="flex-shrink-0 p-4 pt-2">
             <div className="max-w-3xl mx-auto">
-              {renderComposer()}
+              <AssistantComposer
+                inputText={inputText}
+                setInputText={setInputText}
+                selectedProviderId={selectedProviderId}
+                setSelectedProviderId={setSelectedProviderId}
+                selectedModelId={selectedModelId}
+                setSelectedModelId={setSelectedModelId}
+                boundContexts={boundContexts}
+                setBoundContexts={setBoundContexts}
+                providers={providers}
+                isSending={isSending}
+                onSend={handleSend}
+              />
             </div>
           </div>
         )}
@@ -1105,6 +1167,27 @@ export function AssistantPage() {
             </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {previewProject && (
+        <ProjectPreviewModal 
+          project={previewProject} 
+          libraries={[]} // Libraries will be matched by ID in the modal
+          onClose={() => setPreviewProject(null)} 
+        />
+      )}
+
+      {previewLibrary && (
+        <LibraryPreviewModal 
+          library={previewLibrary}
+          selectedTags={previewSelectedTags}
+          onUpdateTags={setPreviewSelectedTags}
+          onClose={() => {
+            setPreviewLibrary(null);
+            setPreviewSelectedTags([]);
+          }}
+        />
+      )}
 
       {/* Delete confirmation */}
       <ConfirmModal

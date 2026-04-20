@@ -49,22 +49,31 @@ function confirmationHashFor(toolName: string, args: unknown): string {
 export function summarizeToolEffect(
   tool: Pick<AssistantToolDefinition, 'name' | 'title' | 'category'>,
   args: unknown,
+  labels?: Record<string, string>,
 ): string {
   const objectArgs = isPlainObject(args) ? args : {};
+
+  const getLabel = (id: string | unknown, type: string) => {
+    if (typeof id !== 'string') return '';
+    const label = labels?.[id];
+    return label ? `'${label}'` : `ID "${id}"`;
+  };
 
   switch (tool.name) {
     case 'create_library':
       return `Create a text library named "${String(objectArgs.name ?? '')}".`;
     case 'create_prompt':
-      return `Create one prompt in library "${String(objectArgs.library_id ?? '')}".`;
+      return `Create one prompt in library ${getLabel(objectArgs.library_id, 'library')}.`;
     case 'batch_create_prompts': {
       const count = Array.isArray(objectArgs.items) ? objectArgs.items.length : 0;
-      return `Create ${count} prompt${count === 1 ? '' : 's'} in library "${String(objectArgs.library_id ?? '')}".`;
+      return `Create ${count} prompt${count === 1 ? '' : 's'} in library ${getLabel(objectArgs.library_id, 'library')}.`;
     }
     case 'create_project_with_workflow': {
       const workflowCount = Array.isArray(objectArgs.workflowItems) ? objectArgs.workflowItems.length : 0;
       return `Create a ${String(objectArgs.type ?? 'new')} project named "${String(objectArgs.name ?? '')}" with ${workflowCount} workflow item${workflowCount === 1 ? '' : 's'}.`;
     }
+    case 'update_project':
+      return `Update project ${getLabel(objectArgs.projectId, 'project')}.`;
     default:
       return tool.category === 'destructive'
         ? `Run destructive tool "${tool.title}".`

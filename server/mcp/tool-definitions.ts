@@ -131,10 +131,14 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         title?: string;
         tags?: string[];
       };
+      const library = await repository.getLibrary(userId, library_id);
+      if (!library) {
+        return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
+      }
       const id = crypto.randomUUID();
       await repository.createLibraryItem(userId, library_id, { id, content, title, tags });
       return {
-        text: JSON.stringify({ id, library_id, title, tags, message: 'Prompt created successfully' }),
+        text: JSON.stringify({ id, library_id, name: library.name, title, tags, message: 'Prompt created successfully' }),
       };
     },
   });
@@ -159,6 +163,10 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         library_id: string;
         items: { content: string; title?: string; tags?: string[] }[];
       };
+      const library = await repository.getLibrary(userId, library_id);
+      if (!library) {
+        return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
+      }
       const libraryItems = items.map((item) => ({
         id: crypto.randomUUID(),
         content: item.content,
@@ -169,6 +177,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       return {
         text: JSON.stringify({
           library_id,
+          name: library.name,
           created: libraryItems.map((item) => ({ id: item.id, title: item.title })),
           count: libraryItems.length,
           message: `${libraryItems.length} prompts created successfully`,
@@ -944,12 +953,129 @@ Recommended workflow:
       }
 
       await repository.updateProject(userId, projectId, updates);
+      const updatedName = name ?? existingProject.name;
 
       return {
         text: JSON.stringify({
           projectId,
+          name: updatedName,
           updatedFields: Object.keys(updates),
           message: 'Project updated successfully.',
+        }),
+      };
+    },
+  });
+
+  // ─── update_library_item ───
+  tools.push({
+    name: 'update_library_item',
+    title: 'Update Library Item',
+    description: 'Update the title, tags, and/or text content of a single library item. Only the fields you provide will be changed. Use get_library_items or search_library_items first to find the item id.',
+    inputSchema: {
+      library_id: z.string().describe('The library ID that contains the item'),
+      item_id: z.string().describe('The ID of the library item to update'),
+      title: z.string().optional().describe('New title for the item (pass empty string to clear)'),
+      tags: z.array(z.string()).optional().describe('Replacement tag list (replaces existing tags; pass [] to clear all tags)'),
+      content: z.string().optional().describe('New text content (text libraries only; leave unset to keep existing)'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'mutate',
+    handler: async (userId, input) => {
+      const { library_id, item_id, title, tags, content } = input as {
+        library_id: string;
+        item_id: string;
+        title?: string;
+        tags?: string[];
+        content?: string;
+      };
+
+      const library = await repository.getLibrary(userId, library_id);
+      if (!library) {
+        return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
+      }
+
+      const updates: { title?: string; tags?: string[]; content?: string } = {};
+      if (title !== undefined) updates.title = title;
+      if (tags !== undefined) updates.tags = tags;
+      if (content !== undefined) updates.content = content;
+
+      if (Object.keys(updates).length === 0) {
+        return { text: JSON.stringify({ error: 'No fields to update. Provide at least one of: title, tags, content.' }), isError: true };
+      }
+
+      try {
+        await repository.updateLibraryItem(userId, library_id, item_id, updates);
+        return {
+          text: JSON.stringify({
+            item_id,
+            library_id,
+            updatedFields: Object.keys(updates),
+            message: 'Library item updated successfully.',
+          }),
+        };
+      } catch (err: any) {
+        return { text: JSON.stringify({ error: err.message ?? 'Update failed.' }), isError: true };
+      }
+    },
+  });
+
+  // ─── batch_update_library_items ───
+  tools.push({
+    name: 'batch_update_library_items',
+    title: 'Batch Update Library Items',
+    description: 'Update the title and/or tags of multiple items in a library in a single batch (up to 100 items). Content editing is not supported in batch — use update_library_item for that. Useful for bulk re-tagging or renaming after importing or reviewing a library.',
+    inputSchema: {
+      library_id: z.string().describe('The library ID that contains the items'),
+      updates: z.array(z.object({
+        item_id: z.string().describe('ID of the item to update'),
+        title: z.string().optional().describe('New title (omit to keep existing; pass empty string to clear)'),
+        tags: z.array(z.string()).optional().describe('Replacement tags (omit to keep existing; pass [] to clear all)'),
+      })).min(1).max(100).describe('List of items to update (1–100)'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'mutate',
+    handler: async (userId, input) => {
+      const { library_id, updates } = input as {
+        library_id: string;
+        updates: { item_id: string; title?: string; tags?: string[] }[];
+      };
+
+      const library = await repository.getLibrary(userId, library_id);
+      if (!library) {
+        return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
+      }
+
+      const results: { item_id: string; status: 'updated' | 'error'; error?: string }[] = [];
+
+      for (const upd of updates) {
+        const itemUpdates: { title?: string; tags?: string[] } = {};
+        if (upd.title !== undefined) itemUpdates.title = upd.title;
+        if (upd.tags !== undefined) itemUpdates.tags = upd.tags;
+
+        if (Object.keys(itemUpdates).length === 0) {
+          results.push({ item_id: upd.item_id, status: 'error', error: 'No fields to update.' });
+          continue;
+        }
+
+        try {
+          await repository.updateLibraryItem(userId, library_id, upd.item_id, itemUpdates);
+          results.push({ item_id: upd.item_id, status: 'updated' });
+        } catch (err: any) {
+          results.push({ item_id: upd.item_id, status: 'error', error: err.message ?? 'Update failed.' });
+        }
+      }
+
+      const successCount = results.filter((r) => r.status === 'updated').length;
+      const errorCount = results.filter((r) => r.status === 'error').length;
+
+      return {
+        text: JSON.stringify({
+          library_id,
+          libraryName: library.name,
+          results,
+          successCount,
+          errorCount,
+          message: `${successCount} item(s) updated, ${errorCount} error(s).`,
         }),
       };
     },

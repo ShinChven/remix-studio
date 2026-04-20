@@ -109,6 +109,7 @@ function categorizeGoogleModel(m: any): 'text' | 'image' | 'video' | 'audio' {
   const methods: string[] = m.supportedGenerationMethods || [];
   const name = ((m.name || '') + ' ' + (m.displayName || '')).toLowerCase();
 
+  if (name.includes('lyria')) return 'audio';
   if (name.includes('tts') || name.includes('text-to-speech') || name.includes('speech')) return 'audio';
   if (name.includes('veo') || name.includes('video')) return 'video';
   if (name.includes('imagen') || name.includes('image-generation')) return 'image';

@@ -58,6 +58,7 @@ export function MainLayout() {
 
   const location = useLocation();
   const { user } = useAuth();
+  const isAccountActive = location.pathname === '/account' || (location.pathname.startsWith('/account/') && location.pathname !== '/account/mcp');
 
   useEffect(() => {
     if (!user) {
@@ -207,7 +208,7 @@ export function MainLayout() {
             to="/assistant"
             icon={<Sparkles className="w-5 h-5 flex-shrink-0" />}
             label={t('sidebar.assistant')}
-            isActive={location.pathname === '/assistant'}
+            isActive={location.pathname === '/assistant' || location.pathname.startsWith('/assistant/')}
             isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
           />
@@ -236,13 +237,13 @@ export function MainLayout() {
           <Link
             to="/account"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`flex items-center overflow-hidden rounded-xl border p-3 transition-colors ${location.pathname === '/account'
+            className={`flex items-center overflow-hidden rounded-xl border p-3 transition-colors ${isAccountActive
                 ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
                 : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl hover:bg-white/60 dark:hover:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 shadow-sm'
               } ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
               }`}
           >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${location.pathname === '/account'
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isAccountActive
                 ? 'bg-white/20 text-white'
                 : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
               }`}>
@@ -250,13 +251,13 @@ export function MainLayout() {
             </div>
             {!isCollapsed && (
               <div className="ml-auto min-w-0 flex-1 text-right">
-                <p className={`text-[10px] uppercase tracking-wider ${location.pathname === '/account' ? 'text-white/70' : 'text-neutral-500 dark:text-neutral-500'}`}>{t('sidebar.storage')}</p>
-                <p className={`text-xs font-medium truncate ${location.pathname === '/account' ? 'text-white' : 'text-neutral-700 dark:text-neutral-300'}`} title={storageText}>
+                <p className={`text-[10px] uppercase tracking-wider ${isAccountActive ? 'text-white/70' : 'text-neutral-500 dark:text-neutral-500'}`}>{t('sidebar.storage')}</p>
+                <p className={`text-xs font-medium truncate ${isAccountActive ? 'text-white' : 'text-neutral-700 dark:text-neutral-300'}`} title={storageText}>
                   {storageText}
                 </p>
-                <div className={`mt-1.5 h-2 w-full overflow-hidden rounded-full ${location.pathname === '/account' ? 'bg-white/20' : 'bg-neutral-200 dark:bg-neutral-800'} border border-neutral-200 dark:border-transparent`}>
+                <div className={`mt-1.5 h-2 w-full overflow-hidden rounded-full ${isAccountActive ? 'bg-white/20' : 'bg-neutral-200 dark:bg-neutral-800'} border border-neutral-200 dark:border-transparent`}>
                   <div
-                    className={`h-full rounded-full transition-all ${location.pathname === '/account' ? 'bg-white' : (storageUsagePercent > 90 ? 'bg-red-500' : storageUsagePercent > 70 ? 'bg-amber-500' : 'bg-blue-500')
+                    className={`h-full rounded-full transition-all ${isAccountActive ? 'bg-white' : (storageUsagePercent > 90 ? 'bg-red-500' : storageUsagePercent > 70 ? 'bg-amber-500' : 'bg-blue-500')
                       }`}
                     style={{ width: `${storageUsagePercent}%` }}
                   />
@@ -268,7 +269,7 @@ export function MainLayout() {
             <Link
               to="/admin/users"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`mt-3 flex items-center rounded-xl border transition-all ${location.pathname === '/admin/users'
+              className={`mt-3 flex items-center rounded-xl border transition-all ${location.pathname.startsWith('/admin/')
                   ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
                   : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl text-neutral-700 dark:text-neutral-300 hover:bg-white/60 dark:hover:bg-neutral-800/60 shadow-sm'
                 } p-3 text-sm ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
