@@ -11,6 +11,8 @@
 
 Remix Studio is a self-hosted multimodal AI workspace for managing text, image, video, and audio generation workflows in one place. You can save prompt fragments and reference assets into reusable libraries, combine them into large sets of prompt variations, create drafts in bulk, and run those batches through a background queue instead of generating one by one. It also includes provider management, asset storage, export tools, and MCP access for prompt and library operations, so clients like Claude and Codex can help organize content around your workflows while generation itself continues to run through the app.
 
+This project is built with **Google AI Studio** and **Antigravity**.
+
 ![Remix Studio screenshot](assets/screenshot.jpg)
 
 ## What Remix Studio Does
