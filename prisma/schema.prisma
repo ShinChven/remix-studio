@@ -141,6 +141,7 @@ model Library {
   userId    String
   name      String
   type      String
+  pinnedAt  DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
@@ -149,6 +150,7 @@ model Library {
 
   @@index([userId])
   @@index([userId, createdAt])
+  @@index([userId, pinnedAt])
 }
 
 model LibraryItem {

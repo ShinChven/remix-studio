@@ -498,8 +498,11 @@
     "libraryCard": {
       "items": "{{count}} items",
       "openEditor": "Open Editor →",
-      "duplicate": "Duplicate Library"
+      "duplicate": "Duplicate Library",
+      "pin": "Pin Library",
+      "unpin": "Unpin Library"
     },
+    "pinLimitReached": "You can pin at most {{max}} libraries.",
     "duplicateDialog": {
       "title": "Duplicate Library",
       "description": "Create a copy of this library with a new name.",

@@ -261,6 +261,35 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
     }
   });
 
+  const MAX_PINNED_LIBRARIES = 6;
+
+  router.put('/api/libraries/:id/pin', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const libraryId = c.req.param('id');
+      const body = await c.req.json().catch(() => ({}));
+      const pinned = body?.pinned !== false;
+
+      if (pinned) {
+        const existing = await repository.getLibrary(user.userId, libraryId);
+        if (!existing) return c.json({ error: 'Not found' }, 404);
+        if (!existing.pinnedAt) {
+          const count = await repository.countPinnedLibraries(user.userId);
+          if (count >= MAX_PINNED_LIBRARIES) {
+            return c.json({ error: `You can pin at most ${MAX_PINNED_LIBRARIES} libraries.` }, 400);
+          }
+        }
+      }
+
+      await repository.setLibraryPinned(user.userId, libraryId, pinned);
+      return c.json({ success: true });
+    } catch (e: any) {
+      if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
+      console.error('[PUT /api/libraries/:id/pin]', e);
+      return c.json({ error: 'Failed to update pin state' }, 500);
+    }
+  });
+
   router.delete('/api/libraries/:id', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

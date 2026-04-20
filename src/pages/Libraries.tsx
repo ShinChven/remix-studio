@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
-import { Plus, Folder, LayoutGrid, ChevronRight, ChevronLeft, Loader2, Copy, Search, ImageIcon, Type, Video, Music } from 'lucide-react';
-import { duplicateLibrary, fetchLibraries } from '../api';
+import { Plus, Folder, LayoutGrid, ChevronRight, ChevronLeft, Loader2, Copy, Search, ImageIcon, Type, Video, Music, Pin, PinOff } from 'lucide-react';
+import { duplicateLibrary, fetchLibraries, setLibraryPinned } from '../api';
+
+const MAX_PINNED_LIBRARIES = 6;
 import { DuplicateLibraryDialog } from '../components/DuplicateLibraryDialog';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
@@ -113,6 +115,26 @@ export function Libraries() {
     setSearchInput(e.target.value);
   };
 
+  const handleTogglePin = async (lib: Library) => {
+    const shouldPin = !lib.pinnedAt;
+    if (shouldPin) {
+      const pinnedCount = libraries.filter(l => l.pinnedAt).length;
+      if (pinnedCount >= MAX_PINNED_LIBRARIES) {
+        toast.error(t('libraries.pinLimitReached', { max: MAX_PINNED_LIBRARIES }));
+        return;
+      }
+    }
+    try {
+      await setLibraryPinned(lib.id, shouldPin);
+      const result = await fetchLibraries(page, 24, q);
+      setLibraries(result.items);
+      setTotal(result.total);
+      setPages(result.pages);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update pin state');
+    }
+  };
+
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       setSearchParams(prev => {
@@ -174,51 +196,61 @@ export function Libraries() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {libraries.map(lib => {
                   const typeMeta = getLibraryTypeMeta(lib.type);
                   const TypeIcon = typeMeta.icon;
+                  const isPinned = Boolean(lib.pinnedAt);
                   return (
                   <Link
                     key={lib.id}
                     to={`/library/${lib.id}`}
-                    className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-5 md:p-6 rounded-2xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300`}
+                    className={`${isPinned ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-200/60 dark:border-blue-500/20' : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5'} border backdrop-blur-xl ${typeMeta.borderClassName} p-3 rounded-xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 duration-300`}
                   >
-                    <div className="flex items-start justify-between mb-3 md:mb-4">
-                      <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
-                        <TypeIcon className="w-5 h-5 md:w-6 md:h-6" />
+                    <div className="flex items-start justify-between mb-2">
+                      <div className={`p-2 rounded-lg group-hover:scale-105 transition-transform shadow ${typeMeta.iconClassName}`}>
+                        <TypeIcon className="w-4 h-4" />
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setLibraryToDuplicate(lib);
-                        }}
-                        className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30"
-                        title={t('libraries.libraryCard.duplicate')}
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleTogglePin(lib);
+                          }}
+                          className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30"
+                          title={isPinned ? t('libraries.libraryCard.unpin') : t('libraries.libraryCard.pin')}
+                        >
+                          {isPinned ? <PinOff className="w-3 h-3" /> : <Pin className="w-3 h-3" />}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setLibraryToDuplicate(lib);
+                          }}
+                          className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30"
+                          title={t('libraries.libraryCard.duplicate')}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
 
-                    <h4 className="text-base md:text-lg font-semibold text-neutral-900 dark:text-white truncate mb-2">{lib.name}</h4>
+                    <h4 className="text-sm font-semibold text-neutral-900 dark:text-white truncate mb-1.5">{lib.name}</h4>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 dark:text-neutral-500 mb-4">
-                      <div className="flex items-center gap-1.5 capitalize">
-                        <TypeIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <div className="flex items-center gap-x-3 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-500">
+                      <div className="flex items-center gap-1 capitalize">
+                        <TypeIcon className="w-3 h-3" />
                         <span>{lib.type || 'text'}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      <div className="flex items-center gap-1">
+                        <LayoutGrid className="w-3 h-3" />
                         <span>{t('libraries.libraryCard.items', { count: lib.itemCount ?? lib.items?.length ?? 0 })}</span>
                       </div>
                     </div>
 
-                    <div className={`pt-3 md:pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50 flex items-center justify-end text-[10px] md:text-xs font-black uppercase tracking-widest opacity-100 transition-opacity ${typeMeta.accentClassName}`}>
-                      {t('libraries.libraryCard.openEditor')}
-                    </div>
-
-                    <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
+                    <div className={`absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
                   </Link>
                 )})}
 

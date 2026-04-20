@@ -31,6 +31,7 @@ export interface Library {
   type: LibraryType;
   items: LibraryItem[];
   itemCount?: number;
+  pinnedAt?: string | null;
 }
 
 export type ProjectType = 'image' | 'text' | 'video' | 'audio';
