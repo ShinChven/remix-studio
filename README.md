@@ -32,6 +32,34 @@ This project is built with **Google AI Studio** and **Antigravity**.
 
 ## Core Workflow
 
+```mermaid
+flowchart TB
+    U([User]) -->|Multi-modal Prompt & Intent| A[AI Assistant]
+    
+    subgraph Orchestration [Assistant Orchestration]
+        A <-->|Tool Calling| T[MCP / Tool System]
+        T <-->|Query/Fetch| L[(Libraries)]
+        T <-->|Configure| W[Workflow Settings]
+    end
+    
+    A -->|Dispatches Context| E[Workflow Engine]
+    L -.->|Library Items| E
+    
+    subgraph Generation [Batch Processing & Queue]
+        E -->|Combines Prompt + Libraries| C[Permutation Combinator]
+        C -->|Generates N Drafts| B[Background Queue]
+        
+        B -->|Concurrent Run| P1[Provider API]
+        B -->|Concurrent Run| P2[Provider API]
+        B -->|Concurrent Run| P3[Provider API]
+    end
+    
+    P1 -.->|Generated Asset| O[(Results DB & Storage)]
+    P2 -.->|Generated Asset| O
+    P3 -.->|Generated Asset| O
+    O -.->|Review & Export| U
+```
+
 1. Save prompt fragments, styles, subjects, and reference assets into reusable libraries.
 2. Build a project workflow by mixing direct inputs with one or more libraries.
 3. Let Remix Studio expand those inputs into combinations, then create drafts in batches.
