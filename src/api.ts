@@ -1305,6 +1305,19 @@ export async function fetchAssistantProviders(): Promise<{ providers: Provider[]
   const res = await apiFetch('/api/assistant/providers', { headers: getHeaders(false) });
   return handleResponse<{ providers: Provider[] }>(res, 'Failed to list assistant providers');
 }
+export async function transcribeAssistantAudio(input: {
+  providerId: string;
+  audioBase64: string;
+  mimeType: string;
+}): Promise<{ text: string }> {
+  const res = await apiFetch('/api/assistant/transcribe-audio', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(input),
+  });
+  return handleResponse<{ text: string }>(res, 'Failed to transcribe audio');
+}
+
 export async function summarizeAssistantConversationTitle(id: string): Promise<{ title: string }> {
   const res = await apiFetch(`/api/assistant/conversations/${id}/summarize`, {
     method: 'POST',

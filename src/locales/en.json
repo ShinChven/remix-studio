@@ -1517,6 +1517,14 @@
     "pasteImage": "Image pasted",
     "imageTooLarge": "Image too large to process",
     "invalidImageType": "Only image files are supported",
-    "removeImage": "Remove image"
+    "removeImage": "Remove image",
+    "micStart": "Record voice message",
+    "micStop": "Stop recording",
+    "micTranscribing": "Transcribing...",
+    "micUnsupported": "Microphone is not supported in this browser",
+    "micPermissionDenied": "Microphone permission denied",
+    "micRecordFailed": "Recording failed",
+    "micTranscribeFailed": "Failed to transcribe audio",
+    "micNoSpeechDetected": "No speech detected in recording"
   }
 }

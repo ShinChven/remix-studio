@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bot, Sparkles, FolderOpen, X, Send, Square, ImagePlus } from 'lucide-react';
+import { Bot, Sparkles, FolderOpen, X, Send, Square, ImagePlus, Mic, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { fetchLibraries, fetchLibraryItems, fetchProjects } from '../../api';
+import { fetchLibraries, fetchLibraryItems, fetchProjects, transcribeAssistantAudio } from '../../api';
 import { resolveAssistantSkillsLibraryId } from '../../lib/assistant-skills';
-import { getTextModelsForProvider, Provider, ProviderType } from '../../types';
+import { getTextModelsForProvider, Provider } from '../../types';
 import { ProviderIcon } from '../ProviderIcon';
 
 export type BoundContext = {
@@ -55,6 +55,7 @@ const MAX_IMAGES = 5;
 const MAX_COMPRESS_DIM = 1024;
 const COMPRESS_QUALITY = 0.7;
 const COMPRESS_MIME = 'image/jpeg';
+const MAX_RECORDING_MS = 5 * 60 * 1000;
 
 function summarizeSkillTitle(title: string | undefined, content: string) {
   if (title?.trim()) return title.trim();
@@ -135,6 +136,14 @@ export function AssistantComposer({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<number | null>(null);
+  const recordingStartRef = useRef<number>(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const [mentionOptions, setMentionOptions] = useState<BoundContext[]>([]);
@@ -315,6 +324,163 @@ export function AssistantComposer({
     if (files.length > 0) processImageFiles(files);
     // Reset so the same file can be re-selected
     e.target.value = '';
+  };
+
+  // ─── Audio recording → Gemini transcription ───
+  // The mic uses the currently-selected Google AI provider (Gemini 3.1 Flash Lite).
+  // When the selected provider is not Google AI, the button is hidden entirely.
+
+  const micProvider = selectedProvider?.type === 'GoogleAI' ? selectedProvider : null;
+
+  const pickRecordingMimeType = (): string => {
+    const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+    if (typeof MediaRecorder === 'undefined') return 'audio/webm';
+    for (const type of candidates) {
+      if (MediaRecorder.isTypeSupported?.(type)) return type;
+    }
+    return '';
+  };
+
+  const clearRecordingTimer = () => {
+    if (recordingTimerRef.current !== null) {
+      window.clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  };
+
+  const stopRecordingTracks = () => {
+    mediaRecorderRef.current?.stream?.getTracks().forEach((track) => track.stop());
+  };
+
+  const transcribeRecordedBlob = useCallback(async (blob: Blob, mimeType: string) => {
+    if (!micProvider) return;
+    if (blob.size === 0) return;
+
+    setIsTranscribing(true);
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      // Convert to base64 without the data: prefix
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+      }
+      const base64 = btoa(binary);
+      const cleanMime = mimeType.split(';')[0] || 'audio/webm';
+      const { text } = await transcribeAssistantAudio({
+        providerId: micProvider.id,
+        audioBase64: base64,
+        mimeType: cleanMime,
+      });
+      const trimmed = text.trim();
+      if (!trimmed) {
+        toast.warning(t('assistant.micNoSpeechDetected'));
+        return;
+      }
+      setInputText(inputText ? `${inputText}${inputText.endsWith(' ') ? '' : ' '}${trimmed}` : trimmed);
+    } catch (err: any) {
+      console.error('[transcribeRecordedBlob]', err);
+      toast.error(err?.message || t('assistant.micTranscribeFailed'));
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, [micProvider, inputText, setInputText, t]);
+
+  const startRecording = async () => {
+    if (!micProvider) return;
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      toast.error(t('assistant.micUnsupported'));
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = pickRecordingMimeType();
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      recorder.onstop = () => {
+        clearRecordingTimer();
+        stopRecordingTracks();
+        setIsRecording(false);
+        setRecordingSeconds(0);
+        const chunkMime = recorder.mimeType || mimeType || 'audio/webm';
+        const blob = new Blob(audioChunksRef.current, { type: chunkMime });
+        audioChunksRef.current = [];
+        mediaRecorderRef.current = null;
+        void transcribeRecordedBlob(blob, chunkMime);
+      };
+
+      recorder.onerror = () => {
+        clearRecordingTimer();
+        stopRecordingTracks();
+        setIsRecording(false);
+        setRecordingSeconds(0);
+        toast.error(t('assistant.micRecordFailed'));
+      };
+
+      recordingStartRef.current = Date.now();
+      setRecordingSeconds(0);
+      recorder.start();
+      setIsRecording(true);
+
+      recordingTimerRef.current = window.setInterval(() => {
+        const elapsed = Date.now() - recordingStartRef.current;
+        setRecordingSeconds(Math.floor(elapsed / 1000));
+        if (elapsed >= MAX_RECORDING_MS) {
+          if (mediaRecorderRef.current?.state === 'recording') {
+            mediaRecorderRef.current.stop();
+          }
+        }
+      }, 250);
+    } catch (err: any) {
+      console.error('[startRecording]', err);
+      const message = err?.name === 'NotAllowedError'
+        ? t('assistant.micPermissionDenied')
+        : t('assistant.micRecordFailed');
+      toast.error(message);
+    }
+  };
+
+  const stopRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state === 'recording') {
+      recorder.stop();
+    } else {
+      clearRecordingTimer();
+      stopRecordingTracks();
+      setIsRecording(false);
+      setRecordingSeconds(0);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isTranscribing) return;
+    if (isRecording) stopRecording();
+    else void startRecording();
+  };
+
+  useEffect(() => {
+    return () => {
+      clearRecordingTimer();
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state === 'recording') recorder.stop();
+      stopRecordingTracks();
+    };
+  }, []);
+
+  const formatRecordingTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -545,6 +711,40 @@ export function AssistantComposer({
                 );
               })}
             </select>
+
+            {/* Mic button — only shown when a Google AI provider is selected */}
+            {micProvider && (
+              <button
+                type="button"
+                onClick={toggleRecording}
+                disabled={isSending || isTranscribing}
+                title={isRecording ? t('assistant.micStop') : t('assistant.micStart')}
+                className={`ml-auto inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                  isRecording
+                    ? 'bg-red-500/10 text-red-600 hover:bg-red-500/20 dark:text-red-300'
+                    : isTranscribing
+                      ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300'
+                      : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
+                }`}
+              >
+                {isTranscribing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>{t('assistant.micTranscribing')}</span>
+                  </>
+                ) : isRecording ? (
+                  <>
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                    </span>
+                    <span className="tabular-nums">{formatRecordingTime(recordingSeconds)}</span>
+                  </>
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
+              </button>
+            )}
           </div>
 
           {/* Picker dropdowns + bound context chips */}
@@ -732,7 +932,7 @@ export function AssistantComposer({
             ) : (
               <button
                 type="button"
-                onClick={onSend}
+                onClick={() => onSend()}
                 disabled={!canSend}
                 className="group/btn flex-shrink-0 rounded-xl bg-indigo-600 p-3 text-white shadow-lg shadow-indigo-600/20 transition-all active:scale-95 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-40"
                 title={t('assistant.send')}

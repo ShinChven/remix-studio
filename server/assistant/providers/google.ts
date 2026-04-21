@@ -15,7 +15,7 @@ import type { ChatMessage } from './types';
  * to ones that actually exist in the Google API (e.g., `gemini-2.5-flash`).
  * Resolves the 404 Not Found error using real internet knowledge.
  */
-function resolveRealGeminiModelId(modelId: string): string {
+export function resolveRealGeminiModelId(modelId: string): string {
   if (modelId.includes('3.1-flash-lite')) return 'gemini-3-flash-preview';
   if (modelId.includes('3.1-pro')) return 'gemini-3.1-pro-preview';
   if (modelId.includes('3.1-flash')) return 'gemini-3-flash-preview';
@@ -202,6 +202,50 @@ export class GoogleAIChatProvider implements ChatProvider {
 
     return lastChunk;
   }
+}
+
+/**
+ * One-shot audio → text transcription/summarization using a Gemini model.
+ * Used by the chat composer's microphone button: the recorded audio is sent
+ * as inlineData and the model returns a rewritten prompt in the user's voice.
+ */
+export async function transcribeAudioWithGemini(
+  apiKey: string,
+  apiUrl: string | undefined | null,
+  audioBase64: string,
+  mimeType: string,
+  modelId = 'gemini-3.1-flash-lite-preview',
+): Promise<string> {
+  const ai = new GoogleGenAI({
+    apiKey,
+    ...(apiUrl ? { baseUrl: apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl } : {}),
+  });
+  const realModel = resolveRealGeminiModelId(modelId);
+  const res = await ai.models.generateContent({
+    model: realModel,
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { inlineData: { mimeType, data: audioBase64 } },
+          {
+            text:
+              "You are transcribing a voice memo the user just recorded for a chat box. "
+              + "Listen and output a single clear, concise written message that captures the user's request, as if they had typed it themselves. "
+              + "Keep it in the same language the user spoke. Preserve any specific names, identifiers, or code they mention. "
+              + "Do not add preamble, quotes, or commentary — output only the rewritten message text.",
+          },
+        ],
+      },
+    ],
+  });
+
+  const parts = res.candidates?.[0]?.content?.parts ?? [];
+  let text = '';
+  for (const part of parts) {
+    if (part.text && !(part as any).thought) text += part.text;
+  }
+  return text.trim();
 }
 
 function appendIncrementalText(current: string, incoming: string): string {

@@ -5,6 +5,7 @@ import { AssistantRepository } from '../db/assistant-repository';
 import { AssistantRunner, AssistantStatusEvent, TurnResult } from '../assistant/assistant-runner';
 import { ProviderRepository } from '../db/provider-repository';
 import { ASSISTANT_SUPPORTED_PROVIDER_TYPES } from '../assistant/chat-provider-factory';
+import { transcribeAudioWithGemini } from '../assistant/providers/google';
 
 type Variables = { user: JwtPayload };
 
@@ -251,6 +252,36 @@ export function createAssistantRouter(
         stream.write(JSON.stringify({ type: 'error', error: message }) + '\n');
       }
     });
+  });
+
+  // ─── Transcribe recorded audio to text (Gemini Flash Lite) ───
+  router.post('/api/assistant/transcribe-audio', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const body = await c.req.json();
+      const providerId = typeof body?.providerId === 'string' ? body.providerId : '';
+      const audioBase64 = typeof body?.audioBase64 === 'string' ? body.audioBase64 : '';
+      const mimeType = typeof body?.mimeType === 'string' && body.mimeType ? body.mimeType : 'audio/webm';
+
+      if (!providerId || !audioBase64) {
+        return c.json({ error: 'providerId and audioBase64 are required' }, 400);
+      }
+
+      const record = await providerRepo.getProvider(user.userId, providerId);
+      if (!record) return c.json({ error: 'Provider not found' }, 404);
+      if (record.type !== 'GoogleAI') {
+        return c.json({ error: 'Audio transcription requires a Google AI provider' }, 400);
+      }
+
+      const apiKey = await providerRepo.getDecryptedApiKey(user.userId, providerId);
+      if (!apiKey) return c.json({ error: 'Provider is missing an API key' }, 400);
+
+      const text = await transcribeAudioWithGemini(apiKey, record.apiUrl, audioBase64, mimeType);
+      return c.json({ text });
+    } catch (e: any) {
+      console.error('[POST /api/assistant/transcribe-audio]', e);
+      return c.json({ error: e?.message || 'Failed to transcribe audio' }, 500);
+    }
   });
 
   // ─── List assistant-capable providers ───
