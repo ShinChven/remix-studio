@@ -43,6 +43,12 @@ export class GoogleAITextGenerator extends TextGenerator {
       payload.systemInstruction = { parts: [{ text: systemPrompt }] };
     }
 
+    if (model.includes('gemma-4')) {
+      payload.thinkingConfig = { thinkingLevel: 'HIGH' };
+    } else if (model.includes('gemini-3') || model.includes('gemini-2.5') || model.includes('thinking')) {
+      payload.thinkingConfig = { includeThoughts: true };
+    }
+
     try {
       const res = await fetch(`${actualApiUrl}${actualApiUrl.includes('?') ? '&' : '?'}key=${this.apiKey}`, {
         method: 'POST',

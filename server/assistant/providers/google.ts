@@ -57,7 +57,9 @@ export class GoogleAIChatProvider implements ChatProvider {
       ...(tools ? { tools } : {}),
     };
 
-    if (
+    if (realModelId.includes('gemma-4')) {
+      config.thinkingConfig = { thinkingLevel: 'HIGH' } as any;
+    } else if (
       realModelId.includes('gemini-3') ||
       realModelId.includes('gemini-2.5') ||
       realModelId.includes('thinking')
@@ -67,6 +69,7 @@ export class GoogleAIChatProvider implements ChatProvider {
 
     const shouldStreamThoughts = typeof req.onThought === 'function'
       && (
+        realModelId.includes('gemma-4') ||
         realModelId.includes('gemini-3') ||
         realModelId.includes('gemini-2.5') ||
         realModelId.includes('thinking')
