@@ -152,29 +152,38 @@ export function ProviderForm() {
         </div>
 
         <div className="px-6 md:px-8 py-10 space-y-10 max-w-screen-2xl mx-auto w-full">
-          {/* Provider Type Selection Grid */}
+          {/* Provider Type Selection Grid / Read-only Display during Edit */}
           <section className="space-y-6">
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {PROVIDER_TYPES.map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setType(t)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all relative group ${
-                    type === t 
-                      ? 'bg-amber-600 text-white border-amber-700 shadow-md shadow-amber-600/20 ring-2 ring-amber-500/20' 
-                      : 'bg-white/50 dark:bg-neutral-900/40 border-neutral-200 dark:border-white/5 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-white dark:hover:bg-neutral-900 backdrop-blur-xl shadow-sm'
-                  }`}
-                >
-                  <ProviderIcon type={t} className={`w-5 h-5 transition-transform group-hover:scale-110 ${type === t ? 'text-white' : 'text-neutral-500 dark:text-neutral-400'}`} />
-                  <span className={`text-[11px] font-black uppercase tracking-wider ${type === t ? 'text-white' : 'text-neutral-900 dark:text-white'}`}>{t}</span>
-                  {type === t && (
-                    <div className="absolute top-1.5 right-1.5 w-1 h-1 rounded-full bg-white shadow-[0_0_5px_rgba(255,255,255,1)]" />
-                  )}
-                </button>
-              ))}
-            </div>
+            {isEditing ? (
+              <div className="flex">
+                <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-amber-500/50 bg-amber-600/10 text-amber-600 dark:text-amber-500 shadow-sm backdrop-blur-xl">
+                  <ProviderIcon type={type} className="w-5 h-5" />
+                  <span className="text-[11px] font-black uppercase tracking-wider">{type}</span>
+                  <div className="ml-2 w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {PROVIDER_TYPES.map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setType(t)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all relative group ${
+                      type === t 
+                        ? 'bg-amber-600 text-white border-amber-700 shadow-md shadow-amber-600/20 ring-2 ring-amber-500/20' 
+                        : 'bg-white/50 dark:bg-neutral-900/40 border-neutral-200 dark:border-white/5 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-white dark:hover:bg-neutral-900 backdrop-blur-xl shadow-sm'
+                    }`}
+                  >
+                    <ProviderIcon type={t} className={`w-5 h-5 transition-transform group-hover:scale-110 ${type === t ? 'text-white' : 'text-neutral-500 dark:text-neutral-400'}`} />
+                    <span className={`text-[11px] font-black uppercase tracking-wider ${type === t ? 'text-white' : 'text-neutral-900 dark:text-white'}`}>{t}</span>
+                    {type === t && (
+                      <div className="absolute top-1.5 right-1.5 w-1 h-1 rounded-full bg-white shadow-[0_0_5px_rgba(255,255,255,1)]" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
