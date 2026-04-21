@@ -260,7 +260,7 @@ Later we can expose more tools once policy tags and confirmation rules are stabl
 
 ### Pagination for large read tools
 
-Read tools that can return large result sets (e.g. `get_library_items`, `search_library_items`, `list_albums`) must accept `limit` and `cursor` (or offset) arguments and return a `nextCursor` when more data exists.
+Read tools that can return large result sets (e.g. `get_library_items`, `search_library_items`, `list_albums`, `list_available_models`) must accept `limit` and `cursor` (or offset) arguments and return a `nextCursor` when more data exists.
 
 Rationale: the circuit breaker intentionally does not cap token consumption, so a single unbounded read can blow the context window silently. Pagination makes "fetch more" an explicit model decision rather than a hidden cost, and keeps individual tool results bounded without constraining total work across a turn.
 

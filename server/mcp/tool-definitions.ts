@@ -6,6 +6,12 @@ import type { UserRepository } from '../auth/user-repository';
 import type { ProviderRepository } from '../db/provider-repository';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 
+const MODEL_CATEGORY_VALUES = ['text', 'image', 'audio', 'video'] as const;
+const PROVIDER_TYPE_VALUES = Object.keys(PROVIDER_MODELS_MAP) as [
+  keyof typeof PROVIDER_MODELS_MAP,
+  ...(keyof typeof PROVIDER_MODELS_MAP)[]
+];
+
 /**
  * Shared tool registry for Remix Studio.
  *
@@ -68,6 +74,24 @@ function formatSize(bytes: number): string {
 function paginationHints(page: number, pages: number) {
   const hasMore = page < pages;
   return { hasMore, nextPage: hasMore ? page + 1 : null };
+}
+
+function paginateItems<T>(items: T[], page: number, limit: number) {
+  const total = items.length;
+  const pages = Math.max(1, Math.ceil(total / limit));
+  const start = (page - 1) * limit;
+  return {
+    items: items.slice(start, start + limit),
+    total,
+    page,
+    pages,
+    ...paginationHints(page, pages),
+  };
+}
+
+function matchesSearchQuery(fields: Array<string | undefined>, query?: string) {
+  if (!query) return true;
+  return fields.some((field) => field?.toLowerCase().includes(query));
 }
 
 function truncateContent(content: string, maxLen: number = MAX_CONTENT_PREVIEW_CHARS): {
@@ -326,11 +350,40 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'list_available_models',
     title: 'List Available Models',
-    description: 'List AI models the user can actually invoke, as pre-joined (providerId, modelConfigId) tuples. Use the returned providerId + modelConfigId verbatim when calling create_project_with_workflow. A provider with no matching saved instance appears in unusableModels with a reason.',
-    inputSchema: {},
+    description: 'List AI models the user can actually invoke, as pre-joined (providerId, modelConfigId) tuples. Supports search, filtering, and pagination to keep responses bounded. Use the returned providerId + modelConfigId verbatim when calling create_project_with_workflow.',
+    inputSchema: {
+      query: z.string().min(1).optional().describe('Optional text search across provider name/type, model name/id, category, and config id'),
+      providerType: z.enum(PROVIDER_TYPE_VALUES).optional().describe('Optional exact provider type filter'),
+      providerId: z.string().optional().describe('Optional exact saved provider ID filter'),
+      category: z.enum(MODEL_CATEGORY_VALUES).optional().describe('Optional exact model category filter'),
+      modelConfigId: z.string().optional().describe('Optional exact model config ID filter'),
+      includeUnusable: z.boolean().default(false).describe('Include models that have no saved provider configured. Disabled by default to keep responses smaller.'),
+      page: z.number().int().min(1).default(1).describe('Page number for paginated results (default 1)'),
+      limit: z.number().int().min(1).max(100).default(25).describe('Maximum results per page for each result bucket (default 25)'),
+    },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     category: 'read',
-    handler: async (userId) => {
+    handler: async (userId, input) => {
+      const {
+        query,
+        providerType: providerTypeFilter,
+        providerId: providerIdFilter,
+        category: categoryFilter,
+        modelConfigId: modelConfigIdFilter,
+        includeUnusable,
+        page,
+        limit,
+      } = input as {
+        query?: string;
+        providerType?: (typeof PROVIDER_TYPE_VALUES)[number];
+        providerId?: string;
+        category?: (typeof MODEL_CATEGORY_VALUES)[number];
+        modelConfigId?: string;
+        includeUnusable: boolean;
+        page: number;
+        limit: number;
+      };
+      const normalizedQuery = query?.trim().toLowerCase();
       const savedProviders = await providerRepository.listProviders(userId);
 
       const providersByType = new Map<string, typeof savedProviders>();
@@ -355,6 +408,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         providerType: string;
         modelConfigId: string;
         modelName: string;
+        category: string;
         reason: string;
       }> = [];
 
@@ -366,6 +420,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
               providerType,
               modelConfigId: m.id,
               modelName: m.name,
+              category: m.category,
               reason: `No saved ${providerType} provider. Add one under Settings before using this model.`,
             });
             continue;
@@ -386,10 +441,69 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         }
       }
 
+      const filteredUsable = usable.filter((model) =>
+        (!providerTypeFilter || model.providerType === providerTypeFilter) &&
+        (!providerIdFilter || model.providerId === providerIdFilter) &&
+        (!categoryFilter || model.category === categoryFilter) &&
+        (!modelConfigIdFilter || model.modelConfigId === modelConfigIdFilter) &&
+        matchesSearchQuery(
+          [
+            model.providerId,
+            model.providerName,
+            model.providerType,
+            model.modelConfigId,
+            model.modelName,
+            model.modelId,
+            model.category,
+          ],
+          normalizedQuery,
+        )
+      );
+
+      const filteredUnusable = includeUnusable
+        ? unusable.filter((model) =>
+            (!providerTypeFilter || model.providerType === providerTypeFilter) &&
+            (!providerIdFilter) &&
+            (!categoryFilter || model.category === categoryFilter) &&
+            (!modelConfigIdFilter || model.modelConfigId === modelConfigIdFilter) &&
+            matchesSearchQuery(
+              [
+                model.providerType,
+                model.modelConfigId,
+                model.modelName,
+                model.category,
+                model.reason,
+              ],
+              normalizedQuery,
+            )
+          )
+        : [];
+
+      const usablePage = paginateItems(filteredUsable, page, limit);
+      const unusablePage = paginateItems(filteredUnusable, page, limit);
+
       return {
         text: JSON.stringify({
-          usableModels: usable,
-          unusableModels: unusable,
+          usableModels: usablePage.items,
+          unusableModels: unusablePage.items,
+          page,
+          limit,
+          usableTotal: usablePage.total,
+          unusableTotal: unusablePage.total,
+          usablePages: usablePage.pages,
+          unusablePages: unusablePage.pages,
+          usableHasMore: usablePage.hasMore,
+          unusableHasMore: includeUnusable ? unusablePage.hasMore : false,
+          nextUsablePage: usablePage.nextPage,
+          nextUnusablePage: includeUnusable ? unusablePage.nextPage : null,
+          appliedFilters: {
+            query: query?.trim() || null,
+            providerType: providerTypeFilter ?? null,
+            providerId: providerIdFilter ?? null,
+            category: categoryFilter ?? null,
+            modelConfigId: modelConfigIdFilter ?? null,
+            includeUnusable,
+          },
           note: 'Pass providerId and modelConfigId from a usableModels entry directly to create_project_with_workflow.',
         }, null, 2),
       };
