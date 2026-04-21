@@ -701,7 +701,7 @@
   "providerForm": {
     "newTitle": "新建供应商",
     "editTitle": "编辑供应商",
-    "securityNote": "密钥使用 AES-256-GCM 加密",
+    "securityNote": "密钥将在数据库中加密",
     "nameLabel": "供应商名称",
     "namePlaceholder": "例如：工作账户、个人密钥...",
     "typeLabel": "供应商类型",
@@ -728,7 +728,9 @@
       "apiKeyRequired": "API Key 是必填项。",
       "secretKeyRequired": "KlingAI 需要 Secret Key。",
       "saveFailed": "保存失败。"
-    }
+    },
+    "supportedModels": "支持的模型",
+    "modelsSubtitle": "这些模型由所选提供商原生支持。"
   },
   "providerProfile": {
     "errorLoad": "加载供应商失败。",

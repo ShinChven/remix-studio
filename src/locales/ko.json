@@ -824,7 +824,7 @@
   "providerForm": {
     "newTitle": "새 제공자",
     "editTitle": "제공자 편집",
-    "securityNote": "키는 AES-256-GCM으로 암호화됩니다",
+    "securityNote": "키는 데이터베이스에서 암호화됩니다",
     "nameLabel": "제공자 이름",
     "namePlaceholder": "예: 업무용 계정, 개인 키...",
     "typeLabel": "제공자 유형",
@@ -847,11 +847,13 @@
     "submitSave": "변경 사항 저장",
     "cancel": "취소",
     "errors": {
-      "accessKeyRequired": "Access Key가 필요합니다.",
-      "apiKeyRequired": "API Key가 필요합니다.",
-      "secretKeyRequired": "KlingAI의 경우 Secret Key가 필요합니다.",
-      "saveFailed": "저장 실패."
-    }
+      "accessKeyRequired": "Access Key는 필수입니다.",
+      "apiKeyRequired": "API Key는 필수입니다.",
+      "secretKeyRequired": "KlingAI에는 Secret Key가 필수입니다.",
+      "saveFailed": "저장에 실패했습니다."
+    },
+    "supportedModels": "지원되는 모델",
+    "modelsSubtitle": "이 모델들은 선택한 제공업체에서 기본적으로 지원됩니다."
   },
   "providerProfile": {
     "errorLoad": "제공자를 불러오지 못했습니다.",

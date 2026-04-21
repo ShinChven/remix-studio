@@ -824,7 +824,7 @@
   "providerForm": {
     "newTitle": "Nouveau fournisseur",
     "editTitle": "Modifier le fournisseur",
-    "securityNote": "Clés cryptées avec AES-256-GCM",
+    "securityNote": "Les clés seront cryptées dans la base de données",
     "nameLabel": "Nom du fournisseur",
     "namePlaceholder": "ex: Compte professionnel, Clé personnelle...",
     "typeLabel": "Type de fournisseur",
@@ -851,7 +851,9 @@
       "apiKeyRequired": "L'API Key est requise.",
       "secretKeyRequired": "La Secret Key est requise pour KlingAI.",
       "saveFailed": "Échec de l'enregistrement."
-    }
+    },
+    "supportedModels": "Modèles Pris en Charge",
+    "modelsSubtitle": "Ces modèles sont nativement pris en charge par le fournisseur sélectionné."
   },
   "providerProfile": {
     "errorLoad": "Échec du chargement du fournisseur.",

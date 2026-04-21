@@ -824,7 +824,7 @@
   "providerForm": {
     "newTitle": "プロバイダーの新規作成",
     "editTitle": "プロバイダーの編集",
-    "securityNote": "キーは AES-256-GCM で暗号化されます",
+    "securityNote": "キーはデータベース内で暗号化されます",
     "nameLabel": "プロバイダー名",
     "namePlaceholder": "例: 仕事用アカウント、個人用キー...",
     "typeLabel": "プロバイダーの種類",
@@ -851,7 +851,9 @@
       "apiKeyRequired": "API Key は必須です。",
       "secretKeyRequired": "KlingAI には Secret Key が必須です。",
       "saveFailed": "保存に失敗しました。"
-    }
+    },
+    "supportedModels": "サポートされているモデル",
+    "modelsSubtitle": "これらのモデルは、選択したプロバイダーによってネイティブにサポートされています。"
   },
   "providerProfile": {
     "errorLoad": "プロバイダーの読み込みに失敗しました。",

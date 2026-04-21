@@ -824,7 +824,7 @@
   "providerForm": {
     "newTitle": "新建供應商",
     "editTitle": "編輯供應商",
-    "securityNote": "密鑰使用 AES-256-GCM 加密",
+    "securityNote": "密鑰將在資料庫中加密",
     "nameLabel": "供應商名稱",
     "namePlaceholder": "例如：工作帳戶、個人密鑰...",
     "typeLabel": "供應商類型",
@@ -847,11 +847,13 @@
     "submitSave": "保存更改",
     "cancel": "取消",
     "errors": {
-      "accessKeyRequired": "Access Key 是必需的。",
-      "apiKeyRequired": "API Key 是必需的。",
+      "accessKeyRequired": "Access Key 是必填項。",
+      "apiKeyRequired": "API Key 是必填項。",
       "secretKeyRequired": "KlingAI 需要 Secret Key。",
-      "saveFailed": "保存失敗。"
-    }
+      "saveFailed": "儲存失敗。"
+    },
+    "supportedModels": "支援的模型",
+    "modelsSubtitle": "這些模型由所選提供商原生支援。"
   },
   "providerProfile": {
     "errorLoad": "加載供應商失敗。",

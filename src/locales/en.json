@@ -1059,7 +1059,7 @@
   "providerForm": {
     "newTitle": "New Provider",
     "editTitle": "Edit Provider",
-    "securityNote": "Keys encrypted with AES-256-GCM",
+    "securityNote": "Keys will be encrypted in database",
     "nameLabel": "Provider Name",
     "namePlaceholder": "e.g. Work account, Personal key…",
     "typeLabel": "Provider Type",
@@ -1086,7 +1086,9 @@
       "apiKeyRequired": "API Key is required.",
       "secretKeyRequired": "Secret Key is required for KlingAI.",
       "saveFailed": "Save failed."
-    }
+    },
+    "supportedModels": "Supported Models",
+    "modelsSubtitle": "These models are natively supported by the selected provider."
   },
   "providerProfile": {
     "errorLoad": "Failed to load provider.",
