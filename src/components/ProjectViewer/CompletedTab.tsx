@@ -5,6 +5,7 @@ import { Job, ProjectType } from '../../types';
 import { SelectionToolbar } from './SelectionToolbar';
 import { JobListItem } from './JobListItem';
 import { InfoChip } from './InfoChip';
+import { EmptyState } from './EmptyState';
 
 interface CompletedTabProps {
   completedJobs: Job[];
@@ -139,13 +140,12 @@ export function CompletedTab({
           })}
 
           {completedJobs.length === 0 && (
-            <div className="py-24 text-center text-neutral-600 bg-white/10 dark:bg-neutral-900/10 border-2 border-dashed border-neutral-900 rounded-3xl flex flex-col items-center gap-4">
-              <CheckCircle2 className="w-12 h-12 opacity-10" />
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em]">{t('projectViewer.completed.emptyTitle')}</div>
-                <div className="text-[9px] opacity-40 mt-2">{t('projectViewer.completed.emptyDescription')}</div>
-              </div>
-            </div>
+            <EmptyState
+              Icon={CheckCircle2}
+              title={t('projectViewer.completed.emptyTitle')}
+              description={t('projectViewer.completed.emptyDescription')}
+              animateIcon={false}
+            />
           )}
         </div>
       </div>

@@ -675,7 +675,7 @@ export function AssistantComposer({
       <div className="relative rounded-2xl border border-neutral-200/50 bg-white/80 p-4 shadow-2xl backdrop-blur-2xl transition-all duration-300 group-focus-within:shadow-indigo-500/10 dark:border-white/10 dark:bg-neutral-900/80">
         <div className="space-y-4">
           {/* Model selector row */}
-          <div className="flex items-center gap-2 px-1">
+          <div className="flex items-center gap-2 px-2">
             <div className="flex h-5 w-5 items-center justify-center text-neutral-500 dark:text-neutral-400">
               {selectedProvider ? (
                 <ProviderIcon type={selectedProvider.type} className="h-4 w-4" />
@@ -907,7 +907,7 @@ export function AssistantComposer({
           </div>
 
           {/* Textarea + action buttons */}
-          <div className="flex items-end gap-3">
+          <div className="flex items-end gap-3 pl-[10px] pr-2">
             <textarea
               ref={textareaRef}
               value={inputText}
@@ -934,20 +934,20 @@ export function AssistantComposer({
               <button
                 type="button"
                 onClick={onStop}
-                className="group/btn flex-shrink-0 rounded-xl bg-red-500 p-3 text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-600 hover:shadow-xl hover:shadow-red-500/30 hover:scale-[1.02] active:scale-[0.98]"
+                className="group/btn mb-0.5 flex-shrink-0 rounded-full p-2 text-red-600 transition-all hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 active:scale-95"
                 title={t('assistant.stop')}
               >
-                <Square className="h-5 w-5" />
+                <Square className="h-4 w-4 fill-current" />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => _handleSend()}
                 disabled={!canSend}
-                className="group/btn flex-shrink-0 rounded-xl bg-indigo-600 p-3 text-white shadow-lg shadow-indigo-600/20 transition-all hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:grayscale disabled:opacity-40"
+                className="group/btn mb-0.5 flex-shrink-0 rounded-full p-2 text-indigo-600 transition-all hover:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 active:scale-95 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-20"
                 title={t('assistant.send')}
               >
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4" />
               </button>
             )}
           </div>

@@ -10,6 +10,7 @@ import { TextAlbumCompareDialog } from './TextAlbumCompareDialog';
 import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
 import { CopyToLibraryDialog } from './CopyToLibraryDialog';
 import { SelectionToolbar } from './SelectionToolbar';
+import { EmptyState } from './EmptyState';
 
 import { toast } from 'sonner';
 
@@ -216,13 +217,12 @@ export function AlbumTab({
         )}
 
         {albumItems.length === 0 ? (
-          <div className="bg-white/40 dark:bg-neutral-900/40 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-xl p-12 md:p-24 m-4 md:m-8 text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center gap-6 transition-colors hover:border-neutral-700 shadow-inner backdrop-blur-xl">
-            {isTextProject ? <FileText className="w-16 h-16 text-neutral-800 animate-pulse" /> : isVideoProject ? <VideoIcon className="w-16 h-16 text-neutral-800 animate-pulse" /> : isAudioProject ? <Music className="w-16 h-16 text-neutral-800 animate-pulse" /> : <ImageIcon className="w-16 h-16 text-neutral-800 animate-pulse" />}
-            <div>
-              <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400 tracking-wider uppercase">{isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : isAudioProject ? t('projectViewer.album.noAudios') : t('projectViewer.album.galleryEmpty')}</p>
-              <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-widest mt-2">{t('projectViewer.album.emptyDescription', { target: isTextProject ? t('projectViewer.album.collection') : isVideoProject ? t('projectViewer.album.reel') : isAudioProject ? t('projectViewer.album.audioCollection') : t('projectViewer.tabs.album').toLowerCase() })}</p>
-            </div>
-          </div>
+          <EmptyState
+            Icon={isTextProject ? FileText : isVideoProject ? VideoIcon : isAudioProject ? Music : ImageIcon}
+            title={isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : isAudioProject ? t('projectViewer.album.noAudios') : t('projectViewer.album.galleryEmpty')}
+            description={t('projectViewer.album.emptyDescription', { target: isTextProject ? t('projectViewer.album.collection') : isVideoProject ? t('projectViewer.album.reel') : isAudioProject ? t('projectViewer.album.audioCollection') : t('projectViewer.tabs.album').toLowerCase() })}
+            animateIcon={true}
+          />
         ) : isTextProject ? (
           <div className="overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-900/40 rounded-none border-x-0 border-t-0">
             {displayItems.map((item, index) => {
