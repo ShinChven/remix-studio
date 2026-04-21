@@ -284,10 +284,8 @@ export function AssistantPage() {
   useEffect(() => {
     if (selectedModelId) localStorage.setItem('assistant_last_model', selectedModelId);
   }, [selectedModelId]);
-  const [inputText, setInputText] = useState('');
+  
   const [isSending, setIsSending] = useState(false);
-  const [boundContexts, setBoundContexts] = useState<BoundContext[]>([]);
-  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [currentThinkingTitle, setCurrentThinkingTitle] = useState('');
   const [currentToolTitle, setCurrentToolTitle] = useState('');
@@ -441,9 +439,8 @@ export function AssistantPage() {
       const { initialMessage, providerId, modelId, boundContexts: initialContexts, attachedImages: initialImages } = state;
       if (providerId) setSelectedProviderId(providerId);
       if (modelId) setSelectedModelId(modelId);
-      if (initialContexts) setBoundContexts(initialContexts);
-      if (initialImages && initialImages.length > 0) setAttachedImages(initialImages);
-      handleSend(initialMessage, providerId, modelId, initialContexts, initialImages ?? []);
+      // Removed initial contexts/images setters as they are now managed by Composer
+      handleSend(initialMessage || '', initialContexts || [], initialImages || [], providerId, modelId);
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
@@ -498,37 +495,29 @@ export function AssistantPage() {
   };
 
   // ─── Send message ───
-  const handleSend = async (manualText?: string, manualProviderId?: string, manualModelId?: string, manualBoundContexts?: BoundContext[], manualImages?: AttachedImage[]) => {
-    const text = (manualText ?? inputText).trim();
-    const finalContexts = manualBoundContexts ?? boundContexts;
-    const finalImages = manualImages ?? attachedImages;
-    if (!text && finalContexts.length === 0 && finalImages.length === 0 || isSending) return;
+  const handleSend = async (text: string, contexts: BoundContext[], images: AttachedImage[], overrideProviderId?: string, overrideModelId?: string) => {
+    const trimmedText = text.trim();
+    if (!trimmedText && contexts.length === 0 && images.length === 0 || isSending) return;
 
-    let finalContent = text;
+    let finalContent = trimmedText;
     // Embed images as [IMAGE_ATTACHMENTS] block at the start
-    if (finalImages.length > 0) {
-      const imageBlock = `[IMAGE_ATTACHMENTS]\n${finalImages.map((img) => img.base64).join('\n')}\n[/IMAGE_ATTACHMENTS]`;
+    if (images.length > 0) {
+      const imageBlock = `[IMAGE_ATTACHMENTS]\n${images.map((img) => img.base64).join('\n')}\n[/IMAGE_ATTACHMENTS]`;
       finalContent = imageBlock + (finalContent ? `\n${finalContent}` : '');
     }
-    if (finalContexts.length > 0) {
-      const contextStr = finalContexts.map(b => `- ${b.type === 'project' ? 'Project' : 'Library'}: "${b.name}" (ID: ${b.id}${b.subType ? `, Type: ${b.subType}` : ''})`).join('\n');
+    if (contexts.length > 0) {
+      const contextStr = contexts.map(b => `- ${b.type === 'project' ? 'Project' : 'Library'}: "${b.name}" (ID: ${b.id}${b.subType ? `, Type: ${b.subType}` : ''})`).join('\n');
       finalContent = finalContent ? `${finalContent}\n\n<bound_context>\n${contextStr}\n</bound_context>` : `<bound_context>\n${contextStr}\n</bound_context>`;
     }
 
-    const pId = manualProviderId ?? selectedProviderId;
-    const mId = manualModelId ?? selectedModelId;
+    const pId = overrideProviderId ?? selectedProviderId;
+    const mId = overrideModelId ?? selectedModelId;
 
     if (!activeConversationId) {
       if (!pId || !mId) {
         toast.error(t('assistant.noProvider'));
         return;
       }
-    }
-
-    if (!manualText) {
-      setInputText('');
-      setBoundContexts([]);
-      setAttachedImages([]);
     }
 
     setIsSending(true);
@@ -575,8 +564,6 @@ export function AssistantPage() {
       createdAt: Date.now(),
     };
     setMessages((prev) => [...prev, optimisticUserMsg]);
-    // Clear images immediately so UI feels responsive
-    setAttachedImages([]);
 
     try {
       const result = await sendAssistantMessage(currentConversationId, finalContent, (event) => {
@@ -766,10 +753,7 @@ export function AssistantPage() {
 
   // ─── Key handler ───
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    // Handled in Composer now
   };
 
   // ─── Render helpers ───
@@ -1309,16 +1293,10 @@ export function AssistantPage() {
             <div className="flex flex-col items-center justify-center h-full px-4">
               <div className="w-full max-w-2xl mx-auto -mt-20">
                 <AssistantHero
-                  inputText={inputText}
-                  setInputText={setInputText}
                   selectedProviderId={selectedProviderId}
                   setSelectedProviderId={setSelectedProviderId}
                   selectedModelId={selectedModelId}
                   setSelectedModelId={setSelectedModelId}
-                  boundContexts={boundContexts}
-                  setBoundContexts={setBoundContexts}
-                  attachedImages={attachedImages}
-                  setAttachedImages={setAttachedImages}
                   providers={providers}
                   isSending={isSending}
                   onSend={handleSend}
@@ -1334,16 +1312,10 @@ export function AssistantPage() {
           <div className="flex-shrink-0 p-4 pt-2">
             <div className="max-w-3xl mx-auto">
               <AssistantComposer
-                inputText={inputText}
-                setInputText={setInputText}
                 selectedProviderId={selectedProviderId}
                 setSelectedProviderId={setSelectedProviderId}
                 selectedModelId={selectedModelId}
                 setSelectedModelId={setSelectedModelId}
-                boundContexts={boundContexts}
-                setBoundContexts={setBoundContexts}
-                attachedImages={attachedImages}
-                setAttachedImages={setAttachedImages}
                 providers={providers}
                 isSending={isSending}
                 onSend={handleSend}

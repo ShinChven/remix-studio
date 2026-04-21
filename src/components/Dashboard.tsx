@@ -25,9 +25,6 @@ export function Dashboard() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(() => localStorage.getItem('assistant_last_provider') || '');
   const [selectedModelId, setSelectedModelId] = useState<string>(() => localStorage.getItem('assistant_last_model') || '');
-  const [inputText, setInputText] = useState('');
-  const [boundContexts, setBoundContexts] = useState<BoundContext[]>([]);
-  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
 
   useEffect(() => {
     if (selectedProviderId) localStorage.setItem('assistant_last_provider', selectedProviderId);
@@ -74,19 +71,18 @@ export function Dashboard() {
   const addProject = () => navigate('/project/new');
   const addLibrary = () => navigate('/library/new');
 
-  const handleStartChat = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    const text = inputText.trim();
-    if (!text && boundContexts.length === 0 && attachedImages.length === 0) return;
+  const handleStartChat = (text: string, contexts: BoundContext[], images: AttachedImage[]) => {
+    const trimmedText = text.trim();
+    if (!trimmedText && contexts.length === 0 && images.length === 0) return;
     
     localStorage.removeItem('assistant_last_conversation');
     navigate('/assistant', { 
       state: { 
-        initialMessage: text,
+        initialMessage: trimmedText,
         providerId: selectedProviderId,
         modelId: selectedModelId,
-        boundContexts: boundContexts,
-        attachedImages: attachedImages,
+        boundContexts: contexts,
+        attachedImages: images,
       } 
     });
   };
@@ -99,16 +95,10 @@ export function Dashboard() {
         {/* Unified Hero Section - Matrix Style */}
         <section className="flex flex-col items-center justify-center py-8 md:py-16">
           <AssistantHero
-            inputText={inputText}
-            setInputText={setInputText}
             selectedProviderId={selectedProviderId}
             setSelectedProviderId={setSelectedProviderId}
             selectedModelId={selectedModelId}
             setSelectedModelId={setSelectedModelId}
-            boundContexts={boundContexts}
-            setBoundContexts={setBoundContexts}
-            attachedImages={attachedImages}
-            setAttachedImages={setAttachedImages}
             providers={providers}
             isSending={false}
             onSend={handleStartChat}

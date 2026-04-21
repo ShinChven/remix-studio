@@ -34,19 +34,16 @@ type SkillTriggerMatch = {
 };
 
 export interface AssistantComposerProps {
-  inputText: string;
-  setInputText: (val: string) => void;
+  initialInputText?: string;
+  initialBoundContexts?: BoundContext[];
+  initialAttachedImages?: AttachedImage[];
   selectedProviderId: string;
   setSelectedProviderId: (id: string) => void;
   selectedModelId: string;
   setSelectedModelId: (id: string) => void;
-  boundContexts: BoundContext[];
-  setBoundContexts: React.Dispatch<React.SetStateAction<BoundContext[]>>;
-  attachedImages: AttachedImage[];
-  setAttachedImages: React.Dispatch<React.SetStateAction<AttachedImage[]>>;
   providers: Provider[];
   isSending: boolean;
-  onSend: () => void;
+  onSend: (text: string, boundContexts: BoundContext[], attachedImages: AttachedImage[]) => void;
   onStop?: () => void;
   placeholder?: string;
 }
@@ -115,16 +112,13 @@ async function compressImage(file: File): Promise<string> {
 }
 
 export function AssistantComposer({
-  inputText,
-  setInputText,
+  initialInputText = '',
+  initialBoundContexts = [],
+  initialAttachedImages = [],
   selectedProviderId,
   setSelectedProviderId,
   selectedModelId,
   setSelectedModelId,
-  boundContexts,
-  setBoundContexts,
-  attachedImages,
-  setAttachedImages,
   providers,
   isSending,
   onSend,
@@ -132,6 +126,17 @@ export function AssistantComposer({
   placeholder,
 }: AssistantComposerProps) {
   const { t } = useTranslation();
+  
+  const [inputText, setInputText] = useState(initialInputText);
+  const [boundContexts, setBoundContexts] = useState<BoundContext[]>(initialBoundContexts);
+  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>(initialAttachedImages);
+
+  const _handleSend = () => {
+    onSend(inputText, boundContexts, attachedImages);
+    setInputText('');
+    setBoundContexts([]);
+    setAttachedImages([]);
+  };
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -642,7 +647,7 @@ export function AssistantComposer({
 
     if (event.key === 'Enter' && !event.shiftKey && (activePicker === null || activeOptions.length === 0)) {
       event.preventDefault();
-      onSend();
+      _handleSend();
     }
   };
 
@@ -712,39 +717,59 @@ export function AssistantComposer({
               })}
             </select>
 
-            {/* Mic button — only shown when a Google AI provider is selected */}
-            {micProvider && (
+            <div className="ml-auto flex items-center gap-1">
+              {/* Mic button — only shown when a Google AI provider is selected */}
+              {micProvider && (
+                <button
+                  type="button"
+                  onClick={toggleRecording}
+                  disabled={isSending || isTranscribing}
+                  title={isRecording ? t('assistant.micStop') : t('assistant.micStart')}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                    isRecording
+                      ? 'bg-red-500/10 text-red-600 hover:bg-red-500/20 dark:text-red-300'
+                      : isTranscribing
+                        ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300'
+                        : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
+                  }`}
+                >
+                  {isTranscribing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>{t('assistant.micTranscribing')}</span>
+                    </>
+                  ) : isRecording ? (
+                    <>
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                      </span>
+                      <span className="tabular-nums">{formatRecordingTime(recordingSeconds)}</span>
+                    </>
+                  ) : (
+                    <Mic className="h-4 w-4" />
+                  )}
+                </button>
+              )}
+
+              {/* Image attach button */}
               <button
                 type="button"
-                onClick={toggleRecording}
-                disabled={isSending || isTranscribing}
-                title={isRecording ? t('assistant.micStop') : t('assistant.micStart')}
-                className={`ml-auto inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                  isRecording
-                    ? 'bg-red-500/10 text-red-600 hover:bg-red-500/20 dark:text-red-300'
-                    : isTranscribing
-                      ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300'
-                      : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isSending || attachedImages.length >= MAX_IMAGES}
+                title={t('assistant.attachImage')}
+                className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                  attachedImages.length > 0
+                    ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300'
+                    : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
                 }`}
               >
-                {isTranscribing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>{t('assistant.micTranscribing')}</span>
-                  </>
-                ) : isRecording ? (
-                  <>
-                    <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-                    </span>
-                    <span className="tabular-nums">{formatRecordingTime(recordingSeconds)}</span>
-                  </>
-                ) : (
-                  <Mic className="h-4 w-4" />
+                <ImagePlus className="h-4 w-4" />
+                {attachedImages.length > 0 && (
+                  <span className="ml-0.5">{attachedImages.length}</span>
                 )}
               </button>
-            )}
+            </div>
           </div>
 
           {/* Picker dropdowns + bound context chips */}
@@ -895,21 +920,6 @@ export function AssistantComposer({
               className="custom-scrollbar max-h-[200px] flex-1 resize-none border-none bg-transparent py-1 text-base text-neutral-800 outline-none placeholder-neutral-400 disabled:opacity-50 dark:text-neutral-200 dark:placeholder-neutral-500"
             />
 
-            {/* Image attach button */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isSending || attachedImages.length >= MAX_IMAGES}
-              title={t('assistant.attachImage')}
-              className={`flex-shrink-0 rounded-xl p-2.5 transition-all ${
-                attachedImages.length > 0
-                  ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-500/30'
-                  : 'text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-600 dark:hover:text-neutral-300'
-              } disabled:cursor-not-allowed disabled:opacity-40`}
-            >
-              <ImagePlus className="h-5 w-5" />
-            </button>
-
             {/* Hidden file input */}
             <input
               ref={fileInputRef}
@@ -924,7 +934,7 @@ export function AssistantComposer({
               <button
                 type="button"
                 onClick={onStop}
-                className="group/btn flex-shrink-0 rounded-xl bg-red-500 p-3 text-white shadow-lg shadow-red-600/20 transition-all active:scale-95 hover:bg-red-600"
+                className="group/btn flex-shrink-0 rounded-xl bg-red-500 p-3 text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-600 hover:shadow-xl hover:shadow-red-500/30 hover:scale-[1.02] active:scale-[0.98]"
                 title={t('assistant.stop')}
               >
                 <Square className="h-5 w-5" />
@@ -932,12 +942,12 @@ export function AssistantComposer({
             ) : (
               <button
                 type="button"
-                onClick={() => onSend()}
+                onClick={() => _handleSend()}
                 disabled={!canSend}
-                className="group/btn flex-shrink-0 rounded-xl bg-indigo-600 p-3 text-white shadow-lg shadow-indigo-600/20 transition-all active:scale-95 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-40"
+                className="group/btn flex-shrink-0 rounded-xl bg-indigo-600 p-3 text-white shadow-lg shadow-indigo-600/20 transition-all hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:grayscale disabled:opacity-40"
                 title={t('assistant.send')}
               >
-                <Send className="h-5 w-5 transition-transform group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5" />
+                <Send className="h-5 w-5" />
               </button>
             )}
           </div>
