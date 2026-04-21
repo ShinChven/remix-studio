@@ -555,7 +555,7 @@
       "deleteLibrary": {
         "title": "Delete Library",
         "message": "This will permanently delete the collection \"{{name}}\" and all its fragments. This action is irreversible.",
-        "confirm": "Delete Collection"
+        "confirm": "Delete"
       },
       "expungeFragment": {
         "title": "Expunge Fragment",

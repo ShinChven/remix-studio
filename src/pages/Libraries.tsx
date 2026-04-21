@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
-import { Plus, Folder, LayoutGrid, ChevronRight, ChevronLeft, Loader2, Copy, Search, ImageIcon, Type, Video, Music, Pin, PinOff } from 'lucide-react';
-import { duplicateLibrary, fetchLibraries, setLibraryPinned } from '../api';
+import { Plus, Folder, LayoutGrid, ChevronRight, ChevronLeft, Loader2, Copy, Search, ImageIcon, Type, Video, Music, Pin, PinOff, Trash2 } from 'lucide-react';
+import { duplicateLibrary, fetchLibraries, setLibraryPinned, deleteLibrary, fetchLibraryReferences } from '../api';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 const MAX_PINNED_LIBRARIES = 6;
 import { DuplicateLibraryDialog } from '../components/DuplicateLibraryDialog';
@@ -59,6 +60,10 @@ export function Libraries() {
   const [pages, setPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [libraryToDuplicate, setLibraryToDuplicate] = useState<Library | null>(null);
+  const [libraryToDelete, setLibraryToDelete] = useState<Library | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isCheckingRefs, setIsCheckingRefs] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(q);
 
   const navigate = useNavigate();
@@ -150,6 +155,42 @@ export function Libraries() {
     }
   };
 
+  const handleDeleteClick = async (lib: Library) => {
+    setIsCheckingRefs(lib.id);
+    try {
+      const refs = await fetchLibraryReferences(lib.id);
+      if (refs.length > 0) {
+        navigate(`/library/${lib.id}/cleanup`);
+      } else {
+        setLibraryToDelete(lib);
+        setShowDeleteModal(true);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to check library references');
+    } finally {
+      setIsCheckingRefs(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!libraryToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteLibrary(libraryToDelete.id);
+      toast.success(t('libraries.libraryCard.deleteSuccess', 'Library deleted successfully'));
+      // Refresh list
+      const result = await fetchLibraries(page, 24, q);
+      setLibraries(result.items);
+      setTotal(result.total);
+      setPages(result.pages);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete library');
+    } finally {
+      setIsDeleting(false);
+      setLibraryToDelete(null);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
       <div className="w-full space-y-8 pb-20">
@@ -196,32 +237,33 @@ export function Libraries() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {libraries.map(lib => {
                   const typeMeta = getLibraryTypeMeta(lib.type);
                   const TypeIcon = typeMeta.icon;
                   const isPinned = Boolean(lib.pinnedAt);
+                  const checking = isCheckingRefs === lib.id;
                   return (
                   <Link
                     key={lib.id}
                     to={`/library/${lib.id}`}
-                    className={`${isPinned ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-200/60 dark:border-blue-500/20' : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5'} border backdrop-blur-xl ${typeMeta.borderClassName} p-3 rounded-xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 duration-300`}
+                    className={`${isPinned ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-200/60 dark:border-blue-500/20' : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5'} border backdrop-blur-xl ${typeMeta.borderClassName} p-5 rounded-2xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 duration-300`}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className={`p-2 rounded-lg group-hover:scale-105 transition-transform shadow ${typeMeta.iconClassName}`}>
-                        <TypeIcon className="w-4 h-4" />
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={`p-3 rounded-xl group-hover:scale-105 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
+                        <TypeIcon className="w-5 h-5" />
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             handleTogglePin(lib);
                           }}
-                          className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30"
+                          className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30"
                           title={isPinned ? t('libraries.libraryCard.unpin') : t('libraries.libraryCard.pin')}
                         >
-                          {isPinned ? <PinOff className="w-3 h-3" /> : <Pin className="w-3 h-3" />}
+                          {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
                         </button>
                         <button
                           onClick={(e) => {
@@ -229,28 +271,40 @@ export function Libraries() {
                             e.stopPropagation();
                             setLibraryToDuplicate(lib);
                           }}
-                          className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30"
+                          className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30"
                           title={t('libraries.libraryCard.duplicate')}
                         >
-                          <Copy className="w-3 h-3" />
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteClick(lib);
+                          }}
+                          disabled={checking}
+                          className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30 disabled:opacity-50"
+                          title={t('libraryEditor.deleteLibrary')}
+                        >
+                          {checking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>
                     </div>
 
-                    <h4 className="text-sm font-semibold text-neutral-900 dark:text-white truncate mb-1.5">{lib.name}</h4>
+                    <h4 className="text-base font-bold text-neutral-900 dark:text-white truncate mb-2">{lib.name}</h4>
 
-                    <div className="flex items-center gap-x-3 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-500">
-                      <div className="flex items-center gap-1 capitalize">
-                        <TypeIcon className="w-3 h-3" />
+                    <div className="flex items-center gap-x-4 gap-y-1.5 text-xs text-neutral-500 dark:text-neutral-500">
+                      <div className="flex items-center gap-1.5 capitalize">
+                        <TypeIcon className="w-3.5 h-3.5" />
                         <span>{lib.type || 'text'}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <LayoutGrid className="w-3 h-3" />
+                      <div className="flex items-center gap-1.5">
+                        <LayoutGrid className="w-3.5 h-3.5" />
                         <span>{t('libraries.libraryCard.items', { count: lib.itemCount ?? lib.items?.length ?? 0 })}</span>
                       </div>
                     </div>
 
-                    <div className={`absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
+                    <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
                   </Link>
                 )})}
 
@@ -296,6 +350,16 @@ export function Libraries() {
         currentName={libraryToDuplicate?.name || ''}
         onClose={() => setLibraryToDuplicate(null)}
         onConfirm={handleDuplicateLibrary}
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title={t('libraryEditor.confirm.deleteLibrary.title')}
+        message={t('libraryEditor.confirm.deleteLibrary.message', { name: libraryToDelete?.name })}
+        confirmText={t('libraryEditor.confirm.deleteLibrary.confirm')}
+        type="danger"
       />
     </div>
   );

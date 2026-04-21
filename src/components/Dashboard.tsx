@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, Project } from '../types';
-import { Plus, Play, Folder, LayoutGrid, Clock, Loader2, Copy, MessageCircle, Send, Bot, Sparkles } from 'lucide-react';
+import { Plus, Play, Folder, LayoutGrid, Clock, Loader2, Copy, MessageCircle, Send, Bot, Sparkles, ImageIcon, Type, Video, Music } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { fetchProjects, fetchLibraries, fetchAssistantProviders } from '../api';
 import { Provider } from '../types';
@@ -12,6 +12,66 @@ import {
   normalizeAssistantProviderSelection,
 } from '../lib/assistant-provider-settings';
 import { AssistantHero } from './Assistant/AssistantHero';
+
+function getLibraryTypeMeta(type: Library['type'] | undefined) {
+  switch (type) {
+    case 'image':
+      return {
+        icon: ImageIcon,
+        iconClassName: 'bg-green-500/10 text-green-500 shadow-green-500/5',
+        borderClassName: 'hover:border-green-500/50',
+      };
+    case 'video':
+      return {
+        icon: Video,
+        iconClassName: 'bg-purple-500/10 text-purple-500 shadow-purple-500/5',
+        borderClassName: 'hover:border-purple-500/50',
+      };
+    case 'audio':
+      return {
+        icon: Music,
+        iconClassName: 'bg-cyan-500/10 text-cyan-500 shadow-cyan-500/5',
+        borderClassName: 'hover:border-cyan-500/50',
+      };
+    case 'text':
+    default:
+      return {
+        icon: Type,
+        iconClassName: 'bg-blue-500/10 text-blue-500 shadow-blue-500/5',
+        borderClassName: 'hover:border-blue-500/50',
+      };
+  }
+}
+
+function getProjectTypeMeta(type: Project['type'] | undefined) {
+  switch (type) {
+    case 'text':
+      return {
+        icon: Type,
+        iconClassName: 'bg-blue-500/10 text-blue-500 shadow-blue-500/5',
+        borderClassName: 'hover:border-blue-500/50',
+      };
+    case 'video':
+      return {
+        icon: Video,
+        iconClassName: 'bg-purple-500/10 text-purple-500 shadow-purple-500/5',
+        borderClassName: 'hover:border-purple-500/50',
+      };
+    case 'audio':
+      return {
+        icon: Music,
+        iconClassName: 'bg-cyan-500/10 text-cyan-500 shadow-cyan-500/5',
+        borderClassName: 'hover:border-cyan-500/50',
+      };
+    case 'image':
+    default:
+      return {
+        icon: ImageIcon,
+        iconClassName: 'bg-green-500/10 text-green-500 shadow-green-500/5',
+        borderClassName: 'hover:border-green-500/50',
+      };
+  }
+}
 
 export function Dashboard() {
   const { t } = useTranslation();
@@ -123,15 +183,18 @@ export function Dashboard() {
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {projects.map(project => (
+                {projects.map(project => {
+                  const typeMeta = getProjectTypeMeta(project.type);
+                  const ProjectIcon = typeMeta.icon;
+                  return (
                   <Link
                     key={project.id}
                     to={`/project/${project.id}`}
-                    className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:border-green-500/50 p-6 rounded-xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 relative overflow-hidden"
+                    className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-6 rounded-xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 relative overflow-hidden`}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <div className="p-2 bg-green-500/10 rounded-lg text-green-500 group-hover:scale-110 transition-transform">
-                        <Play className="w-5 h-5" />
+                      <div className={`p-2 rounded-lg group-hover:scale-110 transition-transform ${typeMeta.iconClassName}`}>
+                        <ProjectIcon className="w-5 h-5" />
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -156,7 +219,7 @@ export function Dashboard() {
                       })}
                     </p>
                   </Link>
-                ))}
+                )})}
                 {projects.length === 0 && (
                   <div className="col-span-full p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
                     {t('dashboard.noProjects')}
@@ -178,21 +241,24 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {libraries.map(lib => (
+                {libraries.map(lib => {
+                  const typeMeta = getLibraryTypeMeta(lib.type);
+                  const LibraryIcon = typeMeta.icon;
+                  return (
                   <Link
                     key={lib.id}
                     to={`/library/${lib.id}`}
-                    className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:border-blue-500/50 p-6 rounded-xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300"
+                    className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-6 rounded-xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300`}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500 group-hover:scale-110 transition-transform">
-                        <Folder className="w-5 h-5" />
+                      <div className={`p-2 rounded-lg group-hover:scale-110 transition-transform ${typeMeta.iconClassName}`}>
+                        <LibraryIcon className="w-5 h-5" />
                       </div>
                       <h4 className="font-medium text-neutral-900 dark:text-white truncate flex-1">{lib.name}</h4>
                     </div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-500">{lib.itemCount ?? lib.items?.length ?? 0} items</p>
                   </Link>
-                ))}
+                )})}
                 {libraries.length === 0 && (
                   <div className="col-span-full p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
                     {t('dashboard.noLibraries')}

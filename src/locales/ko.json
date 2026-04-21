@@ -422,7 +422,7 @@
       "deleteLibrary": {
         "title": "라이브러리 삭제",
         "message": "\"{{name}}\" 컬렉션과 모든 프래그먼트를 영구적으로 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
-        "confirm": "컬렉션 삭제"
+        "confirm": "삭제"
       },
       "expungeFragment": {
         "title": "프래그먼트 말소",

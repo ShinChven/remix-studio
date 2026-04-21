@@ -384,6 +384,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600 dark:text-neutral-400 px-3 py-1.5 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
               {t('libraryEditor.collectionType', { type: library.type || 'text' })}
             </div>
+            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/20 rounded-lg shadow-sm">
+              {t('libraries.libraryCard.items', { count: totalItems })}
+            </div>
           </div>
         )}
         size="large"

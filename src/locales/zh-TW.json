@@ -422,7 +422,7 @@
       "deleteLibrary": {
         "title": "刪除庫",
         "message": "這將永久刪除集合 \"{{name}}\" 及其所有片段。此操作不可逆。",
-        "confirm": "刪除集合"
+        "confirm": "刪除"
       },
       "expungeFragment": {
         "title": "刪除片段",

@@ -422,7 +422,7 @@
       "deleteLibrary": {
         "title": "Supprimer la bibliothèque",
         "message": "Cela supprimera définitivement la collection \"{{name}}\" et tous ses fragments. Cette action est irréversible.",
-        "confirm": "Supprimer la collection"
+        "confirm": "Supprimer"
       },
       "expungeFragment": {
         "title": "Expurger le fragment",

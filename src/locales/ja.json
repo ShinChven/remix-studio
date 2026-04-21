@@ -422,7 +422,7 @@
       "deleteLibrary": {
         "title": "ライブラリを削除",
         "message": "コレクション \"{{name}}\" とそのすべてのフラグメントを完全に削除します。この操作は取り消せません。",
-        "confirm": "コレクションを削除"
+        "confirm": "削除"
       },
       "expungeFragment": {
         "title": "フラグメントを抹消",
