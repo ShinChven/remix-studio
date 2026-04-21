@@ -419,20 +419,20 @@
       "resolve": "Résoudre les références"
     },
     "confirm": {
-      "destroyLibrary": {
-        "title": "Détruire la bibliothèque",
+      "deleteLibrary": {
+        "title": "Supprimer la bibliothèque",
         "message": "Cela supprimera définitivement la collection \"{{name}}\" et tous ses fragments. Cette action est irréversible.",
-        "confirm": "Détruire la collection"
+        "confirm": "Supprimer la collection"
       },
       "expungeFragment": {
         "title": "Expurger le fragment",
         "message": "Voulez-vous vraiment supprimer ce fragment de la collection ?",
         "confirm": "Supprimer maintenant"
       },
-      "destroySelected": {
-        "title": "Détruire les fragments sélectionnés",
+      "deleteSelected": {
+        "title": "Supprimer les fragments sélectionnés",
         "message": "Voulez-vous vraiment supprimer {{count}} fragments ?",
-        "confirm": "Détruire la sélection"
+        "confirm": "Supprimer la sélection"
       }
     },
     "tagModal": {

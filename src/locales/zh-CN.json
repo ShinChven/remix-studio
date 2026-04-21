@@ -194,20 +194,20 @@
       "resolve": "解决引用"
     },
     "confirm": {
-      "destroyLibrary": {
-        "title": "销毁库",
+      "deleteLibrary": {
+        "title": "删除库",
         "message": "这将永久删除集合 \"{{name}}\" 及其所有片段。此操作不可逆。",
-        "confirm": "销毁集合"
+        "confirm": "删除集合"
       },
       "expungeFragment": {
         "title": "删除片段",
         "message": "确定要从集合中移除此片段吗？",
         "confirm": "立即移除"
       },
-      "destroySelected": {
-        "title": "销毁所选片段",
+      "deleteSelected": {
+        "title": "删除所选片段",
         "message": "确定要删除 {{count}} 个片段吗？",
-        "confirm": "销毁所选"
+        "confirm": "删除所选"
       }
     },
     "tagModal": {

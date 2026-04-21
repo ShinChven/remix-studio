@@ -419,20 +419,20 @@
       "resolve": "参照を解決"
     },
     "confirm": {
-      "destroyLibrary": {
-        "title": "ライブラリを破棄",
+      "deleteLibrary": {
+        "title": "ライブラリを削除",
         "message": "コレクション \"{{name}}\" とそのすべてのフラグメントを完全に削除します。この操作は取り消せません。",
-        "confirm": "コレクションを破棄"
+        "confirm": "コレクションを削除"
       },
       "expungeFragment": {
         "title": "フラグメントを抹消",
         "message": "このフラグメントをコレクションから削除してもよろしいですか？",
         "confirm": "今すぐ削除"
       },
-      "destroySelected": {
-        "title": "選択したフラグメントを破棄",
+      "deleteSelected": {
+        "title": "選択したフラグメントを削除",
         "message": "{{count}} 個のフラグメントを削除してもよろしいですか？",
-        "confirm": "選択したものを破棄"
+        "confirm": "選択したものを削除"
       }
     },
     "tagModal": {

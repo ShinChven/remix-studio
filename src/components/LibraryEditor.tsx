@@ -846,9 +846,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         isOpen={showDeleteLibraryModal}
         onClose={() => setShowDeleteLibraryModal(false)}
         onConfirm={onDelete}
-        title={t('libraryEditor.confirm.destroyLibrary.title')}
-        message={t('libraryEditor.confirm.destroyLibrary.message', { name: library.name })}
-        confirmText={t('libraryEditor.confirm.destroyLibrary.confirm')}
+        title={t('libraryEditor.confirm.deleteLibrary.title')}
+        message={t('libraryEditor.confirm.deleteLibrary.message', { name: library.name })}
+        confirmText={t('libraryEditor.confirm.deleteLibrary.confirm')}
         type="danger"
       />
 
@@ -928,9 +928,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         isOpen={showDeleteSelectedModal}
         onClose={() => setShowDeleteSelectedModal(false)}
         onConfirm={deleteSelectedItems}
-        title={t('libraryEditor.confirm.destroySelected.title')}
-        message={t('libraryEditor.confirm.destroySelected.message', { count: selectedItemIds.size })}
-        confirmText={t('libraryEditor.confirm.destroySelected.confirm')}
+        title={t('libraryEditor.confirm.deleteSelected.title')}
+        message={t('libraryEditor.confirm.deleteSelected.message', { count: selectedItemIds.size })}
+        confirmText={t('libraryEditor.confirm.deleteSelected.confirm')}
         type="danger"
       />
 

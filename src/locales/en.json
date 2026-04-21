@@ -552,20 +552,20 @@
       "resolve": "Resolve References"
     },
     "confirm": {
-      "destroyLibrary": {
-        "title": "Destroy Library",
+      "deleteLibrary": {
+        "title": "Delete Library",
         "message": "This will permanently delete the collection \"{{name}}\" and all its fragments. This action is irreversible.",
-        "confirm": "Destroy Collection"
+        "confirm": "Delete Collection"
       },
       "expungeFragment": {
         "title": "Expunge Fragment",
         "message": "Are you sure you want to remove this fragment from the collection?",
         "confirm": "Remove Now"
       },
-      "destroySelected": {
-        "title": "Destroy Selected Fragments",
+      "deleteSelected": {
+        "title": "Delete Selected Fragments",
         "message": "Are you sure you want to delete {{count}} fragment(s)?",
-        "confirm": "Destroy Selected"
+        "confirm": "Delete Selected"
       }
     },
     "tagModal": {

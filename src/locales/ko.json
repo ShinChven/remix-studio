@@ -419,20 +419,20 @@
       "resolve": "참조 해결"
     },
     "confirm": {
-      "destroyLibrary": {
-        "title": "라이브러리 파괴",
+      "deleteLibrary": {
+        "title": "라이브러리 삭제",
         "message": "\"{{name}}\" 컬렉션과 모든 프래그먼트를 영구적으로 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
-        "confirm": "컬렉션 파괴"
+        "confirm": "컬렉션 삭제"
       },
       "expungeFragment": {
         "title": "프래그먼트 말소",
         "message": "컬렉션에서 이 프래그먼트를 제거하시겠습니까?",
         "confirm": "지금 제거"
       },
-      "destroySelected": {
-        "title": "선택한 프래그먼트 파괴",
+      "deleteSelected": {
+        "title": "선택한 프래그먼트 삭제",
         "message": "{{count}}개 프래그먼트를 삭제하시겠습니까?",
-        "confirm": "선택 항목 파괴"
+        "confirm": "선택 항목 삭제"
       }
     },
     "tagModal": {
