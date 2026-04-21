@@ -253,18 +253,6 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
-      id: 'google-gemma-4-31b-it-text',
-      name: 'Gemma 4',
-      generatorId: 'GoogleAI',
-      modelId: 'gemma-4-31b-it',
-      category: 'text',
-      promptLimit: { value: 131072, unit: 'tokens' },
-      options: {
-        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
-        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
-      },
-    },
-    {
       id: 'google-gemini-3-flash-text',
       name: 'Gemini 3 Flash',
       generatorId: 'GoogleAI',
@@ -295,6 +283,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       modelId: 'gemini-3.1-flash-lite-preview',
       category: 'text',
       promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'google-gemma-4-31b-it-text',
+      name: 'Gemma 4',
+      generatorId: 'GoogleAI',
+      modelId: 'gemma-4-31b-it',
+      category: 'text',
+      promptLimit: { value: 131072, unit: 'tokens' },
       options: {
         temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],

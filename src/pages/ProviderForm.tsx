@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { fetchProvider, createProvider, updateProvider } from '../api';
 import { ProviderType, PROVIDER_MODELS_MAP } from '../types';
-import { Save, Key, Eye, EyeOff, Loader2, MessageSquare, Image as ImageIcon, Video, Music, Plus, Minus } from 'lucide-react';
+import { Save, Eye, EyeOff, Loader2, MessageSquare, Image as ImageIcon, Video, Music, Plus, Minus } from 'lucide-react';
 import { ProviderIcon } from '../components/ProviderIcon';
 
 const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs'];
@@ -62,6 +62,7 @@ export function ProviderForm() {
     e.preventDefault();
     if (!name.trim()) return;
     if (!isEditing && !apiKey.trim()) { setError(type === 'KlingAI' ? t('providerForm.errors.accessKeyRequired') : t('providerForm.errors.apiKeyRequired')); return; }
+    if (isEditing && !apiKey.trim() && !hasExistingKey) { setError(type === 'KlingAI' ? t('providerForm.errors.accessKeyRequired') : t('providerForm.errors.apiKeyRequired')); return; }
     if (type === 'KlingAI' && !isEditing && !apiSecret.trim()) { setError(t('providerForm.errors.secretKeyRequired')); return; }
     if (type === 'KlingAI' && isEditing && !apiSecret.trim() && !hasExistingSecret) { setError(t('providerForm.errors.secretKeyRequired')); return; }
 
@@ -95,15 +96,6 @@ export function ProviderForm() {
   const currentModels = useMemo(() => {
     return PROVIDER_MODELS_MAP[type] || [];
   }, [type]);
-
-  const groupedModels = useMemo(() => {
-    const groups: Record<string, typeof currentModels> = {};
-    currentModels.forEach(m => {
-      if (!groups[m.category]) groups[m.category] = [];
-      groups[m.category].push(m);
-    });
-    return groups;
-  }, [currentModels]);
 
   if (isLoading) {
     return (
@@ -364,7 +356,7 @@ export function ProviderForm() {
                        })}
                        {currentModels.length === 0 && (
                          <tr>
-                           <td colSpan={4} className="px-8 py-12 text-center text-xs font-bold text-neutral-400 dark:text-neutral-600 italic">
+                           <td colSpan={3} className="px-8 py-12 text-center text-xs font-bold text-neutral-400 dark:text-neutral-600 italic">
                              No models listed for this provider yet.
                            </td>
                          </tr>
