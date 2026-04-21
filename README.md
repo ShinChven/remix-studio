@@ -1,71 +1,86 @@
 # Remix Studio
 
 [![Self-Hosted](https://img.shields.io/badge/self--hosted-ready-111111?style=flat-square)](./README.md)
+[![Gemini Assistant](https://img.shields.io/badge/Gemini-powered%20assistant-0f766e?style=flat-square)](./README.md)
+[![Batch Generation](https://img.shields.io/badge/Batch-permutation%20engine-15803d?style=flat-square)](./README.md)
 [![Multimodal](https://img.shields.io/badge/AI-multimodal-0f766e?style=flat-square)](./README.md)
 [![MCP](https://img.shields.io/badge/MCP-supported-2563eb?style=flat-square)](./README.md#mcp-support)
 [![React 19](https://img.shields.io/badge/React-19-149eca?style=flat-square)](./README.md#architecture-at-a-glance)
 [![Hono](https://img.shields.io/badge/Hono-Node.js-e36002?style=flat-square)](./README.md#architecture-at-a-glance)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Prisma-336791?style=flat-square)](./README.md#architecture-at-a-glance)
 [![S3 Compatible](https://img.shields.io/badge/Storage-S3%20compatible-16a34a?style=flat-square)](./README.md#deployment)
-[![i18n](https://img.shields.io/badge/i18n-English%20%7C%20%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%20%7C%20%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87%20%7C%20%E6%97%A5%E6%9C%AC%E8%AA%9E%20%7C%20%ED%95%9C%EA%B5%AD%EC%96%B4%20%7C%20Fran%C3%A7ais-7c3aed?style=flat-square)](./README.md#what-remix-studio-does)
+[![i18n](https://img.shields.io/badge/i18n-English%20%7C%20%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%20%7C%20%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87%20%7C%20%E6%97%A5%E6%9C%AC%E8%AA%9E%20%7C%20%ED%95%9C%EA%B5%AD%EC%96%B4%20%7C%20Fran%C3%A7ais-7c3aed?style=flat-square)](./README.md#what-remix-studio-is-for)
 
-Remix Studio is a self-hosted multimodal AI workspace for managing text, image, video, and audio generation workflows in one place. You can save prompt fragments and reference assets into reusable libraries, combine them into large sets of prompt variations, create drafts in bulk, and run those batches through a background queue instead of generating one by one. It also includes provider management, asset storage, export tools, and MCP access for prompt and library operations, so clients like Claude and Codex can help organize content around your workflows while generation itself continues to run through the app.
+Remix Studio is a self-hosted AI assistant workspace for orchestration and batch content generation, with a built-in assistant powered by Gemini models. Instead of prompting one asset at a time, you build workflows from reusable text, image, video, and audio inputs, then let the app expand those inputs into draft sets you can run as full combination sweeps or randomized samples.
+
+It combines three layers in one product: an in-app assistant for planning and operating workflows, a project system for combining reusable libraries into generation recipes, and a background execution stack for queueing, storing, exporting, and delivering results. The same shared tool layer also powers MCP access, so clients like Claude and Codex can help create libraries, inspect assets, and assemble projects around the same workflow model used in the UI.
 
 This project is built with **Google AI Studio** and **Antigravity**.
 
 ![Remix Studio screenshot](assets/screenshot.jpg)
 
-## What Remix Studio Does
+## What Remix Studio Is For
 
-- Manage text, image, video, and audio generation projects in one workspace
-- Save reusable prompt fragments and reference assets in libraries
-- Combine workflow steps and library items into many prompt permutations automatically
-- Create drafts in bulk, then run all or selected jobs instead of generating one by one
-- Queue generation jobs for background processing with per-provider concurrency control
-- Store AI provider credentials, model configurations, and custom model aliases
-- Review outputs in-app and export finished assets as ZIP archives
-- Deliver finished exports to external storage like Google Drive
-- Store generated assets in S3-compatible storage such as AWS S3 or MinIO
-- Support authenticated access with admin controls, 2FA, and passkeys
-- Provide a localized UI with built-in i18n support for English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French
-- Expose MCP tools for prompt and library operations
+- Run text, image, video, and audio generation projects from one workspace
+- Store reusable prompt fragments and reusable media inputs in text, image, video, and audio libraries
+- Turn workflow inputs into large draft sets by enumerating combinations across library items
+- Switch to shuffle mode when you want exploratory sampling instead of exhaustive combinations
+- Create drafts in bulk, then queue only the runs you want to execute
+- Manage provider credentials, model profiles, custom aliases, and provider-level concurrency limits
+- Review generated outputs in-app, retry failures, and export finished results as ZIP archives
+- Deliver completed export packages to external destinations such as Google Drive
+- Keep generated assets in S3-compatible storage such as AWS S3 or MinIO
+- Operate the system through the UI, the in-app assistant, or external MCP clients
+- Protect access with auth, admin controls, 2FA, passkeys, and user storage limits
+- Use the app in English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French
+
+## Why It Feels Different
+
+- **Assistant-first orchestration**: the built-in assistant can inspect your libraries, reason about workflows, and prepare project mutations behind explicit confirmation.
+- **Combination engine**: workflows are built from reusable inputs, then expanded into draft permutations instead of forcing you to handcraft each prompt variant.
+- **Batch execution**: generation runs through a recoverable queue with provider-specific concurrency and detached polling for async providers.
+- **Self-hosted control**: providers, storage, exports, auth, and automation all stay in your own deployment.
+
+## Combination-Driven Workflow
+
+If you have 3 subject prompts, 4 style prompts, and 2 reference-image sets, Remix Studio can turn that into 24 drafts from one workflow before you send anything to a provider. When `shuffle` is enabled, the same workflow can sample from those libraries instead of enumerating the full Cartesian product.
 
 ## Core Workflow
 
 ```mermaid
 flowchart TB
-    U([User]) -->|Multi-modal Prompt & Intent| A[AI Assistant]
+    U([User]) -->|Intent, references, instructions| A[AI Assistant]
     
-    subgraph Orchestration [Assistant Orchestration]
+    subgraph Orchestration [Assistant And Workflow Orchestration]
         A <-->|Tool Calling| T[MCP / Tool System]
         T <-->|Query/Fetch| L[(Libraries)]
-        T <-->|Configure| W[Workflow Settings]
+        T <-->|Create / Update| W[Projects And Workflow Settings]
     end
     
-    A -->|Dispatches Context| E[Workflow Engine]
-    L -.->|Library Items| E
+    A -->|Dispatches plan and context| E[Workflow Engine]
+    L -.->|Reusable inputs| E
     
     subgraph Generation [Batch Processing & Queue]
-        E -->|Combines Prompt + Libraries| C[Permutation Combinator]
-        C -->|Generates N Drafts| B[Background Queue]
+        E -->|Builds combinations or shuffled samples| C[Permutation Engine]
+        C -->|Creates N drafts| B[Background Queue]
         
         B -->|Concurrent Run| P1[Provider API]
         B -->|Concurrent Run| P2[Provider API]
         B -->|Concurrent Run| P3[Provider API]
     end
     
-    P1 -.->|Generated Asset| O[(Results DB & Storage)]
-    P2 -.->|Generated Asset| O
-    P3 -.->|Generated Asset| O
+    P1 -.->|Generated output| O[(Results DB & Storage)]
+    P2 -.->|Generated output| O
+    P3 -.->|Generated output| O
     O -.->|Review & Export| U
 ```
 
-1. Save prompt fragments, styles, subjects, and reference assets into reusable libraries.
-2. Build a project workflow by mixing direct inputs with one or more libraries.
-3. Let Remix Studio expand those inputs into combinations, then create drafts in batches.
-4. Run all or selected drafts through the queue with provider-level concurrency limits.
-5. Review outputs, retry failures, and export finished results.
-6. Optionally deliver exports to Google Drive.
+1. Save prompt fragments, tags, and media inputs into reusable libraries.
+2. Build a project manually or let the assistant assemble a workflow for you.
+3. Mix direct inputs with library-backed inputs across text, image, video, and audio slots.
+4. Expand the workflow into draft permutations, or sample it with shuffle mode.
+5. Queue all or selected drafts with provider-level concurrency limits.
+6. Review outputs, retry failures, export archives, and optionally deliver them to Google Drive.
 
 ## Supported Workflows
 
@@ -81,13 +96,13 @@ flowchart TB
 - **Video to video**: Transform or edit videos using reference video context
 - **Audio to video**: Generate video using reference audio context (e.g. for lip-sync or music)
 
-## Current Supported Models
+## Built-In Model Profiles
 
-These are the built-in model profiles currently included in the app.
+These are the model profiles currently bundled with the app.
 
 | Provider | Text Models | Image Models | Video Models | Audio Models |
 | :--- | :--- | :--- | :--- | :--- |
-| **Google AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | `Veo 3.1`, `Veo 3.1 Lite` | `Gemini 3.1 Flash TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS`, `Lyria 3 Clip`, `Lyria 3 Pro` |
+| **Google AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`, `Gemma 4` | `nano banana 2` | `Veo 3.1`, `Veo 3.1 Lite` | `Gemini 3.1 Flash TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS`, `Lyria 3 Clip`, `Lyria 3 Pro` |
 | **Vertex AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | - | `Gemini 3.1 Flash TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS`, `Lyria 3 Clip`, `Lyria 3 Pro` |
 | **OpenAI** | `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` | `GPT Image 1.5`, `GPT Image 1 Mini` | `Sora 2`, `Sora 2 Pro` | - |
 | **Grok** | `Grok 4.20`, `Grok 4.1 Fast` | `Grok Imagine`, `Grok Imagine Pro` | `Grok Imagine Video` | - |
@@ -100,7 +115,7 @@ These are the built-in model profiles currently included in the app.
 
 ## MCP Support
 
-Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped access to prompt and library tooling. It currently supports operations around prompt libraries, prompts, storage usage, and album summaries.
+Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped automation. External MCP clients can work with libraries, prompts, storage summaries, album summaries, model discovery, and workflow-backed project creation and updates. The in-app assistant uses the same shared tool registry, so chat orchestration and MCP automation stay aligned.
 
 Clients can connect with OAuth 2.0 or a personal access token. Manage both in `Account -> MCP`. OAuth metadata is available at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`; related endpoints are `/register`, `/authorize`, and `/token`.
 
@@ -124,6 +139,7 @@ Replace `http://localhost:3000` with your deployed origin. All tools are user-sc
 
 ## Architecture At a Glance
 
+- Assistant orchestration: in-app assistant runner + shared MCP tool registry
 - Frontend: React 19 + Vite
 - Server: Hono on Node.js
 - Database: PostgreSQL via Prisma
@@ -312,7 +328,7 @@ If you prefer AWS S3 or another external S3-compatible service, point `S3_ENDPOI
 
 ## At a Glance
 
-- See [design/system-overview.md](design/system-overview.md) for the stack, auth model, queue behavior, providers, libraries, exports, storage model, and repository structure
+- See [agent/system-overview.md](agent/system-overview.md) for the stack, auth model, queue behavior, providers, libraries, exports, storage model, and repository structure
 - See [docker/README.md](docker/README.md) for compose templates and deployment layouts
 - See [UPGRADING.md](UPGRADING.md) for migration and compatibility notes
 

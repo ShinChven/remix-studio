@@ -1181,26 +1181,6 @@ export function AssistantPage() {
                       <div className="relative flex-shrink-0">
                         <div className="flex w-9 h-9 items-center justify-center rounded-full bg-slate-900/80 backdrop-blur-sm shadow-sm relative z-10 border border-white/10 dark:border-white/5">
                           <img src="/assistant-avatar.svg" alt="Assistant" className="w-8 h-8 object-contain" />
-                          {isSending && idx === arr.length - 1 && (
-                            <svg className="absolute -inset-[1px] w-[36px] h-[36px] animate-material-spinner pointer-events-none z-20" viewBox="0 0 50 50">
-                              <circle
-                                className="animate-material-dash"
-                                cx="25"
-                                cy="25"
-                                r="23"
-                                fill="none"
-                                stroke="url(#avatarSpinnerGradient)"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                              />
-                              <defs>
-                                <linearGradient id="avatarSpinnerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" stopColor="#6366f1" />
-                                  <stop offset="100%" stopColor="#a855f7" />
-                                </linearGradient>
-                              </defs>
-                            </svg>
-                          )}
                         </div>
                       </div>
                       <div className="max-w-[80%]">
