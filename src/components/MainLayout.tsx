@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Unplug, Sparkles } from 'lucide-react';
+import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Unplug, Sparkles, Sun, Moon, Monitor } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
+
+type ThemeMode = 'light' | 'dark' | 'system';
 
 function NavItem({ to, icon, label, isActive, isCollapsed, onClick }: {
   to: string;
@@ -29,6 +32,49 @@ function NavItem({ to, icon, label, isActive, isCollapsed, onClick }: {
         {label}
       </span>
     </Link>
+  );
+}
+
+function ThemeSwitcher({ isCollapsed }: { isCollapsed: boolean }) {
+  const { t } = useTranslation();
+  const { theme, setTheme } = useTheme();
+
+  const options: Array<{ value: ThemeMode; icon: React.ReactNode; label: string }> = [
+    { value: 'light', icon: <Sun className="h-4 w-4" />, label: t('account.preferences.light') },
+    { value: 'dark', icon: <Moon className="h-4 w-4" />, label: t('account.preferences.dark') },
+    { value: 'system', icon: <Monitor className="h-4 w-4" />, label: t('account.preferences.system') },
+  ];
+
+  return (
+    <div
+      className={`flex items-center rounded-xl bg-neutral-200/50 dark:bg-neutral-950/40 p-1 backdrop-blur-md border border-neutral-300/30 dark:border-white/5 shadow-inner ${
+        isCollapsed ? 'flex-col gap-1' : 'w-full gap-1'
+      }`}
+    >
+      {options.map((option) => {
+        const isActive = theme === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setTheme(option.value)}
+            className={`group relative flex flex-1 items-center justify-center rounded-[8px] transition-all duration-300 ease-out border ${
+              isCollapsed ? 'h-10 w-full' : 'h-9 w-full'
+            } ${
+              isActive
+                ? 'bg-white dark:bg-neutral-800 text-indigo-600 dark:text-indigo-400 shadow-sm border-neutral-200/80 dark:border-neutral-700/80'
+                : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-black/5 dark:hover:bg-white/5 border-transparent'
+            }`}
+            aria-label={option.label}
+            title={option.label}
+          >
+            <span className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'scale-100 group-hover:scale-110'}`}>
+              {option.icon}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -234,6 +280,9 @@ export function MainLayout() {
 
         {/* User Profile */}
         <div className="p-4 border-t border-neutral-200/20 dark:border-white/5 bg-transparent flex-shrink-0">
+          <div className="mb-3">
+            <ThemeSwitcher isCollapsed={isCollapsed} />
+          </div>
           <Link
             to="/account"
             onClick={() => setIsMobileMenuOpen(false)}
