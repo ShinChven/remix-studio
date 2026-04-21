@@ -152,6 +152,40 @@ export function Dashboard() {
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full space-y-8">
+        {!isLoading && providers.length === 0 && (
+          <section className="animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="relative overflow-hidden rounded-[32px] border border-indigo-500/20 bg-indigo-500/5 p-6 md:p-8 backdrop-blur-3xl dark:border-indigo-500/30 dark:bg-indigo-500/10">
+              {/* Decorative elements */}
+              <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-indigo-500/10 blur-3xl" />
+              <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-indigo-500/5 blur-3xl" />
+              <Sparkles className="absolute -right-4 top-4 h-16 w-16 text-indigo-500/10 group-hover:rotate-12 transition-transform duration-500" />
+              
+              <div className="relative flex flex-col items-center gap-6 md:flex-row">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-xl shadow-indigo-600/20">
+                  <Sparkles className="h-8 w-8" />
+                </div>
+                
+                <div className="flex-1 space-y-2 text-center md:text-left">
+                  <h2 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                    {t('dashboard.setupNoticeTitle')}
+                  </h2>
+                  <p className="max-w-2xl text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
+                    {t('dashboard.setupNoticeDescription')}
+                  </p>
+                </div>
+                
+                <button
+                  onClick={() => navigate('/provider/new')}
+                  className="group flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition-all hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-600/30 active:scale-95"
+                >
+                  {t('dashboard.setupNoticeButton')}
+                  <Plus className="h-4 w-4 transition-transform duration-300 group-hover:rotate-90" />
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Unified Hero Section - Matrix Style */}
         <section className="flex flex-col items-center justify-center py-8 md:py-16">
           <AssistantHero

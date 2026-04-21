@@ -309,7 +309,10 @@
     "noLibraries": "暫無庫。建立一個庫來存儲可重用的提示詞。",
     "projectStats": "{{jobCount}} 個作業 • {{imageCount}} 張圖片 • {{date}}",
     "aiChat": "AI助手",
-    "aiChatDescription": "今天有什麼可以幫您的嗎？"
+    "aiChatDescription": "今天有什麼可以幫您的嗎？",
+    "setupNoticeTitle": "歡迎來到 Remix Studio！",
+    "setupNoticeDescription": "要開始使用 AI 助手和生成內容，您首先需要配置至少一個 AI 提供商。",
+    "setupNoticeButton": "配置提供商"
   },
   "projects": {
     "title": "專案",
@@ -1522,6 +1525,14 @@
       "7": "醒醒，尼奧...",
       "8": "歡迎來到真實世界的荒漠。",
       "9": "您完全正確！"
-    }
+    },
+    "micStart": "錄製語音消息",
+    "micStop": "停止錄製",
+    "micTranscribing": "正在轉錄...",
+    "micUnsupported": "此瀏覽器不支援麥克風",
+    "micPermissionDenied": "麥克風權限被拒絕",
+    "micRecordFailed": "錄製失敗",
+    "micTranscribeFailed": "音訊轉錄失敗",
+    "micNoSpeechDetected": "錄音中未檢測到語音"
   }
 }

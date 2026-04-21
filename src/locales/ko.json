@@ -309,7 +309,10 @@
     "noLibraries": "아직 라이브러리가 없습니다. 재사용 가능한 프롬프트를 저장하려면 하나를 만드세요.",
     "projectStats": "{{jobCount}} 작업 • {{imageCount}} 이미지 • {{date}}",
     "aiChat": "AI 어시스턴트",
-    "aiChatDescription": "오늘은 어떻게 도와드릴까요?"
+    "aiChatDescription": "오늘은 어떻게 도와드릴까요?",
+    "setupNoticeTitle": "Remix Studio에 오신 것을 환영합니다!",
+    "setupNoticeDescription": "AI 어시스턴트 사용 및 콘텐츠 생성을 시작하려면 먼저 하나 이상의 AI 제공자를 구성해야 합니다.",
+    "setupNoticeButton": "제공자 설정하기"
   },
   "projects": {
     "title": "프로젝트",
@@ -1522,6 +1525,14 @@
       "7": "일어나라, 네오...",
       "8": "진실의 사막에 오신 것을 환영합니다.",
       "9": "전적으로 옳은 말씀입니다!"
-    }
+    },
+    "micStart": "음성 메시지 녹음",
+    "micStop": "녹음 중지",
+    "micTranscribing": "텍스트 변환 중...",
+    "micUnsupported": "이 브라우저에서 마이크를 지원하지 않습니다",
+    "micPermissionDenied": "마이크 권한이 거부되었습니다",
+    "micRecordFailed": "녹음 실패",
+    "micTranscribeFailed": "오디오 변환 실패",
+    "micNoSpeechDetected": "녹음에서 발견된 음성이 없습니다"
   }
 }

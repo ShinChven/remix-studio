@@ -84,7 +84,10 @@
     "noLibraries": "暂无库。创建一个库来存储可重用的提示词。",
     "projectStats": "{{jobCount}} 个作业 • {{imageCount}} 张图片 • {{date}}",
     "aiChat": "AI助手",
-    "aiChatDescription": "今天有什么可以帮您的吗？"
+    "aiChatDescription": "今天有什么可以帮您的吗？",
+    "setupNoticeTitle": "欢迎来到 Remix Studio！",
+    "setupNoticeDescription": "要开始使用 AI 助手和生成内容，您首先需要配置至少一个 AI 提供商。",
+    "setupNoticeButton": "配置提供商"
   },
   "projects": {
     "title": "项目",
@@ -1522,6 +1525,14 @@
       "7": "醒醒，尼奥...",
       "8": "欢迎来到真实世界的荒漠。",
       "9": "您完全正确！"
-    }
+    },
+    "micStart": "录制语音消息",
+    "micStop": "停止录制",
+    "micTranscribing": "正在转录...",
+    "micUnsupported": "此浏览器不支持麦克风",
+    "micPermissionDenied": "麦克风权限被拒绝",
+    "micRecordFailed": "录制失败",
+    "micTranscribeFailed": "音频转录失败",
+    "micNoSpeechDetected": "录音中未检测到语音"
   }
 }

@@ -309,7 +309,10 @@
     "noLibraries": "ライブラリはまだありません。再利用可能なプロンプトを保存するために作成してください。",
     "projectStats": "{{jobCount}} ジョブ • {{imageCount}} 画像 • {{date}}",
     "aiChat": "AIアシスタント",
-    "aiChatDescription": "今日は何をお手伝いしましょうか？"
+    "aiChatDescription": "今日は何をお手伝いしましょうか？",
+    "setupNoticeTitle": "Remix Studio へようこそ！",
+    "setupNoticeDescription": "AI アシスタントの使用とコンテンツの生成を開始するには、まず少なくとも 1 つの AI プロバイダーを設定する必要があります。",
+    "setupNoticeButton": "プロバイダーを設定する"
   },
   "projects": {
     "title": "プロジェクト",
@@ -1522,6 +1525,14 @@
       "7": "目覚めよ、ネオ…",
       "8": "現実の砂漠へようこそ。",
       "9": "全くその通りです！"
-    }
+    },
+    "micStart": "音声メッセージを録音",
+    "micStop": "録音を停止",
+    "micTranscribing": "文字起こし中...",
+    "micUnsupported": "このブラウザではマイクがサポートされていません",
+    "micPermissionDenied": "マイクの使用が拒否されました",
+    "micRecordFailed": "録音に失敗しました",
+    "micTranscribeFailed": "音声の文字起こしに失敗しました",
+    "micNoSpeechDetected": "録音中に音声が検出されませんでした"
   }
 }

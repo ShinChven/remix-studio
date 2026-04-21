@@ -84,7 +84,10 @@
     "noLibraries": "No libraries yet. Create one to store reusable prompts.",
     "projectStats": "{{jobCount}} jobs • {{imageCount}} images • {{date}}",
     "aiChat": "AI Assistant",
-    "aiChatDescription": "How can I help you today?"
+    "aiChatDescription": "How can I help you today?",
+    "setupNoticeTitle": "Welcome to Remix Studio!",
+    "setupNoticeDescription": "To start using the AI Assistant and generating content, you first need to configure at least one AI provider.",
+    "setupNoticeButton": "Setup Providers"
   },
   "projectViewer": {
     "common": {

@@ -309,7 +309,10 @@
     "noLibraries": "Aucune bibliothèque pour le moment. Créez-en une pour stocker des prompts réutilisables.",
     "projectStats": "{{jobCount}} tâches • {{imageCount}} images • {{date}}",
     "aiChat": "Assistant IA",
-    "aiChatDescription": "Comment puis-je vous aider aujourd'hui ?"
+    "aiChatDescription": "Comment puis-je vous aider aujourd'hui ?",
+    "setupNoticeTitle": "Bienvenue sur Remix Studio !",
+    "setupNoticeDescription": "Pour commencer à utiliser l'assistant IA et générer du contenu, vous devez d'abord configurer au moins un fournisseur d'IA.",
+    "setupNoticeButton": "Configurer les fournisseurs"
   },
   "projects": {
     "title": "Projets",
@@ -1522,6 +1525,14 @@
       "7": "Réveille-toi, Néo...",
       "8": "Bienvenue dans le désert du réel.",
       "9": "Vous avez tout à fait raison !"
-    }
+    },
+    "micStart": "Enregistrer un message vocal",
+    "micStop": "Arrêter l'enregistrement",
+    "micTranscribing": "Transcription en cours...",
+    "micUnsupported": "Le microphone n'est pas pris en charge par ce navigateur",
+    "micPermissionDenied": "Permission du microphone refusée",
+    "micRecordFailed": "L'enregistrement a échoué",
+    "micTranscribeFailed": "Échec de la transcription audio",
+    "micNoSpeechDetected": "Aucune parole détectée dans l'enregistrement"
   }
 }
