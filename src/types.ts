@@ -555,6 +555,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'KlingAI',
       modelId: 'kling-image-o1',
       category: 'image',
+      promptLimit: { value: 2500, unit: 'characters' },
       options: {
         aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9', 'auto'],
         qualities: ['1K', '2K'],
@@ -566,6 +567,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'KlingAI',
       modelId: 'kling-v3-omni',
       category: 'image',
+      promptLimit: { value: 2500, unit: 'characters' },
       options: {
         aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9', 'auto'],
         qualities: ['1K', '2K', '4K'],
@@ -577,6 +579,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'KlingAI',
       modelId: 'kling-v3',
       category: 'image',
+      promptLimit: { value: 2500, unit: 'characters' },
       options: {
         aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
         qualities: ['1K', '2K'],
@@ -588,6 +591,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'KlingAI',
       modelId: 'kling-v2-1',
       category: 'image',
+      promptLimit: { value: 2500, unit: 'characters' },
       options: {
         aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
         qualities: ['1K', '2K'],
@@ -599,6 +603,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'KlingAI',
       modelId: 'kling-v2',
       category: 'image',
+      promptLimit: { value: 2500, unit: 'characters' },
       options: {
         aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
         qualities: ['1K', '2K'],
@@ -610,6 +615,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'KlingAI',
       modelId: 'kling-v1-5',
       category: 'image',
+      promptLimit: { value: 2500, unit: 'characters' },
       options: {
         aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
         qualities: ['1K', '2K'],
@@ -621,6 +627,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'KlingAI',
       modelId: 'kling-v1',
       category: 'image',
+      promptLimit: { value: 2500, unit: 'characters' },
       options: {
         aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
         qualities: ['1K'],

@@ -81,6 +81,7 @@ This is the single source of truth. Each entry is a `ModelConfig`:
 | Field | Where It's Used | Effect |
 |---|---|---|
 | `modelId` | Generator classes | Sent as the `model` param in API calls |
+| `promptLimit` | `ProjectViewer.tsx` shared draft validation | Drives over-limit prompt warning/truncation in the workflow UI |
 | `category` | `ModelSelectorModal.tsx` | Filters models shown for image vs text projects |
 | `temperatures` | `SettingsPanel.tsx` | Temperature picker buttons |
 | `maxTokenOptions` | `SettingsPanel.tsx` | Max tokens picker buttons |
@@ -90,6 +91,19 @@ This is the single source of truth. Each entry is a `ModelConfig`:
 | `durations` / `resolutions` | `SettingsPanel.tsx` | Video controls |
 | `supportsReferenceVideo` / `supportsReferenceAudio` | `WorkflowPanel.tsx` | Enables video/audio reference inputs for video projects |
 | `voices` / `supportsMultiSpeaker` | `SettingsPanel.tsx` | Gemini TTS voice picker and single vs multi-speaker controls |
+
+---
+
+## Prompt Limit Rule
+
+When a model has an input-length limit, declare it in `src/types.ts` as `promptLimit` on the model entry.
+
+- Use the existing shared workflow validation in `src/components/ProjectViewer.tsx`.
+- Do not add new cross-model backend validation just to enforce prompt length.
+- Do not create provider-specific prompt-limit code when the goal is only to make a model follow the existing shared UI behavior.
+- Inline the actual limit value on the model entry unless there is already an established shared constant pattern in the file.
+
+This repo's current pattern is model metadata first: `promptLimit` is the source of truth, and `ProjectViewer` is the shared place that applies it during draft generation.
 
 ---
 
