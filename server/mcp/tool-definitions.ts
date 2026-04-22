@@ -510,12 +510,13 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
     },
   });
 
-  // ─── list_all_libraries ───
+  // ─── list_libraries ───
   tools.push({
-    name: 'list_all_libraries',
+    name: 'list_libraries',
     title: 'List Libraries',
     description: 'List libraries (text, image, audio, video) for the authenticated user. Returns library id, name, type, and item count. Use the library id as libraryId when composing workflow items of type *_from_library or *_library.',
     inputSchema: {
+      query: z.string().optional().describe('Optional: search libraries by name (case-insensitive)'),
       type: z.enum(['text', 'image', 'audio', 'video']).optional().describe('Optional: filter by library type'),
       page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
       limit: z.number().int().min(1).max(100).default(50).describe('Items per page (default 50)'),
@@ -523,12 +524,13 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     category: 'read',
     handler: async (userId, input) => {
-      const { type, page, limit } = input as {
+      const { query, type, page, limit } = input as {
+        query?: string;
         type?: 'text' | 'image' | 'audio' | 'video';
         page: number;
         limit: number;
       };
-      const result = await repository.getUserLibraries(userId, page, limit, undefined, false, type as any);
+      const result = await repository.getUserLibraries(userId, page, limit, query, false, type as any);
       const libraries = result.items.map((lib) => ({
         id: lib.id,
         name: lib.name,
@@ -557,9 +559,9 @@ Field semantics:
 - Text libraries: use item.text as the "value" of a "text" workflow item.
 - Image/audio/video libraries: use item.storageKey as the "value" of the matching workflow item type to pin a specific file.
 
-Use this tool to find an item by name/title before composing a workflow. Combine with list_all_libraries to first discover the libraryId.`,
+Use this tool to find an item by name/title before composing a workflow. Combine with list_libraries to first discover the libraryId.`,
     inputSchema: {
-      library_id: z.string().describe('The library ID to browse (from list_all_libraries)'),
+      library_id: z.string().describe('The library ID to browse (from list_libraries)'),
       query: z.string().optional().describe('Optional: filter items by title/name (case-insensitive substring match)'),
       page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
       limit: z.number().int().min(1).max(100).default(25).describe('Items per page (default 25)'),
@@ -652,7 +654,7 @@ Workflow item types:
 
 Recommended workflow:
 1. Call list_available_models → pick one usableModels entry (copy providerId + modelConfigId verbatim).
-2. Call list_all_libraries → discover libraries.
+2. Call list_libraries → discover libraries.
 3. Call get_library_items(libraryId) → find items by name.
 4. Present the full plan to the user before creating the project.`,
     inputSchema: {

@@ -27,7 +27,7 @@ Status legend:
 ### Execution Checklist
 
 - [x] 1. Extract shared MCP tool definitions from `server/mcp/mcp-server.ts`
-  Notes: created `server/mcp/tool-definitions.ts` exporting `AssistantToolDefinition` + `createAssistantToolDefinitions()`; `mcp-server.ts` now only wires auth, transport, and registration. Paginated read tools (`list_libraries`, `list_all_libraries`, `get_library_items`, `search_library_items`, `list_albums`) return `hasMore`/`nextPage` so the model has an explicit "fetch more" signal. `create_project_with_workflow` carries `requiresConfirmation: true` for the assistant runner to enforce later.
+  Notes: created `server/mcp/tool-definitions.ts` exporting `AssistantToolDefinition` + `createAssistantToolDefinitions()`; `mcp-server.ts` now only wires auth, transport, and registration. Paginated read tools (`list_libraries`, `get_library_items`, `search_library_items`, `list_albums`) return `hasMore`/`nextPage` so the model has an explicit "fetch more" signal. `create_project_with_workflow` carries `requiresConfirmation: true` for the assistant runner to enforce later.
 - [x] 2. Add assistant database schema and repository
   Notes: added `AssistantConversation`, `AssistantMessage`, and `AssistantPendingConfirmation` models; migration `20260419140000_add_assistant_tables` creates the tables with `onDelete: Cascade` from User/Conversation. `AssistantMessage` covers system/user/assistant/tool rows (assistant rows carry `toolCalls`, `stopReason`, token usage; tool rows carry `toolCallId`/`toolName`/`toolArgsJson`/`toolResultJson`). `AssistantPendingConfirmation` stores confirmation payloads bound to `conversationId + toolCallId + normalized args + expiresAt`. Repository exposes conversation CRUD (`list/get/create/update/touch/delete`), message ops (`list/append/updateStatus`), and confirmation ops (`create/get/findPendingForCall/updateStatus/expireStale`).
 - [x] 3. Add assistant provider types and provider adapters
@@ -242,7 +242,6 @@ This avoids:
 Default tools:
 
 - `list_libraries`
-- `list_all_libraries`
 - `get_library_items`
 - `search_library_items`
 - `list_albums`

@@ -54,7 +54,7 @@ You do NOT:
 
 ## Tool use
 
-- Prefer reading before writing. Discover via \`list_all_libraries\` / \`search_library_items\` / \`get_library_items\` / \`list_albums\` / \`list_available_models\` / \`get_storage_usage\` before proposing changes.
+- Prefer reading before writing. Discover via \`list_libraries\` / \`search_library_items\` / \`get_library_items\` / \`list_albums\` / \`list_available_models\` / \`get_storage_usage\` before proposing changes.
 - Paginated read tools return \`hasMore\` and \`nextPage\`. Only page further when the user's question genuinely needs more results — don't preemptively fetch everything.
 - When searching by keyword or title, use \`search_library_items\` (cross-library keyword match) or \`get_library_items\` with a \`query\` (single library, substring match).
 - When the user asks what's available before a mutation (e.g. "show me my image libraries"), read and summarize first; do not mutate.
