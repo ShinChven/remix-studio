@@ -53,7 +53,7 @@ flowchart TD
 
     U --> A[Built-in Assistant]
     U --> X[External Agent / Third-Party AI]
-    X -->|OAuth 2.0 / PAT| M[MCP Protocol]
+    X -->|OAuth 2.0 + PKCE / PAT| M[MCP Protocol]
 
     subgraph ToolsLayer [Shared Tool Layer]
         A --> T{Shared Tools}
@@ -128,7 +128,7 @@ These are the model profiles currently bundled with the app.
 
 Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped automation. External MCP clients can work with libraries, prompts, storage summaries, album summaries, model discovery, direct workflow inputs, and workflow-backed project creation and updates. The in-app assistant uses the same shared tool registry, so chat orchestration and MCP automation stay aligned.
 
-Clients can connect with OAuth 2.0 or a personal access token. Manage both in `Account -> MCP`. OAuth metadata is available at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`; related endpoints are `/register`, `/authorize`, and `/token`.
+Clients can connect with OAuth 2.0 authorization code flow, with PKCE supported, or with a personal access token. Manage both in `Account -> MCP`. OAuth metadata is available at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`; related endpoints are `/register`, `/authorize`, and `/token`.
 
 Example:
 

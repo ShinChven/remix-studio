@@ -1,16 +1,16 @@
-# Model Context Protocol (MCP) and OAuth 2.1 Implementation Guide
+# Model Context Protocol (MCP) and OAuth Implementation Guide
 
 ## Introduction
 
-Remix Studio integrates the **Model Context Protocol (MCP)** to empower AI models with the ability to interact directly with the project's ecosystem. By exposing a set of specialized tools, Remix Studio allows LLMs to list libraries, search for prompts, create new content, and manage storage resources. To ensure these interactions are secure and standards-compliant, the project implements a robust **OAuth 2.1 Connector**.
+Remix Studio integrates the **Model Context Protocol (MCP)** to empower AI models with the ability to interact directly with the project's ecosystem. By exposing a set of specialized tools, Remix Studio allows LLMs to list libraries, search for prompts, create new content, and manage storage resources. To ensure these interactions are secure and standards-compliant, the project implements a robust **OAuth authorization layer** based on the OAuth 2.0 authorization code flow with PKCE support.
 
-This document provides a deep dive into the architectural design, implementation details, and security mechanisms of both the MCP server and the OAuth 2.1 authorization layer. It serves as a comprehensive reference for developers looking to understand, maintain, or extend the platform's AI-ready interfaces.
+This document provides a deep dive into the architectural design, implementation details, and security mechanisms of both the MCP server and the OAuth authorization layer. It serves as a comprehensive reference for developers looking to understand, maintain, or extend the platform's AI-ready interfaces.
 
 ---
 
-## 1. OAuth 2.1 Connector Architecture
+## 1. OAuth Connector Architecture
 
-The OAuth 2.1 implementation in Remix Studio is designed to be a modern, secure authorization server that adheres to the latest RFC standards. Unlike traditional OAuth 2.0, OAuth 2.1 consolidates security best practices, such as requiring PKCE (Proof Key for Code Exchange) and prohibiting insecure grant types like the Implicit Grant.
+The OAuth implementation in Remix Studio is designed to be a modern authorization server built on OAuth 2.0 RFCs and modern security practices. In practice, the server supports the authorization code grant, refresh tokens, dynamic client registration, and PKCE (`S256`). It does not expose legacy grants such as the implicit grant, but it also does not currently require PKCE for every authorization request, so it should not be described as a strict OAuth 2.1 implementation.
 
 ### 1.1 Core Components and RFC Compliance
 
@@ -19,11 +19,11 @@ The authorization server is implemented in `server/routes/oauth.ts` using the Ho
 - **RFC 8414 (Authorization Server Metadata):** The server exposes a metadata endpoint at `/.well-known/oauth-authorization-server`. This allows clients to automatically discover the authorization endpoint, token endpoint, supported scopes (`mcp:tools`), and supported grant types (`authorization_code`, `refresh_token`). This discovery mechanism is crucial for cross-platform compatibility, enabling tools like Claude Desktop to "find" the Remix Studio endpoints without manual configuration.
 - **RFC 9728 (Protected Resource Metadata):** The metadata for the protected MCP resource is available at `/.well-known/oauth-protected-resource`. It points to the MCP endpoint (`/mcp`) and lists the authorized authorization servers. This RFC is particularly important for MCP, as it allows clients to verify that they are talking to the correct resource server and that the authorization server is trusted.
 - **RFC 7591 (Dynamic Client Registration):** Clients can register themselves via the `/register` endpoint. This is essential for ecosystem growth, allowing third-party MCP clients to obtain a `client_id` and `client_secret` dynamically. The registration process enforces strict redirect URI validation (must be `localhost` or `https`) to prevent redirection attacks.
-- **RFC 7636 (PKCE):** Proof Key for Code Exchange is mandatory for the Authorization Code flow. The server strictly validates the `code_challenge` and `code_verifier` using the `S256` method. PKCE is used to mitigate the risk of authorization code interception, making it secure even for public clients (like browser-based apps or CLI tools) that cannot keep a secret.
+- **RFC 7636 (PKCE):** The server supports Proof Key for Code Exchange using the `S256` method. When a client sends a `code_challenge`, the token exchange validates the corresponding `code_verifier`. PKCE mitigates the risk of authorization code interception and is the recommended mode for public clients such as browser-based apps or CLI tools.
 
 ### 1.2 The Authorization Flow
 
-The primary method for obtaining access to MCP tools is the **Authorization Code Flow with PKCE**:
+The primary method for obtaining access to MCP tools is the **Authorization Code Flow**, with PKCE supported for clients that send a `code_challenge`:
 
 1.  **Authorization Request (`GET /authorize`):** The client redirects the user to the authorization endpoint. The request includes parameters such as `client_id`, `redirect_uri`, `response_type=code`, `scope`, `code_challenge`, and `state`.
 2.  **Authentication Check:** Remix Studio first checks if the user is logged in by verifying the `token` cookie. If the session is missing or invalid, the user is redirected to the login page with a `next` parameter to return them to the authorization flow after signing in.
@@ -163,8 +163,8 @@ The `/register` endpoint enforces a strict policy:
 - Insecure `http` on public domains is prohibited.
 - Scope is strictly limited to `mcp:tools` by default.
 
-### 5.3 PKCE Enforcement
-OAuth 2.1 requires PKCE for the authorization code grant. The implementation in `handleAuthorizationCodeGrant` checks for the presence of `code_verifier` if a `code_challenge` was recorded during the authorization phase. This prevents authorization code injection attacks.
+### 5.3 PKCE Behavior
+The implementation in `handleAuthorizationCodeGrant` checks for the presence of `code_verifier` if a `code_challenge` was recorded during the authorization phase. This protects PKCE-enabled clients against authorization code injection attacks. At present, PKCE is supported and recommended, but not universally enforced for every authorization request.
 
 ### 5.4 Bearer Token Rotation
 When a refresh token is used, the old access token and the old refresh token record are marked as `revoked`. A new pair is issued. This "Refresh Token Rotation" is a critical security feature that helps detect and mitigate token theft. If an attacker and a legitimate user both try to use the same refresh token, one of them will fail, and the system can flag the breach.
@@ -229,6 +229,6 @@ If you are building a tool that needs to connect to Remix Studio's MCP:
 
 ## 9. Conclusion
 
-By combining the Model Context Protocol with a standards-compliant OAuth 2.1 authorization server, Remix Studio provides a secure and powerful interface for AI-driven workflows. The implementation ensures that user data is protected through modern cryptography (SHA-256 hashing) and strict protocol enforcement (PKCE, HTTPS validation), while the MCP tools offer a rich set of capabilities for LLMs to assist users in managing their creative assets.
+By combining the Model Context Protocol with a standards-compliant OAuth authorization server, Remix Studio provides a secure and powerful interface for AI-driven workflows. The implementation ensures that user data is protected through modern cryptography (SHA-256 hashing) and strong protocol controls such as PKCE support, refresh-token rotation, and HTTPS redirect validation, while the MCP tools offer a rich set of capabilities for LLMs to assist users in managing their creative assets.
 
 The architecture is designed to be future-proof, allowing for the addition of more tools and resources as the platform evolves. Whether through the fully automated OAuth flow or via Personal Access Tokens, Remix Studio is ready for the next generation of AI-integrated software.
