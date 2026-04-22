@@ -11,9 +11,9 @@
 [![S3 Compatible](https://img.shields.io/badge/Storage-S3%20compatible-16a34a?style=flat-square)](./README.md#deployment)
 [![i18n](https://img.shields.io/badge/i18n-English%20%7C%20%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%20%7C%20%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87%20%7C%20%E6%97%A5%E6%9C%AC%E8%AA%9E%20%7C%20%ED%95%9C%EA%B5%AD%EC%96%B4%20%7C%20Fran%C3%A7ais-7c3aed?style=flat-square)](./README.md#what-remix-studio-is-for)
 
-Remix Studio is a self-hosted AI assistant workspace for orchestration and batch content generation, with a built-in assistant powered by Gemini models. Instead of prompting one asset at a time, you build workflows from reusable text, image, video, and audio inputs, then let the app expand those inputs into draft sets you can run as full combination sweeps or randomized samples.
+Remix Studio is a self-hosted AI assistant workspace for orchestration and batch content generation, with a built-in assistant powered by Gemini models. Instead of prompting one asset at a time, you build workflows from reusable libraries plus direct text, image, video, and audio inputs, then let the app expand those inputs into draft sets you can run as full combination sweeps or randomized samples.
 
-It combines three layers in one product: an in-app assistant for planning and operating workflows, a project system for combining reusable libraries into generation recipes, and a background execution stack for queueing, storing, exporting, and delivering results. The same shared tool layer also powers MCP access, so clients like Claude and Codex can help create libraries, inspect assets, and assemble projects around the same workflow model used in the UI.
+It combines three layers in one product: an in-app assistant for planning and operating workflows, a project system for composing workflows from library-backed and direct inputs, and a background execution stack for queueing, storing, exporting, and delivering results. The same shared tool layer also powers MCP access, so clients like Claude and Codex can help create libraries, inspect albums and model availability, and assemble projects around the same workflow model used in the UI.
 
 This project is built with **Google AI Studio** and **Antigravity**.
 
@@ -23,7 +23,7 @@ This project is built with **Google AI Studio** and **Antigravity**.
 
 - Run text, image, video, and audio generation projects from one workspace
 - Store reusable prompt fragments and reusable media inputs in text, image, video, and audio libraries
-- Turn workflow inputs into large draft sets by enumerating combinations across library items
+- Turn workflow inputs into large draft sets by enumerating combinations across library-backed and direct inputs
 - Switch to shuffle mode when you want exploratory sampling instead of exhaustive combinations
 - Create drafts in bulk, then queue only the runs you want to execute
 - Manage provider credentials, model profiles, custom aliases, and provider-level concurrency limits
@@ -36,7 +36,7 @@ This project is built with **Google AI Studio** and **Antigravity**.
 
 ## Why It Feels Different
 
-- **Assistant-first orchestration**: the built-in assistant can inspect your libraries, reason about workflows, and prepare project mutations behind explicit confirmation.
+- **Assistant-first orchestration**: the built-in assistant can inspect libraries, album summaries, model availability, and storage status, then prepare project mutations behind explicit confirmation.
 - **Combination engine**: workflows are built from reusable inputs, then expanded into draft permutations instead of forcing you to handcraft each prompt variant.
 - **Batch execution**: generation runs through a recoverable queue with provider-specific concurrency and detached polling for async providers.
 - **Self-hosted control**: providers, storage, exports, auth, and automation all stay in your own deployment.
@@ -48,39 +48,50 @@ If you have 3 subject prompts, 4 style prompts, and 2 reference-image sets, Remi
 ## Core Workflow
 
 ```mermaid
-flowchart TB
-    U([User]) -->|Intent, references, instructions| A[AI Assistant]
-    
-    subgraph Orchestration [Assistant And Workflow Orchestration]
-        A <-->|Tool Calling| T[MCP / Tool System]
-        T <-->|Query/Fetch| L[(Libraries)]
-        T <-->|Create / Update| W[Projects And Workflow Settings]
+flowchart TD
+    U((User))
+
+    U --> A[Built-in Assistant]
+    U --> X[External Agent / Third-Party AI]
+    X -->|OAuth 2.0 / PAT| M[MCP Protocol]
+
+    subgraph ToolsLayer [Shared Tool Layer]
+        A --> T{Shared Tools}
+        M --> T
+
+        T --> L[(Libraries)]
+        T --> P[Projects And Workflow Settings]
+        T --> R[Albums / Models / Storage]
+        T --> D[Direct Inputs / Inline Values]
     end
-    
-    A -->|Dispatches plan and context| E[Workflow Engine]
-    L -.->|Reusable inputs| E
-    
-    subgraph Generation [Batch Processing & Queue]
-        E -->|Builds combinations or shuffled samples| C[Permutation Engine]
-        C -->|Creates N drafts| B[Background Queue]
-        
-        B -->|Concurrent Run| P1[Provider API]
-        B -->|Concurrent Run| P2[Provider API]
-        B -->|Concurrent Run| P3[Provider API]
+
+    subgraph ProjectFlow [Project Execution]
+        P --> W[Workflow]
+        L -.->|Reusable inputs from libraries| W
+        D -.->|Pinned or manually entered text / image / audio / video| W
     end
-    
-    P1 -.->|Generated output| O[(Results DB & Storage)]
-    P2 -.->|Generated output| O
-    P3 -.->|Generated output| O
-    O -.->|Review & Export| U
+
+    subgraph Execution [Generation Pipeline]
+        W --> C[Permutation / Shuffle Engine]
+        C --> B[Background Queue]
+        B --> E[Provider Execution]
+    end
+
+    subgraph Outputs [Outputs]
+        E --> TXT[Text]
+        E --> IMG[Image]
+        E --> MED[Audio / Video]
+    end
 ```
 
 1. Save prompt fragments, tags, and media inputs into reusable libraries.
-2. Build a project manually or let the assistant assemble a workflow for you.
-3. Mix direct inputs with library-backed inputs across text, image, video, and audio slots.
-4. Expand the workflow into draft permutations, or sample it with shuffle mode.
-5. Queue all or selected drafts with provider-level concurrency limits.
-6. Review outputs, retry failures, export archives, and optionally deliver them to Google Drive.
+2. Use the built-in assistant or an external MCP client to query the same shared tool layer.
+3. Read libraries, album summaries, model availability, and storage status before changing project settings.
+4. Build a project manually or let an assistant assemble and confirm a workflow for you.
+5. Mix direct inputs with library-backed inputs across text, image, video, and audio slots.
+6. Expand the workflow into draft permutations, or sample it with shuffle mode.
+7. Queue all or selected drafts with provider-level concurrency limits.
+8. Review outputs, retry failures, export archives, and optionally deliver them to Google Drive.
 
 ## Supported Workflows
 
@@ -115,7 +126,7 @@ These are the model profiles currently bundled with the app.
 
 ## MCP Support
 
-Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped automation. External MCP clients can work with libraries, prompts, storage summaries, album summaries, model discovery, and workflow-backed project creation and updates. The in-app assistant uses the same shared tool registry, so chat orchestration and MCP automation stay aligned.
+Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped automation. External MCP clients can work with libraries, prompts, storage summaries, album summaries, model discovery, direct workflow inputs, and workflow-backed project creation and updates. The in-app assistant uses the same shared tool registry, so chat orchestration and MCP automation stay aligned.
 
 Clients can connect with OAuth 2.0 or a personal access token. Manage both in `Account -> MCP`. OAuth metadata is available at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`; related endpoints are `/register`, `/authorize`, and `/token`.
 
