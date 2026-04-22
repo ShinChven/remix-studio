@@ -733,34 +733,69 @@ function renderAuthorizePage(opts: {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Authorize — Remix Studio</title>
+  <title>Authorize Connection — Remix Studio</title>
   <style>
+    :root {
+      --bg-color: #09090b;
+      --card-bg: #18181b;
+      --border-color: #27272a;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --accent: #3b82f6;
+      --accent-hover: #60a5fa;
+      --danger: #ef4444;
+      --success-bg: rgba(34, 197, 94, 0.1);
+      --success-border: rgba(34, 197, 94, 0.2);
+      --success-text: #4ade80;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #e0e0e0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    .card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 2rem; max-width: 420px; width: 100%; }
-    h1 { font-size: 1.25rem; margin-bottom: 0.5rem; }
-    .scope { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
-    .client-name { color: #7c9cff; font-weight: 600; }
-    .error { background: #3a1515; border: 1px solid #662222; color: #ff6b6b; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.875rem; }
-    label { display: block; font-size: 0.875rem; color: #aaa; margin-bottom: 0.25rem; }
-    input[type="email"], input[type="password"] { width: 100%; padding: 0.625rem; background: #111; border: 1px solid #333; border-radius: 6px; color: #e0e0e0; font-size: 0.875rem; margin-bottom: 0.75rem; }
-    input:focus { outline: none; border-color: #7c9cff; }
-    .actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
-    button { flex: 1; padding: 0.625rem; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; font-weight: 500; }
-    .btn-approve { background: #7c9cff; color: #000; }
-    .btn-approve:hover { background: #97b3ff; }
-    .btn-deny { background: #333; color: #ccc; }
-    .btn-deny:hover { background: #444; }
-    .logged-in { background: #1a2a1a; border: 1px solid #2a4a2a; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.875rem; color: #8bc48b; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; background: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; line-height: 1.5; padding: 1rem; }
+    .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 2.5rem; max-width: 460px; width: 100%; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); }
+    .header { text-align: center; margin-bottom: 2rem; }
+    .header svg { width: 48px; height: 48px; color: var(--accent); margin-bottom: 1rem; }
+    h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.025em; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; }
+    .client-name { color: var(--text-main); font-weight: 600; }
+    .permissions { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .permissions h3 { font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 1rem; }
+    .permissions ul { list-style: none; }
+    .permissions li { position: relative; padding-left: 1.75rem; font-size: 0.9rem; color: var(--text-main); margin-bottom: 0.75rem; }
+    .permissions li:last-child { margin-bottom: 0; }
+    .permissions li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--accent); font-weight: bold; }
+    .scope-badge { display: inline-block; background: rgba(59, 130, 246, 0.1); color: var(--accent); padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-family: monospace; margin-top: 0.75rem; }
+    .error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: var(--danger); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.875rem; }
+    .logged-in { display: flex; align-items: center; gap: 0.75rem; background: var(--success-bg); border: 1px solid var(--success-border); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--success-text); }
+    .logged-in svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .actions { display: flex; gap: 1rem; margin-top: 2rem; }
+    button { flex: 1; padding: 0.75rem 1rem; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .btn-approve { background: var(--accent); color: white; }
+    .btn-approve:hover { background: var(--accent-hover); }
+    .btn-deny { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); }
+    .btn-deny:hover { background: rgba(255,255,255,0.05); }
+    .footer { text-align: center; margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-muted); }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Authorize Application</h1>
-    <p class="scope"><span class="client-name">${escHtml(opts.clientName)}</span> is requesting access to your account.</p>
-    <p class="scope">Scope: <strong>${escHtml(opts.scope)}</strong></p>
+    <div class="header">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+      </svg>
+      <h1>Connection Request</h1>
+      <p class="subtitle"><span class="client-name">${escHtml(opts.clientName)}</span> would like to connect to your Remix Studio account.</p>
+    </div>
 
     ${opts.error ? `<div class="error">${escHtml(opts.error)}</div>` : ''}
+
+    <div class="permissions">
+      <h3>This application will be able to:</h3>
+      <ul>
+        <li>Access your configured Model Context Protocol (MCP) connections</li>
+        <li>Read and execute available tools on your behalf</li>
+        <li>Integrate with your personal workspace resources</li>
+      </ul>
+      <div class="scope-badge">Scope: ${escHtml(opts.scope)}</div>
+    </div>
 
     <form method="POST" action="/authorize">
       <input type="hidden" name="client_id" value="${escHtml(opts.clientId)}">
@@ -769,13 +804,22 @@ function renderAuthorizePage(opts: {
       <input type="hidden" name="code_challenge" value="${escHtml(opts.codeChallenge)}">
       <input type="hidden" name="code_challenge_method" value="${escHtml(opts.codeChallengeMethod)}">
 
-      <div class="logged-in">Logged in as <strong>${escHtml(opts.loggedInEmail)}</strong></div>
+      <div class="logged-in">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+        </svg>
+        <span>Signed in as <strong>${escHtml(opts.loggedInEmail || 'Unknown')}</strong></span>
+      </div>
 
       <div class="actions">
-        <button type="submit" name="action" value="deny" class="btn-deny">Deny</button>
-        <button type="submit" name="action" value="approve" class="btn-approve">Approve</button>
+        <button type="submit" name="action" value="deny" class="btn-deny">Cancel</button>
+        <button type="submit" name="action" value="approve" class="btn-approve">Authorize App</button>
       </div>
     </form>
+    
+    <div class="footer">
+      Only authorize applications you trust. You can revoke access at any time in your Account Settings.
+    </div>
   </div>
 </body>
 </html>`;
