@@ -104,7 +104,7 @@ These are the model profiles currently bundled with the app.
 | :--- | :--- | :--- | :--- | :--- |
 | **Google AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`, `Gemma 4` | `nano banana 2` | `Veo 3.1`, `Veo 3.1 Lite` | `Gemini 3.1 Flash TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS`, `Lyria 3 Clip`, `Lyria 3 Pro` |
 | **Vertex AI** | `Gemini 3 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` | `nano banana 2` | - | `Gemini 3.1 Flash TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS`, `Lyria 3 Clip`, `Lyria 3 Pro` |
-| **OpenAI** | `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` | `GPT Image 1.5`, `GPT Image 1 Mini` | `Sora 2`, `Sora 2 Pro` | - |
+| **OpenAI** | `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` | `GPT Image 2`, `GPT Image 1.5`, `GPT Image 1 Mini` | `Sora 2`, `Sora 2 Pro` | - |
 | **Grok** | `Grok 4.20`, `Grok 4.1 Fast` | `Grok Imagine`, `Grok Imagine Pro` | `Grok Imagine Video` | - |
 | **Claude** | `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` | - | - | - |
 | **RunningHub** | - | `nano banana 2`, `Qwen Image 2 Pro` | `Seedance 2.0 Ref` | - |

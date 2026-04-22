@@ -172,6 +172,7 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 ### OpenAI
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
+| GPT Image 2 | `gpt-image-2` | image | - |
 | GPT Image 1.5 | `gpt-image-1.5` | image | - |
 | GPT Image 1 Mini | `gpt-image-1-mini` | image | - |
 | GPT-5.4 | `gpt-5.4` | text | 128,000 |
