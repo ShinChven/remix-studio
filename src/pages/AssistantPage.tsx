@@ -1040,7 +1040,15 @@ export function AssistantPage() {
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {activeConversationId ? (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-              {messages.filter((m) => m.role !== 'system' && m.role !== 'tool').map((msg, idx, arr) => (
+              {messages.filter((m) => {
+                if (m.role === 'system' || m.role === 'tool') return false;
+                if (m.role === 'assistant') {
+                  const hasContent = hasRenderableAssistantContent(m);
+                  const hasTools = m.toolCalls && m.toolCalls.length > 0;
+                  if (!hasContent && !hasTools) return false;
+                }
+                return true;
+              }).map((msg, idx, arr) => (
                 <div key={msg.id}>
                   {msg.role === 'user' && (
                     <div className="flex justify-end group/message">
