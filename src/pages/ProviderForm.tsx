@@ -51,7 +51,11 @@ export function ProviderForm() {
         setHasExistingKey(p.hasKey);
         setHasExistingSecret(Boolean(p.hasSecret));
       } catch {
+      if (id) {
+        navigate(`/provider/${id}`);
+      } else {
         navigate('/providers');
+      }
       } finally {
         setIsLoading(false);
       }
@@ -81,7 +85,11 @@ export function ProviderForm() {
 
       if (isEditing) {
         await updateProvider(id!, payload);
+      if (isEditing) {
+        navigate(`/provider/${id}`);
+      } else {
         navigate('/providers');
+      }
       } else {
         await createProvider(payload as any);
         navigate('/providers');
@@ -124,7 +132,7 @@ export function ProviderForm() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => navigate('/providers')}
+                  onClick={() => isEditing ? navigate(`/provider/${id}`) : navigate('/providers')}
                   className="px-6 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm"
                 >
                   {t('providerForm.cancel')}

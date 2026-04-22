@@ -6,8 +6,8 @@ import { Provider, ProviderType } from '../types';
 import { ProviderIcon } from '../components/ProviderIcon';
 import { PageHeader } from '../components/PageHeader';
 import {
-  Key, Globe, CheckCircle, AlertCircle, Pencil, ArrowLeft,
-  MessageSquare, Image, Video, Music, Loader2, RefreshCw, Layers,
+  Globe, CheckCircle, AlertCircle, Pencil,
+  MessageSquare, Loader2, RefreshCw, Layers,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -71,13 +71,6 @@ export function ProviderProfile() {
     if (provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.type === 'Replicate' || provider.type === 'BlackForestLabs' || provider.hasKey) loadModels();
   }, [provider, loadModels]);
 
-  const grouped = {
-    text:  models.filter(m => m.category === 'text'),
-    image: models.filter(m => m.category === 'image'),
-    video: models.filter(m => m.category === 'video'),
-    audio: models.filter(m => m.category === 'audio'),
-  };
-
   if (isLoadingProvider) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -105,9 +98,9 @@ export function ProviderProfile() {
 
   const CATEGORY_META: Record<string, { label: string; icon: LucideIcon; color: string }> = {
     text:  { label: t('providerProfile.categories.text'),  icon: MessageSquare, color: 'text-sky-800 dark:text-sky-400 bg-sky-100 dark:bg-sky-500/10 border-sky-300 dark:border-sky-500/20 shadow-sm' },
-    image: { label: t('providerProfile.categories.image'), icon: Image,         color: 'text-pink-800 dark:text-pink-400 bg-pink-100 dark:bg-pink-500/10 border-pink-300 dark:border-pink-500/20 shadow-sm' },
-    video: { label: t('providerProfile.categories.video'), icon: Video,         color: 'text-violet-800 dark:text-violet-400 bg-violet-100 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/20 shadow-sm' },
-    audio: { label: t('providerProfile.categories.audio'), icon: Music,         color: 'text-cyan-800 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-500/10 border-cyan-300 dark:border-cyan-500/20 shadow-sm' },
+    image: { label: t('providerProfile.categories.image'), icon: MessageSquare, color: 'text-pink-800 dark:text-pink-400 bg-pink-100 dark:bg-pink-500/10 border-pink-300 dark:border-pink-500/20 shadow-sm' },
+    video: { label: t('providerProfile.categories.video'), icon: MessageSquare, color: 'text-violet-800 dark:text-violet-400 bg-violet-100 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/20 shadow-sm' },
+    audio: { label: t('providerProfile.categories.audio'), icon: MessageSquare, color: 'text-cyan-800 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-500/10 border-cyan-300 dark:border-cyan-500/20 shadow-sm' },
   };
 
   return (
@@ -172,8 +165,8 @@ export function ProviderProfile() {
         {/* Models */}
         <section>
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">
-              {provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.type === 'Replicate' || provider.type === 'BlackForestLabs' ? t('providerProfile.supportedModels') : t('providerProfile.availableModels')}
+            <h3 className="text-xl font-bold text-neutral-900 dark:text-white">
+              {t('providerProfile.supportedModels')}
             </h3>
             {provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && provider.type !== 'Replicate' && provider.type !== 'BlackForestLabs' && (
               <button
@@ -200,7 +193,7 @@ export function ProviderProfile() {
             </div>
           )}
 
-          {isLoadingModels ? (
+           {isLoadingModels ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-6 h-6 text-neutral-500 dark:text-neutral-500 animate-spin" />
             </div>
@@ -209,38 +202,43 @@ export function ProviderProfile() {
               {t('providerProfile.noModels')}
             </div>
           ) : (
-            <div className="space-y-6">
-              {(['text', 'image', 'video', 'audio'] as const).map(cat => {
-                const items = grouped[cat];
-                if (items.length === 0) return null;
-                const meta = CATEGORY_META[cat];
-                const Icon = meta.icon;
-                return (
-                  <div key={cat}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className={`inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1 rounded-full border ${meta.color}`}>
-                        <Icon className="w-4 h-4" />
-                        {meta.label}
-                      </span>
-                      <span className="text-xs text-neutral-500 dark:text-neutral-500">{t('providerProfile.modelCount', { count: items.length })}</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                      {items.map(m => (
-                        <div
-                          key={m.id}
-                          className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 rounded-2xl px-5 py-4 hover:border-neutral-400 dark:hover:border-neutral-700 transition-all shadow-sm hover:shadow-md group/card backdrop-blur-xl"
-                        >
-                          <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{m.name}</p>
-                          <p className="text-[10px] text-neutral-500 dark:text-neutral-500 truncate font-mono mt-0.5 uppercase tracking-wider">{m.id}</p>
-                          {m.description && (
-                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-2 line-clamp-2 leading-relaxed">{m.description}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="rounded-2xl bg-white/50 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl overflow-hidden shadow-xl">
+               <table className="w-full text-left border-collapse table-fixed">
+                 <thead className="sticky top-0 bg-neutral-100/80 dark:bg-neutral-900/80 backdrop-blur-md z-10">
+                     <tr className="border-b border-neutral-200 dark:border-white/5">
+                       <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500 w-1/3">{t('common.name') || 'Name'}</th>
+                       <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500 w-1/3">Model ID</th>
+                       <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Type</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-neutral-200/50 dark:divide-white/5">
+                     {[...models].sort((a, b) => {
+                       const order = ['text', 'image', 'video', 'audio'];
+                       const catDiff = order.indexOf(a.category) - order.indexOf(b.category);
+                       if (catDiff !== 0) return catDiff;
+                       return a.name.localeCompare(b.name);
+                     }).map(m => {
+                       const meta = CATEGORY_META[m.category];
+                       const Icon = meta?.icon || MessageSquare;
+                       return (
+                         <tr key={m.id} className="group hover:bg-neutral-50 dark:hover:bg-amber-500/5 transition-colors">
+                           <td className="px-8 py-5">
+                             <p className="text-sm font-bold text-neutral-900 dark:text-white group-hover:text-amber-500 transition-colors uppercase tracking-tight truncate">{m.name}</p>
+                           </td>
+                           <td className="px-4 py-5">
+                             <p className="text-xs font-mono text-neutral-500 dark:text-neutral-600 truncate">{m.id}</p>
+                           </td>
+                           <td className="px-8 py-5">
+                             <div className="flex items-center gap-2">
+                               <Icon className="w-3.5 h-3.5 text-neutral-400 group-hover:text-amber-500/70 transition-colors" />
+                               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500">{meta?.label || m.category}</span>
+                             </div>
+                           </td>
+                         </tr>
+                       );
+                     })}
+                   </tbody>
+                 </table>
             </div>
           )}
         </section>
