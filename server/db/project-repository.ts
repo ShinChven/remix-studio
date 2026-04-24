@@ -884,6 +884,7 @@ export class ProjectRepository {
         order: item.order,
         thumbnailUrl: item.thumbnailUrl ?? null,
         optimizedUrl: item.optimizedUrl ?? null,
+        selectedTags: this.toNullableJsonArray(item.selectedTags),
         disabled: item.disabled ?? false,
       })),
     });
@@ -928,6 +929,7 @@ export class ProjectRepository {
       order: w.order,
       thumbnailUrl: w.thumbnailUrl ?? undefined,
       optimizedUrl: w.optimizedUrl ?? undefined,
+      selectedTags: (w.selectedTags as string[]) ?? undefined,
       disabled: w.disabled ?? false,
     };
   }

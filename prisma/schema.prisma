@@ -254,6 +254,7 @@ model WorkflowItem {
   order        Int     @default(0)
   thumbnailUrl String?
   optimizedUrl String?
+  selectedTags Json?   // String[]
   disabled     Boolean @default(false)
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

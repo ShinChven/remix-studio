@@ -300,7 +300,7 @@ export class LibraryRepository {
 
   async searchLibraryItems(
     userId: string,
-    query: string,
+    query?: string,
     options: { libraryId?: string; tags?: string[]; page?: number; limit?: number } = {},
   ): Promise<{ items: (LibraryItem & { libraryId: string; libraryName: string })[]; total: number; page: number; pages: number }> {
     const page = options.page ?? 1;
@@ -311,10 +311,11 @@ export class LibraryRepository {
     if (options.libraryId) where.libraryId = options.libraryId;
 
     // Text search across content, title
-    if (query) {
+    const trimmedQuery = query?.trim();
+    if (trimmedQuery) {
       where.OR = [
-        { content: { contains: query, mode: 'insensitive' } },
-        { title: { contains: query, mode: 'insensitive' } },
+        { content: { contains: trimmedQuery, mode: 'insensitive' } },
+        { title: { contains: trimmedQuery, mode: 'insensitive' } },
       ];
     }
 

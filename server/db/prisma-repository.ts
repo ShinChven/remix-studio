@@ -29,7 +29,7 @@ export class PrismaRepository implements IRepository {
   countPinnedLibraries(userId: string) { return this.libraries.countPinnedLibraries(userId); }
 
   // === Library Search ===
-  searchLibraryItems(userId: string, query: string, options?: { libraryId?: string; tags?: string[]; page?: number; limit?: number }) { return this.libraries.searchLibraryItems(userId, query, options); }
+  searchLibraryItems(userId: string, query?: string, options?: { libraryId?: string; tags?: string[]; page?: number; limit?: number }) { return this.libraries.searchLibraryItems(userId, query, options); }
 
   // === Library Item CRUD ===
   getLibraryItems(userId: string, libraryId: string) { return this.libraries.getLibraryItems(userId, libraryId); }

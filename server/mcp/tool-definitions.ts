@@ -214,9 +214,9 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'search_library_items',
     title: 'Search Library Items',
-    description: 'Search text prompts across libraries by keyword (matches content and title) and/or tags. Returns matching items with their library context. Long content is truncated in the preview.',
+    description: 'Search library items by keyword (matches content and title) and/or tags. Returns matching items with their library context. Long content is truncated in the preview.',
     inputSchema: {
-      query: z.string().describe('Search keyword to match against prompt content and title'),
+      query: z.string().optional().describe('Optional search keyword to match against item content and title'),
       library_id: z.string().optional().describe('Optional: limit search to a specific library'),
       tags: z.array(z.string()).optional().describe('Optional: filter by tags (items must contain ALL specified tags)'),
       page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
@@ -226,13 +226,13 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
     category: 'read',
     handler: async (userId, input) => {
       const { query, library_id, tags, page, limit } = input as {
-        query: string;
+        query?: string;
         library_id?: string;
         tags?: string[];
         page: number;
         limit: number;
       };
-      const result = await repository.searchLibraryItems(userId, query, {
+      const result = await repository.searchLibraryItems(userId, query?.trim(), {
         libraryId: library_id,
         tags,
         page,
@@ -563,15 +563,17 @@ Use this tool to find an item by name/title before composing a workflow. Combine
     inputSchema: {
       library_id: z.string().describe('The library ID to browse (from list_libraries)'),
       query: z.string().optional().describe('Optional: filter items by title/name (case-insensitive substring match)'),
+      tags: z.array(z.string()).optional().describe('Optional: filter by tags (items must contain ALL specified tags)'),
       page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
       limit: z.number().int().min(1).max(100).default(25).describe('Items per page (default 25)'),
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     category: 'read',
     handler: async (userId, input) => {
-      const { library_id, query, page, limit } = input as {
+      const { library_id, query, tags, page, limit } = input as {
         library_id: string;
         query?: string;
+        tags?: string[];
         page: number;
         limit: number;
       };
@@ -583,7 +585,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
         };
       }
 
-      const result = await repository.getLibraryItemsPaginated(userId, library_id, page, limit, query);
+      const result = await repository.getLibraryItemsPaginated(userId, library_id, page, limit, query, tags);
       const isText = library.type === 'text';
       const items = result.items.map((item) => {
         const rawContent = item.content ?? '';
@@ -822,6 +824,7 @@ Recommended workflow:
           type: internalType,
           value: internalValue,
           order: idx,
+          selectedTags: item.selectedTags,
         };
       });
 
