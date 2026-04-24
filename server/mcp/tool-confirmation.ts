@@ -68,6 +68,12 @@ export function summarizeToolEffect(
       const count = Array.isArray(objectArgs.items) ? objectArgs.items.length : 0;
       return `Create ${count} prompt${count === 1 ? '' : 's'} in library ${getLabel(objectArgs.library_id, 'library')}.`;
     }
+    case 'update_prompt': {
+      const fields = ['content', 'title', 'tags'].filter((key) => Object.prototype.hasOwnProperty.call(objectArgs, key));
+      return `Update prompt ${getLabel(objectArgs.item_id, 'prompt')} in library ${getLabel(objectArgs.library_id, 'library')}${fields.length ? ` (${fields.join(', ')})` : ''}.`;
+    }
+    case 'delete_prompt':
+      return `Delete prompt ${getLabel(objectArgs.item_id, 'prompt')} from library ${getLabel(objectArgs.library_id, 'library')}.`;
     case 'create_project_with_workflow': {
       const workflowCount = Array.isArray(objectArgs.workflowItems) ? objectArgs.workflowItems.length : 0;
       return `Create a ${String(objectArgs.type ?? 'new')} project named "${String(objectArgs.name ?? '')}" with ${workflowCount} workflow item${workflowCount === 1 ? '' : 's'}.`;

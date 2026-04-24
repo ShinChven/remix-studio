@@ -210,6 +210,116 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
     },
   });
 
+  // ─── update_prompt ───
+  tools.push({
+    name: 'update_prompt',
+    title: 'Update Prompt',
+    description: 'Update a text prompt in a text library. Only the fields you provide will be changed. Use get_library_items or search_library_items first to find the prompt item id.',
+    inputSchema: {
+      library_id: z.string().describe('The text library ID that contains the prompt'),
+      item_id: z.string().describe('The prompt item ID to update'),
+      content: z.string().min(1).optional().describe('New prompt text content'),
+      title: z.string().optional().describe('New prompt title (pass empty string to clear)'),
+      tags: z.array(z.string()).optional().describe('Replacement tag list (pass [] to clear all tags)'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'mutate',
+    handler: async (userId, input) => {
+      const { library_id, item_id, content, title, tags } = input as {
+        library_id: string;
+        item_id: string;
+        content?: string;
+        title?: string;
+        tags?: string[];
+      };
+
+      const library = await repository.getLibrary(userId, library_id);
+      if (!library) {
+        return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
+      }
+      if (library.type !== 'text') {
+        return { text: JSON.stringify({ error: `Library "${library.name}" is type "${library.type}", not a text prompt library.` }), isError: true };
+      }
+
+      const existingItem = library.items.find((item) => item.id === item_id);
+      if (!existingItem) {
+        return { text: JSON.stringify({ error: `Prompt "${item_id}" not found in library "${library.name}".` }), isError: true };
+      }
+
+      const updates: { content?: string; title?: string; tags?: string[] } = {};
+      if (content !== undefined) updates.content = content;
+      if (title !== undefined) updates.title = title;
+      if (tags !== undefined) updates.tags = tags;
+
+      if (Object.keys(updates).length === 0) {
+        return { text: JSON.stringify({ error: 'No fields to update. Provide at least one of: content, title, tags.' }), isError: true };
+      }
+
+      try {
+        await repository.updateLibraryItem(userId, library_id, item_id, updates);
+        return {
+          text: JSON.stringify({
+            item_id,
+            library_id,
+            libraryName: library.name,
+            title: title ?? existingItem.title ?? null,
+            updatedFields: Object.keys(updates),
+            message: 'Prompt updated successfully.',
+          }),
+        };
+      } catch (err: any) {
+        return { text: JSON.stringify({ error: err.message ?? 'Update failed.' }), isError: true };
+      }
+    },
+  });
+
+  // ─── delete_prompt ───
+  tools.push({
+    name: 'delete_prompt',
+    title: 'Delete Prompt',
+    description: 'Delete one text prompt from a text library. Use get_library_items or search_library_items first to find the prompt item id.',
+    inputSchema: {
+      library_id: z.string().describe('The text library ID that contains the prompt'),
+      item_id: z.string().describe('The prompt item ID to delete'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+    category: 'destructive',
+    handler: async (userId, input) => {
+      const { library_id, item_id } = input as {
+        library_id: string;
+        item_id: string;
+      };
+
+      const library = await repository.getLibrary(userId, library_id);
+      if (!library) {
+        return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
+      }
+      if (library.type !== 'text') {
+        return { text: JSON.stringify({ error: `Library "${library.name}" is type "${library.type}", not a text prompt library.` }), isError: true };
+      }
+
+      const existingItem = library.items.find((item) => item.id === item_id);
+      if (!existingItem) {
+        return { text: JSON.stringify({ error: `Prompt "${item_id}" not found in library "${library.name}".` }), isError: true };
+      }
+
+      try {
+        await repository.deleteLibraryItem(userId, library_id, item_id);
+        return {
+          text: JSON.stringify({
+            item_id,
+            library_id,
+            libraryName: library.name,
+            title: existingItem.title ?? null,
+            message: 'Prompt deleted successfully.',
+          }),
+        };
+      } catch (err: any) {
+        return { text: JSON.stringify({ error: err.message ?? 'Delete failed.' }), isError: true };
+      }
+    },
+  });
+
   // ─── search_library_items ───
   tools.push({
     name: 'search_library_items',

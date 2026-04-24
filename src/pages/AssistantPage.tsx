@@ -219,7 +219,7 @@ function extractMutationTarget(
     };
   }
 
-  if (libraryId && ['create_prompt', 'batch_create_prompts'].includes(normalizedToolName)) {
+  if (libraryId && ['create_prompt', 'batch_create_prompts', 'update_prompt', 'delete_prompt'].includes(normalizedToolName)) {
     return {
       entityType: 'library',
       id: libraryId,
@@ -261,6 +261,12 @@ function summarizePendingConfirmation(
       const count = Array.isArray(args.items) ? args.items.length : 0;
       return `Create ${count} prompt${count === 1 ? '' : 's'} in library "${String(args.library_id ?? '')}".`;
     }
+    case 'update_prompt': {
+      const fields = ['content', 'title', 'tags'].filter((key) => Object.prototype.hasOwnProperty.call(args, key));
+      return `Update prompt "${String(args.item_id ?? '')}" in library "${String(args.library_id ?? '')}"${fields.length ? ` (${fields.join(', ')})` : ''}.`;
+    }
+    case 'delete_prompt':
+      return `Delete prompt "${String(args.item_id ?? '')}" from library "${String(args.library_id ?? '')}".`;
     case 'create_project_with_workflow': {
       const workflowCount = Array.isArray(args.workflowItems) ? args.workflowItems.length : 0;
       return `Create a ${String(args.type ?? 'new')} project named "${String(args.name ?? '')}" with ${workflowCount} workflow item${workflowCount === 1 ? '' : 's'}.`;

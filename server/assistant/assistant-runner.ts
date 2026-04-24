@@ -904,6 +904,8 @@ function shouldReplaceProposalText(content: string): boolean {
     /\bcreate_library\b/,
     /\bbatch_create_prompts\b/,
     /\bcreate_project_with_workflow\b/,
+    /\bupdate_prompt\b/,
+    /\bdelete_prompt\b/,
     /\bcall [`']?[a-z_]+[`']?/i,
   ];
 
