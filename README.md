@@ -128,6 +128,17 @@ These are the model profiles currently bundled with the app.
 
 Remix Studio exposes an MCP server at `/mcp` for authenticated, account-scoped automation. External MCP clients can work with libraries, prompts, storage summaries, album summaries, model discovery, direct workflow inputs, and workflow-backed project creation and updates. The in-app assistant uses the same shared tool registry, so chat orchestration and MCP automation stay aligned.
 
+Available MCP capabilities include:
+
+- Create libraries and create text prompts, including batch prompt creation
+- Search library items across libraries or browse a single library with pagination and tag filters
+- Update a single text prompt's content, title, or tags with `update_prompt`
+- Delete a single text prompt from a text library with `delete_prompt`
+- Inspect storage usage, albums, libraries, library items, and usable model/provider pairings
+- Create and update workflow-backed projects
+
+Write and destructive tools are confirmation-gated. Prompt deletion is scoped to one item in a text library and requires an explicit confirmed tool call.
+
 Clients can connect with OAuth 2.0 authorization code flow, with PKCE supported, or with a personal access token. Manage both in `Account -> MCP`. OAuth metadata is available at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`; related endpoints are `/register`, `/authorize`, and `/token`.
 
 Example:
