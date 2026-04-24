@@ -20,7 +20,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -795,6 +795,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   };
 
+  const renameAlbumItem = async (itemId: string, filename: string) => {
+    const updatedItem = await apiRenameAlbumItem(localProject.id, itemId, filename);
+    setLocalAlbum((prev) => prev.map((item) => (item.id === itemId ? { ...item, ...updatedItem } : item)));
+    return updatedItem;
+  };
+
   const draftJobs = localJobs.filter(j => j.status === 'draft');
   const queueJobs = localJobs.filter(j => ['pending', 'processing', 'failed'].includes(j.status));
   const completedJobs = localJobs.filter(j => j.status === 'completed');
@@ -985,6 +991,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               toggleAlbumSelection={toggleAlbumSelection} setAlbumItemsToDelete={setAlbumItemsToDelete}
               setShowDeleteAlbumModal={setShowDeleteAlbumModal} getProviderName={getProviderName} getModelName={getModelName}
               setLightboxData={setLightboxData}
+              onRenameAlbumItem={renameAlbumItem}
               onExportStarted={() => navigate('/exports')}
               projectType={localProject.type || 'image'}
             />

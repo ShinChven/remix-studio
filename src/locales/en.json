@@ -371,7 +371,13 @@
       "expand": "Expand",
       "collapse": "Collapse",
       "sortNewest": "Newest",
-      "sortOldest": "Oldest"
+      "sortOldest": "Oldest",
+      "editFilename": "Edit filename",
+      "filenameRequired": "Filename is required",
+      "filenameDuplicate": "Filename already exists in this album",
+      "filenameUpdated": "Filename updated",
+      "filenameUpdateFailed": "Failed to update filename",
+      "savingFilename": "Saving..."
     },
     "compare": {
       "title": "Compare Texts",

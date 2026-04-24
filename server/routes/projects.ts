@@ -46,6 +46,19 @@ function stripToKey(value: string | undefined, bucket: string): string | undefin
   }
 }
 
+function basenameFromKey(value: string | undefined): string {
+  if (!value) return '';
+  const clean = value.split('?')[0];
+  return decodeURIComponent(clean.split('/').pop() || clean);
+}
+
+function splitFilename(filename: string, fallbackExt?: string): { base: string; ext: string } {
+  const trimmed = filename.trim();
+  const match = trimmed.match(/^(.*?)(\.[^.\/\\]+)$/);
+  if (match && match[1]) return { base: match[1], ext: match[2].slice(1) };
+  return { base: trimmed, ext: fallbackExt || '' };
+}
+
 /** Sign all S3 keys in a project's jobs, album items, and workflow images with pre-signed URLs */
 async function signProjectImages(project: Project, storage: S3Storage): Promise<Project> {
   const jobs = await Promise.all(
@@ -442,6 +455,67 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     } catch (e) {
       console.error('[DELETE /api/projects/:id/album/:itemId]', e);
       return c.json({ error: 'Failed to delete album item' }, 500);
+    }
+  });
+
+  router.patch('/api/projects/:id/album/:itemId/filename', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const itemId = c.req.param('itemId');
+      const body = await c.req.json().catch(() => ({}));
+      const requested = typeof body.filename === 'string' ? body.filename.trim() : '';
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+      if (!itemId) return c.json({ error: 'Item id is required' }, 400);
+      if (!requested) return c.json({ error: 'Filename is required' }, 400);
+      if (/[\/\\]/.test(requested)) return c.json({ error: 'Filename cannot contain path separators' }, 400);
+
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Project not found' }, 404);
+      const item = (project.album || []).find((albumItem) => albumItem.id === itemId);
+      if (!item) return c.json({ error: 'Album item not found' }, 404);
+
+      const currentName = basenameFromKey(stripToKey(item.imageUrl, storage.getBucketName()));
+      const currentParts = splitFilename(currentName, item.format);
+      const requestedParts = splitFilename(requested, currentParts.ext);
+      const normalizedFilename = currentParts.ext ? `${requestedParts.base}.${currentParts.ext}` : requestedParts.base;
+      const duplicate = (project.album || []).some((albumItem) => {
+        if (albumItem.id === itemId) return false;
+        const name = basenameFromKey(stripToKey(albumItem.imageUrl, storage.getBucketName()));
+        return name.trim().toLowerCase() === normalizedFilename.toLowerCase();
+      });
+      if (duplicate) return c.json({ error: 'Filename already exists in this album' }, 409);
+
+      const updates: Partial<typeof item> = {};
+      const mainKey = stripToKey(item.imageUrl, storage.getBucketName());
+      if (mainKey && !mainKey.startsWith('http') && !mainKey.startsWith('data:') && currentParts.base && requestedParts.base !== currentParts.base) {
+        const renameKey = async (value?: string) => {
+          const key = stripToKey(value, storage.getBucketName());
+          if (!key || key.startsWith('http') || key.startsWith('data:')) return value;
+          const keyBasename = basenameFromKey(key);
+          const dir = key.slice(0, key.length - keyBasename.length);
+          if (!keyBasename.startsWith(currentParts.base)) return value;
+          const renamedKey = `${dir}${requestedParts.base}${keyBasename.slice(currentParts.base.length)}`;
+          await storage.copy(key, renamedKey);
+          await storage.delete(key);
+          return renamedKey;
+        };
+        updates.imageUrl = await renameKey(item.imageUrl);
+        updates.thumbnailUrl = await renameKey(item.thumbnailUrl);
+        updates.optimizedUrl = await renameKey(item.optimizedUrl);
+      }
+
+      const updated = { ...item, ...updates };
+      await repository.addAlbumItem(user.userId, projectId, updated);
+      return c.json({
+        ...updated,
+        imageUrl: updated.imageUrl ? await presignIfKey(updated.imageUrl, storage) : updated.imageUrl,
+        thumbnailUrl: updated.thumbnailUrl ? await presignIfKey(updated.thumbnailUrl, storage) : updated.thumbnailUrl,
+        optimizedUrl: updated.optimizedUrl ? await presignIfKey(updated.optimizedUrl, storage) : updated.optimizedUrl,
+      });
+    } catch (e) {
+      console.error('[PATCH /api/projects/:id/album/:itemId/filename]', e);
+      return c.json({ error: 'Failed to rename album item' }, 500);
     }
   });
 

@@ -1,4 +1,4 @@
-import { AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias } from './types';
+import { AlbumItem, AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -855,6 +855,15 @@ export async function moveToTrashBatch(projectId: string, ids: string[]): Promis
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.error || 'Failed to move items to trash');
   }
+}
+
+export async function renameAlbumItem(projectId: string, itemId: string, filename: string): Promise<AlbumItem> {
+  const res = await apiFetch(`/api/projects/${projectId}/album/${itemId}/filename`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify({ filename }),
+  });
+  return handleResponse<AlbumItem>(res, 'Failed to rename album item');
 }
 
 export async function restoreTrashItem(id: string): Promise<void> {

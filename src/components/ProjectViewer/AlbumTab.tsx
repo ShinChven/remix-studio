@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X } from 'lucide-react';
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
@@ -26,6 +26,7 @@ interface AlbumTabProps {
   getProviderName: (id?: string) => string;
   getModelName: (providerId?: string, modelId?: string) => string;
   setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void, onIndexChange?: (index: number) => void } | null) => void;
+  onRenameAlbumItem: (itemId: string, filename: string) => Promise<AlbumItem>;
   onExportStarted: () => void;
   projectType?: ProjectType;
 }
@@ -42,6 +43,7 @@ export function AlbumTab({
   getProviderName,
   getModelName,
   setLightboxData,
+  onRenameAlbumItem,
   onExportStarted,
   projectType = 'image',
 }: AlbumTabProps) {
@@ -65,7 +67,45 @@ export function AlbumTab({
   const [expandedAudioIds, setExpandedAudioIds] = useState<Set<string>>(new Set());
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [albumSort, setAlbumSort] = useState<'newest' | 'oldest'>('newest');
+  const [renameItem, setRenameItem] = useState<AlbumItem | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+
+  const getAlbumFilename = (item: AlbumItem) => {
+    const path = (item.imageUrl || '').split('?')[0];
+    const decoded = decodeURIComponent(path.split('/').pop() || '');
+    return decoded || item.id;
+  };
+
+  const openRenameModal = (item: AlbumItem) => {
+    setRenameItem(item);
+    setRenameValue(getAlbumFilename(item));
+  };
+
+  const submitRename = async () => {
+    if (!renameItem) return;
+    const filename = renameValue.trim();
+    if (!filename) {
+      toast.error(t('projectViewer.album.filenameRequired'));
+      return;
+    }
+    const duplicate = albumItems.some((item) => item.id !== renameItem.id && getAlbumFilename(item).trim().toLowerCase() === filename.toLowerCase());
+    if (duplicate) {
+      toast.error(t('projectViewer.album.filenameDuplicate'));
+      return;
+    }
+    try {
+      setIsRenaming(true);
+      await onRenameAlbumItem(renameItem.id, filename);
+      toast.success(t('projectViewer.album.filenameUpdated'));
+      setRenameItem(null);
+    } catch (err: any) {
+      toast.error(err.message || t('projectViewer.album.filenameUpdateFailed'));
+    } finally {
+      setIsRenaming(false);
+    }
+  };
 
   const displayItems = useMemo(() => {
     return [...albumItems].sort((a, b) => {
@@ -517,13 +557,27 @@ export function AlbumTab({
                   </div>
                   <div className="mt-auto min-h-[160px] flex flex-col bg-white/40 dark:bg-black/40 backdrop-blur-md relative border-t border-neutral-200/50 dark:border-white/5">
                     <div className="p-5 flex-1 flex flex-col justify-start">
+                    <div className="mb-3 flex items-center gap-1.5">
+                      <h3 className="min-w-0 flex-1 truncate text-[13px] font-black leading-5 text-neutral-900 dark:text-white" title={getAlbumFilename(item)}>
+                        {getAlbumFilename(item)}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => openRenameModal(item)}
+                        className="flex-shrink-0 inline-flex items-center justify-center rounded-sm text-[13px] leading-none text-neutral-500 hover:text-blue-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
+                        title={t('projectViewer.album.editFilename')}
+                        aria-label={t('projectViewer.album.editFilename')}
+                      >
+                        <Pencil className="w-[1em] h-[1em]" />
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setPromptItem(item)}
-                      className="mb-4 block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 h-14"
+                      className="mb-4 block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 h-10"
                       title={t('projectViewer.album.viewFullPrompt')}
                     >
-                      <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400 line-clamp-3 font-medium group-hover:text-neutral-200 transition-colors cursor-pointer hover:text-white">
+                      <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400 line-clamp-2 font-medium group-hover:text-neutral-200 transition-colors cursor-pointer hover:text-white">
                         {item.prompt}
                       </p>
                     </button>
@@ -617,6 +671,50 @@ export function AlbumTab({
         </div>
       )}
       <AlbumPromptModal item={promptItem} onClose={() => setPromptItem(null)} />
+      {renameItem && (
+        <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !isRenaming && setRenameItem(null)}>
+          <div className="w-full max-w-md rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-5 py-4">
+              <h2 className="text-sm font-black text-neutral-900 dark:text-white">{t('projectViewer.album.editFilename')}</h2>
+              <button
+                type="button"
+                onClick={() => setRenameItem(null)}
+                disabled={isRenaming}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-50"
+                aria-label={t('projectViewer.common.close')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <textarea
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                className="w-full min-h-28 resize-y rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-900 dark:text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRenameItem(null)}
+                  disabled={isRenaming}
+                  className="px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-50"
+                >
+                  {t('projectViewer.common.cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={submitRename}
+                  disabled={isRenaming}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-xs font-black text-white hover:bg-blue-500 disabled:opacity-50"
+                >
+                  {isRenaming ? t('projectViewer.album.savingFilename') : t('projectViewer.common.save')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {showCompareDialog && <TextAlbumCompareDialog items={selectedTextItems} setLightboxData={setLightboxData} onClose={() => setShowCompareDialog(false)} />}
       <TextAlbumDetailDialog items={displayItems} startIndex={detailIndex} setLightboxData={setLightboxData} onClose={() => setDetailIndex(null)} />
       <ExportPackageDialog
