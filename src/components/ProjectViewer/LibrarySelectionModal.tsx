@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { X, Library as LibraryIcon, Search } from 'lucide-react';
+import { X, Library as LibraryIcon, Search, Loader2, AlertCircle } from 'lucide-react';
 import { Library } from '../../types';
 
 interface LibrarySelectionModalProps {
@@ -10,6 +10,8 @@ interface LibrarySelectionModalProps {
   onSelect: (id: string) => void;
   libraries: Library[];
   selectedLibraryIds: string[];
+  isLoading?: boolean;
+  error?: string | null;
 }
 
 export function LibrarySelectionModal({
@@ -17,7 +19,9 @@ export function LibrarySelectionModal({
   onClose,
   onSelect,
   libraries,
-  selectedLibraryIds
+  selectedLibraryIds,
+  isLoading = false,
+  error = null
 }: LibrarySelectionModalProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
@@ -74,7 +78,22 @@ export function LibrarySelectionModal({
         )}
 
         <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
-          {libraries.length === 0 ? (
+          {error && libraries.length > 0 && (
+            <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-amber-700 dark:text-amber-300">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p className="text-xs font-semibold">
+                {t('projectViewer.librarySelection.refreshFailed', { defaultValue: 'Could not refresh libraries. Showing the last loaded data.' })}
+              </p>
+            </div>
+          )}
+          {isLoading && libraries.length === 0 ? (
+            <div className="py-20 text-center">
+              <Loader2 className="w-12 h-12 text-emerald-500 mx-auto mb-4 animate-spin" />
+              <p className="text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-widest text-xs">
+                {t('projectViewer.librarySelection.loading', { defaultValue: 'Loading libraries...' })}
+              </p>
+            </div>
+          ) : libraries.length === 0 ? (
             <div className="py-20 text-center">
               <LibraryIcon className="w-12 h-12 text-neutral-800 mx-auto mb-4" />
               <p className="text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-widest text-xs">{t('projectViewer.librarySelection.noLibraries')}</p>
