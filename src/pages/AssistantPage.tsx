@@ -534,6 +534,12 @@ export function AssistantPage() {
   const availableModels = selectedProvider
     ? getTextModelsForProvider(selectedProvider.type)
     : [];
+  const contextUsageTokens = messages.reduce((latest, message) => {
+    if (message.role === 'assistant' && typeof message.inputTokens === 'number') {
+      return message.inputTokens;
+    }
+    return latest;
+  }, 0);
 
   // ─── New conversation (handled implicitly in send) ───
   const handleNewConversationClick = () => {
@@ -1335,6 +1341,7 @@ export function AssistantPage() {
                   setSelectedProviderId={setSelectedProviderId}
                   selectedModelId={selectedModelId}
                   setSelectedModelId={setSelectedModelId}
+                  contextUsageTokens={contextUsageTokens}
                   providers={providers}
                   isSending={isSending}
                   onSend={handleSend}
@@ -1354,6 +1361,7 @@ export function AssistantPage() {
                 setSelectedProviderId={setSelectedProviderId}
                 selectedModelId={selectedModelId}
                 setSelectedModelId={setSelectedModelId}
+                contextUsageTokens={contextUsageTokens}
                 providers={providers}
                 isSending={isSending}
                 onSend={handleSend}

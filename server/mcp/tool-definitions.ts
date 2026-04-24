@@ -171,14 +171,14 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'batch_create_prompts',
     title: 'Batch Create Prompts',
-    description: 'Create multiple text prompts (items) in a library in a single batch. Each item requires content; title and tags are optional.',
+    description: 'Create multiple text prompts (library items) in a library in a single batch. Each item requires content; title and tags are optional. For extensive library construction, especially when creating more than 10 items, call this tool multiple times with smaller batches instead of generating every item in one call. Multiple batches keep the generated items more comprehensive and avoid model input/output limits.',
     inputSchema: {
       library_id: z.string().describe('The library ID to add the prompts to'),
       items: z.array(z.object({
         content: z.string().min(1).describe('The prompt text content'),
         title: z.string().optional().describe('Optional title for the prompt'),
         tags: z.array(z.string()).optional().describe('Optional tags for categorization'),
-      })).min(1).max(100).describe('Array of prompts to create (1–100 items)'),
+      })).min(1).max(100).describe('Array of prompts to create (1-100 items). Prefer batches of 10 or fewer items; for larger library builds, call this tool repeatedly until all items are created.'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     category: 'mutate',

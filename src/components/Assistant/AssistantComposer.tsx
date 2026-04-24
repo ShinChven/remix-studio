@@ -37,6 +37,7 @@ export interface AssistantComposerProps {
   initialInputText?: string;
   initialBoundContexts?: BoundContext[];
   initialAttachedImages?: AttachedImage[];
+  contextUsageTokens?: number | null;
   selectedProviderId: string;
   setSelectedProviderId: (id: string) => void;
   selectedModelId: string;
@@ -53,6 +54,8 @@ const MAX_COMPRESS_DIM = 1024;
 const COMPRESS_QUALITY = 0.7;
 const COMPRESS_MIME = 'image/jpeg';
 const MAX_RECORDING_MS = 5 * 60 * 1000;
+const CONTEXT_PROGRESS_RADIUS = 7.5;
+const CONTEXT_PROGRESS_CIRCUMFERENCE = 2 * Math.PI * CONTEXT_PROGRESS_RADIUS;
 
 function summarizeSkillTitle(title: string | undefined, content: string) {
   if (title?.trim()) return title.trim();
@@ -75,6 +78,71 @@ function getSkillTriggerMatch(textBeforeCursor: string): SkillTriggerMatch | nul
     query,
     start: textBeforeCursor.length - query.length - 1,
   };
+}
+
+function formatCompactNumber(value: number) {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(value >= 10_000 ? 0 : 1)}K`;
+  return String(value);
+}
+
+function ContextUsageRing({
+  used,
+  limit,
+  unit,
+}: {
+  used: number;
+  limit?: number;
+  unit?: string;
+}) {
+  if (!limit || limit <= 0) return null;
+
+  const safeUsed = Math.max(0, used);
+  if (safeUsed <= 0) return null;
+
+  const percent = Math.min(100, (safeUsed / limit) * 100);
+  const dashOffset = CONTEXT_PROGRESS_CIRCUMFERENCE * (1 - percent / 100);
+  const progressClass = percent >= 90
+    ? 'stroke-red-500 dark:stroke-red-400'
+    : percent >= 70
+      ? 'stroke-amber-500 dark:stroke-amber-400'
+      : 'stroke-indigo-500 dark:stroke-indigo-400';
+  const unitLabel = unit || 'tokens';
+  const label = `Context used: ${safeUsed.toLocaleString()} / ${limit.toLocaleString()} ${unitLabel} (${Math.round(percent)}%)`;
+
+  return (
+    <div
+      className="inline-flex flex-shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:text-neutral-400"
+      title={label}
+      aria-label={label}
+    >
+      <svg className="h-4 w-4 -rotate-90" viewBox="0 0 20 20" aria-hidden="true">
+        <circle
+          cx="10"
+          cy="10"
+          r={CONTEXT_PROGRESS_RADIUS}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          className="text-neutral-200 dark:text-neutral-700"
+        />
+        <circle
+          cx="10"
+          cy="10"
+          r={CONTEXT_PROGRESS_RADIUS}
+          fill="none"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeDasharray={CONTEXT_PROGRESS_CIRCUMFERENCE}
+          strokeDashoffset={dashOffset}
+          className={`transition-all duration-300 ${progressClass}`}
+        />
+      </svg>
+      <span className="sr-only">
+        {formatCompactNumber(safeUsed)} of {formatCompactNumber(limit)} {unitLabel}
+      </span>
+    </div>
+  );
 }
 
 /**
@@ -115,6 +183,7 @@ export function AssistantComposer({
   initialInputText = '',
   initialBoundContexts = [],
   initialAttachedImages = [],
+  contextUsageTokens = 0,
   selectedProviderId,
   setSelectedProviderId,
   selectedModelId,
@@ -170,6 +239,10 @@ export function AssistantComposer({
   const isSearchingActivePicker = activePicker === 'skill' ? isSearchingSkills : isSearchingMentions;
 
   const selectedProvider = providers.find((p) => p.id === selectedProviderId);
+  const selectedModel = selectedProvider
+    ? getTextModelsForProvider(selectedProvider.type).find((model) => model.id === selectedModelId)
+    : null;
+  const selectedModelLabel = selectedModel?.name || t('assistant.selectModel', 'Select a model');
 
   useEffect(() => {
     if (!textareaRef.current) return;
@@ -683,39 +756,50 @@ export function AssistantComposer({
                 <Bot className="h-4 w-4" />
               )}
             </div>
-            <select
-              value={selectedProviderId && selectedModelId ? `${selectedProviderId}::${selectedModelId}` : ''}
-              onChange={(event) => {
-                const nextValue = event.target.value;
-                if (!nextValue) {
-                  setSelectedProviderId('');
-                  setSelectedModelId('');
-                  return;
-                }
+            <div className="relative inline-flex min-w-0 max-w-[calc(100%-4rem)] flex-shrink items-center gap-1.5 rounded-md outline-none transition-colors hover:text-neutral-800 focus-within:ring-2 focus-within:ring-indigo-500/30 dark:hover:text-neutral-200">
+              <span className="min-w-0 max-w-[12rem] truncate text-xs font-medium text-neutral-500 dark:text-neutral-400 sm:max-w-[18rem]">
+                {selectedModelLabel}
+              </span>
+              <ContextUsageRing
+                used={contextUsageTokens ?? 0}
+                limit={selectedModel?.promptLimit?.value}
+                unit={selectedModel?.promptLimit?.unit}
+              />
+              <select
+                value={selectedProviderId && selectedModelId ? `${selectedProviderId}::${selectedModelId}` : ''}
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  if (!nextValue) {
+                    setSelectedProviderId('');
+                    setSelectedModelId('');
+                    return;
+                  }
 
-                const [providerId, modelId] = nextValue.split('::');
-                setSelectedProviderId(providerId);
-                setSelectedModelId(modelId);
-              }}
-              disabled={isSending}
-              className="cursor-pointer appearance-none border-none bg-transparent p-0 text-xs font-medium text-neutral-500 outline-none transition-colors hover:text-neutral-800 disabled:cursor-not-allowed dark:text-neutral-400 dark:hover:text-neutral-200"
-            >
-              <option value="">{t('assistant.selectModel', 'Select a model')}</option>
-              {providers.map((provider) => {
-                const models = getTextModelsForProvider(provider.type);
-                if (models.length === 0) return null;
+                  const [providerId, modelId] = nextValue.split('::');
+                  setSelectedProviderId(providerId);
+                  setSelectedModelId(modelId);
+                }}
+                disabled={isSending}
+                aria-label={t('assistant.selectModel', 'Select a model')}
+                className="absolute inset-0 h-full w-full cursor-pointer appearance-none border-none bg-transparent p-0 text-xs opacity-0 outline-none disabled:cursor-not-allowed"
+              >
+                <option value="">{t('assistant.selectModel', 'Select a model')}</option>
+                {providers.map((provider) => {
+                  const models = getTextModelsForProvider(provider.type);
+                  if (models.length === 0) return null;
 
-                return (
-                  <optgroup key={provider.id} label={provider.name}>
-                    {models.map((model) => (
-                      <option key={`${provider.id}::${model.id}`} value={`${provider.id}::${model.id}`}>
-                        {model.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                );
-              })}
-            </select>
+                  return (
+                    <optgroup key={provider.id} label={provider.name}>
+                      {models.map((model) => (
+                        <option key={`${provider.id}::${model.id}`} value={`${provider.id}::${model.id}`}>
+                          {model.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
+              </select>
+            </div>
 
             <div className="ml-auto flex items-center gap-1">
               {/* Mic button — only shown when a Google AI provider is selected */}
