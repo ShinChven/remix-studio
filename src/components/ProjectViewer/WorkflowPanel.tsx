@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Archive, ArchiveRestore, CheckCircle2, Copy, Eraser, ImageIcon, Library as LibraryIcon, MoreVertical, Settings, Trash2, Type, Video as VideoIcon, Volume2 } from 'lucide-react';
+import { Archive, ArchiveRestore, Copy, Eraser, ImageIcon, Library as LibraryIcon, MoreVertical, Settings, Sparkles, Trash2, Type, Video as VideoIcon, Volume2 } from 'lucide-react';
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
@@ -26,6 +26,7 @@ interface WorkflowPanelProps {
   onNavigateToEdit: () => void;
   onNavigateToOrphans: () => void;
   onNavigateToDuplicate: () => void;
+  onStartAssistantChat: () => void;
   onShowDeleteProject: () => void;
   onToggleArchive: () => void;
   isArchived: boolean;
@@ -73,6 +74,7 @@ export function WorkflowPanel({
   onNavigateToEdit,
   onNavigateToOrphans,
   onNavigateToDuplicate,
+  onStartAssistantChat,
   onShowDeleteProject,
   onToggleArchive,
   isArchived,
@@ -159,67 +161,75 @@ export function WorkflowPanel({
               <span className="text-[8px] text-neutral-500 dark:text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-white/5 dark:bg-black/20 border border-neutral-200/50 dark:border-white/5 rounded truncate leading-none backdrop-blur-md">
                 {t('projectViewer.main.projectId', { id: project.id })}
               </span>
-              <span title={t('projectViewer.main.autoSavedTitle')} className="flex items-center gap-1 text-[8px] text-emerald-500 font-bold uppercase tracking-widest opacity-80 whitespace-nowrap leading-none">
-                <CheckCircle2 className="w-3 h-3" /> {t('projectViewer.main.autoSaved')}
-              </span>
             </div>
           </div>
 
-          <div className="relative shrink-0" ref={actionMenuRef}>
+          <div className="flex items-center gap-1 shrink-0">
             <button
-              onClick={() => setIsActionMenuOpen((open) => !open)}
-              className="p-1.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 transition-all hover:bg-white/10 rounded-lg border border-transparent hover:border-neutral-200/50 dark:hover:border-white/10"
-              title={t('projectViewer.main.editProjectInfo')}
-              aria-haspopup="menu"
-              aria-expanded={isActionMenuOpen}
-              aria-label={t('projectViewer.main.editProjectInfo')}
+              onClick={onStartAssistantChat}
+              className="p-1.5 text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 transition-all hover:bg-indigo-500/10 rounded-lg border border-transparent hover:border-indigo-500/20"
+              title={t('projectViewer.main.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })}
+              aria-label={t('projectViewer.main.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })}
             >
-              <MoreVertical className="w-4 h-4" />
+              <Sparkles className="w-4 h-4" />
             </button>
 
-            {isActionMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-52 p-2 rounded-xl border border-neutral-200/60 dark:border-white/10 bg-white/90 dark:bg-neutral-900/95 backdrop-blur-xl shadow-xl z-30">
-                <button
-                  onClick={() => closeMenuAndRun(onNavigateToEdit)}
-                  className={`${menuButtonBaseClass} text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/80 dark:hover:bg-neutral-800/80`}
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  {t('projectViewer.main.editProjectInfo')}
-                </button>
+            <div className="relative" ref={actionMenuRef}>
+              <button
+                onClick={() => setIsActionMenuOpen((open) => !open)}
+                className="p-1.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 transition-all hover:bg-white/10 rounded-lg border border-transparent hover:border-neutral-200/50 dark:hover:border-white/10"
+                title={t('projectViewer.main.editProjectInfo')}
+                aria-haspopup="menu"
+                aria-expanded={isActionMenuOpen}
+                aria-label={t('projectViewer.main.editProjectInfo')}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
 
-                <button
-                  onClick={() => closeMenuAndRun(onNavigateToDuplicate)}
-                  className={`${menuButtonBaseClass} text-green-600/90 dark:text-green-400/90 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-500/10`}
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  {t('projectViewer.main.duplicateProject')}
-                </button>
+              {isActionMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-52 p-2 rounded-xl border border-neutral-200/60 dark:border-white/10 bg-white/90 dark:bg-neutral-900/95 backdrop-blur-xl shadow-xl z-30">
+                  <button
+                    onClick={() => closeMenuAndRun(onNavigateToEdit)}
+                    className={`${menuButtonBaseClass} text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/80 dark:hover:bg-neutral-800/80`}
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                    {t('projectViewer.main.editProjectInfo')}
+                  </button>
 
-                <button
-                  onClick={() => closeMenuAndRun(onNavigateToOrphans)}
-                  className={`${menuButtonBaseClass} text-blue-600/90 dark:text-blue-400/90 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-500/10`}
-                >
-                  <Eraser className="w-3.5 h-3.5" />
-                  {t('projectViewer.main.manageOrphans')}
-                </button>
+                  <button
+                    onClick={() => closeMenuAndRun(onNavigateToDuplicate)}
+                    className={`${menuButtonBaseClass} text-green-600/90 dark:text-green-400/90 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-500/10`}
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    {t('projectViewer.main.duplicateProject')}
+                  </button>
 
-                <button
-                  onClick={() => closeMenuAndRun(onToggleArchive)}
-                  className={`${menuButtonBaseClass} text-amber-600/90 dark:text-amber-400/90 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10`}
-                >
-                  {isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
-                  {t(isArchived ? 'projectViewer.main.unarchiveProject' : 'projectViewer.main.archiveProject')}
-                </button>
+                  <button
+                    onClick={() => closeMenuAndRun(onNavigateToOrphans)}
+                    className={`${menuButtonBaseClass} text-blue-600/90 dark:text-blue-400/90 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-500/10`}
+                  >
+                    <Eraser className="w-3.5 h-3.5" />
+                    {t('projectViewer.main.manageOrphans')}
+                  </button>
 
-                <button
-                  onClick={() => closeMenuAndRun(onShowDeleteProject)}
-                  className={`${menuButtonBaseClass} text-red-600/90 dark:text-red-400/90 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-500/10`}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  {t('projectViewer.main.deleteProject')}
-                </button>
-              </div>
-            )}
+                  <button
+                    onClick={() => closeMenuAndRun(onToggleArchive)}
+                    className={`${menuButtonBaseClass} text-amber-600/90 dark:text-amber-400/90 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10`}
+                  >
+                    {isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+                    {t(isArchived ? 'projectViewer.main.unarchiveProject' : 'projectViewer.main.archiveProject')}
+                  </button>
+
+                  <button
+                    onClick={() => closeMenuAndRun(onShowDeleteProject)}
+                    className={`${menuButtonBaseClass} text-red-600/90 dark:text-red-400/90 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-500/10`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    {t('projectViewer.main.deleteProject')}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

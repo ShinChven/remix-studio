@@ -38,6 +38,7 @@ import { QueueTab } from './ProjectViewer/QueueTab';
 import { CompletedTab } from './ProjectViewer/CompletedTab';
 import { AlbumTab } from './ProjectViewer/AlbumTab';
 import { WorkflowPanel } from './ProjectViewer/WorkflowPanel';
+import type { BoundContext } from './Assistant/AssistantComposer';
 
 interface Props {
   project: Project;
@@ -837,6 +838,22 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     onUpdate(updated);
   };
 
+  const handleStartAssistantChat = () => {
+    const projectContext: BoundContext = {
+      id: localProject.id,
+      name: localProject.name,
+      type: 'project',
+      subType: localProject.type || 'image',
+    };
+
+    localStorage.removeItem('assistant_last_conversation');
+    navigate('/assistant', {
+      state: {
+        draftBoundContexts: [projectContext],
+      },
+    });
+  };
+
   return (
     <div className="flex flex-col lg:flex-row h-full bg-transparent overflow-hidden lg:overflow-visible">
       <ModelSelectorModal
@@ -883,6 +900,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         onNavigateToEdit={() => navigate(`/project/${project.id}/edit`)}
         onNavigateToOrphans={() => navigate(`/project/${project.id}/orphans`)}
         onNavigateToDuplicate={() => navigate(`/project/new`, { state: { copyFrom: project.id } })}
+        onStartAssistantChat={handleStartAssistantChat}
         onShowDeleteProject={() => setShowDeleteProjectModal(true)}
         onToggleArchive={handleToggleArchive}
         isArchived={isArchived}

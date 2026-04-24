@@ -39,6 +39,16 @@ import {
 import { AssistantHero } from '../components/Assistant/AssistantHero';
 
 // BoundContext moved to AssistantComposer.tsx
+type AssistantNavigationState = {
+  initialMessage?: string;
+  providerId?: string;
+  modelId?: string;
+  boundContexts?: BoundContext[];
+  attachedImages?: AttachedImage[];
+  draftMessage?: string;
+  draftBoundContexts?: BoundContext[];
+  draftAttachedImages?: AttachedImage[];
+};
 
 const MaterialSpinner = ({ className }: { className?: string }) => (
   <svg className={`animate-material-spinner ${className}`} viewBox="0 0 50 50">
@@ -276,6 +286,13 @@ export function AssistantPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(() => localStorage.getItem('assistant_last_provider') || '');
   const [selectedModelId, setSelectedModelId] = useState<string>(() => localStorage.getItem('assistant_last_model') || '');
+  const initialNavigationState = location.state as AssistantNavigationState | null;
+  const [composerDraft, setComposerDraft] = useState(() => ({
+    inputText: initialNavigationState?.draftMessage || '',
+    boundContexts: initialNavigationState?.draftBoundContexts || [],
+    attachedImages: initialNavigationState?.draftAttachedImages || [],
+    key: 0,
+  }));
 
   useEffect(() => {
     if (selectedProviderId) localStorage.setItem('assistant_last_provider', selectedProviderId);
@@ -429,10 +446,33 @@ export function AssistantPage() {
   }, [lightboxImage]);
 
   // Handle initial message from dashboard
+  const handledDraftRef = useRef(false);
+  useEffect(() => {
+    if (handledDraftRef.current) return;
+    const state = location.state as AssistantNavigationState | null;
+    if (!state) return;
+
+    const draftContexts = state.draftBoundContexts || [];
+    const draftImages = state.draftAttachedImages || [];
+    const hasDraft = state.draftMessage !== undefined || draftContexts.length > 0 || draftImages.length > 0;
+    if (!hasDraft) return;
+
+    handledDraftRef.current = true;
+    initializedRef.current = true;
+    localStorage.removeItem('assistant_last_conversation');
+    setComposerDraft((current) => ({
+      inputText: state.draftMessage || '',
+      boundContexts: draftContexts,
+      attachedImages: draftImages,
+      key: current.key + 1,
+    }));
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location, navigate]);
+
   const handledInitialRef = useRef(false);
   useEffect(() => {
     if (handledInitialRef.current) return;
-    const state = location.state as { initialMessage?: string; providerId?: string; modelId?: string; boundContexts?: BoundContext[]; attachedImages?: AttachedImage[] } | null;
+    const state = location.state as AssistantNavigationState | null;
     if (state && (state.initialMessage !== undefined || (state.attachedImages && state.attachedImages.length > 0))) {
       handledInitialRef.current = true;
       initializedRef.current = true; // Mark as initialized to prevent auto-select from running
@@ -447,8 +487,14 @@ export function AssistantPage() {
 
   useEffect(() => {
     // If we're coming from dashboard with an initial message, definitely don't auto-jump
-    const state = location.state as { initialMessage?: string; attachedImages?: AttachedImage[] } | null;
-    if (state && (state.initialMessage !== undefined || (state.attachedImages && state.attachedImages.length > 0))) {
+    const state = location.state as AssistantNavigationState | null;
+    const hasInitialSend = state && (state.initialMessage !== undefined || (state.attachedImages && state.attachedImages.length > 0));
+    const hasDraft = state && (
+      state.draftMessage !== undefined
+      || (state.draftBoundContexts && state.draftBoundContexts.length > 0)
+      || (state.draftAttachedImages && state.draftAttachedImages.length > 0)
+    );
+    if (hasInitialSend || hasDraft) {
       initializedRef.current = true;
       return;
     }
@@ -1281,6 +1327,10 @@ export function AssistantPage() {
             <div className="flex flex-col items-center justify-center h-full px-4">
               <div className="w-full max-w-2xl mx-auto -mt-20">
                 <AssistantHero
+                  key={`assistant-hero-${composerDraft.key}`}
+                  initialInputText={composerDraft.inputText}
+                  initialBoundContexts={composerDraft.boundContexts}
+                  initialAttachedImages={composerDraft.attachedImages}
                   selectedProviderId={selectedProviderId}
                   setSelectedProviderId={setSelectedProviderId}
                   selectedModelId={selectedModelId}
