@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Archive, ArchiveRestore, Copy, Eraser, ImageIcon, Library as LibraryIcon, MoreVertical, Settings, Sparkles, Trash2, Type, Video as VideoIcon, Volume2 } from 'lucide-react';
+import { Archive, ArchiveRestore, Copy, Eraser, HardDrive, Hash, ImageIcon, Library as LibraryIcon, MoreVertical, Settings, Sparkles, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
@@ -102,6 +103,7 @@ export function WorkflowPanel({
 }: WorkflowPanelProps) {
   const { t } = useTranslation();
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+  const [isProjectInfoOpen, setIsProjectInfoOpen] = useState(false);
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -137,6 +139,22 @@ export function WorkflowPanel({
   const selectedAllModels = [...selectedBaseModels, ...resolveCustomModels(selectedProviderType, selectedCustomAliases)];
   const selectedModel = selectedAllModels.find((m) => m.id === selectedModelId);
   const supportsImageInput = localProject.type !== 'audio' || selectedModel?.options.supportsReferenceImages === true;
+  const sumStoredSize = (item: { size?: number; optimizedSize?: number; thumbnailSize?: number }) => {
+    return Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
+  };
+  const projectStorageUsage = localProject.totalSize ?? [
+    ...(localProject.album || []),
+    ...(localProject.workflow || []),
+  ].reduce((sum, item) => sum + sumStoredSize(item), 0);
+
+  const formatStorageSize = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const unit = 1024;
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const index = Math.min(Math.floor(Math.log(bytes) / Math.log(unit)), units.length - 1);
+    const value = bytes / Math.pow(unit, index);
+    return `${parseFloat(value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2))} ${units[index]}`;
+  };
 
   const closeMenuAndRun = (action: () => void) => {
     setIsActionMenuOpen(false);
@@ -148,19 +166,21 @@ export function WorkflowPanel({
       <div className="p-3 border-b border-neutral-200/50 dark:border-white/5 bg-transparent shadow-sm relative z-10">
         <div className="min-h-[40px] flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-black text-neutral-900 dark:text-white truncate tracking-widest leading-none uppercase mb-1.5 flex items-center gap-2 min-w-0">
-              <span className="truncate">{localProject.name}</span>
+            <div className="text-sm font-black text-neutral-900 dark:text-white tracking-tight leading-none flex items-center gap-2 min-w-0">
+              <button
+                type="button"
+                onClick={() => setIsProjectInfoOpen(true)}
+                className="min-w-0 truncate text-left hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                title={localProject.name}
+              >
+                {localProject.name}
+              </button>
               {isArchived && (
                 <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 leading-none shrink-0">
                   <Archive className="w-2.5 h-2.5" />
                   {t('projectViewer.main.archivedBadge')}
                 </span>
               )}
-            </div>
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-[8px] text-neutral-500 dark:text-neutral-500 font-mono uppercase tracking-widest px-1.5 py-0.5 bg-white/5 dark:bg-black/20 border border-neutral-200/50 dark:border-white/5 rounded truncate leading-none backdrop-blur-md">
-                {t('projectViewer.main.projectId', { id: project.id })}
-              </span>
             </div>
           </div>
 
@@ -233,6 +253,63 @@ export function WorkflowPanel({
           </div>
         </div>
       </div>
+
+      {isProjectInfoOpen && createPortal((
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setIsProjectInfoOpen(false)}
+        >
+          <div
+            className="w-full max-w-md overflow-hidden rounded-3xl border border-neutral-200/60 dark:border-white/10 bg-white/95 dark:bg-neutral-900/95 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-200"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-neutral-200/60 dark:border-white/10 p-5">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">
+                  {t('projectViewer.main.projectInfo', { defaultValue: 'Project info' })}
+                </p>
+                <h3 className="mt-2 text-xl font-black leading-tight text-neutral-900 dark:text-white break-words">
+                  {localProject.name}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsProjectInfoOpen(false)}
+                className="shrink-0 rounded-xl border border-transparent p-2 text-neutral-500 transition-all hover:border-neutral-200 dark:hover:border-white/10 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                aria-label={t('projectViewer.common.close')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 p-5">
+              <div className="rounded-2xl border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
+                <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
+                  <Type className="h-3.5 w-3.5" />
+                  {t('projectViewer.main.projectTitle', { defaultValue: 'Title' })}
+                </div>
+                <p className="break-words text-sm font-semibold text-neutral-900 dark:text-white">{localProject.name}</p>
+              </div>
+
+              <div className="rounded-2xl border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
+                <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
+                  <Hash className="h-3.5 w-3.5" />
+                  {t('projectViewer.main.id', { defaultValue: 'ID' })}
+                </div>
+                <p className="break-all font-mono text-xs font-semibold text-neutral-900 dark:text-white">{localProject.id || project.id}</p>
+              </div>
+
+              <div className="rounded-2xl border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
+                <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
+                  <HardDrive className="h-3.5 w-3.5" />
+                  {t('projectViewer.main.storageUsage', { defaultValue: 'Storage usage' })}
+                </div>
+                <p className="text-sm font-black text-neutral-900 dark:text-white">{formatStorageSize(projectStorageUsage)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ), document.body)}
 
       <div className="h-[57px] p-3 border-b border-neutral-200/50 dark:border-white/5 flex gap-2 bg-white/30 dark:bg-black/20 items-center backdrop-blur-xl">
         <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">

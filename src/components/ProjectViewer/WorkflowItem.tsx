@@ -52,6 +52,10 @@ export function WorkflowItem({
   const { t } = useTranslation();
   const isLibrary = item.type === 'library';
   const library = isLibrary ? libraries.find(l => l.id === item.value) : null;
+  const visibilityLabel = item.disabled
+    ? t('projectViewer.workflow.enableItem', { defaultValue: 'Enable' })
+    : t('projectViewer.workflow.disableItem', { defaultValue: 'Disable' });
+  const deleteLabel = t('projectViewer.common.delete', { defaultValue: 'Delete' });
 
   return (
     <div 
@@ -78,16 +82,75 @@ export function WorkflowItem({
              item.type === 'video' ? t('projectViewer.common.video') :
              item.type === 'audio' ? t('projectViewer.common.audio') :
              item.type}
+            {item.type === 'text' && (
+              <span className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/70 px-1.5 py-0.5 text-[9px] font-black tracking-[0.14em] text-neutral-500 dark:text-neutral-500 shadow-sm">
+                {t('projectViewer.workflow.characterCount', { count: item.value.length })}
+              </span>
+            )}
           </span>
         </div>
         <div className="flex items-center gap-1">
-          {onToggleDisable && (
-            <button onClick={() => onToggleDisable(item.id)} className={`transition-all p-1.5 rounded-lg border border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 ${item.disabled ? 'text-neutral-400 hover:text-neutral-600' : 'text-blue-500 hover:text-blue-600'}`}>
-              {item.disabled ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          {item.type === 'text' && (
+            <button
+              onClick={() => onSelectFromLibrary(item.id)}
+              className="relative p-1.5 rounded-lg border border-transparent text-neutral-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:border-blue-200 dark:hover:border-blue-500/20 transition-all group/action"
+              title={t('projectViewer.workflow.pickFromLibrary')}
+            >
+              <LibraryIcon className="w-4 h-4" />
+              <span className="pointer-events-none absolute right-0 top-full z-20 mt-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 opacity-0 shadow-lg transition-opacity whitespace-nowrap group-hover/action:opacity-100">
+                {t('projectViewer.workflow.pickFromLibrary')}
+              </span>
             </button>
           )}
-          <button onClick={() => onRemove(item.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all p-1.5 rounded-lg border border-transparent hover:border-red-200">
+          {item.type === 'image' && (
+            <>
+              <label
+                className="relative p-1.5 rounded-lg border border-transparent text-neutral-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:border-amber-200 dark:hover:border-amber-500/20 transition-all cursor-pointer group/action"
+                title={uploadingItemIds.has(item.id) ? t('projectViewer.workflow.wait') : t('projectViewer.common.upload')}
+              >
+                {uploadingItemIds.has(item.id) ? (
+                  <Loader2 className="w-4 h-4 text-amber-600 dark:text-amber-500 animate-spin" />
+                ) : (
+                  <ImageIcon className="w-4 h-4" />
+                )}
+                <input type="file" accept="image/*" onChange={(e) => onImageUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
+                <span className="pointer-events-none absolute right-0 top-full z-20 mt-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 opacity-0 shadow-lg transition-opacity whitespace-nowrap group-hover/action:opacity-100">
+                  {uploadingItemIds.has(item.id) ? t('projectViewer.workflow.wait') : t('projectViewer.common.upload')}
+                </span>
+              </label>
+              <button
+                onClick={() => onSelectFromLibrary(item.id)}
+                className="relative p-1.5 rounded-lg border border-transparent text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:border-emerald-200 dark:hover:border-emerald-500/20 transition-all group/action"
+                title={t('projectViewer.common.library')}
+              >
+                <LibraryIcon className="w-4 h-4" />
+                <span className="pointer-events-none absolute right-0 top-full z-20 mt-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 opacity-0 shadow-lg transition-opacity whitespace-nowrap group-hover/action:opacity-100">
+                  {t('projectViewer.common.library')}
+                </span>
+              </button>
+            </>
+          )}
+          {onToggleDisable && (
+            <button
+              onClick={() => onToggleDisable(item.id)}
+              className={`relative transition-all p-1.5 rounded-lg border border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 group/action ${item.disabled ? 'text-neutral-400 hover:text-neutral-600' : 'text-blue-500 hover:text-blue-600'}`}
+              title={visibilityLabel}
+            >
+              {item.disabled ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <span className="pointer-events-none absolute right-0 top-full z-20 mt-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 opacity-0 shadow-lg transition-opacity whitespace-nowrap group-hover/action:opacity-100">
+                {visibilityLabel}
+              </span>
+            </button>
+          )}
+          <button
+            onClick={() => onRemove(item.id)}
+            className="relative text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all p-1.5 rounded-lg border border-transparent hover:border-red-200 group/action"
+            title={deleteLabel}
+          >
             <Trash2 className="w-4 h-4" />
+            <span className="pointer-events-none absolute right-0 top-full z-20 mt-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 opacity-0 shadow-lg transition-opacity whitespace-nowrap group-hover/action:opacity-100">
+              {deleteLabel}
+            </span>
           </button>
         </div>
       </div>
@@ -98,23 +161,13 @@ export function WorkflowItem({
             onClick={() => onEdit(item)}
             className="group/text relative cursor-pointer"
           >
-            <div className="w-full bg-white/40 dark:bg-black/40 border border-neutral-200/50 dark:border-white/5 rounded-xl p-4 pb-10 text-xs text-neutral-900 dark:text-neutral-300 line-clamp-4 min-h-[110px] transition-all hover:border-blue-500/30 hover:bg-white/60 dark:hover:bg-neutral-900/60 shadow-inner backdrop-blur-md">
+            <div className="w-full bg-white/40 dark:bg-black/40 border border-neutral-200/50 dark:border-white/5 rounded-xl p-4 text-xs text-neutral-900 dark:text-neutral-300 line-clamp-4 min-h-[110px] transition-all hover:border-blue-500/30 hover:bg-white/60 dark:hover:bg-neutral-900/60 shadow-inner backdrop-blur-md">
               {item.value || <span className="opacity-30 italic font-medium">{t('projectViewer.workflow.noTextContent')}</span>}
-              <div className="absolute bottom-3 left-3 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-neutral-500 dark:text-neutral-500 shadow-sm">
-                {t('projectViewer.workflow.characterCount', { count: item.value.length })}
-              </div>
               <div className="absolute top-3 right-3 p-1.5 bg-white dark:bg-neutral-900 rounded-md border border-neutral-200 dark:border-neutral-800 shadow-sm opacity-100 transition-all text-neutral-400 hover:text-blue-500 hover:border-blue-200">
                 <Maximize2 className="w-3.5 h-3.5" />
               </div>
             </div>
           </div>
-          <button 
-            onClick={() => onSelectFromLibrary(item.id)}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-neutral-200/50 dark:border-white/5 rounded-xl bg-white/20 dark:bg-neutral-900/20 hover:bg-blue-50/40 dark:hover:bg-blue-500/10 hover:border-blue-500/50 text-[10px] font-black text-neutral-500 dark:text-neutral-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all group uppercase tracking-widest shadow-sm backdrop-blur-sm"
-          >
-            <LibraryIcon className="w-3.5 h-3.5 text-neutral-400 group-hover:text-blue-500" />
-            {t('projectViewer.workflow.pickFromLibrary')}
-          </button>
         </div>
       )}
 
@@ -162,31 +215,8 @@ export function WorkflowItem({
 
       {item.type === 'image' && (
         <div className="space-y-2">
-          <div className="flex gap-2">
-            <label className="flex-1 block text-center py-3 border border-dashed border-neutral-200/50 dark:border-white/5 rounded-xl cursor-pointer hover:bg-amber-50/40 dark:hover:bg-amber-500/10 hover:border-amber-500/50 transition-all group relative overflow-hidden bg-white/20 dark:bg-neutral-900/20 shadow-sm backdrop-blur-sm">
-              {uploadingItemIds.has(item.id) ? (
-                <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 text-amber-600 dark:text-amber-500 animate-spin" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-600/70">{t('projectViewer.workflow.wait')}</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-neutral-400 group-hover:text-amber-600" />
-                  <span className="text-[10px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest group-hover:text-neutral-900 dark:group-hover:text-neutral-200">{t('projectViewer.common.upload')}</span>
-                  <input type="file" accept="image/*" onChange={(e) => onImageUpload(e, item.id)} className="hidden" disabled={uploadingItemIds.has(item.id)} />
-                </div>
-              )}
-            </label>
-            <button 
-              onClick={() => onSelectFromLibrary(item.id)}
-              className="flex-1 flex items-center justify-center gap-2 py-3 border border-dashed border-neutral-200/50 dark:border-white/5 rounded-xl hover:bg-emerald-50/40 dark:hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all group bg-white/20 dark:bg-neutral-900/20 shadow-sm backdrop-blur-sm"
-            >
-              <LibraryIcon className="w-4 h-4 text-neutral-400 group-hover:text-emerald-600" />
-              <span className="text-[10px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest group-hover:text-neutral-900 dark:group-hover:text-neutral-200">{t('projectViewer.common.library')}</span>
-            </button>
-          </div>
           {item.value && !uploadingItemIds.has(item.id) && (
-            <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 mt-2">
+            <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800">
                <img 
                  src={imageDisplayUrl(item.thumbnailUrl || item.value)} 
                  alt="Reference" 
