@@ -1321,6 +1321,9 @@
       "itemCount_one": "此包包含 {{count}} 项",
       "itemCount_other": "此包包含 {{count}} 项",
       "packageName": "包名称",
+      "version": "版本",
+      "raw": "原始",
+      "optimized": "优化",
       "placeholder": "album_export.zip",
       "queueing": "加入队列中...",
       "startExport": "开始导出"

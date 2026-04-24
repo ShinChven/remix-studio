@@ -1321,6 +1321,9 @@
       "itemCount_one": "{{count}} élément dans ce paquet",
       "itemCount_other": "{{count}} éléments dans ce paquet",
       "packageName": "Nom du paquet",
+      "version": "Version",
+      "raw": "Brut",
+      "optimized": "Optimisé",
       "placeholder": "album_export.zip",
       "queueing": "Mise en file...",
       "startExport": "Démarrer l'export"

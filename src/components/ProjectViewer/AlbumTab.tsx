@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X } from 'lucide-react';
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
+import type { AlbumExportVersion } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
 import { ExportPackageDialog } from './ExportPackageDialog';
 import { TextAlbumCompareDialog } from './TextAlbumCompareDialog';
@@ -156,9 +157,9 @@ export function AlbumTab({
     setIsExportDialogOpen(true);
   };
 
-  const handleExport = async (packageName: string) => {
+  const handleExport = async (packageName: string, exportVersion: AlbumExportVersion) => {
     try {
-      await startAlbumExport(projectId, pendingExportItemIds, packageName);
+      await startAlbumExport(projectId, pendingExportItemIds, packageName, exportVersion);
       onExportStarted();
       navigate('/exports');
       toast.success(t('projectViewer.album.exportQueued'));

@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, Package, X } from 'lucide-react';
+import { Download, Image, Package, Sparkles, X } from 'lucide-react';
+import type { AlbumExportVersion } from '../../api';
 
 interface ExportPackageDialogProps {
   isOpen: boolean;
   defaultValue: string;
   itemCount: number;
   onClose: () => void;
-  onSubmit: (packageName: string) => Promise<void> | void;
+  onSubmit: (packageName: string, exportVersion: AlbumExportVersion) => Promise<void> | void;
 }
 
 export function ExportPackageDialog({
@@ -19,11 +20,13 @@ export function ExportPackageDialog({
 }: ExportPackageDialogProps) {
   const { t } = useTranslation();
   const [packageName, setPackageName] = useState(defaultValue);
+  const [exportVersion, setExportVersion] = useState<AlbumExportVersion>('raw');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     setPackageName(defaultValue);
+    setExportVersion('raw');
     setIsSubmitting(false);
   }, [defaultValue, isOpen]);
 
@@ -33,7 +36,7 @@ export function ExportPackageDialog({
     if (!packageName.trim() || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      await onSubmit(packageName);
+      await onSubmit(packageName, exportVersion);
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -94,6 +97,33 @@ export function ExportPackageDialog({
               autoFocus
             />
           </label>
+
+          <div>
+            <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.24em] text-neutral-500 dark:text-neutral-500">
+              {t('projectViewer.exportDialog.version')}
+            </span>
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-1">
+              {[
+                { value: 'raw' as const, label: t('projectViewer.exportDialog.raw'), icon: Image },
+                { value: 'optimized' as const, label: t('projectViewer.exportDialog.optimized'), icon: Sparkles },
+              ].map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setExportVersion(value)}
+                  className={`flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                    exportVersion === value
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                      : 'text-neutral-500 hover:bg-white dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white'
+                  }`}
+                  aria-pressed={exportVersion === value}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span className="truncate">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 p-4 sm:p-6">

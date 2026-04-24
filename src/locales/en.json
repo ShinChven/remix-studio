@@ -292,6 +292,9 @@
       "itemCount_one": "{{count}} item in this package",
       "itemCount_other": "{{count}} items in this package",
       "packageName": "Package Name",
+      "version": "Version",
+      "raw": "Raw",
+      "optimized": "Optimized",
       "placeholder": "album_export.zip",
       "queueing": "Queueing...",
       "startExport": "Start Export"

@@ -24,6 +24,8 @@ const HEARTBEAT_INTERVAL_MS = 10_000;
 /** Reaper polling interval — how often to check for stuck tasks. */
 const REAPER_INTERVAL_MS = 60_000;
 
+type ExportAssetVersion = 'raw' | 'optimized';
+
 export interface ExportTask {
   id: string;
   projectId?: string;
@@ -37,9 +39,24 @@ export interface ExportTask {
   s3Key?: string;
   /** Presigned download URL — only populated when returned to the client */
   downloadUrl?: string;
+  exportVersion?: ExportAssetVersion;
   error?: string;
   createdAt: number;
   ttl?: number;
+}
+
+function resolveExportSource(item: AlbumItem, version: ExportAssetVersion) {
+  if (version === 'optimized' && item.optimizedUrl) {
+    return {
+      key: item.optimizedUrl,
+      size: item.optimizedSize ?? item.size,
+    };
+  }
+
+  return {
+    key: item.imageUrl,
+    size: item.size,
+  };
 }
 
 export class ExportManager {
@@ -185,8 +202,9 @@ export class ExportManager {
   private async runExportTask(task: any): Promise<void> {
     const { id: taskId, userId, projectName, packageName } = task;
     const items: AlbumItem[] = task.items ?? [];
+    const exportVersion: ExportAssetVersion = task.exportVersion === 'optimized' ? 'optimized' : 'raw';
 
-    console.log(`[ExportManager] Starting task ${taskId} (${items.length} items, user=${userId})`);
+    console.log(`[ExportManager] Starting task ${taskId} (${items.length} items, version=${exportVersion}, user=${userId})`);
 
     const normalizedPackageName = this.normalizePackageName(packageName, projectName);
     const s3Key = `${userId}/exports/${taskId}/${normalizedPackageName}`;
@@ -206,9 +224,10 @@ export class ExportManager {
 
       let estimatedSize = 0;
       for (const item of items) {
-        if (item.imageUrl) {
-          const size = await this.imageStorage.getSize(item.imageUrl).catch(() => undefined);
-          estimatedSize += size ?? (item.size ?? 5 * 1024 * 1024);
+        const { key, size: knownSize } = resolveExportSource(item, exportVersion);
+        if (key) {
+          const size = await this.imageStorage.getSize(key).catch(() => undefined);
+          estimatedSize += size ?? (knownSize ?? 5 * 1024 * 1024);
         }
       }
 
@@ -248,19 +267,20 @@ export class ExportManager {
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        if (!item.imageUrl) { done++; continue; }
+        const { key } = resolveExportSource(item, exportVersion);
+        if (!key) { done++; continue; }
 
-        console.log(`[ExportManager] ${taskId}: stream ${i + 1}/${items.length} — ${item.imageUrl}`);
+        console.log(`[ExportManager] ${taskId}: stream ${i + 1}/${items.length} — ${key}`);
 
         // Build a unique filename
-        let name = item.imageUrl.split('/').pop() || `file_${i + 1}.png`;
+        let name = key.split('/').pop() || `file_${i + 1}.png`;
         if (seenNames.has(name)) name = `${i + 1}_${name}`;
         seenNames.add(name);
 
         // Idle-timeout wrapper around the S3 read stream
         const sourceStream = await Promise.race([
-          this.imageStorage.readStream(item.imageUrl),
-          new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`Idle timeout opening ${item.imageUrl}`)), IDLE_TIMEOUT_MS)),
+          this.imageStorage.readStream(key),
+          new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`Idle timeout opening ${key}`)), IDLE_TIMEOUT_MS)),
         ]);
 
         // Per-stream idle timeout: reset timer on every data event
@@ -268,7 +288,7 @@ export class ExportManager {
         const resetIdle = () => {
           if (idleTimer) clearTimeout(idleTimer);
           idleTimer = setTimeout(() => {
-            sourceStream.destroy(new Error(`Idle timeout reading ${item.imageUrl}`));
+            sourceStream.destroy(new Error(`Idle timeout reading ${key}`));
           }, IDLE_TIMEOUT_MS);
         };
         sourceStream.on('data', resetIdle);

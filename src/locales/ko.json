@@ -1321,6 +1321,9 @@
       "itemCount_one": "이 패키지에 {{count}}개 항목 포함",
       "itemCount_other": "이 패키지에 {{count}}개 항목 포함",
       "packageName": "패키지 이름",
+      "version": "버전",
+      "raw": "원본",
+      "optimized": "최적화",
       "placeholder": "album_export.zip",
       "queueing": "대기열에 추가 중...",
       "startExport": "내보내기 시작"

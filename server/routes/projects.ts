@@ -862,6 +862,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const body = await c.req.json();
       const itemIds = body.itemIds as string[];
       const packageName = typeof body.packageName === 'string' ? body.packageName : undefined;
+      const exportVersion: 'raw' | 'optimized' = body.exportVersion === 'optimized' ? 'optimized' : 'raw';
 
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
@@ -872,9 +873,19 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       if (itemsToExport.length === 0) return c.json({ error: 'No items to export' }, 400);
 
-      // Estimate the ZIP size using the sum of original image sizes
-      // (JPEGs and PNGs are already compressed, so the ZIP will be roughly this size)
-      const estimatedZipSize = itemsToExport.reduce((acc, item) => acc + (item.size || 5 * 1024 * 1024), 0);
+      // Estimate the ZIP size using the selected asset version. Media files are already
+      // compressed, so the ZIP will be roughly the sum of source sizes.
+      const estimatedZipSize = (
+        await Promise.all(
+          itemsToExport.map(async (item) => {
+            const key = exportVersion === 'optimized' && item.optimizedUrl ? item.optimizedUrl : item.imageUrl;
+            const knownSize = exportVersion === 'optimized' && item.optimizedUrl
+              ? item.optimizedSize || item.size
+              : item.size;
+            return knownSize || (await storage.getSize(key).catch(() => undefined)) || 5 * 1024 * 1024;
+          })
+        )
+      ).reduce((acc, size) => acc + size, 0);
       const { allowed, currentUsage, limit } = await checkStorageLimit(
         user.userId,
         estimatedZipSize,
@@ -890,7 +901,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         }, 403);
       }
 
-      const taskId = await exportManager.startExport(user.userId, projectId, project.name, itemsToExport, packageName);
+      const taskId = await exportManager.startExport(user.userId, projectId, project.name, itemsToExport, packageName, {
+        exportVersion,
+      });
       return c.json({ taskId });
     } catch (e) {
       console.error('[POST /api/projects/:id/export]', e);

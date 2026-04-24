@@ -1321,6 +1321,9 @@
       "itemCount_one": "このパッケージには {{count}} 件が含まれます",
       "itemCount_other": "このパッケージには {{count}} 件が含まれます",
       "packageName": "パッケージ名",
+      "version": "バージョン",
+      "raw": "Raw",
+      "optimized": "最適化",
       "placeholder": "album_export.zip",
       "queueing": "キューに追加中...",
       "startExport": "エクスポートを開始"
