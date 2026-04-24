@@ -184,7 +184,7 @@ export class AssistantRepository {
         userId,
         ...(options.includeArchived ? {} : { archivedAt: null }),
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       take: limit,
       ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
     });
@@ -285,7 +285,7 @@ export class AssistantRepository {
     const take = options.limit ? Math.min(Math.max(options.limit, 1), 500) : undefined;
     const records = await this.prisma.assistantMessage.findMany({
       where: { conversationId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       ...(take ? { take } : {}),
     });
     return records.map(toMessage);

@@ -43,7 +43,7 @@ export class ProjectRepository {
         include: {
           _count: { select: { jobs: true, albumItems: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
     ]);
 
@@ -114,9 +114,9 @@ export class ProjectRepository {
     const p = await this.prisma.project.findFirst({
       where: { id: projectId, userId },
       include: {
-        jobs: { orderBy: { createdAt: 'asc' } },
-        workflowItems: { orderBy: { order: 'asc' } },
-        albumItems: { orderBy: { createdAt: 'asc' } },
+        jobs: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+        workflowItems: { orderBy: [{ order: 'asc' }, { id: 'asc' }] },
+        albumItems: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
       },
     });
     if (!p) return null;
@@ -343,7 +343,7 @@ export class ProjectRepository {
   async getTrashItems(userId: string): Promise<TrashItem[]> {
     const items = await this.prisma.trashItem.findMany({
       where: { userId },
-      orderBy: { deletedAt: 'desc' },
+      orderBy: [{ deletedAt: 'desc' }, { id: 'desc' }],
     });
     return items.map((item) => this.mapTrashItem(item));
   }
@@ -411,7 +411,7 @@ export class ProjectRepository {
   async getExportTasks(userId: string, projectId: string): Promise<any[]> {
     const tasks = await this.prisma.exportTask.findMany({
       where: { userId, projectId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
     return tasks.map((t) => this.mapExportTask(t));
   }
@@ -419,15 +419,15 @@ export class ProjectRepository {
   async getAllExportTasks(userId: string, limit: number = 20, cursor?: string): Promise<{ items: any[]; nextCursor?: string }> {
     const tasks = await this.prisma.exportTask.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
 
     let nextCursor: string | undefined;
     if (tasks.length > limit) {
-      nextCursor = tasks[limit].id;
       tasks.splice(limit);
+      nextCursor = tasks[tasks.length - 1]?.id;
     }
 
     return { items: tasks.map((t) => this.mapExportTask(t)), nextCursor };
@@ -564,7 +564,7 @@ export class ProjectRepository {
         userId,
         status: { in: ['pending', 'processing'] },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
     return tasks.map((t) => this.mapDeliveryTask(t));
   }

@@ -86,7 +86,11 @@ export class UserRepository {
       sortBy === 'email'
         ? [{ email: sortOrder }]
         : sortBy === 'lastLoginAt'
-          ? [{ lastLoginAt: sortOrder }, { createdAt: 'desc' as const }]
+          ? [
+              { lastLoginAt: { sort: sortOrder, nulls: 'last' as const } },
+              { createdAt: 'desc' as const },
+              { email: 'asc' as const },
+            ]
           : [{ createdAt: sortOrder }, { email: 'asc' as const }];
 
     const [total, users] = await Promise.all([

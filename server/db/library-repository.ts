@@ -39,11 +39,12 @@ export class LibraryRepository {
         orderBy: [
           { pinnedAt: { sort: 'desc', nulls: 'last' } },
           { createdAt: 'desc' },
+          { id: 'asc' },
         ],
         include: includeItems
           ? {
               items: {
-                orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
+                orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }],
               },
               _count: { select: { items: true } },
             }
@@ -75,7 +76,7 @@ export class LibraryRepository {
       where: { id: libraryId, userId },
       include: {
         items: {
-          orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
+          orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }],
         },
       },
     });
@@ -134,7 +135,7 @@ export class LibraryRepository {
 
     const items = await this.prisma.libraryItem.findMany({
       where: { libraryId },
-      orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
+      orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }],
     });
     return items.map((item) => this.mapItem(item));
   }
@@ -176,7 +177,7 @@ export class LibraryRepository {
         where,
         skip,
         take: limit,
-        orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
+        orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }],
       }),
     ]);
 
@@ -324,8 +325,8 @@ export class LibraryRepository {
     }
 
     const orderBy = options.libraryId
-      ? [{ order: { sort: 'asc' as const, nulls: 'last' as const } }, { createdAt: 'desc' as const }]
-      : [{ createdAt: 'desc' as const }];
+      ? [{ order: { sort: 'asc' as const, nulls: 'last' as const } }, { createdAt: 'desc' as const }, { id: 'asc' as const }]
+      : [{ createdAt: 'desc' as const }, { id: 'asc' as const }];
 
     const [total, items] = await Promise.all([
       this.prisma.libraryItem.count({ where }),

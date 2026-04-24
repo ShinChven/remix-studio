@@ -28,7 +28,7 @@ export class ProviderRepository {
   constructor(private prisma: PrismaClient) {}
 
   async listProviders(userId: string): Promise<Provider[]> {
-    const records = await this.prisma.provider.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } });
+    const records = await this.prisma.provider.findMany({ where: { userId }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] });
     const usageEntries = await Promise.all(
       records.map(async (record) => [record.id, await this.getProviderUsage(userId, record.id)] as const)
     );

@@ -370,7 +370,7 @@ export function createOAuthRouter(prisma: PrismaClient) {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       });
 
       return c.json(clients.map((client) => ({
@@ -497,7 +497,7 @@ export function createOAuthRouter(prisma: PrismaClient) {
           expiresAt: true,
           createdAt: true,
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       });
 
       return c.json(tokens.map((t) => ({
