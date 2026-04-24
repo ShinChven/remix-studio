@@ -17,6 +17,10 @@ const CATEGORY_ICONS: Record<string, any> = {
   audio: Music,
 };
 
+const maskedCredentialStyle = {
+  WebkitTextSecurity: 'disc',
+} as React.CSSProperties;
+
 export function ProviderForm() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
@@ -188,7 +192,7 @@ export function ProviderForm() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Form Fields - Left Column */}
-            <form id="provider-form" onSubmit={handleSubmit} className="lg:col-span-5 xl:col-span-4 space-y-8 h-fit">
+            <form id="provider-form" onSubmit={handleSubmit} autoComplete="off" className="lg:col-span-5 xl:col-span-4 space-y-8 h-fit">
               <div className="space-y-8 bg-neutral-200/20 dark:bg-black/20 p-8 rounded-2xl border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl shadow-xl">
                 {/* Name */}
                 <div className="space-y-2.5">
@@ -198,6 +202,9 @@ export function ProviderForm() {
                   <input
                     type="text"
                     autoFocus
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder={t('providerForm.namePlaceholder')}
@@ -216,7 +223,15 @@ export function ProviderForm() {
                   </label>
                   <div className="relative group">
                     <input
-                      type={showKey ? 'text' : 'password'}
+                      type="text"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-bwignore="true"
+                      style={showKey ? undefined : maskedCredentialStyle}
                       value={apiKey}
                       onChange={e => setApiKey(e.target.value)}
                       placeholder={isEditing && hasExistingKey ? t('providerForm.stored') : type === 'KlingAI' ? t('providerForm.accessKeyPlaceholder') : t('providerForm.apiKeyPlaceholder')}
@@ -242,7 +257,15 @@ export function ProviderForm() {
                     </label>
                     <div className="relative group">
                       <input
-                        type={showSecret ? 'text' : 'password'}
+                        type="text"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        data-bwignore="true"
+                        style={showSecret ? undefined : maskedCredentialStyle}
                         value={apiSecret}
                         onChange={e => setApiSecret(e.target.value)}
                         placeholder={isEditing && hasExistingSecret ? t('providerForm.stored') : t('providerForm.secretKeyPlaceholder')}
@@ -267,6 +290,10 @@ export function ProviderForm() {
                   </label>
                   <input
                     type="url"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
                     value={apiUrl}
                     onChange={e => setApiUrl(e.target.value)}
                     placeholder={t('providerForm.apiUrlPlaceholder')}
@@ -297,6 +324,7 @@ export function ProviderForm() {
                     
                     <input
                       type="number"
+                      autoComplete="off"
                       min="1"
                       max="1000"
                       value={concurrency}
