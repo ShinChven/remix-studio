@@ -135,6 +135,41 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
     },
   });
 
+  // ─── update_library ───
+  tools.push({
+    name: 'update_library',
+    title: 'Update Library',
+    description: 'Rename an existing library. Only the library name can be updated with this tool.',
+    inputSchema: {
+      library_id: z.string().describe('The library ID to rename'),
+      name: z.string().min(1).max(256).describe('New library name'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'mutate',
+    handler: async (userId, input) => {
+      const { library_id, name } = input as { library_id: string; name: string };
+      const nextName = name.trim();
+      if (!nextName) {
+        return { text: JSON.stringify({ error: 'Library name is required.' }), isError: true };
+      }
+
+      const library = await repository.getLibrary(userId, library_id);
+      if (!library) {
+        return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
+      }
+
+      await repository.updateLibrary(userId, library_id, { name: nextName });
+      return {
+        text: JSON.stringify({
+          library_id,
+          name: nextName,
+          previousName: library.name,
+          message: 'Library renamed successfully.',
+        }),
+      };
+    },
+  });
+
   // ─── create_prompt ───
   tools.push({
     name: 'create_prompt',

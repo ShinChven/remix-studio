@@ -206,7 +206,10 @@ function extractMutationTarget(
     ?? getStringField(result, 'libraryId')
     ?? getStringField(args, 'library_id')
     ?? getStringField(args, 'libraryId');
-  const libraryName = getStringField(result, 'name') ?? getStringField(args, 'name');
+  const libraryName = getStringField(result, 'name')
+    ?? getStringField(result, 'libraryName')
+    ?? getStringField(args, 'name')
+    ?? getStringField(args, 'libraryName');
 
   if (normalizedToolName === 'create_library' && getStringField(result, 'id')) {
     const id = getStringField(result, 'id')!;
@@ -220,6 +223,16 @@ function extractMutationTarget(
   }
 
   if (libraryId && ['create_prompt', 'batch_create_prompts', 'update_prompt', 'delete_prompt'].includes(normalizedToolName)) {
+    return {
+      entityType: 'library',
+      id: libraryId,
+      name: libraryName,
+      href: `/library/${libraryId}`,
+      summary: libraryName ? `Library "${libraryName}" was updated.` : 'Library was updated.',
+    };
+  }
+
+  if (libraryId && normalizedToolName === 'update_library') {
     return {
       entityType: 'library',
       id: libraryId,
@@ -255,6 +268,8 @@ function summarizePendingConfirmation(
   switch (pendingConfirmation.toolName) {
     case 'create_library':
       return `Create a text library named "${String(args.name ?? '')}".`;
+    case 'update_library':
+      return `Rename library "${String(args.library_id ?? '')}" to "${String(args.name ?? '')}".`;
     case 'create_prompt':
       return `Create one prompt in library "${String(args.library_id ?? '')}".`;
     case 'batch_create_prompts': {

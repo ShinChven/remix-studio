@@ -1203,6 +1203,15 @@ export interface AssistantPendingConfirmation {
   createdAt: number;
 }
 
+export interface AssistantToolMetadata {
+  name: string;
+  title: string;
+  description: string;
+  category: 'read' | 'mutate' | 'destructive';
+  requiresConfirmation: boolean;
+  inputSchema: Record<string, unknown>;
+}
+
 export interface AssistantStatusEvent {
   type: string;
   [key: string]: unknown;
@@ -1321,6 +1330,12 @@ export async function fetchAssistantProviders(): Promise<{ providers: Provider[]
   const res = await apiFetch('/api/assistant/providers', { headers: getHeaders(false) });
   return handleResponse<{ providers: Provider[] }>(res, 'Failed to list assistant providers');
 }
+
+export async function fetchAssistantTools(): Promise<{ tools: AssistantToolMetadata[] }> {
+  const res = await apiFetch('/api/assistant/tools', { headers: getHeaders(false) });
+  return handleResponse<{ tools: AssistantToolMetadata[] }>(res, 'Failed to list assistant tools');
+}
+
 export async function transcribeAssistantAudio(input: {
   providerId: string;
   audioBase64: string;

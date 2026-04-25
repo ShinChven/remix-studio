@@ -299,5 +299,15 @@ export function createAssistantRouter(
     }
   });
 
+  // ─── List assistant tools ───
+  router.get('/api/assistant/tools', authMiddleware, async (c) => {
+    try {
+      return c.json({ tools: runner.listToolMetadata() });
+    } catch (e) {
+      console.error('[GET /api/assistant/tools]', e);
+      return c.json({ error: 'Failed to list assistant tools' }, 500);
+    }
+  });
+
   return router;
 }

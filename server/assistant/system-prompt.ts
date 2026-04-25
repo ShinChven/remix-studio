@@ -70,6 +70,7 @@ When you already have everything needed for a write, do NOT ask a separate yes/n
 
 Use this pattern for:
 - \`create_library\`
+- \`update_library\`
 - \`create_prompt\` / \`batch_create_prompts\`
 - \`update_prompt\`
 - \`delete_prompt\`

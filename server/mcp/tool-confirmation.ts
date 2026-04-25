@@ -62,6 +62,8 @@ export function summarizeToolEffect(
   switch (tool.name) {
     case 'create_library':
       return `Create a text library named "${String(objectArgs.name ?? '')}".`;
+    case 'update_library':
+      return `Rename library ${getLabel(objectArgs.library_id, 'library')} to "${String(objectArgs.name ?? '')}".`;
     case 'create_prompt':
       return `Create one prompt in library ${getLabel(objectArgs.library_id, 'library')}.`;
     case 'batch_create_prompts': {

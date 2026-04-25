@@ -21,6 +21,7 @@ import type {
   ChatStopReason,
   ToolCall,
 } from './providers/types';
+import { toolParametersJsonSchema } from './providers/types';
 import { ASSISTANT_SYSTEM_PROMPT, wrapToolResult } from './system-prompt';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 
@@ -50,6 +51,15 @@ export const ASSISTANT_LIMITS = {
   CONFIRMATION_TTL_MS: 10 * 60 * 1000,
   MAX_HISTORY_MESSAGES: 80,
 };
+
+export interface AssistantToolMetadata {
+  name: string;
+  title: string;
+  description: string;
+  category: AssistantToolDefinition['category'];
+  requiresConfirmation: boolean;
+  inputSchema: Record<string, unknown>;
+}
 
 export type AssistantStatusEvent =
   | { type: 'provider_call_started'; iteration: number }
@@ -102,6 +112,17 @@ export class AssistantRunner {
   ) {
     this.tools = createAssistantToolDefinitions(toolDeps);
     this.toolsByName = new Map(this.tools.map((t) => [t.name, t]));
+  }
+
+  listToolMetadata(): AssistantToolMetadata[] {
+    return this.tools.map((tool) => ({
+      name: tool.name,
+      title: tool.title,
+      description: tool.description,
+      category: tool.category,
+      requiresConfirmation: toolRequiresConfirmation(tool),
+      inputSchema: toolParametersJsonSchema(tool),
+    }));
   }
 
   async sendUserMessage(input: SendUserMessageInput): Promise<TurnResult> {
@@ -902,6 +923,7 @@ function shouldReplaceProposalText(content: string): boolean {
     /\bI['’]ll need to\b/i,
     /\bThe instructions\b/i,
     /\bcreate_library\b/,
+    /\bupdate_library\b/,
     /\bbatch_create_prompts\b/,
     /\bcreate_project_with_workflow\b/,
     /\bupdate_prompt\b/,
