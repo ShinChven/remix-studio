@@ -1,0 +1,26 @@
+name: ghcr-cleanup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 0"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ghcr-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old untagged GHCR images
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          packages: remix-studio
+          older-than: 30 days
+          keep-n-untagged: 20
+          validate: true

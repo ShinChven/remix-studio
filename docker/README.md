@@ -24,11 +24,18 @@ These templates are intended to be copied into a separate deployment repository 
 ## Suggested workflow
 
 1. Let GitHub Actions build and publish the image from this repository
-2. In the deployment repository, pin `REMIX_STUDIO_IMAGE` to a specific tag such as `ghcr.io/owner/remix-studio:sha-<commit>`
+2. In the deployment repository, pin `REMIX_STUDIO_IMAGE` to a release tag such as `ghcr.io/shinchven/remix-studio:1.0.0`
 3. Copy one compose file and its matching env example
 4. Replace all placeholder secrets before deployment
 5. If you use passkeys, set `WEBAUTHN_RP_ID` to the public site domain only, without protocol or port. Example: `app.example.com` or `example.com`
 6. If TLS terminates at a reverse proxy or load balancer, set `WEBAUTHN_ORIGIN` to the exact external origin, including `https://`. Example: `https://app.example.com`
+
+## Image tags and cleanup
+
+- `edge` tracks the latest successful build from the default branch
+- `latest` is only published from version tags and points to the newest release
+- Version tags publish `1.0.0`, `1.0`, and `1` style tags from `v1.0.0`
+- `.github/workflows/ghcr-cleanup.yml` removes old untagged GHCR images weekly, keeps the newest 20 untagged images, and validates multi-architecture image integrity after cleanup
 
 ## Example commands
 

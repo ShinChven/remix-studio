@@ -176,6 +176,7 @@ Remix Studio is designed for self-hosted and cloud-hosted deployments. It works 
 - For local development, Docker Compose can run PostgreSQL and MinIO
 - For cloud or production-style deployments, point the app at your own PostgreSQL database and S3-compatible storage
 - Docker images are published to GHCR from `.github/workflows/docker.yml`
+- Release images use SemVer tags, while the moving `latest` tag points only at the newest release
 - See [docker/README.md](docker/README.md) for compose templates and deployment layouts
 - See [UPGRADING.md](UPGRADING.md) for migration and compatibility notes
 
@@ -319,10 +320,10 @@ Generate one with:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### 3. Build and start the full stack
+### 3. Start the full stack from the published GHCR image
 
 ```bash
-docker compose --profile app --env-file .env.docker up -d --build
+docker compose -f docker/compose.minio.yml --env-file .env.docker up -d
 ```
 
 This starts:
@@ -360,7 +361,7 @@ If you prefer AWS S3 or another external S3-compatible service, point `S3_ENDPOI
 - The app auto-creates a default admin user if `DEFAULT_ADMIN_EMAIL` and `DEFAULT_ADMIN_PASSWORD` are provided and the user does not already exist
 - Storage is implemented against S3-compatible APIs, so MinIO works well for development and AWS S3 works for deployment
 - For host-based local development with `docker compose up -d postgres minio` and `npm run dev`, MinIO should be reached at `http://localhost:9000`
-- For Docker deployment, use `docker compose --profile app --env-file .env.docker up -d --build` so the app receives container-network addresses instead of your host-based `.env` values
+- For Docker deployment, use a compose template under `docker/` so the app runs from the published GHCR image and receives container-network addresses instead of your host-based `.env` values
 
 ## Scripts
 
