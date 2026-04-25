@@ -370,6 +370,13 @@ If you prefer AWS S3 or another external S3-compatible service, point `S3_ENDPOI
 - `npm run start`: run the production server from the built output
 - `npm run lint`: run TypeScript type checking
 
+## Docker Image Release
+
+```bash
+npm version 1.0.0
+git push origin main --tags
+```
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
