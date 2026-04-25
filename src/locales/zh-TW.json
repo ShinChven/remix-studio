@@ -1402,6 +1402,11 @@
       "pauseAudio": "暫停",
       "expand": "展開",
       "collapse": "收合",
+      "aspectRatioFilter": "比例",
+      "aspectRatioFilterCount": "{{count}} 個比例",
+      "allAspectRatios": "全部比例",
+      "noAspectRatioMatches": "沒有符合的比例",
+      "noAspectRatioMatchesDescription": "清除寬高比篩選以顯示更多相簿項目",
       "sortNewest": "最新",
       "sortOldest": "最早"
     },

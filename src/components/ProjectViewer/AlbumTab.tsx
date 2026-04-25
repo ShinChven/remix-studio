@@ -1,7 +1,7 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter } from 'lucide-react';
 import { AlbumItem, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import type { AlbumExportVersion } from '../../api';
@@ -68,6 +68,8 @@ export function AlbumTab({
   const [expandedAudioIds, setExpandedAudioIds] = useState<Set<string>>(new Set());
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [albumSort, setAlbumSort] = useState<'newest' | 'oldest'>('newest');
+  const [selectedAspectRatios, setSelectedAspectRatios] = useState<string[]>([]);
+  const [showAspectRatioFilter, setShowAspectRatioFilter] = useState(false);
   const [renameItem, setRenameItem] = useState<AlbumItem | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
@@ -108,13 +110,59 @@ export function AlbumTab({
     }
   };
 
+  const aspectRatioOptions = useMemo(() => {
+    const ratioCounts = new Map<string, number>();
+    albumItems.forEach((item) => {
+      const ratio = item.aspectRatio?.trim();
+      if (ratio) ratioCounts.set(ratio, (ratioCounts.get(ratio) || 0) + 1);
+    });
+    return Array.from(ratioCounts.entries()).map(([ratio, count]) => ({ ratio, count })).sort((a, b) => {
+      const toNumber = (value: string) => {
+        const [width, height] = value.split(':').map(Number);
+        if (!width || !height) return Number.POSITIVE_INFINITY;
+        return width / height;
+      };
+      const numericDiff = toNumber(a.ratio) - toNumber(b.ratio);
+      return Number.isFinite(numericDiff) && numericDiff !== 0 ? numericDiff : a.ratio.localeCompare(b.ratio);
+    });
+  }, [albumItems]);
+
+  useEffect(() => {
+    if (!showAspectRatioFilter) return;
+    const handleClick = () => setShowAspectRatioFilter(false);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [showAspectRatioFilter]);
+
+  useEffect(() => {
+    const availableRatios = new Set(aspectRatioOptions.map((option) => option.ratio));
+    setSelectedAspectRatios((current) => current.filter((ratio) => availableRatios.has(ratio)));
+  }, [aspectRatioOptions]);
+
+  const hasAspectRatioFilter = selectedAspectRatios.length > 0;
+  const showAspectRatioFilterControl = !isTextProject && !isAudioProject && aspectRatioOptions.length > 1;
+
+  const toggleAspectRatioFilter = (ratio: string) => {
+    setSelectedAspectRatios((current) => (
+      current.includes(ratio)
+        ? current.filter((item) => item !== ratio)
+        : [...current, ratio]
+    ));
+  };
+
   const displayItems = useMemo(() => {
-    return [...albumItems].sort((a, b) => {
+    const filteredItems = hasAspectRatioFilter
+      ? albumItems.filter((item) => {
+          const ratio = item.aspectRatio?.trim();
+          return !!ratio && selectedAspectRatios.includes(ratio);
+        })
+      : albumItems;
+    return [...filteredItems].sort((a, b) => {
       const aTs = a.createdAt ?? 0;
       const bTs = b.createdAt ?? 0;
       return albumSort === 'newest' ? bTs - aTs : aTs - bTs;
     });
-  }, [albumItems, albumSort]);
+  }, [albumItems, albumSort, hasAspectRatioFilter, selectedAspectRatios]);
 
   const toggleAudioExpand = (id: string) => {
     setExpandedAudioIds((prev) => {
@@ -237,6 +285,67 @@ export function AlbumTab({
                     <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
                   </button>
                 )}
+                {showAspectRatioFilterControl && (
+                  <div className="relative" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => setShowAspectRatioFilter((show) => !show)}
+                      title={t('projectViewer.album.aspectRatioFilter')}
+                      aria-label={t('projectViewer.album.aspectRatioFilter')}
+                      className={`flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg border transition-all ${
+                        hasAspectRatioFilter
+                          ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border-blue-500/30'
+                          : 'bg-white/5 hover:bg-white/10 text-neutral-200 border-neutral-700'
+                      }`}
+                    >
+                      <Filter className="w-3 h-3" />
+                      <span className="hidden sm:inline">
+                        {selectedAspectRatios.length === 0
+                          ? t('projectViewer.album.aspectRatioFilter')
+                          : t('projectViewer.album.aspectRatioFilterCount', { count: selectedAspectRatios.length })}
+                      </span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${showAspectRatioFilter ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {showAspectRatioFilter && (
+                      <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAspectRatios([])}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors mb-1 ${
+                            !hasAspectRatioFilter ? 'bg-blue-600 text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                          }`}
+                        >
+                          {t('projectViewer.album.allAspectRatios')}
+                        </button>
+                        <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                          {aspectRatioOptions.map(({ ratio, count }) => {
+                            const isChecked = selectedAspectRatios.includes(ratio);
+                            return (
+                              <label
+                                key={ratio}
+                                className={`w-full px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-between gap-3 cursor-pointer ${
+                                  isChecked ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                                }`}
+                              >
+                                <span>{ratio}</span>
+                                <span className="ml-auto rounded-md bg-neutral-100 px-1.5 py-0.5 text-[9px] font-black text-neutral-500 dark:bg-neutral-950 dark:text-neutral-500">
+                                  {count}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleAspectRatioFilter(ratio)}
+                                  className="h-3.5 w-3.5 rounded border-neutral-600 bg-neutral-950 text-blue-500 focus:ring-blue-500"
+                                />
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <button
                   onClick={() => setAlbumSort((s) => (s === 'newest' ? 'oldest' : 'newest'))}
                   title={albumSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
@@ -263,6 +372,13 @@ export function AlbumTab({
             title={isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : isAudioProject ? t('projectViewer.album.noAudios') : t('projectViewer.album.galleryEmpty')}
             description={t('projectViewer.album.emptyDescription', { target: isTextProject ? t('projectViewer.album.collection') : isVideoProject ? t('projectViewer.album.reel') : isAudioProject ? t('projectViewer.album.audioCollection') : t('projectViewer.tabs.album').toLowerCase() })}
             animateIcon={true}
+          />
+        ) : displayItems.length === 0 ? (
+          <EmptyState
+            Icon={Filter}
+            title={t('projectViewer.album.noAspectRatioMatches')}
+            description={t('projectViewer.album.noAspectRatioMatchesDescription')}
+            animateIcon={false}
           />
         ) : isTextProject ? (
           <div className="overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-900/40 rounded-none border-x-0 border-t-0">

@@ -1402,6 +1402,11 @@
       "pauseAudio": "一時停止",
       "expand": "展開",
       "collapse": "折りたたみ",
+      "aspectRatioFilter": "比率",
+      "aspectRatioFilterCount": "{{count}} 比率",
+      "allAspectRatios": "すべての比率",
+      "noAspectRatioMatches": "一致する比率がありません",
+      "noAspectRatioMatchesDescription": "アスペクト比フィルターを解除すると、さらにアルバム項目を表示できます",
       "sortNewest": "新しい順",
       "sortOldest": "古い順"
     },

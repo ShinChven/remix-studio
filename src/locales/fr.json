@@ -1402,6 +1402,11 @@
       "pauseAudio": "Pause",
       "expand": "Développer",
       "collapse": "Réduire",
+      "aspectRatioFilter": "Ratio",
+      "aspectRatioFilterCount": "{{count}} ratios",
+      "allAspectRatios": "Tous les ratios",
+      "noAspectRatioMatches": "Aucun ratio correspondant",
+      "noAspectRatioMatchesDescription": "Effacez le filtre de ratio pour afficher plus d'éléments d'album",
       "sortNewest": "Plus récent",
       "sortOldest": "Plus ancien"
     },

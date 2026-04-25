@@ -11,6 +11,14 @@ const PROVIDER_TYPE_VALUES = Object.keys(PROVIDER_MODELS_MAP) as [
   keyof typeof PROVIDER_MODELS_MAP,
   ...(keyof typeof PROVIDER_MODELS_MAP)[]
 ];
+const WORKFLOW_ITEM_TYPES = [
+  'text',
+  'library',
+  'text_from_library', 'text_library',
+  'image', 'image_from_library', 'image_library',
+  'audio', 'audio_from_library', 'audio_library',
+  'video', 'video_from_library', 'video_library',
+] as const;
 
 /**
  * Shared tool registry for Remix Studio.
@@ -106,6 +114,28 @@ function truncateContent(content: string, maxLen: number = MAX_CONTENT_PREVIEW_C
     text: content.slice(0, maxLen),
     truncated: true,
     originalLength: content.length,
+  };
+}
+
+function toToolWorkflowItem(item: {
+  id?: string;
+  type: string;
+  value?: string;
+  selectedTags?: string[];
+  disabled?: boolean;
+  thumbnailUrl?: string;
+  optimizedUrl?: string;
+}) {
+  const isLibrary = item.type === 'library';
+  return {
+    id: item.id,
+    itemType: isLibrary ? 'library' : item.type,
+    value: isLibrary ? undefined : item.value ?? '',
+    libraryId: isLibrary ? item.value ?? '' : undefined,
+    selectedTags: item.selectedTags,
+    disabled: item.disabled ?? false,
+    thumbnailUrl: item.thumbnailUrl,
+    optimizedUrl: item.optimizedUrl,
   };
 }
 
@@ -775,14 +805,63 @@ Use this tool to find an item by name/title before composing a workflow. Combine
     },
   });
 
+  // ─── get_project ───
+  tools.push({
+    name: 'get_project',
+    title: 'Get Project',
+    description: 'Read one project, including its current workflow. Always call this before update_project when changing workflowItems so unchanged workflow items can be carried forward.',
+    inputSchema: {
+      projectId: z.string().describe('The project ID to inspect'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { projectId } = input as { projectId: string };
+      const project = await repository.getProject(userId, projectId);
+      if (!project) {
+        return {
+          text: JSON.stringify({ error: `Project "${projectId}" not found.` }),
+          isError: true,
+        };
+      }
+
+      const workflowItems = (project.workflow || []).map(toToolWorkflowItem);
+      const response = {
+        projectId: project.id,
+        name: project.name,
+        type: project.type,
+        status: project.status,
+        providerId: project.providerId ?? null,
+        modelConfigId: project.modelConfigId ?? null,
+        aspectRatio: project.aspectRatio ?? null,
+        quality: project.quality ?? null,
+        format: project.format ?? null,
+        shuffle: project.shuffle ?? null,
+        prefix: project.prefix ?? null,
+        systemPrompt: project.systemPrompt ?? null,
+        temperature: project.temperature ?? null,
+        maxTokens: project.maxTokens ?? null,
+        duration: project.duration ?? null,
+        resolution: project.resolution ?? null,
+        sound: project.sound ?? null,
+        workflowItemCount: workflowItems.length,
+        workflowItems,
+        workflowUpdateWarning:
+          'update_project replaces the whole workflow when workflowItems is provided. Include every existing workflow item you want to keep, in order; omit only items the user explicitly asked to remove.',
+        counts: {
+          jobs: project.jobs?.length ?? 0,
+          album: project.album?.length ?? 0,
+        },
+      };
+
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
   // ─── create_project_with_workflow ───
-  const WORKFLOW_ITEM_TYPES = [
-    'text',
-    'text_from_library', 'text_library',
-    'image', 'image_from_library', 'image_library',
-    'audio', 'audio_from_library', 'audio_library',
-    'video', 'video_from_library', 'video_library',
-  ] as const;
 
   tools.push({
     name: 'create_project_with_workflow',
@@ -791,6 +870,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
 
 Workflow item types:
 - "text": static prompt text. Requires "value" with the text content. To use a specific item from a text library, first call get_library_items and pass the returned item.text as "value".
+- "library": generic library reference (runtime uses the referenced library's type). Requires "libraryId".
 - "text_from_library" / "text_library": reference a text library (runtime picks random items). Requires "libraryId".
 - "image": image context slot. Leave "value" empty for a blank placeholder, or set "value" to item.storageKey from get_library_items to pin a specific image file.
 - "image_from_library" / "image_library": reference an image library (runtime picks randomly). Requires "libraryId".
@@ -823,7 +903,7 @@ Recommended workflow:
       workflowItems: z.array(z.object({
         itemType: z.enum(WORKFLOW_ITEM_TYPES).describe('Workflow item type'),
         value: z.string().optional().describe('For "text": the prompt text. For "image"/"audio"/"video": leave empty for a blank slot, or set to item.storageKey from get_library_items to pin a specific file.'),
-        libraryId: z.string().optional().describe('Library ID (required for *_from_library and *_library types)'),
+        libraryId: z.string().optional().describe('Library ID (required for "library", *_from_library, and *_library types)'),
         selectedTags: z.array(z.string()).optional().describe('Optional tag filter applied when picking items from the library'),
       })).min(1).max(200).describe('Ordered list of workflow items (1–200)'),
     },
@@ -907,7 +987,7 @@ Recommended workflow:
       // ─── Validate *_library items supply a libraryId ───
       for (let i = 0; i < workflowItems.length; i++) {
         const item = workflowItems[i];
-        const needsLibrary = item.itemType.endsWith('_from_library') || item.itemType.endsWith('_library');
+        const needsLibrary = item.itemType === 'library' || item.itemType.endsWith('_from_library') || item.itemType.endsWith('_library');
         if (needsLibrary && !item.libraryId) {
           return {
             text: JSON.stringify({ error: `workflowItems[${i}] has itemType "${item.itemType}" but no libraryId.` }),
@@ -926,6 +1006,7 @@ Recommended workflow:
             internalType = 'text';
             internalValue = item.value || '';
             break;
+          case 'library':
           case 'text_from_library':
           case 'text_library':
             internalType = 'library';
@@ -1017,7 +1098,12 @@ Recommended workflow:
   tools.push({
     name: 'update_project',
     title: 'Update Project',
-    description: 'Update an existing project\'s metadata, settings, or workflow. Only provided fields will be updated. If workflowItems is provided, it completely replaces the existing workflow.',
+    description: `Update an existing project's metadata, settings, or workflow. Only provided non-workflow fields will be updated.
+
+Important workflow behavior:
+- If workflowItems is omitted, the existing workflow is unchanged.
+- If workflowItems is provided, it completely replaces the existing workflow.
+- Before changing workflowItems, call get_project and start from its returned workflowItems. Carry forward every existing item the user did not explicitly ask to remove.`,
     inputSchema: {
       projectId: z.string().describe('The ID of the project to update'),
       name: z.string().min(1).max(256).optional().describe('New project display name'),
@@ -1039,9 +1125,13 @@ Recommended workflow:
       workflowItems: z.array(z.object({
         itemType: z.enum(WORKFLOW_ITEM_TYPES).describe('Workflow item type'),
         value: z.string().optional().describe('For "text": the prompt text. For "image"/"audio"/"video": file storage key to pin a file.'),
-        libraryId: z.string().optional().describe('Library ID (required for *_from_library types)'),
+        libraryId: z.string().optional().describe('Library ID (required for "library" and *_from_library types)'),
         selectedTags: z.array(z.string()).optional().describe('Optional tag filter for library items'),
-      })).optional().describe('If provided, replaces the existing workflow with this new ordered list'),
+        id: z.string().optional().describe('Existing workflow item ID. Preserve this when carrying forward an item from get_project.'),
+        disabled: z.boolean().optional().describe('Whether this workflow item is disabled. Preserve this when carrying forward an item from get_project.'),
+        thumbnailUrl: z.string().optional().describe('Existing media thumbnail key/URL. Preserve this when carrying forward an item from get_project.'),
+        optimizedUrl: z.string().optional().describe('Existing optimized media key/URL. Preserve this when carrying forward an item from get_project.'),
+      })).optional().describe('Replacement ordered workflow list. If provided, include every existing workflow item to keep; omitted existing items are removed. Call get_project first.'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     category: 'mutate',
@@ -1068,10 +1158,14 @@ Recommended workflow:
         resolution?: string;
         sound?: 'on' | 'off';
         workflowItems?: {
+          id?: string;
           itemType: (typeof WORKFLOW_ITEM_TYPES)[number];
           value?: string;
           libraryId?: string;
           selectedTags?: string[];
+          disabled?: boolean;
+          thumbnailUrl?: string;
+          optimizedUrl?: string;
         }[];
       };
 
@@ -1157,7 +1251,7 @@ Recommended workflow:
       if (workflowItems) {
         for (let i = 0; i < workflowItems.length; i++) {
           const item = workflowItems[i];
-          const needsLibrary = item.itemType.endsWith('_from_library') || item.itemType.endsWith('_library');
+          const needsLibrary = item.itemType === 'library' || item.itemType.endsWith('_from_library') || item.itemType.endsWith('_library');
           if (needsLibrary && !item.libraryId) {
             return {
               text: JSON.stringify({ error: `workflowItems[${i}] has itemType "${item.itemType}" but no libraryId.` }),
@@ -1175,6 +1269,7 @@ Recommended workflow:
               internalType = 'text';
               internalValue = item.value || '';
               break;
+            case 'library':
             case 'text_from_library':
             case 'text_library':
               internalType = 'library';
@@ -1212,11 +1307,14 @@ Recommended workflow:
           }
 
           return {
-            id: crypto.randomUUID(),
+            id: item.id || crypto.randomUUID(),
             type: internalType,
             value: internalValue,
             order: idx,
             selectedTags: item.selectedTags,
+            disabled: item.disabled,
+            thumbnailUrl: item.thumbnailUrl,
+            optimizedUrl: item.optimizedUrl,
           };
         });
       }

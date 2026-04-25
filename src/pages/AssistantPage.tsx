@@ -286,6 +286,12 @@ function summarizePendingConfirmation(
       const workflowCount = Array.isArray(args.workflowItems) ? args.workflowItems.length : 0;
       return `Create a ${String(args.type ?? 'new')} project named "${String(args.name ?? '')}" with ${workflowCount} workflow item${workflowCount === 1 ? '' : 's'}.`;
     }
+    case 'update_project': {
+      const workflowCount = Array.isArray(args.workflowItems) ? args.workflowItems.length : null;
+      return workflowCount == null
+        ? `Update project "${String(args.projectId ?? '')}".`
+        : `Update project "${String(args.projectId ?? '')}" and replace its workflow with ${workflowCount} item${workflowCount === 1 ? '' : 's'}. Existing workflow items not included will be removed.`;
+    }
     default:
       return `Apply ${pendingConfirmation.toolName}.`;
   }

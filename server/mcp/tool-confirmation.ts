@@ -80,8 +80,12 @@ export function summarizeToolEffect(
       const workflowCount = Array.isArray(objectArgs.workflowItems) ? objectArgs.workflowItems.length : 0;
       return `Create a ${String(objectArgs.type ?? 'new')} project named "${String(objectArgs.name ?? '')}" with ${workflowCount} workflow item${workflowCount === 1 ? '' : 's'}.`;
     }
-    case 'update_project':
-      return `Update project ${getLabel(objectArgs.projectId, 'project')}.`;
+    case 'update_project': {
+      const workflowCount = Array.isArray(objectArgs.workflowItems) ? objectArgs.workflowItems.length : null;
+      return workflowCount == null
+        ? `Update project ${getLabel(objectArgs.projectId, 'project')}.`
+        : `Update project ${getLabel(objectArgs.projectId, 'project')} and replace its workflow with ${workflowCount} item${workflowCount === 1 ? '' : 's'}. Existing workflow items not included in this replacement will be removed.`;
+    }
     default:
       return tool.category === 'destructive'
         ? `Run destructive tool "${tool.title}".`

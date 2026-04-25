@@ -1402,6 +1402,11 @@
       "pauseAudio": "일시정지",
       "expand": "펼치기",
       "collapse": "접기",
+      "aspectRatioFilter": "비율",
+      "aspectRatioFilterCount": "비율 {{count}}개",
+      "allAspectRatios": "모든 비율",
+      "noAspectRatioMatches": "일치하는 비율 없음",
+      "noAspectRatioMatchesDescription": "더 많은 앨범 항목을 보려면 화면비 필터를 지우세요",
       "sortNewest": "최신순",
       "sortOldest": "오래된 순"
     },

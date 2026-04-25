@@ -167,34 +167,37 @@ export function LibraryPreviewModal({
         )}
 
         {availableTags.length > 0 && (
-          <div className="px-6 py-4 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap gap-2">
-            <div className="w-full text-[9px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-2 flex items-center gap-2">
+          <div className="px-6 py-4 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
+            <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-2 flex items-center gap-2">
               <span className="w-4 h-px bg-neutral-200 dark:bg-neutral-800" />
               {t('projectViewer.libraryPreview.filterByTags')}
             </div>
-            <button
-              onClick={() => onUpdateTags([])}
-              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
-                selectedTags.length === 0
-                  ? 'bg-blue-600 text-neutral-900 dark:text-white border-transparent'
-                  : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
-              }`}
-            >
-              {t('projectViewer.libraryPreview.allItems')}
-            </button>
-            {availableTags.map(tag => (
+            <div className="max-h-28 md:max-h-32 overflow-y-auto custom-scrollbar pr-1 flex flex-wrap gap-2 content-start">
               <button
-                key={tag}
-                onClick={() => toggleTag(tag)}
-                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
-                  selectedTags.includes(tag)
-                    ? 'bg-blue-600/20 text-blue-400 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                onClick={() => onUpdateTags([])}
+                className={`max-w-full px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                  selectedTags.length === 0
+                    ? 'bg-blue-600 text-neutral-900 dark:text-white border-transparent'
                     : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
                 }`}
               >
-                {tag}
+                {t('projectViewer.libraryPreview.allItems')}
               </button>
-            ))}
+              {availableTags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  title={tag}
+                  className={`max-w-full sm:max-w-80 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                    selectedTags.includes(tag)
+                      ? 'bg-blue-600/20 text-blue-400 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                      : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
+                  }`}
+                >
+                  <span className="block truncate">{tag}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

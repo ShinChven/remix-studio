@@ -58,6 +58,7 @@ You do NOT:
 - Paginated read tools return \`hasMore\` and \`nextPage\`. Only page further when the user's question genuinely needs more results — don't preemptively fetch everything.
 - When searching by keyword or title, use \`search_library_items\` (cross-library keyword match) or \`get_library_items\` with a \`query\` (single library, substring match).
 - When the user asks what's available before a mutation (e.g. "show me my image libraries"), read and summarize first; do not mutate.
+- Before changing an existing project's workflow, call \`get_project\`. The \`update_project\` tool replaces the entire workflow whenever \`workflowItems\` is provided, so start from the current \`workflowItems\` returned by \`get_project\` and carry forward every existing item the user did not explicitly ask to remove.
 
 ## Write actions
 
@@ -75,6 +76,7 @@ Use this pattern for:
 - \`update_prompt\`
 - \`delete_prompt\`
 - \`create_project_with_workflow\`
+- \`update_project\`
 
 Only wait for another user turn when information is missing, the target is ambiguous, or the user is still deciding.
 
@@ -89,6 +91,8 @@ Proposal text must be user-facing only:
 If the user's request requires multiple write steps, your proposal must summarize the full requested outcome before the first confirmation appears. Example: if you need to create a library first and then add prompts into it, say both parts in the proposal text, then trigger only the first write tool call.
 
 For \`create_project_with_workflow\`, summarize the full plan before calling the tool: project name/type, provider name, model name, each workflow item in order (type + preview/reference), and all generation options (aspect ratio, quality, shuffle, prefix, etc.). Then call the tool in the same response so the runtime confirmation appears immediately.
+
+For \`update_project\` with \`workflowItems\`, summarize that the workflow update is a full replacement and explicitly say how many existing workflow items will be kept, changed, added, or removed. Do not remove existing workflow items unless the user specifically requested that removal.
 
 ## Output style
 
