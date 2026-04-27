@@ -845,17 +845,17 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
 
-  const toggleAlbumSelection = (id: string, isShiftPressed: boolean) => {
+  const toggleAlbumSelection = (id: string, isShiftPressed: boolean, scopeIds?: string[]) => {
     setSelectedAlbumIds(prev => {
       const next = new Set(prev);
-      const album = localAlbum;
+      const scopedIds = scopeIds !== undefined ? scopeIds : localAlbum.map(item => item.id);
       if (isShiftPressed && lastSelectedAlbumId && next.has(lastSelectedAlbumId)) {
-        const lastIndex = album.findIndex(item => item.id === lastSelectedAlbumId);
-        const currentIndex = album.findIndex(item => item.id === id);
+        const lastIndex = scopedIds.findIndex(itemId => itemId === lastSelectedAlbumId);
+        const currentIndex = scopedIds.findIndex(itemId => itemId === id);
         if (lastIndex !== -1 && currentIndex !== -1) {
           const start = Math.min(lastIndex, currentIndex);
           const end = Math.max(lastIndex, currentIndex);
-          for (let i = start; i <= end; i++) next.add(album[i].id);
+          for (let i = start; i <= end; i++) next.add(scopedIds[i]);
         }
       } else {
         if (next.has(id)) next.delete(id); else next.add(id);
@@ -865,9 +865,18 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setLastSelectedAlbumId(id);
   };
 
-  const toggleSelectAllAlbum = () => {
-    const albumIds = localAlbum.map(item => item.id);
-    setSelectedAlbumIds(selectedAlbumIds.size === albumIds.length ? new Set() : new Set(albumIds));
+  const toggleSelectAllAlbum = (scopeIds?: string[]) => {
+    const albumIds = scopeIds !== undefined ? scopeIds : localAlbum.map(item => item.id);
+    const allSelected = albumIds.length > 0 && albumIds.every(id => selectedAlbumIds.has(id));
+    setSelectedAlbumIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        albumIds.forEach(id => next.delete(id));
+      } else {
+        albumIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
   };
 
   const deleteAlbumItems = async (items: AlbumItem[]) => {

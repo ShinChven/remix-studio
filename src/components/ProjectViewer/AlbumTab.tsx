@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter } from 'lucide-react';
@@ -20,8 +20,8 @@ interface AlbumTabProps {
   projectName: string;
   albumItems: AlbumItem[];
   selectedAlbumIds: Set<string>;
-  toggleSelectAllAlbum: () => void;
-  toggleAlbumSelection: (id: string, isShiftPressed: boolean) => void;
+  toggleSelectAllAlbum: (scopeIds?: string[]) => void;
+  toggleAlbumSelection: (id: string, isShiftPressed: boolean, scopeIds?: string[]) => void;
   setAlbumItemsToDelete: (items: AlbumItem[]) => void;
   setShowDeleteAlbumModal: (show: boolean) => void;
   getProviderName: (id?: string) => string;
@@ -31,6 +31,123 @@ interface AlbumTabProps {
   onExportStarted: () => void;
   projectType?: ProjectType;
 }
+
+function normalizeAspectRatio(value?: string) {
+  const ratio = value?.trim();
+  if (!ratio) return '';
+
+  const exactSizeMatch = ratio.match(/^(\d+)\s*x\s*(\d+)$/i);
+  if (!exactSizeMatch) return ratio.replace(/\s+/g, '');
+
+  const width = Number(exactSizeMatch[1]);
+  const height = Number(exactSizeMatch[2]);
+  if (!width || !height) return ratio;
+
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+  const divisor = gcd(width, height);
+  return `${width / divisor}:${height / divisor}`;
+}
+
+function getCssAspectRatio(value?: string) {
+  const ratio = value?.trim();
+  if (!ratio) return '1 / 1';
+
+  const match = ratio.match(/^(\d+(?:\.\d+)?)\s*[:x]\s*(\d+(?:\.\d+)?)$/i);
+  if (!match) return '1 / 1';
+
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (!width || !height) return '1 / 1';
+  return `${width} / ${height}`;
+}
+
+interface AspectRatioFilterControlProps {
+  options: { ratio: string; count: number }[];
+  selectedAspectRatios: string[];
+  hasAspectRatioFilter: boolean;
+  onToggle: (ratio: string) => void;
+  onClear: () => void;
+}
+
+const AspectRatioFilterControl = memo(function AspectRatioFilterControl({
+  options,
+  selectedAspectRatios,
+  hasAspectRatioFilter,
+  onToggle,
+  onClear,
+}: AspectRatioFilterControlProps) {
+  const { t } = useTranslation();
+  const [showAspectRatioFilter, setShowAspectRatioFilter] = useState(false);
+
+  useEffect(() => {
+    if (!showAspectRatioFilter) return;
+    const handleClick = () => setShowAspectRatioFilter(false);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [showAspectRatioFilter]);
+
+  return (
+    <div className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onClick={() => setShowAspectRatioFilter((show) => !show)}
+        title={t('projectViewer.album.aspectRatioFilter')}
+        aria-label={t('projectViewer.album.aspectRatioFilter')}
+        className={`flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg border transition-all ${
+          hasAspectRatioFilter
+            ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border-blue-500/30'
+            : 'bg-white/5 hover:bg-white/10 text-neutral-200 border-neutral-700'
+        }`}
+      >
+        <Filter className="w-3 h-3" />
+        <span className="hidden sm:inline">
+          {selectedAspectRatios.length === 0
+            ? t('projectViewer.album.aspectRatioFilter')
+            : t('projectViewer.album.aspectRatioFilterCount', { count: selectedAspectRatios.length })}
+        </span>
+        <ChevronDown className={`w-3 h-3 transition-transform ${showAspectRatioFilter ? 'rotate-180' : ''}`} />
+      </button>
+
+      {showAspectRatioFilter && (
+        <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
+          <button
+            type="button"
+            onClick={onClear}
+            className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors mb-1 ${
+              !hasAspectRatioFilter ? 'bg-blue-600 text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
+            }`}
+          >
+            {t('projectViewer.album.allAspectRatios')}
+          </button>
+          <div className="max-h-64 overflow-y-auto custom-scrollbar">
+            {options.map(({ ratio, count }) => {
+              const isChecked = selectedAspectRatios.includes(ratio);
+              return (
+                <label
+                  key={ratio}
+                  className={`w-full px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-between gap-3 cursor-pointer ${
+                    isChecked ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                  }`}
+                >
+                  <span>{ratio}</span>
+                  <span className="ml-auto rounded-md bg-neutral-100 px-1.5 py-0.5 text-[9px] font-black text-neutral-500 dark:bg-neutral-950 dark:text-neutral-500">
+                    {count}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => onToggle(ratio)}
+                    className="h-3.5 w-3.5 rounded border-neutral-600 bg-neutral-950 text-blue-500 focus:ring-blue-500"
+                  />
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
 
 export function AlbumTab({
   projectId,
@@ -69,7 +186,6 @@ export function AlbumTab({
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [albumSort, setAlbumSort] = useState<'newest' | 'oldest'>('newest');
   const [selectedAspectRatios, setSelectedAspectRatios] = useState<string[]>([]);
-  const [showAspectRatioFilter, setShowAspectRatioFilter] = useState(false);
   const [renameItem, setRenameItem] = useState<AlbumItem | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
@@ -113,7 +229,7 @@ export function AlbumTab({
   const aspectRatioOptions = useMemo(() => {
     const ratioCounts = new Map<string, number>();
     albumItems.forEach((item) => {
-      const ratio = item.aspectRatio?.trim();
+      const ratio = normalizeAspectRatio(item.aspectRatio);
       if (ratio) ratioCounts.set(ratio, (ratioCounts.get(ratio) || 0) + 1);
     });
     return Array.from(ratioCounts.entries()).map(([ratio, count]) => ({ ratio, count })).sort((a, b) => {
@@ -128,32 +244,29 @@ export function AlbumTab({
   }, [albumItems]);
 
   useEffect(() => {
-    if (!showAspectRatioFilter) return;
-    const handleClick = () => setShowAspectRatioFilter(false);
-    window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
-  }, [showAspectRatioFilter]);
-
-  useEffect(() => {
     const availableRatios = new Set(aspectRatioOptions.map((option) => option.ratio));
     setSelectedAspectRatios((current) => current.filter((ratio) => availableRatios.has(ratio)));
   }, [aspectRatioOptions]);
 
   const hasAspectRatioFilter = selectedAspectRatios.length > 0;
-  const showAspectRatioFilterControl = !isTextProject && !isAudioProject && aspectRatioOptions.length > 1;
+  const showAspectRatioFilterControl = !isTextProject && !isAudioProject && aspectRatioOptions.length > 0;
 
-  const toggleAspectRatioFilter = (ratio: string) => {
+  const toggleAspectRatioFilter = useCallback((ratio: string) => {
     setSelectedAspectRatios((current) => (
       current.includes(ratio)
         ? current.filter((item) => item !== ratio)
         : [...current, ratio]
     ));
-  };
+  }, []);
+
+  const clearAspectRatioFilter = useCallback(() => {
+    setSelectedAspectRatios([]);
+  }, []);
 
   const displayItems = useMemo(() => {
     const filteredItems = hasAspectRatioFilter
       ? albumItems.filter((item) => {
-          const ratio = item.aspectRatio?.trim();
+          const ratio = normalizeAspectRatio(item.aspectRatio);
           return !!ratio && selectedAspectRatios.includes(ratio);
         })
       : albumItems;
@@ -163,6 +276,18 @@ export function AlbumTab({
       return albumSort === 'newest' ? bTs - aTs : aTs - bTs;
     });
   }, [albumItems, albumSort, hasAspectRatioFilter, selectedAspectRatios]);
+
+  const displayItemIds = useMemo(() => displayItems.map((item) => item.id), [displayItems]);
+  const selectedDisplayItemIds = useMemo(
+    () => displayItemIds.filter((id) => selectedAlbumIds.has(id)),
+    [displayItemIds, selectedAlbumIds]
+  );
+  const hasVisibleSelection = selectedDisplayItemIds.length > 0;
+  const bulkItemIds = hasVisibleSelection
+    ? selectedDisplayItemIds
+    : hasAspectRatioFilter
+      ? displayItemIds
+      : albumItems.map((item) => item.id);
 
   const toggleAudioExpand = (id: string) => {
     setExpandedAudioIds((prev) => {
@@ -197,11 +322,11 @@ export function AlbumTab({
       minute: '2-digit',
     });
   };
-  const selectedTextItems = albumItems.filter((item) => selectedAlbumIds.has(item.id));
-  const copyItemIds = selectedAlbumIds.size > 0 ? Array.from(selectedAlbumIds) : albumItems.map((item) => item.id);
+  const selectedTextItems = displayItems.filter((item) => selectedAlbumIds.has(item.id));
+  const copyItemIds = bulkItemIds;
 
   const openExportDialog = (isAll: boolean) => {
-    setPendingExportItemIds(isAll ? undefined : Array.from(selectedAlbumIds));
+    setPendingExportItemIds(isAll && !hasAspectRatioFilter ? undefined : bulkItemIds);
     setIsExportDialogOpen(true);
   };
 
@@ -222,9 +347,9 @@ export function AlbumTab({
       <div className="flex flex-col gap-0">
         {albumItems.length > 0 && (
           <SelectionToolbar
-            totalCount={albumItems.length}
-            selectedCount={selectedAlbumIds.size}
-            onToggleSelectAll={toggleSelectAllAlbum}
+            totalCount={displayItems.length}
+            selectedCount={selectedDisplayItemIds.length}
+            onToggleSelectAll={() => toggleSelectAllAlbum(displayItemIds)}
             mobileSingleLine
             mobileActionsRight
             prefix={!isTextProject && (
@@ -238,28 +363,28 @@ export function AlbumTab({
             rightActions={
               <>
                 <button
-                  onClick={() => openExportDialog(selectedAlbumIds.size === 0)}
-                  title={selectedAlbumIds.size > 0 ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
-                  aria-label={selectedAlbumIds.size > 0 ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
+                  onClick={() => openExportDialog(!hasVisibleSelection)}
+                  title={hasVisibleSelection ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
+                  aria-label={hasVisibleSelection ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
                   className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
                 >
                   <FileArchive className="w-3 h-3" />
                   <span className="hidden sm:inline">
-                    {selectedAlbumIds.size > 0 ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
+                    {hasVisibleSelection ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
                   </span>
                 </button>
                 <button
                   onClick={() => setShowCopyDialog(true)}
-                  title={selectedAlbumIds.size > 0 ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
-                  aria-label={selectedAlbumIds.size > 0 ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
+                  title={hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
+                  aria-label={hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
                   className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
                 >
                   <Copy className="w-3 h-3" />
                   <span className="hidden sm:inline">
-                    {selectedAlbumIds.size > 0 ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
+                    {hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
                   </span>
                 </button>
-                {isTextProject && selectedAlbumIds.size > 1 && (
+                {isTextProject && selectedDisplayItemIds.length > 1 && (
                   <button
                     onClick={() => setShowCompareDialog(true)}
                     title={t('projectViewer.album.compareSelected')}
@@ -270,10 +395,10 @@ export function AlbumTab({
                     <span className="hidden sm:inline">{t('projectViewer.album.compareSelected')}</span>
                   </button>
                 )}
-                {selectedAlbumIds.size > 0 && (
+                {hasVisibleSelection && (
                   <button
                     onClick={() => {
-                      const itemsToDelete = albumItems.filter(item => selectedAlbumIds.has(item.id));
+                      const itemsToDelete = displayItems.filter(item => selectedAlbumIds.has(item.id));
                       setAlbumItemsToDelete(itemsToDelete);
                       setShowDeleteAlbumModal(true);
                     }}
@@ -286,65 +411,13 @@ export function AlbumTab({
                   </button>
                 )}
                 {showAspectRatioFilterControl && (
-                  <div className="relative" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => setShowAspectRatioFilter((show) => !show)}
-                      title={t('projectViewer.album.aspectRatioFilter')}
-                      aria-label={t('projectViewer.album.aspectRatioFilter')}
-                      className={`flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg border transition-all ${
-                        hasAspectRatioFilter
-                          ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border-blue-500/30'
-                          : 'bg-white/5 hover:bg-white/10 text-neutral-200 border-neutral-700'
-                      }`}
-                    >
-                      <Filter className="w-3 h-3" />
-                      <span className="hidden sm:inline">
-                        {selectedAspectRatios.length === 0
-                          ? t('projectViewer.album.aspectRatioFilter')
-                          : t('projectViewer.album.aspectRatioFilterCount', { count: selectedAspectRatios.length })}
-                      </span>
-                      <ChevronDown className={`w-3 h-3 transition-transform ${showAspectRatioFilter ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {showAspectRatioFilter && (
-                      <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAspectRatios([])}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors mb-1 ${
-                            !hasAspectRatioFilter ? 'bg-blue-600 text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
-                          }`}
-                        >
-                          {t('projectViewer.album.allAspectRatios')}
-                        </button>
-                        <div className="max-h-64 overflow-y-auto custom-scrollbar">
-                          {aspectRatioOptions.map(({ ratio, count }) => {
-                            const isChecked = selectedAspectRatios.includes(ratio);
-                            return (
-                              <label
-                                key={ratio}
-                                className={`w-full px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-between gap-3 cursor-pointer ${
-                                  isChecked ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
-                                }`}
-                              >
-                                <span>{ratio}</span>
-                                <span className="ml-auto rounded-md bg-neutral-100 px-1.5 py-0.5 text-[9px] font-black text-neutral-500 dark:bg-neutral-950 dark:text-neutral-500">
-                                  {count}
-                                </span>
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => toggleAspectRatioFilter(ratio)}
-                                  className="h-3.5 w-3.5 rounded border-neutral-600 bg-neutral-950 text-blue-500 focus:ring-blue-500"
-                                />
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <AspectRatioFilterControl
+                    options={aspectRatioOptions}
+                    selectedAspectRatios={selectedAspectRatios}
+                    hasAspectRatioFilter={hasAspectRatioFilter}
+                    onToggle={toggleAspectRatioFilter}
+                    onClear={clearAspectRatioFilter}
+                  />
                 )}
                 <button
                   onClick={() => setAlbumSort((s) => (s === 'newest' ? 'oldest' : 'newest'))}
@@ -390,7 +463,7 @@ export function AlbumTab({
                   className={`group flex items-center gap-3 border-b border-neutral-200/80 dark:border-neutral-800/80 px-4 py-2.5 transition-colors last:border-b-0 ${isSelected ? 'bg-blue-500/10' : 'hover:bg-neutral-800/40'}`}
                 >
                   <button
-                    onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
+                    onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey, displayItemIds); }}
                     className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-blue-500 text-blue-400' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700'}`}
                   >
                     {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
@@ -442,7 +515,7 @@ export function AlbumTab({
                 >
                   <div className="flex items-center gap-2 sm:gap-3">
                     <button
-                      onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
+                      onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey, displayItemIds); }}
                       className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700'}`}
                     >
                       {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
@@ -554,14 +627,14 @@ export function AlbumTab({
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
             {displayItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
-              const aspectRatioStr = item.aspectRatio?.replace(':', '/') || '1/1';
+              const aspectRatioStr = getCssAspectRatio(item.aspectRatio);
               return (
                 <div key={item.id} id={`album-item-${item.id}`} className={`bg-white/20 dark:bg-black/20 border overflow-hidden flex flex-col group transition-all duration-300 active:scale-100 rounded-xl border-neutral-200/20 dark:border-white/5 backdrop-blur-md ${isSelected ? 'ring-2 ring-inset ring-blue-500 shadow-xl shadow-blue-500/20 z-10 scale-[1.02]' : 'hover:shadow-2xl hover:z-10 hover:-translate-y-1'}`}>
                   <div className="bg-neutral-50 dark:bg-neutral-950 relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: aspectRatioStr }}>
                     {/* Selection Overlay */}
                     <div className={`absolute top-4 left-4 z-20 transition-all opacity-100`}>
                       <button
-                        onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey); }}
+                        onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey, displayItemIds); }}
                         className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20 hover:border-white/40'}`}
                       >
                         {isSelected && <CheckSquare className="w-4 h-4 text-neutral-900 dark:text-white" />}
