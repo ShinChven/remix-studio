@@ -57,6 +57,14 @@ interface PromptLimitDialogState {
   resolve: (decision: PromptLimitDecision) => void;
 }
 
+interface LightboxData {
+  images: string[];
+  index: number;
+  albumItemIds?: string[];
+  onDelete?: (index: number) => void;
+  onIndexChange?: (index: number) => void;
+}
+
 const WORKFLOW_LIBRARY_PAGE_SIZE = 500;
 
 async function fetchWorkflowLibraries(): Promise<Library[]> {
@@ -108,7 +116,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [selectingLibraryForItemId, setSelectingLibraryForItemId] = useState<string | null>(null);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
-  const [lightboxData, setLightboxData] = useState<{ images: string[], index: number, onDelete?: (index: number) => void, onIndexChange?: (index: number) => void } | null>(null);
+  const [lightboxData, setLightboxData] = useState<LightboxData | null>(null);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'workflow' | 'jobs'>('workflow');
   const [selectedQueueIds, setSelectedQueueIds] = useState<Set<string>>(new Set());
@@ -874,10 +882,39 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         itemIdsSet.forEach(id => next.delete(id));
         return next;
       });
+      return true;
     } catch (e: any) {
       console.error('Failed to move items to trash:', e);
       toast.error(`Failed to move items to trash: ${e.message}`);
+      return false;
     }
+  };
+
+  const updateLightboxAfterAlbumDelete = (deletedItems: AlbumItem[]) => {
+    const deletedItemIds = new Set(deletedItems.map((item) => item.id));
+    const deletedImageUrls = new Set(deletedItems.map((item) => apiImageDisplayUrl(item.optimizedUrl || item.imageUrl)));
+
+    setLightboxData((current) => {
+      if (!current) return current;
+
+      const nextEntries = current.images
+        .map((image, index) => ({ image, albumItemId: current.albumItemIds?.[index] }))
+        .filter(({ image, albumItemId }) => (
+          albumItemId
+            ? !deletedItemIds.has(albumItemId)
+            : !deletedImageUrls.has(image)
+        ));
+
+      if (nextEntries.length === current.images.length) return current;
+      if (nextEntries.length === 0) return null;
+
+      return {
+        ...current,
+        images: nextEntries.map((entry) => entry.image),
+        albumItemIds: current.albumItemIds ? nextEntries.map((entry) => entry.albumItemId || '') : undefined,
+        index: Math.min(current.index, nextEntries.length - 1),
+      };
+    });
   };
 
   const renameAlbumItem = async (itemId: string, filename: string) => {
@@ -1175,19 +1212,33 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           setPreviewingWorkflowItemId(null);
         }}
       />
-      {lightboxData && <ImageLightbox images={lightboxData.images} startIndex={lightboxData.index} onClose={() => setLightboxData(null)} onDelete={lightboxData.onDelete} onIndexChange={lightboxData.onIndexChange} />}
+      {lightboxData && (
+        <ImageLightbox
+          images={lightboxData.images}
+          startIndex={lightboxData.index}
+          onClose={() => setLightboxData(null)}
+          onDelete={lightboxData.albumItemIds ? (index) => {
+            const albumItemId = lightboxData.albumItemIds?.[index];
+            const itemToDelete = albumItemId ? localAlbumRef.current.find((item) => item.id === albumItemId) : undefined;
+            if (itemToDelete) {
+              setAlbumItemsToDelete([itemToDelete]);
+              setShowDeleteAlbumModal(true);
+            }
+          } : lightboxData.onDelete}
+          onIndexChange={(index) => {
+            setLightboxData((current) => current && current.index !== index ? { ...current, index } : current);
+            lightboxData.onIndexChange?.(index);
+          }}
+        />
+      )}
       <ConfirmModal
         isOpen={showDeleteAlbumModal}
         onClose={() => { setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); }}
         onConfirm={async () => {
           if (albumItemsToDelete) {
-            const urlsToRemove = albumItemsToDelete.map(i => apiImageDisplayUrl(i.optimizedUrl || i.imageUrl));
-            await deleteAlbumItems(albumItemsToDelete);
-            if (lightboxData) {
-              const newImages = lightboxData.images.filter(img => !urlsToRemove.includes(img));
-              if (newImages.length === 0) setLightboxData(null);
-              else setLightboxData({ ...lightboxData, images: newImages });
-            }
+            const didDelete = await deleteAlbumItems(albumItemsToDelete);
+            if (!didDelete) return;
+            updateLightboxAfterAlbumDelete(albumItemsToDelete);
             setShowDeleteAlbumModal(false);
             setAlbumItemsToDelete(null);
           }

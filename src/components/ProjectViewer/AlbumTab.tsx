@@ -26,7 +26,7 @@ interface AlbumTabProps {
   setShowDeleteAlbumModal: (show: boolean) => void;
   getProviderName: (id?: string) => string;
   getModelName: (providerId?: string, modelId?: string) => string;
-  setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void, onIndexChange?: (index: number) => void } | null) => void;
+  setLightboxData: (data: { images: string[], index: number, albumItemIds?: string[], onDelete?: (index: number) => void, onIndexChange?: (index: number) => void } | null) => void;
   onRenameAlbumItem: (itemId: string, filename: string) => Promise<AlbumItem>;
   onExportStarted: () => void;
   projectType?: ProjectType;
@@ -611,6 +611,7 @@ export function AlbumTab({
                         setLightboxData({
                           images: imgUrls,
                           index: idx >= 0 ? idx : 0,
+                          albumItemIds: validItems.map(a => a.id),
                           onDelete: (deletedIndex) => {
                              const itemToDelete = validItems[deletedIndex];
                              if (itemToDelete) {
