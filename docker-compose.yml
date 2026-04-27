@@ -2,7 +2,7 @@ services:
   app:
     profiles: ["app"]
     build: .
-    image: ${REMIX_STUDIO_IMAGE:-ghcr.io/shinchven/remix-studio:edge}
+    image: ${REMIX_STUDIO_IMAGE:-ghcr.io/shinchven/remix-studio:latest}
     container_name: remix-studio-app
     restart: unless-stopped
     ports:

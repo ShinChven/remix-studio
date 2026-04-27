@@ -326,6 +326,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 docker compose -f docker/compose.minio.yml --env-file .env.docker up -d
 ```
 
+The compose templates default to `ghcr.io/shinchven/remix-studio:latest`, which tracks the latest successful build from the main branch. For release deployments, set `REMIX_STUDIO_IMAGE` in `.env.docker` to a version tag such as `ghcr.io/shinchven/remix-studio:1.0.0`.
+
 This starts:
 
 - `app` on `3000`

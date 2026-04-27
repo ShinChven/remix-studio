@@ -823,6 +823,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setLocalJobs(updatedJobs);
     setSelectedQueueIds(new Set());
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+    if (updatedJobs.some(j => j.status === 'pending')) {
+      try { await apiRunWorkflow(localProject.id); } catch (e) { console.error("Failed to resume queue after clearing failed:", e); }
+    }
   };
 
   const toggleCompletedSelection = (jobId: string) => {
