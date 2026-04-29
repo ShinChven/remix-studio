@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, LibraryItem } from '../types';
-import { Trash2, Plus, GripVertical, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive } from 'lucide-react';
+import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive, Stars } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { TagModal } from './TagModal';
 import { PageHeader } from './PageHeader';
@@ -12,6 +12,7 @@ import { DuplicateLibraryDialog } from './DuplicateLibraryDialog';
 import { RenameItemModal } from './RenameItemModal';
 import { ImageLightbox } from './ProjectViewer/ImageLightbox';
 import { ExportFileNameModal } from './ExportFileNameModal';
+import type { BoundContext } from './Assistant/AssistantComposer';
 import { toast } from 'sonner';
 
 interface Props {
@@ -375,6 +376,22 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     }
   };
 
+  const handleStartAssistantChat = () => {
+    const libraryContext: BoundContext = {
+      id: library.id,
+      name: library.name,
+      type: 'library',
+      subType: library.type || 'text',
+    };
+
+    localStorage.removeItem('assistant_last_conversation');
+    navigate('/assistant', {
+      state: {
+        draftBoundContexts: [libraryContext],
+      },
+    });
+  };
+
   return (
     <div className="h-full flex flex-col p-4 md:p-8 w-full overflow-hidden animate-in fade-in duration-700">
       <PageHeader
@@ -408,10 +425,11 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               {library.type === 'text' ? (
                 <button
                   onClick={() => navigate(`/library/${library.id}/prompt/new`)}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-xl transition-all border border-blue-700 active:scale-95 group shadow-lg shadow-blue-600/10"
+                  className="p-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-all border border-blue-700 active:scale-95 group shadow-lg shadow-blue-600/10"
+                  title={t('libraryEditor.addFragment')}
+                  aria-label={t('libraryEditor.addFragment')}
                 >
                   <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-                  <span className="text-xs font-bold uppercase tracking-widest">{t('libraryEditor.addFragment')}</span>
                 </button>
               ) : (
                 <label className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-xl transition-all border border-blue-700 active:scale-95 group shadow-lg shadow-blue-600/10 ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
@@ -437,6 +455,15 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   />
                 </label>
               )}
+
+              <button
+                onClick={handleStartAssistantChat}
+                className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-neutral-700 active:scale-95"
+                title={t('libraryEditor.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
+                aria-label={t('libraryEditor.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
+              >
+                <Stars className="w-5 h-5" />
+              </button>
 
               <button
                 onClick={() => setShowDuplicateDialog(true)}

@@ -3,9 +3,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Project, ProjectType } from '../types';
-import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video, Music, Search, Copy, Archive, ArchiveRestore } from 'lucide-react';
+import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video, Music, Search, Copy, Archive, ArchiveRestore, Stars } from 'lucide-react';
 import { fetchProjects, updateProject } from '../api';
 import { PageHeader } from '../components/PageHeader';
+import type { BoundContext } from '../components/Assistant/AssistantComposer';
 
 type StatusFilter = 'active' | 'archived' | 'all';
 
@@ -153,6 +154,22 @@ export function Projects() {
     }
   };
 
+  const handleStartAssistantChat = (project: Project) => {
+    const projectContext: BoundContext = {
+      id: project.id,
+      name: project.name,
+      type: 'project',
+      subType: project.type || 'image',
+    };
+
+    localStorage.removeItem('assistant_last_conversation');
+    navigate('/assistant', {
+      state: {
+        draftBoundContexts: [projectContext],
+      },
+    });
+  };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchInput(e.target.value);
   };
@@ -264,6 +281,19 @@ export function Projects() {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
+                            handleStartAssistantChat(project);
+                          }}
+                          className="p-1.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-all"
+                          title={t('projects.projectCard.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })}
+                          aria-label={t('projects.projectCard.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })}
+                        >
+                          <Stars className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             if (!isToggling) handleToggleArchive(project);
                           }}
                           disabled={isToggling}
@@ -275,6 +305,7 @@ export function Projects() {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             navigate('/project/new', { state: { copyFrom: project.id } });
                           }}
                           className="p-1.5 text-neutral-500 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all"
@@ -282,9 +313,6 @@ export function Projects() {
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </button>
-                        <span className="hidden sm:block text-[10px] text-neutral-500 dark:text-neutral-500 font-mono bg-neutral-100 dark:bg-neutral-800/50 px-2 py-1 rounded border border-neutral-200 dark:border-neutral-800 truncate max-w-[140px] shadow-inner">
-                          {project.id}
-                        </span>
                       </div>
                     </div>
 

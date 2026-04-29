@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Archive, ArchiveRestore, Copy, Eraser, HardDrive, Hash, ImageIcon, Library as LibraryIcon, MoreVertical, Settings, Sparkles, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
+import { Archive, ArchiveRestore, Copy, Eraser, HardDrive, Hash, ImageIcon, Library as LibraryIcon, MoreVertical, Settings, Stars, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
@@ -187,11 +187,11 @@ export function WorkflowPanel({
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={onStartAssistantChat}
-              className="p-1.5 text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 transition-all hover:bg-indigo-500/10 rounded-lg border border-transparent hover:border-indigo-500/20"
+              className="p-1.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 transition-all hover:bg-white/10 rounded-lg border border-transparent hover:border-neutral-200/50 dark:hover:border-white/10"
               title={t('projectViewer.main.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })}
               aria-label={t('projectViewer.main.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })}
             >
-              <Sparkles className="w-4 h-4" />
+              <Stars className="w-4 h-4" />
             </button>
 
             <div className="relative" ref={actionMenuRef}>

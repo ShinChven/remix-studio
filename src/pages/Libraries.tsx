@@ -1,15 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
-import { Plus, Folder, LayoutGrid, ChevronRight, ChevronLeft, Loader2, Copy, Search, ImageIcon, Type, Video, Music, Pin, PinOff, Trash2 } from 'lucide-react';
+import { Plus, Folder, LayoutGrid, ChevronRight, ChevronLeft, Loader2, Copy, Search, ImageIcon, Type, Video, Music, Pin, PinOff, Trash2, Stars } from 'lucide-react';
 import { duplicateLibrary, fetchLibraries, setLibraryPinned, deleteLibrary, fetchLibraryReferences } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
-
-const MAX_PINNED_LIBRARIES = 6;
+import type { BoundContext } from '../components/Assistant/AssistantComposer';
 import { DuplicateLibraryDialog } from '../components/DuplicateLibraryDialog';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
+
+const MAX_PINNED_LIBRARIES = 6;
 
 function getLibraryTypeMeta(type: Library['type'] | undefined) {
   switch (type) {
@@ -191,6 +192,22 @@ export function Libraries() {
     }
   };
 
+  const handleStartAssistantChat = (lib: Library) => {
+    const libraryContext: BoundContext = {
+      id: lib.id,
+      name: lib.name,
+      type: 'library',
+      subType: lib.type || 'text',
+    };
+
+    localStorage.removeItem('assistant_last_conversation');
+    navigate('/assistant', {
+      state: {
+        draftBoundContexts: [libraryContext],
+      },
+    });
+  };
+
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
       <div className="w-full space-y-8 pb-20">
@@ -260,10 +277,22 @@ export function Libraries() {
                             e.stopPropagation();
                             handleTogglePin(lib);
                           }}
-                          className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30"
+                          className="p-1.5 text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
                           title={isPinned ? t('libraries.libraryCard.unpin') : t('libraries.libraryCard.pin')}
                         >
-                          {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                          {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleStartAssistantChat(lib);
+                          }}
+                          className="p-1.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-all"
+                          title={t('libraries.libraryCard.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
+                          aria-label={t('libraries.libraryCard.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
+                        >
+                          <Stars className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={(e) => {
@@ -271,10 +300,10 @@ export function Libraries() {
                             e.stopPropagation();
                             setLibraryToDuplicate(lib);
                           }}
-                          className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30"
+                          className="p-1.5 text-neutral-500 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all"
                           title={t('libraries.libraryCard.duplicate')}
                         >
-                          <Copy className="w-4 h-4" />
+                          <Copy className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={(e) => {
@@ -283,10 +312,10 @@ export function Libraries() {
                             handleDeleteClick(lib);
                           }}
                           disabled={checking}
-                          className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100/50 dark:bg-neutral-800/30 disabled:opacity-50"
+                          className="p-1.5 text-neutral-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all disabled:opacity-50"
                           title={t('libraryEditor.deleteLibrary')}
                         >
-                          {checking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          {checking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                     </div>
