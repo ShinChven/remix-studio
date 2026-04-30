@@ -2,6 +2,39 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.4.1] - 2026-05-01
+
+### Fixed
+
+- Fixed failed task error text being cut off in Queue Monitor by adding click-to-expand functionality.
+
+### Added
+
+- Added detailed generation options (resolution, quality, aspect ratio, etc.) to the expanded view of jobs in the Queue Monitor.
+
+## [1.4.0] - 2026-05-01
+
+### Added
+
+- Introduced a comprehensive Queue Monitoring system with a dedicated UI for tracking projects and providers.
+- Modularized internationalization files into domain-specific JSON schemas (admin, app, libraries, etc.) for better maintainability.
+
+### Changed
+
+- Migrated MCP connections to the assistant settings tab.
+
+## [1.3.0] - 2026-05-01
+
+### Added
+
+- Implemented robust concurrency slot management and orphaned job reconciliation in `QueueManager`.
+- Added server-side configurable sorting for library items, replacing manual drag-and-drop.
+
+### Changed
+
+- Modernized RunningHub video generator with improved API integration and endpoint management.
+- Updated pinned state icon to use a filled Pin component.
+
 ## [1.2.0] - 2026-04-30
 
 ### Added
@@ -59,6 +92,9 @@ All notable changes to Remix Studio are documented here by version number.
 - Authentication, admin controls, 2FA, passkeys, and user storage limits.
 - Internationalized UI for English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French.
 
+[1.4.1]: https://github.com/ShinChven/remix-studio/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/ShinChven/remix-studio/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/ShinChven/remix-studio/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/ShinChven/remix-studio/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/ShinChven/remix-studio/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/ShinChven/remix-studio/compare/v1.0.0...v1.1.0
