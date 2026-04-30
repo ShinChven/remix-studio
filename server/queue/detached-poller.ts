@@ -7,10 +7,22 @@ import { Job, ProviderType } from '../../src/types';
 import { ImageProcessor } from './image-processor';
 import { VideoProcessor } from './video-processor';
 
+// A processing+taskId job that never reaches a terminal state would hold its
+// concurrency slot forever. After this timeout we declare the remote task
+// stuck, fail the job, and free the slot. Override with JOB_PROCESSING_TIMEOUT_MS.
+const DEFAULT_STUCK_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours
+
 export class DetachedPoller {
   private isPollingDetached = false;
   private activePolls: Set<string> = new Set();
   private intervalId?: NodeJS.Timeout;
+  private onJobFinalize?: (providerId: string, jobId: string) => void;
+  private onPollCycleComplete?: () => Promise<void> | void;
+  // First time the poller observed each in-flight job. Used to enforce the
+  // stuck-task timeout. Reset on server restart — recovered jobs get a fresh
+  // window, which we accept to avoid a schema migration.
+  private firstSeenAt: Map<string, number> = new Map();
+  private readonly stuckTimeoutMs: number;
 
   constructor(
     private prisma: PrismaClient,
@@ -18,7 +30,65 @@ export class DetachedPoller {
     private projectRepo: ProjectRepository,
     private imageProcessor: ImageProcessor,
     private videoProcessor: VideoProcessor
-  ) {}
+  ) {
+    const raw = process.env.JOB_PROCESSING_TIMEOUT_MS;
+    const parsed = raw ? parseInt(raw, 10) : NaN;
+    this.stuckTimeoutMs = Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_STUCK_TIMEOUT_MS;
+  }
+
+  /**
+   * Register a callback fired whenever a polled job reaches a terminal state
+   * (completed or failed). QueueManager uses this to release the concurrency
+   * slot it reserved when the job was handed off to detached polling.
+   */
+  public setOnJobFinalize(cb: (providerId: string, jobId: string) => void) {
+    this.onJobFinalize = cb;
+  }
+
+  /**
+   * Register a callback fired after each full poll cycle. QueueManager uses
+   * this to reconcile its in-memory slot tracking against the DB and release
+   * slots for jobs that have been deleted out-of-band.
+   */
+  public setOnPollCycleComplete(cb: () => Promise<void> | void) {
+    this.onPollCycleComplete = cb;
+  }
+
+  private finalize(providerId: string | undefined, jobId: string) {
+    this.firstSeenAt.delete(jobId);
+    if (!providerId) return;
+    try {
+      this.onJobFinalize?.(providerId, jobId);
+    } catch (e) {
+      console.error(`[DetachedPoller] onJobFinalize threw for job ${jobId}:`, e);
+    }
+  }
+
+  private touchFirstSeen(jobId: string): number {
+    const existing = this.firstSeenAt.get(jobId);
+    if (existing != null) return existing;
+    const now = Date.now();
+    this.firstSeenAt.set(jobId, now);
+    return now;
+  }
+
+  private isStuck(jobId: string): boolean {
+    const seen = this.touchFirstSeen(jobId);
+    return Date.now() - seen > this.stuckTimeoutMs;
+  }
+
+  private async markStuck(userId: string, projectId: string, job: Job) {
+    const seen = this.firstSeenAt.get(job.id) ?? Date.now();
+    const elapsedMin = Math.round((Date.now() - seen) / 60000);
+    const errorMsg = `Task stuck on remote provider for ~${elapsedMin} min without reaching a terminal state.`;
+    console.warn(`[DetachedPoller] Job ${job.id} (taskId ${job.taskId}) declared stuck: ${errorMsg}`);
+    await this.updateJobStatus(userId, projectId, job.id, {
+      status: 'failed',
+      error: errorMsg,
+      taskId: null as any,
+    });
+    this.finalize(job.providerId, job.id);
+  }
 
   public start() {
     if (this.intervalId) return;
@@ -59,6 +129,14 @@ export class DetachedPoller {
         const projectType = ((item as any).project?.type as string) || 'image';
         await this.checkJobStatus(item.userId, item.projectId, job, projectType);
       }
+
+      if (this.onPollCycleComplete) {
+        try {
+          await this.onPollCycleComplete();
+        } catch (e) {
+          console.error('[DetachedPoller] onPollCycleComplete threw:', e);
+        }
+      }
     } finally {
       this.isPollingDetached = false;
     }
@@ -72,18 +150,35 @@ export class DetachedPoller {
       if (!job.providerId) {
          console.warn(`[DetachedPoller] Job ${job.id} is missing providerId. Marking as failed.`);
          await this.updateJobStatus(userId, projectId, job.id, { status: 'failed', error: 'Missing providerId', taskId: null as any });
+         // No providerId means no slot was ever reserved — nothing to finalize.
+         this.firstSeenAt.delete(job.id);
          return;
       }
 
+      // Track first observation as early as possible so the stuck timeout fires
+      // even when we never reach the remote call (e.g. provider record missing,
+      // creds unreadable). Without this, a job whose creds were rotated would
+      // hold its concurrency slot indefinitely.
+      this.touchFirstSeen(job.id);
+
       const providerRecord = await this.providerRepo.getProvider(userId, job.providerId);
-      if (!providerRecord) return;
+      if (!providerRecord) {
+        if (this.isStuck(job.id)) await this.markStuck(userId, projectId, job);
+        return;
+      }
 
       const apiKey = await this.providerRepo.getDecryptedApiKey(userId, providerRecord.id);
-      if (!apiKey) return;
+      if (!apiKey) {
+        if (this.isStuck(job.id)) await this.markStuck(userId, projectId, job);
+        return;
+      }
       const apiSecret = providerRecord.type === 'KlingAI'
         ? await this.providerRepo.getDecryptedApiSecret(userId, providerRecord.id)
         : null;
-      if (providerRecord.type === 'KlingAI' && !apiSecret) return;
+      if (providerRecord.type === 'KlingAI' && !apiSecret) {
+        if (this.isStuck(job.id)) await this.markStuck(userId, projectId, job);
+        return;
+      }
 
       if (projectType === 'video') {
         const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl, apiSecret);
@@ -106,10 +201,14 @@ export class DetachedPoller {
             modelConfigId: job.modelConfigId,
             providerId: job.providerId,
           });
+          this.finalize(job.providerId, job.id);
         } else if (res.status === 'failed') {
           const errorMsg = res.error || 'Video task failed on remote server.';
           console.log(`[DetachedPoller] Video job ${job.id} failed (final): ${errorMsg}`);
           await this.updateJobStatus(userId, projectId, job.id, { status: 'failed', error: errorMsg, taskId: null as any });
+          this.finalize(job.providerId, job.id);
+        } else if (this.isStuck(job.id)) {
+          await this.markStuck(userId, projectId, job);
         }
         return;
       }
@@ -137,11 +236,15 @@ export class DetachedPoller {
           modelConfigId: job.modelConfigId,
           providerId: job.providerId
         });
+        this.finalize(job.providerId, job.id);
       } else if (res.status === 'failed') {
         const errorMsg = res.error || 'Task failed on remote server.';
         console.log(`[DetachedPoller] Job ${job.id} detached poll failed (final): ${errorMsg}`);
         // Remote failure definitively means the taskId is dead — clear taskId to stop polling
         await this.updateJobStatus(userId, projectId, job.id, { status: 'failed', error: errorMsg, taskId: null as any });
+        this.finalize(job.providerId, job.id);
+      } else if (this.isStuck(job.id)) {
+        await this.markStuck(userId, projectId, job);
       }
     } catch (e: any) {
       console.error(`[DetachedPoller] checkStatus for ${job.id} failed:`, e);

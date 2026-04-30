@@ -85,7 +85,9 @@ function inferImageMimeType(value: string): string {
 export class QueueManager {
   private activeJobs: Map<string, number> = new Map(); // providerId -> active count
   private queues: Map<string, QueuedJob[]> = new Map(); // providerId -> pending jobs
-  private activeJobIds: Set<string> = new Set(); // global dedup
+  // Tracks every jobId that currently consumes a slot (queued, executing, or detached).
+  // Maps to the providerId so we can release the right slot during reconciliation.
+  private activeJobIds: Map<string, string> = new Map();
   private processingLoops: Map<string, boolean> = new Map();
 
   constructor(
@@ -153,7 +155,7 @@ export class QueueManager {
     if (this.activeJobIds.has(job.id)) return;
 
     if (!this.queues.has(providerId)) this.queues.set(providerId, []);
-    this.activeJobIds.add(job.id);
+    this.activeJobIds.set(job.id, providerId);
     this.queues.get(providerId)!.push({ userId, projectId, job, projectType, aspectRatio, quality, background, format, modelConfigId, systemPrompt, temperature, maxTokens, duration, resolution, sound });
     this.processNext(providerId);
   }
@@ -193,11 +195,14 @@ export class QueueManager {
         queue.shift();
         this.activeJobs.set(providerId, (this.activeJobs.get(providerId) || 0) + 1);
 
-        // Run in background
-        this.executeJob(nextJob, provider).finally(() => {
-          this.activeJobIds.delete(nextJob.job.id);
-          this.activeJobs.set(providerId, Math.max(0, (this.activeJobs.get(providerId) || 1) - 1));
-          this.processNext(providerId);
+        // Run in background. For async (detached) jobs, the slot stays held
+        // until DetachedPoller observes a terminal state and calls releaseSlot.
+        const jobId = nextJob.job.id;
+        this.executeJob(nextJob, provider).then((detached) => {
+          if (!detached) this.releaseSlot(providerId, jobId);
+        }, (e) => {
+          console.error(`[QueueManager] Unhandled error in executeJob ${jobId}:`, e);
+          this.releaseSlot(providerId, jobId);
         });
       }
     } finally {
@@ -205,7 +210,50 @@ export class QueueManager {
     }
   }
 
-  private async executeJob(queued: QueuedJob, providerRecord: any) {
+  /**
+   * Release a concurrency slot for a job. Idempotent — safe to call multiple times.
+   * Called by .then handler in processNext for sync/failed jobs, and by DetachedPoller
+   * for async jobs once they reach a terminal state.
+   */
+  public releaseSlot(providerId: string, jobId: string) {
+    if (!this.activeJobIds.has(jobId)) return;
+    this.activeJobIds.delete(jobId);
+    this.activeJobs.set(providerId, Math.max(0, (this.activeJobs.get(providerId) || 1) - 1));
+    this.processNext(providerId);
+  }
+
+  /**
+   * Reconcile in-memory slot tracking against the database. If a tracked job
+   * no longer exists in the DB (deleted via workflow replace, project cascade,
+   * or any direct manipulation), release its slot. Without this, deleting a
+   * job mid-flight leaks the slot until restart, blocking the provider.
+   */
+  public async reconcileSlots() {
+    if (this.activeJobIds.size === 0) return;
+    const trackedIds = Array.from(this.activeJobIds.keys());
+    const dbJobs = await this.prisma.job.findMany({
+      where: { id: { in: trackedIds } },
+      select: { id: true },
+    });
+    const dbJobIds = new Set(dbJobs.map((j) => j.id));
+    let released = 0;
+    for (const [jobId, providerId] of this.activeJobIds) {
+      if (!dbJobIds.has(jobId)) {
+        console.warn(`[QueueManager] Reconciling orphaned slot: job ${jobId} no longer exists in DB. Releasing on provider ${providerId}.`);
+        this.releaseSlot(providerId, jobId);
+        released++;
+      }
+    }
+    if (released > 0) {
+      console.log(`[QueueManager] Reconciliation released ${released} orphaned slot(s).`);
+    }
+  }
+
+  /**
+   * Execute a job. Returns true if the job was handed off to detached polling
+   * (slot stays held); false if the job reached a terminal state in-line.
+   */
+  private async executeJob(queued: QueuedJob, providerRecord: any): Promise<boolean> {
     const { userId, projectId, job } = queued;
     console.log(`[QueueManager] Executing job ${job.id} for project ${projectId} using provider ${providerRecord.id}`);
 
@@ -249,19 +297,22 @@ export class QueueManager {
       // Dispatch based on project type
       if (queued.projectType === 'text') {
         await this.executeTextJob(userId, projectId, job, queued, providerRecord, apiKey);
+        return false;
       } else if (queued.projectType === 'audio') {
         await this.executeAudioJob(userId, projectId, job, queued, providerRecord, apiKey);
+        return false;
       } else if (queued.projectType === 'video') {
         const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl, apiSecret);
-        await this.executeVideoJob(userId, projectId, job, queued, videoGenerator, providerRecord);
+        return await this.executeVideoJob(userId, projectId, job, queued, videoGenerator, providerRecord);
       } else {
         const generator = buildGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl, apiSecret);
 
         // Dispatch to specific execution path based on generator capabilities
         if (generator.checkStatus) {
-          await this.executeAsyncHandoff(userId, projectId, job, queued, generator, providerRecord);
+          return await this.executeAsyncHandoff(userId, projectId, job, queued, generator, providerRecord);
         } else {
           await this.executeSyncJob(userId, projectId, job, queued, generator, providerRecord);
+          return false;
         }
       }
 
@@ -273,6 +324,7 @@ export class QueueManager {
         error: e.message || 'Unknown dispatcher error',
         taskId: null as any
       });
+      return false;
     }
   }
 
@@ -280,16 +332,16 @@ export class QueueManager {
    * [Asynchronous Pipeline] (e.g. RunningHub)
    * Only fetches TaskId and exits. Leaves the polling up to DetachedPoller.
    */
-  private async executeAsyncHandoff(userId: string, projectId: string, job: Job, queued: QueuedJob, generator: ImageGenerator, providerRecord: any) {
+  private async executeAsyncHandoff(userId: string, projectId: string, job: Job, queued: QueuedJob, generator: ImageGenerator, providerRecord: any): Promise<boolean> {
     // Pre-check Mechanism: Prevent Stale Task ID Deadlocks
     if (job.taskId) {
       try {
         console.log(`[QueueManager] Pre-checking stale taskId ${job.taskId} for Job ${job.id}`);
         const statusRes = await generator.checkStatus!(job.taskId);
-        
+
         if (statusRes.status === 'processing' || statusRes.status === 'completed') {
            console.log(`[QueueManager] Job ${job.id} task is still active on remote. Handoff to poller.`);
-           return; // Already snapshotted to processing, we're done here.
+           return true; // Already snapshotted to processing, slot stays held until poller finalizes.
         } else {
            console.log(`[QueueManager] Job ${job.id} remote task failed/expired. Clearing taskId for fresh request.`);
            job.taskId = undefined;
@@ -313,9 +365,9 @@ export class QueueManager {
     if (result.status === 'processing' && result.taskId) {
       console.log(`[QueueManager] Job ${job.id} shifted to detached polling. TaskId: ${result.taskId}`);
       await this.updateJobStatus(userId, projectId, job.id, { taskId: result.taskId });
-      return; // Handed off successfully
+      return true; // Handed off successfully
     }
-    
+
     // Fallback if an async generator synchronously completes immediately
     if (result.imageBytes) {
       await this.imageProcessor.processCompletedImage({
@@ -338,6 +390,7 @@ export class QueueManager {
           status: 'completed',
         });
       }
+      return false;
     } else {
       throw new Error('Async generator returned no taskId and no image bytes');
     }
@@ -535,7 +588,7 @@ export class QueueManager {
    * All video providers are async: generate() returns a taskId, DetachedPoller
    * later drains the operation and hands it to VideoProcessor.
    */
-  private async executeVideoJob(userId: string, projectId: string, job: Job, queued: QueuedJob, generator: VideoGenerator, providerRecord: any) {
+  private async executeVideoJob(userId: string, projectId: string, job: Job, queued: QueuedJob, generator: VideoGenerator, providerRecord: any): Promise<boolean> {
     // Pre-check stale taskId so a recovered job doesn't re-submit on top of an active remote task
     if (job.taskId) {
       try {
@@ -543,7 +596,7 @@ export class QueueManager {
         const statusRes = await generator.checkStatus(job.taskId);
         if (statusRes.status === 'processing' || statusRes.status === 'completed') {
           console.log(`[QueueManager] Video job ${job.id} task is still active on remote. Handoff to poller.`);
-          return;
+          return true; // Slot stays held until poller finalizes.
         }
         console.log(`[QueueManager] Video job ${job.id} remote task failed/expired. Clearing taskId for fresh request.`);
         job.taskId = undefined;
@@ -565,7 +618,7 @@ export class QueueManager {
     if (result.status === 'processing' && result.taskId) {
       console.log(`[QueueManager] Video job ${job.id} shifted to detached polling. TaskId: ${result.taskId}`);
       await this.updateJobStatus(userId, projectId, job.id, { taskId: result.taskId });
-      return;
+      return true; // Handed off — slot stays held until poller finalizes.
     }
 
     // Fallback if a video generator synchronously completes immediately
@@ -582,7 +635,7 @@ export class QueueManager {
         modelConfigId: job.modelConfigId,
         providerId: job.providerId,
       });
-      return;
+      return false;
     }
 
     throw new Error('Video generator returned no taskId and no video bytes');
@@ -731,6 +784,13 @@ export class QueueManager {
 
       if (job.status === 'processing' && job.taskId) {
         pollingCount++;
+        // Reserve a concurrency slot for in-flight detached jobs so the limit is
+        // enforced even after a restart. DetachedPoller will release on terminal state.
+        const recoverProviderId = job.providerId;
+        if (recoverProviderId && !this.activeJobIds.has(job.id)) {
+          this.activeJobIds.set(job.id, recoverProviderId);
+          this.activeJobs.set(recoverProviderId, (this.activeJobs.get(recoverProviderId) || 0) + 1);
+        }
       } else if (job.status === 'processing' && !job.taskId) {
         await this.updateJobStatus(userId, projectId, job.id, { status: 'pending' });
         console.log(`[QueueManager] Resetting interrupted job ${job.id} to pending.`);

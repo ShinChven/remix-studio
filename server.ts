@@ -108,6 +108,12 @@ async function startServer() {
   const audioProcessor = new AudioProcessor(projectRepository, storage, userRepository, exportStorage);
   const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor, videoProcessor);
   const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, textProcessor, videoProcessor, audioProcessor, detachedPoller);
+  // Release the QueueManager concurrency slot when DetachedPoller finalizes a job.
+  // Without this, async providers (e.g. KlingAI) would hold their slots forever.
+  detachedPoller.setOnJobFinalize((providerId, jobId) => queueManager.releaseSlot(providerId, jobId));
+  // Reconcile in-memory slot tracking against the DB after each poll cycle so
+  // out-of-band job deletions (workflow replace, project cascade) don't leak slots.
+  detachedPoller.setOnPollCycleComplete(() => queueManager.reconcileSlots());
   // Important: Recover tasks before starting the server to resume background work
   await queueManager.recoverTasks();
 
