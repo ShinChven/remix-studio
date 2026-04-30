@@ -62,6 +62,8 @@ export class LibraryRepository {
       type: lib.type as LibraryType,
       items: 'items' in lib && Array.isArray(lib.items) ? lib.items.map((item) => this.mapItem(item)) : [],
       itemCount: lib._count.items,
+      createdAt: lib.createdAt instanceof Date ? lib.createdAt.getTime() : lib.createdAt,
+      updatedAt: lib.updatedAt instanceof Date ? lib.updatedAt.getTime() : lib.updatedAt,
       pinnedAt: lib.pinnedAt ? lib.pinnedAt.toISOString() : null,
     }));
 
@@ -90,6 +92,8 @@ export class LibraryRepository {
       description: (lib as any).description ?? undefined,
       type: lib.type as LibraryType,
       items: lib.items.map((item) => this.mapItem(item)),
+      createdAt: lib.createdAt instanceof Date ? lib.createdAt.getTime() : lib.createdAt,
+      updatedAt: lib.updatedAt instanceof Date ? lib.updatedAt.getTime() : lib.updatedAt,
       pinnedAt: lib.pinnedAt ? lib.pinnedAt.toISOString() : null,
     };
   }

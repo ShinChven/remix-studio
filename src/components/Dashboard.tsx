@@ -41,7 +41,7 @@ export function Dashboard() {
       setIsLoading(true);
       try {
         const [projRes, libRes, provRes] = await Promise.all([
-          fetchProjects(1, 6, undefined, 'active'),
+          fetchProjects(1, 8, undefined, 'active'),
           fetchLibraries(1, 8),
           fetchAssistantProviders(),
         ]);
@@ -190,7 +190,7 @@ export function Dashboard() {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {projects.map(project => (
                   <ProjectCard
                     key={project.id}

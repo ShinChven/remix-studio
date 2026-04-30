@@ -34,6 +34,8 @@ export interface Library {
   type: LibraryType;
   items: LibraryItem[];
   itemCount?: number;
+  createdAt?: number;
+  updatedAt?: number;
   pinnedAt?: string | null;
 }
 

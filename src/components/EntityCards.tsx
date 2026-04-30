@@ -107,6 +107,20 @@ function formatSize(bytes: number) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
+function formatCompactDateTime(value?: number) {
+  if (!value) return '';
+  const date = new Date(value);
+  const now = new Date();
+  const sameYear = date.getFullYear() === now.getFullYear();
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 interface ProjectCardProps {
   project: Project;
   isToggling?: boolean;
@@ -125,7 +139,7 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
   return (
     <Link
       to={`/project/${project.id}`}
-      className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-5 md:p-6 rounded-2xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 ${isArchived ? 'opacity-75' : ''}`}
+      className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-5 md:p-6 rounded-2xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 ${isArchived ? 'opacity-75' : ''} flex min-h-[260px] flex-col`}
     >
       <div className="flex items-start justify-between mb-3 md:mb-4">
         <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
@@ -186,13 +200,15 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
         )}
       </div>
 
-      {project.description && (
-        <p className="mb-4 line-clamp-2 min-h-10 text-sm leading-5 text-neutral-600 dark:text-neutral-400">
+      <div className="flex-1">
+        {project.description && (
+          <p className="line-clamp-2 min-h-10 text-sm leading-5 text-neutral-600 dark:text-neutral-400">
           {project.description}
-        </p>
-      )}
+          </p>
+        )}
+      </div>
 
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 dark:text-neutral-500 mb-4">
+      <div className="mt-4 grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 dark:text-neutral-500">
         <div className="flex items-center gap-1.5">
           <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" />
           <span className="font-bold">{t('projects.projectCard.jobs', { count: (project.jobCount ?? project.jobs?.length) || 0 })}</span>
@@ -209,10 +225,6 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
           <Clock className="w-3.5 h-3.5 md:w-4 md:h-4" />
           <span className="truncate font-bold">{new Date(project.createdAt).toLocaleDateString()}</span>
         </div>
-      </div>
-
-      <div className={`pt-3 md:pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50 flex items-center justify-end text-[10px] md:text-xs font-black uppercase tracking-widest opacity-100 transition-opacity ${typeMeta.accentClassName}`}>
-        {t('projects.projectCard.openProject')}
       </div>
 
       <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
@@ -319,6 +331,12 @@ export function LibraryCard({ library, isCheckingRefs = false, onTogglePin, onSt
           <LayoutGrid className="w-3.5 h-3.5" />
           <span>{t('libraries.libraryCard.items', { count: library.itemCount ?? library.items?.length ?? 0 })}</span>
         </div>
+        {library.updatedAt && (
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" />
+            <span className="truncate">{formatCompactDateTime(library.updatedAt)}</span>
+          </div>
+        )}
       </div>
 
       <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
