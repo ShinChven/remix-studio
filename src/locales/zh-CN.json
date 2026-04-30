@@ -173,6 +173,12 @@
     "deleteLibrary": "删除库",
     "selectAll": "全选",
     "selectedCount": "已选择 {{count}} 项",
+    "sort": {
+      "timeDesc": "最新优先",
+      "timeAsc": "最早优先",
+      "nameAsc": "名称 A-Z",
+      "nameDesc": "名称 Z-A"
+    },
     "filterByTag": "按标签筛选",
     "tagsSelected": "已选择 {{count}} 个标签",
     "allFragments": "所有片段",

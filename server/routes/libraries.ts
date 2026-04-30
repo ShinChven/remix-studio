@@ -449,11 +449,13 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       const limit = parseInt(c.req.query('limit') || '25', 10);
       const q = c.req.query('q');
       const tags = c.req.queries('tag');
+      const sortBy = c.req.query('sortBy') as 'time' | 'name' || 'time';
+      const sortOrder = c.req.query('sortOrder') as 'asc' | 'desc' || 'desc';
 
       const library = await repository.getLibrary(user.userId, libId);
       if (!library) return c.json({ error: 'Not found' }, 404);
 
-      const result = await repository.getLibraryItemsPaginated(user.userId, libId, page, limit, q, tags);
+      const result = await repository.getLibraryItemsPaginated(user.userId, libId, page, limit, q, tags, sortBy, sortOrder);
       const signedItems = await signLibraryImages(result.items, storage, library.type);
 
       return c.json({
@@ -678,23 +680,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
     }
   });
 
-  router.put('/api/libraries/:libId/items/reorder', authMiddleware, async (c) => {
-    try {
-      const user = c.get('user') as JwtPayload;
-      const body = await c.req.json();
 
-      if (!Array.isArray(body)) {
-        return c.json({ error: 'Expected an array of { id, order }' }, 400);
-      }
-
-      await repository.reorderLibraryItems(user.userId, c.req.param('libId'), body);
-      return c.json({ success: true });
-    } catch (e: any) {
-      if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
-      console.error('[PUT /api/libraries/:libId/items/reorder]', e);
-      return c.json({ error: 'Failed to reorder items' }, 500);
-    }
-  });
 
   router.put('/api/libraries/:libId/items/:itemId', authMiddleware, async (c) => {
     try {

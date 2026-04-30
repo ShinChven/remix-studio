@@ -398,6 +398,12 @@
     "deleteLibrary": "刪除庫",
     "selectAll": "全選",
     "selectedCount": "已選擇 {{count}} 項",
+    "sort": {
+      "timeDesc": "最新優先",
+      "timeAsc": "最早優先",
+      "nameAsc": "名稱 A-Z",
+      "nameDesc": "名稱 Z-A"
+    },
     "filterByTag": "按標籤篩選",
     "tagsSelected": "已選擇 {{count}} 個標籤",
     "allFragments": "所有片段",

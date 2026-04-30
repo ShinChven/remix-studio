@@ -363,10 +363,20 @@ export async function removeLibraryReferences(libraryId: string, projectIds?: st
 
 // ========== Library Item CRUD ==========
 
-export async function fetchLibraryItems(libraryId: string, page: number = 1, limit: number = 25, q?: string, tags: string[] = []): Promise<PaginatedResult<LibraryItem>> {
+export async function fetchLibraryItems(
+  libraryId: string, 
+  page: number = 1, 
+  limit: number = 25, 
+  q?: string, 
+  tags: string[] = [],
+  sortBy: 'time' | 'name' = 'time',
+  sortOrder: 'asc' | 'desc' = 'desc'
+): Promise<PaginatedResult<LibraryItem>> {
   const params = new URLSearchParams();
   params.set('page', page.toString());
   params.set('limit', limit.toString());
+  params.set('sortBy', sortBy);
+  params.set('sortOrder', sortOrder);
   if (q) params.set('q', q);
   tags.forEach((tag) => params.append('tag', tag));
   const res = await apiFetch(`/api/libraries/${libraryId}/items?${params.toString()}`, { headers: getHeaders(false) });
@@ -427,17 +437,6 @@ export async function updateLibraryItem(libraryId: string, itemId: string, updat
   }
 }
 
-export async function updateLibraryItemOrders(libraryId: string, updates: { id: string; order: number }[]): Promise<void> {
-  const res = await apiFetch(`/api/libraries/${libraryId}/items/reorder`, {
-    method: 'PUT',
-    headers: getHeaders(),
-    body: JSON.stringify(updates),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Failed to reorder items');
-  }
-}
 
 export async function deleteLibraryItem(libraryId: string, itemId: string): Promise<void> {
   const res = await apiFetch(`/api/libraries/${libraryId}/items/${itemId}`, {

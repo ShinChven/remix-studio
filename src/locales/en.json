@@ -545,6 +545,12 @@
     "deleteLibrary": "Delete Library",
     "selectAll": "Select All",
     "selectedCount": "{{count}} Selected",
+    "sort": {
+      "timeDesc": "Newest First",
+      "timeAsc": "Oldest First",
+      "nameAsc": "Name A-Z",
+      "nameDesc": "Name Z-A"
+    },
     "filterByTag": "Filter by Tag",
     "tagsSelected": "{{count}} Tags Selected",
     "allFragments": "All Fragments",

@@ -3,11 +3,11 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, LibraryItem } from '../types';
-import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive, Stars } from 'lucide-react';
+import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive, Stars, Filter, ArrowDownNarrowWide, Check } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { TagModal } from './TagModal';
 import { PageHeader } from './PageHeader';
-import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary, fetchLibraryItems, imageDisplayUrl, exportMediaLibraryZip, copyLibraryItems, moveLibraryItems } from '../api';
+import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItem, duplicateLibrary, fetchLibraryItems, imageDisplayUrl, exportMediaLibraryZip, copyLibraryItems, moveLibraryItems, fetchLibraryReferences } from '../api';
 import { DuplicateLibraryDialog } from './DuplicateLibraryDialog';
 import { CopyMoveItemsDialog } from './CopyMoveItemsDialog';
 import { RenameItemModal } from './RenameItemModal';
@@ -59,8 +59,6 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [itemToRemoveIndex, setItemToRemoveIndex] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState(searchTerm);
   const [uploading, setUploading] = useState(false);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
@@ -112,11 +110,32 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     });
   }, [setSearchParams]);
 
+  const sortBy = (searchParams.get('sortBy') as 'time' | 'name') || 'time';
+  const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+
+  const setSort = useCallback((newSortBy: 'time' | 'name', newSortOrder: 'asc' | 'desc') => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('sortBy', newSortBy);
+      next.set('sortOrder', newSortOrder);
+      next.set('page', '1');
+      return next;
+    });
+  }, [setSearchParams]);
+
   // Fetch items from server when page/search/library changes
   const loadItems = useCallback(async () => {
     setLoadingItems(true);
     try {
-      const result = await fetchLibraryItems(library.id, currentPage, ITEMS_PER_PAGE, searchTerm || undefined, selectedFilterTags);
+      const result = await fetchLibraryItems(
+        library.id, 
+        currentPage, 
+        ITEMS_PER_PAGE, 
+        searchTerm || undefined, 
+        selectedFilterTags,
+        sortBy,
+        sortOrder
+      );
       setItems(result.items);
       setTotalItems(result.total);
       setTotalPages(result.pages);
@@ -125,7 +144,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     } finally {
       setLoadingItems(false);
     }
-  }, [library.id, currentPage, searchTerm, selectedTagsKey]);
+  }, [library.id, currentPage, searchTerm, selectedTagsKey, sortBy, sortOrder]);
 
   useEffect(() => {
     loadItems();
@@ -305,47 +324,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragEnter = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
-    setDragOverIndex(index);
-  };
-
-  const handleDragEnd = async () => {
-    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
-      const reordered = [...items];
-      const draggedItem = reordered[draggedIndex];
-      reordered.splice(draggedIndex, 1);
-      reordered.splice(dragOverIndex, 0, draggedItem);
-
-      // Optimistic update for immediate visual feedback
-      setItems(reordered);
-
-      const pageOffset = (currentPage - 1) * ITEMS_PER_PAGE;
-      const updates = reordered.map((item, idx) => ({ id: item.id, order: pageOffset + idx }));
-      try {
-        await updateLibraryItemOrders(library.id, updates);
-      } catch (err) {
-        console.error('Failed to save updated order', err);
-        await loadItems();
-      }
-    }
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
-
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
 
     setUploading(true);
     try {
-      for (const file of files) {
+      const filesToUpload = [...files].reverse();
+      for (const file of filesToUpload) {
         const base64 = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onload = (ev) => resolve(ev.target?.result as string);
@@ -638,6 +624,25 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   </div>
                 )}
               </div>
+
+              <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800 mx-1 hidden sm:block" />
+
+              <div className="flex items-center gap-1.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-1">
+                <select
+                  value={`${sortBy}-${sortOrder}`}
+                  onChange={(e) => {
+                    const [newSortBy, newSortOrder] = e.target.value.split('-') as [any, any];
+                    setSort(newSortBy, newSortOrder);
+                  }}
+                  className="bg-transparent text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-400 focus:outline-none px-2 py-0.5 cursor-pointer appearance-none"
+                >
+                  <option value="time-desc">{t('libraryEditor.sort.timeDesc')}</option>
+                  <option value="time-asc">{t('libraryEditor.sort.timeAsc')}</option>
+                  <option value="name-asc">{t('libraryEditor.sort.nameAsc')}</option>
+                  <option value="name-desc">{t('libraryEditor.sort.nameDesc')}</option>
+                </select>
+                <ArrowDownNarrowWide className="w-3.5 h-3.5 text-neutral-400" />
+              </div>
             </div>
 
             {selectedItemIds.size > 0 && (
@@ -700,13 +705,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             return (
             <div
               key={item.id}
-              className={`group relative flex flex-col transition-all duration-300 ${draggedIndex === index ? 'opacity-50' : ''} ${dragOverIndex === index ? 'ring-2 ring-blue-500 rounded-xl scale-105 z-10' : ''}`}
-              draggable={library.type === 'image' && !hasActiveItemFilters}
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnter={(e) => handleDragEnter(e, index)}
-              onDragOver={(e) => e.preventDefault()}
-              onDragEnd={handleDragEnd}
-              onDrop={(e) => e.preventDefault()}
+              className={`group relative flex flex-col transition-all duration-300`}
             >
                 <div className={`
                   group/item flex flex-col transition-all duration-300 border overflow-hidden

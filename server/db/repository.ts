@@ -13,12 +13,11 @@ export interface IRepository {
   // === Library Item CRUD ===
   getLibraryItems(userId: string, libraryId: string): Promise<LibraryItem[]>;
   getLibraryItemsByIds(userId: string, libraryId: string, itemIds: string[]): Promise<LibraryItem[]>;
-  getLibraryItemsPaginated(userId: string, libraryId: string, page?: number, limit?: number, q?: string, tags?: string[]): Promise<{ items: LibraryItem[], total: number, page: number, pages: number }>;
+  getLibraryItemsPaginated(userId: string, libraryId: string, page?: number, limit?: number, q?: string, tags?: string[], sortBy?: 'time' | 'name', sortOrder?: 'asc' | 'desc'): Promise<{ items: LibraryItem[], total: number, page: number, pages: number }>;
   createLibraryItem(userId: string, libraryId: string, item: LibraryItem): Promise<void>;
   createLibraryItemsBatch(userId: string, libraryId: string, items: LibraryItem[]): Promise<void>;
   updateLibraryItem(userId: string, libraryId: string, itemId: string, updates: Partial<LibraryItem>): Promise<void>;
   deleteLibraryItem(userId: string, libraryId: string, itemId: string): Promise<void>;
-  reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]): Promise<void>;
 
   // === Library Search ===
   searchLibraryItems(userId: string, query?: string, options?: { libraryId?: string; tags?: string[]; page?: number; limit?: number }): Promise<{ items: (LibraryItem & { libraryId: string; libraryName: string; libraryDescription?: string })[]; total: number; page: number; pages: number }>;

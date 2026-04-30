@@ -157,7 +157,7 @@ export class LibraryRepository {
     return items.map((item) => this.mapItem(item));
   }
 
-  async getLibraryItemsPaginated(userId: string, libraryId: string, page: number = 1, limit: number = 25, q?: string, tags?: string[]): Promise<{ items: LibraryItem[], total: number, page: number, pages: number }> {
+  async getLibraryItemsPaginated(userId: string, libraryId: string, page: number = 1, limit: number = 25, q?: string, tags?: string[], sortBy: 'time' | 'name' = 'time', sortOrder: 'asc' | 'desc' = 'desc'): Promise<{ items: LibraryItem[], total: number, page: number, pages: number }> {
     const lib = await this.prisma.library.findFirst({ where: { id: libraryId, userId } });
     if (!lib) return { items: [], total: 0, page, pages: 1 };
 
@@ -188,13 +188,20 @@ export class LibraryRepository {
       where.AND = andClauses;
     }
 
+    let orderByClause: any[] = [];
+    if (sortBy === 'name') {
+      orderByClause = [{ title: sortOrder }, { createdAt: 'desc' }, { id: 'asc' }];
+    } else {
+      orderByClause = [{ createdAt: sortOrder }, { id: 'asc' }];
+    }
+
     const [total, items] = await Promise.all([
       this.prisma.libraryItem.count({ where }),
       (this.prisma.libraryItem.findMany as any)({
         where,
         skip,
         take: limit,
-        orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }],
+        orderBy: orderByClause,
       }),
     ]);
 
@@ -216,7 +223,6 @@ export class LibraryRepository {
         content: item.content,
         title: item.title ?? null,
         tags: item.tags ?? [],
-        order: item.order ?? null,
         thumbnailUrl: item.thumbnailUrl ?? null,
         optimizedUrl: item.optimizedUrl ?? null,
         size: item.size != null ? BigInt(item.size) : null,
@@ -227,6 +233,8 @@ export class LibraryRepository {
   async createLibraryItemsBatch(userId: string, libraryId: string, items: LibraryItem[]): Promise<void> {
     await this.assertOwnedLibrary(userId, libraryId);
 
+    if (items.length === 0) return;
+
     await this.prisma.libraryItem.createMany({
       data: items.map((item) => ({
         id: item.id,
@@ -234,7 +242,6 @@ export class LibraryRepository {
         content: item.content,
         title: item.title ?? null,
         tags: item.tags ?? [],
-        order: item.order ?? null,
         thumbnailUrl: item.thumbnailUrl ?? null,
         optimizedUrl: item.optimizedUrl ?? null,
         size: item.size != null ? BigInt(item.size) : null,
@@ -284,36 +291,7 @@ export class LibraryRepository {
     }
   }
 
-  async reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]): Promise<void> {
-    await this.assertOwnedLibrary(userId, libraryId);
 
-    const itemIds = [...new Set(updates.map((item) => item.id))];
-    const existing = await this.prisma.libraryItem.findMany({
-      where: {
-        id: { in: itemIds },
-        libraryId,
-        library: { userId },
-      },
-      select: { id: true },
-    });
-
-    if (existing.length !== itemIds.length) {
-      throw new Error('Library item not found');
-    }
-
-    await Promise.all(
-      updates.map((u) =>
-        this.prisma.libraryItem.updateMany({
-          where: {
-            id: u.id,
-            libraryId,
-            library: { userId },
-          },
-          data: { order: u.order },
-        })
-      )
-    );
-  }
 
   async searchLibraryItems(
     userId: string,
