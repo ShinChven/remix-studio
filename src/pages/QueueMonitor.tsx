@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, Clock, Layers3, Loader2, RefreshCw, Rows3, Server, Timer } from 'lucide-react';
+import { Activity, AlertCircle, ChevronDown, Clock, Layers3, Loader2, RefreshCw, Rows3, Server, Timer, Video } from 'lucide-react';
 import { fetchQueueStatus } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { InfoChip } from '../components/ProjectViewer/InfoChip';
@@ -54,32 +54,85 @@ function Metric({ label, value, tone = 'neutral' }: { label: string; value: numb
 
 function JobRow({ job, showProject = false, showProvider = false }: { job: QueueMonitorJob; showProject?: boolean; showProvider?: boolean }) {
   const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="grid grid-cols-1 gap-3 border-t border-neutral-200/60 dark:border-neutral-800/60 px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <InfoChip className={jobStateClass(job)}>
-            {(job.queueState === 'running' || job.queueState === 'detached') && <Loader2 className="h-2.5 w-2.5 animate-spin" />}
-            {jobStateLabel(job, t)}
-          </InfoChip>
-          {showProject && (
-            <Link to={`/project/${job.projectId}`} className="text-xs font-semibold text-neutral-800 hover:text-blue-600 dark:text-neutral-200 dark:hover:text-blue-400">
-              {job.projectName}
-            </Link>
-          )}
-          {showProvider && job.providerName && (
-            <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{job.providerName}</span>
-          )}
-          {job.modelName && <InfoChip className="text-neutral-500 dark:text-neutral-500">{job.modelName}</InfoChip>}
-          {job.taskId && <InfoChip className="text-violet-500">{t('queueMonitor.taskShort')} {job.taskId.slice(0, 8)}</InfoChip>}
+    <div 
+      className={`group border-t border-neutral-200/60 dark:border-neutral-800/60 px-4 py-3 transition-colors hover:bg-neutral-50/50 dark:hover:bg-white/5 cursor-pointer ${isExpanded ? 'bg-neutral-50/50 dark:bg-white/5' : ''}`}
+      onClick={() => setIsExpanded(!isExpanded)}
+    >
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
+        <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+          <ChevronDown className="h-4 w-4 text-neutral-400" />
         </div>
-        <p className="mt-2 truncate text-sm text-neutral-700 dark:text-neutral-300" title={job.prompt}>{job.prompt}</p>
-        {job.error && <p className="mt-1 truncate text-xs text-red-500" title={job.error}>{job.error}</p>}
-      </div>
-      <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-500">
-        <Clock className="h-3.5 w-3.5" />
-        {formatTime(job.createdAt, t)}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <InfoChip className={jobStateClass(job)}>
+              {(job.queueState === 'running' || job.queueState === 'detached') && <Loader2 className="h-2.5 w-2.5 animate-spin" />}
+              {jobStateLabel(job, t)}
+            </InfoChip>
+            {showProject && (
+              <Link 
+                to={`/project/${job.projectId}`} 
+                className="text-xs font-semibold text-neutral-800 hover:text-blue-600 dark:text-neutral-200 dark:hover:text-blue-400"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {job.projectName}
+              </Link>
+            )}
+            {showProvider && job.providerName && (
+              <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{job.providerName}</span>
+            )}
+            {job.modelName && <InfoChip className="text-neutral-500 dark:text-neutral-500">{job.modelName}</InfoChip>}
+            {job.taskId && <InfoChip className="text-violet-500">{t('queueMonitor.taskShort')} {job.taskId.slice(0, 8)}</InfoChip>}
+          </div>
+          <p className={`mt-2 text-sm text-neutral-700 dark:text-neutral-300 ${isExpanded ? 'whitespace-pre-wrap' : 'truncate'}`} title={isExpanded ? undefined : job.prompt}>
+            {job.prompt}
+          </p>
+          {isExpanded && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {job.aspectRatio && (
+                <InfoChip className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                  {job.aspectRatio}
+                </InfoChip>
+              )}
+              {job.quality && (
+                <InfoChip className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                  {job.quality}
+                </InfoChip>
+              )}
+              {job.format && (
+                <InfoChip className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                  {job.format.toUpperCase()}
+                </InfoChip>
+              )}
+              {job.resolution && (
+                <InfoChip className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                  {job.resolution}
+                </InfoChip>
+              )}
+              {job.duration !== undefined && (
+                <InfoChip className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                  {job.duration}s
+                </InfoChip>
+              )}
+              {job.sound && (
+                <InfoChip className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                  Sound: {job.sound}
+                </InfoChip>
+              )}
+            </div>
+          )}
+          {job.error && (
+            <p className={`mt-1 text-xs text-red-500 ${isExpanded ? 'whitespace-pre-wrap break-all' : 'truncate'}`} title={isExpanded ? undefined : job.error}>
+              {job.error}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-500">
+          <Clock className="h-3.5 w-3.5" />
+          {formatTime(job.createdAt, t)}
+        </div>
       </div>
     </div>
   );

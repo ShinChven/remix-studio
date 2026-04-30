@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Sparkles,
   Trash2,
+  Unplug,
   Wrench,
   X,
 } from 'lucide-react';
@@ -38,10 +39,11 @@ import {
   resolveEnabledAssistantProviderIds,
   setStoredEnabledAssistantProviderIds,
 } from '../lib/assistant-provider-settings';
+import { McpConnections } from './McpConnections';
 import type { Library, LibraryItem, Provider } from '../types';
 import { getTextModelsForProvider } from '../types';
 
-type AssistantSettingsTab = 'providers' | 'skills' | 'tools';
+type AssistantSettingsTab = 'providers' | 'skills' | 'tools' | 'mcp';
 
 type SkillEditorState = {
   mode: 'create' | 'edit';
@@ -53,7 +55,7 @@ const PROVIDER_STORAGE_KEY = 'assistant_last_provider';
 const SKILLS_PAGE_SIZE = 8;
 
 function isAssistantSettingsTab(value: string | null): value is AssistantSettingsTab {
-  return value === 'providers' || value === 'skills' || value === 'tools';
+  return value === 'providers' || value === 'skills' || value === 'tools' || value === 'mcp';
 }
 
 function getStoredValue(key: string) {
@@ -463,7 +465,7 @@ export function AssistantSettingsPage() {
           />
 
           <div className="rounded-3xl border border-neutral-200/50 bg-white/40 p-3 backdrop-blur-3xl dark:border-white/5 dark:bg-neutral-900/40">
-            <div className="grid gap-2 md:grid-cols-3">
+            <div className="grid gap-2 md:grid-cols-4">
               {[
                 {
                   id: 'providers' as const,
@@ -479,6 +481,11 @@ export function AssistantSettingsPage() {
                   id: 'tools' as const,
                   label: t('assistant.toolsTab', { defaultValue: 'Tools' }),
                   icon: Wrench,
+                },
+                {
+                  id: 'mcp' as const,
+                  label: t('assistant.mcpTab', { defaultValue: 'MCP' }),
+                  icon: Unplug,
                 },
               ].map((tab) => {
                 const Icon = tab.icon;
@@ -984,6 +991,8 @@ export function AssistantSettingsPage() {
               </div>
             </section>
           )}
+
+          {activeTab === 'mcp' && <McpConnections embedded />}
         </div>
 
         {editorState && (

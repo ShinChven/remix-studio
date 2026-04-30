@@ -219,6 +219,12 @@ export class QueueManager {
         createdAt: row.createdAt.getTime(),
         taskId: row.taskId ?? undefined,
         error: row.error ?? undefined,
+        aspectRatio: row.aspectRatio ?? undefined,
+        quality: row.quality ?? undefined,
+        format: row.format ?? undefined,
+        duration: row.duration ?? undefined,
+        resolution: row.resolution ?? undefined,
+        sound: row.sound ?? undefined,
       };
     };
 

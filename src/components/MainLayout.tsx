@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Activity, Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Unplug, Sparkles, Sun, Moon, Monitor } from 'lucide-react';
+import { Activity, Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
@@ -104,7 +104,7 @@ export function MainLayout() {
 
   const location = useLocation();
   const { user } = useAuth();
-  const isAccountActive = location.pathname === '/account' || (location.pathname.startsWith('/account/') && location.pathname !== '/account/mcp');
+  const isAccountActive = location.pathname === '/account' || location.pathname.startsWith('/account/');
 
   useEffect(() => {
     if (!user) {
@@ -255,15 +255,6 @@ export function MainLayout() {
             icon={<Key className="w-5 h-5 flex-shrink-0" />}
             label={t('sidebar.providers')}
             isActive={location.pathname === '/providers' || location.pathname.startsWith('/provider/')}
-            isCollapsed={isCollapsed}
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-
-          <NavItem
-            to="/account/mcp"
-            icon={<Unplug className="w-5 h-5 flex-shrink-0" />}
-            label={t('sidebar.mcp')}
-            isActive={location.pathname === '/account/mcp'}
             isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
           />

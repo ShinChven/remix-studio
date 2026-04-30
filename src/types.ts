@@ -1369,6 +1369,13 @@ export interface QueueMonitorJob {
   createdAt: number;
   taskId?: string;
   error?: string;
+  // Generation options
+  aspectRatio?: string;
+  quality?: string;
+  format?: string;
+  duration?: number;
+  resolution?: string;
+  sound?: string;
 }
 
 export interface QueueMonitorProject {

@@ -6,7 +6,11 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
 
-export function McpConnections() {
+type McpConnectionsProps = {
+  embedded?: boolean;
+};
+
+export function McpConnections({ embedded = false }: McpConnectionsProps) {
   const { t } = useTranslation();
 
   const formatDate = useCallback((ts: number) => {
@@ -257,12 +261,14 @@ export function McpConnections() {
   };
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
+    <div className={embedded ? 'w-full' : 'h-full flex flex-col p-4 md:p-8 overflow-y-auto'}>
       <div className="w-full space-y-8 md:space-y-12">
-        <PageHeader
-          title={t('mcpConnections.title')}
-          description={t('mcpConnections.description')}
-        />
+        {!embedded && (
+          <PageHeader
+            title={t('mcpConnections.title')}
+            description={t('mcpConnections.description')}
+          />
+        )}
 
         <section className="rounded-xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl overflow-hidden relative group shadow-sm">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-amber-500/5 opacity-50" />

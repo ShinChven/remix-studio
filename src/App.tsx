@@ -32,7 +32,6 @@ import { ProjectOrphans } from './pages/ProjectOrphans.tsx';
 import { Exports } from './pages/Exports.tsx';
 import { Account } from './pages/Account.tsx';
 import { AccountTwoFactorSetup } from './pages/AccountTwoFactorSetup.tsx';
-import { McpConnections } from './pages/McpConnections.tsx';
 import { AssistantPage } from './pages/AssistantPage.tsx';
 import { AssistantSettingsPage } from './pages/AssistantSettingsPage.tsx';
 import { ChatHistoryPage } from './pages/ChatHistoryPage.tsx';
@@ -84,7 +83,7 @@ export default function App() {
               <Route path="storage" element={<Navigate to="/account?tab=storage" replace />} />
               <Route path="account" element={<Account />} />
               <Route path="account/security/2fa" element={<AccountTwoFactorSetup />} />
-              <Route path="account/mcp" element={<McpConnections />} />
+              <Route path="account/mcp" element={<Navigate to="/assistant/settings?tab=mcp" replace />} />
               <Route path="assistant" element={<AssistantPage />} />
               <Route path="assistant/history" element={<ChatHistoryPage />} />
               <Route path="assistant/settings" element={<AssistantSettingsPage />} />
