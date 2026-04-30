@@ -48,6 +48,9 @@ export async function listProviderModels(
     case 'Grok':
       result = await listGrokModels(apiKey, apiUrl);
       break;
+    case 'Alibabacloud':
+      result = await listAlibabacloudModels(apiKey, apiUrl);
+      break;
     case 'RunningHub':
     case 'KlingAI':
     case 'BytePlus':
@@ -294,5 +297,48 @@ function categorizeGrokModel(id: string): 'text' | 'image' | 'video' | 'audio' {
   const lower = id.toLowerCase();
   if (lower.includes('imagine-image') || lower.includes('aurora')) return 'image';
   if (lower.includes('imagine-video') || lower.includes('video')) return 'video';
+  return 'text';
+}
+
+// ---------------------------------------------------------------------------
+// Alibabacloud (DashScope) — OpenAI-compatible API
+// ---------------------------------------------------------------------------
+
+async function listAlibabacloudModels(
+  apiKey: string,
+  apiUrl?: string | null,
+): Promise<ProviderModelsResult> {
+  const base = (apiUrl || 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1').replace(/\/$/, '');
+
+  try {
+    const res = await fetch(`${base}/models`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      return { models: [], error: `HTTP ${res.status}: ${text}` };
+    }
+    const data: any = await res.json();
+    const models: ProviderModel[] = (data.data || []).map((m: any) => ({
+      id: m.id,
+      name: m.id,
+      description: '',
+      category: categorizeAlibabacloudModel(m.id),
+    }));
+    models.sort((a, b) => a.id.localeCompare(b.id));
+    return { models };
+  } catch (e: any) {
+    return { models: [], error: e.message };
+  }
+}
+
+function categorizeAlibabacloudModel(id: string): 'text' | 'image' | 'video' | 'audio' {
+  const lower = id.toLowerCase();
+  if (lower.includes('image') || lower.includes('wanx')) return 'image';
+  if (lower.includes('video') || lower.includes('wanvideo')) return 'video';
+  if (lower.includes('audio') || lower.includes('tts') || lower.includes('paraformer') || lower.includes('sambert')) return 'audio';
   return 'text';
 }

@@ -45,6 +45,8 @@ export function buildGenerator(
       return new BlackForestLabsGenerator(apiKey, safeApiUrl);
     case 'Claude':
       throw new Error(`Provider type 'Claude' does not support image generation`);
+    case 'Alibabacloud':
+      throw new Error(`Provider type 'Alibabacloud' does not support image generation`);
     default: {
       // Exhaustiveness check — TypeScript will error here if a new ProviderType is added
       const _never: never = type;

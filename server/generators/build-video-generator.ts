@@ -42,6 +42,8 @@ export function buildVideoGenerator(
       return new ReplicateVideoGenerator(apiKey, safeApiUrl);
     case 'BlackForestLabs':
       throw new Error(`Provider type 'BlackForestLabs' does not support video generation`);
+    case 'Alibabacloud':
+      throw new Error(`Provider type 'Alibabacloud' does not support video generation`);
     default:
       throw new Error(`Unknown provider type: ${type}`);
   }

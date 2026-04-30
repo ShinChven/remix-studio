@@ -7,7 +7,7 @@ import crypto from 'crypto';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 import { listProviderModels } from '../services/provider-model-lister';
 
-const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'KlingAI', 'OpenAI', 'Grok', 'Claude', 'BytePlus', 'Replicate', 'BlackForestLabs'];
+const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'KlingAI', 'OpenAI', 'Grok', 'Claude', 'BytePlus', 'Replicate', 'BlackForestLabs', 'Alibabacloud'];
 type Variables = { user: JwtPayload };
 
 function parseCustomModels(raw: unknown, providerType: ProviderType): CustomModelAlias[] | undefined {

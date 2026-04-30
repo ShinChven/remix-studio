@@ -19,6 +19,7 @@ const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
   BytePlus:   { icon: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-500', badge: 'bg-cyan-600/10 text-cyan-700 dark:text-cyan-400 border-cyan-600/20 dark:border-cyan-600/30' },
   Replicate:  { icon: 'bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400', badge: 'bg-fuchsia-600/10 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-600/20 dark:border-fuchsia-600/30' },
   BlackForestLabs: { icon: 'bg-stone-500/10 text-stone-800 dark:text-stone-200', badge: 'bg-stone-600/10 text-stone-800 dark:text-stone-200 border-stone-600/20 dark:border-stone-600/30' },
+  Alibabacloud: { icon: 'bg-violet-500/10 text-violet-600 dark:text-violet-400', badge: 'bg-violet-600/10 text-violet-700 dark:text-violet-400 border-violet-600/20 dark:border-violet-600/30' },
 };
 
 export function Providers() {

@@ -1020,6 +1020,68 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  Alibabacloud: [
+    {
+      id: 'alibabacloud-qwen3.6-max-text',
+      name: 'Qwen3.6 Max',
+      generatorId: 'Alibabacloud',
+      modelId: 'qwen3.6-max',
+      category: 'text',
+      promptLimit: { value: 256000, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
+      },
+    },
+    {
+      id: 'alibabacloud-qwen3.6-plus-text',
+      name: 'Qwen3.6 Plus',
+      generatorId: 'Alibabacloud',
+      modelId: 'qwen3.6-plus',
+      category: 'text',
+      promptLimit: { value: 131072, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
+      },
+    },
+    {
+      id: 'alibabacloud-qwen3.6-flash-text',
+      name: 'Qwen3.6 Flash',
+      generatorId: 'Alibabacloud',
+      modelId: 'qwen3.6-flash',
+      category: 'text',
+      promptLimit: { value: 131072, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
+      },
+    },
+    {
+      id: 'alibabacloud-qwen3.6-vl-max-text',
+      name: 'Qwen3.6 VL Max',
+      generatorId: 'Alibabacloud',
+      modelId: 'qwen3.6-vl-max',
+      category: 'text',
+      promptLimit: { value: 131072, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384],
+      },
+    },
+    {
+      id: 'alibabacloud-qwen3.6-vl-plus-text',
+      name: 'Qwen3.6 VL Plus',
+      generatorId: 'Alibabacloud',
+      modelId: 'qwen3.6-vl-plus',
+      category: 'text',
+      promptLimit: { value: 131072, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384],
+      },
+    },
+  ],
   BlackForestLabs: [
     {
       id: 'bfl-flux-2-max',
@@ -1239,7 +1301,7 @@ export interface Project {
   lastQueueCount?: number;
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud';
 
 /**
  * A custom model variant that inherits all options from a built-in base model

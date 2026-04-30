@@ -3,6 +3,7 @@ import { ChatProvider } from './providers/types';
 import { OpenAIChatProvider } from './providers/openai';
 import { ClaudeChatProvider } from './providers/anthropic';
 import { GoogleAIChatProvider } from './providers/google';
+import { AlibabacloudChatProvider } from './providers/alibabacloud';
 import type { ProviderRepository } from '../db/provider-repository';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
@@ -10,6 +11,7 @@ export const ASSISTANT_SUPPORTED_PROVIDER_TYPES: ProviderType[] = [
   'OpenAI',
   'Claude',
   'GoogleAI',
+  'Alibabacloud',
 ];
 
 export function isAssistantCapableProviderType(type: ProviderType): boolean {
@@ -25,6 +27,8 @@ export function buildChatProvider(type: ProviderType, apiKey: string, apiUrl?: s
       return new ClaudeChatProvider(apiKey, safeApiUrl);
     case 'GoogleAI':
       return new GoogleAIChatProvider(apiKey, safeApiUrl);
+    case 'Alibabacloud':
+      return new AlibabacloudChatProvider(apiKey, safeApiUrl);
     default:
       throw new Error(`Provider type '${type}' is not supported by the assistant chat runtime`);
   }

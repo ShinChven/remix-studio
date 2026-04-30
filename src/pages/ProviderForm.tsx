@@ -6,7 +6,7 @@ import { ProviderType, PROVIDER_MODELS_MAP } from '../types';
 import { Save, Eye, EyeOff, Loader2, MessageSquare, Image as ImageIcon, Video, Music, Plus, Minus } from 'lucide-react';
 import { ProviderIcon } from '../components/ProviderIcon';
 
-const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs'];
+const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'Alibabacloud', 'RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs'];
 
 
 

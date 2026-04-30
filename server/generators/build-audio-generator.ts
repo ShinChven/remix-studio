@@ -24,6 +24,7 @@ export function buildAudioGenerator(
     case 'BytePlus':
     case 'Replicate':
     case 'BlackForestLabs':
+    case 'Alibabacloud':
       throw new Error(`Provider type '${type}' does not support audio generation`);
     default:
       throw new Error(`Provider type '${type}' does not support audio generation`);

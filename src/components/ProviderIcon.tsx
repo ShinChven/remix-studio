@@ -6,7 +6,8 @@ import {
   SiOpenai, 
   SiAnthropic, 
   SiX, 
-  SiBytedance 
+  SiBytedance,
+  SiAlibabacloud
 } from 'react-icons/si';
 
 interface ProviderIconProps {
@@ -53,6 +54,8 @@ export function ProviderIcon({ type, className = "w-5 h-5" }: ProviderIconProps)
           <path d="M12 2 3 7v10l9 5 9-5V7l-9-5Zm0 2.3 6.5 3.6-6.5 3.6-6.5-3.6L12 4.3ZM5 9.4l6 3.3v7.7l-6-3.3V9.4Zm14 0v7.7l-6 3.3v-7.7l6-3.3Z" />
         </svg>
       );
+    case 'Alibabacloud':
+      return <SiAlibabacloud className={className} />;
     default:
       // Fallback key icon
       return (
