@@ -44,6 +44,11 @@ export function ProjectPreviewModal({
             </div>
             <div>
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">{project.name}</h3>
+              {project.description && (
+                <p className="mt-1 max-w-2xl text-xs leading-5 text-neutral-600 dark:text-neutral-400 line-clamp-2">
+                  {project.description}
+                </p>
+              )}
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest bg-white/5 dark:bg-black/20 border border-neutral-200/50 dark:border-white/5 px-2 py-0.5 rounded leading-none backdrop-blur-md">
                   ID: {project.id}

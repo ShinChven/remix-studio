@@ -1,0 +1,3 @@
+-- No-op repair migration.
+-- The Job.filename column exists in the initial schema migration; this folder was
+-- present without a migration.sql file, which prevents prisma migrate deploy.

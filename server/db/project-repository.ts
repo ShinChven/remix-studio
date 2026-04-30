@@ -31,6 +31,7 @@ export class ProjectRepository {
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
         { id: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
       ];
     }
 
@@ -83,6 +84,7 @@ export class ProjectRepository {
     const mappedProjects = projects.map((p) => ({
       id: p.id,
       name: p.name,
+      description: (p as any).description ?? undefined,
       type: (p as any).type ?? 'image',
       status: ((p as any).status ?? 'active') as ProjectStatus,
       createdAt: p.createdAt.getTime(),
@@ -124,6 +126,7 @@ export class ProjectRepository {
     return {
       id: p.id,
       name: p.name,
+      description: (p as any).description ?? undefined,
       type: (p as any).type ?? 'image',
       status: ((p as any).status ?? 'active') as ProjectStatus,
       createdAt: p.createdAt.getTime(),
@@ -154,6 +157,7 @@ export class ProjectRepository {
         id: project.id,
         userId,
         name: project.name,
+        description: project.description ?? null,
         type: project.type ?? 'image',
         status: project.status ?? 'active',
         createdAt: project.createdAt ? new Date(project.createdAt) : new Date(),
@@ -184,6 +188,7 @@ export class ProjectRepository {
 
     const data: any = {};
     if (updates.name !== undefined) data.name = updates.name;
+    if (updates.description !== undefined) data.description = updates.description ?? null;
     if (updates.status !== undefined) data.status = updates.status;
     if (updates.providerId !== undefined) data.providerId = updates.providerId ?? null;
     if (updates.aspectRatio !== undefined) data.aspectRatio = updates.aspectRatio ?? null;

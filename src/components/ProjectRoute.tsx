@@ -74,6 +74,7 @@ export function ProjectRoute() {
     try {
       await apiUpdateProject(project.id, {
         name: updatedProject.name,
+        description: updatedProject.description,
         status: updatedProject.status,
         workflow: updatedProject.workflow,
         providerId: updatedProject.providerId,

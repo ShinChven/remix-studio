@@ -148,19 +148,21 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'create_library',
     title: 'Create Library',
-    description: 'Create a new library of a specific type (text, image, audio, video).',
+    description: 'Create a new library of a specific type (text, image, audio, video). Description is optional and should explain what the library contains or when to use it.',
     inputSchema: {
       name: z.string().min(1).max(256).describe('Library name'),
+      description: z.string().max(2000).optional().describe('Optional library description explaining what it contains or how it should be used'),
       type: z.enum(['text', 'image', 'audio', 'video']).default('text').describe('Library type (default "text")'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     category: 'mutate',
     handler: async (userId, input) => {
-      const { name, type } = input as { name: string; type: 'text' | 'image' | 'audio' | 'video' };
+      const { name, description, type } = input as { name: string; description?: string; type: 'text' | 'image' | 'audio' | 'video' };
       const id = crypto.randomUUID();
-      await repository.createLibrary(userId, { id, name, type });
+      const nextDescription = description?.trim() || undefined;
+      await repository.createLibrary(userId, { id, name, description: nextDescription, type });
       return {
-        text: JSON.stringify({ id, name, type, message: 'Library created successfully' }),
+        text: JSON.stringify({ id, name, description: nextDescription ?? null, type, message: 'Library created successfully' }),
       };
     },
   });
@@ -169,32 +171,39 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'update_library',
     title: 'Update Library',
-    description: 'Rename an existing library. Only the library name can be updated with this tool.',
+    description: 'Update an existing library name and/or description. Only provided fields are changed.',
     inputSchema: {
-      library_id: z.string().describe('The library ID to rename'),
-      name: z.string().min(1).max(256).describe('New library name'),
+      library_id: z.string().describe('The library ID to update'),
+      name: z.string().min(1).max(256).optional().describe('New library name'),
+      description: z.string().max(2000).optional().describe('New library description. Pass an empty string to clear it.'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     category: 'mutate',
     handler: async (userId, input) => {
-      const { library_id, name } = input as { library_id: string; name: string };
-      const nextName = name.trim();
-      if (!nextName) {
-        return { text: JSON.stringify({ error: 'Library name is required.' }), isError: true };
-      }
+      const { library_id, name, description } = input as { library_id: string; name?: string; description?: string };
+      const nextName = name?.trim();
+      const hasDescription = description !== undefined;
 
       const library = await repository.getLibrary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
+      if (!nextName && !hasDescription) {
+        return { text: JSON.stringify({ error: 'No fields to update. Provide name and/or description.' }), isError: true };
+      }
 
-      await repository.updateLibrary(userId, library_id, { name: nextName });
+      await repository.updateLibrary(userId, library_id, {
+        ...(nextName ? { name: nextName } : {}),
+        ...(hasDescription ? { description: description.trim() || null } : {}),
+      });
       return {
         text: JSON.stringify({
           library_id,
-          name: nextName,
+          name: nextName ?? library.name,
+          description: hasDescription ? (description.trim() || null) : (library.description ?? null),
           previousName: library.name,
-          message: 'Library renamed successfully.',
+          previousDescription: library.description ?? null,
+          message: 'Library updated successfully.',
         }),
       };
     },
@@ -419,6 +428,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
           id: item.id,
           libraryId: item.libraryId,
           libraryName: item.libraryName,
+          libraryDescription: item.libraryDescription ?? null,
           content: preview.text,
           contentTruncated: preview.truncated,
           contentLength: preview.originalLength,
@@ -479,7 +489,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'list_albums',
     title: 'List Albums',
-    description: 'List project albums for the authenticated user, with album item count and total album size per project. Defaults to active projects only — pass status="archived" or "all" to include archived.',
+    description: 'List project albums for the authenticated user, with project descriptions, album item count, and total album size per project. Defaults to active projects only — pass status="archived" or "all" to include archived.',
     inputSchema: {
       status: z.enum(['active', 'archived', 'all']).default('active').describe('Project status filter (default "active")'),
       page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
@@ -502,6 +512,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         return {
           projectId: project.id,
           projectName: project.name,
+          projectDescription: project.description ?? null,
           projectStatus: project.status,
           itemCount: stats.itemCount,
           totalSize: stats.totalSize,
@@ -689,7 +700,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'list_libraries',
     title: 'List Libraries',
-    description: 'List libraries (text, image, audio, video) for the authenticated user. Returns library id, name, type, and item count. Use the library id as libraryId when composing workflow items of type *_from_library or *_library.',
+    description: 'List libraries (text, image, audio, video) for the authenticated user. Returns library id, name, description, type, and item count. Use the library id as libraryId when composing workflow items of type *_from_library or *_library.',
     inputSchema: {
       query: z.string().optional().describe('Optional: search libraries by name (case-insensitive)'),
       type: z.enum(['text', 'image', 'audio', 'video']).optional().describe('Optional: filter by library type'),
@@ -709,6 +720,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       const libraries = result.items.map((lib) => ({
         id: lib.id,
         name: lib.name,
+        description: lib.description ?? null,
         type: lib.type,
         itemCount: lib.itemCount ?? 0,
       }));
@@ -788,6 +800,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
       const response = {
         libraryId: library_id,
         libraryName: library.name,
+        libraryDescription: library.description ?? null,
         libraryType: library.type,
         items,
         total: result.total,
@@ -829,6 +842,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
       const response = {
         projectId: project.id,
         name: project.name,
+        description: project.description ?? null,
         type: project.type,
         status: project.status,
         providerId: project.providerId ?? null,
@@ -886,6 +900,7 @@ Recommended workflow:
 4. Present the full plan to the user before creating the project.`,
     inputSchema: {
       name: z.string().min(1).max(256).describe('Project display name'),
+      description: z.string().max(2000).optional().describe('Optional project description explaining what it does, generates, or how it should be used'),
       type: z.enum(['image', 'text', 'video', 'audio']).describe('Project generation type'),
       providerId: z.string().optional().describe('Saved provider ID (from list_available_models usableModels[].providerId)'),
       modelConfigId: z.string().optional().describe('Model config ID (from list_available_models usableModels[].modelConfigId)'),
@@ -911,10 +926,11 @@ Recommended workflow:
     category: 'mutate',
     handler: async (userId, input) => {
       const {
-        name, type, providerId, modelConfigId, aspectRatio, quality, format, shuffle, prefix,
+        name, description, type, providerId, modelConfigId, aspectRatio, quality, format, shuffle, prefix,
         systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems,
       } = input as {
         name: string;
+        description?: string;
         type: 'image' | 'text' | 'video' | 'audio';
         providerId?: string;
         modelConfigId?: string;
@@ -1059,6 +1075,7 @@ Recommended workflow:
       const project = {
         id: projectId,
         name,
+        description: description?.trim() || undefined,
         type,
         status: 'active' as const,
         createdAt: Date.now(),
@@ -1086,6 +1103,7 @@ Recommended workflow:
         text: JSON.stringify({
           projectId,
           name,
+          description: description?.trim() || null,
           type,
           workflowItemCount: workflow.length,
           message: 'Project created successfully. Open it in Remix Studio to review the workflow and run generation.',
@@ -1107,6 +1125,7 @@ Important workflow behavior:
     inputSchema: {
       projectId: z.string().describe('The ID of the project to update'),
       name: z.string().min(1).max(256).optional().describe('New project display name'),
+      description: z.string().max(2000).optional().describe('New project description. Pass an empty string to clear it.'),
       status: z.enum(['active', 'archived']).optional().describe('Update project status'),
       type: z.enum(['image', 'text', 'video', 'audio']).optional().describe('Update project generation type'),
       providerId: z.string().optional().describe('Update saved provider ID'),
@@ -1137,11 +1156,12 @@ Important workflow behavior:
     category: 'mutate',
     handler: async (userId, input) => {
       const {
-        projectId, name, status, type, providerId, modelConfigId, aspectRatio, quality, format,
+        projectId, name, description, status, type, providerId, modelConfigId, aspectRatio, quality, format,
         shuffle, prefix, systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems,
       } = input as {
         projectId: string;
         name?: string;
+        description?: string;
         status?: 'active' | 'archived';
         type?: 'image' | 'text' | 'video' | 'audio';
         providerId?: string;
@@ -1179,6 +1199,7 @@ Important workflow behavior:
 
       const updates: any = {};
       if (name !== undefined) updates.name = name;
+      if (description !== undefined) updates.description = description.trim() || null;
       if (status !== undefined) updates.status = status;
       if (type !== undefined) updates.type = type;
       if (providerId !== undefined) updates.providerId = providerId;
@@ -1326,6 +1347,7 @@ Important workflow behavior:
         text: JSON.stringify({
           projectId,
           name: updatedName,
+          description: description !== undefined ? (description.trim() || null) : (existingProject.description ?? null),
           updatedFields: Object.keys(updates),
           message: 'Project updated successfully.',
         }),

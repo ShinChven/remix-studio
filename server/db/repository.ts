@@ -5,7 +5,7 @@ export interface IRepository {
   getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType): Promise<{ items: Library[], total: number, page: number, pages: number }>;
   getLibrary(userId: string, libraryId: string): Promise<Library | null>;
   createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void>;
-  updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }): Promise<void>;
+  updateLibrary(userId: string, libraryId: string, updates: { name?: string; description?: string | null; type?: string }): Promise<void>;
   deleteLibrary(userId: string, libraryId: string): Promise<void>;
   setLibraryPinned(userId: string, libraryId: string, pinned: boolean): Promise<void>;
   countPinnedLibraries(userId: string): Promise<number>;
@@ -20,7 +20,7 @@ export interface IRepository {
   reorderLibraryItems(userId: string, libraryId: string, updates: { id: string; order: number }[]): Promise<void>;
 
   // === Library Search ===
-  searchLibraryItems(userId: string, query?: string, options?: { libraryId?: string; tags?: string[]; page?: number; limit?: number }): Promise<{ items: (LibraryItem & { libraryId: string; libraryName: string })[]; total: number; page: number; pages: number }>;
+  searchLibraryItems(userId: string, query?: string, options?: { libraryId?: string; tags?: string[]; page?: number; limit?: number }): Promise<{ items: (LibraryItem & { libraryId: string; libraryName: string; libraryDescription?: string })[]; total: number; page: number; pages: number }>;
 
   // === Project CRUD ===
   getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all'): Promise<{ items: Project[], total: number, page: number, pages: number }>;

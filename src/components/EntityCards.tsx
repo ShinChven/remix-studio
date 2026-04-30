@@ -186,6 +186,12 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
         )}
       </div>
 
+      {project.description && (
+        <p className="mb-4 line-clamp-2 min-h-10 text-sm leading-5 text-neutral-600 dark:text-neutral-400">
+          {project.description}
+        </p>
+      )}
+
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 dark:text-neutral-500 mb-4">
         <div className="flex items-center gap-1.5">
           <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -297,6 +303,12 @@ export function LibraryCard({ library, isCheckingRefs = false, onTogglePin, onSt
       </div>
 
       <h4 className="text-base font-bold text-neutral-900 dark:text-white truncate mb-2">{library.name}</h4>
+
+      {library.description && (
+        <p className="mb-4 line-clamp-2 min-h-10 text-sm leading-5 text-neutral-600 dark:text-neutral-400">
+          {library.description}
+        </p>
+      )}
 
       <div className="flex items-center gap-x-4 gap-y-1.5 text-xs text-neutral-500 dark:text-neutral-500">
         <div className="flex items-center gap-1.5 capitalize">

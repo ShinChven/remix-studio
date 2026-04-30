@@ -1,9 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Layers, Terminal, Play, ImageIcon, Type, Video, Music } from 'lucide-react';
+import { AudioLines, FileText, Hash, ImageIcon, Layers, Play, Save, Terminal, Type, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createProject, updateProject, fetchProject } from '../api';
 import type { Project, ProjectType, WorkflowItem } from '../types';
+import { PageHeader } from '../components/PageHeader';
+
+const typeOptions: Array<{ type: ProjectType; icon: typeof ImageIcon }> = [
+  { type: 'image', icon: ImageIcon },
+  { type: 'text', icon: Type },
+  { type: 'video', icon: Video },
+  { type: 'audio', icon: AudioLines },
+];
+
+function getTypeClasses(type: ProjectType, selected: boolean) {
+  const color = type === 'text' ? 'blue' : type === 'video' ? 'purple' : type === 'audio' ? 'cyan' : 'green';
+  if (!selected) {
+    return 'border-neutral-200/70 dark:border-white/10 bg-white/60 dark:bg-neutral-900/50 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-white dark:hover:bg-neutral-900';
+  }
+  if (color === 'blue') return 'border-blue-500/60 bg-blue-500/10 text-blue-600 dark:text-blue-300 shadow-blue-500/10';
+  if (color === 'purple') return 'border-purple-500/60 bg-purple-500/10 text-purple-600 dark:text-purple-300 shadow-purple-500/10';
+  if (color === 'cyan') return 'border-cyan-500/60 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 shadow-cyan-500/10';
+  return 'border-green-500/60 bg-green-500/10 text-green-600 dark:text-green-300 shadow-green-500/10';
+}
 
 export function ProjectForm() {
   const { t } = useTranslation();
@@ -15,6 +34,7 @@ export function ProjectForm() {
   const copyFrom = location.state?.copyFrom;
 
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState('');
   const [prefix, setPrefix] = useState('');
   const [projectType, setProjectType] = useState<ProjectType>('image');
@@ -26,6 +46,7 @@ export function ProjectForm() {
     if (id) {
       fetchProject(id).then(proj => {
         setName(proj.name);
+        setDescription(proj.description || '');
         setProjectId(proj.id);
         setPrefix(proj.prefix || '');
         setProjectType(proj.type || 'image');
@@ -33,15 +54,14 @@ export function ProjectForm() {
     } else if (copyFrom) {
       fetchProject(copyFrom).then(proj => {
         setName(proj.name);
+        setDescription(proj.description || '');
         setPrefix(proj.prefix || '');
         setProjectType(proj.type || 'image');
-        // Generate new IDs for workflow items when copying
         const copiedWorkflow = (proj.workflow || []).map(item => ({
           ...item,
           id: crypto.randomUUID()
         }));
         setWorkflowToCopy(copiedWorkflow);
-        // Preserve model choices and generation settings
         setSourceProject(proj);
       }).catch(err => console.error('Failed to fetch source project:', err));
     }
@@ -54,12 +74,14 @@ export function ProjectForm() {
     setIsSubmitting(true);
     try {
       let targetId: string;
+      const trimmedDescription = description.trim();
 
       if (isNew) {
         targetId = projectId.trim().replace(/[^a-zA-Z0-9-_]/g, '_') || `project-${Date.now()}`;
         await createProject({
           id: targetId,
           name: name.trim(),
+          description: trimmedDescription || undefined,
           type: projectType,
           createdAt: Date.now(),
           workflow: workflowToCopy,
@@ -67,7 +89,6 @@ export function ProjectForm() {
           album: [],
           shuffle: sourceProject?.shuffle ?? false,
           prefix: prefix.trim(),
-          // Copy model choices and generation settings from source project
           ...(sourceProject && {
             providerId: sourceProject.providerId,
             modelConfigId: sourceProject.modelConfigId,
@@ -75,11 +96,9 @@ export function ProjectForm() {
             quality: sourceProject.quality,
             background: sourceProject.background,
             format: sourceProject.format,
-            // Text generation settings
             systemPrompt: sourceProject.systemPrompt,
             temperature: sourceProject.temperature,
             maxTokens: sourceProject.maxTokens,
-            // Video generation settings
             duration: sourceProject.duration,
             resolution: sourceProject.resolution,
             sound: sourceProject.sound,
@@ -89,7 +108,7 @@ export function ProjectForm() {
         });
       } else {
         targetId = id!;
-        await updateProject(targetId, { name: name.trim(), prefix: prefix.trim() });
+        await updateProject(targetId, { name: name.trim(), description: trimmedDescription, prefix: prefix.trim() });
       }
       navigate(`/project/${targetId}`);
     } catch (error) {
@@ -100,148 +119,151 @@ export function ProjectForm() {
   };
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-50 dark:bg-neutral-950">
-      <div className="w-full max-w-md bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="flex items-center gap-3 mb-8">
-          <div className={`p-3 rounded-2xl ${projectType === 'text' ? 'bg-blue-600/10' : projectType === 'video' ? 'bg-purple-600/10' : projectType === 'audio' ? 'bg-cyan-600/10' : 'bg-green-600/10'}`}>
-            <Layers className={`w-6 h-6 ${projectType === 'text' ? 'text-blue-500' : projectType === 'video' ? 'text-purple-500' : projectType === 'audio' ? 'text-cyan-500' : 'text-green-500'}`} />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              {isNew ? t('projectForm.newTitle') : t('projectForm.editTitle')}
-            </h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-500">{t('projectForm.description')}</p>
-          </div>
-        </div>
+    <div className="h-full overflow-y-auto p-4 md:p-8">
+      <div className="w-full space-y-8 pb-20">
+        <PageHeader
+          title={isNew ? t('projectForm.newTitle') : t('projectForm.editTitle')}
+          description={t('projectForm.description')}
+          backLink={{ label: t('projectForm.cancel'), onClick: () => navigate(-1) }}
+        />
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {isNew && (
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">{t('projectForm.typeLabel')}</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setProjectType('image')}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                    projectType === 'image'
-                      ? 'border-green-500 bg-green-500/10 text-green-400'
-                      : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl shadow-sm text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
-                  }`}
-                >
-                  <ImageIcon className="w-6 h-6" />
-                  <span className="text-xs font-bold uppercase tracking-wider">{t('projectForm.typeImage')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setProjectType('text')}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                    projectType === 'text'
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                      : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl shadow-sm text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
-                  }`}
-                >
-                  <Type className="w-6 h-6" />
-                  <span className="text-xs font-bold uppercase tracking-wider">{t('projectForm.typeText')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setProjectType('video')}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                    projectType === 'video'
-                      ? 'border-purple-500 bg-purple-500/10 text-purple-400'
-                      : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl shadow-sm text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
-                  }`}
-                >
-                  <Video className="w-6 h-6" />
-                  <span className="text-xs font-bold uppercase tracking-wider">{t('projectForm.typeVideo')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setProjectType('audio')}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                    projectType === 'audio'
-                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
-                      : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl shadow-sm text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'
-                  }`}
-                >
-                  <Music className="w-6 h-6" />
-                  <span className="text-xs font-bold uppercase tracking-wider">{t('projectForm.typeAudio')}</span>
-                </button>
-              </div>
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="space-y-6 rounded-lg border border-neutral-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/55 md:p-6">
+            {isNew && (
+              <section className="space-y-3">
+                <label className="text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">{t('projectForm.typeLabel')}</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {typeOptions.map((option) => {
+                    const Icon = option.icon;
+                    const selected = projectType === option.type;
+                    return (
+                      <button
+                        key={option.type}
+                        type="button"
+                        onClick={() => setProjectType(option.type)}
+                        className={`flex min-h-24 flex-col items-start justify-between rounded-lg border p-4 text-left shadow-sm transition-all ${getTypeClasses(option.type, selected)}`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="text-sm font-black uppercase tracking-wider">{t(`projectForm.type${option.type[0].toUpperCase()}${option.type.slice(1)}`)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">{t('projectForm.nameLabel')}</label>
-            <input
-              type="text"
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={
-                projectType === 'text'
-                  ? t('projectForm.namePlaceholderText')
-                  : projectType === 'audio'
-                    ? t('projectForm.namePlaceholderAudio')
-                    : t('projectForm.namePlaceholderImage')
-              }
-              className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-700"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">{t('projectForm.prefixLabel')}</label>
-            <input
-              type="text"
-              value={prefix}
-              onChange={(e) => setPrefix(e.target.value)}
-              placeholder={t('projectForm.prefixPlaceholder')}
-              className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-700"
-            />
-            <p className="text-[10px] text-neutral-600 ml-1 font-medium tracking-wide">
-              {projectType === 'text'
-                ? t('projectForm.prefixDescriptionText')
-                : projectType === 'audio'
-                  ? t('projectForm.prefixDescriptionAudio')
-                  : t('projectForm.prefixDescriptionImage')}
-            </p>
-          </div>
-
-          {isNew && (
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">{t('projectForm.customIdLabel')}</label>
-              <div className="relative">
-                <Terminal className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-700" />
+            <section className="grid gap-5 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2">
+                <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
+                  <FileText className="h-3.5 w-3.5" />
+                  {t('projectForm.nameLabel')}
+                </label>
                 <input
                   type="text"
-                  value={projectId}
-                  onChange={(e) => setProjectId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
-                  placeholder={t('projectForm.customIdPlaceholder')}
-                  className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl pl-10 pr-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 font-mono focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all placeholder:text-neutral-800"
+                  autoFocus
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={
+                    projectType === 'text'
+                      ? t('projectForm.namePlaceholderText')
+                      : projectType === 'audio'
+                        ? t('projectForm.namePlaceholderAudio')
+                        : t('projectForm.namePlaceholderImage')
+                  }
+                  className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-base font-semibold text-neutral-950 shadow-sm transition-all placeholder:text-neutral-400 focus:border-green-500/60 focus:outline-none focus:ring-4 focus:ring-green-500/10 dark:border-white/10 dark:bg-neutral-950 dark:text-white dark:placeholder:text-neutral-600"
+                  required
                 />
               </div>
-              <p className="text-[10px] text-neutral-600 ml-1 font-medium tracking-wide">{t('projectForm.customIdDescription')}</p>
-            </div>
-          )}
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="flex-1 px-4 py-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
-            >
-              {t('projectForm.cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !name.trim()}
-              className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-neutral-900 dark:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-green-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
-            >
-              <Play className="w-4 h-4 fill-current" />
-              {isNew ? t('projectForm.submitCreate') : t('projectForm.submitSave')}
-            </button>
+              <div className="space-y-2 md:col-span-2">
+                <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
+                  <Layers className="h-3.5 w-3.5" />
+                  {t('projectForm.descriptionLabel', { defaultValue: 'Description' })}
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={t('projectForm.descriptionPlaceholder', { defaultValue: 'Explain what this project does, what it generates, or how it should be used.' })}
+                  maxLength={2000}
+                  rows={6}
+                  className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm leading-6 text-neutral-900 shadow-sm transition-all placeholder:text-neutral-400 focus:border-green-500/60 focus:outline-none focus:ring-4 focus:ring-green-500/10 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-600"
+                />
+                <div className="flex justify-between text-[11px] font-medium text-neutral-500 dark:text-neutral-500">
+                  <span>{t('projectForm.descriptionHelp', { defaultValue: 'Optional. Shown on cards, profile, and MCP tools.' })}</span>
+                  <span>{description.length}/2000</span>
+                </div>
+              </div>
+            </section>
           </div>
+
+          <aside className="space-y-6">
+            <div className="rounded-lg border border-neutral-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/55">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="rounded-lg bg-neutral-100 p-2 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                  <Hash className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-neutral-950 dark:text-white">{t('projectForm.identityTitle', { defaultValue: 'Identity' })}</h3>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-500">{t('projectForm.identityDescription', { defaultValue: 'Naming and file output settings.' })}</p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">{t('projectForm.prefixLabel')}</label>
+                  <input
+                    type="text"
+                    value={prefix}
+                    onChange={(e) => setPrefix(e.target.value)}
+                    placeholder={t('projectForm.prefixPlaceholder')}
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 shadow-sm transition-all placeholder:text-neutral-400 focus:border-green-500/60 focus:outline-none focus:ring-4 focus:ring-green-500/10 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-600"
+                  />
+                  <p className="text-xs leading-5 text-neutral-500 dark:text-neutral-500">
+                    {projectType === 'text'
+                      ? t('projectForm.prefixDescriptionText')
+                      : projectType === 'audio'
+                        ? t('projectForm.prefixDescriptionAudio')
+                        : t('projectForm.prefixDescriptionImage')}
+                  </p>
+                </div>
+
+                {isNew && (
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">{t('projectForm.customIdLabel')}</label>
+                    <div className="relative">
+                      <Terminal className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                      <input
+                        type="text"
+                        value={projectId}
+                        onChange={(e) => setProjectId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                        placeholder={t('projectForm.customIdPlaceholder')}
+                        className="w-full rounded-lg border border-neutral-200 bg-white py-3 pl-10 pr-4 font-mono text-sm text-neutral-700 shadow-sm transition-all placeholder:text-neutral-400 focus:border-green-500/60 focus:outline-none focus:ring-4 focus:ring-green-500/10 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-300 dark:placeholder:text-neutral-600"
+                      />
+                    </div>
+                    <p className="text-xs leading-5 text-neutral-500 dark:text-neutral-500">{t('projectForm.customIdDescription')}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="flex-1 rounded-lg border border-neutral-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-widest text-neutral-700 shadow-sm transition-all hover:bg-neutral-50 active:scale-[0.98] dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              >
+                {t('projectForm.cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || !name.trim()}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-green-600/15 transition-all hover:bg-green-700 active:scale-[0.98] disabled:opacity-40"
+              >
+                {isNew ? <Play className="h-4 w-4 fill-current" /> : <Save className="h-4 w-4" />}
+                {isNew ? t('projectForm.submitCreate') : t('projectForm.submitSave')}
+              </button>
+            </div>
+          </aside>
         </form>
       </div>
     </div>

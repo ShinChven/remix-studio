@@ -30,6 +30,7 @@ export type LibraryType = 'text' | 'image' | 'video' | 'audio';
 export interface Library {
   id: string;
   name: string;
+  description?: string;
   type: LibraryType;
   items: LibraryItem[];
   itemCount?: number;
@@ -1205,6 +1206,7 @@ export interface TrashItem extends AlbumItem {
 export interface Project {
   id: string;
   name: string;
+  description?: string;
   type?: ProjectType; // 'image' (default), 'text', 'video', or 'audio'
   status?: ProjectStatus; // 'active' (default) or 'archived'
   createdAt: number;

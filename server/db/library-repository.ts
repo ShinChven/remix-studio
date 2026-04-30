@@ -27,6 +27,7 @@ export class LibraryRepository {
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
         { id: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
       ];
     }
 
@@ -57,6 +58,7 @@ export class LibraryRepository {
     const items = libs.map((lib) => ({
       id: lib.id,
       name: lib.name,
+      description: (lib as any).description ?? undefined,
       type: lib.type as LibraryType,
       items: 'items' in lib && Array.isArray(lib.items) ? lib.items.map((item) => this.mapItem(item)) : [],
       itemCount: lib._count.items,
@@ -85,6 +87,7 @@ export class LibraryRepository {
     return {
       id: lib.id,
       name: lib.name,
+      description: (lib as any).description ?? undefined,
       type: lib.type as LibraryType,
       items: lib.items.map((item) => this.mapItem(item)),
       pinnedAt: lib.pinnedAt ? lib.pinnedAt.toISOString() : null,
@@ -93,14 +96,14 @@ export class LibraryRepository {
 
   async createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void> {
     await this.prisma.library.create({
-      data: { id: library.id, userId, name: library.name, type: library.type },
+      data: { id: library.id, userId, name: library.name, description: library.description ?? null, type: library.type } as any,
     });
   }
 
-  async updateLibrary(userId: string, libraryId: string, updates: { name?: string; type?: string }): Promise<void> {
+  async updateLibrary(userId: string, libraryId: string, updates: { name?: string; description?: string | null; type?: string }): Promise<void> {
     const result = await this.prisma.library.updateMany({
       where: { id: libraryId, userId },
-      data: updates,
+      data: updates as any,
     });
 
     if (result.count === 0) {
@@ -173,7 +176,7 @@ export class LibraryRepository {
 
     const [total, items] = await Promise.all([
       this.prisma.libraryItem.count({ where }),
-      this.prisma.libraryItem.findMany({
+      (this.prisma.libraryItem.findMany as any)({
         where,
         skip,
         take: limit,
@@ -302,7 +305,7 @@ export class LibraryRepository {
     userId: string,
     query?: string,
     options: { libraryId?: string; tags?: string[]; page?: number; limit?: number } = {},
-  ): Promise<{ items: (LibraryItem & { libraryId: string; libraryName: string })[]; total: number; page: number; pages: number }> {
+  ): Promise<{ items: (LibraryItem & { libraryId: string; libraryName: string; libraryDescription?: string })[]; total: number; page: number; pages: number }> {
     const page = options.page ?? 1;
     const limit = options.limit ?? 50;
     const skip = (page - 1) * limit;
@@ -331,20 +334,21 @@ export class LibraryRepository {
 
     const [total, items] = await Promise.all([
       this.prisma.libraryItem.count({ where }),
-      this.prisma.libraryItem.findMany({
+      (this.prisma.libraryItem.findMany as any)({
         where,
         skip,
         take: limit,
         orderBy,
-        include: { library: { select: { name: true } } },
+        include: { library: { select: { name: true, description: true } } },
       }),
     ]);
 
     return {
-      items: items.map((item) => ({
+      items: (items as any[]).map((item) => ({
         ...this.mapItem(item),
         libraryId: item.libraryId,
         libraryName: item.library.name,
+        libraryDescription: (item.library as any).description ?? undefined,
       })),
       total,
       page,

@@ -1,9 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, Folder, Type, Image as ImageIcon, Video, Music } from 'lucide-react';
+import { AudioLines, FileText, Folder, Image as ImageIcon, Info, Music, Save, Type, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createLibrary, updateLibrary, fetchLibrary } from '../api';
 import { LibraryType } from '../types';
+import { PageHeader } from '../components/PageHeader';
+
+const libraryTypes: Array<{ type: LibraryType; icon: typeof Type }> = [
+  { type: 'text', icon: Type },
+  { type: 'image', icon: ImageIcon },
+  { type: 'video', icon: Video },
+  { type: 'audio', icon: AudioLines },
+];
+
+function typeButtonClasses(type: LibraryType, selected: boolean) {
+  if (!selected) {
+    return 'border-neutral-200/70 dark:border-white/10 bg-white/60 dark:bg-neutral-900/50 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-white dark:hover:bg-neutral-900';
+  }
+  if (type === 'image') return 'border-emerald-500/60 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-emerald-500/10';
+  if (type === 'video') return 'border-purple-500/60 bg-purple-500/10 text-purple-600 dark:text-purple-300 shadow-purple-500/10';
+  if (type === 'audio') return 'border-amber-500/60 bg-amber-500/10 text-amber-600 dark:text-amber-300 shadow-amber-500/10';
+  return 'border-blue-500/60 bg-blue-500/10 text-blue-600 dark:text-blue-300 shadow-blue-500/10';
+}
+
+function typeLabelKey(type: LibraryType) {
+  if (type === 'image') return 'libraryForm.typeImage';
+  if (type === 'video') return 'libraryForm.typeVideo';
+  if (type === 'audio') return 'libraryForm.typeAudio';
+  return 'libraryForm.typeText';
+}
 
 export function LibraryForm() {
   const { t } = useTranslation();
@@ -13,6 +38,7 @@ export function LibraryForm() {
   const isNew = !id;
 
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [type, setType] = useState<LibraryType>('text');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -20,6 +46,7 @@ export function LibraryForm() {
     if (id) {
       fetchLibrary(id).then(lib => {
         setName(lib.name);
+        setDescription(lib.description || '');
         setType(lib.type);
       }).catch(() => navigate('/libraries'));
     }
@@ -32,13 +59,14 @@ export function LibraryForm() {
     setIsSubmitting(true);
     try {
       let targetId: string;
+      const trimmedDescription = description.trim();
 
       if (isNew) {
         targetId = crypto.randomUUID();
-        await createLibrary({ id: targetId, name: name.trim(), type });
+        await createLibrary({ id: targetId, name: name.trim(), description: trimmedDescription || undefined, type });
       } else {
         targetId = id!;
-        await updateLibrary(targetId, { name: name.trim(), type });
+        await updateLibrary(targetId, { name: name.trim(), description: trimmedDescription, type });
       }
 
       navigate(`/library/${targetId}`);
@@ -49,127 +77,130 @@ export function LibraryForm() {
     }
   };
 
+  const CurrentIcon = libraryTypes.find((option) => option.type === type)?.icon || Folder;
+
   return (
-    <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-50 dark:bg-neutral-950">
-      <div className="w-full max-w-md bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-blue-600/10 rounded-2xl">
-            <Folder className="w-6 h-6 text-blue-500" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              {isNew ? t('libraryForm.newTitle') : t('libraryForm.editTitle')}
-            </h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-500">{t('libraryForm.description')}</p>
-          </div>
-        </div>
+    <div className="h-full overflow-y-auto p-4 md:p-8">
+      <div className="w-full space-y-8 pb-20">
+        <PageHeader
+          title={isNew ? t('libraryForm.newTitle') : t('libraryForm.editTitle')}
+          description={t('libraryForm.description')}
+          backLink={{ label: t('libraryForm.cancel'), onClick: () => navigate(-1) }}
+        />
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">{t('libraryForm.nameLabel')}</label>
-            <input
-              type="text"
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('libraryForm.namePlaceholder')}
-              className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-neutral-700"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="space-y-6 rounded-lg border border-neutral-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/55 md:p-6">
+            <section className="space-y-2">
+              <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
+                <FileText className="h-3.5 w-3.5" />
+                {t('libraryForm.nameLabel')}
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t('libraryForm.namePlaceholder')}
+                className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-base font-semibold text-neutral-950 shadow-sm transition-all placeholder:text-neutral-400 focus:border-blue-500/60 focus:outline-none focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-neutral-950 dark:text-white dark:placeholder:text-neutral-600"
+                required
+              />
+            </section>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 ml-1">{t('libraryForm.typeLabel')}</label>
-            {isNew ? (
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setType('text')}
-                  className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
-                    type === 'text'
-                      ? 'bg-blue-600/10 border-blue-500/50 text-blue-400'
-                      : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5 text-neutral-600 hover:border-neutral-700 backdrop-blur-xl shadow-sm'
-                  }`}
-                >
-                  <Type className="w-5 h-5" />
-                  <span className="text-sm font-bold">{t('libraryForm.typeText')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType('image')}
-                  className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
-                    type === 'image'
-                      ? 'bg-emerald-600/10 border-emerald-500/50 text-emerald-400'
-                      : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5 text-neutral-600 hover:border-neutral-700 backdrop-blur-xl shadow-sm'
-                  }`}
-                >
-                  <ImageIcon className="w-5 h-5" />
-                  <span className="text-sm font-bold">{t('libraryForm.typeImage')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType('video')}
-                  className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
-                    type === 'video'
-                      ? 'bg-purple-600/10 border-purple-500/50 text-purple-400'
-                      : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5 text-neutral-600 hover:border-neutral-700 backdrop-blur-xl shadow-sm'
-                  }`}
-                >
-                  <Video className="w-5 h-5" />
-                  <span className="text-sm font-bold">{t('libraryForm.typeVideo', 'Video Library')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType('audio')}
-                  className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all ${
-                    type === 'audio'
-                      ? 'bg-amber-600/10 border-amber-500/50 text-amber-400'
-                      : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5 text-neutral-600 hover:border-neutral-700 backdrop-blur-xl shadow-sm'
-                  }`}
-                >
-                  <Music className="w-5 h-5" />
-                  <span className="text-sm font-bold">{t('libraryForm.typeAudio', 'Audio Library')}</span>
-                </button>
+            <section className="space-y-2">
+              <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
+                <Info className="h-3.5 w-3.5" />
+                {t('libraryForm.descriptionLabel', { defaultValue: 'Description' })}
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t('libraryForm.descriptionPlaceholder', { defaultValue: 'Explain what this library contains and when it should be used.' })}
+                maxLength={2000}
+                rows={7}
+                className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm leading-6 text-neutral-900 shadow-sm transition-all placeholder:text-neutral-400 focus:border-blue-500/60 focus:outline-none focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-600"
+              />
+              <div className="flex justify-between text-[11px] font-medium text-neutral-500 dark:text-neutral-500">
+                <span>{t('libraryForm.descriptionHelp', { defaultValue: 'Optional. Shown on cards, profile, and MCP tools.' })}</span>
+                <span>{description.length}/2000</span>
               </div>
-            ) : (
-              <div className={`flex items-center gap-3 p-4 rounded-2xl border ${
-                type === 'image' ? 'bg-emerald-600/5 border-emerald-500/20 text-emerald-400' : 
-                type === 'video' ? 'bg-purple-600/5 border-purple-500/20 text-purple-400' :
-                type === 'audio' ? 'bg-amber-600/5 border-amber-500/20 text-amber-400' :
-                'bg-blue-600/5 border-blue-500/20 text-blue-400'
-              }`}>
-                {type === 'image' ? <ImageIcon className="w-5 h-5" /> : 
-                 type === 'video' ? <Video className="w-5 h-5" /> :
-                 type === 'audio' ? <Music className="w-5 h-5" /> :
-                 <Type className="w-5 h-5" />}
-                <span className="text-sm font-bold capitalize">{t('libraryForm.contentType', { type: 
-                  type === 'image' ? t('libraryForm.typeImage') : 
-                  type === 'video' ? t('projectViewer.common.video') :
-                  type === 'audio' ? t('projectViewer.common.audio') :
-                  t('libraryForm.typeText') 
-                })}</span>
-                <span className="ml-auto text-[10px] font-black uppercase tracking-[0.1em] opacity-50">{t('libraryForm.permanent')}</span>
-              </div>
+            </section>
+
+            {isNew && (
+              <section className="space-y-3">
+                <label className="text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">{t('libraryForm.typeLabel')}</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {libraryTypes.map((option) => {
+                    const Icon = option.icon;
+                    const selected = type === option.type;
+                    return (
+                      <button
+                        key={option.type}
+                        type="button"
+                        onClick={() => setType(option.type)}
+                        className={`flex min-h-24 flex-col items-start justify-between rounded-lg border p-4 text-left shadow-sm transition-all ${typeButtonClasses(option.type, selected)}`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="text-sm font-black uppercase tracking-wider">{t(typeLabelKey(option.type), option.type)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             )}
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="flex-1 px-4 py-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]"
-            >
-              {t('libraryForm.cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !name.trim()}
-              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-neutral-900 dark:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 active:scale-[0.98] disabled:opacity-30 flex items-center justify-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              {isNew ? t('libraryForm.submitCreate') : t('libraryForm.submitSave')}
-            </button>
-          </div>
+          <aside className="space-y-6">
+            <div className="rounded-lg border border-neutral-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/55">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="rounded-lg bg-neutral-100 p-2 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                  <Folder className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-neutral-950 dark:text-white">{t('libraryForm.contentSummaryTitle', { defaultValue: 'Content setup' })}</h3>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-500">{t('libraryForm.contentSummaryDescription', { defaultValue: 'Library type controls accepted items.' })}</p>
+                </div>
+              </div>
+
+              {isNew ? (
+                <div className="rounded-lg border border-neutral-200/70 bg-neutral-50/80 p-4 dark:border-white/10 dark:bg-black/20">
+                  <div className="mb-2 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
+                    <CurrentIcon className="h-3.5 w-3.5" />
+                    {t(typeLabelKey(type), type)}
+                  </div>
+                  <p className="text-sm leading-6 text-neutral-600 dark:text-neutral-400">
+                    {t('libraryForm.typeDescription', { defaultValue: 'Choose the media family this library will store before creating it.' })}
+                  </p>
+                </div>
+              ) : (
+                <div className={`flex items-center gap-3 rounded-lg border p-4 ${type === 'image' ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300' : type === 'video' ? 'border-purple-500/20 bg-purple-500/5 text-purple-600 dark:text-purple-300' : type === 'audio' ? 'border-amber-500/20 bg-amber-500/5 text-amber-600 dark:text-amber-300' : 'border-blue-500/20 bg-blue-500/5 text-blue-600 dark:text-blue-300'}`}>
+                  {type === 'image' ? <ImageIcon className="h-5 w-5" /> :
+                   type === 'video' ? <Video className="h-5 w-5" /> :
+                   type === 'audio' ? <Music className="h-5 w-5" /> :
+                   <Type className="h-5 w-5" />}
+                  <span className="text-sm font-black">{t('libraryForm.contentType', { type: t(typeLabelKey(type), type) })}</span>
+                  <span className="ml-auto text-[10px] font-black uppercase tracking-[0.1em] opacity-60">{t('libraryForm.permanent')}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="flex-1 rounded-lg border border-neutral-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-widest text-neutral-700 shadow-sm transition-all hover:bg-neutral-50 active:scale-[0.98] dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              >
+                {t('libraryForm.cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || !name.trim()}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/15 transition-all hover:bg-blue-700 active:scale-[0.98] disabled:opacity-40"
+              >
+                <Save className="h-4 w-4" />
+                {isNew ? t('libraryForm.submitCreate') : t('libraryForm.submitSave')}
+              </button>
+            </div>
+          </aside>
         </form>
       </div>
     </div>

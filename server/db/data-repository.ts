@@ -38,7 +38,7 @@ export class DataRepository {
     });
 
     for (const lib of data.libraries || []) {
-      await this.libraryRepo.createLibrary(userId, { id: lib.id, name: lib.name, type: lib.type });
+      await this.libraryRepo.createLibrary(userId, { id: lib.id, name: lib.name, description: lib.description, type: lib.type });
       for (const item of lib.items || []) {
         await this.libraryRepo.createLibraryItem(userId, lib.id, item);
       }

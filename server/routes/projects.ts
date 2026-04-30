@@ -258,9 +258,11 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const body = await c.req.json();
       const id = typeof body?.id === 'string' ? body.id.trim() : null;
       const name = typeof body?.name === 'string' ? body.name.trim() : null;
+      const description = typeof body?.description === 'string' ? body.description.trim() : undefined;
 
       if (!id || !name) return c.json({ error: 'id and name are required' }, 400);
       if (id.length > 128 || name.length > 256) return c.json({ error: 'Field too long' }, 400);
+      if (description && description.length > 2000) return c.json({ error: 'Description too long' }, 400);
 
       const projectType: 'image' | 'text' | 'video' | 'audio' =
         body.type === 'text'
@@ -274,6 +276,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const project = {
         id,
         name,
+        description: description || undefined,
         type: projectType,
         status: projectStatus,
         createdAt: typeof body.createdAt === 'number' ? body.createdAt : Date.now(),
@@ -315,6 +318,11 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const body = await c.req.json();
       const updates: Partial<Project> = {};
       if (typeof body?.name === 'string') updates.name = body.name.trim();
+      if (typeof body?.description === 'string') {
+        const description = body.description.trim();
+        if (description.length > 2000) return c.json({ error: 'Description too long' }, 400);
+        (updates as any).description = description || null;
+      }
       if (body?.status === 'active' || body?.status === 'archived') updates.status = body.status;
       if (Array.isArray(body?.workflow)) {
         // Strip presigned URLs back to bare S3 keys before storing
@@ -597,6 +605,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         await repository.createLibrary(user.userId, {
           id: libraryId,
           name: newLibraryName!,
+          description: project.description,
           type: targetLibraryType
         });
       } else {

@@ -137,6 +137,11 @@ export function LibraryPreviewModal({
             </div>
             <div>
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">{library.name}</h3>
+              {library.description && (
+                <p className="mt-1 max-w-2xl text-xs leading-5 text-neutral-600 dark:text-neutral-400 line-clamp-2">
+                  {library.description}
+                </p>
+              )}
               <p className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest mt-0.5">
                 {t('projectViewer.libraryPreview.itemsSummary', { filtered: filteredItems.length, total: library.items.length })}
               </p>

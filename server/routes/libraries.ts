@@ -187,12 +187,14 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       const body = await c.req.json();
       const id = typeof body?.id === 'string' ? body.id.trim() : null;
       const name = typeof body?.name === 'string' ? body.name.trim() : null;
+      const description = typeof body?.description === 'string' ? body.description.trim() : undefined;
       const type = typeof body?.type === 'string' ? body.type.trim() : null;
 
       if (!id || !name || !type) return c.json({ error: 'id, name, and type are required' }, 400);
       if (id.length > 128 || name.length > 256) return c.json({ error: 'Field too long' }, 400);
+      if (description && description.length > 2000) return c.json({ error: 'Description too long' }, 400);
 
-      await repository.createLibrary(user.userId, { id, name, type });
+      await repository.createLibrary(user.userId, { id, name, description: description || undefined, type });
       return c.json({ success: true }, 201);
     } catch (e) {
       console.error('[POST /api/libraries]', e);
@@ -204,8 +206,13 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
     try {
       const user = c.get('user') as JwtPayload;
       const body = await c.req.json();
-      const updates: { name?: string; type?: string } = {};
+      const updates: { name?: string; description?: string | null; type?: string } = {};
       if (typeof body?.name === 'string') updates.name = body.name.trim();
+      if (typeof body?.description === 'string') {
+        const description = body.description.trim();
+        if (description.length > 2000) return c.json({ error: 'Description too long' }, 400);
+        updates.description = description || null;
+      }
       if (typeof body?.type === 'string') updates.type = body.type.trim();
 
       await repository.updateLibrary(user.userId, c.req.param('id'), updates);
@@ -339,6 +346,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       await repository.createLibrary(user.userId, {
         id: duplicatedLibraryId,
         name,
+        description: sourceLibrary.description,
         type: sourceLibrary.type,
       });
 

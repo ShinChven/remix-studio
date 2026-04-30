@@ -140,6 +140,7 @@ model Library {
   id        String   @id @default(uuid())
   userId    String
   name      String
+  description String? @db.Text
   type      String
   pinnedAt  DateTime?
   createdAt DateTime @default(now())
@@ -177,6 +178,7 @@ model Project {
   id           String   @id @default(uuid())
   userId       String
   name         String
+  description  String?  @db.Text
   type         String   @default("image") // "image", "text", or "video"
   status       String   @default("active") // "active" or "archived"
   providerId   String?

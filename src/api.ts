@@ -279,7 +279,7 @@ export async function fetchLibrary(id: string): Promise<Library> {
   return handleResponse<Library>(res, 'Failed to get library');
 }
 
-export async function createLibrary(library: { id: string; name: string; type: string }): Promise<void> {
+export async function createLibrary(library: { id: string; name: string; description?: string; type: string }): Promise<void> {
   const res = await apiFetch('/api/libraries', {
     method: 'POST',
     headers: getHeaders(),
@@ -291,7 +291,7 @@ export async function createLibrary(library: { id: string; name: string; type: s
   }
 }
 
-export async function updateLibrary(id: string, updates: { name?: string; type?: string }): Promise<void> {
+export async function updateLibrary(id: string, updates: { name?: string; description?: string; type?: string }): Promise<void> {
   const res = await apiFetch(`/api/libraries/${id}`, {
     method: 'PUT',
     headers: getHeaders(),

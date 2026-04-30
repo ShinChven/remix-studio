@@ -291,6 +291,16 @@ export function WorkflowPanel({
                 <p className="break-words text-sm font-semibold text-neutral-900 dark:text-white">{localProject.name}</p>
               </div>
 
+              {localProject.description && (
+                <div className="rounded-2xl border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
+                  <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
+                    <LibraryIcon className="h-3.5 w-3.5" />
+                    {t('projectViewer.main.projectDescription', { defaultValue: 'Description' })}
+                  </div>
+                  <p className="whitespace-pre-wrap break-words text-sm leading-6 text-neutral-700 dark:text-neutral-300">{localProject.description}</p>
+                </div>
+              )}
+
               <div className="rounded-2xl border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
                 <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
                   <Hash className="h-3.5 w-3.5" />
