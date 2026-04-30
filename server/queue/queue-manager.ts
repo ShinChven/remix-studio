@@ -214,19 +214,29 @@ export class QueueManager {
    * Release a concurrency slot for a job. Idempotent — safe to call multiple times.
    * Called by .then handler in processNext for sync/failed jobs, and by DetachedPoller
    * for async jobs once they reach a terminal state.
+   *
+   * Pass `null` for providerId when the caller doesn't know it (e.g. a job whose
+   * provider was deleted via cascade SetNull); we'll resolve it from the in-memory
+   * tracking map populated at enqueue time.
    */
-  public releaseSlot(providerId: string, jobId: string) {
+  public releaseSlot(providerId: string | null, jobId: string) {
     if (!this.activeJobIds.has(jobId)) return;
+    const resolved = providerId ?? this.activeJobIds.get(jobId);
+    if (!resolved) return;
     this.activeJobIds.delete(jobId);
-    this.activeJobs.set(providerId, Math.max(0, (this.activeJobs.get(providerId) || 1) - 1));
-    this.processNext(providerId);
+    this.activeJobs.set(resolved, Math.max(0, (this.activeJobs.get(resolved) || 1) - 1));
+    this.processNext(resolved);
   }
 
   /**
    * Reconcile in-memory slot tracking against the database. If a tracked job
    * no longer exists in the DB (deleted via workflow replace, project cascade,
-   * or any direct manipulation), release its slot. Without this, deleting a
-   * job mid-flight leaks the slot until restart, blocking the provider.
+   * or any direct manipulation), drop it. Without this, deleting a job mid-flight
+   * leaks state until restart and can block the provider.
+   *
+   * Pending jobs (still in queue, never executed) never consumed an activeJobs
+   * slot, so they're removed surgically without decrementing the counter.
+   * Executing/detached jobs trigger a full releaseSlot.
    */
   public async reconcileSlots() {
     if (this.activeJobIds.size === 0) return;
@@ -236,16 +246,29 @@ export class QueueManager {
       select: { id: true },
     });
     const dbJobIds = new Set(dbJobs.map((j) => j.id));
-    let released = 0;
+    let releasedExecuting = 0;
+    let droppedPending = 0;
     for (const [jobId, providerId] of this.activeJobIds) {
-      if (!dbJobIds.has(jobId)) {
-        console.warn(`[QueueManager] Reconciling orphaned slot: job ${jobId} no longer exists in DB. Releasing on provider ${providerId}.`);
-        this.releaseSlot(providerId, jobId);
-        released++;
+      if (dbJobIds.has(jobId)) continue;
+
+      // If the job is still queued (never started executing), remove it surgically.
+      // The activeJobs counter was never bumped for it, so do NOT call releaseSlot.
+      const queue = this.queues.get(providerId);
+      const idx = queue ? queue.findIndex((q) => q.job.id === jobId) : -1;
+      if (idx >= 0) {
+        queue!.splice(idx, 1);
+        this.activeJobIds.delete(jobId);
+        droppedPending++;
+        continue;
       }
+
+      // Otherwise it was executing or handed off to detached polling — release the slot.
+      console.warn(`[QueueManager] Reconciling orphaned slot: job ${jobId} no longer exists in DB. Releasing on provider ${providerId}.`);
+      this.releaseSlot(providerId, jobId);
+      releasedExecuting++;
     }
-    if (released > 0) {
-      console.log(`[QueueManager] Reconciliation released ${released} orphaned slot(s).`);
+    if (releasedExecuting > 0 || droppedPending > 0) {
+      console.log(`[QueueManager] Reconciliation: released ${releasedExecuting} executing slot(s), dropped ${droppedPending} queued entry(s).`);
     }
   }
 

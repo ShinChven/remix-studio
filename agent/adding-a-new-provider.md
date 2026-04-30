@@ -55,6 +55,30 @@ Update `server/queue/queue-manager.ts`:
 2.  **Update `enqueue` Methods**: Pass the parameter from the `Project` or `Job` to the `QueuedJob`.
 3.  **Update `executeJob`**: Pass the parameter from the `QueuedJob` to the `generator.generate()` call.
 
+### Sync vs Async Generators (Important for Concurrency)
+
+The queue treats two kinds of generators differently. The distinction is whether you implement `checkStatus`.
+
+| Kind | Defines `checkStatus`? | `generate()` returns | Slot lifecycle |
+|---|---|---|---|
+| **Sync** (e.g. OpenAI image) | No | `{ ok: true, imageBytes, ... }` | Slot held until `generate()` resolves |
+| **Async** (e.g. KlingAI, Replicate, RunningHub) | Yes | `{ ok: true, status: 'processing', taskId }` | Slot held until `DetachedPoller` observes a terminal state via `checkStatus` |
+
+**For async providers**, `QueueManager` hands the job off to `DetachedPoller` once a `taskId` is returned, but the **concurrency slot stays held** until the poller observes `completed` or `failed`. This is what makes `provider.concurrency` actually limit in-flight remote tasks (not just submission rate).
+
+**Rules for `checkStatus` implementations** (see `server/generators/kling-ai-generator.ts` for a reference):
+
+1. Return `{ status: 'processing' }` on **transient errors** (network timeouts, 5xx, JSON parse failures). Never throw — throws disable the stuck-task timeout for that poll cycle.
+2. Return `{ status: 'failed', error: '...' }` only when the remote definitively reports the task is dead. The poller will clear the `taskId` and stop polling.
+3. Return `{ status: 'completed', imageBytes/videoBytes, mimeType }` only when fully done with bytes ready. Don't return `completed` without bytes.
+4. If you never reach a terminal state, the **2-hour stuck-task timeout** (configurable via `JOB_PROCESSING_TIMEOUT_MS`) will auto-fail the job and free the slot. Default applies to all async providers.
+
+**Provider with two-key auth (`apiKey` + `apiSecret`)**: see KlingAI for the pattern. Both `getDecryptedApiKey` and `getDecryptedApiSecret` are looked up; pass both into your generator constructor via `buildGenerator` / `buildVideoGenerator`.
+
+### Video Generators
+
+For video providers, implement the `VideoGenerator` interface in `server/generators/video-generator.ts` and register in `server/generators/build-video-generator.ts`. All video providers are async by definition — `generate()` returns a `taskId` and `checkStatus` polls until completion.
+
 ## 2. Type Definitions
 
 Update `src/types.ts` to expose the new provider to the frontend.

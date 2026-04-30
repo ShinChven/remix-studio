@@ -16,7 +16,7 @@ export class DetachedPoller {
   private isPollingDetached = false;
   private activePolls: Set<string> = new Set();
   private intervalId?: NodeJS.Timeout;
-  private onJobFinalize?: (providerId: string, jobId: string) => void;
+  private onJobFinalize?: (providerId: string | null, jobId: string) => void;
   private onPollCycleComplete?: () => Promise<void> | void;
   // First time the poller observed each in-flight job. Used to enforce the
   // stuck-task timeout. Reset on server restart — recovered jobs get a fresh
@@ -41,7 +41,7 @@ export class DetachedPoller {
    * (completed or failed). QueueManager uses this to release the concurrency
    * slot it reserved when the job was handed off to detached polling.
    */
-  public setOnJobFinalize(cb: (providerId: string, jobId: string) => void) {
+  public setOnJobFinalize(cb: (providerId: string | null, jobId: string) => void) {
     this.onJobFinalize = cb;
   }
 
@@ -54,11 +54,13 @@ export class DetachedPoller {
     this.onPollCycleComplete = cb;
   }
 
-  private finalize(providerId: string | undefined, jobId: string) {
+  private finalize(providerId: string | undefined | null, jobId: string) {
     this.firstSeenAt.delete(jobId);
-    if (!providerId) return;
     try {
-      this.onJobFinalize?.(providerId, jobId);
+      // Always notify — receiver can resolve providerId from its own tracking
+      // map when ours is null (e.g. provider was deleted; job.providerId got
+      // SetNull'd by cascade and we no longer know the original provider).
+      this.onJobFinalize?.(providerId ?? null, jobId);
     } catch (e) {
       console.error(`[DetachedPoller] onJobFinalize threw for job ${jobId}:`, e);
     }
@@ -150,8 +152,10 @@ export class DetachedPoller {
       if (!job.providerId) {
          console.warn(`[DetachedPoller] Job ${job.id} is missing providerId. Marking as failed.`);
          await this.updateJobStatus(userId, projectId, job.id, { status: 'failed', error: 'Missing providerId', taskId: null as any });
-         // No providerId means no slot was ever reserved — nothing to finalize.
-         this.firstSeenAt.delete(job.id);
+         // The provider was likely deleted (cascade SetNull); QueueManager still
+         // tracks the original providerId in its activeJobIds map and will resolve
+         // it when releasing the slot.
+         this.finalize(null, job.id);
          return;
       }
 
