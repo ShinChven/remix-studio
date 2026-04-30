@@ -362,6 +362,8 @@ export class LibraryRepository {
       thumbnailUrl: item.thumbnailUrl ?? undefined,
       optimizedUrl: item.optimizedUrl ?? undefined,
       size: item.size != null ? Number(item.size) : undefined,
+      createdAt: item.createdAt instanceof Date ? item.createdAt.getTime() : item.createdAt,
+      updatedAt: item.updatedAt instanceof Date ? item.updatedAt.getTime() : item.updatedAt,
     };
   }
 }

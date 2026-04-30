@@ -226,7 +226,7 @@ export function Libraries() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Search Input */}
               <div className="relative flex-1 sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500" />
                   <input
                     type="text"
                     value={searchInput}
@@ -240,9 +240,11 @@ export function Libraries() {
               <div className="flex gap-2">
                 <button
                   onClick={addLibrary}
-                  className="text-xs md:text-sm bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-blue-700 font-black uppercase tracking-widest shadow-lg shadow-blue-600/10 active:scale-95"
+                  className="p-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-all flex items-center justify-center border border-blue-700 shadow-lg shadow-blue-600/10 active:scale-95"
+                  title={t('libraries.newLibrary')}
+                  aria-label={t('libraries.newLibrary')}
                 >
-                  <Plus className="w-4 h-4" /> <span>{t('libraries.newLibrary')}</span>
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>

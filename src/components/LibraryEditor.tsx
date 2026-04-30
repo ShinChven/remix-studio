@@ -33,6 +33,17 @@ function getDefaultLibraryExportName(name: string): string {
   return `${compactBase}_Library.zip`;
 }
 
+function formatLibraryItemDateTime(value?: number): string {
+  if (!value) return '';
+  return new Date(value).toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -635,6 +646,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           {items.map((item, index) => {
             const isExpanded = expandedItemId === item.id;
             const isSelected = selectedItemIds.has(item.id);
+            const createdAtLabel = formatLibraryItemDateTime(item.createdAt);
+            const updatedAtLabel = formatLibraryItemDateTime(item.updatedAt);
 
             return (
             <div
@@ -756,7 +769,12 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0 w-full sm:w-auto">
+                        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 flex-shrink-0 w-full sm:w-auto">
+                          {updatedAtLabel && (
+                            <span className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-500 whitespace-nowrap tabular-nums">
+                              {updatedAtLabel}
+                            </span>
+                          )}
                           {(item.tags && item.tags.length > 0) && (
                             <div className="flex items-center gap-1.5">
                               {item.tags.slice(0, 1).map(t => (
@@ -794,6 +812,22 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                       </div>
                       {isExpanded && (
                         <div className="p-4 md:p-8 space-y-4 animate-in slide-in-from-top-1 duration-200 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/20">
+                          {(createdAtLabel || updatedAtLabel) && (
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {createdAtLabel && (
+                                <div className="rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/60 dark:bg-neutral-950/40 px-3 py-2">
+                                  <div className="text-[8px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryEditor.createdAt', { defaultValue: 'Created' })}</div>
+                                  <div className="mt-1 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 tabular-nums">{createdAtLabel}</div>
+                                </div>
+                              )}
+                              {updatedAtLabel && (
+                                <div className="rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/60 dark:bg-neutral-950/40 px-3 py-2">
+                                  <div className="text-[8px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryEditor.updatedAt', { defaultValue: 'Updated' })}</div>
+                                  <div className="mt-1 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 tabular-nums">{updatedAtLabel}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                           <div className="space-y-2">
                              <div className="flex items-center justify-between">
                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('libraryEditor.fullSource')}</label>

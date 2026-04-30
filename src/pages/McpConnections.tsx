@@ -436,10 +436,11 @@ export function McpConnections() {
             </div>
             <button
               onClick={() => { setShowCreatePat(true); setNewToken(null); }}
-              className="text-xs md:text-sm bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold shadow-lg shadow-amber-600/10 active:scale-95"
+              className="p-2.5 bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 rounded-xl transition-all flex items-center justify-center shadow-lg shadow-amber-600/10 active:scale-95"
+              title={t('mcpConnections.tokens.newToken')}
+              aria-label={t('mcpConnections.tokens.newToken')}
             >
               <Plus className="w-4 h-4" />
-              <span>{t('mcpConnections.tokens.newToken')}</span>
             </button>
           </div>
 
@@ -610,10 +611,11 @@ export function McpConnections() {
             </div>
             <button
               onClick={() => { setShowCreateClient(true); setNewClientCredentials(null); }}
-              className="text-xs md:text-sm bg-blue-600 text-white hover:bg-blue-500 px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold shadow-lg shadow-blue-600/10 active:scale-95"
+              className="p-2.5 bg-blue-600 text-white hover:bg-blue-500 rounded-xl transition-all flex items-center justify-center shadow-lg shadow-blue-600/10 active:scale-95"
+              title={t('mcpConnections.oauth.newClient')}
+              aria-label={t('mcpConnections.oauth.newClient')}
             >
               <Plus className="w-4 h-4" />
-              <span>{t('mcpConnections.oauth.newClient')}</span>
             </button>
           </div>
 

@@ -86,11 +86,11 @@ export function Providers() {
             </h3>
             <button
               onClick={() => navigate('/provider/new')}
-              className="text-xs md:text-sm bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 px-4 md:px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-amber-600/30 font-black shadow-lg shadow-amber-600/10 active:scale-95 uppercase tracking-widest"
+              className="p-2.5 bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 rounded-xl transition-all flex items-center justify-center border border-amber-600/30 shadow-lg shadow-amber-600/10 active:scale-95"
+              title={t('providers.newProvider')}
+              aria-label={t('providers.newProvider')}
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('providers.newProvider')}</span>
-              <span className="sm:hidden">{t('providers.new')}</span>
             </button>
           </div>
 

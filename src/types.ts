@@ -21,6 +21,8 @@ export interface LibraryItem {
   optimizedUrl?: string;
   size?: number;
   tags?: string[];
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export type LibraryType = 'text' | 'image' | 'video' | 'audio';

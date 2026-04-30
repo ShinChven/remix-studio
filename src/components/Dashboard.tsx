@@ -100,7 +100,7 @@ export function Dashboard() {
       setIsLoading(true);
       try {
         const [projRes, libRes, provRes] = await Promise.all([
-          fetchProjects(1, 6),
+          fetchProjects(1, 6, undefined, 'active'),
           fetchLibraries(1, 8),
           fetchAssistantProviders(),
         ]);
@@ -212,8 +212,13 @@ export function Dashboard() {
                   <Clock className="w-5 h-5 text-green-500" />
                   {t('dashboard.recentProjects')}
                 </h3>
-                <button onClick={addProject} className="text-xs md:text-sm bg-green-600 text-white hover:bg-green-700 px-5 md:px-6 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-green-700 font-black uppercase tracking-widest shadow-lg shadow-green-600/10 active:scale-95">
-                  <Plus className="w-4 h-4" /> <span>{t('dashboard.newProject')}</span>
+                <button
+                  onClick={addProject}
+                  className="p-2.5 bg-green-600 text-white hover:bg-green-700 rounded-xl transition-all flex items-center justify-center border border-green-700 shadow-lg shadow-green-600/10 active:scale-95"
+                  title={t('dashboard.newProject')}
+                  aria-label={t('dashboard.newProject')}
+                >
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -269,8 +274,13 @@ export function Dashboard() {
                   {t('dashboard.libraries')}
                 </h3>
                 <div className="flex gap-2">
-                  <button onClick={addLibrary} className="text-xs md:text-sm bg-blue-600 text-white hover:bg-blue-700 px-5 md:px-6 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-blue-700 font-black uppercase tracking-widest shadow-lg shadow-blue-600/10 active:scale-95">
-                    <Plus className="w-4 h-4" /> <span>{t('dashboard.newLibrary')}</span>
+                  <button
+                    onClick={addLibrary}
+                    className="p-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-all flex items-center justify-center border border-blue-700 shadow-lg shadow-blue-600/10 active:scale-95"
+                    title={t('dashboard.newLibrary')}
+                    aria-label={t('dashboard.newLibrary')}
+                  >
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
               </div>

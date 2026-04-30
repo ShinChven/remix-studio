@@ -232,7 +232,7 @@ export function Projects() {
 
               {/* Search Input */}
               <div className="relative flex-1 sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500" />
                   <input
                     type="text"
                     value={searchInput}
@@ -246,9 +246,11 @@ export function Projects() {
               {/* Desktop New Project Button */}
               <button
                 onClick={addProject}
-                className="hidden sm:flex text-xs md:text-sm bg-green-600 text-white hover:bg-green-700 px-5 py-2.5 rounded-xl transition-all items-center gap-2 border border-green-700 font-black uppercase tracking-widest shadow-lg shadow-green-600/10 active:scale-95"
+                className="hidden sm:flex p-2.5 bg-green-600 text-white hover:bg-green-700 rounded-xl transition-all items-center justify-center border border-green-700 shadow-lg shadow-green-600/10 active:scale-95"
+                title={t('projects.newProject')}
+                aria-label={t('projects.newProject')}
               >
-                <Plus className="w-4 h-4" /> <span>{t('projects.newProject')}</span>
+                <Plus className="w-4 h-4" />
               </button>
             </div>
           </div>
