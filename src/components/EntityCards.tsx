@@ -11,7 +11,6 @@ import {
   Loader2,
   Music,
   Pin,
-  PinOff,
   Stars,
   Trash2,
   Type,
@@ -267,7 +266,7 @@ export function LibraryCard({ library, isCheckingRefs = false, onTogglePin, onSt
               className="p-1.5 text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
               title={isPinned ? t('libraries.libraryCard.unpin') : t('libraries.libraryCard.pin')}
             >
-              {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+              {isPinned ? <Pin className="w-3.5 h-3.5" fill="currentColor" /> : <Pin className="w-3.5 h-3.5" />}
             </button>
           )}
           {onStartAssistantChat && (
