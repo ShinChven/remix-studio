@@ -1350,6 +1350,82 @@ export interface Provider {
   usage?: ProviderUsageSummary;
 }
 
+export type QueueMonitorView = 'projects' | 'providers';
+export type QueueMonitorJobQueueState = 'queued' | 'waiting' | 'running' | 'detached' | 'failed';
+
+export interface QueueMonitorJob {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectType: ProjectType;
+  providerId?: string;
+  providerName?: string;
+  providerType?: ProviderType;
+  modelConfigId?: string;
+  modelName?: string;
+  prompt: string;
+  status: 'pending' | 'processing' | 'failed';
+  queueState: QueueMonitorJobQueueState;
+  createdAt: number;
+  taskId?: string;
+  error?: string;
+}
+
+export interface QueueMonitorProject {
+  id: string;
+  name: string;
+  type: ProjectType;
+  status: ProjectStatus;
+  providerId?: string;
+  providerName?: string;
+  pendingJobs: number;
+  processingJobs: number;
+  failedJobs: number;
+  queuedJobs: number;
+  waitingJobs: number;
+  runningJobs: number;
+  detachedJobs: number;
+  latestJobAt?: number;
+  jobs: QueueMonitorJob[];
+}
+
+export interface QueueMonitorProvider {
+  id: string;
+  name: string;
+  type: ProviderType;
+  concurrency: number;
+  activeSlots: number;
+  availableSlots: number;
+  pendingJobs: number;
+  processingJobs: number;
+  failedJobs: number;
+  queuedJobs: number;
+  waitingJobs: number;
+  runningJobs: number;
+  detachedJobs: number;
+  jobs: QueueMonitorJob[];
+}
+
+export interface QueueMonitorStatus {
+  view: QueueMonitorView;
+  updatedAt: number;
+  totals: {
+    projects: number;
+    providers: number;
+    pendingJobs: number;
+    processingJobs: number;
+    failedJobs: number;
+    queuedJobs: number;
+    waitingJobs: number;
+    runningJobs: number;
+    detachedJobs: number;
+    activeSlots: number;
+    concurrency: number;
+  };
+  projects?: QueueMonitorProject[];
+  providers?: QueueMonitorProvider[];
+}
+
 export type UserRole = 'admin' | 'user';
 export type UserStatus = 'active' | 'disabled';
 

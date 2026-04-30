@@ -8,7 +8,7 @@ import { ExportManager } from '../queue/export-manager';
 import { DeliveryManager } from '../queue/delivery-manager';
 import { checkStorageLimit } from '../utils/storage-check';
 import { UserRepository } from '../auth/user-repository';
-import type { WorkflowItem, Job, Project, LibraryItem } from '../../src/types';
+import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView } from '../../src/types';
 
 type Variables = { user: JwtPayload };
 
@@ -235,6 +235,18 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     } catch (e) {
       console.error('[GET /api/projects]', e);
       return c.json({ error: 'Failed to list projects' }, 500);
+    }
+  });
+
+  router.get('/api/queue-status', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const rawView = c.req.query('view');
+      const view: QueueMonitorView = rawView === 'providers' ? 'providers' : 'projects';
+      return c.json(await queueManager.getMonitorStatus(user.userId, view));
+    } catch (e) {
+      console.error('[GET /api/queue-status]', e);
+      return c.json({ error: 'Failed to load queue status' }, 500);
     }
   });
 

@@ -36,6 +36,7 @@ import { McpConnections } from './pages/McpConnections.tsx';
 import { AssistantPage } from './pages/AssistantPage.tsx';
 import { AssistantSettingsPage } from './pages/AssistantSettingsPage.tsx';
 import { ChatHistoryPage } from './pages/ChatHistoryPage.tsx';
+import { QueueMonitor } from './pages/QueueMonitor.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -62,6 +63,7 @@ export default function App() {
               <Route path="library/new" element={<LibraryForm />} />
               <Route path="library/:id/edit" element={<LibraryForm />} />
               <Route path="projects" element={<Projects />} />
+              <Route path="queues" element={<QueueMonitor />} />
               <Route path="project/new" element={<ProjectForm />} />
               <Route path="project/:id" element={<ProjectRoute />} />
               <Route path="project/:id/edit" element={<ProjectForm />} />

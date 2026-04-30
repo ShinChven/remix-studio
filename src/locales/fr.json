@@ -2,6 +2,7 @@
   "sidebar": {
     "dashboard": "Tableau de bord",
     "projects": "Projets",
+    "queueMonitor": "Files",
     "libraries": "Bibliothèques",
     "providers": "Fournisseurs",
     "mcp": "MCP",
@@ -31,6 +32,43 @@
   "projectRoute": {
     "notFound": "Projet non trouvé.",
     "renameFailed": "Échec du renommage du dossier du projet. Annulation du changement d'ID."
+  },
+  "queueMonitor": {
+    "title": "Moniteur de files",
+    "description": "Surveillez les générations actives entre les projets et les files de concurrence des fournisseurs.",
+    "projectView": "Vue projet",
+    "providerView": "Vue files fournisseur",
+    "refresh": "Actualiser",
+    "updatedAt": "Mis à jour",
+    "loadError": "Impossible de charger l'état des files.",
+    "unknown": "Inconnu",
+    "archived": "Archivé",
+    "noProvider": "Aucun fournisseur",
+    "taskShort": "Tâche",
+    "projectUpdated": "{{provider}} · mis à jour à {{time}}",
+    "noProviderJobs": "Aucune tâche active pour ce fournisseur.",
+    "states": {
+      "queued": "En file",
+      "waiting": "En attente",
+      "running": "En cours",
+      "detached": "Polling",
+      "failed": "Échec"
+    },
+    "metrics": {
+      "projects": "Projets",
+      "providers": "Fournisseurs",
+      "running": "En cours",
+      "queued": "En file",
+      "pending": "En attente",
+      "failed": "Échec",
+      "slots": "Slots",
+      "limit": "Limite"
+    },
+    "empty": {
+      "projectsTitle": "Aucune tâche de projet active",
+      "providersTitle": "Aucun fournisseur configuré",
+      "description": "L'activité de génération apparaîtra ici lorsque du travail sera en file ou en cours."
+    }
   },
   "libraryRoute": {
     "notFound": "Bibliothèque non trouvée."

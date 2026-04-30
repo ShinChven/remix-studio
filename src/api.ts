@@ -1,4 +1,4 @@
-import { AlbumItem, AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias } from './types';
+import { AlbumItem, AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -470,6 +470,12 @@ export async function fetchProjects(
 export async function fetchProject(id: string): Promise<Project> {
   const res = await apiFetch(`/api/projects/${id}`, { headers: getHeaders(false) });
   return handleResponse<Project>(res, 'Failed to get project');
+}
+
+export async function fetchQueueStatus(view: QueueMonitorView): Promise<QueueMonitorStatus> {
+  const params = new URLSearchParams({ view });
+  const res = await apiFetch(`/api/queue-status?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<QueueMonitorStatus>(res, 'Failed to load queue status');
 }
 
 export async function createProject(project: Project): Promise<void> {

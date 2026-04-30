@@ -2,6 +2,7 @@
   "sidebar": {
     "dashboard": "仪表盘",
     "projects": "项目",
+    "queueMonitor": "队列",
     "libraries": "库",
     "providers": "供应商",
     "mcp": "MCP",
@@ -31,6 +32,43 @@
   "projectRoute": {
     "notFound": "未找到项目。",
     "renameFailed": "重命名项目文件夹失败。正在撤销 ID 更改。"
+  },
+  "queueMonitor": {
+    "title": "队列监控",
+    "description": "监控跨项目和供应商并发队列中的活跃生成任务。",
+    "projectView": "项目视图",
+    "providerView": "供应商队列视图",
+    "refresh": "刷新",
+    "updatedAt": "已更新",
+    "loadError": "加载队列状态失败。",
+    "unknown": "未知",
+    "archived": "已归档",
+    "noProvider": "无供应商",
+    "taskShort": "任务",
+    "projectUpdated": "{{provider}} · 更新于 {{time}}",
+    "noProviderJobs": "此供应商没有活跃任务。",
+    "states": {
+      "queued": "已入队",
+      "waiting": "等待中",
+      "running": "运行中",
+      "detached": "轮询中",
+      "failed": "失败"
+    },
+    "metrics": {
+      "projects": "项目",
+      "providers": "供应商",
+      "running": "运行中",
+      "queued": "已入队",
+      "pending": "待处理",
+      "failed": "失败",
+      "slots": "槽位",
+      "limit": "限制"
+    },
+    "empty": {
+      "projectsTitle": "没有活跃项目任务",
+      "providersTitle": "尚未配置供应商",
+      "description": "当任务进入队列或运行时，生成活动会显示在这里。"
+    }
   },
   "libraryRoute": {
     "notFound": "未找到库。"

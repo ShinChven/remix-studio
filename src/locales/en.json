@@ -2,6 +2,7 @@
   "sidebar": {
     "dashboard": "Dashboard",
     "projects": "Projects",
+    "queueMonitor": "Queues",
     "libraries": "Libraries",
     "providers": "Providers",
     "mcp": "MCP",
@@ -31,6 +32,43 @@
   "projectRoute": {
     "notFound": "Project not found.",
     "renameFailed": "Failed to rename project folder. Reverting ID change."
+  },
+  "queueMonitor": {
+    "title": "Queue Monitor",
+    "description": "Monitor active generation work across projects and provider concurrency queues.",
+    "projectView": "Project View",
+    "providerView": "Provider Queue View",
+    "refresh": "Refresh",
+    "updatedAt": "Updated",
+    "loadError": "Failed to load queue status.",
+    "unknown": "Unknown",
+    "archived": "Archived",
+    "noProvider": "No provider",
+    "taskShort": "Task",
+    "projectUpdated": "{{provider}} · updated {{time}}",
+    "noProviderJobs": "No active jobs for this provider.",
+    "states": {
+      "queued": "Queued",
+      "waiting": "Waiting",
+      "running": "Running",
+      "detached": "Polling",
+      "failed": "Failed"
+    },
+    "metrics": {
+      "projects": "Projects",
+      "providers": "Providers",
+      "running": "Running",
+      "queued": "Queued",
+      "pending": "Pending",
+      "failed": "Failed",
+      "slots": "Slots",
+      "limit": "Limit"
+    },
+    "empty": {
+      "projectsTitle": "No active project jobs",
+      "providersTitle": "No providers configured",
+      "description": "Generation activity will appear here when work is queued or running."
+    }
   },
   "libraryRoute": {
     "notFound": "Library not found."

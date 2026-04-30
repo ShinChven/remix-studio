@@ -2,6 +2,7 @@
   "sidebar": {
     "dashboard": "儀表板",
     "projects": "專案",
+    "queueMonitor": "佇列",
     "libraries": "庫",
     "providers": "供應商",
     "mcp": "MCP",
@@ -31,6 +32,43 @@
   "projectRoute": {
     "notFound": "未找到專案。",
     "renameFailed": "重命名專案資料夾失敗。正在撤銷 ID 更改。"
+  },
+  "queueMonitor": {
+    "title": "佇列監控",
+    "description": "監控跨專案與供應商並發佇列中的活躍生成任務。",
+    "projectView": "專案視圖",
+    "providerView": "供應商佇列視圖",
+    "refresh": "重新整理",
+    "updatedAt": "已更新",
+    "loadError": "載入佇列狀態失敗。",
+    "unknown": "未知",
+    "archived": "已封存",
+    "noProvider": "無供應商",
+    "taskShort": "任務",
+    "projectUpdated": "{{provider}} · 更新於 {{time}}",
+    "noProviderJobs": "此供應商沒有活躍任務。",
+    "states": {
+      "queued": "已入佇列",
+      "waiting": "等待中",
+      "running": "執行中",
+      "detached": "輪詢中",
+      "failed": "失敗"
+    },
+    "metrics": {
+      "projects": "專案",
+      "providers": "供應商",
+      "running": "執行中",
+      "queued": "已入佇列",
+      "pending": "待處理",
+      "failed": "失敗",
+      "slots": "槽位",
+      "limit": "限制"
+    },
+    "empty": {
+      "projectsTitle": "沒有活躍專案任務",
+      "providersTitle": "尚未設定供應商",
+      "description": "當任務進入佇列或執行時，生成活動會顯示在這裡。"
+    }
   },
   "libraryRoute": {
     "notFound": "未找到庫。"

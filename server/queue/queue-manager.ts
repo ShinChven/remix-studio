@@ -6,7 +6,20 @@ import { buildGenerator } from '../generators/build-generator';
 import { buildTextGenerator } from '../generators/build-text-generator';
 import { buildAudioGenerator } from '../generators/build-audio-generator';
 import { buildVideoGenerator } from '../generators/build-video-generator';
-import { Job, ProviderType, ProjectType, ModelConfig, PROVIDER_MODELS_MAP, parseAudioProjectConfig, resolveCustomModels } from '../../src/types';
+import {
+  Job,
+  ProviderType,
+  ProjectType,
+  ModelConfig,
+  PROVIDER_MODELS_MAP,
+  parseAudioProjectConfig,
+  resolveCustomModels,
+  QueueMonitorJob,
+  QueueMonitorProject,
+  QueueMonitorProvider,
+  QueueMonitorStatus,
+  QueueMonitorView,
+} from '../../src/types';
 import { ImageProcessor } from './image-processor';
 import { TextProcessor } from './text-processor';
 import { VideoProcessor } from './video-processor';
@@ -107,6 +120,204 @@ export class QueueManager {
   // Expose poller method if explicitly requested (e.g. from routes)
   public async pollDetachedTasks() {
     await this.detachedPoller.pollDetachedTasks();
+  }
+
+  public async getMonitorStatus(userId: string, view: QueueMonitorView): Promise<QueueMonitorStatus> {
+    const providerRecords = await this.prisma.provider.findMany({
+      where: { userId },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    const providers = providerRecords.map((provider) => {
+      const providerType = provider.type as ProviderType;
+      const customAliases = Array.isArray(provider.models) ? provider.models : [];
+      return {
+        id: provider.id,
+        name: provider.name,
+        type: providerType,
+        concurrency: provider.concurrency || 1,
+        models: [
+          ...(PROVIDER_MODELS_MAP[providerType] || []),
+          ...resolveCustomModels(providerType, customAliases as any),
+        ],
+      };
+    });
+    const providerById = new Map(providers.map((provider) => [provider.id, provider]));
+
+    const queuedJobIds = new Set<string>();
+    const queuedProviderCounts = new Map<string, number>();
+    for (const [providerId, queue] of this.queues) {
+      for (const queued of queue) {
+        if (queued.userId !== userId) continue;
+        queuedJobIds.add(queued.job.id);
+        queuedProviderCounts.set(providerId, (queuedProviderCounts.get(providerId) || 0) + 1);
+      }
+    }
+
+    const jobRows = await this.prisma.job.findMany({
+      where: {
+        userId,
+        status: { in: ['pending', 'processing', 'failed'] },
+      },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            status: true,
+            providerId: true,
+          },
+        },
+        provider: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            concurrency: true,
+            models: true,
+          },
+        },
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+
+    const toProjectType = (value: string | null | undefined): ProjectType => {
+      if (value === 'text' || value === 'video' || value === 'audio') return value;
+      return 'image';
+    };
+    const toProjectStatus = (value: string | null | undefined) => value === 'archived' ? 'archived' : 'active';
+
+    const toQueueState = (job: { id: string; status: string; taskId: string | null }): QueueMonitorJob['queueState'] => {
+      if (job.status === 'failed') return 'failed';
+      if (queuedJobIds.has(job.id)) return 'queued';
+      if (job.status === 'processing') return job.taskId ? 'detached' : 'running';
+      return 'waiting';
+    };
+
+    const toMonitorJob = (row: (typeof jobRows)[number]): QueueMonitorJob => {
+      const providerId = row.providerId || row.project.providerId || undefined;
+      const publicProvider = providerId ? providerById.get(providerId) : undefined;
+      const providerType = (row.provider?.type || publicProvider?.type) as ProviderType | undefined;
+      const modelConfigId = row.modelConfigId ?? undefined;
+      const modelName = modelConfigId && publicProvider
+        ? publicProvider.models.find((model) => model.id === modelConfigId)?.name
+        : undefined;
+
+      return {
+        id: row.id,
+        projectId: row.projectId,
+        projectName: row.project.name,
+        projectType: toProjectType(row.project.type),
+        providerId,
+        providerName: row.provider?.name || publicProvider?.name,
+        providerType,
+        modelConfigId,
+        modelName,
+        prompt: row.prompt,
+        status: row.status as QueueMonitorJob['status'],
+        queueState: toQueueState(row),
+        createdAt: row.createdAt.getTime(),
+        taskId: row.taskId ?? undefined,
+        error: row.error ?? undefined,
+      };
+    };
+
+    const jobs = jobRows.map(toMonitorJob);
+    const totals = {
+      projects: new Set(jobs.map((job) => job.projectId)).size,
+      providers: providers.length,
+      pendingJobs: jobs.filter((job) => job.status === 'pending').length,
+      processingJobs: jobs.filter((job) => job.status === 'processing').length,
+      failedJobs: jobs.filter((job) => job.status === 'failed').length,
+      queuedJobs: jobs.filter((job) => job.queueState === 'queued').length,
+      waitingJobs: jobs.filter((job) => job.queueState === 'waiting').length,
+      runningJobs: jobs.filter((job) => job.queueState === 'running').length,
+      detachedJobs: jobs.filter((job) => job.queueState === 'detached').length,
+      activeSlots: providers.reduce((total, provider) => total + (this.activeJobs.get(provider.id) || 0), 0),
+      concurrency: providers.reduce((total, provider) => total + (provider.concurrency || 1), 0),
+    };
+
+    const buildProjectRows = (): QueueMonitorProject[] => {
+      const grouped = new Map<string, QueueMonitorProject>();
+      for (const job of jobs) {
+        const current = grouped.get(job.projectId) || {
+          id: job.projectId,
+          name: job.projectName,
+          type: job.projectType,
+          status: toProjectStatus(jobRows.find((row) => row.projectId === job.projectId)?.project.status),
+          providerId: job.providerId,
+          providerName: job.providerName,
+          pendingJobs: 0,
+          processingJobs: 0,
+          failedJobs: 0,
+          queuedJobs: 0,
+          waitingJobs: 0,
+          runningJobs: 0,
+          detachedJobs: 0,
+          latestJobAt: undefined,
+          jobs: [],
+        };
+
+        current.jobs.push(job);
+        current.latestJobAt = Math.max(current.latestJobAt || 0, job.createdAt);
+        if (job.status === 'pending') current.pendingJobs++;
+        if (job.status === 'processing') current.processingJobs++;
+        if (job.status === 'failed') current.failedJobs++;
+        if (job.queueState === 'queued') current.queuedJobs++;
+        if (job.queueState === 'waiting') current.waitingJobs++;
+        if (job.queueState === 'running') current.runningJobs++;
+        if (job.queueState === 'detached') current.detachedJobs++;
+        grouped.set(job.projectId, current);
+      }
+      return Array.from(grouped.values()).sort((a, b) => {
+        const activeDelta = (b.processingJobs + b.pendingJobs) - (a.processingJobs + a.pendingJobs);
+        if (activeDelta !== 0) return activeDelta;
+        return (b.latestJobAt || 0) - (a.latestJobAt || 0);
+      });
+    };
+
+    const buildProviderRows = (): QueueMonitorProvider[] => {
+      const jobsByProvider = new Map<string, QueueMonitorJob[]>();
+      for (const job of jobs) {
+        if (!job.providerId) continue;
+        if (!jobsByProvider.has(job.providerId)) jobsByProvider.set(job.providerId, []);
+        jobsByProvider.get(job.providerId)!.push(job);
+      }
+
+      return providers.map((provider) => {
+        const providerJobs = jobsByProvider.get(provider.id) || [];
+        const concurrency = provider.concurrency || 1;
+        const activeSlots = this.activeJobs.get(provider.id) || 0;
+        return {
+          id: provider.id,
+          name: provider.name,
+          type: provider.type,
+          concurrency,
+          activeSlots,
+          availableSlots: Math.max(0, concurrency - activeSlots),
+          pendingJobs: providerJobs.filter((job) => job.status === 'pending').length,
+          processingJobs: providerJobs.filter((job) => job.status === 'processing').length,
+          failedJobs: providerJobs.filter((job) => job.status === 'failed').length,
+          queuedJobs: queuedProviderCounts.get(provider.id) || 0,
+          waitingJobs: providerJobs.filter((job) => job.queueState === 'waiting').length,
+          runningJobs: providerJobs.filter((job) => job.queueState === 'running').length,
+          detachedJobs: providerJobs.filter((job) => job.queueState === 'detached').length,
+          jobs: providerJobs,
+        };
+      }).sort((a, b) => {
+        const activeDelta = (b.activeSlots + b.queuedJobs + b.waitingJobs) - (a.activeSlots + a.queuedJobs + a.waitingJobs);
+        if (activeDelta !== 0) return activeDelta;
+        return a.name.localeCompare(b.name);
+      });
+    };
+
+    return {
+      view,
+      updatedAt: Date.now(),
+      totals,
+      projects: view === 'projects' ? buildProjectRows() : undefined,
+      providers: view === 'providers' ? buildProviderRows() : undefined,
+    };
   }
 
   /**

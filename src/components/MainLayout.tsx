@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Unplug, Sparkles, Sun, Moon, Monitor } from 'lucide-react';
+import { Activity, Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Unplug, Sparkles, Sun, Moon, Monitor } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
@@ -228,6 +228,15 @@ export function MainLayout() {
             icon={<Play className="w-5 h-5 flex-shrink-0" />}
             label={t('sidebar.projects')}
             isActive={location.pathname === '/projects' || location.pathname.startsWith('/project/')}
+            isCollapsed={isCollapsed}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          <NavItem
+            to="/queues"
+            icon={<Activity className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.queueMonitor')}
+            isActive={location.pathname === '/queues'}
             isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
           />

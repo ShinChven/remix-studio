@@ -2,6 +2,7 @@
   "sidebar": {
     "dashboard": "ダッシュボード",
     "projects": "プロジェクト",
+    "queueMonitor": "キュー",
     "libraries": "ライブラリ",
     "providers": "プロバイダー",
     "mcp": "MCP",
@@ -31,6 +32,43 @@
   "projectRoute": {
     "notFound": "プロジェクトが見つかりません。",
     "renameFailed": "プロジェクトフォルダ名の変更に失敗しました。IDの変更を元に戻します。"
+  },
+  "queueMonitor": {
+    "title": "キューモニター",
+    "description": "プロジェクトとプロバイダーの同時実行キューにあるアクティブな生成処理を監視します。",
+    "projectView": "プロジェクト表示",
+    "providerView": "プロバイダーキュー表示",
+    "refresh": "更新",
+    "updatedAt": "更新",
+    "loadError": "キュー状態を読み込めませんでした。",
+    "unknown": "不明",
+    "archived": "アーカイブ済み",
+    "noProvider": "プロバイダーなし",
+    "taskShort": "タスク",
+    "projectUpdated": "{{provider}} · {{time}} に更新",
+    "noProviderJobs": "このプロバイダーにアクティブなジョブはありません。",
+    "states": {
+      "queued": "キュー済み",
+      "waiting": "待機中",
+      "running": "実行中",
+      "detached": "ポーリング中",
+      "failed": "失敗"
+    },
+    "metrics": {
+      "projects": "プロジェクト",
+      "providers": "プロバイダー",
+      "running": "実行中",
+      "queued": "キュー済み",
+      "pending": "保留中",
+      "failed": "失敗",
+      "slots": "スロット",
+      "limit": "上限"
+    },
+    "empty": {
+      "projectsTitle": "アクティブなプロジェクトジョブはありません",
+      "providersTitle": "プロバイダーが設定されていません",
+      "description": "生成処理がキューに入るか実行されると、ここに表示されます。"
+    }
   },
   "libraryRoute": {
     "notFound": "ライブラリが見つかりません。"
