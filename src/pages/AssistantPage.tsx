@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, AlertTriangle, Bot, FolderOpen, Sparkles, ExternalLink, Settings2, Copy, Pencil } from 'lucide-react';
+import { Plus, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, AlertTriangle, Bot, FolderOpen, Sparkles, ExternalLink, Settings2, Copy, Pencil, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -379,10 +379,10 @@ export function AssistantPage() {
     }
   }, [providers, selectedModelId, selectedProviderId]);
 
-  // ─── Load conversations ───
+  // ─── Load conversations (sidebar caps at the 50 most recent) ───
   const loadConversations = useCallback(async () => {
     try {
-      const data = await fetchAssistantConversations();
+      const data = await fetchAssistantConversations(undefined, 50);
       setConversations(data.conversations);
       return data.conversations;
     } catch {
@@ -1426,13 +1426,22 @@ export function AssistantPage() {
               )}
               <div className="flex items-center gap-1">
                 {rightPanelOpen && (
-                  <button
-                    onClick={handleNewConversationClick}
-                    className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
-                    title={t('assistant.newChat')}
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => navigate('/assistant/history')}
+                      className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
+                      title={t('assistant.searchHistory', { defaultValue: 'Search chat history' })}
+                    >
+                      <Search className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={handleNewConversationClick}
+                      className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
+                      title={t('assistant.newChat')}
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => setRightPanelOpen(!rightPanelOpen)}

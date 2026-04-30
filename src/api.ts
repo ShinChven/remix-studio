@@ -1230,6 +1230,22 @@ export async function fetchAssistantConversations(cursor?: string, limit?: numbe
   return handleResponse<{ conversations: AssistantConversation[] }>(res, 'Failed to list conversations');
 }
 
+export async function searchAssistantConversations(
+  query: string,
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<{ items: AssistantConversation[]; total: number; page: number; pages: number }> {
+  const params = new URLSearchParams();
+  if (query) params.set('q', query);
+  params.set('page', page.toString());
+  params.set('pageSize', pageSize.toString());
+  const res = await apiFetch(`/api/assistant/history?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<{ items: AssistantConversation[]; total: number; page: number; pages: number }>(
+    res,
+    'Failed to search conversations',
+  );
+}
+
 export async function createAssistantConversation(data: {
   providerId?: string;
   modelConfigId?: string;

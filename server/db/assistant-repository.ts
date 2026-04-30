@@ -119,6 +119,20 @@ export interface ListConversationsOptions {
   includeArchived?: boolean;
 }
 
+export interface SearchConversationsOptions {
+  query?: string;
+  page?: number;
+  pageSize?: number;
+  includeArchived?: boolean;
+}
+
+export interface SearchConversationsResult {
+  items: AssistantConversationRecord[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
 function toDateMs(value: Date | number | null | undefined): number {
   if (value == null) return 0;
   return value instanceof Date ? value.getTime() : value;
@@ -189,6 +203,56 @@ export class AssistantRepository {
       ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
     });
     return records.map(toConversation);
+  }
+
+  /**
+   * Offset-paginated search across conversation titles and message content.
+   * Returns conversations the user owns, optionally filtered by a substring
+   * query that matches either the title or any message content.
+   */
+  async searchConversations(
+    userId: string,
+    options: SearchConversationsOptions = {},
+  ): Promise<SearchConversationsResult> {
+    const page = Math.max(options.page ?? 1, 1);
+    const pageSize = Math.min(Math.max(options.pageSize ?? 20, 1), 100);
+    const query = (options.query ?? '').trim();
+
+    const baseWhere: any = {
+      userId,
+      ...(options.includeArchived ? {} : { archivedAt: null }),
+    };
+
+    const where = query
+      ? {
+          ...baseWhere,
+          OR: [
+            { title: { contains: query, mode: 'insensitive' as const } },
+            {
+              messages: {
+                some: { content: { contains: query, mode: 'insensitive' as const } },
+              },
+            },
+          ],
+        }
+      : baseWhere;
+
+    const [total, records] = await Promise.all([
+      this.prisma.assistantConversation.count({ where }),
+      this.prisma.assistantConversation.findMany({
+        where,
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    return {
+      items: records.map(toConversation),
+      total,
+      page,
+      pages: Math.max(Math.ceil(total / pageSize), 1),
+    };
   }
 
   async getConversation(userId: string, conversationId: string): Promise<AssistantConversationRecord | null> {

@@ -1,77 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, Project } from '../types';
-import { Plus, Play, Folder, LayoutGrid, Clock, Loader2, Copy, MessageCircle, Send, Bot, Sparkles, ImageIcon, Type, Video, Music } from 'lucide-react';
+import { Plus, LayoutGrid, Clock, Loader2, Sparkles } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { fetchProjects, fetchLibraries, fetchAssistantProviders } from '../api';
 import { Provider } from '../types';
-import { AssistantComposer, BoundContext, AttachedImage } from './Assistant/AssistantComposer';
+import type { BoundContext, AttachedImage } from './Assistant/AssistantComposer';
+import { LibraryCard, ProjectCard } from './EntityCards';
 import {
   filterEnabledAssistantProviders,
   normalizeAssistantProviderSelection,
 } from '../lib/assistant-provider-settings';
 import { AssistantHero } from './Assistant/AssistantHero';
-
-function getLibraryTypeMeta(type: Library['type'] | undefined) {
-  switch (type) {
-    case 'image':
-      return {
-        icon: ImageIcon,
-        iconClassName: 'bg-green-500/10 text-green-500 shadow-green-500/5',
-        borderClassName: 'hover:border-green-500/50',
-      };
-    case 'video':
-      return {
-        icon: Video,
-        iconClassName: 'bg-purple-500/10 text-purple-500 shadow-purple-500/5',
-        borderClassName: 'hover:border-purple-500/50',
-      };
-    case 'audio':
-      return {
-        icon: Music,
-        iconClassName: 'bg-cyan-500/10 text-cyan-500 shadow-cyan-500/5',
-        borderClassName: 'hover:border-cyan-500/50',
-      };
-    case 'text':
-    default:
-      return {
-        icon: Type,
-        iconClassName: 'bg-blue-500/10 text-blue-500 shadow-blue-500/5',
-        borderClassName: 'hover:border-blue-500/50',
-      };
-  }
-}
-
-function getProjectTypeMeta(type: Project['type'] | undefined) {
-  switch (type) {
-    case 'text':
-      return {
-        icon: Type,
-        iconClassName: 'bg-blue-500/10 text-blue-500 shadow-blue-500/5',
-        borderClassName: 'hover:border-blue-500/50',
-      };
-    case 'video':
-      return {
-        icon: Video,
-        iconClassName: 'bg-purple-500/10 text-purple-500 shadow-purple-500/5',
-        borderClassName: 'hover:border-purple-500/50',
-      };
-    case 'audio':
-      return {
-        icon: Music,
-        iconClassName: 'bg-cyan-500/10 text-cyan-500 shadow-cyan-500/5',
-        borderClassName: 'hover:border-cyan-500/50',
-      };
-    case 'image':
-    default:
-      return {
-        icon: ImageIcon,
-        iconClassName: 'bg-green-500/10 text-green-500 shadow-green-500/5',
-        borderClassName: 'hover:border-green-500/50',
-      };
-  }
-}
 
 export function Dashboard() {
   const { t } = useTranslation();
@@ -130,6 +71,34 @@ export function Dashboard() {
 
   const addProject = () => navigate('/project/new');
   const addLibrary = () => navigate('/library/new');
+
+  const handleStartProjectChat = (project: Project) => {
+    localStorage.removeItem('assistant_last_conversation');
+    navigate('/assistant', {
+      state: {
+        draftBoundContexts: [{
+          id: project.id,
+          name: project.name,
+          type: 'project',
+          subType: project.type || 'image',
+        } satisfies BoundContext],
+      },
+    });
+  };
+
+  const handleStartLibraryChat = (library: Library) => {
+    localStorage.removeItem('assistant_last_conversation');
+    navigate('/assistant', {
+      state: {
+        draftBoundContexts: [{
+          id: library.id,
+          name: library.name,
+          type: 'library',
+          subType: library.type || 'text',
+        } satisfies BoundContext],
+      },
+    });
+  };
 
   const handleStartChat = (text: string, contexts: BoundContext[], images: AttachedImage[]) => {
     const trimmedText = text.trim();
@@ -222,43 +191,14 @@ export function Dashboard() {
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {projects.map(project => {
-                  const typeMeta = getProjectTypeMeta(project.type);
-                  const ProjectIcon = typeMeta.icon;
-                  return (
-                  <Link
+                {projects.map(project => (
+                  <ProjectCard
                     key={project.id}
-                    to={`/project/${project.id}`}
-                    className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-6 rounded-xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 relative overflow-hidden`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className={`p-2 rounded-lg group-hover:scale-110 transition-transform ${typeMeta.iconClassName}`}>
-                        <ProjectIcon className="w-5 h-5" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigate('/project/new', { state: { copyFrom: project.id } });
-                          }}
-                          className="p-1.5 text-neutral-500 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all"
-                          title={t('projectViewer.main.duplicateProject')}
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="text-xs text-neutral-500 dark:text-neutral-500 font-mono truncate max-w-[120px]">{project.id}</span>
-                      </div>
-                    </div>
-                    <h4 className="font-medium text-neutral-900 dark:text-white truncate">{project.name}</h4>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
-                      {t('dashboard.projectStats', { 
-                        jobCount: (project.jobCount ?? project.jobs?.length) || 0,
-                        imageCount: (project.albumCount ?? project.album?.length) || 0,
-                        date: new Date(project.createdAt).toLocaleDateString()
-                      })}
-                    </p>
-                  </Link>
-                )})}
+                    project={project}
+                    onStartAssistantChat={handleStartProjectChat}
+                    onDuplicate={(item) => navigate('/project/new', { state: { copyFrom: item.id } })}
+                  />
+                ))}
                 {projects.length === 0 && (
                   <div className="col-span-full p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
                     {t('dashboard.noProjects')}
@@ -285,24 +225,13 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {libraries.map(lib => {
-                  const typeMeta = getLibraryTypeMeta(lib.type);
-                  const LibraryIcon = typeMeta.icon;
-                  return (
-                  <Link
+                {libraries.map(lib => (
+                  <LibraryCard
                     key={lib.id}
-                    to={`/library/${lib.id}`}
-                    className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-6 rounded-xl text-left transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300`}
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className={`p-2 rounded-lg group-hover:scale-110 transition-transform ${typeMeta.iconClassName}`}>
-                        <LibraryIcon className="w-5 h-5" />
-                      </div>
-                      <h4 className="font-medium text-neutral-900 dark:text-white truncate flex-1">{lib.name}</h4>
-                    </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-500">{lib.itemCount ?? lib.items?.length ?? 0} items</p>
-                  </Link>
-                )})}
+                    library={lib}
+                    onStartAssistantChat={handleStartLibraryChat}
+                  />
+                ))}
                 {libraries.length === 0 && (
                   <div className="col-span-full p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
                     {t('dashboard.noLibraries')}

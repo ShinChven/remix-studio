@@ -55,6 +55,22 @@ export function createAssistantRouter(
     }
   });
 
+  // ─── Search conversation history (offset-paginated, content-aware) ───
+  router.get('/api/assistant/history', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const query = c.req.query('q') || undefined;
+      const page = Math.max(Number(c.req.query('page') || '1'), 1);
+      const pageSize = Math.min(Math.max(Number(c.req.query('pageSize') || '20'), 1), 100);
+      const includeArchived = c.req.query('includeArchived') === 'true';
+      const result = await repo.searchConversations(user.userId, { query, page, pageSize, includeArchived });
+      return c.json(result);
+    } catch (e) {
+      console.error('[GET /api/assistant/history]', e);
+      return c.json({ error: 'Failed to search conversations' }, 500);
+    }
+  });
+
   // ─── Create conversation ───
   router.post('/api/assistant/conversations', authMiddleware, async (c) => {
     try {

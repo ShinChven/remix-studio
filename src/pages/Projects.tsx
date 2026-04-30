@@ -1,63 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Project, ProjectType } from '../types';
-import { Plus, Play, Clock, LayoutGrid, ImageIcon, HardDrive, ChevronLeft, ChevronRight, Loader2, Type, Video, Music, Search, Copy, Archive, ArchiveRestore, Stars } from 'lucide-react';
+import { Project } from '../types';
+import { Plus, Play, Clock, ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
 import { fetchProjects, updateProject } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import type { BoundContext } from '../components/Assistant/AssistantComposer';
+import { ProjectCard } from '../components/EntityCards';
 
 type StatusFilter = 'active' | 'archived' | 'all';
 
 function isStatusFilter(value: string | null): value is StatusFilter {
   return value === 'active' || value === 'archived' || value === 'all';
-}
-
-function getProjectTypeMeta(type: ProjectType | undefined) {
-  switch (type) {
-    case 'text':
-      return {
-        icon: Type,
-        iconClassName: 'bg-blue-500/10 text-blue-500 shadow-blue-500/5',
-        borderClassName: 'hover:border-blue-500/50',
-        accentClassName: 'text-blue-500',
-        glowClassName: 'via-blue-500/20',
-        assetIcon: Type,
-        assetLabel: 'texts',
-      };
-    case 'video':
-      return {
-        icon: Video,
-        iconClassName: 'bg-purple-500/10 text-purple-500 shadow-purple-500/5',
-        borderClassName: 'hover:border-purple-500/50',
-        accentClassName: 'text-purple-500/80',
-        glowClassName: 'via-purple-500/20',
-        assetIcon: Video,
-        assetLabel: 'videos',
-      };
-    case 'audio':
-      return {
-        icon: Music,
-        iconClassName: 'bg-cyan-500/10 text-cyan-500 shadow-cyan-500/5',
-        borderClassName: 'hover:border-cyan-500/50',
-        accentClassName: 'text-cyan-500/80',
-        glowClassName: 'via-cyan-500/20',
-        assetIcon: Music,
-        assetLabel: 'audios',
-      };
-    case 'image':
-    default:
-      return {
-        icon: ImageIcon,
-        iconClassName: 'bg-green-500/10 text-green-500 shadow-green-500/5',
-        borderClassName: 'hover:border-green-500/50',
-        accentClassName: 'text-green-500/80',
-        glowClassName: 'via-green-500/20',
-        assetIcon: ImageIcon,
-        assetLabel: 'images',
-      };
-  }
 }
 
 export function Projects() {
@@ -189,14 +144,6 @@ export function Projects() {
     }
   };
 
-  const formatSize = (bytes: number) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
-
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
       <div className="w-full space-y-8 pb-20">
@@ -262,98 +209,16 @@ export function Projects() {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {projects.map(project => {
-                  const typeMeta = getProjectTypeMeta(project.type);
-                  const ProjectIcon = typeMeta.icon;
-                  const AssetIcon = typeMeta.assetIcon;
-                  const isArchived = project.status === 'archived';
-                  const isToggling = togglingId === project.id;
-
-                  return (
-                  <Link
+                {projects.map(project => (
+                  <ProjectCard
                     key={project.id}
-                    to={`/project/${project.id}`}
-                    className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-5 md:p-6 rounded-2xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 ${isArchived ? 'opacity-75' : ''}`}
-                  >
-                    <div className="flex items-start justify-between mb-3 md:mb-4">
-                      <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
-                        <ProjectIcon className="w-5 h-5 md:w-6 md:h-6" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleStartAssistantChat(project);
-                          }}
-                          className="p-1.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-all"
-                          title={t('projects.projectCard.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })}
-                          aria-label={t('projects.projectCard.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })}
-                        >
-                          <Stars className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (!isToggling) handleToggleArchive(project);
-                          }}
-                          disabled={isToggling}
-                          className={`p-1.5 rounded-lg transition-all ${isArchived ? 'text-amber-500 hover:text-amber-400 hover:bg-amber-500/10' : 'text-neutral-500 hover:text-amber-500 hover:bg-amber-500/10'} disabled:opacity-50`}
-                          title={t(isArchived ? 'projects.unarchiveProject' : 'projects.archiveProject')}
-                        >
-                          {isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            navigate('/project/new', { state: { copyFrom: project.id } });
-                          }}
-                          className="p-1.5 text-neutral-500 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all"
-                          title={t('projectViewer.main.duplicateProject')}
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="text-base md:text-lg font-semibold text-neutral-900 dark:text-white truncate">{project.name}</h4>
-                      {isArchived && (
-                        <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 leading-none shrink-0">
-                          <Archive className="w-2.5 h-2.5" />
-                          {t('projects.archivedBadge')}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 dark:text-neutral-500 mb-4">
-                      <div className="flex items-center gap-1.5">
-                        <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                        <span className="font-bold">{t('projects.projectCard.jobs', { count: (project.jobCount ?? project.jobs?.length) || 0 })}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <AssetIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                        <span className="font-bold">{t(`projects.projectCard.assets.${typeMeta.assetLabel}`, { count: (project.albumCount ?? project.album?.length) || 0 })}</span>
-                      </div>
-                      <div className={`flex items-center gap-1.5 font-medium ${typeMeta.accentClassName}`}>
-                        <HardDrive className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                        <span className="font-bold">{formatSize(project.totalSize || 0)}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                        <span className="truncate font-bold">{new Date(project.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-
-                    <div className={`pt-3 md:pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50 flex items-center justify-end text-[10px] md:text-xs font-black uppercase tracking-widest opacity-100 transition-opacity ${typeMeta.accentClassName}`}>
-                      {t('projects.projectCard.openProject')}
-                    </div>
-
-                    <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
-                  </Link>
-                )})}
+                    project={project}
+                    isToggling={togglingId === project.id}
+                    onStartAssistantChat={handleStartAssistantChat}
+                    onToggleArchive={handleToggleArchive}
+                    onDuplicate={(item) => navigate('/project/new', { state: { copyFrom: item.id } })}
+                  />
+                ))}
 
                 {projects.length === 0 && (
                   <div className="col-span-full py-20 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/20 shadow-sm">

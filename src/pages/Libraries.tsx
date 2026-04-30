@@ -1,54 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
-import { Plus, Folder, LayoutGrid, ChevronRight, ChevronLeft, Loader2, Copy, Search, ImageIcon, Type, Video, Music, Pin, PinOff, Trash2, Stars } from 'lucide-react';
+import { Plus, Folder, LayoutGrid, ChevronRight, ChevronLeft, Loader2, Search } from 'lucide-react';
 import { duplicateLibrary, fetchLibraries, setLibraryPinned, deleteLibrary, fetchLibraryReferences } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
 import type { BoundContext } from '../components/Assistant/AssistantComposer';
 import { DuplicateLibraryDialog } from '../components/DuplicateLibraryDialog';
 import { PageHeader } from '../components/PageHeader';
+import { LibraryCard } from '../components/EntityCards';
 import { toast } from 'sonner';
 
 const MAX_PINNED_LIBRARIES = 6;
-
-function getLibraryTypeMeta(type: Library['type'] | undefined) {
-  switch (type) {
-    case 'image':
-      return {
-        icon: ImageIcon,
-        iconClassName: 'bg-green-500/10 text-green-500 shadow-green-500/5',
-        borderClassName: 'hover:border-green-500/50',
-        accentClassName: 'text-green-500',
-        glowClassName: 'via-green-500/20',
-      };
-    case 'video':
-      return {
-        icon: Video,
-        iconClassName: 'bg-purple-500/10 text-purple-500 shadow-purple-500/5',
-        borderClassName: 'hover:border-purple-500/50',
-        accentClassName: 'text-purple-500',
-        glowClassName: 'via-purple-500/20',
-      };
-    case 'audio':
-      return {
-        icon: Music,
-        iconClassName: 'bg-cyan-500/10 text-cyan-500 shadow-cyan-500/5',
-        borderClassName: 'hover:border-cyan-500/50',
-        accentClassName: 'text-cyan-500',
-        glowClassName: 'via-cyan-500/20',
-      };
-    case 'text':
-    default:
-      return {
-        icon: Type,
-        iconClassName: 'bg-blue-500/10 text-blue-500 shadow-blue-500/5',
-        borderClassName: 'hover:border-blue-500/50',
-        accentClassName: 'text-blue-500',
-        glowClassName: 'via-blue-500/20',
-      };
-  }
-}
 
 export function Libraries() {
   const { t } = useTranslation();
@@ -257,87 +220,17 @@ export function Libraries() {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {libraries.map(lib => {
-                  const typeMeta = getLibraryTypeMeta(lib.type);
-                  const TypeIcon = typeMeta.icon;
-                  const isPinned = Boolean(lib.pinnedAt);
-                  const checking = isCheckingRefs === lib.id;
-                  return (
-                  <Link
+                {libraries.map(lib => (
+                  <LibraryCard
                     key={lib.id}
-                    to={`/library/${lib.id}`}
-                    className={`${isPinned ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-200/60 dark:border-blue-500/20' : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5'} border backdrop-blur-xl ${typeMeta.borderClassName} p-5 rounded-2xl text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 duration-300`}
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`p-3 rounded-xl group-hover:scale-105 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
-                        <TypeIcon className="w-5 h-5" />
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleTogglePin(lib);
-                          }}
-                          className="p-1.5 text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
-                          title={isPinned ? t('libraries.libraryCard.unpin') : t('libraries.libraryCard.pin')}
-                        >
-                          {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleStartAssistantChat(lib);
-                          }}
-                          className="p-1.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-all"
-                          title={t('libraries.libraryCard.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
-                          aria-label={t('libraries.libraryCard.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
-                        >
-                          <Stars className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setLibraryToDuplicate(lib);
-                          }}
-                          className="p-1.5 text-neutral-500 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all"
-                          title={t('libraries.libraryCard.duplicate')}
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDeleteClick(lib);
-                          }}
-                          disabled={checking}
-                          className="p-1.5 text-neutral-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all disabled:opacity-50"
-                          title={t('libraryEditor.deleteLibrary')}
-                        >
-                          {checking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <h4 className="text-base font-bold text-neutral-900 dark:text-white truncate mb-2">{lib.name}</h4>
-
-                    <div className="flex items-center gap-x-4 gap-y-1.5 text-xs text-neutral-500 dark:text-neutral-500">
-                      <div className="flex items-center gap-1.5 capitalize">
-                        <TypeIcon className="w-3.5 h-3.5" />
-                        <span>{lib.type || 'text'}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <LayoutGrid className="w-3.5 h-3.5" />
-                        <span>{t('libraries.libraryCard.items', { count: lib.itemCount ?? lib.items?.length ?? 0 })}</span>
-                      </div>
-                    </div>
-
-                    <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
-                  </Link>
-                )})}
+                    library={lib}
+                    isCheckingRefs={isCheckingRefs === lib.id}
+                    onTogglePin={handleTogglePin}
+                    onStartAssistantChat={handleStartAssistantChat}
+                    onDuplicate={setLibraryToDuplicate}
+                    onDelete={handleDeleteClick}
+                  />
+                ))}
 
                 {libraries.length === 0 && (
                   <div className="col-span-full py-20 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/20 shadow-sm">
