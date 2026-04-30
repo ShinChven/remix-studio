@@ -365,6 +365,7 @@ export function AssistantPage() {
   }, []);
 
   useEffect(() => {
+    if (providers.length === 0) return;
     const normalizedSelection = normalizeAssistantProviderSelection(
       providers,
       selectedProviderId,
