@@ -147,6 +147,16 @@ export class LibraryRepository {
     return items.map((item) => this.mapItem(item));
   }
 
+  async getLibraryItemsByIds(userId: string, libraryId: string, itemIds: string[]): Promise<LibraryItem[]> {
+    const lib = await this.prisma.library.findFirst({ where: { id: libraryId, userId } });
+    if (!lib) return [];
+
+    const items = await this.prisma.libraryItem.findMany({
+      where: { libraryId, id: { in: itemIds } },
+    });
+    return items.map((item) => this.mapItem(item));
+  }
+
   async getLibraryItemsPaginated(userId: string, libraryId: string, page: number = 1, limit: number = 25, q?: string, tags?: string[]): Promise<{ items: LibraryItem[], total: number, page: number, pages: number }> {
     const lib = await this.prisma.library.findFirst({ where: { id: libraryId, userId } });
     if (!lib) return { items: [], total: 0, page, pages: 1 };

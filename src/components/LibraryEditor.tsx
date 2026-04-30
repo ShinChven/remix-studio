@@ -7,8 +7,9 @@ import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, 
 import { ConfirmModal } from './ConfirmModal';
 import { TagModal } from './TagModal';
 import { PageHeader } from './PageHeader';
-import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary, fetchLibraryItems, imageDisplayUrl, exportMediaLibraryZip } from '../api';
+import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItemOrders, fetchLibraryReferences, updateLibraryItem, duplicateLibrary, fetchLibraryItems, imageDisplayUrl, exportMediaLibraryZip, copyLibraryItems, moveLibraryItems } from '../api';
 import { DuplicateLibraryDialog } from './DuplicateLibraryDialog';
+import { CopyMoveItemsDialog } from './CopyMoveItemsDialog';
 import { RenameItemModal } from './RenameItemModal';
 import { ImageLightbox } from './ProjectViewer/ImageLightbox';
 import { ExportFileNameModal } from './ExportFileNameModal';
@@ -75,6 +76,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFileName, setExportFileName] = useState(getDefaultLibraryExportName(library.name));
   const [exportingLibrary, setExportingLibrary] = useState(false);
+  const [showCopyMoveDialog, setShowCopyMoveDialog] = useState(false);
+  const [copyMoveAction, setCopyMoveAction] = useState<'copy' | 'move'>('copy');
 
   // Server-side paginated items
   const [items, setItems] = useState<LibraryItem[]>([]);
@@ -209,6 +212,26 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     if (!tagModalItemId) return;
     await updateLibraryItem(library.id, tagModalItemId, { tags }).catch(console.error);
     await loadItems();
+  };
+
+  const handleCopyMoveConfirm = async (destinationLibraryId: string) => {
+    const itemIds = Array.from(selectedItemIds);
+    try {
+      if (copyMoveAction === 'copy') {
+        await copyLibraryItems(library.id, itemIds, destinationLibraryId);
+        toast.success(t('libraryEditor.copySuccess', { count: itemIds.length }));
+      } else {
+        await moveLibraryItems(library.id, itemIds, destinationLibraryId);
+        toast.success(t('libraryEditor.moveSuccess', { count: itemIds.length }));
+      }
+      setSelectedItemIds(new Set());
+      setLastSelectedIndex(null);
+      await loadItems();
+    } catch (e: any) {
+      console.error(`Failed to ${copyMoveAction} items:`, e);
+      toast.error(e.message || t(`libraryEditor.${copyMoveAction}Error`, `Failed to ${copyMoveAction} items`));
+      throw e;
+    }
   };
 
   // Close dropdown when clicking outside
@@ -619,6 +642,24 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
             {selectedItemIds.size > 0 && (
               <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-right-2">
+                <button
+                  onClick={() => {
+                    setCopyMoveAction('copy');
+                    setShowCopyMoveDialog(true);
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all font-bold text-[10px] uppercase tracking-widest border border-white/20"
+                >
+                  <Copy className="w-3.5 h-3.5" /> <span className="hidden xs:inline">{t('libraryEditor.copyTo', 'Copy To')}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setCopyMoveAction('move');
+                    setShowCopyMoveDialog(true);
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all font-bold text-[10px] uppercase tracking-widest border border-white/20"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" /> <span className="hidden xs:inline">{t('libraryEditor.moveTo', 'Move To')}</span>
+                </button>
                 <button
                   onClick={() => setShowBatchTagModal(true)}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all font-bold text-[10px] uppercase tracking-widest border border-white/20"
@@ -1034,6 +1075,16 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         currentName={library.name}
         onClose={() => setShowDuplicateDialog(false)}
         onConfirm={handleDuplicateLibrary}
+      />
+
+      <CopyMoveItemsDialog
+        isOpen={showCopyMoveDialog}
+        action={copyMoveAction}
+        sourceLibraryId={library.id}
+        libraryType={library.type || 'text'}
+        itemCount={selectedItemIds.size}
+        onClose={() => setShowCopyMoveDialog(false)}
+        onConfirm={handleCopyMoveConfirm}
       />
 
       <ExportFileNameModal

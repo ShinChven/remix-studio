@@ -534,6 +534,150 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
     }
   });
 
+  router.post('/api/libraries/:libId/items/copy', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const libId = c.req.param('libId');
+      const body = await c.req.json();
+      const { itemIds, destinationLibraryId } = body;
+
+      if (!Array.isArray(itemIds) || !destinationLibraryId) {
+        return c.json({ error: 'itemIds array and destinationLibraryId are required' }, 400);
+      }
+
+      if (libId === destinationLibraryId) {
+        return c.json({ error: 'Destination library must be different' }, 400);
+      }
+
+      const sourceLibrary = await repository.getLibrary(user.userId, libId);
+      const destinationLibrary = await repository.getLibrary(user.userId, destinationLibraryId);
+
+      if (!sourceLibrary || !destinationLibrary) {
+        return c.json({ error: 'Source or destination library not found' }, 404);
+      }
+
+      if (sourceLibrary.type !== destinationLibrary.type) {
+        return c.json({ error: 'Libraries must be of the same type' }, 400);
+      }
+
+      const itemsToCopy = await repository.getLibraryItemsByIds(user.userId, libId, itemIds);
+      if (itemsToCopy.length === 0) {
+        return c.json({ success: true, count: 0 }, 200);
+      }
+
+      // Check storage limits for copied media assets
+      if (sourceLibrary.type === 'image' || sourceLibrary.type === 'video' || sourceLibrary.type === 'audio') {
+        const copySize = itemsToCopy.reduce((acc, item) => acc + (item.size || 0), 0);
+        if (copySize > 0) {
+          const { allowed, currentUsage, limit } = await checkStorageLimit(
+            user.userId,
+            copySize,
+            userRepository,
+            storage,
+            exportStorage,
+            repository
+          );
+
+          if (!allowed) {
+            return c.json({
+              error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ${(copySize / (1024 * 1024)).toFixed(1)}MB.`
+            }, 403);
+          }
+        }
+      }
+
+      // Clone items and S3 objects using the same logic as cloneLibraryItems
+      const safeLibraryId = toSafeStorageKeyPart(destinationLibraryId);
+      const clonedItems = await Promise.all(
+        itemsToCopy.map(async (item) => {
+          const clonedItem: LibraryItem = {
+            ...item,
+            id: randomUUID(),
+          };
+
+          if (sourceLibrary.type === 'image' || sourceLibrary.type === 'video' || sourceLibrary.type === 'audio') {
+            const keyFields: Array<'content' | 'thumbnailUrl' | 'optimizedUrl'> = ['content', 'thumbnailUrl', 'optimizedUrl'];
+            for (const field of keyFields) {
+              const sourceKey = clonedItem[field];
+              if (!sourceKey || sourceKey.startsWith('http') || sourceKey.startsWith('data:')) continue;
+
+              const destinationKey = `${user.userId}/${safeLibraryId}/${getKeyBasename(sourceKey)}`;
+              await storage.copy(sourceKey, destinationKey);
+              clonedItem[field] = destinationKey;
+            }
+          }
+
+          return clonedItem;
+        })
+      );
+
+      await repository.createLibraryItemsBatch(user.userId, destinationLibraryId, clonedItems);
+      return c.json({ success: true, count: clonedItems.length }, 201);
+    } catch (e: any) {
+      console.error('[POST /api/libraries/:libId/items/copy]', e);
+      return c.json({ error: formatError(e, 'Failed to copy items') }, 500);
+    }
+  });
+
+  router.post('/api/libraries/:libId/items/move', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const libId = c.req.param('libId');
+      const body = await c.req.json();
+      const { itemIds, destinationLibraryId } = body;
+
+      if (!Array.isArray(itemIds) || !destinationLibraryId) {
+        return c.json({ error: 'itemIds array and destinationLibraryId are required' }, 400);
+      }
+
+      if (libId === destinationLibraryId) {
+        return c.json({ error: 'Destination library must be different' }, 400);
+      }
+
+      const sourceLibrary = await repository.getLibrary(user.userId, libId);
+      const destinationLibrary = await repository.getLibrary(user.userId, destinationLibraryId);
+
+      if (!sourceLibrary || !destinationLibrary) {
+        return c.json({ error: 'Source or destination library not found' }, 404);
+      }
+
+      if (sourceLibrary.type !== destinationLibrary.type) {
+        return c.json({ error: 'Libraries must be of the same type' }, 400);
+      }
+
+      const itemsToMove = await repository.getLibraryItemsByIds(user.userId, libId, itemIds);
+      if (itemsToMove.length === 0) {
+        return c.json({ success: true, count: 0 }, 200);
+      }
+
+      const destItems = await repository.getLibraryItemsPaginated(user.userId, destinationLibraryId, 1, 1);
+      const startOrder = destItems.total;
+
+      for (let i = 0; i < itemsToMove.length; i++) {
+        const item = itemsToMove[i];
+        await repository.updateLibraryItem(user.userId, libId, item.id, {
+          order: startOrder + i
+        });
+        
+        // Use Prisma directly to update the libraryId since the repository interface
+        // doesn't support changing the libraryId through updateLibraryItem.
+        // Or we can delete and create. Since Prisma schema cascades, delete/create is safer?
+        // Wait, repository.updateLibraryItem doesn't allow changing libraryId.
+        // Let's just delete from source and create in destination.
+        await repository.deleteLibraryItem(user.userId, libId, item.id);
+        await repository.createLibraryItem(user.userId, destinationLibraryId, {
+          ...item,
+          order: startOrder + i
+        });
+      }
+
+      return c.json({ success: true, count: itemsToMove.length });
+    } catch (e: any) {
+      console.error('[POST /api/libraries/:libId/items/move]', e);
+      return c.json({ error: formatError(e, 'Failed to move items') }, 500);
+    }
+  });
+
   router.put('/api/libraries/:libId/items/reorder', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

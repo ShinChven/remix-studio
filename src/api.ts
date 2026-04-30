@@ -397,6 +397,24 @@ export async function createLibraryItemsBatch(libraryId: string, items: LibraryI
   }
 }
 
+export async function copyLibraryItems(libraryId: string, itemIds: string[], destinationLibraryId: string): Promise<{ count: number }> {
+  const res = await apiFetch(`/api/libraries/${libraryId}/items/copy`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ itemIds, destinationLibraryId }),
+  });
+  return handleResponse<{ count: number }>(res, 'Failed to copy items');
+}
+
+export async function moveLibraryItems(libraryId: string, itemIds: string[], destinationLibraryId: string): Promise<{ count: number }> {
+  const res = await apiFetch(`/api/libraries/${libraryId}/items/move`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ itemIds, destinationLibraryId }),
+  });
+  return handleResponse<{ count: number }>(res, 'Failed to move items');
+}
+
 export async function updateLibraryItem(libraryId: string, itemId: string, updates: Partial<LibraryItem>): Promise<void> {
   const res = await apiFetch(`/api/libraries/${libraryId}/items/${itemId}`, {
     method: 'PUT',
