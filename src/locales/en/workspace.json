@@ -1,0 +1,348 @@
+{
+  "storageView": {
+    "tiers": {
+      "free": "Free",
+      "professional": "Professional",
+      "premium": "Premium",
+      "custom": "Custom"
+    },
+    "analyzing": "Analyzing storage usage...",
+    "title": "Storage Analysis",
+    "description": "Detailed breakdown of your digital footprint.",
+    "capacityOverview": "Capacity Overview",
+    "consumption": "Consumption",
+    "totalLimit": "Total Limit",
+    "percentConsumed": "{{percent}}% consumed",
+    "optimizationTitle": "Storage Optimization",
+    "cleanOrphansTitle": "Clean Orphans",
+    "cleanOrphansDescription": "Identify and remove unreferenced files from project folders to reclaim space.",
+    "recycleBinTitle": "Recycle Bin",
+    "recycleBinDescription": "Total of {{size}} can be permanently deleted.",
+    "completeScan": "Complete Scan",
+    "projectRankings": "Project Rankings",
+    "album": "Album",
+    "orphans": "Orphans"
+  },
+  "exports": {
+    "title": "Exports",
+    "description": "Manage your generated ZIP archives across all projects.",
+    "drive": {
+      "connected": "Drive Connected",
+      "disconnect": "Disconnect",
+      "connect": "Connect Drive",
+      "disconnectSuccess": "Google Drive disconnected",
+      "disconnectError": "Failed to disconnect Google Drive",
+      "uploadQueued": "Drive upload queued — watch the Drive icon for progress",
+      "uploadSuccess": "Uploaded to Google Drive!",
+      "uploadFailed": "Drive upload failed",
+      "openFile": "Open file",
+      "uploading": "Uploading to Drive…",
+      "uploadToDrive": "Upload to Google Drive"
+    },
+    "stats": {
+      "database": "Database",
+      "total": "Total",
+      "inProgress": "In Progress",
+      "active": "Active"
+    },
+    "empty": {
+      "title": "Exports are empty",
+      "description": "Generated project exports will appear here automatically",
+      "viewProjects": "View Projects"
+    },
+    "status": {
+      "ready": "Ready",
+      "archiving": "Archiving",
+      "queued": "Queued",
+      "failed": "Failed"
+    },
+    "card": {
+      "files": "{{count}} Files",
+      "download": "Download ZIP",
+      "delete": "Delete record"
+    },
+    "loadMore": "Load More Exports",
+    "deleteDialog": {
+      "title": "Delete Export Record",
+      "message": "Are you sure you want to delete this export record? This action cannot be undone.",
+      "confirm": "Delete Record"
+    }
+  },
+  "trash": {
+    "title": "Recycle Bin",
+    "description": "Review deleted items, restore what you need, or remove them permanently.",
+    "stats": {
+      "items": "{{count}} Items",
+      "total": "{{size}} Total"
+    },
+    "actions": {
+      "restore": "Restore",
+      "restoreCount": "Restore ({{count}})",
+      "deletePermanently": "Delete Permanently",
+      "emptyTrash": "Empty Trash"
+    },
+    "empty": {
+      "title": "Recycle Bin is Empty",
+      "description": "Deleted album items will appear here"
+    },
+    "card": {
+      "restore": "Restore",
+      "delete": "Delete Permanently"
+    },
+    "confirm": {
+      "empty": {
+        "title": "Empty Recycle Bin",
+        "message": "Are you sure you want to permanently delete all {{count}} items? This will free up {{size}} but cannot be undone.",
+        "confirm": "Empty Trash"
+      },
+      "deleteSelected": {
+        "title": "Delete Selected Items",
+        "message": "Are you sure you want to permanently delete {{count}} items? This will free up {{size}} and cannot be undone.",
+        "confirm": "Delete Permanently"
+      },
+      "deleteSingle": {
+        "title": "Permanently Delete Image",
+        "message": "Are you sure you want to permanently delete this image? This action cannot be undone.",
+        "confirm": "Delete Permanently"
+      },
+      "deleting": "Deleting..."
+    }
+  },
+  "promptEditor": {
+    "titlePlaceholder": "Title...",
+    "fragmentTitlePlaceholder": "Fragment Title",
+    "addTags": "Add Tags",
+    "tagsCount": "{{count}} Tags",
+    "backToLibrary": "Back to Library",
+    "viewMode": {
+      "edit": "Editor Only",
+      "split": "Split View",
+      "preview": "Preview Only"
+    },
+    "toggleFullscreen": "Toggle Fullscreen",
+    "save": "Save",
+    "sourceContent": "Source Content",
+    "markdownSupport": "Supports GFM Markdown",
+    "editorPlaceholder": "Draft your library fragment here using Markdown...",
+    "dynamicPreview": "Dynamic Preview",
+    "previewPlaceholder": "Write something to see the preview here...",
+    "words": "Words: {{count}}",
+    "chars": "Chars: {{count}}",
+    "libraryLabel": "Library: {{id}}",
+    "errorSave": "Failed to save library prompt"
+  },
+  "mcpConnections": {
+    "title": "MCP Connections",
+    "description": "Connect AI apps securely through MCP protocol",
+    "justNow": "just now",
+    "relativeTime": {
+      "m": "{{count}}m ago",
+      "h": "{{count}}h ago"
+    },
+    "expiryOptions": {
+      "noExpiration": "No expiration",
+      "7days": "7 days",
+      "30days": "30 days",
+      "90days": "90 days",
+      "1year": "1 year"
+    },
+    "errorLoad": "Failed to load MCP connections.",
+    "toasts": {
+      "clientRevoked": "Client access revoked",
+      "clientCreated": "OAuth client created",
+      "clientCreateFailed": "Failed to create OAuth client",
+      "clientUpdated": "OAuth callback updated",
+      "clientUpdateFailed": "Failed to update OAuth callback",
+      "clientRedirectRequired": "Add at least one redirect URI",
+      "clientIdCopied": "Client ID copied to clipboard",
+      "clientSecretCopied": "Client secret copied to clipboard",
+      "tokenRevoked": "Token revoked",
+      "revokeFailed": "Failed to revoke",
+      "tokenCreated": "Token created — copy it now. You won't see it again.",
+      "tokenCopied": "Token copied to clipboard",
+      "createFailed": "Failed to create token",
+      "copied": "{{label}} copied",
+      "copyFailed": "Failed to copy {{label}}"
+    },
+    "connectSection": {
+      "title": "Connect an AI app to your account",
+      "description": "This page helps you connect AI apps to your workspace. Start by copying the app address below into the app you want to connect. Then choose one of the two supported sign-in methods.",
+      "oauthMethod": {
+        "title": "OAuth 2.1 connector",
+        "description": "Use this when the app can open a browser for sign-in. You sign in, approve access, and the app connects automatically. This is the best option for most users."
+      },
+      "tokenMethod": {
+        "title": "Access token",
+        "description": "Use this only when the app asks you to paste a token, API key, or secret. You create the token here and paste it into the app yourself."
+      },
+      "appAddress": {
+        "label": "App address",
+        "copyTitle": "Copy MCP URL",
+        "instruction": "Copy this into the AI app when it asks where to connect."
+      },
+      "advancedUrl": {
+        "label": "Advanced sign-in URL",
+        "copyTitle": "Copy OAuth metadata URL",
+        "instruction": "Only use this if the app specifically asks for a sign-in or discovery URL."
+      },
+      "steps": {
+        "1": {
+          "title": "1. Copy Address",
+          "desc": "Paste it into the AI app to start setup."
+        },
+        "2": {
+          "title": "2. Choose Method",
+          "desc": "Use OAuth if it opens a browser, otherwise use a token."
+        },
+        "3": {
+          "title": "3. Manage Here",
+          "desc": "View connections or revoke access anytime."
+        }
+      },
+      "jsonSetup": {
+        "title": "Need to use a JSON configuration?",
+        "subtitle": "Click to show or hide JSON setup blocks",
+        "instruction": "Some apps ask you to paste a JSON setup block instead of filling out a form. Use the OAuth 2.1 version when the app supports browser sign-in. Use the access token version when the app asks for a token.",
+        "oauthJson": "OAuth 2.1 JSON",
+        "tokenJson": "Access token JSON",
+        "copyJson": "Copy JSON",
+        "tokenInstruction": "Replace <code className=\"text-amber-400\">YOUR_MCP_TOKEN</code> with a token from this page, then paste the finished JSON into the app."
+      }
+    },
+    "tokens": {
+      "title": "Access Tokens",
+      "newToken": "New Token",
+      "whenToUse": "When to use Access Tokens",
+      "tip": "Use an access token only if the app does not support the OAuth 2.1 connector. Keep tokens private, like a password. In most cases, you will paste the app address and this token into the app.",
+      "form": {
+        "tokenName": "Token Name",
+        "expiration": "Expiration",
+        "placeholder": "e.g. Claude Desktop",
+        "create": "Create Token",
+        "cancel": "Cancel",
+        "done": "Done"
+      },
+      "empty": {
+        "title": "No access tokens",
+        "desc": "Create a token to connect your first AI app manually."
+      },
+      "card": {
+        "created": "Created {{date}}",
+        "used": "Used {{date}}",
+        "expired": "Expired",
+        "expires": "Expires {{date}}",
+        "noExpiration": "No expiration",
+        "revokeTitle": "Revoke token"
+      }
+    },
+    "oauth": {
+      "title": "OAuth 2.1 Connections",
+      "newClient": "New Client",
+      "recommended": "Recommended for simple sign-in",
+      "tip": "Apps that you connect with the OAuth 2.1 connector will appear here automatically. After you approve access in the browser, the app will show up here.",
+      "edit": {
+        "title": "Edit callbacks for {{name}}",
+        "description": "Update the callback URLs used by this OAuth client. Keep one redirect URI per line.",
+        "save": "Save Callback URLs"
+      },
+      "form": {
+        "clientName": "Client Name",
+        "clientNamePlaceholder": "e.g. Claude Desktop local",
+        "authMethod": "Auth Method",
+        "redirectUris": "Redirect URIs",
+        "redirectUrisPlaceholder": "http://localhost:3000/callback\nhttps://example.com/oauth/callback",
+        "redirectUrisHint": "Enter one redirect URI per line. Redirect URIs must use HTTPS or localhost.",
+        "create": "Create Client",
+        "created": "OAuth client created — copy the credentials now.",
+        "createdHint": "The client secret is only shown once. Store it in the MCP app or secret manager before closing this panel.",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "copyClientId": "Copy client ID",
+        "copyClientSecret": "Copy client secret",
+        "scope": "Scope"
+      },
+      "empty": {
+        "title": "No OAuth clients connected",
+        "desc": "Apps will appear here after sign-in is completed in your AI app."
+      },
+      "card": {
+        "manualClient": "Manual client",
+        "activeToken": "{{count}} active token",
+        "activeToken_plural": "{{count}} active tokens",
+        "noTokens": "No active tokens",
+        "registered": "Registered {{date}}",
+        "editTitle": "Edit callback URLs",
+        "revokeTitle": "Revoke all tokens"
+      }
+    },
+    "confirm": {
+      "revokeClientTitle": "Revoke Client Access",
+      "revokeTokenTitle": "Revoke Token",
+      "revokeClientMessage": "Revoke all access tokens for \"{{name}}\"? The client will need to re-authenticate.",
+      "revokeTokenMessage": "Revoke the token \"{{name}}\"? Any MCP client using this token will lose access immediately.",
+      "revoking": "Revoking...",
+      "revoke": "Revoke"
+    }
+  },
+  "assistant": {
+    "title": "Assistant",
+    "greetings": {
+      "0": "What do you have in mind?",
+      "1": "What do you want to create today?",
+      "2": "How can I assist your workflow?",
+      "3": "Ready to make some magic happen?",
+      "4": "Follow the white rabbit.",
+      "5": "Red pill or blue pill?",
+      "6": "There is no spoon.",
+      "7": "Wake up, Neo...",
+      "8": "Welcome to the Desert of the Real.",
+      "9": "You're absolutely right!"
+    },
+    "newChat": "New Chat",
+    "conversations": "Chats",
+    "noConversations": "No conversations yet",
+    "selectProvider": "Select Provider",
+    "selectModel": "Select Model",
+    "typePlaceholder": "Type a message...",
+    "send": "Send",
+    "stop": "Stop",
+    "confirm": "Confirm",
+    "confirmTool": "Approve this tool in this session",
+    "cancel": "Cancel",
+    "confirmAction": "Confirm this action?",
+    "cancelAction": "Cancel this action",
+    "toolApprovalEnabled": "Future {{tool}} actions in this conversation will auto-approve for this session.",
+    "toolRunning": "Running {{tool}}...",
+    "toolCompleted": "{{tool}} completed",
+    "toolFailed": "{{tool}} failed",
+    "errorOccurred": "An error occurred. You can try again.",
+    "circuitOpen": "Safety limit reached",
+    "deleteConversation": "Delete Conversation",
+    "deleteConfirm": "Are you sure you want to delete this conversation?",
+    "renameConversation": "Rename",
+    "archiveConversation": "Archive",
+    "unarchiveConversation": "Unarchive",
+    "noProvider": "Select a provider and model to start chatting",
+    "providerNotConfigured": "No chat-capable providers configured. Add an OpenAI, Claude, or Google AI provider first.",
+    "emptyChat": "Start a conversation with your assistant",
+    "confirmationExpired": "This confirmation has expired",
+    "loading": "Thinking...",
+    "attachImage": "Attach image",
+    "dropImagesHere": "Drop images here",
+    "maxImagesReached": "Maximum 5 images per message",
+    "imageAttached_one": "{{count}} image attached",
+    "imageAttached_other": "{{count}} images attached",
+    "pasteImage": "Image pasted",
+    "imageTooLarge": "Image too large to process",
+    "invalidImageType": "Only image files are supported",
+    "removeImage": "Remove image",
+    "micStart": "Record voice message",
+    "micStop": "Stop recording",
+    "micTranscribing": "Transcribing...",
+    "micUnsupported": "Microphone is not supported in this browser",
+    "micPermissionDenied": "Microphone permission denied",
+    "micRecordFailed": "Recording failed",
+    "micTranscribeFailed": "Failed to transcribe audio",
+    "micNoSpeechDetected": "No speech detected in recording"
+  }
+}

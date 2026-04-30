@@ -1,0 +1,138 @@
+{
+  "projectRoute": {
+    "notFound": "Projet non trouvé.",
+    "renameFailed": "Échec du renommage du dossier du projet. Annulation du changement d'ID."
+  },
+  "projects": {
+    "title": "Projets",
+    "description": "Gérez et suivez vos flux de travail et tâches de génération IA.",
+    "allProjects": "Tous les projets",
+    "searchPlaceholder": "Rechercher des projets par nom ou ID...",
+    "newProject": "Nouveau projet",
+    "noResultsFound": "Aucun projet correspondant trouvé",
+    "archiveProject": "Archiver le projet",
+    "unarchiveProject": "Désarchiver le projet",
+    "archivedBadge": "Archivé",
+    "archivedToast": "« {{name}} » archivé",
+    "unarchivedToast": "« {{name}} » restauré",
+    "archiveFailed": "Échec du changement de statut d'archive. Veuillez réessayer.",
+    "statusFilter": {
+      "active": "Actifs",
+      "all": "Tous",
+      "archived": "Archivés"
+    },
+    "statusHeading": {
+      "active": "Projets actifs",
+      "all": "Tous les projets",
+      "archived": "Projets archivés"
+    },
+    "noProjects": {
+      "title": "Aucun projet pour le moment",
+      "description": "Créez un nouveau projet pour commencer à construire vos flux de travail."
+    },
+    "projectCard": {
+      "jobs": "{{count}} travaux",
+      "assets": {
+        "images": "{{count}} images",
+        "texts": "{{count}} textes",
+        "videos": "{{count}} vidéos",
+        "audios": "{{count}} fichiers audio"
+      },
+      "openProject": "Ouvrir le projet →"
+    },
+    "pagination": "Page {{current}} sur {{total}}"
+  },
+  "projectForm": {
+    "newTitle": "Nouveau projet",
+    "editTitle": "Modifier le projet",
+    "description": "Définissez vos paramètres de projet",
+    "typeLabel": "Type de projet",
+    "typeImage": "Image",
+    "typeText": "Texte",
+    "typeVideo": "Vidéo",
+    "typeAudio": "Audio",
+    "nameLabel": "Nom du projet",
+    "namePlaceholderText": "ex: Générateur de descriptions de produits...",
+    "namePlaceholderImage": "ex: Série de personnages cyberpunk...",
+    "namePlaceholderAudio": "ex: Extrait de podcast à deux voix...",
+    "prefixLabel": "Préfixe du projet",
+    "prefixPlaceholder": "ex: PJ01",
+    "prefixDescriptionText": "Utilisé comme préfixe pour le nommage de sortie",
+    "prefixDescriptionImage": "Utilisé pour la génération des noms de fichiers images",
+    "prefixDescriptionAudio": "Utilisé pour la génération des noms de fichiers audio",
+    "customIdLabel": "ID personnalisé (optionnel)",
+    "customIdPlaceholder": "identifiant-du-projet",
+    "customIdDescription": "Laisser vide pour une génération automatique d'ID",
+    "cancel": "Annuler",
+    "submitCreate": "Démarrer le projet",
+    "submitSave": "Enregistrer les modifications",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Expliquez ce que ce projet fait, ce qu’il génère ou comment il doit être utilisé.",
+    "descriptionHelp": "Facultatif. Affiché sur les cartes, le profil et les outils MCP.",
+    "identityTitle": "Identité",
+    "identityDescription": "Paramètres de nommage et de fichiers de sortie."
+  },
+  "projectOrphans": {
+    "title": "Gestion des fichiers orphelins",
+    "cleanupTool": "Outil de nettoyage",
+    "projectLabel": "Projet : {{name}}",
+    "backToProject": "Retour au projet",
+    "refresh": "Actualiser l'analyse",
+    "deleteSelected": "Supprimer ({{count}})",
+    "clearAll": "Tout effacer",
+    "orphanedFiles": "Fichiers orphelins",
+    "totalWaste": "Gaspillage total",
+    "warning": "Avertissement",
+    "warningDesc": "Ces fichiers ne sont PAS référencés par un composant actuel de ce projet et peuvent être supprimés en toute sécurité.",
+    "selectAll": "Tout sélectionner",
+    "filesSelected": "{{count}} fichiers sélectionnés",
+    "cleanTitle": "Le projet est propre",
+    "cleanDesc": "Aucun fichier non référencé trouvé dans le stockage.",
+    "preview": "Aperçu",
+    "unknownSize": "Inconnu",
+    "scanning": "Analyse de S3 pour les orphelins...",
+    "confirm": {
+      "title": "Supprimer définitivement les fichiers",
+      "message": "Êtes-vous sûr de vouloir supprimer {{count}} fichier(s) orphelin(s) ? Cette action les supprimera définitivement de S3 et ne pourra pas être annulée.",
+      "confirmText": "Supprimer définitivement",
+      "deleting": "Suppression..."
+    }
+  },
+  "queueMonitor": {
+    "title": "Moniteur de files",
+    "description": "Surveillez les générations actives entre les projets et les files de concurrence des fournisseurs.",
+    "projectView": "Vue projet",
+    "providerView": "Vue files fournisseur",
+    "refresh": "Actualiser",
+    "updatedAt": "Mis à jour",
+    "loadError": "Impossible de charger l'état des files.",
+    "unknown": "Inconnu",
+    "archived": "Archivé",
+    "noProvider": "Aucun fournisseur",
+    "taskShort": "Tâche",
+    "projectUpdated": "{{provider}} · mis à jour à {{time}}",
+    "noProviderJobs": "Aucune tâche active pour ce fournisseur.",
+    "states": {
+      "queued": "En file",
+      "waiting": "En attente",
+      "running": "En cours",
+      "detached": "Polling",
+      "failed": "Échec"
+    },
+    "metrics": {
+      "projects": "Projets",
+      "providers": "Fournisseurs",
+      "running": "En cours",
+      "queued": "En file",
+      "pending": "En attente",
+      "failed": "Échec",
+      "slots": "Slots",
+      "limit": "Limite"
+    },
+    "empty": {
+      "projectsTitle": "Aucune tâche de projet active",
+      "providersTitle": "Aucun fournisseur configuré",
+      "description": "L'activité de génération apparaîtra ici lorsque du travail sera en file ou en cours."
+    }
+  }
+}

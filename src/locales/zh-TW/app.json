@@ -1,0 +1,93 @@
+{
+  "sidebar": {
+    "dashboard": "儀表板",
+    "projects": "專案",
+    "queueMonitor": "佇列",
+    "libraries": "庫",
+    "providers": "供應商",
+    "mcp": "MCP",
+    "assistant": "助手",
+    "exports": "匯出",
+    "recycleBin": "資源回收筒",
+    "storage": "存儲",
+    "userManagement": "用戶管理"
+  },
+  "mainLayout": {
+    "storageUnavailable": "存儲不可用",
+    "toggleMenu": "切換選單",
+    "expandSidebar": "展開側邊欄",
+    "collapseSidebar": "收起側邊欄"
+  },
+  "confirmModal": {
+    "confirm": "確認",
+    "cancel": "取消"
+  },
+  "apiKeyCheck": {
+    "loading": "載入中...",
+    "title": "需要 API 金鑰",
+    "description": "此應用程式使用 Nano Banana 2 (Gemini 3.1 Flash Image) ，需要付費的 Google Cloud API 金鑰。",
+    "learnMore": "了解更多關於計費的資訊",
+    "selectApiKey": "選擇 API 金鑰"
+  },
+  "storageIndicator": {
+    "title": "存儲：{{used}} / {{limit}} ({{percent}}%)",
+    "storage": "存儲",
+    "usedOfLimit": "{{used}} / {{limit}}"
+  },
+  "tagModal": {
+    "title": "編輯標籤",
+    "description": "為此項目添加或刪除標籤。",
+    "saveTags": "保存標籤",
+    "placeholder": "輸入標籤 (逗號分隔)...",
+    "add": "添加",
+    "noTags": "尚未添加標籤"
+  },
+  "dashboard": {
+    "welcome": "歡迎來到 Remix Studio",
+    "description": "從側邊欄選擇專案或庫，或者建立一個新專案或庫開始。",
+    "recentProjects": "最近專案",
+    "newProject": "新專案",
+    "new": "新建",
+    "noProjects": "暫無專案。建立一個專案開始生成。",
+    "libraries": "庫",
+    "newLibrary": "新庫",
+    "noLibraries": "暫無庫。建立一個庫來存儲可重用的提示詞。",
+    "projectStats": "{{jobCount}} 個作業 • {{imageCount}} 張圖片 • {{date}}",
+    "aiChat": "AI助手",
+    "aiChatDescription": "今天有什麼可以幫您的嗎？",
+    "setupNoticeTitle": "歡迎來到 Remix Studio！",
+    "setupNoticeDescription": "要開始使用 AI 助手和生成內容，您首先需要配置至少一個 AI 提供商。",
+    "setupNoticeButton": "配置提供商"
+  },
+  "login": {
+    "welcomeBack": "歡迎回來",
+    "completeRegistration": "完成註冊",
+    "twoFactorVerification": "雙重驗證",
+    "signInWith": "使用密碼、儲存的通行密鑰或 Google 登入。",
+    "registrationDescription": "您的 Google 身份已驗證。請輸入邀請碼以完成帳戶建立。",
+    "twoFactorDescription": "請輸入傳送至 {{email}} 的 6 位驗證碼。",
+    "email": "電子郵件",
+    "password": "密碼",
+    "signIn": "登入",
+    "orContinueWith": "或透過以下方式繼續",
+    "passkey": "通行密鑰",
+    "google": "Google",
+    "inviteCode": "邀請碼",
+    "enterInviteCode": "輸入邀請碼",
+    "inviteCodeDescription": "邀請碼可以從 `inviteCode` URL 參數中自動填入。",
+    "finishRegistration": "完成註冊",
+    "restartGoogle": "重新開始 Google 登入",
+    "googleSignIn": "Google 登入",
+    "verifiedSuccessfully": "驗證成功",
+    "authCode": "身分驗證碼",
+    "verifyAndSignIn": "驗證並登入",
+    "back": "返回",
+    "errors": {
+      "passkeyNotSupported": "此瀏覽器不支援通行密鑰。",
+      "loginFailed": "登入失敗",
+      "twoFactorFailed": "雙重驗證失敗",
+      "passkeyFailed": "通行密鑰登入失敗",
+      "registrationFailed": "註冊失敗"
+    }
+  }
+}

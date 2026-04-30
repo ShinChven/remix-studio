@@ -1,0 +1,93 @@
+{
+  "sidebar": {
+    "dashboard": "ダッシュボード",
+    "projects": "プロジェクト",
+    "queueMonitor": "キュー",
+    "libraries": "ライブラリ",
+    "providers": "プロバイダー",
+    "mcp": "MCP",
+    "assistant": "アシスタント",
+    "exports": "エクスポート",
+    "recycleBin": "ゴミ箱",
+    "storage": "ストレージ",
+    "userManagement": "ユーザー管理"
+  },
+  "mainLayout": {
+    "storageUnavailable": "ストレージ利用不可",
+    "toggleMenu": "メニュー切り替え",
+    "expandSidebar": "サイドバーを展開",
+    "collapseSidebar": "サイドバーを折りたたむ"
+  },
+  "confirmModal": {
+    "confirm": "確認",
+    "cancel": "キャンセル"
+  },
+  "apiKeyCheck": {
+    "loading": "読み込み中...",
+    "title": "APIキーが必要です",
+    "description": "このアプリケーションは Nano Banana 2 (Gemini 3.1 Flash Image) を使用しており、有料の Google Cloud API キーが必要です。",
+    "learnMore": "請求の詳細を表示",
+    "selectApiKey": "APIキーを選択"
+  },
+  "storageIndicator": {
+    "title": "ストレージ: {{used}} / {{limit}} ({{percent}}%)",
+    "storage": "ストレージ",
+    "usedOfLimit": "{{used}} / {{limit}}"
+  },
+  "tagModal": {
+    "title": "タグを編集",
+    "description": "このアイテムのタグを追加または削除します。",
+    "saveTags": "タグを保存",
+    "placeholder": "タグを入力 (カンマ区切り)...",
+    "add": "追加",
+    "noTags": "タグがまだ追加されていません"
+  },
+  "dashboard": {
+    "welcome": "Remix Studio へようこそ",
+    "description": "サイドバーからプロジェクトまたはライブラリを選択するか、新しく作成して開始してください。",
+    "recentProjects": "最近のプロジェクト",
+    "newProject": "新規プロジェクト",
+    "new": "新規",
+    "noProjects": "プロジェクトはまだありません。作成して生成を開始しましょう。",
+    "libraries": "ライブラリ",
+    "newLibrary": "新規ライブラリ",
+    "noLibraries": "ライブラリはまだありません。再利用可能なプロンプトを保存するために作成してください。",
+    "projectStats": "{{jobCount}} ジョブ • {{imageCount}} 画像 • {{date}}",
+    "aiChat": "AIアシスタント",
+    "aiChatDescription": "今日は何をお手伝いしましょうか？",
+    "setupNoticeTitle": "Remix Studio へようこそ！",
+    "setupNoticeDescription": "AI アシスタントの使用とコンテンツの生成を開始するには、まず少なくとも 1 つの AI プロバイダーを設定する必要があります。",
+    "setupNoticeButton": "プロバイダーを設定する"
+  },
+  "login": {
+    "welcomeBack": "おかえりなさい",
+    "completeRegistration": "登録を完了する",
+    "twoFactorVerification": "2要素認証",
+    "signInWith": "パスワード、保存されたパスキー、または Google でサインインしてください。",
+    "registrationDescription": "Google の本人確認が完了しました。招待コードを入力してアカウント作成を完了してください。",
+    "twoFactorDescription": "{{email}} に送信された 6 桁のコードを入力してください。",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "signIn": "サインイン",
+    "orContinueWith": "または以下で続行",
+    "passkey": "パスキー",
+    "google": "Google",
+    "inviteCode": "招待コード",
+    "enterInviteCode": "招待コードを入力",
+    "inviteCodeDescription": "招待コードは `inviteCode` URL パラメータから自動入力できます。",
+    "finishRegistration": "登録を完了",
+    "restartGoogle": "Google サインインをやり直す",
+    "googleSignIn": "Google サインイン",
+    "verifiedSuccessfully": "認証に成功しました",
+    "authCode": "認証コード",
+    "verifyAndSignIn": "認証してサインイン",
+    "back": "戻る",
+    "errors": {
+      "passkeyNotSupported": "このブラウザはパスキーをサポートしていません。",
+      "loginFailed": "ログインに失敗しました",
+      "twoFactorFailed": "2要素認証に失敗しました",
+      "passkeyFailed": "パスキーによるログインに失敗しました",
+      "registrationFailed": "登録に失敗しました"
+    }
+  }
+}

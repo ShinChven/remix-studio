@@ -1,0 +1,138 @@
+{
+  "projectRoute": {
+    "notFound": "프로젝트를 찾을 수 없습니다.",
+    "renameFailed": "프로젝트 폴더 이름을 바꾸지 못했습니다. ID 변경을 되돌리는 중입니다."
+  },
+  "projects": {
+    "title": "프로젝트",
+    "description": "AI 워크플로우 및 생성 작업을 관리하고 추적하세요.",
+    "allProjects": "모든 프로젝트",
+    "searchPlaceholder": "이름 또는 ID로 프로젝트 검색...",
+    "newProject": "새 프로젝트",
+    "noResultsFound": "일치하는 프로젝트를 찾을 수 없습니다.",
+    "archiveProject": "프로젝트 보관",
+    "unarchiveProject": "보관 해제",
+    "archivedBadge": "보관됨",
+    "archivedToast": "\"{{name}}\" 보관됨",
+    "unarchivedToast": "\"{{name}}\" 복원됨",
+    "archiveFailed": "보관 상태를 변경하지 못했습니다. 다시 시도하세요.",
+    "statusFilter": {
+      "active": "진행 중",
+      "all": "전체",
+      "archived": "보관됨"
+    },
+    "statusHeading": {
+      "active": "진행 중 프로젝트",
+      "all": "모든 프로젝트",
+      "archived": "보관된 프로젝트"
+    },
+    "noProjects": {
+      "title": "프로젝트가 없습니다",
+      "description": "워크플로우 구축을 위해 새 프로젝트를 만드세요."
+    },
+    "projectCard": {
+      "jobs": "{{count}}개 작업",
+      "assets": {
+        "images": "{{count}}개 이미지",
+        "texts": "{{count}}개 텍스트",
+        "videos": "{{count}}개 비디오",
+        "audios": "{{count}}개 오디오"
+      },
+      "openProject": "프로젝트 열기 →"
+    },
+    "pagination": "{{total}}페이지 중 {{current}}페이지"
+  },
+  "projectForm": {
+    "newTitle": "새 프로젝트",
+    "editTitle": "프로젝트 편집",
+    "description": "프로젝트 매개변수를 정의합니다",
+    "typeLabel": "프로젝트 유형",
+    "typeImage": "이미지",
+    "typeText": "텍스트",
+    "typeVideo": "비디오",
+    "typeAudio": "오디오",
+    "nameLabel": "프로젝트 이름",
+    "namePlaceholderText": "예: 제품 설명 생성기...",
+    "namePlaceholderImage": "예: 사이버펑크 캐릭터 시리즈...",
+    "namePlaceholderAudio": "예: 2인 진행 팟캐스트...",
+    "prefixLabel": "프로젝트 접두사",
+    "prefixPlaceholder": "예: PJ01",
+    "prefixDescriptionText": "출력 명명 시 접두사로 사용됩니다",
+    "prefixDescriptionImage": "이미지 파일 이름 생성에 사용됩니다",
+    "prefixDescriptionAudio": "오디오 파일 이름 생성에 사용됩니다",
+    "customIdLabel": "사용자 정의 ID (선택 사항)",
+    "customIdPlaceholder": "프로젝트 식별자",
+    "customIdDescription": "비워두면 자동으로 ID가 생성됩니다",
+    "cancel": "취소",
+    "submitCreate": "프로젝트 시작",
+    "submitSave": "변경 사항 저장",
+    "descriptionLabel": "설명",
+    "descriptionPlaceholder": "이 프로젝트가 수행하는 작업, 생성하는 결과물 또는 사용 방법을 설명하세요.",
+    "descriptionHelp": "선택 사항입니다. 카드, 프로필, MCP 도구에 표시됩니다.",
+    "identityTitle": "ID",
+    "identityDescription": "이름 및 파일 출력 설정."
+  },
+  "projectOrphans": {
+    "title": "고립된 파일 관리",
+    "cleanupTool": "정리 도구",
+    "projectLabel": "프로젝트: {{name}}",
+    "backToProject": "프로젝트로 돌아가기",
+    "refresh": "검사 새로고침",
+    "deleteSelected": "삭제 ({{count}})",
+    "clearAll": "모두 지우기",
+    "orphanedFiles": "고립된 파일",
+    "totalWaste": "총 낭비 용량",
+    "warning": "경고",
+    "warningDesc": "이 파일들은 이 프로젝트의 현재 구성 요소에 의해 참조되지 않으며 안전하게 삭제할 수 있습니다.",
+    "selectAll": "모두 선택",
+    "filesSelected": "{{count}}개 파일 선택됨",
+    "cleanTitle": "프로젝트가 깨끗합니다",
+    "cleanDesc": "저장공간에서 참조되지 않은 파일이 발견되지 않았습니다.",
+    "preview": "미리보기",
+    "unknownSize": "알 수 없음",
+    "scanning": "S3에서 고립된 파일 검사 중...",
+    "confirm": {
+      "title": "파일 영구 삭제",
+      "message": "고립된 파일 {{count}}개를 삭제하시겠습니까? 이 작업은 S3에서 파일을 영구적으로 제거하며 취소할 수 없습니다.",
+      "confirmText": "영구 삭제",
+      "deleting": "삭제 중..."
+    }
+  },
+  "queueMonitor": {
+    "title": "대기열 모니터",
+    "description": "프로젝트와 제공자 동시 실행 대기열 전반의 활성 생성 작업을 모니터링합니다.",
+    "projectView": "프로젝트 보기",
+    "providerView": "제공자 대기열 보기",
+    "refresh": "새로 고침",
+    "updatedAt": "업데이트됨",
+    "loadError": "대기열 상태를 불러오지 못했습니다.",
+    "unknown": "알 수 없음",
+    "archived": "보관됨",
+    "noProvider": "제공자 없음",
+    "taskShort": "작업",
+    "projectUpdated": "{{provider}} · {{time}} 업데이트",
+    "noProviderJobs": "이 제공자에는 활성 작업이 없습니다.",
+    "states": {
+      "queued": "대기열에 있음",
+      "waiting": "대기 중",
+      "running": "실행 중",
+      "detached": "폴링 중",
+      "failed": "실패"
+    },
+    "metrics": {
+      "projects": "프로젝트",
+      "providers": "제공자",
+      "running": "실행 중",
+      "queued": "대기열",
+      "pending": "보류 중",
+      "failed": "실패",
+      "slots": "슬롯",
+      "limit": "제한"
+    },
+    "empty": {
+      "projectsTitle": "활성 프로젝트 작업이 없습니다",
+      "providersTitle": "설정된 제공자가 없습니다",
+      "description": "생성 작업이 대기열에 들어가거나 실행되면 여기에 표시됩니다."
+    }
+  }
+}

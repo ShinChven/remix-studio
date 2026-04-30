@@ -1,0 +1,93 @@
+{
+  "sidebar": {
+    "dashboard": "대시보드",
+    "projects": "프로젝트",
+    "queueMonitor": "대기열",
+    "libraries": "라이브러리",
+    "providers": "제공자",
+    "mcp": "MCP",
+    "assistant": "어시스턴트",
+    "exports": "내보내기",
+    "recycleBin": "휴지통",
+    "storage": "저장공간",
+    "userManagement": "사용자 관리"
+  },
+  "mainLayout": {
+    "storageUnavailable": "스토리지 사용 불가",
+    "toggleMenu": "메뉴 토글",
+    "expandSidebar": "사이드바 확장",
+    "collapseSidebar": "사이드바 축소"
+  },
+  "confirmModal": {
+    "confirm": "확인",
+    "cancel": "취소"
+  },
+  "apiKeyCheck": {
+    "loading": "로딩 중...",
+    "title": "API 키 필요",
+    "description": "이 애플리케이션은 유료 Google Cloud API 키가 필요한 Nano Banana 2(Gemini 3.1 Flash Image)를 사용합니다.",
+    "learnMore": "결제에 대해 자세히 알아보기",
+    "selectApiKey": "API 키 선택"
+  },
+  "storageIndicator": {
+    "title": "스토리지: {{used}} / {{limit}} ({{percent}}%)",
+    "storage": "스토리지",
+    "usedOfLimit": "{{used}} / {{limit}}"
+  },
+  "tagModal": {
+    "title": "태그 편집",
+    "description": "이 항목의 태그를 추가하거나 제거합니다.",
+    "saveTags": "태그 저장",
+    "placeholder": "태그 입력 (쉼표로 구분)...",
+    "add": "추가",
+    "noTags": "아직 태그가 추가되지 않았습니다"
+  },
+  "dashboard": {
+    "welcome": "Remix Studio에 오신 것을 환영합니다",
+    "description": "사이드바에서 프로젝트나 라이브러리를 선택하거나, 새로 만들어 시작하세요.",
+    "recentProjects": "최근 프로젝트",
+    "newProject": "새 프로젝트",
+    "new": "새로 만들기",
+    "noProjects": "아직 프로젝트가 없습니다. 생성을 시작하려면 하나를 만드세요.",
+    "libraries": "라이브러리",
+    "newLibrary": "새 라이브러리",
+    "noLibraries": "아직 라이브러리가 없습니다. 재사용 가능한 프롬프트를 저장하려면 하나를 만드세요.",
+    "projectStats": "{{jobCount}} 작업 • {{imageCount}} 이미지 • {{date}}",
+    "aiChat": "AI 어시스턴트",
+    "aiChatDescription": "오늘은 어떻게 도와드릴까요?",
+    "setupNoticeTitle": "Remix Studio에 오신 것을 환영합니다!",
+    "setupNoticeDescription": "AI 어시스턴트 사용 및 콘텐츠 생성을 시작하려면 먼저 하나 이상의 AI 제공자를 구성해야 합니다.",
+    "setupNoticeButton": "제공자 설정하기"
+  },
+  "login": {
+    "welcomeBack": "다시 오신 것을 환영합니다",
+    "completeRegistration": "가입 완료",
+    "twoFactorVerification": "2단계 인증",
+    "signInWith": "비밀번호, 저장된 패스키 또는 Google로 로그인하세요.",
+    "registrationDescription": "Google 본인 확인이 완료되었습니다. 초대 코드를 입력하여 계정 생성을 완료하세요.",
+    "twoFactorDescription": "{{email}}(으)로 전송된 6자리 코드를 입력하세요.",
+    "email": "이메일 주소",
+    "password": "비밀번호",
+    "signIn": "로그인",
+    "orContinueWith": "또는 다음으로 계속",
+    "passkey": "패스키",
+    "google": "Google",
+    "inviteCode": "초대 코드",
+    "enterInviteCode": "초대 코드 입력",
+    "inviteCodeDescription": "초대 코드는 `inviteCode` URL 매개변수에서 자동으로 채워질 수 있습니다.",
+    "finishRegistration": "가입 완료",
+    "restartGoogle": "Google 로그인 다시 시작",
+    "googleSignIn": "Google 로그인",
+    "verifiedSuccessfully": "인증 성공",
+    "authCode": "인증 코드",
+    "verifyAndSignIn": "인증 및 로그인",
+    "back": "뒤로",
+    "errors": {
+      "passkeyNotSupported": "이 브라우저는 패스키를 지원하지 않습니다.",
+      "loginFailed": "로그인 실패",
+      "twoFactorFailed": "2단계 인증 실패",
+      "passkeyFailed": "패스키 로그인 실패",
+      "registrationFailed": "등록에 실패했습니다"
+    }
+  }
+}

@@ -1,0 +1,226 @@
+{
+  "libraryRoute": {
+    "notFound": "未找到庫。"
+  },
+  "libraries": {
+    "title": "資源庫",
+    "description": "管理您的可重複使用提示詞和圖像集合。",
+    "allLibraries": "所有資源庫",
+    "searchPlaceholder": "搜尋資源庫名稱或 ID...",
+    "newLibrary": "新建資源庫",
+    "noResultsFound": "未找到相符的資源庫",
+    "new": "新建",
+    "noLibraries": {
+      "title": "暫無資源庫",
+      "description": "創建一個資源庫來存儲可重複使用的提示詞或圖像。"
+    },
+    "libraryCard": {
+      "items": "{{count}} 個項目",
+      "openEditor": "開啟編輯器 →",
+      "duplicate": "複製資源庫",
+      "pin": "固定庫",
+      "unpin": "取消固定"
+    },
+    "duplicateDialog": {
+      "title": "複製資源庫",
+      "description": "為該資源庫創建一個新名稱的副本。",
+      "placeholder": "新資源庫名稱",
+      "cancel": "取消",
+      "confirm": "複製",
+      "success": "已複製 \"{{name}}\"",
+      "error": "複製資源庫失敗"
+    },
+    "pinLimitReached": "您最多只能固定 {{max}} 個庫。"
+  },
+  "libraryEditor": {
+    "toasts": {
+      "uploadFailed": "上傳圖片失敗"
+    },
+    "collectionType": "{{type}} 集合",
+    "filterItems": "篩選項目...",
+    "uploading": "正在上傳...",
+    "upload": "上傳",
+    "addFragment": "添加片段",
+    "editLibrarySettings": "編輯庫設置",
+    "importOutput": "導入 / 匯出",
+    "exportLibrary": "匯出素材庫",
+    "deleteLibrary": "刪除庫",
+    "selectAll": "全選",
+    "selectedCount": "已選擇 {{count}} 項",
+    "sort": {
+      "timeDesc": "最新優先",
+      "timeAsc": "最早優先",
+      "nameAsc": "名稱 A-Z",
+      "nameDesc": "名稱 Z-A"
+    },
+    "filterByTag": "按標籤篩選",
+    "tagsSelected": "已選擇 {{count}} 個標籤",
+    "allFragments": "所有片段",
+    "batchTag": "批量標籤",
+    "delete": "刪除",
+    "imageLabel": "IMG_{{index}}",
+    "clickToRename": "點擊重命名",
+    "renameItem": "重命名項目",
+    "editTags": "編輯標籤",
+    "refineInFullEditor": "在完整編輯器中完善",
+    "deleteFragment": "刪除片段",
+    "fullSource": "完整源碼",
+    "markdownEnabled": "Markdown 已啟用",
+    "noResultsFound": "未找到結果",
+    "emptyTitle": "空空如也",
+    "tryDifferentSearch": "嘗試不同的搜索詞",
+    "emptyDescription": "在下方添加內容以初始化庫",
+    "references": {
+      "title": "庫正在使用中",
+      "message_one": "\"{{name}}\" 被 {{count}} 個專案引用。刪除前需要移除這些引用。",
+      "message_other": "\"{{name}}\" 被 {{count}} 個專案引用。刪除前需要移除這些引用。",
+      "resolve": "解決引用"
+    },
+    "confirm": {
+      "deleteLibrary": {
+        "title": "刪除庫",
+        "message": "這將永久刪除集合 \"{{name}}\" 及其所有片段。此操作不可逆。",
+        "confirm": "刪除"
+      },
+      "expungeFragment": {
+        "title": "刪除片段",
+        "message": "確定要從集合中移除此片段嗎？",
+        "confirm": "立即移除"
+      },
+      "deleteSelected": {
+        "title": "刪除所選片段",
+        "message": "確定要刪除 {{count}} 個片段嗎？",
+        "confirm": "刪除所選"
+      }
+    },
+    "tagModal": {
+      "batchTitle": "批量標記所選項目",
+      "batchDescription": "為 {{count}} 個所選項目添加標籤。",
+      "addTags": "添加標籤",
+      "editTitle": "編輯項目標籤"
+    },
+    "exportModal": {
+      "trigger": "匯出 ZIP",
+      "title": "匯出素材庫",
+      "description": "下載前請確認 ZIP 檔名。",
+      "fileName": "檔案名稱",
+      "placeholder": "library_export.zip",
+      "cancel": "取消",
+      "confirm": "匯出 ZIP",
+      "exporting": "匯出中...",
+      "success": "素材庫 ZIP 已下載",
+      "error": "素材庫匯出失敗"
+    }
+  },
+  "libraryImportExport": {
+    "badge": "文字資源庫工作區",
+    "title": "匯入與匯出",
+    "description": "批次匯入提示片段，在輸出中保留標籤，並維持適合在應用程式外編輯的整潔格式。",
+    "toasts": {
+      "importFailed": "匯入項目失敗。",
+      "outputCopied": "資源庫輸出已複製到剪貼簿",
+      "copyFailed": "複製輸出失敗。"
+    },
+    "stats": {
+      "library": "資源庫",
+      "currentItems": "目前項目數",
+      "currentTags": "目前標籤數",
+      "readyToImport": "可匯入項目"
+    },
+    "importSource": {
+      "label": "匯入來源",
+      "title": "整理即將匯入的資源庫項目",
+      "description": "支援舊版清單格式與新的標籤格式：",
+      "clear": "清空",
+      "uploadText": "上傳文字",
+      "sharedTags": "共用標籤",
+      "sharedTagsPlaceholder": "將套用到每個匯入項目。例如：evergreen, short-form",
+      "detectedTags": "偵測到的標籤",
+      "skippedLines": "略過的行",
+      "textareaPlaceholder": "在此貼上清單項目。\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio",
+      "dropHint": "將 `.txt` 或 `.md` 檔案拖放到這裡"
+    },
+    "formatGuide": {
+      "title": "格式說明",
+      "rule1": "每個項目都必須以 `- ` 開頭，解析器才能穩定拆分條目。",
+      "rule2": "若需要顯示標題，請使用 `Title: Content`。若需要項目標籤，請在結尾使用 `| tags: a, b`。",
+      "rule3": "上方的共用標籤會合併到每個解析出的項目中，並自動去重。"
+    },
+    "parseStatus": {
+      "title": "解析狀態",
+      "valid": "所有非空白行都是有效的匯入項目。",
+      "line": "第 {{line}} 行",
+      "moreSkipped": "另外還有 {{count}} 行被略過"
+    },
+    "parseIssues": {
+      "missingListMarker": "缺少 \"- \" 清單標記",
+      "emptyAfterMarker": "\"- \" 之後內容為空",
+      "missingContentBeforeTags": "標籤片段之前缺少內容",
+      "missingContentAfterTitle": "標題分隔符號之後缺少內容"
+    },
+    "importAction": "匯入 {{count}} 個項目",
+    "preview": {
+      "label": "匯入預覽",
+      "title": "檢視即將匯入的標籤項目",
+      "description": "解析後的項目會準確顯示在此文字資源庫中將要建立的內容。",
+      "items": "預覽項目",
+      "sourceLine": "來源行 {{line}}",
+      "tagsCount": "{{count}} 個標籤",
+      "tagsCount_plural": "{{count}} 個標籤",
+      "emptyTitle": "尚未解析任何內容",
+      "emptyDescription": "在左側加入清單項目，此面板將顯示精確的匯入結果，包括合併後的標籤。"
+    },
+    "output": {
+      "label": "資源庫輸出",
+      "title": "匯出目前項目，可選擇含標籤或不含標籤",
+      "description": "含標籤輸出會保留文字資源庫中繼資料。純文字輸出會保留原始的精簡清單格式。",
+      "tagged": "含標籤",
+      "plain": "純文字",
+      "copy": "複製輸出",
+      "download": "下載 .md"
+    }
+  },
+  "libraryForm": {
+    "newTitle": "新建庫",
+    "editTitle": "編輯庫",
+    "description": "定義您的庫屬性",
+    "nameLabel": "庫名稱",
+    "namePlaceholder": "例如：角色服裝、科幻背景...",
+    "typeLabel": "內容類型",
+    "typeText": "文本",
+    "typeImage": "圖像",
+    "contentType": "{{type}} 內容",
+    "permanent": "永久",
+    "cancel": "取消",
+    "submitCreate": "建立庫",
+    "submitSave": "保存更改",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "說明這個素材庫包含什麼，以及何時應使用。",
+    "descriptionHelp": "選填。會顯示在卡片、設定檔和 MCP 工具中。",
+    "typeVideo": "影片",
+    "typeAudio": "音訊",
+    "contentSummaryTitle": "內容設定",
+    "contentSummaryDescription": "素材庫類型會控制可接受的項目。",
+    "typeDescription": "建立前請選擇這個素材庫要儲存的媒體類型。"
+  },
+  "libraryCleanup": {
+    "errorNotFound": "找不到資源庫。",
+    "title": "清理引用",
+    "description": "在刪除前，從專案中移除對 \"<span className=\"text-white font-medium\">{{name}}</span>\" 的引用。",
+    "backToLibrary": "返回資源庫",
+    "warning": "{{count}} 個專案仍在引用此資源庫",
+    "warning_plural": "{{count}} 個專案仍在引用此資源庫",
+    "warningDesc": "逐個移除引用，或使用下方按鈕清理所有並刪除。",
+    "remove": "移除",
+    "allCleared": "所有引用已清除",
+    "allClearedDesc": "您現在可以安全地刪除此資源庫。",
+    "cleanAllAndDelete": "清理全部並刪除資源庫",
+    "deleteLibrary": "刪除資源庫",
+    "confirm": {
+      "title": "清理全部並刪除",
+      "message": "這將從 {{count}} 個專案中移除對 \"{{name}}\" 的所有引用，並永久刪除該資源庫。此操作不可逆。",
+      "message_plural": "這將從 {{count}} 個專案中移除對 \"{{name}}\" 的所有引用，並永久刪除該資源庫。此操作不可逆。",
+      "confirmText": "清理並刪除"
+    }
+  }
+}

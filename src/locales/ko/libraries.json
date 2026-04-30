@@ -1,0 +1,226 @@
+{
+  "libraryRoute": {
+    "notFound": "라이브러리를 찾을 수 없습니다."
+  },
+  "libraries": {
+    "title": "라이브러리",
+    "description": "재사용 가능한 프롬프트 및 이미지 컬렉션을 관리합니다.",
+    "allLibraries": "모든 라이브러리",
+    "searchPlaceholder": "이름 또는 ID로 라이브러리 검색...",
+    "newLibrary": "새 라이브러리",
+    "noResultsFound": "일치하는 라이브러리를 찾을 수 없습니다.",
+    "new": "새로 만들기",
+    "noLibraries": {
+      "title": "라이브러리가 없습니다",
+      "description": "재사용 가능한 프롬프트 또는 이미지를 저장하려면 하나를 만드세요."
+    },
+    "libraryCard": {
+      "items": "{{count}}개 항목",
+      "openEditor": "편집기 열기 →",
+      "duplicate": "라이브러리 복제",
+      "pin": "라이브러리 고정",
+      "unpin": "고정 해제"
+    },
+    "duplicateDialog": {
+      "title": "라이브러리 복제",
+      "description": "새로운 이름으로 이 라이브러리의 복사본을 만듭니다.",
+      "placeholder": "새 라이브러리 이름",
+      "cancel": "취소",
+      "confirm": "복제",
+      "success": "\"{{name}}\"을(를) 복사했습니다",
+      "error": "라이브러리 복제 실패"
+    },
+    "pinLimitReached": "최대 {{max}}개의 라이브러리를 고정할 수 있습니다."
+  },
+  "libraryEditor": {
+    "toasts": {
+      "uploadFailed": "이미지 업로드 실패"
+    },
+    "collectionType": "{{type}} 컬렉션",
+    "filterItems": "항목 필터링...",
+    "uploading": "업로드 중...",
+    "upload": "업로드",
+    "addFragment": "프래그먼트 추가",
+    "editLibrarySettings": "라이브러리 설정 편집",
+    "importOutput": "가져오기 / 내보내기",
+    "exportLibrary": "라이브러리 내보내기",
+    "deleteLibrary": "라이브러리 삭제",
+    "selectAll": "전체 선택",
+    "selectedCount": "{{count}}개 선택됨",
+    "filterByTag": "태그로 필터링",
+    "tagsSelected": "{{count}}개 태그 선택됨",
+    "allFragments": "모든 프래그먼트",
+    "batchTag": "일괄 태그",
+    "delete": "삭제",
+    "imageLabel": "IMG_{{index}}",
+    "clickToRename": "클릭하여 이름 바꾸기",
+    "renameItem": "항목 이름 바꾸기",
+    "editTags": "태그 편집",
+    "refineInFullEditor": "전체 에디터에서 다듬기",
+    "deleteFragment": "프래그먼트 삭제",
+    "fullSource": "전체 소스",
+    "markdownEnabled": "마크다운 활성화됨",
+    "noResultsFound": "결과 없음",
+    "emptyTitle": "유령 마을",
+    "tryDifferentSearch": "다른 검색어 시도",
+    "emptyDescription": "라이브러리를 초기화하려면 아래에 내용을 추가하세요",
+    "references": {
+      "title": "라이브러리 사용 중",
+      "message_one": "\"{{name}}\"은(는) {{count}}개 프로젝트에서 참조 중입니다. 삭제하기 전에 이 참조를 제거해야 합니다.",
+      "message_other": "\"{{name}}\"은(는) {{count}}개 프로젝트에서 참조 중입니다. 삭제하기 전에 이 참조를 제거해야 합니다.",
+      "resolve": "참조 해결"
+    },
+    "confirm": {
+      "deleteLibrary": {
+        "title": "라이브러리 삭제",
+        "message": "\"{{name}}\" 컬렉션과 모든 프래그먼트를 영구적으로 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
+        "confirm": "삭제"
+      },
+      "expungeFragment": {
+        "title": "프래그먼트 말소",
+        "message": "컬렉션에서 이 프래그먼트를 제거하시겠습니까?",
+        "confirm": "지금 제거"
+      },
+      "deleteSelected": {
+        "title": "선택한 프래그먼트 삭제",
+        "message": "{{count}}개 프래그먼트를 삭제하시겠습니까?",
+        "confirm": "선택 항목 삭제"
+      }
+    },
+    "tagModal": {
+      "batchTitle": "선택한 항목 일괄 태그",
+      "batchDescription": "{{count}}개 선택한 항목에 태그를 추가합니다.",
+      "addTags": "태그 추가",
+      "editTitle": "항목 태그 편집"
+    },
+    "exportModal": {
+      "trigger": "ZIP 내보내기",
+      "title": "라이브러리 내보내기",
+      "description": "다운로드 전에 ZIP 파일 이름을 확인하세요.",
+      "fileName": "파일 이름",
+      "placeholder": "library_export.zip",
+      "cancel": "취소",
+      "confirm": "ZIP 내보내기",
+      "exporting": "내보내는 중...",
+      "success": "라이브러리 ZIP을 다운로드했습니다",
+      "error": "라이브러리 내보내기에 실패했습니다"
+    },
+    "sort": {
+      "timeDesc": "최신순",
+      "timeAsc": "오래된순",
+      "nameAsc": "이름 A-Z",
+      "nameDesc": "이름 Z-A"
+    }
+  },
+  "libraryImportExport": {
+    "badge": "텍스트 라이브러리 작업 공간",
+    "title": "가져오기 및 출력",
+    "description": "프롬프트 조각을 대량으로 로드하고, 출력 시 태그를 유지하며, 앱 외부에서 편집할 수 있도록 깔끔한 가져오기 형식을 유지합니다.",
+    "toasts": {
+      "importFailed": "항목을 가져오지 못했습니다.",
+      "outputCopied": "라이브러리 출력이 클립보드에 복사되었습니다.",
+      "copyFailed": "출력을 복사하지 못했습니다."
+    },
+    "stats": {
+      "library": "라이브러리",
+      "currentItems": "현재 항목 수",
+      "currentTags": "현재 태그 수",
+      "readyToImport": "가져오기 준비 완료"
+    },
+    "importSource": {
+      "label": "Import Source",
+      "title": "Compose incoming library items",
+      "description": "Supports the legacy list format and a new tag-aware variant:",
+      "clear": "Clear",
+      "uploadText": "Upload Text",
+      "sharedTags": "Shared Tags",
+      "sharedTagsPlaceholder": "Applied to every imported item. Example: evergreen, short-form",
+      "detectedTags": "Detected Tags",
+      "skippedLines": "Skipped Lines",
+      "textareaPlaceholder": "Paste list items here.\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio",
+      "dropHint": "Drop `.txt` or `.md` files here"
+    },
+    "formatGuide": {
+      "title": "Format Guide",
+      "rule1": "Each item must start with `- ` so the parser can split entries predictably.",
+      "rule2": "Use `Title: Content` when you want a display title. Use `| tags: a, b` at the end when you want per-item tags.",
+      "rule3": "Shared tags above are merged into every parsed item and deduplicated automatically."
+    },
+    "parseStatus": {
+      "title": "Parse Status",
+      "valid": "All non-empty lines are valid import entries.",
+      "line": "Line {{line}}",
+      "moreSkipped": "+{{count}} more skipped lines"
+    },
+    "parseIssues": {
+      "missingListMarker": "Missing \"- \" list marker",
+      "emptyAfterMarker": "Line is empty after \"- \"",
+      "missingContentBeforeTags": "Missing content before the tags segment",
+      "missingContentAfterTitle": "Missing content after the title separator"
+    },
+    "importAction": "Import {{count}} Items",
+    "preview": {
+      "label": "Import Preview",
+      "title": "Review incoming tagged items",
+      "description": "Parsed items show exactly what will be created in this text library.",
+      "items": "Preview Items",
+      "sourceLine": "Source line {{line}}",
+      "tagsCount": "{{count}} tag",
+      "tagsCount_plural": "{{count}} tags",
+      "emptyTitle": "Nothing parsed yet",
+      "emptyDescription": "Add list items on the left and this panel will render the exact import result, including merged tags."
+    },
+    "output": {
+      "label": "Library Output",
+      "title": "Export current items with or without tags",
+      "description": "Tagged output preserves text library metadata. Plain output keeps the original minimal list format.",
+      "tagged": "Tagged",
+      "plain": "Plain",
+      "copy": "Copy Output",
+      "download": "Download .md"
+    }
+  },
+  "libraryForm": {
+    "newTitle": "새 라이브러리",
+    "editTitle": "라이브러리 편집",
+    "description": "라이브러리 속성을 정의합니다",
+    "nameLabel": "라이브러리 이름",
+    "namePlaceholder": "예: 캐릭터 의상, SF 배경...",
+    "typeLabel": "콘텐츠 유형",
+    "typeText": "텍스트",
+    "typeImage": "이미지",
+    "contentType": "{{type}} 콘텐츠",
+    "permanent": "영구적",
+    "cancel": "취소",
+    "submitCreate": "라이브러리 생성",
+    "submitSave": "변경 사항 저장",
+    "descriptionLabel": "설명",
+    "descriptionPlaceholder": "이 라이브러리에 포함된 내용과 사용 시점을 설명하세요.",
+    "descriptionHelp": "선택 사항입니다. 카드, 프로필, MCP 도구에 표시됩니다.",
+    "typeVideo": "비디오",
+    "typeAudio": "오디오",
+    "contentSummaryTitle": "콘텐츠 설정",
+    "contentSummaryDescription": "라이브러리 유형에 따라 허용되는 항목이 결정됩니다.",
+    "typeDescription": "생성하기 전에 이 라이브러리에 저장할 미디어 종류를 선택하세요."
+  },
+  "libraryCleanup": {
+    "errorNotFound": "라이브러리를 찾을 수 없습니다.",
+    "title": "참조 정리",
+    "description": "삭제하기 전에 프로젝트에서 \"<span className=\"text-white font-medium\">{{name}}</span>\"에 대한 참조를 제거하세요.",
+    "backToLibrary": "라이브러리로 돌아가기",
+    "warning": "{{count}}개 프로젝트가 여전히 이 라이브러리를 참조하고 있습니다",
+    "warning_plural": "{{count}}개 프로젝트가 여전히 이 라이브러리를 참조하고 있습니다",
+    "warningDesc": "참조를 개별적으로 제거하거나 아래 버튼을 사용하여 모두 정리하고 삭제하세요.",
+    "remove": "제거",
+    "allCleared": "모든 참조가 지워졌습니다",
+    "allClearedDesc": "이제 이 라이브러리를 안전하게 삭제할 수 있습니다.",
+    "cleanAllAndDelete": "모두 정리 및 라이브러리 삭제",
+    "deleteLibrary": "라이브러리 삭제",
+    "confirm": {
+      "title": "모두 정리 및 삭제",
+      "message": "이렇게 하면 {{count}}개 프로젝트에서 \"{{name}}\"에 대한 모든 참조가 제거되고 라이브러리가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+      "message_plural": "이렇게 하면 {{count}}개 프로젝트에서 \"{{name}}\"에 대한 모든 참조가 제거되고 라이브러리가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+      "confirmText": "정리 및 삭제"
+    }
+  }
+}

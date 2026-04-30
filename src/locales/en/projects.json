@@ -1,0 +1,138 @@
+{
+  "projectRoute": {
+    "notFound": "Project not found.",
+    "renameFailed": "Failed to rename project folder. Reverting ID change."
+  },
+  "projects": {
+    "title": "Projects",
+    "description": "Manage and track your AI workflows and generation tasks.",
+    "allProjects": "All Projects",
+    "searchPlaceholder": "Search projects by name or ID...",
+    "newProject": "New Project",
+    "noResultsFound": "No matching projects found",
+    "archiveProject": "Archive Project",
+    "unarchiveProject": "Unarchive Project",
+    "archivedBadge": "Archived",
+    "archivedToast": "Archived \"{{name}}\"",
+    "unarchivedToast": "Restored \"{{name}}\"",
+    "archiveFailed": "Failed to change archive status. Please try again.",
+    "statusFilter": {
+      "active": "Active",
+      "all": "All",
+      "archived": "Archived"
+    },
+    "statusHeading": {
+      "active": "Active Projects",
+      "all": "All Projects",
+      "archived": "Archived Projects"
+    },
+    "noProjects": {
+      "title": "No projects yet",
+      "description": "Create a new project to start building your workflows."
+    },
+    "projectCard": {
+      "jobs": "{{count}} jobs",
+      "assets": {
+        "images": "{{count}} images",
+        "texts": "{{count}} texts",
+        "videos": "{{count}} videos",
+        "audios": "{{count}} audios"
+      },
+      "openProject": "Open Project →"
+    },
+    "pagination": "Page {{current}} of {{total}}"
+  },
+  "projectForm": {
+    "newTitle": "New Project",
+    "editTitle": "Edit Project",
+    "description": "Define your project parameters",
+    "typeLabel": "Project Type",
+    "typeImage": "Image",
+    "typeText": "Text",
+    "typeVideo": "Video",
+    "typeAudio": "Audio",
+    "nameLabel": "Project Name",
+    "namePlaceholderText": "e.g. Product Description Generator...",
+    "namePlaceholderImage": "e.g. Cyberpunk Character Series...",
+    "namePlaceholderAudio": "e.g. Two-voice Podcast Segment...",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Explain what this project does, what it generates, or how it should be used.",
+    "descriptionHelp": "Optional. Shown on cards, profile, and MCP tools.",
+    "identityTitle": "Identity",
+    "identityDescription": "Naming and file output settings.",
+    "prefixLabel": "Project Prefix",
+    "prefixPlaceholder": "e.g. PJ01",
+    "prefixDescriptionText": "Used as prefix for output naming",
+    "prefixDescriptionImage": "Used for image filename generation",
+    "prefixDescriptionAudio": "Used for audio filename generation",
+    "customIdLabel": "Custom ID (Optional)",
+    "customIdPlaceholder": "project-slug-id",
+    "customIdDescription": "Leave blank for automatic ID generation",
+    "cancel": "Cancel",
+    "submitCreate": "Start Project",
+    "submitSave": "Save Changes"
+  },
+  "projectOrphans": {
+    "title": "Orphan Files Management",
+    "cleanupTool": "Cleanup Tool",
+    "projectLabel": "Project: {{name}}",
+    "backToProject": "Back to Project",
+    "refresh": "Refresh scan",
+    "deleteSelected": "Delete ({{count}})",
+    "clearAll": "Clear All",
+    "orphanedFiles": "Orphaned Files",
+    "totalWaste": "Total Waste",
+    "warning": "Warning",
+    "warningDesc": "These files are NOT referenced by any current component of this project and can be safely deleted.",
+    "selectAll": "Select All",
+    "filesSelected": "{{count}} Files Selected",
+    "cleanTitle": "Project is Clean",
+    "cleanDesc": "No unreferenced files found in storage.",
+    "preview": "Preview",
+    "unknownSize": "Unknown",
+    "scanning": "Scanning S3 for Orphans...",
+    "confirm": {
+      "title": "Permanently Delete Files",
+      "message": "Are you sure you want to delete {{count}} orphan file(s)? This action will permanently remove them from S3 and cannot be undone.",
+      "confirmText": "Delete Permanently",
+      "deleting": "Deleting..."
+    }
+  },
+  "queueMonitor": {
+    "title": "Queue Monitor",
+    "description": "Monitor active generation work across projects and provider concurrency queues.",
+    "projectView": "Project View",
+    "providerView": "Provider Queue View",
+    "refresh": "Refresh",
+    "updatedAt": "Updated",
+    "loadError": "Failed to load queue status.",
+    "unknown": "Unknown",
+    "archived": "Archived",
+    "noProvider": "No provider",
+    "taskShort": "Task",
+    "projectUpdated": "{{provider}} · updated {{time}}",
+    "noProviderJobs": "No active jobs for this provider.",
+    "states": {
+      "queued": "Queued",
+      "waiting": "Waiting",
+      "running": "Running",
+      "detached": "Polling",
+      "failed": "Failed"
+    },
+    "metrics": {
+      "projects": "Projects",
+      "providers": "Providers",
+      "running": "Running",
+      "queued": "Queued",
+      "pending": "Pending",
+      "failed": "Failed",
+      "slots": "Slots",
+      "limit": "Limit"
+    },
+    "empty": {
+      "projectsTitle": "No active project jobs",
+      "providersTitle": "No providers configured",
+      "description": "Generation activity will appear here when work is queued or running."
+    }
+  }
+}

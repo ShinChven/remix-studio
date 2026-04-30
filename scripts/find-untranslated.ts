@@ -5,8 +5,21 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const localesDir = path.join(__dirname, '../src/locales');
-const en = JSON.parse(fs.readFileSync(path.join(localesDir, 'en.json'), 'utf-8'));
-const files = ['fr.json', 'ja.json', 'ko.json', 'zh-CN.json', 'zh-TW.json'];
+const locales = ['fr', 'ja', 'ko', 'zh-CN', 'zh-TW'];
+
+function loadLocale(locale: string): Record<string, any> {
+  const localeDir = path.join(localesDir, locale);
+  const data: Record<string, any> = {};
+
+  for (const file of fs.readdirSync(localeDir).filter(file => file.endsWith('.json'))) {
+    const chunk = JSON.parse(fs.readFileSync(path.join(localeDir, file), 'utf-8'));
+    Object.assign(data, chunk);
+  }
+
+  return data;
+}
+
+const en = loadLocale('en');
 
 function findEnglishValues(enObj: any, targetObj: any, path: string = ''): string[] {
   let issues: string[] = [];
@@ -31,9 +44,9 @@ function findEnglishValues(enObj: any, targetObj: any, path: string = ''): strin
   return issues;
 }
 
-for (const file of files) {
-  const target = JSON.parse(fs.readFileSync(path.join(localesDir, file), 'utf-8'));
+for (const locale of locales) {
+  const target = loadLocale(locale);
   const issues = findEnglishValues(en, target);
-  console.log(`\n--- ${file} (${issues.length} keys with potential English values) ---`);
+  console.log(`\n--- ${locale} (${issues.length} keys with potential English values) ---`);
   console.log(issues.slice(0, 20).join(', ') + (issues.length > 20 ? '...' : ''));
 }

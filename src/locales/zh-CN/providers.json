@@ -1,0 +1,127 @@
+{
+  "providers": {
+    "title": "供应商",
+    "description": "管理图像生成后端的 API 凭据。密钥在存储时已加密。",
+    "allProviders": "所有供应商",
+    "newProvider": "新供应商",
+    "new": "新建",
+    "noProviders": {
+      "title": "尚无供应商",
+      "description": "添加您的第一个 API 密钥以开始生成图像。"
+    },
+    "providerCard": {
+      "credentialsStored": "凭据已存储",
+      "keyStored": "密钥已存储",
+      "missingCredentials": "缺少凭据",
+      "noKey": "无密钥",
+      "projects": "{{count}} 个项目",
+      "projects_plural": "{{count}} 个项目",
+      "activeJobs": "{{count}} 个进行中的任务",
+      "activeJobs_plural": "{{count}} 个进行中的任务"
+    },
+    "deleteDialog": {
+      "title": "删除供应商",
+      "message": "删除 \"{{name}}\"？这将移除存储的 API 密钥。现有的项目引用将保留为警告，任何使用此供应商的待处理或处理中的任务都可能失败，直到您将其切换到另一个供应商。",
+      "usageWarning": " 当前被 {{projectCount}} 个项目和 {{jobCount}} 个进行中的任务引用。",
+      "confirm": "删除",
+      "deleting": "正在删除..."
+    },
+    "errors": {
+      "load": "加载供应商失败。",
+      "delete": "删除供应商失败。"
+    }
+  },
+  "providerForm": {
+    "newTitle": "新建供应商",
+    "editTitle": "编辑供应商",
+    "securityNote": "密钥将在数据库中加密",
+    "nameLabel": "供应商名称",
+    "namePlaceholder": "例如：工作账户、个人密钥...",
+    "typeLabel": "供应商类型",
+    "apiKeyLabel": "API 密钥",
+    "accessKeyLabel": "访问密钥 (Access Key)",
+    "secretKeyLabel": "秘密密钥 (Secret Key)",
+    "leaveBlankToKeep": "— 留空以保持现有值",
+    "apiKeyPlaceholder": "粘贴您的 API 密钥...",
+    "accessKeyPlaceholder": "粘贴您的 access key...",
+    "secretKeyPlaceholder": "粘贴您的 secret key...",
+    "stored": "•••••••• (已存储)",
+    "apiUrlLabel": "API 地址",
+    "apiUrlOptional": "— 可选覆盖",
+    "apiUrlPlaceholder": "https://... (留空使用默认值)",
+    "parallelTasksLabel": "并行任务",
+    "concurrencyLimit": "— 并发限制",
+    "maxRequests": "最大请求数",
+    "saving": "正在保存...",
+    "submitCreate": "创建供应商",
+    "submitSave": "保存更改",
+    "cancel": "取消",
+    "errors": {
+      "accessKeyRequired": "Access Key 是必填项。",
+      "apiKeyRequired": "API Key 是必填项。",
+      "secretKeyRequired": "KlingAI 需要 Secret Key。",
+      "saveFailed": "保存失败。"
+    },
+    "supportedModels": "支持的模型",
+    "modelsSubtitle": "这些模型由所选提供商原生支持。"
+  },
+  "providerProfile": {
+    "errorLoad": "加载供应商失败。",
+    "errorNotFound": "未找到供应商",
+    "backToProviders": "返回供应商列表",
+    "credentialsStored": "凭据已存储",
+    "keyStored": "密钥已存储",
+    "missingCredentials": "缺少凭据",
+    "noKey": "无密钥",
+    "customModels": "自定义模型",
+    "edit": "编辑",
+    "concurrency": "并发限制",
+    "projects": "项目",
+    "jobs": "任务",
+    "models": "模型",
+    "supportedModels": "支持的模型",
+    "availableModels": "可用模型",
+    "refresh": "刷新",
+    "addKeyToFetch": "添加 API 密钥以从供应商获取可用模型。",
+    "noModels": "供应商 API 未返回任何模型。",
+    "categories": {
+      "text": "文本生成",
+      "image": "图像生成",
+      "video": "视频生成",
+      "audio": "音频生成"
+    },
+    "modelCount": "{{count}} 个模型",
+    "modelCount_plural": "{{count}} 个模型",
+    "errors": {
+      "fetchModels": "从供应商 API 获取模型失败。"
+    }
+  },
+  "providerCustomModels": {
+    "errorLoad": "加载供应商失败。",
+    "errorNotFound": "未找到供应商",
+    "backToProvider": "返回 {{name}}",
+    "title": "自定义模型变体",
+    "description": "使用自定义 ID 创建模型变体。每个变体都会继承其基础模型的所有参数。",
+    "newVariant": "新建变体",
+    "editVariant": "编辑变体",
+    "baseModelLabel": "基础模型",
+    "selectBaseModel": "选择基础模型...",
+    "inherits": "继承：{{traits}}",
+    "modelNameLabel": "模型名称",
+    "modelIdLabel": "模型 ID",
+    "namePlaceholder": "例如：产品照片 v2",
+    "idPlaceholder": "例如：seedream-5-0-my-finetune",
+    "saving": "正在保存...",
+    "create": "创建",
+    "update": "更新",
+    "cancel": "取消",
+    "noVariants": "暂无自定义模型变体",
+    "noVariantsDesc": "选择一个基础模型，提供自定义名称和模型 ID 以创建变体。",
+    "confirmDelete": "确认删除",
+    "edit": "编辑",
+    "delete": "删除",
+    "errors": {
+      "saveFailed": "保存失败。"
+    }
+  }
+}

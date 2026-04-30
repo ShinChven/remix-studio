@@ -1,0 +1,127 @@
+{
+  "providers": {
+    "title": "Fournisseurs",
+    "description": "Gérez les identifiants API pour les backends de génération d'images. Les clés sont cryptées au repos.",
+    "allProviders": "Tous les fournisseurs",
+    "newProvider": "Nouveau fournisseur",
+    "new": "Nouveau",
+    "noProviders": {
+      "title": "Aucun fournisseur pour le moment",
+      "description": "Ajoutez votre première clé API pour commencer à générer des images."
+    },
+    "providerCard": {
+      "credentialsStored": "Identifiants stockés",
+      "keyStored": "Clé stockée",
+      "missingCredentials": "Identifiants manquants",
+      "noKey": "Pas de clé",
+      "projects": "{{count}} projet",
+      "projects_plural": "{{count}} projets",
+      "activeJobs": "{{count}} tâche active",
+      "activeJobs_plural": "{{count}} tâches actives"
+    },
+    "deleteDialog": {
+      "title": "Supprimer le fournisseur",
+      "message": "Supprimer \"{{name}}\" ? Cela supprimera la clé API stockée. Les références de projet existantes resteront sous forme d'avertissements, et toutes les tâches en attente ou en cours de traitement utilisant ce fournisseur pourraient échouer jusqu'à ce que vous passiez à un autre fournisseur.",
+      "usageWarning": " Actuellement référencé par {{projectCount}} projets et {{jobCount}} tâches actives.",
+      "confirm": "Supprimer",
+      "deleting": "Suppression…"
+    },
+    "errors": {
+      "load": "Échec du chargement des fournisseurs.",
+      "delete": "Échec de la suppression du fournisseur."
+    }
+  },
+  "providerForm": {
+    "newTitle": "Nouveau fournisseur",
+    "editTitle": "Modifier le fournisseur",
+    "securityNote": "Les clés seront cryptées dans la base de données",
+    "nameLabel": "Nom du fournisseur",
+    "namePlaceholder": "ex: Compte professionnel, Clé personnelle...",
+    "typeLabel": "Type de fournisseur",
+    "apiKeyLabel": "API Key",
+    "accessKeyLabel": "Access Key",
+    "secretKeyLabel": "Secret Key",
+    "leaveBlankToKeep": "— laisser vide pour conserver l'existant",
+    "apiKeyPlaceholder": "Collez votre API Key...",
+    "accessKeyPlaceholder": "Collez votre Access Key...",
+    "secretKeyPlaceholder": "Collez votre Secret Key...",
+    "stored": "•••••••• (stocké)",
+    "apiUrlLabel": "URL de l'API",
+    "apiUrlOptional": "— surcharge optionnelle",
+    "apiUrlPlaceholder": "https://... (laisser vide pour la valeur par défaut)",
+    "parallelTasksLabel": "Tâches parallèles",
+    "concurrencyLimit": "— limite de simultanéité",
+    "maxRequests": "Requêtes max",
+    "saving": "Enregistrement...",
+    "submitCreate": "Créer le fournisseur",
+    "submitSave": "Enregistrer les modifications",
+    "cancel": "Annuler",
+    "errors": {
+      "accessKeyRequired": "L'Access Key est requise.",
+      "apiKeyRequired": "L'API Key est requise.",
+      "secretKeyRequired": "La Secret Key est requise pour KlingAI.",
+      "saveFailed": "Échec de l'enregistrement."
+    },
+    "supportedModels": "Modèles Pris en Charge",
+    "modelsSubtitle": "Ces modèles sont nativement pris en charge par le fournisseur sélectionné."
+  },
+  "providerProfile": {
+    "errorLoad": "Échec du chargement du fournisseur.",
+    "errorNotFound": "Fournisseur non trouvé",
+    "backToProviders": "Retour aux fournisseurs",
+    "credentialsStored": "Identifiants stockés",
+    "keyStored": "Clé stockée",
+    "missingCredentials": "Identifiants manquants",
+    "noKey": "Pas de clé",
+    "customModels": "Modèles personnalisés",
+    "edit": "Modifier",
+    "concurrency": "Simultanéité",
+    "projects": "Projets",
+    "jobs": "Tâches",
+    "models": "Modèles",
+    "supportedModels": "Modèles pris en charge",
+    "availableModels": "Modèles disponibles",
+    "refresh": "Actualiser",
+    "addKeyToFetch": "Ajoutez une API Key pour récupérer les modèles disponibles auprès du fournisseur.",
+    "noModels": "Aucun modèle renvoyé par l'API du fournisseur.",
+    "categories": {
+      "text": "Génération de texte",
+      "image": "Génération d'image",
+      "video": "Génération de vidéo",
+      "audio": "Génération audio"
+    },
+    "modelCount": "{{count}} modèle",
+    "modelCount_plural": "{{count}} modèles",
+    "errors": {
+      "fetchModels": "Échec de la récupération des modèles depuis l'API du fournisseur."
+    }
+  },
+  "providerCustomModels": {
+    "errorLoad": "Échec du chargement du fournisseur.",
+    "errorNotFound": "Fournisseur non trouvé",
+    "backToProvider": "Retour à {{name}}",
+    "title": "Variantes de modèles personnalisés",
+    "description": "Créez des variantes de modèles avec des ID personnalisés. Chaque variante hérite de tous les paramètres de son modèle de base.",
+    "newVariant": "Nouvelle variante",
+    "editVariant": "Modifier la variante",
+    "baseModelLabel": "Modèle de base",
+    "selectBaseModel": "Sélectionner le modèle de base...",
+    "inherits": "Hérite : {{traits}}",
+    "modelNameLabel": "Nom du modèle",
+    "modelIdLabel": "ID du modèle",
+    "namePlaceholder": "ex: Photo de produit v2",
+    "idPlaceholder": "ex: seedream-5-0-my-finetune",
+    "saving": "Enregistrement...",
+    "create": "Créer",
+    "update": "Mettre à jour",
+    "cancel": "Annuler",
+    "noVariants": "Pas encore de variantes de modèles personnalisés",
+    "noVariantsDesc": "Choisissez un modèle de base, donnez-lui un nom personnalisé et un ID de modèle pour créer une variante.",
+    "confirmDelete": "Confirmer",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "errors": {
+      "saveFailed": "Échec de l'enregistrement."
+    }
+  }
+}

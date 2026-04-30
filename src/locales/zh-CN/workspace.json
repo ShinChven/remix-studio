@@ -1,0 +1,353 @@
+{
+  "storageView": {
+    "tiers": {
+      "free": "免费",
+      "professional": "专业",
+      "premium": "高级",
+      "custom": "自定义"
+    },
+    "analyzing": "正在分析存储使用情况...",
+    "title": "存储分析",
+    "description": "数字足迹的详细细分。",
+    "capacityOverview": "容量概览",
+    "consumption": "消耗量",
+    "totalLimit": "总限制",
+    "percentConsumed": "已消耗 {{percent}}%",
+    "optimizationTitle": "存储优化",
+    "cleanOrphansTitle": "清理孤立文件",
+    "cleanOrphansDescription": "识别并从项目文件夹中删除未引用的文件以回收空间。",
+    "recycleBinTitle": "回收站",
+    "recycleBinDescription": "共有 {{size}} 可以永久删除。",
+    "completeScan": "完整扫描",
+    "projectRankings": "项目排名",
+    "album": "相册",
+    "orphans": "孤立文件"
+  },
+  "exports": {
+    "title": "导出",
+    "description": "管理所有生成的项目 ZIP 归档。",
+    "drive": {
+      "connected": "Google Drive 已连接",
+      "disconnect": "断开连接",
+      "connect": "连接 Google Drive",
+      "disconnectSuccess": "Google Drive 已断开连接",
+      "disconnectError": "断开 Google Drive 连接失败",
+      "uploadQueued": "上传任务已加入队列 — 请关注 Drive 图标查看进度",
+      "uploadSuccess": "已成功上传到 Google Drive！",
+      "uploadFailed": "上传到 Google Drive 失败",
+      "openFile": "打开文件",
+      "uploading": "正在上传到 Drive...",
+      "uploadToDrive": "上传到 Google Drive"
+    },
+    "stats": {
+      "database": "数据库",
+      "total": "总计",
+      "inProgress": "进行中",
+      "active": "活跃"
+    },
+    "empty": {
+      "title": "导出为空",
+      "description": "生成的项目导出将自动显示在这里",
+      "viewProjects": "查看项目"
+    },
+    "status": {
+      "ready": "就绪",
+      "archiving": "正在归档",
+      "queued": "队列中",
+      "failed": "失败"
+    },
+    "card": {
+      "files": "{{count}} 个文件",
+      "download": "下载 ZIP",
+      "delete": "删除记录"
+    },
+    "loadMore": "加载更多导出",
+    "deleteDialog": {
+      "title": "删除导出记录",
+      "message": "确定要删除此导出记录吗？此操作无法撤销。",
+      "confirm": "删除记录"
+    }
+  },
+  "trash": {
+    "title": "回收站",
+    "description": "查看已删除的项目，还原您需要的项，或永久删除它们。",
+    "stats": {
+      "items": "{{count}} 个项目",
+      "total": "总计 {{size}}"
+    },
+    "actions": {
+      "restore": "还原",
+      "restoreCount": "还原 ({{count}})",
+      "deletePermanently": "永久删除",
+      "emptyTrash": "清空回收站"
+    },
+    "empty": {
+      "title": "回收站为空",
+      "description": "已删除的相册项目将显示在这里"
+    },
+    "card": {
+      "restore": "还原",
+      "delete": "永久删除"
+    },
+    "confirm": {
+      "empty": {
+        "title": "清空回收站",
+        "message": "确定要永久删除所有 {{count}} 个项目吗？这将释放 {{size}} 空间，且操作无法撤销。",
+        "confirm": "清空回收站"
+      },
+      "deleteSelected": {
+        "title": "删除所选项目",
+        "message": "确定要永久删除这 {{count}} 个项目吗？这将释放 {{size}} 空间，且操作无法撤销。",
+        "confirm": "永久删除"
+      },
+      "deleteSingle": {
+        "title": "永久删除图片",
+        "message": "确定要永久删除此图片吗？此操作无法撤销。",
+        "confirm": "永久删除"
+      },
+      "deleting": "正在删除..."
+    }
+  },
+  "promptEditor": {
+    "titlePlaceholder": "标题...",
+    "fragmentTitlePlaceholder": "片段标题",
+    "addTags": "添加标签",
+    "tagsCount": "{{count}} 个标签",
+    "backToLibrary": "返回库",
+    "viewMode": {
+      "edit": "仅编辑",
+      "split": "分屏视图",
+      "preview": "仅预览"
+    },
+    "toggleFullscreen": "切换全屏",
+    "save": "保存",
+    "sourceContent": "源内容",
+    "markdownSupport": "支持 GFM Markdown",
+    "editorPlaceholder": "在此使用 Markdown 撰写您的库片段...",
+    "dynamicPreview": "动态预览",
+    "previewPlaceholder": "在这里撰写内容以查看预览...",
+    "words": "字数：{{count}}",
+    "chars": "字符数：{{count}}",
+    "libraryLabel": "库：{{id}}",
+    "errorSave": "保存库提示词失败"
+  },
+  "mcpConnections": {
+    "title": "MCP 连接",
+    "description": "管理 Model Context Protocol 服务器以扩展您的助手能力。",
+    "justNow": "刚刚",
+    "relativeTime": {
+      "m": "{{count}} 分钟前",
+      "h": "{{count}} 小时前"
+    },
+    "expiryOptions": {
+      "noExpiration": "永不过期",
+      "7days": "7 天",
+      "30days": "30 天",
+      "90days": "90 天",
+      "1year": "1 年"
+    },
+    "errorLoad": "加载 MCP 连接失败。",
+    "toasts": {
+      "clientRevoked": "已撤销客户端访问权限",
+      "clientCreated": "已创建 OAuth 客户端",
+      "clientCreateFailed": "创建 OAuth 客户端失败",
+      "clientUpdated": "OAuth 回调地址已更新",
+      "clientUpdateFailed": "更新 OAuth 回调地址失败",
+      "clientRedirectRequired": "请至少添加一个重定向 URI",
+      "clientIdCopied": "Client ID 已复制到剪贴板",
+      "clientSecretCopied": "Client secret 已复制到剪贴板",
+      "tokenRevoked": "令牌已撤销",
+      "revokeFailed": "撤销失败",
+      "tokenCreated": "令牌已创建 — 请立即复制。之后您将无法再次查看。",
+      "tokenCopied": "令牌已复制到剪贴板",
+      "createFailed": "创建令牌失败",
+      "copied": "{{label}} 已复制",
+      "copyFailed": "复制 {{label}} 失败"
+    },
+    "connectSection": {
+      "title": "将 AI 应用连接到您的账户",
+      "description": "此页面帮助您将 AI 应用连接到您的工作区。首先将下方的应用地址复制到您要连接的应用中。然后选择两种支持的登录方式之一。",
+      "oauthMethod": {
+        "title": "OAuth 2.1 连接器",
+        "description": "当应用可以打开浏览器进行登录时使用此方式。您登录并批准访问后，应用将自动连接。这是大多数用户的最佳选择。"
+      },
+      "tokenMethod": {
+        "title": "访问令牌",
+        "description": "仅在应用要求您粘贴令牌、API 密钥或密钥时使用此方式。您在此处创建令牌并自行将其粘贴到应用中。"
+      },
+      "appAddress": {
+        "label": "应用地址",
+        "copyTitle": "复制 MCP URL",
+        "instruction": "当 AI 应用询问连接地址时，请复制此地址。"
+      },
+      "advancedUrl": {
+        "label": "高级登录 URL",
+        "copyTitle": "复制 OAuth 元数据 URL",
+        "instruction": "仅当应用特别要求登录或发现 URL 时才使用此地址。"
+      },
+      "steps": {
+        "1": {
+          "title": "1. 复制地址",
+          "desc": "将其粘贴到 AI 应用中开始设置。"
+        },
+        "2": {
+          "title": "2. 选择方式",
+          "desc": "如果支持浏览器登录则使用 OAuth，否则使用令牌。"
+        },
+        "3": {
+          "title": "3. 在此管理",
+          "desc": "随时查看连接或撤销访问权限。"
+        }
+      },
+      "jsonSetup": {
+        "title": "需要使用 JSON 配置？",
+        "subtitle": "点击显示或隐藏 JSON 设置块",
+        "instruction": "某些应用要求您粘贴 JSON 设置块而不是填写表单。当应用支持浏览器登录时使用 OAuth 2.1 版本。当应用要求提供令牌时使用访问令牌版本。",
+        "oauthJson": "OAuth 2.1 JSON",
+        "tokenJson": "访问令牌 JSON",
+        "copyJson": "复制 JSON",
+        "tokenInstruction": "将 <code className=\"text-amber-400\">YOUR_MCP_TOKEN</code> 替换为此页面的令牌，然后将完整的 JSON 粘贴到应用中。"
+      }
+    },
+    "tokens": {
+      "title": "访问令牌",
+      "newToken": "新令牌",
+      "whenToUse": "何时使用访问令牌",
+      "tip": "仅当应用不支持 OAuth 2.1 连接器时才使用访问令牌。请像保护密码一样保护令牌。在大多数情况下，您需要将应用地址和此令牌粘贴到应用中。",
+      "form": {
+        "tokenName": "令牌名称",
+        "expiration": "有效期",
+        "placeholder": "例如：Claude Desktop",
+        "create": "创建令牌",
+        "cancel": "取消",
+        "done": "完成"
+      },
+      "empty": {
+        "title": "无访问令牌",
+        "desc": "创建一个令牌来手动连接您的第一个 AI 应用。"
+      },
+      "card": {
+        "created": "创建于 {{date}}",
+        "used": "上次使用于 {{date}}",
+        "expired": "已过期",
+        "expires": "{{date}} 过期",
+        "noExpiration": "永不过期",
+        "revokeTitle": "撤销令牌"
+      }
+    },
+    "oauth": {
+      "title": "OAuth 2.1 连接",
+      "newClient": "新客户端",
+      "recommended": "推荐用于简单登录",
+      "tip": "您通过 OAuth 2.1 连接器连接的应用将自动显示在此处。在浏览器中批准访问后，应用将出现在这里。",
+      "edit": {
+        "title": "编辑 {{name}} 的回调地址",
+        "description": "更新此 OAuth 客户端使用的回调 URL。每行保留一个重定向 URI。",
+        "save": "保存回调地址"
+      },
+      "form": {
+        "clientName": "客户端名称",
+        "clientNamePlaceholder": "例如：Claude Desktop local",
+        "authMethod": "认证方式",
+        "redirectUris": "重定向 URI",
+        "redirectUrisPlaceholder": "http://localhost:3000/callback\nhttps://example.com/oauth/callback",
+        "redirectUrisHint": "每行输入一个重定向 URI。重定向 URI 必须使用 HTTPS 或 localhost。",
+        "create": "创建客户端",
+        "created": "OAuth 客户端已创建，请立即复制凭据。",
+        "createdHint": "Client secret 只会显示一次。关闭此面板前，请先将它保存到 MCP 应用或密钥管理工具中。",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "copyClientId": "复制 Client ID",
+        "copyClientSecret": "复制 Client secret",
+        "scope": "Scope"
+      },
+      "empty": {
+        "title": "无 OAuth 客户端连接",
+        "desc": "在您的 AI 应用中完成登录后，应用将显示在此处。"
+      },
+      "card": {
+        "manualClient": "手动客户端",
+        "activeToken": "{{count}} 个活动令牌",
+        "activeToken_plural": "{{count}} 个活动令牌",
+        "noTokens": "无活动令牌",
+        "registered": "注册于 {{date}}",
+        "editTitle": "编辑回调地址",
+        "revokeTitle": "撤销所有令牌"
+      }
+    },
+    "confirm": {
+      "revokeClientTitle": "撤销客户端访问权限",
+      "revokeTokenTitle": "撤销令牌",
+      "revokeClientMessage": "确定要撤销 \"{{name}}\" 的所有访问令牌吗？客户端将需要重新进行身份验证。",
+      "revokeTokenMessage": "确定要撤销令牌 \"{{name}}\" 吗？任何使用此令牌的 MCP 客户端都将立即失去访问权限。",
+      "revoking": "正在撤销...",
+      "revoke": "撤销"
+    },
+    "status": {
+      "connected": "已连接",
+      "disconnected": "已断开",
+      "error": "错误"
+    }
+  },
+  "assistant": {
+    "title": "助手",
+    "newChat": "新建对话",
+    "conversations": "对话列表",
+    "noConversations": "暂无对话",
+    "selectProvider": "选择服务商",
+    "selectModel": "选择模型",
+    "typePlaceholder": "输入消息...",
+    "send": "发送",
+    "stop": "停止",
+    "confirm": "确定",
+    "confirmTool": "在此会话中批准此工具",
+    "cancel": "取消",
+    "confirmAction": "确认此操作？",
+    "cancelAction": "取消此操作",
+    "toolApprovalEnabled": "此对话中未来的 {{tool}} 操作将在此会话中自动批准。",
+    "toolRunning": "正在执行 {{tool}}...",
+    "toolCompleted": "{{tool}} 已完成",
+    "toolFailed": "{{tool}} 失败",
+    "errorOccurred": "发生错误，请重试。",
+    "circuitOpen": "已达到安全限制",
+    "deleteConversation": "删除对话",
+    "deleteConfirm": "确定要删除此对话吗？",
+    "renameConversation": "重命名",
+    "archiveConversation": "存档",
+    "unarchiveConversation": "取消存档",
+    "noProvider": "请选择服务商和模型以开始对话",
+    "providerNotConfigured": "未配置可用于对话的服务商。请先添加 OpenAI、Claude 或 Google AI 服务商。",
+    "emptyChat": "开始与助手对话",
+    "confirmationExpired": "此确认已过期",
+    "loading": "思考中...",
+    "attachImage": "附加图片",
+    "dropImagesHere": "将图片拖放至此",
+    "maxImagesReached": "每条消息最多5张图片",
+    "imageAttached_one": "已附加{{count}}张图片",
+    "imageAttached_other": "已附加{{count}}张图片",
+    "pasteImage": "图片已粘贴",
+    "imageTooLarge": "图片太大，无法处理",
+    "invalidImageType": "仅支持图片文件",
+    "removeImage": "删除图片",
+    "greetings": {
+      "0": "您有什么想法？",
+      "1": "今天您想创造什么？",
+      "2": "我该如何协助您的工作流？",
+      "3": "准备好见证奇迹了吗？",
+      "4": "跟随白兔。",
+      "5": "红色药丸还是蓝色药丸？",
+      "6": "勺子并不存在。",
+      "7": "醒醒，尼奥...",
+      "8": "欢迎来到真实世界的荒漠。",
+      "9": "您完全正确！"
+    },
+    "micStart": "录制语音消息",
+    "micStop": "停止录制",
+    "micTranscribing": "正在转录...",
+    "micUnsupported": "此浏览器不支持麦克风",
+    "micPermissionDenied": "麦克风权限被拒绝",
+    "micRecordFailed": "录制失败",
+    "micTranscribeFailed": "音频转录失败",
+    "micNoSpeechDetected": "录音中未检测到语音"
+  }
+}

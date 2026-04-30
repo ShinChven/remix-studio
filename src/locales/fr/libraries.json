@@ -1,0 +1,226 @@
+{
+  "libraryRoute": {
+    "notFound": "Bibliothèque non trouvée."
+  },
+  "libraries": {
+    "title": "Bibliothèques",
+    "description": "Gérez vos invites réutilisables et vos collections d'images.",
+    "allLibraries": "Toute les bibliothèques",
+    "searchPlaceholder": "Rechercher des bibliothèques par nom ou ID...",
+    "newLibrary": "Nouvelle bibliothèque",
+    "noResultsFound": "Aucune bibliothèque correspondante trouvée",
+    "new": "Nouveau",
+    "noLibraries": {
+      "title": "Pas encore de bibliothèque",
+      "description": "Créez-en une pour stocker des invites ou des images réutilisables."
+    },
+    "libraryCard": {
+      "items": "{{count}} éléments",
+      "openEditor": "Ouvrir l'éditeur →",
+      "duplicate": "Dupliquer la bibliothèque",
+      "pin": "Épingler la bibliothèque",
+      "unpin": "Désépingler la bibliothèque"
+    },
+    "duplicateDialog": {
+      "title": "Dupliquer la bibliothèque",
+      "description": "Créez une copie de cette bibliothèque avec un nouveau nom.",
+      "placeholder": "Nom de la nouvelle bibliothèque",
+      "cancel": "Annuler",
+      "confirm": "Dupliquer",
+      "success": "Copié \"{{name}}\"",
+      "error": "Échec de la duplication de la bibliothèque"
+    },
+    "pinLimitReached": "Vous pouvez épingler au maximum {{max}} bibliothèques."
+  },
+  "libraryEditor": {
+    "toasts": {
+      "uploadFailed": "Échec du téléchargement de l'image"
+    },
+    "collectionType": "Collection de {{type}}",
+    "filterItems": "Filtrer les éléments...",
+    "uploading": "Téléchargement...",
+    "upload": "Télécharger",
+    "addFragment": "Ajouter un fragment",
+    "editLibrarySettings": "Modifier les paramètres de la bibliothèque",
+    "importOutput": "Import / Export",
+    "exportLibrary": "Exporter la bibliothèque",
+    "deleteLibrary": "Supprimer la bibliothèque",
+    "selectAll": "Tout sélectionner",
+    "selectedCount": "{{count}} sélectionné(s)",
+    "filterByTag": "Filtrer par tag",
+    "tagsSelected": "{{count}} tag(s) sélectionné(s)",
+    "allFragments": "Tous les fragments",
+    "batchTag": "Tag en lot",
+    "delete": "Supprimer",
+    "imageLabel": "IMG_{{index}}",
+    "clickToRename": "Cliquez pour renommer",
+    "renameItem": "Renommer l'élément",
+    "editTags": "Modifier les tags",
+    "refineInFullEditor": "Affiner dans l'éditeur complet",
+    "deleteFragment": "Supprimer le fragment",
+    "fullSource": "Source complète",
+    "markdownEnabled": "Markdown activé",
+    "noResultsFound": "Aucun résultat trouvé",
+    "emptyTitle": "Ville fantôme",
+    "tryDifferentSearch": "Essayez un autre mot-clé",
+    "emptyDescription": "Ajoutez du contenu ci-dessous pour initialiser la bibliothèque",
+    "references": {
+      "title": "Bibliothèque utilisée",
+      "message_one": "\"{{name}}\" est référencé par {{count}} projet. Vous devez supprimer ces références avant la suppression.",
+      "message_other": "\"{{name}}\" est référencé par {{count}} projets. Vous devez supprimer ces références avant la suppression.",
+      "resolve": "Résoudre les références"
+    },
+    "confirm": {
+      "deleteLibrary": {
+        "title": "Supprimer la bibliothèque",
+        "message": "Cela supprimera définitivement la collection \"{{name}}\" et tous ses fragments. Cette action est irréversible.",
+        "confirm": "Supprimer"
+      },
+      "expungeFragment": {
+        "title": "Expurger le fragment",
+        "message": "Voulez-vous vraiment supprimer ce fragment de la collection ?",
+        "confirm": "Supprimer maintenant"
+      },
+      "deleteSelected": {
+        "title": "Supprimer les fragments sélectionnés",
+        "message": "Voulez-vous vraiment supprimer {{count}} fragments ?",
+        "confirm": "Supprimer la sélection"
+      }
+    },
+    "tagModal": {
+      "batchTitle": "Marquage en lot des éléments sélectionnés",
+      "batchDescription": "Ajouter des tags aux {{count}} éléments sélectionnés.",
+      "addTags": "Ajouter des tags",
+      "editTitle": "Modifier les tags de l'élément"
+    },
+    "exportModal": {
+      "trigger": "Exporter le ZIP",
+      "title": "Exporter la bibliothèque",
+      "description": "Confirmez le nom du fichier ZIP avant le téléchargement.",
+      "fileName": "Nom du fichier",
+      "placeholder": "library_export.zip",
+      "cancel": "Annuler",
+      "confirm": "Exporter le ZIP",
+      "exporting": "Export en cours...",
+      "success": "ZIP de la bibliothèque téléchargé",
+      "error": "Échec de l'export de la bibliothèque"
+    },
+    "sort": {
+      "timeDesc": "Les plus récents",
+      "timeAsc": "Les plus anciens",
+      "nameAsc": "Nom A-Z",
+      "nameDesc": "Nom Z-A"
+    }
+  },
+  "libraryImportExport": {
+    "badge": "Espace de travail de la bibliothèque de texte",
+    "title": "Importation et Sortie",
+    "description": "Chargez en masse des fragments d'invites, préservez les tags à la sortie et maintenez un format d'importation propre pour l'édition en dehors de l'application.",
+    "toasts": {
+      "importFailed": "Échec de l'importation des éléments.",
+      "outputCopied": "Sortie de la bibliothèque copiée dans le presse-papiers",
+      "copyFailed": "Échec de la copie de la sortie."
+    },
+    "stats": {
+      "library": "Bibliothèque",
+      "currentItems": "Éléments actuels",
+      "currentTags": "Tags actuels",
+      "readyToImport": "Prêt à importer"
+    },
+    "importSource": {
+      "label": "Import Source",
+      "title": "Compose incoming library items",
+      "description": "Supports the legacy list format and a new tag-aware variant:",
+      "clear": "Clear",
+      "uploadText": "Upload Text",
+      "sharedTags": "Shared Tags",
+      "sharedTagsPlaceholder": "Applied to every imported item. Example: evergreen, short-form",
+      "detectedTags": "Detected Tags",
+      "skippedLines": "Skipped Lines",
+      "textareaPlaceholder": "Paste list items here.\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio",
+      "dropHint": "Drop `.txt` or `.md` files here"
+    },
+    "formatGuide": {
+      "title": "Format Guide",
+      "rule1": "Each item must start with `- ` so the parser can split entries predictably.",
+      "rule2": "Use `Title: Content` when you want a display title. Use `| tags: a, b` at the end when you want per-item tags.",
+      "rule3": "Shared tags above are merged into every parsed item and deduplicated automatically."
+    },
+    "parseStatus": {
+      "title": "Parse Status",
+      "valid": "All non-empty lines are valid import entries.",
+      "line": "Line {{line}}",
+      "moreSkipped": "+{{count}} more skipped lines"
+    },
+    "parseIssues": {
+      "missingListMarker": "Missing \"- \" list marker",
+      "emptyAfterMarker": "Line is empty after \"- \"",
+      "missingContentBeforeTags": "Missing content before the tags segment",
+      "missingContentAfterTitle": "Missing content after the title separator"
+    },
+    "importAction": "Import {{count}} Items",
+    "preview": {
+      "label": "Import Preview",
+      "title": "Review incoming tagged items",
+      "description": "Parsed items show exactly what will be created in this text library.",
+      "items": "Preview Items",
+      "sourceLine": "Source line {{line}}",
+      "tagsCount": "{{count}} tag",
+      "tagsCount_plural": "{{count}} tags",
+      "emptyTitle": "Nothing parsed yet",
+      "emptyDescription": "Add list items on the left and this panel will render the exact import result, including merged tags."
+    },
+    "output": {
+      "label": "Library Output",
+      "title": "Export current items with or without tags",
+      "description": "Tagged output preserves text library metadata. Plain output keeps the original minimal list format.",
+      "tagged": "Tagged",
+      "plain": "Plain",
+      "copy": "Copy Output",
+      "download": "Download .md"
+    }
+  },
+  "libraryForm": {
+    "newTitle": "Nouvelle bibliothèque",
+    "editTitle": "Modifier la bibliothèque",
+    "description": "Définissez les propriétés de votre bibliothèque",
+    "nameLabel": "Nom de la bibliothèque",
+    "namePlaceholder": "ex: Tenues de personnages, Contexte SF...",
+    "typeLabel": "Type de contenu",
+    "typeText": "Texte",
+    "typeImage": "Image",
+    "contentType": "Contenu {{type}}",
+    "permanent": "Permanent",
+    "cancel": "Annuler",
+    "submitCreate": "Créer la bibliothèque",
+    "submitSave": "Enregistrer les modifications",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Expliquez ce que cette bibliothèque contient et quand elle doit être utilisée.",
+    "descriptionHelp": "Facultatif. Affiché sur les cartes, le profil et les outils MCP.",
+    "typeVideo": "Vidéo",
+    "typeAudio": "Audio",
+    "contentSummaryTitle": "Configuration du contenu",
+    "contentSummaryDescription": "Le type de bibliothèque contrôle les éléments acceptés.",
+    "typeDescription": "Choisissez la famille de médias que cette bibliothèque stockera avant de la créer."
+  },
+  "libraryCleanup": {
+    "errorNotFound": "Bibliothèque non trouvée.",
+    "title": "Nettoyer les références",
+    "description": "Supprimez les références à \"<span className=\"text-white font-medium\">{{name}}</span>\" des projets avant de supprimer.",
+    "backToLibrary": "Retour à la bibliothèque",
+    "warning": "{{count}} projet référence encore cette bibliothèque",
+    "warning_plural": "{{count}} projets référencent encore cette bibliothèque",
+    "warningDesc": "Supprimez les références individuellement ou utilisez le bouton ci-dessous pour tout nettoyer et supprimer.",
+    "remove": "Supprimer",
+    "allCleared": "Toutes les références sont effacées",
+    "allClearedDesc": "Vous pouvez maintenant supprimer cette bibliothèque en toute sécurité.",
+    "cleanAllAndDelete": "Tout nettoyer et supprimer la bibliothèque",
+    "deleteLibrary": "Supprimer la bibliothèque",
+    "confirm": {
+      "title": "Tout nettoyer et supprimer",
+      "message": "Cela supprimera toutes les références à \"{{name}}\" de {{count}} projet et supprimera définitivement la bibliothèque. Cette action est irréversible.",
+      "message_plural": "Cela supprimera toutes les références à \"{{name}}\" de {{count}} projets et supprimera définitivement la bibliothèque. Cette action est irréversible.",
+      "confirmText": "Nettoyer et supprimer"
+    }
+  }
+}

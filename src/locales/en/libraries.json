@@ -1,0 +1,226 @@
+{
+  "libraryRoute": {
+    "notFound": "Library not found."
+  },
+  "libraries": {
+    "title": "Libraries",
+    "description": "Manage your reusable prompts and image collections.",
+    "allLibraries": "All Libraries",
+    "searchPlaceholder": "Search libraries by name or ID...",
+    "newLibrary": "New Library",
+    "noResultsFound": "No matching libraries found",
+    "new": "New",
+    "noLibraries": {
+      "title": "No libraries yet",
+      "description": "Create one to store reusable prompts or images."
+    },
+    "libraryCard": {
+      "items": "{{count}} items",
+      "openEditor": "Open Editor →",
+      "duplicate": "Duplicate Library",
+      "pin": "Pin Library",
+      "unpin": "Unpin Library"
+    },
+    "pinLimitReached": "You can pin at most {{max}} libraries.",
+    "duplicateDialog": {
+      "title": "Duplicate Library",
+      "description": "Create a copy of this library with a new name.",
+      "placeholder": "New library name",
+      "cancel": "Cancel",
+      "confirm": "Duplicate",
+      "success": "Copied \"{{name}}\"",
+      "error": "Failed to duplicate library"
+    }
+  },
+  "libraryEditor": {
+    "toasts": {
+      "uploadFailed": "Failed to upload images"
+    },
+    "collectionType": "{{type}} Collection",
+    "filterItems": "Filter items...",
+    "uploading": "Uploading...",
+    "upload": "Upload",
+    "addFragment": "Add Fragment",
+    "editLibrarySettings": "Edit Library Settings",
+    "importOutput": "Import / Output",
+    "exportLibrary": "Export Library",
+    "deleteLibrary": "Delete Library",
+    "selectAll": "Select All",
+    "selectedCount": "{{count}} Selected",
+    "sort": {
+      "timeDesc": "Newest First",
+      "timeAsc": "Oldest First",
+      "nameAsc": "Name A-Z",
+      "nameDesc": "Name Z-A"
+    },
+    "filterByTag": "Filter by Tag",
+    "tagsSelected": "{{count}} Tags Selected",
+    "allFragments": "All Fragments",
+    "batchTag": "Batch Tag",
+    "delete": "Delete",
+    "imageLabel": "IMG_{{index}}",
+    "clickToRename": "Click to rename",
+    "renameItem": "Rename Item",
+    "editTags": "Edit Tags",
+    "refineInFullEditor": "Refine in Full Editor",
+    "deleteFragment": "Delete Fragment",
+    "fullSource": "Full Source",
+    "markdownEnabled": "Markdown Enabled",
+    "noResultsFound": "No results found",
+    "emptyTitle": "Ghost Town",
+    "tryDifferentSearch": "Try a different search term",
+    "emptyDescription": "Add content below to initialize library",
+    "references": {
+      "title": "Library In Use",
+      "message_one": "\"{{name}}\" is referenced by {{count}} project. You need to remove these references before deleting.",
+      "message_other": "\"{{name}}\" is referenced by {{count}} projects. You need to remove these references before deleting.",
+      "resolve": "Resolve References"
+    },
+    "confirm": {
+      "deleteLibrary": {
+        "title": "Delete Library",
+        "message": "This will permanently delete the collection \"{{name}}\" and all its fragments. This action is irreversible.",
+        "confirm": "Delete"
+      },
+      "expungeFragment": {
+        "title": "Expunge Fragment",
+        "message": "Are you sure you want to remove this fragment from the collection?",
+        "confirm": "Remove Now"
+      },
+      "deleteSelected": {
+        "title": "Delete Selected Fragments",
+        "message": "Are you sure you want to delete {{count}} fragment(s)?",
+        "confirm": "Delete Selected"
+      }
+    },
+    "tagModal": {
+      "batchTitle": "Batch Tag Selected Items",
+      "batchDescription": "Add tags to {{count}} selected item(s).",
+      "addTags": "Add Tags",
+      "editTitle": "Edit Item Tags"
+    },
+    "exportModal": {
+      "trigger": "Export ZIP",
+      "title": "Export Library",
+      "description": "Confirm the ZIP filename before downloading this library.",
+      "fileName": "File Name",
+      "placeholder": "library_export.zip",
+      "cancel": "Cancel",
+      "confirm": "Export ZIP",
+      "exporting": "Exporting...",
+      "success": "Library ZIP downloaded",
+      "error": "Failed to export library"
+    }
+  },
+  "libraryImportExport": {
+    "badge": "Text Library Workspace",
+    "title": "Import & Output",
+    "description": "Bulk load prompt fragments, preserve tags in output, and keep a clean import format for editing outside the app.",
+    "toasts": {
+      "importFailed": "Failed to import items.",
+      "outputCopied": "Library output copied to clipboard",
+      "copyFailed": "Failed to copy output."
+    },
+    "stats": {
+      "library": "Library",
+      "currentItems": "Current Items",
+      "currentTags": "Current Tags",
+      "readyToImport": "Ready To Import"
+    },
+    "importSource": {
+      "label": "Import Source",
+      "title": "Compose incoming library items",
+      "description": "Supports the legacy list format and a new tag-aware variant:",
+      "clear": "Clear",
+      "uploadText": "Upload Text",
+      "sharedTags": "Shared Tags",
+      "sharedTagsPlaceholder": "Applied to every imported item. Example: evergreen, short-form",
+      "detectedTags": "Detected Tags",
+      "skippedLines": "Skipped Lines",
+      "textareaPlaceholder": "Paste list items here.\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio",
+      "dropHint": "Drop `.txt` or `.md` files here"
+    },
+    "formatGuide": {
+      "title": "Format Guide",
+      "rule1": "Each item must start with `- ` so the parser can split entries predictably.",
+      "rule2": "Use `Title: Content` when you want a display title. Use `| tags: a, b` at the end when you want per-item tags.",
+      "rule3": "Shared tags above are merged into every parsed item and deduplicated automatically."
+    },
+    "parseStatus": {
+      "title": "Parse Status",
+      "valid": "All non-empty lines are valid import entries.",
+      "line": "Line {{line}}",
+      "moreSkipped": "+{{count}} more skipped lines"
+    },
+    "parseIssues": {
+      "missingListMarker": "Missing \"- \" list marker",
+      "emptyAfterMarker": "Line is empty after \"- \"",
+      "missingContentBeforeTags": "Missing content before the tags segment",
+      "missingContentAfterTitle": "Missing content after the title separator"
+    },
+    "importAction": "Import {{count}} Items",
+    "preview": {
+      "label": "Import Preview",
+      "title": "Review incoming tagged items",
+      "description": "Parsed items show exactly what will be created in this text library.",
+      "items": "Preview Items",
+      "sourceLine": "Source line {{line}}",
+      "tagsCount": "{{count}} tag",
+      "tagsCount_plural": "{{count}} tags",
+      "emptyTitle": "Nothing parsed yet",
+      "emptyDescription": "Add list items on the left and this panel will render the exact import result, including merged tags."
+    },
+    "output": {
+      "label": "Library Output",
+      "title": "Export current items with or without tags",
+      "description": "Tagged output preserves text library metadata. Plain output keeps the original minimal list format.",
+      "tagged": "Tagged",
+      "plain": "Plain",
+      "copy": "Copy Output",
+      "download": "Download .md"
+    }
+  },
+  "libraryForm": {
+    "newTitle": "New Library",
+    "editTitle": "Edit Library",
+    "description": "Define your library properties",
+    "nameLabel": "Library Name",
+    "namePlaceholder": "e.g. Character Outfits, Sci-Fi Context...",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Explain what this library contains and when it should be used.",
+    "descriptionHelp": "Optional. Shown on cards, profile, and MCP tools.",
+    "typeLabel": "Content Type",
+    "typeText": "Text",
+    "typeImage": "Image",
+    "typeVideo": "Video",
+    "typeAudio": "Audio",
+    "contentSummaryTitle": "Content setup",
+    "contentSummaryDescription": "Library type controls accepted items.",
+    "typeDescription": "Choose the media family this library will store before creating it.",
+    "contentType": "{{type}} Content",
+    "permanent": "Permanent",
+    "cancel": "Cancel",
+    "submitCreate": "Create Library",
+    "submitSave": "Save Changes"
+  },
+  "libraryCleanup": {
+    "errorNotFound": "Library not found.",
+    "title": "Clean Up References",
+    "description": "Remove references to \"<span className=\"text-white font-medium\">{{name}}</span>\" from projects before deleting.",
+    "backToLibrary": "Back to Library",
+    "warning": "{{count}} project still referencing this library",
+    "warning_plural": "{{count}} projects still referencing this library",
+    "warningDesc": "Remove references individually or use the button below to clean all and delete.",
+    "remove": "Remove",
+    "allCleared": "All references cleared",
+    "allClearedDesc": "You can now safely delete this library.",
+    "cleanAllAndDelete": "Clean All & Delete Library",
+    "deleteLibrary": "Delete Library",
+    "confirm": {
+      "title": "Clean All & Delete",
+      "message": "This will remove all references to \"{{name}}\" from {{count}} project and permanently delete the library. This action is irreversible.",
+      "message_plural": "This will remove all references to \"{{name}}\" from {{count}} projects and permanently delete the library. This action is irreversible.",
+      "confirmText": "Clean & Delete"
+    }
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "sidebar": {
+    "dashboard": "Tableau de bord",
+    "projects": "Projets",
+    "queueMonitor": "Files",
+    "libraries": "Bibliothèques",
+    "providers": "Fournisseurs",
+    "mcp": "MCP",
+    "assistant": "Assistant",
+    "exports": "Exportations",
+    "recycleBin": "Corbeille",
+    "storage": "Stockage",
+    "userManagement": "Gestion des utilisateurs"
+  },
+  "mainLayout": {
+    "storageUnavailable": "Stockage indisponible",
+    "toggleMenu": "Basculer le menu",
+    "expandSidebar": "Développer la barre latérale",
+    "collapseSidebar": "Réduire la barre latérale"
+  },
+  "confirmModal": {
+    "confirm": "Confirmer",
+    "cancel": "Annuler"
+  },
+  "apiKeyCheck": {
+    "loading": "Chargement...",
+    "title": "Clé API requise",
+    "description": "Cette application utilise Nano Banana 2 (Gemini 3.1 Flash Image), qui nécessite une clé API Google Cloud payante.",
+    "learnMore": "En savoir plus sur la facturation",
+    "selectApiKey": "Sélectionner une clé API"
+  },
+  "storageIndicator": {
+    "title": "Stockage : {{used}} / {{limit}} ({{percent}}%)",
+    "storage": "Stockage",
+    "usedOfLimit": "{{used}} / {{limit}}"
+  },
+  "tagModal": {
+    "title": "Modifier les tags",
+    "description": "Ajouter ou supprimer des tags pour cet élément.",
+    "saveTags": "Enregistrer les tags",
+    "placeholder": "Entrez les tags (séparés par des virgules)...",
+    "add": "Ajouter",
+    "noTags": "Aucun tag ajouté pour le moment"
+  },
+  "dashboard": {
+    "welcome": "Bienvenue sur Remix Studio",
+    "description": "Sélectionnez un projet ou une bibliothèque dans la barre latérale, ou créez-en un nouveau pour commencer.",
+    "recentProjects": "Projets récents",
+    "newProject": "Nouveau projet",
+    "new": "Nouveau",
+    "noProjects": "Aucun projet pour le moment. Créez-en un pour commencer à générer.",
+    "libraries": "Bibliothèques",
+    "newLibrary": "Nouvelle bibliothèque",
+    "noLibraries": "Aucune bibliothèque pour le moment. Créez-en une pour stocker des prompts réutilisables.",
+    "projectStats": "{{jobCount}} tâches • {{imageCount}} images • {{date}}",
+    "aiChat": "Assistant IA",
+    "aiChatDescription": "Comment puis-je vous aider aujourd'hui ?",
+    "setupNoticeTitle": "Bienvenue sur Remix Studio !",
+    "setupNoticeDescription": "Pour commencer à utiliser l'assistant IA et générer du contenu, vous devez d'abord configurer au moins un fournisseur d'IA.",
+    "setupNoticeButton": "Configurer les fournisseurs"
+  },
+  "login": {
+    "welcomeBack": "Bon retour",
+    "completeRegistration": "Compléter l'inscription",
+    "twoFactorVerification": "Authentification à deux facteurs",
+    "signInWith": "Connectez-vous avec votre mot de passe, une clé d'accès enregistrée ou Google.",
+    "registrationDescription": "Votre identité Google est vérifiée. Entrez un code d'invitation pour terminer la création de votre compte.",
+    "twoFactorDescription": "Entrez le code à 6 chiffres pour {{email}}.",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "signIn": "Se connecter",
+    "orContinueWith": "Ou continuer avec",
+    "passkey": "Clé d'accès",
+    "google": "Google",
+    "inviteCode": "Code d'invitation",
+    "enterInviteCode": "Entrez le code d'invitation",
+    "inviteCodeDescription": "Les codes d'invitation peuvent être pré-remplis à partir du paramètre URL `inviteCode`.",
+    "finishRegistration": "Terminer l'inscription",
+    "restartGoogle": "Recommencer la connexion Google",
+    "googleSignIn": "Connexion Google",
+    "verifiedSuccessfully": "Vérifié avec succès",
+    "authCode": "Code d'authentification",
+    "verifyAndSignIn": "Vérifier et se connecter",
+    "back": "Retour",
+    "errors": {
+      "passkeyNotSupported": "Ce navigateur ne prend pas en charge les clés d'accès.",
+      "loginFailed": "Échec de la connexion",
+      "twoFactorFailed": "Échec de la vérification 2FA",
+      "passkeyFailed": "Échec de la connexion par clé d'accès",
+      "registrationFailed": "Échec de l'inscription"
+    }
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "sidebar": {
+    "dashboard": "仪表盘",
+    "projects": "项目",
+    "queueMonitor": "队列",
+    "libraries": "库",
+    "providers": "供应商",
+    "mcp": "MCP",
+    "assistant": "助手",
+    "exports": "导出",
+    "recycleBin": "回收站",
+    "storage": "存储",
+    "userManagement": "用户管理"
+  },
+  "mainLayout": {
+    "storageUnavailable": "存储不可用",
+    "toggleMenu": "切换菜单",
+    "expandSidebar": "展开侧边栏",
+    "collapseSidebar": "收起侧边栏"
+  },
+  "confirmModal": {
+    "confirm": "确认",
+    "cancel": "取消"
+  },
+  "apiKeyCheck": {
+    "loading": "加载中...",
+    "title": "需要 API 密钥",
+    "description": "此应用程序使用 Nano Banana 2 (Gemini 3.1 Flash Image) ，需要付费的 Google Cloud API 密钥。",
+    "learnMore": "了解更多关于计费的信息",
+    "selectApiKey": "选择 API 密钥"
+  },
+  "storageIndicator": {
+    "title": "存储：{{used}} / {{limit}} ({{percent}}%)",
+    "storage": "存储",
+    "usedOfLimit": "{{used}} / {{limit}}"
+  },
+  "tagModal": {
+    "title": "编辑标签",
+    "description": "为此项目添加或删除标签。",
+    "saveTags": "保存标签",
+    "placeholder": "输入标签 (逗号分隔)...",
+    "add": "添加",
+    "noTags": "尚未添加标签"
+  },
+  "dashboard": {
+    "welcome": "欢迎来到 Remix Studio",
+    "description": "从侧边栏选择项目或库，或者创建一个新项目或库开始。",
+    "recentProjects": "最近项目",
+    "newProject": "新项目",
+    "new": "新建",
+    "noProjects": "暂无项目。创建一个项目开始生成。",
+    "libraries": "库",
+    "newLibrary": "新库",
+    "noLibraries": "暂无库。创建一个库来存储可重用的提示词。",
+    "projectStats": "{{jobCount}} 个作业 • {{imageCount}} 张图片 • {{date}}",
+    "aiChat": "AI助手",
+    "aiChatDescription": "今天有什么可以帮您的吗？",
+    "setupNoticeTitle": "欢迎来到 Remix Studio！",
+    "setupNoticeDescription": "要开始使用 AI 助手和生成内容，您首先需要配置至少一个 AI 提供商。",
+    "setupNoticeButton": "配置提供商"
+  },
+  "login": {
+    "welcomeBack": "欢迎回来",
+    "completeRegistration": "完成注册",
+    "twoFactorVerification": "双重验证",
+    "signInWith": "使用密码、保存的通行密钥或 Google 登录。",
+    "registrationDescription": "您的 Google 身份已验证。请输入邀请码以完成账户创建。",
+    "twoFactorDescription": "请输入发送至 {{email}} 的 6 位验证码。",
+    "email": "电子邮箱",
+    "password": "密码",
+    "signIn": "登录",
+    "orContinueWith": "或通过以下方式继续",
+    "passkey": "通行密钥",
+    "google": "Google",
+    "inviteCode": "邀请码",
+    "enterInviteCode": "输入邀请码",
+    "inviteCodeDescription": "邀请码可以从 `inviteCode` URL 参数中自动填充。",
+    "finishRegistration": "完成注册",
+    "restartGoogle": "重新开始 Google 登录",
+    "googleSignIn": "Google 登录",
+    "verifiedSuccessfully": "验证成功",
+    "authCode": "身份验证码",
+    "verifyAndSignIn": "验证并登录",
+    "back": "返回",
+    "errors": {
+      "passkeyNotSupported": "此浏览器不支持通行密钥。",
+      "loginFailed": "登录失败",
+      "twoFactorFailed": "双重验证失败",
+      "passkeyFailed": "通行密钥登录失败",
+      "registrationFailed": "注册失败"
+    }
+  }
+}

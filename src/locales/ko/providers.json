@@ -1,0 +1,127 @@
+{
+  "providers": {
+    "title": "제공자",
+    "description": "이미지 생성 백엔드의 API 자격 증명을 관리합니다. 키는 저장 시 암호화됩니다.",
+    "allProviders": "모든 제공자",
+    "newProvider": "새 제공자",
+    "new": "새로 만들기",
+    "noProviders": {
+      "title": "제공자가 없습니다",
+      "description": "이미지 생성을 시작하려면 첫 번째 API 키를 추가하세요."
+    },
+    "providerCard": {
+      "credentialsStored": "자격 증명 저장됨",
+      "keyStored": "키 저장됨",
+      "missingCredentials": "자격 증명 누락",
+      "noKey": "키 없음",
+      "projects": "{{count}}개 프로젝트",
+      "projects_plural": "{{count}}개 프로젝트",
+      "activeJobs": "{{count}}개 활성 작업",
+      "activeJobs_plural": "{{count}}개 활성 작업"
+    },
+    "deleteDialog": {
+      "title": "제공자 삭제",
+      "message": "\"{{name}}\"을(를) 삭제하시겠습니까? 저장된 API 키가 제거됩니다. 기존 프로젝트 참조는 경고로 남으며, 이 제공자를 사용하는 대기 중이거나 처리 중인 작업은 다른 제공자로 전환할 때까지 실패할 수 있습니다.",
+      "usageWarning": " 현재 {{projectCount}}개 프로젝트와 {{jobCount}}개 활성 작업에서 참조하고 있습니다.",
+      "confirm": "삭제",
+      "deleting": "삭제 중..."
+    },
+    "errors": {
+      "load": "제공자를 불러오지 못했습니다.",
+      "delete": "제공자를 삭제하지 못했습니다."
+    }
+  },
+  "providerForm": {
+    "newTitle": "새 제공자",
+    "editTitle": "제공자 편집",
+    "securityNote": "키는 데이터베이스에서 암호화됩니다",
+    "nameLabel": "제공자 이름",
+    "namePlaceholder": "예: 업무용 계정, 개인 키...",
+    "typeLabel": "제공자 유형",
+    "apiKeyLabel": "API Key",
+    "accessKeyLabel": "Access Key",
+    "secretKeyLabel": "Secret Key",
+    "leaveBlankToKeep": "— 기존 설정을 유지하려면 비워두세요",
+    "apiKeyPlaceholder": "API Key 붙여넣기...",
+    "accessKeyPlaceholder": "Access Key 붙여넣기...",
+    "secretKeyPlaceholder": "Secret Key 붙여넣기...",
+    "stored": "•••••••• (저장됨)",
+    "apiUrlLabel": "API URL",
+    "apiUrlOptional": "— 선택적 재정의",
+    "apiUrlPlaceholder": "https://... (기본값을 사용하려면 비워둠)",
+    "parallelTasksLabel": "병렬 작업",
+    "concurrencyLimit": "— 동시성 제한",
+    "maxRequests": "최대 요청 수",
+    "saving": "저장 중...",
+    "submitCreate": "제공자 생성",
+    "submitSave": "변경 사항 저장",
+    "cancel": "취소",
+    "errors": {
+      "accessKeyRequired": "Access Key는 필수입니다.",
+      "apiKeyRequired": "API Key는 필수입니다.",
+      "secretKeyRequired": "KlingAI에는 Secret Key가 필수입니다.",
+      "saveFailed": "저장에 실패했습니다."
+    },
+    "supportedModels": "지원되는 모델",
+    "modelsSubtitle": "이 모델들은 선택한 제공업체에서 기본적으로 지원됩니다."
+  },
+  "providerProfile": {
+    "errorLoad": "제공자를 불러오지 못했습니다.",
+    "errorNotFound": "제공자를 찾을 수 없습니다",
+    "backToProviders": "제공자 목록으로 돌아가기",
+    "credentialsStored": "자격 증명 저장됨",
+    "keyStored": "키 저장됨",
+    "missingCredentials": "자격 증명 누락",
+    "noKey": "키 없음",
+    "customModels": "사용자 정의 모델",
+    "edit": "편집",
+    "concurrency": "동시성",
+    "projects": "프로젝트",
+    "jobs": "작업",
+    "models": "모델",
+    "supportedModels": "지원되는 모델",
+    "availableModels": "사용 가능한 모델",
+    "refresh": "새로고침",
+    "addKeyToFetch": "제공자로부터 사용 가능한 모델을 가져오려면 API Key를 추가하세요.",
+    "noModels": "제공자 API에서 반환된 모델이 없습니다.",
+    "categories": {
+      "text": "텍스트 생성",
+      "image": "이미지 생성",
+      "video": "비디오 생성",
+      "audio": "오디오 생성"
+    },
+    "modelCount": "{{count}}개 모델",
+    "modelCount_plural": "{{count}}개 모델",
+    "errors": {
+      "fetchModels": "제공자 API에서 모델을 가져오지 못했습니다."
+    }
+  },
+  "providerCustomModels": {
+    "errorLoad": "제공자를 불러오지 못했습니다.",
+    "errorNotFound": "제공자를 찾을 수 없습니다",
+    "backToProvider": "{{name}}(으)로 돌아가기",
+    "title": "사용자 정의 모델 변체",
+    "description": "사용자 정의 ID로 모델 변체를 생성합니다. 각 변체는 기본 모델의 모든 매개변수를 상속합니다.",
+    "newVariant": "새 변체",
+    "editVariant": "변체 편집",
+    "baseModelLabel": "기본 모델",
+    "selectBaseModel": "기본 모델 선택...",
+    "inherits": "상속: {{traits}}",
+    "modelNameLabel": "모델 이름",
+    "modelIdLabel": "모델 ID",
+    "namePlaceholder": "예: 제품 사진 v2",
+    "idPlaceholder": "예: seedream-5-0-my-finetune",
+    "saving": "저장 중...",
+    "create": "생성",
+    "update": "업데이트",
+    "cancel": "취소",
+    "noVariants": "사용자 정의 모델 변체가 없습니다",
+    "noVariantsDesc": "기본 모델을 선택하고 사용자 정의 이름과 모델 ID를 입력하여 변체를 만드세요.",
+    "confirmDelete": "확인",
+    "edit": "편집",
+    "delete": "삭제",
+    "errors": {
+      "saveFailed": "저장 실패."
+    }
+  }
+}

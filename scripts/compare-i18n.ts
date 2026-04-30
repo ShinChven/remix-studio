@@ -6,17 +6,45 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const LOCALES_DIR = path.resolve(__dirname, '../src/locales');
-const REFERENCE_FILE = 'en.json';
+const REFERENCE_LOCALE = 'en';
 
 type LocaleData = { [key: string]: any };
 
-function getFiles(): string[] {
-  return fs.readdirSync(LOCALES_DIR).filter(file => file.endsWith('.json'));
+function getLocales(): string[] {
+  return fs
+    .readdirSync(LOCALES_DIR, { withFileTypes: true })
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name)
+    .sort();
 }
 
-function loadJson(filename: string): LocaleData {
-  const filePath = path.join(LOCALES_DIR, filename);
-  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+function getLocaleFiles(locale: string): string[] {
+  const localeDir = path.join(LOCALES_DIR, locale);
+  return fs
+    .readdirSync(localeDir)
+    .filter(file => file.endsWith('.json'))
+    .sort();
+}
+
+function loadLocale(locale: string): LocaleData {
+  const localeDir = path.join(LOCALES_DIR, locale);
+  const files = getLocaleFiles(locale);
+  const localeData: LocaleData = {};
+
+  for (const file of files) {
+    const filePath = path.join(localeDir, file);
+    const chunk = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+
+    for (const key of Object.keys(chunk)) {
+      if (key in localeData) {
+        throw new Error(`Duplicate key "${key}" in ${locale}/${file}`);
+      }
+    }
+
+    Object.assign(localeData, chunk);
+  }
+
+  return localeData;
 }
 
 function findMissingKeys(
@@ -49,30 +77,49 @@ function findMissingKeys(
 }
 
 function run() {
-  const files = getFiles();
-  if (!files.includes(REFERENCE_FILE)) {
-    console.error(`Reference file ${REFERENCE_FILE} not found in ${LOCALES_DIR}`);
+  const locales = getLocales();
+  if (!locales.includes(REFERENCE_LOCALE)) {
+    console.error(`Reference locale ${REFERENCE_LOCALE} not found in ${LOCALES_DIR}`);
     process.exit(1);
   }
 
-  const referenceData = loadJson(REFERENCE_FILE);
-  const otherFiles = files.filter(f => f !== REFERENCE_FILE);
+  const referenceData = loadLocale(REFERENCE_LOCALE);
+  const referenceFiles = getLocaleFiles(REFERENCE_LOCALE);
+  const otherLocales = locales.filter(locale => locale !== REFERENCE_LOCALE);
 
   let hasMissing = false;
 
-  console.log(`Comparing against ${REFERENCE_FILE}...\n`);
+  console.log(`Comparing against ${REFERENCE_LOCALE}/...\n`);
 
-  for (const file of otherFiles) {
-    const targetData = loadJson(file);
+  for (const locale of otherLocales) {
+    const targetFiles = getLocaleFiles(locale);
+    const missingFiles = referenceFiles.filter(file => !targetFiles.includes(file));
+    const extraFiles = targetFiles.filter(file => !referenceFiles.includes(file));
+    const targetData = loadLocale(locale);
     const missingKeys = findMissingKeys(referenceData, targetData);
+    const hasChunkIssues = missingFiles.length > 0 || extraFiles.length > 0;
+
+    if (missingFiles.length > 0) {
+      hasMissing = true;
+      console.log(`❌ ${locale}: ${missingFiles.length} missing locale chunks`);
+      missingFiles.forEach(file => console.log(`   - ${file}`));
+      console.log('');
+    }
+
+    if (extraFiles.length > 0) {
+      hasMissing = true;
+      console.log(`❌ ${locale}: ${extraFiles.length} extra locale chunks`);
+      extraFiles.forEach(file => console.log(`   - ${file}`));
+      console.log('');
+    }
 
     if (missingKeys.length > 0) {
       hasMissing = true;
-      console.log(`❌ ${file}: ${missingKeys.length} missing keys`);
+      console.log(`❌ ${locale}: ${missingKeys.length} missing keys`);
       missingKeys.forEach(key => console.log(`   - ${key}`));
       console.log('');
-    } else {
-      console.log(`✅ ${file}: No missing keys`);
+    } else if (!hasChunkIssues) {
+      console.log(`✅ ${locale}: No missing keys`);
     }
   }
 

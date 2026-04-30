@@ -1,0 +1,127 @@
+{
+  "providers": {
+    "title": "プロバイダー",
+    "description": "画像生成バックエンドのAPI認証情報を管理します。キーは保存時に暗号化されます。",
+    "allProviders": "すべてのプロバイダー",
+    "newProvider": "新規プロバイダー",
+    "new": "新規",
+    "noProviders": {
+      "title": "プロバイダーがありません",
+      "description": "画像生成を開始するには、最初のAPIキーを追加してください。"
+    },
+    "providerCard": {
+      "credentialsStored": "認証情報が保存されました",
+      "keyStored": "キーが保存されました",
+      "missingCredentials": "認証情報が不足しています",
+      "noKey": "キーなし",
+      "projects": "{{count}} プロジェクト",
+      "projects_plural": "{{count}} プロジェクト",
+      "activeJobs": "{{count}} 実行中のジョブ",
+      "activeJobs_plural": "{{count}} 実行中のジョブ"
+    },
+    "deleteDialog": {
+      "title": "プロバイダーの削除",
+      "message": "\"{{name}}\" を削除しますか？これにより、保存されているAPIキーが削除されます。既存のプロジェクト参照は警告として残り、このプロバイダーを使用している保留中または処理中のジョブは、別のプロバイダーに切り替えるまで失敗する可能性があります。",
+      "usageWarning": " 現在、{{projectCount}} 個のプロジェクトと {{jobCount}} 個の実行中のジョブによって参照されています。",
+      "confirm": "削除",
+      "deleting": "削除中..."
+    },
+    "errors": {
+      "load": "プロバイダーの読み込みに失敗しました。",
+      "delete": "プロバイダーの削除に失敗しました。"
+    }
+  },
+  "providerForm": {
+    "newTitle": "プロバイダーの新規作成",
+    "editTitle": "プロバイダーの編集",
+    "securityNote": "キーはデータベース内で暗号化されます",
+    "nameLabel": "プロバイダー名",
+    "namePlaceholder": "例: 仕事用アカウント、個人用キー...",
+    "typeLabel": "プロバイダーの種類",
+    "apiKeyLabel": "API Key",
+    "accessKeyLabel": "Access Key",
+    "secretKeyLabel": "Secret Key",
+    "leaveBlankToKeep": "— 変更しない場合は空白のままにしてください",
+    "apiKeyPlaceholder": "API Key を貼り付け...",
+    "accessKeyPlaceholder": "Access Key を貼り付け...",
+    "secretKeyPlaceholder": "Secret Key を貼り付け...",
+    "stored": "•••••••• (保存済み)",
+    "apiUrlLabel": "API URL",
+    "apiUrlOptional": "— オプションのオーバーライド",
+    "apiUrlPlaceholder": "https://... (デフォルトを使用する場合は空白)",
+    "parallelTasksLabel": "並列タスク",
+    "concurrencyLimit": "— 同時実行制限",
+    "maxRequests": "最大リクエスト数",
+    "saving": "保存中...",
+    "submitCreate": "プロバイダーを作成",
+    "submitSave": "変更を保存",
+    "cancel": "キャンセル",
+    "errors": {
+      "accessKeyRequired": "Access Key は必須です。",
+      "apiKeyRequired": "API Key は必須です。",
+      "secretKeyRequired": "KlingAI には Secret Key が必須です。",
+      "saveFailed": "保存に失敗しました。"
+    },
+    "supportedModels": "サポートされているモデル",
+    "modelsSubtitle": "これらのモデルは、選択したプロバイダーによってネイティブにサポートされています。"
+  },
+  "providerProfile": {
+    "errorLoad": "プロバイダーの読み込みに失敗しました。",
+    "errorNotFound": "プロバイダーが見つかりません",
+    "backToProviders": "プロバイダー一覧に戻る",
+    "credentialsStored": "認証情報保存済み",
+    "keyStored": "キー保存済み",
+    "missingCredentials": "認証情報が不足しています",
+    "noKey": "キーなし",
+    "customModels": "カスタムモデル",
+    "edit": "編集",
+    "concurrency": "同時実行数",
+    "projects": "プロジェクト",
+    "jobs": "ジョブ",
+    "models": "モデル",
+    "supportedModels": "サポートされているモデル",
+    "availableModels": "利用可能なモデル",
+    "refresh": "更新",
+    "addKeyToFetch": "API Key を追加してプロバイダーから利用可能なモデルを取得します。",
+    "noModels": "プロバイダー API からモデルが返されませんでした。",
+    "categories": {
+      "text": "テキスト生成",
+      "image": "画像生成",
+      "video": "動画生成",
+      "audio": "音声生成"
+    },
+    "modelCount": "{{count}} モデル",
+    "modelCount_plural": "{{count}} モデル",
+    "errors": {
+      "fetchModels": "プロバイダー API からのモデル取得に失敗しました。"
+    }
+  },
+  "providerCustomModels": {
+    "errorLoad": "プロバイダーの読み込みに失敗しました。",
+    "errorNotFound": "プロバイダーが見つかりません",
+    "backToProvider": "{{name}} に戻る",
+    "title": "カスタムモデルバリアント",
+    "description": "カスタム ID でモデルバリアントを作成します。各バリアントはベースモデルのすべてのパラメータを継承します。",
+    "newVariant": "新しいバリアント",
+    "editVariant": "バリアントを編集",
+    "baseModelLabel": "ベースモデル",
+    "selectBaseModel": "ベースモデルを選択...",
+    "inherits": "継承: {{traits}}",
+    "modelNameLabel": "モデル名",
+    "modelIdLabel": "モデル ID",
+    "namePlaceholder": "例: 製品写真 v2",
+    "idPlaceholder": "例: seedream-5-0-my-finetune",
+    "saving": "保存中...",
+    "create": "作成",
+    "update": "更新",
+    "cancel": "キャンセル",
+    "noVariants": "カスタムモデルバリアントはまだありません",
+    "noVariantsDesc": "ベースモデルを選択し、カスタム名とモデル ID を入力してバリアントを作成してください。",
+    "confirmDelete": "確認",
+    "edit": "編集",
+    "delete": "削除",
+    "errors": {
+      "saveFailed": "保存に失敗しました。"
+    }
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "projectRoute": {
+    "notFound": "未找到项目。",
+    "renameFailed": "重命名项目文件夹失败。正在撤销 ID 更改。"
+  },
+  "projects": {
+    "title": "项目",
+    "description": "管理并跟踪您的 AI 工作流和生成任务。",
+    "allProjects": "所有项目",
+    "searchPlaceholder": "搜索项目名称或 ID...",
+    "newProject": "新建项目",
+    "noResultsFound": "未找到匹配的项目",
+    "archiveProject": "归档项目",
+    "unarchiveProject": "取消归档",
+    "archivedBadge": "已归档",
+    "archivedToast": "已归档 “{{name}}”",
+    "unarchivedToast": "已恢复 “{{name}}”",
+    "archiveFailed": "更改归档状态失败，请重试。",
+    "statusFilter": {
+      "active": "进行中",
+      "all": "全部",
+      "archived": "已归档"
+    },
+    "statusHeading": {
+      "active": "进行中的项目",
+      "all": "所有项目",
+      "archived": "已归档的项目"
+    },
+    "noProjects": {
+      "title": "暂无项目",
+      "description": "创建一个新项目开始构建您的工作流。"
+    },
+    "projectCard": {
+      "jobs": "{{count}} 个作业",
+      "assets": {
+        "images": "{{count}} 张图片",
+        "texts": "{{count}} 个文本",
+        "videos": "{{count}} 个视频",
+        "audios": "{{count}} 个音频"
+      },
+      "openProject": "打开项目 →"
+    },
+    "pagination": "第 {{current}} / {{total}} 页"
+  },
+  "projectForm": {
+    "newTitle": "新建项目",
+    "editTitle": "编辑项目",
+    "description": "定义您的项目参数",
+    "typeLabel": "项目类型",
+    "typeImage": "图像",
+    "typeText": "文本",
+    "typeVideo": "视频",
+    "typeAudio": "音频",
+    "nameLabel": "项目名称",
+    "namePlaceholderText": "例如：产品描述生成器...",
+    "namePlaceholderImage": "例如：赛博朋克角色系列...",
+    "namePlaceholderAudio": "例如：双人播客片段...",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "说明这个项目做什么、生成什么，或应该如何使用。",
+    "descriptionHelp": "可选。会显示在卡片、资料页和 MCP 工具中。",
+    "identityTitle": "身份信息",
+    "identityDescription": "命名和文件输出设置。",
+    "prefixLabel": "项目前缀",
+    "prefixPlaceholder": "例如：PJ01",
+    "prefixDescriptionText": "用作输出命名的前缀",
+    "prefixDescriptionImage": "用于图像文件名生成",
+    "prefixDescriptionAudio": "用于音频文件名生成",
+    "customIdLabel": "自定义 ID (可选)",
+    "customIdPlaceholder": "项目标识符",
+    "customIdDescription": "留空则自动生成 ID",
+    "cancel": "取消",
+    "submitCreate": "开始项目",
+    "submitSave": "保存更改"
+  },
+  "projectOrphans": {
+    "title": "孤立文件管理",
+    "cleanupTool": "清理工具",
+    "projectLabel": "项目：{{name}}",
+    "backToProject": "返回项目",
+    "refresh": "刷新扫描",
+    "deleteSelected": "删除 ({{count}})",
+    "clearAll": "清空所有",
+    "orphanedFiles": "孤立文件",
+    "totalWaste": "总计浪费",
+    "warning": "警告",
+    "warningDesc": "这些文件未被此项目的任何当前组件引用，可以安全删除。",
+    "selectAll": "全选",
+    "filesSelected": "已选择 {{count}} 个文件",
+    "cleanTitle": "项目很整洁",
+    "cleanDesc": "存储中未发现未引用的文件。",
+    "preview": "预览",
+    "unknownSize": "未知",
+    "scanning": "正在扫描存储中的孤立文件...",
+    "confirm": {
+      "title": "永久删除文件",
+      "message": "确定要删除 {{count}} 个孤立文件吗？此操作将永久从存储中移除且无法撤销。",
+      "confirmText": "永久删除",
+      "deleting": "正在删除..."
+    }
+  },
+  "queueMonitor": {
+    "title": "队列监控",
+    "description": "监控跨项目和供应商并发队列中的活跃生成任务。",
+    "projectView": "项目视图",
+    "providerView": "供应商队列视图",
+    "refresh": "刷新",
+    "updatedAt": "已更新",
+    "loadError": "加载队列状态失败。",
+    "unknown": "未知",
+    "archived": "已归档",
+    "noProvider": "无供应商",
+    "taskShort": "任务",
+    "projectUpdated": "{{provider}} · 更新于 {{time}}",
+    "noProviderJobs": "此供应商没有活跃任务。",
+    "states": {
+      "queued": "已入队",
+      "waiting": "等待中",
+      "running": "运行中",
+      "detached": "轮询中",
+      "failed": "失败"
+    },
+    "metrics": {
+      "projects": "项目",
+      "providers": "供应商",
+      "running": "运行中",
+      "queued": "已入队",
+      "pending": "待处理",
+      "failed": "失败",
+      "slots": "槽位",
+      "limit": "限制"
+    },
+    "empty": {
+      "projectsTitle": "没有活跃项目任务",
+      "providersTitle": "尚未配置供应商",
+      "description": "当任务进入队列或运行时，生成活动会显示在这里。"
+    }
+  }
+}

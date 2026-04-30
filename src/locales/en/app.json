@@ -1,0 +1,93 @@
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "queueMonitor": "Queues",
+    "libraries": "Libraries",
+    "providers": "Providers",
+    "mcp": "MCP",
+    "assistant": "Assistant",
+    "exports": "Exports",
+    "recycleBin": "Recycle Bin",
+    "storage": "Storage",
+    "userManagement": "User Management"
+  },
+  "mainLayout": {
+    "storageUnavailable": "Storage unavailable",
+    "toggleMenu": "Toggle Menu",
+    "expandSidebar": "Expand Sidebar",
+    "collapseSidebar": "Collapse Sidebar"
+  },
+  "confirmModal": {
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "apiKeyCheck": {
+    "loading": "Loading...",
+    "title": "API Key Required",
+    "description": "This application uses Nano Banana 2 (Gemini 3.1 Flash Image) which requires a paid Google Cloud API key.",
+    "learnMore": "Learn more about billing",
+    "selectApiKey": "Select API Key"
+  },
+  "storageIndicator": {
+    "title": "Storage: {{used}} / {{limit}} ({{percent}}%)",
+    "storage": "Storage",
+    "usedOfLimit": "{{used}} of {{limit}}"
+  },
+  "tagModal": {
+    "title": "Edit Tags",
+    "description": "Add or remove tags for this item.",
+    "saveTags": "Save Tags",
+    "placeholder": "Enter tags (comma separated)...",
+    "add": "Add",
+    "noTags": "No tags added yet"
+  },
+  "dashboard": {
+    "welcome": "Welcome to Remix Studio",
+    "description": "Select a project or library from the sidebar, or create a new one to get started.",
+    "recentProjects": "Recent Projects",
+    "newProject": "New Project",
+    "new": "New",
+    "noProjects": "No projects yet. Create one to start generating.",
+    "libraries": "Libraries",
+    "newLibrary": "New Library",
+    "noLibraries": "No libraries yet. Create one to store reusable prompts.",
+    "projectStats": "{{jobCount}} jobs • {{imageCount}} images • {{date}}",
+    "aiChat": "AI Assistant",
+    "aiChatDescription": "How can I help you today?",
+    "setupNoticeTitle": "Welcome to Remix Studio!",
+    "setupNoticeDescription": "To start using the AI Assistant and generating content, you first need to configure at least one AI provider.",
+    "setupNoticeButton": "Setup Providers"
+  },
+  "login": {
+    "welcomeBack": "Welcome Back",
+    "completeRegistration": "Complete Registration",
+    "twoFactorVerification": "Two-Factor Verification",
+    "signInWith": "Sign in with your password, a saved passkey, or Google.",
+    "registrationDescription": "Your Google identity is verified. Enter an invite code to finish creating your account.",
+    "twoFactorDescription": "Enter the 6-digit code for {{email}}.",
+    "email": "Email Address",
+    "password": "Password",
+    "signIn": "Sign In",
+    "orContinueWith": "Or continue with",
+    "passkey": "Passkey",
+    "google": "Google",
+    "inviteCode": "Invite code",
+    "enterInviteCode": "Enter invite code",
+    "inviteCodeDescription": "Invite codes can be prefilled from the `inviteCode` URL parameter.",
+    "finishRegistration": "Finish Registration",
+    "restartGoogle": "Restart Google Sign-In",
+    "googleSignIn": "Google sign-in",
+    "verifiedSuccessfully": "Verified successfully",
+    "authCode": "Authentication code",
+    "verifyAndSignIn": "Verify and Sign In",
+    "back": "Back",
+    "errors": {
+      "passkeyNotSupported": "This browser does not support passkeys.",
+      "loginFailed": "Login failed",
+      "twoFactorFailed": "2FA verification failed",
+      "passkeyFailed": "Passkey login failed",
+      "registrationFailed": "Registration failed"
+    }
+  }
+}

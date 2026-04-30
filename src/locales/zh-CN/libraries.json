@@ -1,0 +1,226 @@
+{
+  "libraryRoute": {
+    "notFound": "未找到库。"
+  },
+  "libraries": {
+    "title": "资源库",
+    "description": "管理您的可复用提示词和图像集合。",
+    "allLibraries": "所有资源库",
+    "searchPlaceholder": "搜索资源库名称或 ID...",
+    "newLibrary": "新建资源库",
+    "noResultsFound": "未找到匹配的资源库",
+    "new": "新建",
+    "noLibraries": {
+      "title": "暂无资源库",
+      "description": "创建一个资源库来存储可复用的提示词或图像。"
+    },
+    "libraryCard": {
+      "items": "{{count}} 个项目",
+      "openEditor": "打开编辑器 →",
+      "duplicate": "复制资源库",
+      "pin": "固定库",
+      "unpin": "取消固定"
+    },
+    "duplicateDialog": {
+      "title": "复制资源库",
+      "description": "为该资源库创建一个新名称的副本。",
+      "placeholder": "新资源库名称",
+      "cancel": "取消",
+      "confirm": "复制",
+      "success": "已复制 \"{{name}}\"",
+      "error": "复制资源库失败"
+    },
+    "pinLimitReached": "您最多只能固定 {{max}} 个库。"
+  },
+  "libraryEditor": {
+    "toasts": {
+      "uploadFailed": "上传图片失败"
+    },
+    "collectionType": "{{type}} 集合",
+    "filterItems": "筛选项目...",
+    "uploading": "正在上传...",
+    "upload": "上传",
+    "addFragment": "添加片段",
+    "editLibrarySettings": "编辑库设置",
+    "importOutput": "导入 / 导出",
+    "exportLibrary": "导出媒体库",
+    "deleteLibrary": "删除库",
+    "selectAll": "全选",
+    "selectedCount": "已选择 {{count}} 项",
+    "sort": {
+      "timeDesc": "最新优先",
+      "timeAsc": "最早优先",
+      "nameAsc": "名称 A-Z",
+      "nameDesc": "名称 Z-A"
+    },
+    "filterByTag": "按标签筛选",
+    "tagsSelected": "已选择 {{count}} 个标签",
+    "allFragments": "所有片段",
+    "batchTag": "批量标签",
+    "delete": "删除",
+    "imageLabel": "IMG_{{index}}",
+    "clickToRename": "点击重命名",
+    "renameItem": "重命名项目",
+    "editTags": "编辑标签",
+    "refineInFullEditor": "在完整编辑器中完善",
+    "deleteFragment": "删除片段",
+    "fullSource": "完整源码",
+    "markdownEnabled": "Markdown 已启用",
+    "noResultsFound": "未找到结果",
+    "emptyTitle": "空空如也",
+    "tryDifferentSearch": "尝试不同的搜索词",
+    "emptyDescription": "在下方添加内容以初始化库",
+    "references": {
+      "title": "库正在使用中",
+      "message_one": "\"{{name}}\" 被 {{count}} 个项目引用。删除前需要移除这些引用。",
+      "message_other": "\"{{name}}\" 被 {{count}} 个项目引用。删除前需要移除这些引用。",
+      "resolve": "解决引用"
+    },
+    "confirm": {
+      "deleteLibrary": {
+        "title": "删除库",
+        "message": "这将永久删除集合 \"{{name}}\" 及其所有片段。此操作不可逆。",
+        "confirm": "删除"
+      },
+      "expungeFragment": {
+        "title": "删除片段",
+        "message": "确定要从集合中移除此片段吗？",
+        "confirm": "立即移除"
+      },
+      "deleteSelected": {
+        "title": "删除所选片段",
+        "message": "确定要删除 {{count}} 个片段吗？",
+        "confirm": "删除所选"
+      }
+    },
+    "tagModal": {
+      "batchTitle": "批量标记所选项目",
+      "batchDescription": "为 {{count}} 个所选项目添加标签。",
+      "addTags": "添加标签",
+      "editTitle": "编辑项目标签"
+    },
+    "exportModal": {
+      "trigger": "导出 ZIP",
+      "title": "导出媒体库",
+      "description": "下载前请确认 ZIP 文件名。",
+      "fileName": "文件名",
+      "placeholder": "library_export.zip",
+      "cancel": "取消",
+      "confirm": "导出 ZIP",
+      "exporting": "导出中...",
+      "success": "媒体库 ZIP 已下载",
+      "error": "导出媒体库失败"
+    }
+  },
+  "libraryImportExport": {
+    "badge": "文本资源库工作区",
+    "title": "导入与导出",
+    "description": "批量导入提示片段，在导出中保留标签，并保持适合在应用外编辑的整洁格式。",
+    "toasts": {
+      "importFailed": "导入项目失败。",
+      "outputCopied": "资源库输出已复制到剪贴板",
+      "copyFailed": "复制输出失败。"
+    },
+    "stats": {
+      "library": "资源库",
+      "currentItems": "当前项目数",
+      "currentTags": "当前标签数",
+      "readyToImport": "可导入项目"
+    },
+    "importSource": {
+      "label": "导入源",
+      "title": "整理即将导入的资源库项目",
+      "description": "支持旧版列表格式和新的标签格式：",
+      "clear": "清空",
+      "uploadText": "上传文本",
+      "sharedTags": "共享标签",
+      "sharedTagsPlaceholder": "将应用到每个导入项目。例如：evergreen, short-form",
+      "detectedTags": "检测到的标签",
+      "skippedLines": "跳过的行",
+      "textareaPlaceholder": "在此粘贴列表项目。\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio",
+      "dropHint": "将 `.txt` 或 `.md` 文件拖放到这里"
+    },
+    "formatGuide": {
+      "title": "格式说明",
+      "rule1": "每个项目都必须以 `- ` 开头，解析器才能稳定拆分条目。",
+      "rule2": "如需显示标题，请使用 `Title: Content`。如需项目级标签，请在结尾使用 `| tags: a, b`。",
+      "rule3": "上方的共享标签会合并到每个解析出的项目中，并自动去重。"
+    },
+    "parseStatus": {
+      "title": "解析状态",
+      "valid": "所有非空行都是有效的导入条目。",
+      "line": "第 {{line}} 行",
+      "moreSkipped": "另外还有 {{count}} 行被跳过"
+    },
+    "parseIssues": {
+      "missingListMarker": "缺少 \"- \" 列表标记",
+      "emptyAfterMarker": "\"- \" 之后内容为空",
+      "missingContentBeforeTags": "标签片段之前缺少内容",
+      "missingContentAfterTitle": "标题分隔符之后缺少内容"
+    },
+    "importAction": "导入 {{count}} 个项目",
+    "preview": {
+      "label": "导入预览",
+      "title": "检查即将导入的标签项目",
+      "description": "解析后的项目会准确显示在此文本资源库中将要创建的内容。",
+      "items": "预览项目",
+      "sourceLine": "源行 {{line}}",
+      "tagsCount": "{{count}} 个标签",
+      "tagsCount_plural": "{{count}} 个标签",
+      "emptyTitle": "尚未解析任何内容",
+      "emptyDescription": "在左侧添加列表项目，此面板将显示精确的导入结果，包括合并后的标签。"
+    },
+    "output": {
+      "label": "资源库输出",
+      "title": "导出当前项目，可选择带标签或不带标签",
+      "description": "带标签输出会保留文本资源库元数据。纯文本输出会保留原始的精简列表格式。",
+      "tagged": "带标签",
+      "plain": "纯文本",
+      "copy": "复制输出",
+      "download": "下载 .md"
+    }
+  },
+  "libraryForm": {
+    "newTitle": "新建库",
+    "editTitle": "编辑库",
+    "description": "定义您的库属性",
+    "nameLabel": "库名称",
+    "namePlaceholder": "例如：角色服装、科幻背景...",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "说明这个库包含什么，以及什么时候使用它。",
+    "descriptionHelp": "可选。会显示在卡片、资料页和 MCP 工具中。",
+    "typeLabel": "内容类型",
+    "typeText": "文本",
+    "typeImage": "图像",
+    "typeVideo": "视频",
+    "typeAudio": "音频",
+    "contentSummaryTitle": "内容设置",
+    "contentSummaryDescription": "库类型决定可接收的条目。",
+    "typeDescription": "创建前选择此库要存储的媒体类型。",
+    "contentType": "{{type}} 内容",
+    "permanent": "永久",
+    "cancel": "取消",
+    "submitCreate": "创建库",
+    "submitSave": "保存更改"
+  },
+  "libraryCleanup": {
+    "errorNotFound": "未找到资源库。",
+    "title": "清理引用",
+    "description": "在删除前，从项目中移除对 \"<span className=\"text-white font-medium\">{{name}}</span>\" 的引用。",
+    "backToLibrary": "返回资源库",
+    "warning": "仍有 {{count}} 个项目引用此资源库",
+    "warning_plural": "仍有 {{count}} 个项目引用此资源库",
+    "warningDesc": "逐个移除引用，或使用下方按钮清理所有引用并删除。",
+    "remove": "移除",
+    "allCleared": "所有引用已清理",
+    "allClearedDesc": "您现在可以安全地删除此资源库。",
+    "cleanAllAndDelete": "清理所有引用并删除资源库",
+    "deleteLibrary": "删除资源库",
+    "confirm": {
+      "title": "清理所有并删除",
+      "message": "这将从 {{count}} 个项目中移除对 \"{{name}}\" 的所有引用，并永久删除资源库。此操作不可逆。",
+      "message_plural": "这将从 {{count}} 个项目中移除对 \"{{name}}\" 的所有引用，并永久删除资源库。此操作不可逆。",
+      "confirmText": "清理并删除"
+    }
+  }
+}

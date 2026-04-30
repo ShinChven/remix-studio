@@ -1,0 +1,353 @@
+{
+  "storageView": {
+    "tiers": {
+      "free": "무료",
+      "professional": "프로페셔널",
+      "premium": "프리미엄",
+      "custom": "커스텀"
+    },
+    "analyzing": "스토리지 사용량 분석 중...",
+    "title": "스토리지 분석",
+    "description": "디지털 발자국의 상세 분석입니다.",
+    "capacityOverview": "용량 개요",
+    "consumption": "소비량",
+    "totalLimit": "총 제한",
+    "percentConsumed": "{{percent}}% 소비됨",
+    "optimizationTitle": "스토리지 최적화",
+    "cleanOrphansTitle": "고립된 파일 정리",
+    "cleanOrphansDescription": "프로젝트 폴더에서 참조되지 않은 파일을 식별하고 제거하여 공간을 회수합니다.",
+    "recycleBinTitle": "휴지통",
+    "recycleBinDescription": "총 {{size}}를 영구적으로 삭제할 수 있습니다.",
+    "completeScan": "전체 스캔",
+    "projectRankings": "프로젝트 순위",
+    "album": "앨범",
+    "orphans": "고립된 파일"
+  },
+  "exports": {
+    "title": "내보내기",
+    "description": "모든 프로젝트에서 생성된 ZIP 보관 파일을 관리합니다.",
+    "drive": {
+      "connected": "Drive 연결됨",
+      "disconnect": "연결 해제",
+      "connect": "Drive 연결",
+      "disconnectSuccess": "Google Drive 연결이 해제되었습니다",
+      "disconnectError": "Google Drive 연결 해제 실패",
+      "uploadQueued": "Drive 업로드가 대기열에 추가되었습니다. 진행 상황은 Drive 아이콘을 확인하세요",
+      "uploadSuccess": "Google Drive에 업로드되었습니다!",
+      "uploadFailed": "Drive 업로드 실패",
+      "openFile": "파일 열기",
+      "uploading": "Drive로 업로드 중...",
+      "uploadToDrive": "Google Drive에 업로드"
+    },
+    "stats": {
+      "database": "데이터베이스",
+      "total": "총계",
+      "inProgress": "진행 중",
+      "active": "활성"
+    },
+    "empty": {
+      "title": "내보내기가 비어 있습니다",
+      "description": "생성된 프로젝트 내보내기가 여기에 자동으로 표시됩니다",
+      "viewProjects": "프로젝트 보기"
+    },
+    "status": {
+      "ready": "준비됨",
+      "archiving": "보관 중",
+      "queued": "대기 중",
+      "failed": "실패"
+    },
+    "card": {
+      "files": "파일 {{count}}개",
+      "download": "ZIP 다운로드",
+      "delete": "기록 삭제"
+    },
+    "loadMore": "내보내기 더 불러오기",
+    "deleteDialog": {
+      "title": "내보내기 기록 삭제",
+      "message": "이 내보내기 기록을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+      "confirm": "기록 삭제"
+    }
+  },
+  "trash": {
+    "title": "휴지통",
+    "description": "삭제된 항목을 검토하고 필요한 항목을 복원하거나 영구적으로 삭제하십시오.",
+    "stats": {
+      "items": "{{count}}개 항목",
+      "total": "총 {{size}}"
+    },
+    "actions": {
+      "restore": "복원",
+      "restoreCount": "복원 ({{count}})",
+      "deletePermanently": "영구 삭제",
+      "emptyTrash": "휴지통 비우기"
+    },
+    "empty": {
+      "title": "휴지통이 비어 있습니다",
+      "description": "삭제된 앨범 항목이 여기에 표시됩니다"
+    },
+    "card": {
+      "restore": "복원",
+      "delete": "영구 삭제"
+    },
+    "confirm": {
+      "empty": {
+        "title": "휴지통 비우기",
+        "message": "모든 {{count}}개 항목을 영구적으로 삭제하시겠습니까? 이 작업은 {{size}}의 공간을 확보하지만 취소할 수 없습니다.",
+        "confirm": "휴지통 비우기"
+      },
+      "deleteSelected": {
+        "title": "선택한 항목 삭제",
+        "message": "{{count}}개 항목을 영구적으로 삭제하시겠습니까? 이 작업은 {{size}}의 공간을 확보하며 취소할 수 없습니다.",
+        "confirm": "영구 삭제"
+      },
+      "deleteSingle": {
+        "title": "이미지 영구 삭제",
+        "message": "이 이미지를 영구적으로 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+        "confirm": "영구 삭제"
+      },
+      "deleting": "삭제 중..."
+    }
+  },
+  "promptEditor": {
+    "titlePlaceholder": "제목...",
+    "fragmentTitlePlaceholder": "프래그먼트 제목",
+    "addTags": "태그 추가",
+    "tagsCount": "태그 {{count}}개",
+    "backToLibrary": "라이브러리로 돌아가기",
+    "viewMode": {
+      "edit": "편집기만",
+      "split": "분할 보기",
+      "preview": "미리보기만"
+    },
+    "toggleFullscreen": "전체 화면 전환",
+    "save": "저장",
+    "sourceContent": "소스 콘텐츠",
+    "markdownSupport": "GFM Markdown 지원",
+    "editorPlaceholder": "여기에 Markdown을 사용하여 라이브러리 프래그먼트를 작성하세요...",
+    "dynamicPreview": "동적 미리보기",
+    "previewPlaceholder": "미리보기를 보려면 내용을 입력하세요...",
+    "words": "단어 수: {{count}}",
+    "chars": "글자 수: {{count}}",
+    "libraryLabel": "라이브러리: {{id}}",
+    "errorSave": "라이브러리 프롬프트 저장 실패"
+  },
+  "mcpConnections": {
+    "title": "MCP 연결",
+    "description": "Model Context Protocol 서버를 관리하여 어시스턴트의 기능을 확장합니다.",
+    "justNow": "방금 전",
+    "relativeTime": {
+      "m": "{{count}}분 전",
+      "h": "{{count}}시간 전"
+    },
+    "expiryOptions": {
+      "noExpiration": "만료 없음",
+      "7days": "7일",
+      "30days": "30일",
+      "90days": "90일",
+      "1year": "1년"
+    },
+    "errorLoad": "MCP 연결을 불러오지 못했습니다.",
+    "toasts": {
+      "clientRevoked": "클라이언트 접근 권한을 취소했습니다",
+      "clientCreated": "OAuth 클라이언트를 생성했습니다",
+      "clientCreateFailed": "OAuth 클라이언트 생성에 실패했습니다",
+      "clientUpdated": "OAuth 콜백이 업데이트되었습니다",
+      "clientUpdateFailed": "OAuth 콜백 업데이트에 실패했습니다",
+      "clientRedirectRequired": "리디렉션 URI를 하나 이상 추가하세요",
+      "clientIdCopied": "Client ID를 클립보드에 복사했습니다",
+      "clientSecretCopied": "Client secret을 클립보드에 복사했습니다",
+      "tokenRevoked": "토큰을 취소했습니다",
+      "revokeFailed": "취소하지 못했습니다",
+      "tokenCreated": "토큰이 생성되었습니다. 지금 복사하세요. 다시는 표시되지 않습니다.",
+      "tokenCopied": "토큰을 클립보드에 복사했습니다",
+      "createFailed": "토큰 생성에 실패했습니다",
+      "copied": "{{label}} 복사됨",
+      "copyFailed": "{{label}} 복사에 실패했습니다"
+    },
+    "connectSection": {
+      "title": "AI 앱을 계정에 연결하기",
+      "description": "이 페이지에서는 AI 앱을 워크스페이스에 연결할 수 있습니다. 먼저 아래 앱 주소를 연결하려는 앱에 복사하세요. 그런 다음 지원되는 두 가지 로그인 방식 중 하나를 선택하세요.",
+      "oauthMethod": {
+        "title": "OAuth 2.1 커넥터",
+        "description": "앱이 로그인용 브라우저를 열 수 있을 때 사용합니다. 로그인 후 접근을 승인하면 앱이 자동으로 연결됩니다. 대부분의 사용자에게 가장 좋은 옵션입니다."
+      },
+      "tokenMethod": {
+        "title": "액세스 토큰",
+        "description": "앱이 토큰, API 키 또는 시크릿을 붙여넣으라고 할 때만 사용하세요. 여기서 토큰을 만든 뒤 직접 앱에 붙여넣습니다."
+      },
+      "appAddress": {
+        "label": "앱 주소",
+        "copyTitle": "MCP URL 복사",
+        "instruction": "AI 앱이 어디에 연결할지 물으면 이것을 복사해서 넣으세요."
+      },
+      "advancedUrl": {
+        "label": "고급 로그인 URL",
+        "copyTitle": "OAuth 메타데이터 URL 복사",
+        "instruction": "앱이 로그인 URL 또는 디스커버리 URL을 명시적으로 요구할 때만 사용하세요."
+      },
+      "steps": {
+        "1": {
+          "title": "1. 주소 복사",
+          "desc": "AI 앱에 붙여넣어 설정을 시작하세요."
+        },
+        "2": {
+          "title": "2. 방식 선택",
+          "desc": "브라우저가 열리면 OAuth를, 아니면 토큰을 사용하세요."
+        },
+        "3": {
+          "title": "3. 여기서 관리",
+          "desc": "연결을 확인하거나 접근을 언제든 취소할 수 있습니다."
+        }
+      },
+      "jsonSetup": {
+        "title": "JSON 구성이 필요한가요?",
+        "subtitle": "클릭해서 JSON 설정 블록을 표시하거나 숨깁니다",
+        "instruction": "일부 앱은 양식 입력 대신 JSON 설정 블록을 붙여넣으라고 요청합니다. 브라우저 로그인 지원 시 OAuth 2.1 버전을 사용하세요. 토큰을 요구하면 액세스 토큰 버전을 사용하세요.",
+        "oauthJson": "OAuth 2.1 JSON",
+        "tokenJson": "액세스 토큰 JSON",
+        "copyJson": "JSON 복사",
+        "tokenInstruction": "<code className=\"text-amber-400\">YOUR_MCP_TOKEN</code>을 이 페이지에서 만든 토큰으로 바꾼 뒤, 완성된 JSON을 앱에 붙여넣으세요."
+      }
+    },
+    "tokens": {
+      "title": "액세스 토큰",
+      "newToken": "새 토큰",
+      "whenToUse": "액세스 토큰을 사용하는 경우",
+      "tip": "앱이 OAuth 2.1 커넥터를 지원하지 않을 때만 액세스 토큰을 사용하세요. 토큰은 비밀번호처럼 비공개로 보관해야 합니다. 대부분의 경우 앱 주소와 이 토큰을 앱에 붙여넣게 됩니다.",
+      "form": {
+        "tokenName": "토큰 이름",
+        "expiration": "만료",
+        "placeholder": "예: Claude Desktop",
+        "create": "토큰 만들기",
+        "cancel": "취소",
+        "done": "완료"
+      },
+      "empty": {
+        "title": "액세스 토큰이 없습니다",
+        "desc": "첫 번째 AI 앱을 수동으로 연결하려면 토큰을 만드세요."
+      },
+      "card": {
+        "created": "{{date}} 생성",
+        "used": "{{date}} 사용",
+        "expired": "만료됨",
+        "expires": "{{date}} 만료",
+        "noExpiration": "만료 없음",
+        "revokeTitle": "토큰 취소"
+      }
+    },
+    "oauth": {
+      "title": "OAuth 2.1 연결",
+      "newClient": "새 클라이언트",
+      "recommended": "간편 로그인에 권장",
+      "tip": "OAuth 2.1 커넥터로 연결한 앱은 자동으로 여기에 표시됩니다. 브라우저에서 접근을 승인하면 앱이 여기에 나타납니다.",
+      "edit": {
+        "title": "{{name}}의 콜백 URL 편집",
+        "description": "이 OAuth 클라이언트에서 사용하는 콜백 URL을 업데이트합니다. 리디렉션 URI는 줄마다 하나씩 입력하세요.",
+        "save": "콜백 URL 저장"
+      },
+      "form": {
+        "clientName": "클라이언트 이름",
+        "clientNamePlaceholder": "예: Claude Desktop local",
+        "authMethod": "인증 방식",
+        "redirectUris": "리디렉션 URI",
+        "redirectUrisPlaceholder": "http://localhost:3000/callback\nhttps://example.com/oauth/callback",
+        "redirectUrisHint": "한 줄에 하나씩 리디렉션 URI를 입력하세요. 리디렉션 URI는 HTTPS 또는 localhost여야 합니다.",
+        "create": "클라이언트 생성",
+        "created": "OAuth 클라이언트가 생성되었습니다. 지금 자격 증명을 복사하세요.",
+        "createdHint": "Client secret은 한 번만 표시됩니다. 이 패널을 닫기 전에 MCP 앱이나 시크릿 관리자에 저장하세요.",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "copyClientId": "Client ID 복사",
+        "copyClientSecret": "Client secret 복사",
+        "scope": "Scope"
+      },
+      "empty": {
+        "title": "연결된 OAuth 클라이언트가 없습니다",
+        "desc": "AI 앱에서 로그인이 완료되면 앱이 여기에 표시됩니다."
+      },
+      "card": {
+        "manualClient": "수동 클라이언트",
+        "activeToken": "활성 토큰 {{count}}개",
+        "activeToken_plural": "활성 토큰 {{count}}개",
+        "noTokens": "활성 토큰 없음",
+        "registered": "{{date}} 등록",
+        "editTitle": "콜백 URL 편집",
+        "revokeTitle": "모든 토큰 취소"
+      }
+    },
+    "confirm": {
+      "revokeClientTitle": "클라이언트 접근 취소",
+      "revokeTokenTitle": "토큰 취소",
+      "revokeClientMessage": "\"{{name}}\"의 모든 액세스 토큰을 취소하시겠습니까? 클라이언트는 다시 인증해야 합니다.",
+      "revokeTokenMessage": "\"{{name}}\" 토큰을 취소하시겠습니까? 이 토큰을 사용하는 모든 MCP 클라이언트는 즉시 접근 권한을 잃습니다.",
+      "revoking": "취소 중...",
+      "revoke": "취소"
+    },
+    "status": {
+      "connected": "연결됨",
+      "disconnected": "연결 끊김",
+      "error": "오류"
+    }
+  },
+  "assistant": {
+    "title": "어시스턴트",
+    "newChat": "새 대화",
+    "conversations": "대화 목록",
+    "noConversations": "대화가 없습니다",
+    "selectProvider": "제공업체 선택",
+    "selectModel": "모델 선택",
+    "typePlaceholder": "메시지를 입력하세요...",
+    "send": "보내기",
+    "stop": "정지",
+    "confirm": "확인",
+    "confirmTool": "이 세션에서 이 도구 승인",
+    "cancel": "취소",
+    "confirmAction": "이 작업을 확인하시겠습니까?",
+    "cancelAction": "이 작업 취소",
+    "toolApprovalEnabled": "이 대화의 향후 {{tool}} 작업은 이 세션에 대해 자동으로 승인됩니다.",
+    "toolRunning": "{{tool}} 실행 중...",
+    "toolCompleted": "{{tool}} 완료",
+    "toolFailed": "{{tool}} 실패",
+    "errorOccurred": "오류가 발생했습니다. 다시 시도해 주세요.",
+    "circuitOpen": "안전 한도에 도달했습니다",
+    "deleteConversation": "대화 삭제",
+    "deleteConfirm": "이 대화를 삭제하시겠습니까?",
+    "renameConversation": "이름 변경",
+    "archiveConversation": "보관",
+    "unarchiveConversation": "보관 해제",
+    "noProvider": "제공업체와 모델을 선택해 주세요",
+    "providerNotConfigured": "채팅 가능한 제공업체가 설정되지 않았습니다. 먼저 OpenAI, Claude 또는 Google AI 제공업체를 추가하세요.",
+    "emptyChat": "어시스턴트와 대화 시작",
+    "confirmationExpired": "이 확인이 만료되었습니다",
+    "loading": "생각 중...",
+    "attachImage": "이미지 첨부",
+    "dropImagesHere": "여기에 이미지를 드롭하세요",
+    "maxImagesReached": "메시지당 최대 5개의 이미지",
+    "imageAttached_one": "{{count}}개 이미지 첨부됨",
+    "imageAttached_other": "{{count}}개 이미지 첨부됨",
+    "pasteImage": "이미지 붙여넣기됨",
+    "imageTooLarge": "이미지가 너무 커서 처리할 수 없습니다",
+    "invalidImageType": "이미지 파일만 지원됩니다",
+    "removeImage": "이미지 삭제",
+    "greetings": {
+      "0": "어떤 생각을 가지고 계신가요?",
+      "1": "오늘은 무엇을 만들고 싶으신가요?",
+      "2": "당신의 작업 흐름을 어떻게 도와드릴까요?",
+      "3": "마법을 일으킬 준비가 되셨나요?",
+      "4": "흰 토끼를 따라가라.",
+      "5": "빨간 약인가, 파란 약인가?",
+      "6": "숟가락은 없다.",
+      "7": "일어나라, 네오...",
+      "8": "진실의 사막에 오신 것을 환영합니다.",
+      "9": "전적으로 옳은 말씀입니다!"
+    },
+    "micStart": "음성 메시지 녹음",
+    "micStop": "녹음 중지",
+    "micTranscribing": "텍스트 변환 중...",
+    "micUnsupported": "이 브라우저에서 마이크를 지원하지 않습니다",
+    "micPermissionDenied": "마이크 권한이 거부되었습니다",
+    "micRecordFailed": "녹음 실패",
+    "micTranscribeFailed": "오디오 변환 실패",
+    "micNoSpeechDetected": "녹음에서 발견된 음성이 없습니다"
+  }
+}

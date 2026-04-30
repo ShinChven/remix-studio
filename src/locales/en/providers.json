@@ -1,0 +1,127 @@
+{
+  "providers": {
+    "title": "Providers",
+    "description": "Manage API credentials for image generation backends. Keys are encrypted at rest.",
+    "allProviders": "All Providers",
+    "newProvider": "New Provider",
+    "new": "New",
+    "noProviders": {
+      "title": "No providers yet",
+      "description": "Add your first API key to start generating images."
+    },
+    "providerCard": {
+      "credentialsStored": "Credentials stored",
+      "keyStored": "Key stored",
+      "missingCredentials": "Missing credentials",
+      "noKey": "No key",
+      "projects": "{{count}} project",
+      "projects_plural": "{{count}} projects",
+      "activeJobs": "{{count}} active job",
+      "activeJobs_plural": "{{count}} active jobs"
+    },
+    "deleteDialog": {
+      "title": "Delete Provider",
+      "message": "Delete \"{{name}}\"? This removes the stored API key. Existing project references will remain as warnings, and any pending or processing jobs using this provider may fail until you switch them to another provider.",
+      "usageWarning": " Currently referenced by {{projectCount}} projects and {{jobCount}} active jobs.",
+      "confirm": "Delete",
+      "deleting": "Deleting…"
+    },
+    "errors": {
+      "load": "Failed to load providers.",
+      "delete": "Failed to delete provider."
+    }
+  },
+  "providerForm": {
+    "newTitle": "New Provider",
+    "editTitle": "Edit Provider",
+    "securityNote": "Keys will be encrypted in database",
+    "nameLabel": "Provider Name",
+    "namePlaceholder": "e.g. Work account, Personal key…",
+    "typeLabel": "Provider Type",
+    "apiKeyLabel": "API Key",
+    "accessKeyLabel": "Access Key",
+    "secretKeyLabel": "Secret Key",
+    "leaveBlankToKeep": "— leave blank to keep existing",
+    "apiKeyPlaceholder": "Paste your API key…",
+    "accessKeyPlaceholder": "Paste your access key…",
+    "secretKeyPlaceholder": "Paste your secret key…",
+    "stored": "•••••••• (stored)",
+    "apiUrlLabel": "API URL",
+    "apiUrlOptional": "— optional override",
+    "apiUrlPlaceholder": "https://… (leave blank for default)",
+    "parallelTasksLabel": "Parallel Tasks",
+    "concurrencyLimit": "— concurrency limit",
+    "maxRequests": "Max requests",
+    "saving": "Saving…",
+    "submitCreate": "Create Provider",
+    "submitSave": "Save Changes",
+    "cancel": "Cancel",
+    "errors": {
+      "accessKeyRequired": "Access Key is required.",
+      "apiKeyRequired": "API Key is required.",
+      "secretKeyRequired": "Secret Key is required for KlingAI.",
+      "saveFailed": "Save failed."
+    },
+    "supportedModels": "Supported Models",
+    "modelsSubtitle": "These models are natively supported by the selected provider."
+  },
+  "providerProfile": {
+    "errorLoad": "Failed to load provider.",
+    "errorNotFound": "Provider not found",
+    "backToProviders": "Back to Providers",
+    "credentialsStored": "Credentials stored",
+    "keyStored": "Key stored",
+    "missingCredentials": "Missing credentials",
+    "noKey": "No key",
+    "customModels": "Custom Models",
+    "edit": "Edit",
+    "concurrency": "Concurrency",
+    "projects": "Projects",
+    "jobs": "Jobs",
+    "models": "Models",
+    "supportedModels": "Supported Models",
+    "availableModels": "Available Models",
+    "refresh": "Refresh",
+    "addKeyToFetch": "Add an API key to fetch available models from the provider.",
+    "noModels": "No models returned by the provider API.",
+    "categories": {
+      "text": "Text Generation",
+      "image": "Image Generation",
+      "video": "Video Generation",
+      "audio": "Audio Generation"
+    },
+    "modelCount": "{{count}} model",
+    "modelCount_plural": "{{count}} models",
+    "errors": {
+      "fetchModels": "Failed to fetch models from provider API."
+    }
+  },
+  "providerCustomModels": {
+    "errorLoad": "Failed to load provider.",
+    "errorNotFound": "Provider not found",
+    "backToProvider": "Back to {{name}}",
+    "title": "Custom Model Variants",
+    "description": "Create model variants with custom IDs. Each variant inherits all parameters from its base model.",
+    "newVariant": "New Variant",
+    "editVariant": "Edit Variant",
+    "baseModelLabel": "Base Model",
+    "selectBaseModel": "Select base model...",
+    "inherits": "Inherits: {{traits}}",
+    "modelNameLabel": "Model Name",
+    "modelIdLabel": "Model ID",
+    "namePlaceholder": "e.g. Product Photo v2",
+    "idPlaceholder": "e.g. seedream-5-0-my-finetune",
+    "saving": "Saving...",
+    "create": "Create",
+    "update": "Update",
+    "cancel": "Cancel",
+    "noVariants": "No custom model variants yet",
+    "noVariantsDesc": "Pick a base model, give it a custom name and model ID to create a variant.",
+    "confirmDelete": "Confirm",
+    "edit": "Edit",
+    "delete": "Delete",
+    "errors": {
+      "saveFailed": "Failed to save."
+    }
+  }
+}

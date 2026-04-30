@@ -1,0 +1,138 @@
+{
+  "projectRoute": {
+    "notFound": "未找到專案。",
+    "renameFailed": "重命名專案資料夾失敗。正在撤銷 ID 更改。"
+  },
+  "projects": {
+    "title": "專案",
+    "description": "管理並追蹤您的 AI 工作流和生成任務。",
+    "allProjects": "所有專案",
+    "searchPlaceholder": "搜尋專案名稱或 ID...",
+    "newProject": "新建專案",
+    "noResultsFound": "未找到相符的專案",
+    "archiveProject": "封存專案",
+    "unarchiveProject": "取消封存",
+    "archivedBadge": "已封存",
+    "archivedToast": "已封存「{{name}}」",
+    "unarchivedToast": "已還原「{{name}}」",
+    "archiveFailed": "變更封存狀態失敗，請再試一次。",
+    "statusFilter": {
+      "active": "進行中",
+      "all": "全部",
+      "archived": "已封存"
+    },
+    "statusHeading": {
+      "active": "進行中的專案",
+      "all": "所有專案",
+      "archived": "已封存的專案"
+    },
+    "noProjects": {
+      "title": "暫無專案",
+      "description": "建立一個新專案開始構建您的工作流。"
+    },
+    "projectCard": {
+      "jobs": "{{count}} 個作業",
+      "assets": {
+        "images": "{{count}} 張圖片",
+        "texts": "{{count}} 個文本",
+        "videos": "{{count}} 個影片",
+        "audios": "{{count}} 段音訊"
+      },
+      "openProject": "開啟專案 →"
+    },
+    "pagination": "第 {{current}} / {{total}} 頁"
+  },
+  "projectForm": {
+    "newTitle": "新建專案",
+    "editTitle": "編輯專案",
+    "description": "定義您的專案參數",
+    "typeLabel": "專案類型",
+    "typeImage": "圖像",
+    "typeText": "文本",
+    "typeVideo": "影片",
+    "typeAudio": "音訊",
+    "nameLabel": "專案名稱",
+    "namePlaceholderText": "例如：產品描述生成器...",
+    "namePlaceholderImage": "例如：賽博朋克角色系列...",
+    "namePlaceholderAudio": "例如：雙人播客片段...",
+    "prefixLabel": "專案前綴",
+    "prefixPlaceholder": "例如：PJ01",
+    "prefixDescriptionText": "用作輸出命名的前綴",
+    "prefixDescriptionImage": "用於圖像文件名生成",
+    "prefixDescriptionAudio": "用於音訊檔名生成",
+    "customIdLabel": "自定義 ID (可選)",
+    "customIdPlaceholder": "專案識別符",
+    "customIdDescription": "留空則自動生成 ID",
+    "cancel": "取消",
+    "submitCreate": "開始專案",
+    "submitSave": "保存更改",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "說明這個專案的用途、會產生什麼，或應如何使用。",
+    "descriptionHelp": "選填。會顯示在卡片、設定檔和 MCP 工具中。",
+    "identityTitle": "身分",
+    "identityDescription": "命名與輸出檔案設定。"
+  },
+  "projectOrphans": {
+    "title": "孤立檔案管理",
+    "cleanupTool": "清理工具",
+    "projectLabel": "專案：{{name}}",
+    "backToProject": "返回專案",
+    "refresh": "刷新掃描",
+    "deleteSelected": "刪除 ({{count}})",
+    "clearAll": "全部清除",
+    "orphanedFiles": "孤立檔案",
+    "totalWaste": "浪費總量",
+    "warning": "警告",
+    "warningDesc": "這些檔案未被此專案的任何當前組件引用，可以安全刪除。",
+    "selectAll": "全選",
+    "filesSelected": "已選擇 {{count}} 個檔案",
+    "cleanTitle": "專案已清理",
+    "cleanDesc": "存儲中未發現未引用的檔案。",
+    "preview": "預覽",
+    "unknownSize": "未知",
+    "scanning": "正在掃描 S3 中的孤立檔案...",
+    "confirm": {
+      "title": "永久刪除檔案",
+      "message": "確定要刪除 {{count}} 個孤立檔案嗎？此操作將從 S3 中永久移除它們且無法撤銷。",
+      "confirmText": "永久刪除",
+      "deleting": "正在刪除..."
+    }
+  },
+  "queueMonitor": {
+    "title": "佇列監控",
+    "description": "監控跨專案與供應商並發佇列中的活躍生成任務。",
+    "projectView": "專案視圖",
+    "providerView": "供應商佇列視圖",
+    "refresh": "重新整理",
+    "updatedAt": "已更新",
+    "loadError": "載入佇列狀態失敗。",
+    "unknown": "未知",
+    "archived": "已封存",
+    "noProvider": "無供應商",
+    "taskShort": "任務",
+    "projectUpdated": "{{provider}} · 更新於 {{time}}",
+    "noProviderJobs": "此供應商沒有活躍任務。",
+    "states": {
+      "queued": "已入佇列",
+      "waiting": "等待中",
+      "running": "執行中",
+      "detached": "輪詢中",
+      "failed": "失敗"
+    },
+    "metrics": {
+      "projects": "專案",
+      "providers": "供應商",
+      "running": "執行中",
+      "queued": "已入佇列",
+      "pending": "待處理",
+      "failed": "失敗",
+      "slots": "槽位",
+      "limit": "限制"
+    },
+    "empty": {
+      "projectsTitle": "沒有活躍專案任務",
+      "providersTitle": "尚未設定供應商",
+      "description": "當任務進入佇列或執行時，生成活動會顯示在這裡。"
+    }
+  }
+}

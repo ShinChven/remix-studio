@@ -1,0 +1,138 @@
+{
+  "projectRoute": {
+    "notFound": "プロジェクトが見つかりません。",
+    "renameFailed": "プロジェクトフォルダ名の変更に失敗しました。IDの変更を元に戻します。"
+  },
+  "projects": {
+    "title": "プロジェクト",
+    "description": "AI ワークフローと生成タスクを管理・追跡します。",
+    "allProjects": "すべてのプロジェクト",
+    "searchPlaceholder": "名前またはIDでプロジェクトを検索...",
+    "newProject": "新規プロジェクト",
+    "noResultsFound": "名称またはIDに一致するプロジェクトは見つかりませんでした。",
+    "archiveProject": "プロジェクトをアーカイブ",
+    "unarchiveProject": "アーカイブ解除",
+    "archivedBadge": "アーカイブ済み",
+    "archivedToast": "「{{name}}」をアーカイブしました",
+    "unarchivedToast": "「{{name}}」を復元しました",
+    "archiveFailed": "アーカイブ状態の変更に失敗しました。もう一度お試しください。",
+    "statusFilter": {
+      "active": "進行中",
+      "all": "すべて",
+      "archived": "アーカイブ"
+    },
+    "statusHeading": {
+      "active": "進行中のプロジェクト",
+      "all": "すべてのプロジェクト",
+      "archived": "アーカイブされたプロジェクト"
+    },
+    "noProjects": {
+      "title": "プロジェクトがありません",
+      "description": "新しいプロジェクトを作成してワークフローの構築を始めましょう。"
+    },
+    "projectCard": {
+      "jobs": "{{count}} 件のジョブ",
+      "assets": {
+        "images": "{{count}} 枚の画像",
+        "texts": "{{count}} 件のテキスト",
+        "videos": "{{count}} 本の動画",
+        "audios": "{{count}} 件の音声"
+      },
+      "openProject": "プロジェクトを開く →"
+    },
+    "pagination": "{{total}} ページ中 {{current}} ページ"
+  },
+  "projectForm": {
+    "newTitle": "新規プロジェクト",
+    "editTitle": "プロジェクトを編集",
+    "description": "プロジェクトパラメータを定義します",
+    "typeLabel": "プロジェクトタイプ",
+    "typeImage": "画像",
+    "typeText": "テキスト",
+    "typeVideo": "動画",
+    "typeAudio": "音声",
+    "nameLabel": "プロジェクト名",
+    "namePlaceholderText": "例: 製品説明ジェネレーター...",
+    "namePlaceholderImage": "例: サイバーパンクキャラクターシリーズ...",
+    "namePlaceholderAudio": "例: 2人トークのポッドキャスト...",
+    "prefixLabel": "プロジェクト接頭辞",
+    "prefixPlaceholder": "例: PJ01",
+    "prefixDescriptionText": "出力名の接頭辞として使用されます",
+    "prefixDescriptionImage": "画像ファイル名の生成に使用されます",
+    "prefixDescriptionAudio": "音声ファイル名の生成に使用されます",
+    "customIdLabel": "カスタムID (任意)",
+    "customIdPlaceholder": "プロジェクト識別子",
+    "customIdDescription": "自動生成する場合は空欄のままにしてください",
+    "cancel": "キャンセル",
+    "submitCreate": "プロジェクトを開始",
+    "submitSave": "変更を保存",
+    "descriptionLabel": "説明",
+    "descriptionPlaceholder": "このプロジェクトの目的、生成するもの、使用方法を説明してください。",
+    "descriptionHelp": "任意。カード、プロフィール、MCPツールに表示されます。",
+    "identityTitle": "アイデンティティ",
+    "identityDescription": "名前と出力ファイルの設定。"
+  },
+  "projectOrphans": {
+    "title": "孤立ファイルの管理",
+    "cleanupTool": "クリーンアップツール",
+    "projectLabel": "プロジェクト: {{name}}",
+    "backToProject": "プロジェクトに戻る",
+    "refresh": "スキャンを更新",
+    "deleteSelected": "削除 ({{count}})",
+    "clearAll": "すべてクリア",
+    "orphanedFiles": "孤立ファイル",
+    "totalWaste": "無駄な容量の合計",
+    "warning": "警告",
+    "warningDesc": "これらのファイルは、このプロジェクトの現在のコンポーネントによって参照されておらず、安全に削除できます。",
+    "selectAll": "すべて選択",
+    "filesSelected": "{{count}} ファイル選択済み",
+    "cleanTitle": "プロジェクトはクリーンです",
+    "cleanDesc": "ストレージ内に参照されていないファイルは見つかりませんでした。",
+    "preview": "プレビュー",
+    "unknownSize": "不明",
+    "scanning": "S3 で孤立ファイルをスキャン中...",
+    "confirm": {
+      "title": "ファイルを永久に削除",
+      "message": "{{count}} 個の孤立ファイルを削除してもよろしいですか？この操作により S3 から永久に削除され、元に戻すことはできません。",
+      "confirmText": "永久に削除",
+      "deleting": "削除中..."
+    }
+  },
+  "queueMonitor": {
+    "title": "キューモニター",
+    "description": "プロジェクトとプロバイダーの同時実行キューにあるアクティブな生成処理を監視します。",
+    "projectView": "プロジェクト表示",
+    "providerView": "プロバイダーキュー表示",
+    "refresh": "更新",
+    "updatedAt": "更新",
+    "loadError": "キュー状態を読み込めませんでした。",
+    "unknown": "不明",
+    "archived": "アーカイブ済み",
+    "noProvider": "プロバイダーなし",
+    "taskShort": "タスク",
+    "projectUpdated": "{{provider}} · {{time}} に更新",
+    "noProviderJobs": "このプロバイダーにアクティブなジョブはありません。",
+    "states": {
+      "queued": "キュー済み",
+      "waiting": "待機中",
+      "running": "実行中",
+      "detached": "ポーリング中",
+      "failed": "失敗"
+    },
+    "metrics": {
+      "projects": "プロジェクト",
+      "providers": "プロバイダー",
+      "running": "実行中",
+      "queued": "キュー済み",
+      "pending": "保留中",
+      "failed": "失敗",
+      "slots": "スロット",
+      "limit": "上限"
+    },
+    "empty": {
+      "projectsTitle": "アクティブなプロジェクトジョブはありません",
+      "providersTitle": "プロバイダーが設定されていません",
+      "description": "生成処理がキューに入るか実行されると、ここに表示されます。"
+    }
+  }
+}

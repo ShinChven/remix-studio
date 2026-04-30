@@ -1,0 +1,353 @@
+{
+  "storageView": {
+    "tiers": {
+      "free": "免費",
+      "professional": "專業",
+      "premium": "高級",
+      "custom": "自定義"
+    },
+    "analyzing": "正在分析存儲使用情況...",
+    "title": "存儲分析",
+    "description": "數位足跡的詳細細分。",
+    "capacityOverview": "容量概覽",
+    "consumption": "消耗量",
+    "totalLimit": "總限制",
+    "percentConsumed": "已消耗 {{percent}}%",
+    "optimizationTitle": "存儲優化",
+    "cleanOrphansTitle": "清理孤立檔案",
+    "cleanOrphansDescription": "識別並從專案資料夾中刪除未引用的檔案以回收空間。",
+    "recycleBinTitle": "資源回收筒",
+    "recycleBinDescription": "共有 {{size}} 可以永久刪除。",
+    "completeScan": "完整掃描",
+    "projectRankings": "專案排名",
+    "album": "相簿",
+    "orphans": "孤立檔案"
+  },
+  "exports": {
+    "title": "匯出",
+    "description": "管理所有生成的專案 ZIP 封存。",
+    "drive": {
+      "connected": "Google Drive 已連接",
+      "disconnect": "斷開連接",
+      "connect": "連接 Google Drive",
+      "disconnectSuccess": "Google Drive 已斷開連接",
+      "disconnectError": "斷開 Google Drive 連接失敗",
+      "uploadQueued": "上傳任務已加入隊列 — 請關注 Drive 圖示查看進度",
+      "uploadSuccess": "已成功上傳到 Google Drive！",
+      "uploadFailed": "上傳到 Google Drive 失敗",
+      "openFile": "開啟檔案",
+      "uploading": "正在上傳到 Drive...",
+      "uploadToDrive": "上傳到 Google Drive"
+    },
+    "stats": {
+      "database": "資料庫",
+      "total": "總計",
+      "inProgress": "進行中",
+      "active": "活躍"
+    },
+    "empty": {
+      "title": "匯出為空",
+      "description": "生成的專案匯出將自動顯示在這裡",
+      "viewProjects": "查看專案"
+    },
+    "status": {
+      "ready": "就緒",
+      "archiving": "正在封存",
+      "queued": "隊列中",
+      "failed": "失敗"
+    },
+    "card": {
+      "files": "{{count}} 個檔案",
+      "download": "下載 ZIP",
+      "delete": "刪除紀錄"
+    },
+    "loadMore": "載入更多匯出",
+    "deleteDialog": {
+      "title": "刪除匯出紀錄",
+      "message": "確定要刪除此匯出紀錄嗎？此操作無法撤銷。",
+      "confirm": "刪除紀錄"
+    }
+  },
+  "trash": {
+    "title": "回收站",
+    "description": "查看已刪除的項目，還原您需要的項，或永久刪除它們。",
+    "stats": {
+      "items": "{{count}} 個項目",
+      "total": "總計 {{size}}"
+    },
+    "actions": {
+      "restore": "還原",
+      "restoreCount": "還原 ({{count}})",
+      "deletePermanently": "永久刪除",
+      "emptyTrash": "清空回收站"
+    },
+    "empty": {
+      "title": "回收站為空",
+      "description": "已刪除的相簿項目將顯示在這裡"
+    },
+    "card": {
+      "restore": "還原",
+      "delete": "永久刪除"
+    },
+    "confirm": {
+      "empty": {
+        "title": "清空回收站",
+        "message": "確定要永久刪除所有 {{count}} 個項目嗎？這將釋放 {{size}} 空間，且操作無法撤銷。",
+        "confirm": "清空回收站"
+      },
+      "deleteSelected": {
+        "title": "刪除所選項目",
+        "message": "確定要永久刪除這 {{count}} 個項目嗎？這將釋放 {{size}} 空間，且操作無法撤銷。",
+        "confirm": "永久刪除"
+      },
+      "deleteSingle": {
+        "title": "永久刪除圖片",
+        "message": "確定要永久刪除此圖片嗎？此操作無法撤銷。",
+        "confirm": "永久刪除"
+      },
+      "deleting": "正在刪除..."
+    }
+  },
+  "promptEditor": {
+    "titlePlaceholder": "標題...",
+    "fragmentTitlePlaceholder": "片段標題",
+    "addTags": "添加標籤",
+    "tagsCount": "{{count}} 個標籤",
+    "backToLibrary": "返回庫",
+    "viewMode": {
+      "edit": "僅編輯",
+      "split": "分屏視圖",
+      "preview": "僅預覽"
+    },
+    "toggleFullscreen": "切換全屏",
+    "save": "保存",
+    "sourceContent": "源內容",
+    "markdownSupport": "支持 GFM Markdown",
+    "editorPlaceholder": "在此使用 Markdown 撰寫您的庫片段...",
+    "dynamicPreview": "動態預覽",
+    "previewPlaceholder": "在這裡撰寫內容以查看預覽...",
+    "words": "字數：{{count}}",
+    "chars": "字符數：{{count}}",
+    "libraryLabel": "庫：{{id}}",
+    "errorSave": "保存庫提示詞失敗"
+  },
+  "mcpConnections": {
+    "title": "MCP 連接",
+    "description": "管理 Model Context Protocol 服務器以擴展您的助手能力。",
+    "justNow": "剛剛",
+    "relativeTime": {
+      "m": "{{count}} 分鐘前",
+      "h": "{{count}} 小時前"
+    },
+    "expiryOptions": {
+      "noExpiration": "永不過期",
+      "7days": "7 天",
+      "30days": "30 天",
+      "90days": "90 天",
+      "1year": "1 年"
+    },
+    "errorLoad": "載入 MCP 連線失敗。",
+    "toasts": {
+      "clientRevoked": "已撤銷用戶端存取權限",
+      "clientCreated": "已建立 OAuth 用戶端",
+      "clientCreateFailed": "建立 OAuth 用戶端失敗",
+      "clientUpdated": "OAuth 回呼網址已更新",
+      "clientUpdateFailed": "更新 OAuth 回呼網址失敗",
+      "clientRedirectRequired": "請至少新增一個重新導向 URI",
+      "clientIdCopied": "Client ID 已複製到剪貼簿",
+      "clientSecretCopied": "Client secret 已複製到剪貼簿",
+      "tokenRevoked": "權杖已撤銷",
+      "revokeFailed": "撤銷失敗",
+      "tokenCreated": "權杖已建立，請立即複製。之後將無法再次查看。",
+      "tokenCopied": "權杖已複製到剪貼簿",
+      "createFailed": "建立權杖失敗",
+      "copied": "{{label}} 已複製",
+      "copyFailed": "複製 {{label}} 失敗"
+    },
+    "connectSection": {
+      "title": "將 AI 應用連接到您的帳戶",
+      "description": "此頁面可協助您將 AI 應用連接到工作區。先將下方的應用位址複製到您要連接的應用中，再選擇兩種支援的登入方式之一。",
+      "oauthMethod": {
+        "title": "OAuth 2.1 連接器",
+        "description": "當應用可以開啟瀏覽器登入時使用此方式。您登入並核准存取後，應用會自動完成連線。這是大多數使用者的最佳選擇。"
+      },
+      "tokenMethod": {
+        "title": "存取權杖",
+        "description": "只有在應用要求您貼上權杖、API 金鑰或密鑰時才使用此方式。您可在此建立權杖，再自行貼到應用中。"
+      },
+      "appAddress": {
+        "label": "應用位址",
+        "copyTitle": "複製 MCP URL",
+        "instruction": "當 AI 應用詢問連線位址時，請複製此位址。"
+      },
+      "advancedUrl": {
+        "label": "進階登入 URL",
+        "copyTitle": "複製 OAuth 中繼資料 URL",
+        "instruction": "只有在應用明確要求登入 URL 或探索 URL 時才使用。"
+      },
+      "steps": {
+        "1": {
+          "title": "1. 複製位址",
+          "desc": "貼到 AI 應用中開始設定。"
+        },
+        "2": {
+          "title": "2. 選擇方式",
+          "desc": "若會開啟瀏覽器就使用 OAuth，否則使用權杖。"
+        },
+        "3": {
+          "title": "3. 在此管理",
+          "desc": "您可以隨時檢視連線或撤銷存取權限。"
+        }
+      },
+      "jsonSetup": {
+        "title": "需要使用 JSON 設定嗎？",
+        "subtitle": "點擊以顯示或隱藏 JSON 設定區塊",
+        "instruction": "某些應用要求您貼上 JSON 設定區塊，而不是填寫表單。若應用支援瀏覽器登入，請使用 OAuth 2.1 版本；若應用要求權杖，請使用存取權杖版本。",
+        "oauthJson": "OAuth 2.1 JSON",
+        "tokenJson": "存取權杖 JSON",
+        "copyJson": "複製 JSON",
+        "tokenInstruction": "將 <code className=\"text-amber-400\">YOUR_MCP_TOKEN</code> 替換成此頁面的權杖，然後將完成的 JSON 貼到應用中。"
+      }
+    },
+    "tokens": {
+      "title": "存取權杖",
+      "newToken": "新權杖",
+      "whenToUse": "何時使用存取權杖",
+      "tip": "只有在應用不支援 OAuth 2.1 連接器時才使用存取權杖。請像保護密碼一樣保護權杖。在大多數情況下，您需要將應用位址與此權杖一起貼到應用中。",
+      "form": {
+        "tokenName": "權杖名稱",
+        "expiration": "有效期限",
+        "placeholder": "例如：Claude Desktop",
+        "create": "建立權杖",
+        "cancel": "取消",
+        "done": "完成"
+      },
+      "empty": {
+        "title": "沒有存取權杖",
+        "desc": "建立一個權杖，以手動連接您的第一個 AI 應用。"
+      },
+      "card": {
+        "created": "建立於 {{date}}",
+        "used": "上次使用於 {{date}}",
+        "expired": "已過期",
+        "expires": "{{date}} 到期",
+        "noExpiration": "永不過期",
+        "revokeTitle": "撤銷權杖"
+      }
+    },
+    "oauth": {
+      "title": "OAuth 2.1 連線",
+      "newClient": "新用戶端",
+      "recommended": "建議用於簡單登入",
+      "tip": "使用 OAuth 2.1 連接器連線的應用會自動顯示在這裡。在瀏覽器中核准存取後，應用就會出現在此處。",
+      "edit": {
+        "title": "編輯 {{name}} 的回呼網址",
+        "description": "更新此 OAuth 用戶端使用的回呼 URL。每行保留一個重新導向 URI。",
+        "save": "儲存回呼網址"
+      },
+      "form": {
+        "clientName": "用戶端名稱",
+        "clientNamePlaceholder": "例如：Claude Desktop local",
+        "authMethod": "驗證方式",
+        "redirectUris": "重新導向 URI",
+        "redirectUrisPlaceholder": "http://localhost:3000/callback\nhttps://example.com/oauth/callback",
+        "redirectUrisHint": "每行輸入一個重新導向 URI。重新導向 URI 必須使用 HTTPS 或 localhost。",
+        "create": "建立用戶端",
+        "created": "OAuth 用戶端已建立，請立即複製憑證。",
+        "createdHint": "Client secret 只會顯示一次。關閉此面板前，請先將它保存到 MCP 應用或祕密管理工具中。",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "copyClientId": "複製 Client ID",
+        "copyClientSecret": "複製 Client secret",
+        "scope": "Scope"
+      },
+      "empty": {
+        "title": "尚未連接任何 OAuth 用戶端",
+        "desc": "在 AI 應用中完成登入後，應用將顯示在這裡。"
+      },
+      "card": {
+        "manualClient": "手動用戶端",
+        "activeToken": "{{count}} 個有效權杖",
+        "activeToken_plural": "{{count}} 個有效權杖",
+        "noTokens": "沒有有效權杖",
+        "registered": "註冊於 {{date}}",
+        "editTitle": "編輯回呼網址",
+        "revokeTitle": "撤銷所有權杖"
+      }
+    },
+    "confirm": {
+      "revokeClientTitle": "撤銷用戶端存取權限",
+      "revokeTokenTitle": "撤銷權杖",
+      "revokeClientMessage": "確定要撤銷 \"{{name}}\" 的所有存取權杖嗎？用戶端將需要重新驗證。",
+      "revokeTokenMessage": "確定要撤銷權杖 \"{{name}}\" 嗎？任何使用此權杖的 MCP 用戶端都會立即失去存取權限。",
+      "revoking": "正在撤銷...",
+      "revoke": "撤銷"
+    },
+    "status": {
+      "connected": "已連接",
+      "disconnected": "已斷開",
+      "error": "錯誤"
+    }
+  },
+  "assistant": {
+    "title": "助手",
+    "newChat": "新建對話",
+    "conversations": "對話列表",
+    "noConversations": "尚無對話",
+    "selectProvider": "選擇供應商",
+    "selectModel": "選擇模型",
+    "typePlaceholder": "輸入訊息...",
+    "send": "傳送",
+    "stop": "停止",
+    "confirm": "確定",
+    "confirmTool": "在此會話中批准此工具",
+    "cancel": "取消",
+    "confirmAction": "確認此操作？",
+    "cancelAction": "取消此操作",
+    "toolApprovalEnabled": "此對話中未來的 {{tool}} 操作將在此會話中自動批准。",
+    "toolRunning": "正在執行 {{tool}}...",
+    "toolCompleted": "{{tool}} 已完成",
+    "toolFailed": "{{tool}} 失敗",
+    "errorOccurred": "發生錯誤，請重試。",
+    "circuitOpen": "已達到安全限制",
+    "deleteConversation": "刪除對話",
+    "deleteConfirm": "確定要刪除此對話嗎？",
+    "renameConversation": "重新命名",
+    "archiveConversation": "封存",
+    "unarchiveConversation": "取消封存",
+    "noProvider": "請選擇供應商和模型以開始對話",
+    "providerNotConfigured": "未設定可用於對話的供應商。請先新增 OpenAI、Claude 或 Google AI 供應商。",
+    "emptyChat": "開始與助手對話",
+    "confirmationExpired": "此確認已過期",
+    "loading": "思考中...",
+    "attachImage": "附加圖片",
+    "dropImagesHere": "將圖片拖放至此",
+    "maxImagesReached": "每條訊息最多5張圖片",
+    "imageAttached_one": "已附加{{count}}張圖片",
+    "imageAttached_other": "已附加{{count}}張圖片",
+    "pasteImage": "圖片已貼上",
+    "imageTooLarge": "圖片太大，無法處理",
+    "invalidImageType": "僅支援圖片檔案",
+    "removeImage": "刪除圖片",
+    "greetings": {
+      "0": "您有什麼想法？",
+      "1": "今天您想創造什麼？",
+      "2": "我該如何協助您的工作流程？",
+      "3": "準備好見證奇蹟了嗎？",
+      "4": "跟隨白兔。",
+      "5": "紅色藥丸還是藍色藥丸？",
+      "6": "勺子並不存在。",
+      "7": "醒醒，尼奧...",
+      "8": "歡迎來到真實世界的荒漠。",
+      "9": "您完全正確！"
+    },
+    "micStart": "錄製語音消息",
+    "micStop": "停止錄製",
+    "micTranscribing": "正在轉錄...",
+    "micUnsupported": "此瀏覽器不支援麥克風",
+    "micPermissionDenied": "麥克風權限被拒絕",
+    "micRecordFailed": "錄製失敗",
+    "micTranscribeFailed": "音訊轉錄失敗",
+    "micNoSpeechDetected": "錄音中未檢測到語音"
+  }
+}
