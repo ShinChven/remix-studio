@@ -14,10 +14,10 @@ yarn-error.log*
 .DS_Store
 Dockerfile
 docker-compose.yml
-docker-compose.yml.bak
 data/
 docs/
 scripts/
 README.md
 LICENSE
 GEMINI.md
+assets/
