@@ -108,22 +108,22 @@ export function SettingsPanel({
         className="w-full p-3 bg-white/40 dark:bg-black/40 backdrop-blur-md border border-neutral-200/50 dark:border-white/5 rounded-xl mb-3 hover:bg-white/60 dark:hover:bg-neutral-900/50 transition-all group flex flex-col gap-2.5 shadow-inner"
       >
         {/* Row 1: Provider Name + Chevron */}
-        <div className="w-full flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="w-full flex items-start justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1 text-left">
             <span className="text-[9px] font-black uppercase tracking-widest text-neutral-600 shrink-0">{selectedProvider?.name || t('projectViewer.settings.none')}</span>
             <div className="w-1 h-1 rounded-full bg-neutral-200 dark:bg-neutral-800 shrink-0" />
-            <span className="text-[10px] font-bold text-neutral-700 dark:text-neutral-300 truncate">
+            <span className="min-w-0 text-[10px] font-bold leading-4 text-neutral-700 dark:text-neutral-300 line-clamp-2 break-words">
               {selectedModel?.name || t('projectViewer.settings.none')}
             </span>
           </div>
-          <div className={`p-1 rounded-md bg-neutral-200/50 dark:bg-neutral-800/50 group-hover:bg-neutral-300 dark:group-hover:bg-neutral-800 transition-all ${isSettingsCollapsed ? 'rotate-180' : ''}`}>
+          <div className={`shrink-0 p-1 rounded-md bg-neutral-200/50 dark:bg-neutral-800/50 group-hover:bg-neutral-300 dark:group-hover:bg-neutral-800 transition-all ${isSettingsCollapsed ? 'rotate-180' : ''}`}>
             <ChevronDown className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-500" />
           </div>
         </div>
 
         {/* Row 2: Options */}
         <div className="w-full flex items-center justify-between pt-2 border-t border-neutral-200/50 dark:border-neutral-800/50">
-          <div className="flex items-center gap-2">
+          <div className="min-w-0 flex flex-wrap items-center gap-2">
             {!hasSelectedModel ? (
               <span className="text-[9px] font-bold text-neutral-600 bg-white dark:bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 uppercase tracking-widest">
                 {t('projectViewer.settings.selectModelToConfigure')}
@@ -225,16 +225,16 @@ export function SettingsPanel({
               }`}
 
             >
-              <div className="flex items-center justify-between relative z-10">
-                <div className="min-w-0">
+              <div className="flex items-start justify-between gap-3 relative z-10">
+                <div className="min-w-0 flex-1">
                   <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-1">
                     {selectedProvider?.name || t('projectViewer.settings.selectProvider')}
                   </div>
-                  <div className="text-sm font-black text-neutral-900 dark:text-white truncate tracking-tight">
+                  <div className="text-sm font-black text-neutral-900 dark:text-white leading-5 line-clamp-2 break-words tracking-tight">
                     {selectedModel?.name || t('projectViewer.settings.selectModel')}
                   </div>
                 </div>
-                <div className="p-2 bg-neutral-200 dark:bg-neutral-800 rounded-xl group-hover/model-btn:bg-blue-600 group-hover/model-btn:text-white transition-all">
+                <div className="shrink-0 p-2 bg-neutral-200 dark:bg-neutral-800 rounded-xl group-hover/model-btn:bg-blue-600 group-hover/model-btn:text-white transition-all">
                   <Layers className="w-4 h-4" />
                 </div>
               </div>

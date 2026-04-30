@@ -123,7 +123,7 @@ export function ModelSelectorModal({
                       >
                         <div className="relative z-10 flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className={`text-sm font-bold truncate tracking-tight transition-colors ${isSelected ? 'text-blue-50' : 'text-neutral-700 dark:text-neutral-300'}`}>
+                            <div className={`text-sm font-bold leading-5 line-clamp-2 break-words tracking-tight transition-colors ${isSelected ? 'text-blue-50' : 'text-neutral-700 dark:text-neutral-300'}`}>
                               {model.name}
                             </div>
                           </div>
