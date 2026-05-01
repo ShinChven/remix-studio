@@ -7,7 +7,7 @@ import { SocialChannelFactory } from '../services/social';
 import { encrypt } from '../utils/crypto';
 
 export function createSocialRouter(prisma: PrismaClient) {
-  const router = new Hono();
+  const router = new Hono<{ Variables: { user: JwtPayload } }>();
 
   // Redirect to provider
   router.get('/api/social/:platform/connect', authMiddleware, async (c) => {
@@ -63,11 +63,26 @@ export function createSocialRouter(prisma: PrismaClient) {
       const channel = SocialChannelFactory.getChannel(platform);
       const tokens = await channel.exchangeCode(code, codeVerifier);
 
-      // Dummy account info lookup (Normally you would fetch user profile from the provider)
-      // Since TwitterChannel doesn't implement profile fetching yet, we'll just use a placeholder
-      // To strictly follow X v2 we should call `GET /2/users/me` but for now we'll store the tokens.
-      let accountId = `user_${Date.now()}`;
+      // Fetch real profile from X API so we have a stable accountId for upsert
+      let accountId = `unknown_${Date.now()}`;
       let profileName = 'Connected Account';
+      let avatarUrl: string | null = null;
+
+      try {
+        const profileRes = await fetch('https://api.x.com/2/users/me?user.fields=name,username,profile_image_url', {
+          headers: { Authorization: `Bearer ${tokens.accessToken}` },
+        });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          accountId = profileData.data?.id ?? accountId;
+          profileName = profileData.data?.name ?? profileData.data?.username ?? profileName;
+          avatarUrl = profileData.data?.profile_image_url ?? null;
+        } else {
+          console.warn('[Social Callback] Could not fetch profile, using fallback accountId');
+        }
+      } catch (profileErr) {
+        console.warn('[Social Callback] Profile fetch failed:', profileErr);
+      }
 
       // We encrypt tokens at rest (Security Audit check 6.1)
       const encryptedAccessToken = encrypt(tokens.accessToken);
@@ -86,7 +101,8 @@ export function createSocialRouter(prisma: PrismaClient) {
           refreshToken: encryptedRefreshToken,
           expiresAt: tokens.expiresAt,
           status: 'active',
-          profileName
+          profileName,
+          avatarUrl,
         },
         create: {
           userId: user.userId,
@@ -96,7 +112,8 @@ export function createSocialRouter(prisma: PrismaClient) {
           refreshToken: encryptedRefreshToken,
           expiresAt: tokens.expiresAt,
           status: 'active',
-          profileName
+          profileName,
+          avatarUrl,
         }
       });
 
