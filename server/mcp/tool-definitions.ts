@@ -1611,7 +1611,7 @@ Important workflow behavior:
     handler: async (userId, { postId }) => {
       const post = await prisma.post.findFirst({
         where: { id: postId, userId },
-        include: { media: true, executions: true }
+        include: { media: { orderBy: { position: 'asc' } }, executions: true }
       });
       if (!post) throw new Error("Post not found");
       return { text: JSON.stringify(post) };
@@ -1661,11 +1661,17 @@ Important workflow behavior:
     handler: async (userId, { postId, sourceUrl, type }) => {
       const post = await prisma.post.findUnique({ where: { id: postId }});
       if (!post || post.userId !== userId) throw new Error("Post not found");
+      const max = await prisma.postMedia.aggregate({
+        where: { postId },
+        _max: { position: true },
+      });
+      const nextPosition = (max._max.position ?? -1) + 1;
       const media = await prisma.postMedia.create({
         data: {
           postId,
           sourceUrl,
           type,
+          position: nextPosition,
           status: 'pending'
         }
       });

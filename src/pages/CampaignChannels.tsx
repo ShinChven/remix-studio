@@ -11,6 +11,7 @@ import {
 import { toast } from 'sonner';
 import { disconnectSocialAccount, fetchSocialAccounts } from '../api';
 import { PageHeader } from '../components/PageHeader';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 interface SocialAccount {
   id: string;
@@ -35,6 +36,7 @@ export function CampaignChannels() {
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SocialAccount | null>(null);
 
   const loadAccounts = async () => {
     setLoading(true);
@@ -53,7 +55,6 @@ export function CampaignChannels() {
   }, []);
 
   const handleDisconnect = async (account: SocialAccount) => {
-    if (!window.confirm(`Disconnect ${displayName(account)}? Campaigns using this channel will stop targeting it.`)) return;
     try {
       setDisconnectingId(account.id);
       await disconnectSocialAccount(account.platform, account.id);
@@ -63,6 +64,7 @@ export function CampaignChannels() {
       toast.error(error?.message || 'Failed to disconnect channel');
     } finally {
       setDisconnectingId(null);
+      setDeleteTarget(null);
     }
   };
 
@@ -157,7 +159,7 @@ export function CampaignChannels() {
                     <button
                       type="button"
                       disabled={disconnectingId === account.id}
-                      onClick={() => void handleDisconnect(account)}
+                      onClick={() => setDeleteTarget(account)}
                       className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-red-500/10 px-3 text-sm font-bold text-red-600 transition hover:bg-red-500/20 disabled:opacity-50"
                     >
                       {disconnectingId === account.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -170,6 +172,17 @@ export function CampaignChannels() {
           )}
         </section>
       </div>
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Disconnect Channel"
+        description={`Are you sure you want to disconnect ${deleteTarget ? displayName(deleteTarget) : ''}? Campaigns using this channel will stop targeting it.`}
+        confirmLabel="Disconnect"
+        cancelLabel="Cancel"
+        onConfirm={() => deleteTarget && void handleDisconnect(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+        variant="danger"
+      />
     </div>
   );
 }

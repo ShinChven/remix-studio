@@ -212,7 +212,7 @@ export class PostManager {
       const account = await this.prisma.socialAccount.findUnique({ where: { id: exec.socialAccountId } });
       if (!account) throw new Error('Social Account not found');
 
-      const post = await this.prisma.post.findUnique({ where: { id: exec.postId }, include: { media: true } });
+      const post = await this.prisma.post.findUnique({ where: { id: exec.postId }, include: { media: { orderBy: { position: 'asc' } } } });
       if (!post) throw new Error('Post not found');
 
       if (post.userId !== account.userId) {

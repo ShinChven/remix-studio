@@ -1497,6 +1497,15 @@ export async function removePostMedia(mediaId: string): Promise<void> {
   return handleResponse<void>(res, 'Failed to remove media');
 }
 
+export async function reorderPostMedia(postId: string, mediaIds: string[]): Promise<{ media: any[] }> {
+  const res = await apiFetch(`/api/posts/${postId}/media/reorder`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ mediaIds }),
+  });
+  return handleResponse<{ media: any[] }>(res, 'Failed to reorder media');
+}
+
 export interface BatchScheduleItem {
   postId: string;
   scheduledAt: string; // ISO
@@ -1561,6 +1570,19 @@ export async function batchGeneratePostText(input: {
 export async function fetchSocialAccounts(): Promise<any[]> {
   const res = await apiFetch('/api/social/accounts', { headers: getHeaders() });
   return handleResponse<any[]>(res, 'Failed to get social accounts');
+}
+
+export async function fetchScheduledPosts(page = 1, pageSize = 25, q?: string, sortBy = 'scheduledAt', sortOrder = 'asc'): Promise<{ items: any[], total: number, page: number, pageSize: number, totalPages: number }> {
+  const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString(), sortBy, sortOrder });
+  if (q) params.set('q', q);
+  const res = await apiFetch(`/api/posts/scheduled?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<any>(res, 'Failed to fetch scheduled posts');
+}
+
+export async function fetchScheduledPostCounts(from: string, to: string, timezoneOffsetMinutes: number): Promise<any[]> {
+  const params = new URLSearchParams({ from, to, timezoneOffsetMinutes: timezoneOffsetMinutes.toString() });
+  const res = await apiFetch(`/api/posts/scheduled-counts?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<any[]>(res, 'Failed to fetch scheduled counts');
 }
 
 export async function disconnectSocialAccount(platform: string, accountId: string): Promise<void> {

@@ -611,12 +611,14 @@ model PostMedia {
   width        Int?
   height       Int?
   size         BigInt?
+  position     Int      @default(0)
   errorMsg     String?  @db.Text
   createdAt    DateTime @default(now())
 
   post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
+
   @@index([status])
+  @@index([postId, position])
 }
 
 model PostExecution {

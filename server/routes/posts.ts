@@ -76,6 +76,112 @@ export function createPostsRouter(
     }
   });
 
+  // ========== Scheduled Posts ==========
+
+  postsRouter.get('/api/posts/scheduled', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const page = Math.max(1, Number(c.req.query('page') || 1));
+    const pageSize = Math.max(1, Math.min(100, Number(c.req.query('pageSize') || 25)));
+    const skip = (page - 1) * pageSize;
+    const q = c.req.query('q');
+    const sortBy = c.req.query('sortBy') || 'scheduledAt';
+    const sortOrder = (c.req.query('sortOrder') || 'asc') as 'asc' | 'desc';
+
+    const whereClause: any = {
+      userId: user.userId,
+      status: 'scheduled',
+    };
+
+    if (q) {
+      whereClause.OR = [
+        { textContent: { contains: q, mode: 'insensitive' } },
+        { campaign: { name: { contains: q, mode: 'insensitive' } } }
+      ];
+    }
+
+    try {
+      const [total, items] = await Promise.all([
+        prisma.post.count({ where: whereClause }),
+        prisma.post.findMany({
+          where: whereClause,
+          include: {
+            campaign: { select: { id: true, name: true } },
+            media: { orderBy: { position: 'asc' } },
+          },
+          orderBy: { [sortBy]: sortOrder },
+          skip,
+          take: pageSize,
+        }),
+      ]);
+
+      const signedItems = await Promise.all(items.map((item) => signPostMediaUrls(storage, item)));
+
+      return c.json({
+        items: signedItems,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      });
+    } catch (error) {
+      console.error('Failed to get scheduled posts:', error);
+      return c.json({ error: 'Failed to fetch scheduled posts' }, 500);
+    }
+  });
+
+  postsRouter.get('/api/posts/scheduled-counts', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const from = c.req.query('from'); // ISO date string
+    const to = c.req.query('to');     // ISO date string
+    const timezoneOffsetMinutes = Number(c.req.query('timezoneOffsetMinutes') || 0);
+
+    if (!from || !to) {
+      return c.json({ error: 'Missing from or to parameters' }, 400);
+    }
+
+    try {
+      const posts = await prisma.post.findMany({
+        where: {
+          userId: user.userId,
+          status: 'scheduled',
+          scheduledAt: {
+            gte: new Date(from),
+            lte: new Date(to),
+          },
+        },
+        select: {
+          scheduledAt: true,
+          executions: { select: { id: true } },
+        },
+      });
+
+      // Group by local date
+      const counts: Record<string, { date: string; postCount: number; sendCount: number }> = {};
+
+      posts.forEach((post) => {
+        if (!post.scheduledAt) return;
+        
+        // Adjust for timezone offset if needed, or just use the local date representation
+        // The frontend sends from/to in local date start/end ISOs usually.
+        // Let's use simple YYYY-MM-DD in user's presumed local time.
+        // Actually, let's just use the Date object and adjust by offset.
+        const localDate = new Date(post.scheduledAt.getTime() - timezoneOffsetMinutes * 60000);
+        const dateKey = localDate.toISOString().split('T')[0];
+
+        if (!counts[dateKey]) {
+          counts[dateKey] = { date: dateKey, postCount: 0, sendCount: 0 };
+        }
+        counts[dateKey].postCount++;
+        counts[dateKey].sendCount += post.executions.length || 1; // Assuming at least 1 send if it's a post
+      });
+
+      return c.json(Object.values(counts));
+    } catch (error) {
+      console.error('Failed to get scheduled counts:', error);
+      return c.json({ error: 'Failed to fetch scheduled counts' }, 500);
+    }
+  });
+
   postsRouter.get('/api/posts/:id', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;
     const id = c.req.param('id');
@@ -84,7 +190,7 @@ export function createPostsRouter(
       const post = await prisma.post.findFirst({
         where: { id, userId: user.userId },
         include: {
-          media: true,
+          media: { orderBy: { position: 'asc' } },
           executions: { include: { socialAccount: true } },
           campaign: { include: { socialAccounts: true } },
         },
@@ -94,7 +200,7 @@ export function createPostsRouter(
         return c.json({ error: 'Post not found' }, 404);
       }
 
-      return c.json(post);
+      return c.json(await signPostMediaUrls(storage, post));
     } catch (error) {
       console.error('Failed to get post:', error);
       return c.json({ error: 'Failed to get post' }, 500);
@@ -179,6 +285,12 @@ export function createPostsRouter(
         return c.json({ error: 'Post not found' }, 404);
       }
 
+      const maxPosition = await prisma.postMedia.aggregate({
+        where: { postId },
+        _max: { position: true },
+      });
+      const nextPosition = (maxPosition._max.position ?? -1) + 1;
+
       const media = await prisma.postMedia.create({
         data: {
           postId,
@@ -188,6 +300,7 @@ export function createPostsRouter(
           width: data.width,
           height: data.height,
           size: data.size,
+          position: nextPosition,
           status: 'pending' // MediaProcessingPoller will pick this up
         }
       });
@@ -221,6 +334,50 @@ export function createPostsRouter(
     } catch (error) {
       console.error('Failed to delete media:', error);
       return c.json({ error: 'Failed to delete media' }, 500);
+    }
+  });
+
+  const reorderMediaSchema = z.object({
+    mediaIds: z.array(z.string().min(1)).min(1),
+  });
+
+  postsRouter.put('/api/posts/:id/media/reorder', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const postId = c.req.param('id');
+
+    try {
+      const body = await c.req.json();
+      const { mediaIds } = reorderMediaSchema.parse(body);
+
+      const post = await prisma.post.findFirst({ where: { id: postId, userId: user.userId } });
+      if (!post) {
+        return c.json({ error: 'Post not found' }, 404);
+      }
+
+      const existing = await prisma.postMedia.findMany({
+        where: { postId },
+        select: { id: true },
+      });
+      const existingIds = new Set(existing.map((m) => m.id));
+      if (mediaIds.length !== existing.length || !mediaIds.every((id) => existingIds.has(id))) {
+        return c.json({ error: 'mediaIds must include exactly the post\'s current media' }, 400);
+      }
+
+      await prisma.$transaction(
+        mediaIds.map((id, index) =>
+          prisma.postMedia.update({ where: { id }, data: { position: index } }),
+        ),
+      );
+
+      const updated = await prisma.postMedia.findMany({
+        where: { postId },
+        orderBy: { position: 'asc' },
+      });
+      const signed = await signPostMediaUrls(storage, { media: updated });
+      return c.json({ media: signed.media });
+    } catch (error) {
+      console.error('Failed to reorder media:', error);
+      return c.json({ error: 'Failed to reorder media' }, 400);
     }
   });
 
@@ -339,7 +496,7 @@ export function createPostsRouter(
       const updated = await prisma.post.findUnique({
         where: { id },
         include: {
-          media: true,
+          media: { orderBy: { position: 'asc' } },
           executions: { include: { socialAccount: true } },
         },
       });
@@ -385,7 +542,7 @@ export function createPostsRouter(
         try {
           const post = await prisma.post.findFirst({
             where: { id: postId, userId: user.userId },
-            include: { media: true },
+            include: { media: { orderBy: { position: 'asc' } } },
           });
           if (!post) {
             results.push({ postId, ok: false, error: 'Not found' });
@@ -459,6 +616,7 @@ export function createPostsRouter(
       return c.json({ error: error?.message || 'Failed to batch-generate text' }, 400);
     }
   });
+
 
   return postsRouter;
 }

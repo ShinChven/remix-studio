@@ -228,7 +228,7 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
           socialAccounts: true,
           posts: {
             include: {
-              media: true,
+              media: { orderBy: { position: 'asc' } },
               executions: { include: { socialAccount: true } }
             },
             orderBy: { createdAt: 'desc' }

@@ -17,6 +17,7 @@ import {
   fetchCampaign,
   fetchPost,
   removePostMedia,
+  reorderPostMedia,
   saveImage,
   saveVideo,
   updatePost,
@@ -57,6 +58,12 @@ function mediaPreviewUrl(media: Pick<PostMedia, 'thumbnailUrl' | 'processedUrl' 
   if (!value) return '';
   if (/^https?:\/\//i.test(value) || value.startsWith('/')) return value;
   return `/api/storage/${value}`;
+}
+
+function prettyMediaName(url: string | null | undefined) {
+  if (!url) return '';
+  const path = url.split('?')[0];
+  return path.split('/').pop() || path;
 }
 
 function accountName(account: SocialAccount) {
@@ -112,6 +119,8 @@ export function PostForm() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [mediaToRemove, setMediaToRemove] = useState<string | null>(null);
+  const [draggedReorderIndex, setDraggedReorderIndex] = useState<number | null>(null);
+  const [dragOverReorderIndex, setDragOverReorderIndex] = useState<number | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const loadData = useCallback(async () => {
@@ -165,11 +174,79 @@ export function PostForm() {
     event.target.value = '';
   };
 
+  const isFileDragEvent = (event: React.DragEvent) => {
+    const types = event.dataTransfer?.types;
+    if (!types) return false;
+    return Array.from(types).includes('Files');
+  };
+
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
     event.stopPropagation();
     setIsDragging(false);
+    if (!isFileDragEvent(event)) return;
     addFiles(Array.from(event.dataTransfer.files || []));
+  };
+
+  const handleMediaDragStart = (event: React.DragEvent, index: number) => {
+    setDraggedReorderIndex(index);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('application/x-post-media-index', String(index));
+  };
+
+  const handleMediaDragOver = (event: React.DragEvent, index: number) => {
+    if (draggedReorderIndex === null) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (dragOverReorderIndex !== index) setDragOverReorderIndex(index);
+  };
+
+  const handleMediaDragEnd = () => {
+    setDraggedReorderIndex(null);
+    setDragOverReorderIndex(null);
+  };
+
+  const handleMediaDrop = async (event: React.DragEvent, dropIndex: number) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const fromIndex = draggedReorderIndex;
+    setDraggedReorderIndex(null);
+    setDragOverReorderIndex(null);
+    if (fromIndex === null || fromIndex === dropIndex) return;
+
+    const visibleMediaCount = visibleExistingMedia.length;
+    type Slot =
+      | { kind: 'existing'; media: PostMedia }
+      | { kind: 'new'; file: File };
+    const combined: Slot[] = [
+      ...visibleExistingMedia.map((media) => ({ kind: 'existing' as const, media })),
+      ...newFiles.map((file) => ({ kind: 'new' as const, file })),
+    ];
+    if (fromIndex >= combined.length || dropIndex >= combined.length) return;
+    const [moved] = combined.splice(fromIndex, 1);
+    combined.splice(dropIndex, 0, moved);
+
+    const nextVisibleExisting = combined
+      .filter((slot): slot is Extract<Slot, { kind: 'existing' }> => slot.kind === 'existing')
+      .map((slot) => slot.media);
+    const nextNewFiles = combined
+      .filter((slot): slot is Extract<Slot, { kind: 'new' }> => slot.kind === 'new')
+      .map((slot) => slot.file);
+
+    const removed = existingMedia.filter((media) => removedMediaIds.has(media.id));
+    setExistingMedia([...nextVisibleExisting, ...removed]);
+    setNewFiles(nextNewFiles);
+
+    const movedExistingOnly = fromIndex < visibleMediaCount || dropIndex < visibleMediaCount;
+    if (movedExistingOnly && postId && nextVisibleExisting.length > 0) {
+      try {
+        const res = await reorderPostMedia(postId, nextVisibleExisting.map((m) => m.id));
+        setExistingMedia([...(res.media as PostMedia[]), ...removed]);
+      } catch (err: any) {
+        toast.error(err?.message || 'Failed to reorder media');
+        void loadData();
+      }
+    }
   };
 
   const handleSave = async () => {
@@ -253,6 +330,7 @@ export function PostForm() {
                 <div
                   className="grid gap-4"
                   onDragOver={(event) => {
+                    if (!isFileDragEvent(event)) return;
                     event.preventDefault();
                     setIsDragging(true);
                   }}
@@ -292,12 +370,27 @@ export function PostForm() {
                       ) : null}
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">Drag files onto this area or use Add Files.</p>
 
-                      {visibleExistingMedia.map((media) => {
+                      {visibleExistingMedia.map((media, index) => {
                         const preview = mediaPreviewUrl(media);
+                        const combinedIndex = index;
+                        const isBeingDragged = draggedReorderIndex === combinedIndex;
+                        const isDragTarget = dragOverReorderIndex === combinedIndex && draggedReorderIndex !== null && draggedReorderIndex !== combinedIndex;
                         return (
-                          <div key={media.id} className="flex min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100/40 p-3 shadow-sm dark:border-white/10 dark:bg-white/5">
-                            <div className="h-8 w-8 shrink-0 cursor-grab rounded-full text-neutral-400">
-                              <GripVertical className="mx-auto h-4 w-4" />
+                          <div
+                            key={media.id}
+                            draggable
+                            onDragStart={(e) => handleMediaDragStart(e, combinedIndex)}
+                            onDragOver={(e) => handleMediaDragOver(e, combinedIndex)}
+                            onDrop={(e) => handleMediaDrop(e, combinedIndex)}
+                            onDragEnd={handleMediaDragEnd}
+                            className={cn(
+                              'flex min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100/40 p-3 shadow-sm transition dark:border-white/10 dark:bg-white/5',
+                              isBeingDragged && 'opacity-50',
+                              isDragTarget && 'border-indigo-500/60 ring-2 ring-indigo-500/30',
+                            )}
+                          >
+                            <div className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-full text-neutral-400 active:cursor-grabbing">
+                              <GripVertical className="h-4 w-4" />
                             </div>
                             <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800">
                               {preview && media.type !== 'video' ? (
@@ -306,7 +399,7 @@ export function PostForm() {
                                 <div className="flex h-full w-full items-center justify-center text-xs font-bold text-neutral-400">{media.type || 'media'}</div>
                               )}
                             </div>
-                            <div className="min-w-0 flex-1 truncate font-mono text-xs text-neutral-500 dark:text-neutral-400">{media.sourceUrl.split('/').pop()}</div>
+                            <div className="min-w-0 flex-1 truncate font-mono text-xs text-neutral-500 dark:text-neutral-400">{prettyMediaName(media.sourceUrl)}</div>
                             <span className="rounded-full border border-neutral-200 px-2 py-0.5 text-xs font-bold uppercase text-neutral-500 dark:border-white/10">Existing</span>
                             <button className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-red-500/10 hover:text-red-600" onClick={() => setMediaToRemove(media.id)}>
                               <Trash2 className="h-4 w-4" />
@@ -315,19 +408,39 @@ export function PostForm() {
                         );
                       })}
 
-                      {newFiles.map((file, index) => (
-                        <div key={`${file.name}-${index}`} className="flex min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 shadow-sm">
-                          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800">
-                            <NewFilePreview file={file} />
+                      {newFiles.map((file, index) => {
+                        const combinedIndex = visibleExistingMedia.length + index;
+                        const isBeingDragged = draggedReorderIndex === combinedIndex;
+                        const isDragTarget = dragOverReorderIndex === combinedIndex && draggedReorderIndex !== null && draggedReorderIndex !== combinedIndex;
+                        return (
+                          <div
+                            key={`${file.name}-${index}`}
+                            draggable
+                            onDragStart={(e) => handleMediaDragStart(e, combinedIndex)}
+                            onDragOver={(e) => handleMediaDragOver(e, combinedIndex)}
+                            onDrop={(e) => handleMediaDrop(e, combinedIndex)}
+                            onDragEnd={handleMediaDragEnd}
+                            className={cn(
+                              'flex min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 shadow-sm transition',
+                              isBeingDragged && 'opacity-50',
+                              isDragTarget && 'border-indigo-500/60 ring-2 ring-indigo-500/30',
+                            )}
+                          >
+                            <div className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-full text-neutral-400 active:cursor-grabbing">
+                              <GripVertical className="h-4 w-4" />
+                            </div>
+                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800">
+                              <NewFilePreview file={file} />
+                            </div>
+                            <div className="min-w-0 flex-1 truncate text-xs font-medium text-neutral-950 dark:text-white">{file.name}</div>
+                            <span className="rounded-full border border-neutral-200 px-2 py-0.5 text-xs font-bold uppercase text-neutral-500 dark:border-white/10">{getFileMediaType(file)}</span>
+                            <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-bold uppercase text-white">New</span>
+                            <button className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-red-500/10 hover:text-red-600" onClick={() => setNewFiles((prev) => prev.filter((_, i) => i !== index))}>
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
-                          <div className="min-w-0 flex-1 truncate text-xs font-medium text-neutral-950 dark:text-white">{file.name}</div>
-                          <span className="rounded-full border border-neutral-200 px-2 py-0.5 text-xs font-bold uppercase text-neutral-500 dark:border-white/10">{getFileMediaType(file)}</span>
-                          <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-bold uppercase text-white">New</span>
-                          <button className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-red-500/10 hover:text-red-600" onClick={() => setNewFiles((prev) => prev.filter((_, i) => i !== index))}>
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div

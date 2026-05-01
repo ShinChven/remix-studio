@@ -10,7 +10,7 @@ export class PostRepository {
         userId: userId,
       },
       include: {
-        media: true,
+        media: { orderBy: { position: 'asc' } },
         executions: true,
       }
     });
@@ -23,7 +23,7 @@ export class PostRepository {
         campaignId,
       },
       include: {
-        media: true,
+        media: { orderBy: { position: 'asc' } },
         executions: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -81,10 +81,17 @@ export class PostRepository {
     const post = await this.prisma.post.findUnique({ where: { id: postId }});
     if (!post || post.userId !== userId) throw new Error("Post not found or unauthorized");
 
+    const max = await this.prisma.postMedia.aggregate({
+      where: { postId },
+      _max: { position: true },
+    });
+    const nextPosition = (max._max.position ?? -1) + 1;
+
     return this.prisma.postMedia.create({
       data: {
         ...media,
         postId,
+        position: nextPosition,
       },
     });
   }

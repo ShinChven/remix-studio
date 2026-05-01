@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Activity,
   ArrowRight,
@@ -20,7 +20,7 @@ import {
   Twitter,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { deleteCampaign, fetchCampaigns, fetchRecentPosts, fetchSocialAccounts, updateCampaign } from '../api';
+import { deleteCampaign, fetchCampaigns, fetchRecentPosts, fetchScheduledPosts, fetchSocialAccounts, updateCampaign } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 
@@ -107,6 +107,8 @@ export function Campaigns() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
   const [recentPostsLoading, setRecentPostsLoading] = useState(true);
+  const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
+  const [scheduledPostsLoading, setScheduledPostsLoading] = useState(true);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -132,9 +134,22 @@ export function Campaigns() {
     }
   };
 
+  const loadScheduledPosts = async () => {
+    setScheduledPostsLoading(true);
+    try {
+      const data = await fetchScheduledPosts(1, 5);
+      setScheduledPosts(data.items);
+    } catch (error) {
+      console.error('Failed to load scheduled posts', error);
+    } finally {
+      setScheduledPostsLoading(false);
+    }
+  };
+
   useEffect(() => {
     void loadData();
     void loadRecentPosts();
+    void loadScheduledPosts();
   }, []);
 
   useEffect(() => {
@@ -346,126 +361,210 @@ export function Campaigns() {
             )}
           </section>
 
-          {/* Right Column: Recently Posted */}
-          <aside className="lg:col-span-1 space-y-6">
-            <div className="flex h-10 items-center justify-between">
-              <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
-                <Activity className="h-5 w-5 text-indigo-500" />
-                Recently Posted
-              </h3>
-            </div>
-
-            <div className="rounded-3xl border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
-              <div className="space-y-6">
-                {recentPostsLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-4 animate-pulse">
-                      <div className="h-10 w-10 rounded-full bg-neutral-200 dark:bg-neutral-800" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 w-1/2 bg-neutral-200 dark:bg-neutral-800 rounded" />
-                        <div className="h-3 w-1/3 bg-neutral-100 dark:bg-neutral-800/50 rounded" />
-                      </div>
-                    </div>
-                  ))
-                ) : recentPosts.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <p className="text-sm text-neutral-500">No recent activity found.</p>
-                  </div>
-                ) : (
-                  recentPosts.map((post) => {
-                    // Find the first execution that has an external URL, or fallback to the first execution
-                    const executionWithLink = post.executions?.find((ex: any) => ex.externalUrl);
-                    const primaryExecution = executionWithLink || post.executions?.[0];
-                    const account = primaryExecution?.socialAccount;
-                    const platform = account?.platform || 'Unknown';
-                    const name = account?.profileName || 'Unknown Account';
-                    const avatar = account?.avatarUrl || fallbackAvatar(account?.id || post.id);
-
-                    let externalUrl = primaryExecution?.externalUrl;
-                    if (!externalUrl && primaryExecution?.externalId) {
-                      const p = platform.toLowerCase();
-                      if (p === 'twitter' || p === 'x') {
-                        externalUrl = `https://twitter.com/i/web/status/${primaryExecution.externalId}`;
-                      } else if (p === 'linkedin') {
-                        externalUrl = `https://www.linkedin.com/feed/update/${primaryExecution.externalId}`;
-                      }
-                    }
-
-                    return (
-                      <div key={post.id} className="group flex items-start gap-4">
-                        <div className="relative shrink-0">
-                          <div className={cn("relative", "cursor-pointer")} onClick={() => navigate(`/campaigns/${post.campaign?.id}/posts/edit/${post.id}`)}>
-                            <img
-                              src={avatar}
-                              alt={name}
-                              className="h-10 w-10 rounded-full border border-neutral-200 object-cover transition group-hover:border-indigo-500/50 dark:border-white/10"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-white text-neutral-900 shadow-sm dark:border-neutral-900 dark:bg-neutral-800 dark:text-white">
-                              {getPlatformIcon(platform, "h-2 w-2")}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <p
-                              className={cn(
-                                "truncate text-sm font-bold text-neutral-900 dark:text-white",
-                                "cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400"
-                              )}
-                              onClick={() => navigate(`/campaigns/${post.campaign?.id}/posts/edit/${post.id}`)}
-                            >
-                              {name}
-                            </p>
-                            <span className={cn(
-                              "shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider",
-                              post.status === 'completed'
-                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                : "bg-red-500/10 text-red-600 dark:text-red-400"
-                            )}>
-                              {post.status === 'completed' ? 'Published' : 'Failed'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs font-medium text-neutral-500">
-                            <span
-                              className="cursor-pointer truncate hover:text-indigo-600 hover:underline"
-                              onClick={() => navigate(`/campaigns/${post.campaign?.id}`)}
-                            >
-                              {post.campaign?.name}
-                            </span>
-                            <span className="shrink-0">•</span>
-                            <span className="shrink-0 flex items-center gap-1">
-                              <Clock className="h-2.5 w-2.5" />
-                              {new Date(post.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        </div>
-                        {externalUrl && (
-                          <a
-                            href={externalUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition hover:border-indigo-500/50 hover:bg-indigo-50/50 hover:text-indigo-600 dark:border-white/10 dark:hover:bg-white/5 dark:hover:text-white"
-                            title="View live post"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
+          {/* Right Column: Recently Posted & Scheduled */}
+          <aside className="lg:col-span-1 space-y-8">
+            <div className="space-y-6">
+              <div className="flex h-10 items-center justify-between">
+                <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
+                  <Activity className="h-5 w-5 text-indigo-500" />
+                  Recently Posted
+                </h3>
               </div>
 
-              {recentPosts.length > 0 && (
+              <div className="rounded-3xl border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+                <div className="space-y-6">
+                  {recentPostsLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-4 animate-pulse">
+                        <div className="h-10 w-10 rounded-full bg-neutral-200 dark:bg-neutral-800" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-1/2 bg-neutral-200 dark:bg-neutral-800 rounded" />
+                          <div className="h-3 w-1/3 bg-neutral-100 dark:bg-neutral-800/50 rounded" />
+                        </div>
+                      </div>
+                    ))
+                  ) : recentPosts.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <p className="text-sm text-neutral-500">No recent activity found.</p>
+                    </div>
+                  ) : (
+                    recentPosts.map((post) => {
+                      // Find the first execution that has an external URL, or fallback to the first execution
+                      const executionWithLink = post.executions?.find((ex: any) => ex.externalUrl);
+                      const primaryExecution = executionWithLink || post.executions?.[0];
+                      const account = primaryExecution?.socialAccount;
+                      const platform = account?.platform || 'Unknown';
+                      const name = account?.profileName || 'Unknown Account';
+                      const avatar = account?.avatarUrl || fallbackAvatar(account?.id || post.id);
+
+                      let externalUrl = primaryExecution?.externalUrl;
+                      if (!externalUrl && primaryExecution?.externalId) {
+                        const p = platform.toLowerCase();
+                        if (p === 'twitter' || p === 'x') {
+                          externalUrl = `https://twitter.com/i/web/status/${primaryExecution.externalId}`;
+                        } else if (p === 'linkedin') {
+                          externalUrl = `https://www.linkedin.com/feed/update/${primaryExecution.externalId}`;
+                        }
+                      }
+
+                      return (
+                        <div key={post.id} className="group flex items-start gap-4">
+                          <div className="relative shrink-0">
+                            <Link to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`} className={cn("relative", "block")}>
+                              <img
+                                src={avatar}
+                                alt={name}
+                                className="h-10 w-10 rounded-full border border-neutral-200 object-cover transition group-hover:border-indigo-500/50 dark:border-white/10"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-white text-neutral-900 shadow-sm dark:border-neutral-900 dark:bg-neutral-800 dark:text-white">
+                                {getPlatformIcon(platform, "h-2 w-2")}
+                              </div>
+                            </Link>
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <Link
+                                to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`}
+                                className={cn(
+                                  "truncate text-sm font-bold text-neutral-900 dark:text-white",
+                                  "hover:text-indigo-600 dark:hover:text-indigo-400"
+                                )}
+                              >
+                                {name}
+                              </Link>
+                              <span className={cn(
+                                "shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider",
+                                post.status === 'completed'
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : "bg-red-500/10 text-red-600 dark:text-red-400"
+                              )}>
+                                {post.status === 'completed' ? 'Published' : 'Failed'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs font-medium text-neutral-500">
+                              <Link
+                                className="cursor-pointer truncate hover:text-indigo-600 hover:underline"
+                                to={`/campaigns/${post.campaignId || post.campaign?.id}`}
+                              >
+                                {post.campaign?.name}
+                              </Link>
+                              <span className="shrink-0">•</span>
+                              <span className="shrink-0 flex items-center gap-1">
+                                <Clock className="h-2.5 w-2.5" />
+                                {new Date(post.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          </div>
+                          {externalUrl && (
+                            <a
+                              href={externalUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition hover:border-indigo-500/50 hover:bg-indigo-50/50 hover:text-indigo-600 dark:border-white/10 dark:hover:bg-white/5 dark:hover:text-white"
+                              title="View live post"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {recentPosts.length > 0 && (
+                  <button
+                    className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-300/70 bg-neutral-200/60 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-200 hover:text-neutral-900 dark:border-white/10 dark:bg-white/10 dark:text-neutral-300 dark:hover:bg-white/15 dark:hover:text-white"
+                    onClick={() => navigate('/campaigns/history')}
+                  >
+                    View All History
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex h-10 items-center justify-between">
+                <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
+                  <Calendar className="h-5 w-5 text-indigo-500" />
+                  Scheduled Posts
+                </h3>
+              </div>
+
+              <div className="rounded-3xl border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+                <div className="space-y-6">
+                  {scheduledPostsLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-4 animate-pulse">
+                        <div className="h-10 w-10 rounded-xl bg-neutral-200 dark:bg-neutral-800" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-1/2 bg-neutral-200 dark:bg-neutral-800 rounded" />
+                          <div className="h-3 w-1/3 bg-neutral-100 dark:bg-neutral-800/50 rounded" />
+                        </div>
+                      </div>
+                    ))
+                  ) : scheduledPosts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="h-12 w-12 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center mb-4">
+                        <Clock className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white">Upcoming Queue</h4>
+                      <p className="text-xs text-neutral-500 mt-1 mb-6 max-w-[200px]">
+                        No scheduled posts found. Start planning your campaigns!
+                      </p>
+                    </div>
+                  ) : (
+                    scheduledPosts.map((post) => (
+                      <div key={post.id} className="group flex items-start gap-4">
+                        <Link 
+                          className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800"
+                          to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`}
+                        >
+                          {post.media?.[0]?.thumbnailUrl ? (
+                            <img src={post.media[0].thumbnailUrl} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center">
+                              <Calendar className="h-5 w-5 text-neutral-400" />
+                            </div>
+                          )}
+                        </Link>
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <Link 
+                            className="truncate text-sm font-bold text-neutral-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-400 transition-colors"
+                            to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`}
+                          >
+                            {post.textContent || <span className="italic font-normal text-neutral-400">No text content</span>}
+                          </Link>
+                          <div className="flex items-center gap-2 text-[11px] font-medium text-neutral-500">
+                            <span className="flex items-center gap-1 font-bold text-indigo-600 dark:text-indigo-400">
+                              <Clock className="h-3 w-3" />
+                              {new Date(post.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            </span>
+                            <span className="shrink-0">•</span>
+                            <span className="truncate">{post.campaign?.name}</span>
+                          </div>
+                        </div>
+                        <Link
+                          to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`}
+                          className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition hover:border-indigo-500/50 hover:bg-indigo-50/50 hover:text-indigo-600 dark:border-white/10 dark:hover:bg-white/5 dark:hover:text-white"
+                        >
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </Link>
+                      </div>
+                    ))
+                  )}
+                </div>
+
                 <button
                   className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-300/70 bg-neutral-200/60 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-200 hover:text-neutral-900 dark:border-white/10 dark:bg-white/10 dark:text-neutral-300 dark:hover:bg-white/15 dark:hover:text-white"
-                  onClick={() => navigate('/campaigns/history')}
+                  onClick={() => navigate('/campaigns/scheduled')}
                 >
-                  View All History
+                  {scheduledPosts.length > 0 ? 'View All Scheduled' : 'Open Calendar'}
                   <ArrowRight className="h-4 w-4" />
                 </button>
-              )}
+              </div>
             </div>
           </aside>
         </div>
