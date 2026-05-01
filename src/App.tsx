@@ -43,6 +43,7 @@ import { CampaignChannels } from './pages/CampaignChannels.tsx';
 import { CampaignBatchActions } from './pages/CampaignBatchActions.tsx';
 import { CampaignBatchCreate } from './pages/CampaignBatchCreate.tsx';
 import { PostForm } from './pages/PostForm.tsx';
+import { CampaignHistory } from './pages/CampaignHistory.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -79,6 +80,7 @@ export default function App() {
               <Route path="library/:id/cleanup" element={<LibraryCleanup />} />
               <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
               <Route path="campaigns" element={<Campaigns />} />
+              <Route path="campaigns/history" element={<CampaignHistory />} />
               <Route path="campaigns/channels" element={<CampaignChannels />} />
               <Route path="campaigns/new" element={<CampaignForm />} />
               <Route path="campaigns/edit/:id" element={<CampaignForm />} />

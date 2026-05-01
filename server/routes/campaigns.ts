@@ -31,6 +31,117 @@ async function signPostMediaUrls(storage: S3Storage, post: any) {
 export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) {
   const campaignsRouter = new Hono<{ Variables: { user: JwtPayload } }>();
 
+  // Must be registered BEFORE /api/campaigns/:id to avoid being caught by the param route
+  campaignsRouter.get('/api/campaigns/recent-posts', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const limitRaw = Number(c.req.query('limit') ?? 20);
+    const limit = Math.max(1, Math.min(100, Number.isNaN(limitRaw) ? 20 : limitRaw));
+
+    try {
+      const posts = await prisma.post.findMany({
+        where: {
+          userId: user.userId,
+          status: { in: ['completed', 'failed'] },
+        },
+        include: {
+          campaign: { select: { id: true, name: true } },
+          media: { select: { id: true, thumbnailUrl: true, processedUrl: true, sourceUrl: true, type: true } },
+          executions: {
+            include: { socialAccount: { select: { id: true, platform: true, profileName: true, avatarUrl: true } } },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: limit,
+      });
+
+      // Presign thumbnail URLs
+      const signed = await Promise.all(
+        posts.map(async (post) => ({
+          ...post,
+          media: await Promise.all(
+            post.media.map(async (m) => ({
+              ...m,
+              thumbnailUrl: await presignStorageValue(storage, m.thumbnailUrl),
+              processedUrl: await presignStorageValue(storage, m.processedUrl),
+              sourceUrl: await presignStorageValue(storage, m.sourceUrl),
+            })),
+          ),
+        })),
+      );
+
+      return c.json(signed);
+    } catch (error) {
+      console.error('Failed to get recent posts:', error);
+      return c.json({ error: 'Failed to fetch recent posts' }, 500);
+    }
+  });
+
+  campaignsRouter.get('/api/campaigns/history', authMiddleware, async (c) => {
+    console.log('[DEBUG] GET /api/campaigns/history called');
+    const user = c.get('user') as JwtPayload;
+    const page = Math.max(1, Number(c.req.query('page') || 1));
+    const pageSize = Math.max(1, Math.min(100, Number(c.req.query('pageSize') || 25)));
+    const skip = (page - 1) * pageSize;
+
+    try {
+      console.log(`[DEBUG] Fetching history for user ${user.userId}, page ${page}, size ${pageSize}`);
+      const [total, posts] = await Promise.all([
+        prisma.post.count({
+          where: {
+            userId: user.userId,
+            status: { in: ['completed', 'failed'] },
+          },
+        }),
+        prisma.post.findMany({
+          where: {
+            userId: user.userId,
+            status: { in: ['completed', 'failed'] },
+          },
+          include: {
+            campaign: { select: { id: true, name: true } },
+            media: { select: { id: true, thumbnailUrl: true, processedUrl: true, sourceUrl: true, type: true } },
+            executions: {
+              include: { socialAccount: { select: { id: true, platform: true, profileName: true, avatarUrl: true } } },
+            },
+          },
+          orderBy: { updatedAt: 'desc' },
+          skip,
+          take: pageSize,
+        }),
+      ]);
+
+      console.log(`[DEBUG] Found ${posts.length} posts out of ${total}`);
+
+      // Presign URLs
+      const signed = await Promise.all(
+        posts.map(async (post) => ({
+          ...post,
+          media: await Promise.all(
+            post.media.map(async (m) => ({
+              ...m,
+              thumbnailUrl: await presignStorageValue(storage, m.thumbnailUrl),
+              processedUrl: await presignStorageValue(storage, m.processedUrl),
+              sourceUrl: await presignStorageValue(storage, m.sourceUrl),
+            })),
+          ),
+        })),
+      );
+
+      console.log(`[DEBUG] Presigned URLs for history`);
+
+      return c.json({
+        items: signed,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      });
+    } catch (error) {
+      console.error('Failed to get campaign history:', error);
+      return c.json({ error: 'Failed to fetch campaign history: ' + String(error) }, 500);
+    }
+  });
+
   campaignsRouter.get('/api/campaigns', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;
     try {

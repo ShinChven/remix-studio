@@ -1403,6 +1403,18 @@ export async function fetchCampaigns(): Promise<any[]> {
   return handleResponse<any[]>(res, 'Failed to list campaigns');
 }
 
+export async function fetchRecentPosts(limit = 20): Promise<any[]> {
+  const params = new URLSearchParams({ limit: limit.toString() });
+  const res = await apiFetch(`/api/campaigns/recent-posts?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<any[]>(res, 'Failed to fetch recent posts');
+}
+
+export async function fetchCampaignHistory(page = 1, pageSize = 25): Promise<{ items: any[], total: number, page: number, pageSize: number, totalPages: number }> {
+  const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
+  const res = await apiFetch(`/api/campaigns/history?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<any>(res, 'Failed to fetch campaign history');
+}
+
 export async function createCampaign(data: { name: string; description?: string; socialAccountIds?: string[] }): Promise<any> {
   const res = await apiFetch('/api/campaigns', {
     method: 'POST',

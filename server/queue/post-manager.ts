@@ -266,11 +266,24 @@ export class PostManager {
         }
       }
 
+      let externalUrl: string | undefined;
+      if (externalId) {
+        if (account.platform.toLowerCase() === 'twitter' || account.platform.toLowerCase() === 'x') {
+          // Fallback generic Twitter status URL if username is unknown.
+          externalUrl = `https://twitter.com/i/web/status/${externalId}`;
+          // If we have profileName and it looks like a handle, we could use it, but generic is safer.
+        } else if (account.platform.toLowerCase() === 'linkedin') {
+          // LinkedIn URNs can be tricky, but typically:
+          externalUrl = `https://www.linkedin.com/feed/update/${externalId}`;
+        }
+      }
+
       await this.prisma.postExecution.update({
         where: { id: exec.id },
         data: {
           status: 'posted',
           externalId,
+          externalUrl,
           publishedAt: new Date()
         }
       });
