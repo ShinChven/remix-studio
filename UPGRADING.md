@@ -1,18 +1,6 @@
 # Upgrading
 
-When pulling new changes in a Docker deployment and the app container is already running, run the upgrade step with `docker exec` before restarting the server:
-
-```bash
-docker exec -it remix-studio-app node /app/docker/upgrade.mjs
-```
-
-Then restart the app container:
-
-```bash
-docker restart remix-studio-app
-```
-
-If you are running the app outside Docker, the equivalent direct command is:
+When pulling new changes, always run database migrations before restarting the server:
 
 ```bash
 npx prisma migrate deploy
