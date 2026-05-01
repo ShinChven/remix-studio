@@ -43,7 +43,7 @@ import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 
-type StatusFilter = 'all' | 'draft' | 'scheduled' | 'completed' | 'failed';
+type StatusFilter = 'all' | 'draft' | 'scheduled' | 'queued' | 'completed' | 'failed';
 type SortKey = 'scheduled_asc' | 'scheduled_desc' | 'created_desc' | 'created_asc';
 
 interface SocialAccount {
@@ -130,12 +130,14 @@ function mediaFullUrl(media: PostMedia) {
 
 function statusLabel(status: string) {
   if (status === 'completed') return 'Posted';
+  if (status === 'queued') return 'Queued';
   return status.slice(0, 1).toUpperCase() + status.slice(1);
 }
 
 function statusClasses(status: string) {
   if (status === 'draft') return 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300';
   if (status === 'scheduled') return 'bg-amber-500/10 text-amber-600 dark:text-amber-400';
+  if (status === 'queued') return 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
   if (status === 'completed') return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
   return 'bg-red-500/10 text-red-600 dark:text-red-400';
 }

@@ -120,7 +120,13 @@ export class PostManager {
         executions.push(exec);
       }
 
-      // Do NOT mark the post as completed here — fanOutAndExecute will set status based on real results.
+      // Mark post as 'queued' so the scheduler doesn't re-pick it on the next tick.
+      // fanOutAndExecute() will override this to 'completed'/'failed' based on real results.
+      // The async queue path leaves it as 'queued' until all PostExecutions settle.
+      await tx.post.update({
+        where: { id: post.id },
+        data: { status: 'queued' },
+      });
 
       return { executions };
     });
@@ -168,12 +174,28 @@ export class PostManager {
 
       for (const exec of executions) {
         await this.executePost(exec);
+        // After each execution, check if all executions for this post are settled
+        // and update the parent Post status accordingly (async queue path)
+        await this.settlePostStatus(exec.postId);
       }
     } catch (e) {
       console.error('[PostManager] Error in processExecutions:', e);
     } finally {
       this.isExecuting = false;
     }
+  }
+
+  // Update Post status once all its PostExecutions are no longer pending/publishing
+  private async settlePostStatus(postId: string) {
+    const executions = await this.prisma.postExecution.findMany({ where: { postId } });
+    const allSettled = executions.every((e) => e.status === 'posted' || e.status === 'failed');
+    if (!allSettled) return; // still executing
+
+    const anyPosted = executions.some((e) => e.status === 'posted');
+    await this.prisma.post.update({
+      where: { id: postId },
+      data: { status: anyPosted ? 'completed' : 'failed' },
+    });
   }
 
   async executePost(exec: any) {
