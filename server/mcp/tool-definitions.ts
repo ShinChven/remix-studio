@@ -19,6 +19,23 @@ const WORKFLOW_ITEM_TYPES = [
   'audio', 'audio_from_library', 'audio_library',
   'video', 'video_from_library', 'video_library',
 ] as const;
+const SOCIAL_ACCOUNT_STATUS_VALUES = ['active', 'disconnected', 'expired'] as const;
+const CAMPAIGN_STATUS_VALUES = ['active', 'completed', 'archived'] as const;
+const MCP_POST_STATUS_VALUES = ['draft', 'scheduled'] as const;
+const POST_MEDIA_TYPE_VALUES = ['image', 'video', 'gif'] as const;
+const SAFE_SOCIAL_ACCOUNT_SELECT = {
+  id: true,
+  platform: true,
+  accountId: true,
+  profileName: true,
+  avatarUrl: true,
+  scopes: true,
+  expiresAt: true,
+  status: true,
+  rateLimitResetAt: true,
+  createdAt: true,
+  updatedAt: true,
+};
 
 /**
  * Shared tool registry for Remix Studio.
@@ -115,6 +132,133 @@ function truncateContent(content: string, maxLen: number = MAX_CONTENT_PREVIEW_C
     truncated: true,
     originalLength: content.length,
   };
+}
+
+function parseScheduledAt(value: string | undefined, fieldName = 'scheduledAt'): Date | undefined {
+  if (value === undefined) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  const date = new Date(trimmed);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`${fieldName} must be a valid ISO date string`);
+  }
+  if (date.getTime() < Date.now()) {
+    throw new Error(`${fieldName} must not be in the past`);
+  }
+  return date;
+}
+
+async function resolveOwnedSocialAccountIds(
+  prisma: PrismaClient,
+  userId: string,
+  socialAccountIds: string[] | undefined,
+) {
+  if (socialAccountIds === undefined) return undefined;
+
+  const uniqueIds = [...new Set(socialAccountIds)];
+  if (uniqueIds.length === 0) return [];
+
+  const owned = await prisma.socialAccount.findMany({
+    where: { userId, id: { in: uniqueIds } },
+    select: { id: true },
+  });
+  if (owned.length !== uniqueIds.length) {
+    throw new Error('One or more social accounts were not found');
+  }
+  return uniqueIds;
+}
+
+async function assertCampaignHasActiveSocialAccount(prisma: PrismaClient, campaignId: string) {
+  const campaign = await prisma.campaign.findUnique({
+    where: { id: campaignId },
+    select: {
+      id: true,
+      socialAccounts: {
+        where: { status: 'active' },
+        select: { id: true },
+        take: 1,
+      },
+    },
+  });
+  if (!campaign || campaign.socialAccounts.length === 0) {
+    throw new Error('Cannot schedule post: Campaign has no active linked social accounts.');
+  }
+}
+
+async function assertPostMediaReady(prisma: PrismaClient, postId: string) {
+  const notReady = await prisma.postMedia.count({
+    where: {
+      postId,
+      status: { not: 'ready' },
+    },
+  });
+  if (notReady > 0) {
+    throw new Error('Cannot schedule post: Some media is still processing or failed.');
+  }
+}
+
+function isInternalStorageValue(value: string) {
+  return !/^https?:\/\//i.test(value) && !value.startsWith('data:') && !value.startsWith('/');
+}
+
+async function assertPostMediaSourceAllowed(
+  prisma: PrismaClient,
+  userId: string,
+  campaignId: string,
+  sourceUrl: string,
+) {
+  const source = sourceUrl.trim();
+  if (!source || !isInternalStorageValue(source)) {
+    throw new Error('sourceUrl must be an internal storage key owned by the authenticated user');
+  }
+
+  const existingCampaignMedia = source.startsWith(`campaigns/${campaignId}/`);
+  if (existingCampaignMedia) return source;
+
+  const [libraryMatch, albumMatch, postMediaMatch] = await Promise.all([
+    prisma.libraryItem.findFirst({
+      where: {
+        library: {
+          userId,
+          type: { in: ['image', 'video'] },
+        },
+        OR: [
+          { content: source },
+          { thumbnailUrl: source },
+          { optimizedUrl: source },
+        ],
+      },
+      select: { id: true },
+    }),
+    prisma.albumItem.findFirst({
+      where: {
+        userId,
+        project: {
+          userId,
+          type: { in: ['image', 'video'] },
+        },
+        OR: [
+          { imageUrl: source },
+          { thumbnailUrl: source },
+          { optimizedUrl: source },
+        ],
+      },
+      select: { id: true },
+    }),
+    prisma.postMedia.findFirst({
+      where: {
+        sourceUrl: source,
+        post: { userId },
+      },
+      select: { id: true },
+    }),
+  ]);
+
+  if (!libraryMatch && !albumMatch && !postMediaMatch) {
+    throw new Error('sourceUrl does not reference media owned by the authenticated user');
+  }
+  return source;
 }
 
 function toToolWorkflowItem(item: {
@@ -1480,13 +1624,14 @@ Important workflow behavior:
     title: 'List Social Accounts',
     description: 'Returns the social accounts connected by the user.',
     inputSchema: {
-      status: z.string().optional().describe('Filter by status (e.g. "active", "disconnected")'),
+      status: z.enum(SOCIAL_ACCOUNT_STATUS_VALUES).optional().describe('Filter by status'),
     },
     annotations: { readOnlyHint: true, destructiveHint: false },
     category: 'read',
     handler: async (userId, { status }) => {
       const accounts = await prisma.socialAccount.findMany({
         where: { userId, ...(status ? { status } : {}) },
+        select: SAFE_SOCIAL_ACCOUNT_SELECT,
       });
       return { text: JSON.stringify(accounts) };
     }
@@ -1497,24 +1642,25 @@ Important workflow behavior:
     title: 'Create Campaign',
     description: 'Creates a new social media campaign.',
     inputSchema: {
-      name: z.string().describe('Name of the campaign'),
-      description: z.string().optional(),
-      socialAccountIds: z.array(z.string()).optional(),
+      name: z.string().min(1).max(200).describe('Name of the campaign'),
+      description: z.string().max(5000).optional(),
+      socialAccountIds: z.array(z.string().min(1)).max(100).optional(),
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     category: 'mutate',
     requiresConfirmation: true,
     handler: async (userId, { name, description, socialAccountIds }) => {
+      const ownedSocialAccountIds = await resolveOwnedSocialAccountIds(prisma, userId, socialAccountIds);
       const campaign = await prisma.campaign.create({
         data: {
           userId,
-          name,
-          description,
-          ...(socialAccountIds && socialAccountIds.length > 0 ? {
-            socialAccounts: { connect: socialAccountIds.map((id: string) => ({ id })) }
+          name: name.trim(),
+          description: description?.trim() || undefined,
+          ...(ownedSocialAccountIds && ownedSocialAccountIds.length > 0 ? {
+            socialAccounts: { connect: ownedSocialAccountIds.map((id: string) => ({ id })) }
           } : {})
         },
-        include: { socialAccounts: true }
+        include: { socialAccounts: { select: SAFE_SOCIAL_ACCOUNT_SELECT } }
       });
       return { text: JSON.stringify(campaign) };
     }
@@ -1525,14 +1671,14 @@ Important workflow behavior:
     title: 'List Campaigns',
     description: 'Returns the users social media campaigns.',
     inputSchema: {
-      status: z.string().optional().describe('Filter by status'),
+      status: z.enum(CAMPAIGN_STATUS_VALUES).optional().describe('Filter by status'),
     },
     annotations: { readOnlyHint: true, destructiveHint: false },
     category: 'read',
     handler: async (userId, { status }) => {
       const campaigns = await prisma.campaign.findMany({
         where: { userId, ...(status ? { status } : {}) },
-        include: { socialAccounts: true, _count: { select: { posts: true } } }
+        include: { socialAccounts: { select: SAFE_SOCIAL_ACCOUNT_SELECT }, _count: { select: { posts: true } } }
       });
       return { text: JSON.stringify(campaigns) };
     }
@@ -1543,11 +1689,11 @@ Important workflow behavior:
     title: 'Update Campaign',
     description: 'Updates a social media campaign.',
     inputSchema: {
-      campaignId: z.string(),
-      name: z.string().optional(),
-      description: z.string().optional(),
-      status: z.string().optional(),
-      socialAccountIds: z.array(z.string()).optional(),
+      campaignId: z.string().min(1),
+      name: z.string().min(1).max(200).optional(),
+      description: z.string().max(5000).optional(),
+      status: z.enum(CAMPAIGN_STATUS_VALUES).optional(),
+      socialAccountIds: z.array(z.string().min(1)).max(100).optional(),
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     category: 'mutate',
@@ -1555,17 +1701,18 @@ Important workflow behavior:
     handler: async (userId, { campaignId, name, description, status, socialAccountIds }) => {
       const campaign = await prisma.campaign.findUnique({ where: { id: campaignId }});
       if (!campaign || campaign.userId !== userId) throw new Error("Campaign not found");
+      const ownedSocialAccountIds = await resolveOwnedSocialAccountIds(prisma, userId, socialAccountIds);
       const updated = await prisma.campaign.update({
         where: { id: campaignId },
         data: {
-          ...(name && { name }),
-          ...(description !== undefined && { description }),
+          ...(name !== undefined && { name: name.trim() }),
+          ...(description !== undefined && { description: description.trim() || null }),
           ...(status && { status }),
-          ...(socialAccountIds ? {
-            socialAccounts: { set: socialAccountIds.map((id: string) => ({ id })) }
+          ...(ownedSocialAccountIds ? {
+            socialAccounts: { set: ownedSocialAccountIds.map((id: string) => ({ id })) }
           } : {})
         },
-        include: { socialAccounts: true }
+        include: { socialAccounts: { select: SAFE_SOCIAL_ACCOUNT_SELECT } }
       });
       return { text: JSON.stringify(updated) };
     }
@@ -1576,10 +1723,10 @@ Important workflow behavior:
     title: 'Create Post',
     description: 'Creates a new post in a campaign.',
     inputSchema: {
-      campaignId: z.string(),
-      textContent: z.string().optional(),
+      campaignId: z.string().min(1),
+      textContent: z.string().max(28000).optional(),
       scheduledAt: z.string().optional().describe('ISO date string (e.g. 2026-05-01T12:00:00Z)'),
-      status: z.string().optional().describe('e.g., draft, scheduled'),
+      status: z.enum(MCP_POST_STATUS_VALUES).optional().describe('draft or scheduled'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     category: 'mutate',
@@ -1587,13 +1734,19 @@ Important workflow behavior:
     handler: async (userId, { campaignId, textContent, scheduledAt, status }) => {
       const campaign = await prisma.campaign.findUnique({ where: { id: campaignId }});
       if (!campaign || campaign.userId !== userId) throw new Error("Campaign not found");
+      const parsedScheduledAt = parseScheduledAt(scheduledAt);
+      const nextStatus = status || (parsedScheduledAt ? 'scheduled' : 'draft');
+      if (nextStatus === 'scheduled') {
+        if (!parsedScheduledAt) throw new Error('scheduledAt is required when creating a scheduled post');
+        await assertCampaignHasActiveSocialAccount(prisma, campaignId);
+      }
       const post = await prisma.post.create({
         data: {
           userId,
           campaignId,
-          textContent,
-          ...(scheduledAt && { scheduledAt: new Date(scheduledAt) }),
-          ...(status && { status })
+          textContent: textContent?.trim() || undefined,
+          scheduledAt: parsedScheduledAt,
+          status: nextStatus,
         }
       });
       return { text: JSON.stringify(post) };
@@ -1605,7 +1758,7 @@ Important workflow behavior:
     title: 'Get Post',
     description: 'Get details of a specific post.',
     inputSchema: {
-      postId: z.string(),
+      postId: z.string().min(1),
     },
     annotations: { readOnlyHint: true, destructiveHint: false },
     category: 'read',
@@ -1624,10 +1777,10 @@ Important workflow behavior:
     title: 'Update Post',
     description: 'Update a post in a campaign.',
     inputSchema: {
-      postId: z.string(),
-      textContent: z.string().optional(),
-      scheduledAt: z.string().optional().describe('ISO date string, pass null or empty string to unset'),
-      status: z.string().optional(),
+      postId: z.string().min(1),
+      textContent: z.string().max(28000).optional(),
+      scheduledAt: z.string().optional().describe('ISO date string; pass an empty string to unset'),
+      status: z.enum(MCP_POST_STATUS_VALUES).optional(),
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     category: 'mutate',
@@ -1635,11 +1788,20 @@ Important workflow behavior:
     handler: async (userId, { postId, textContent, scheduledAt, status }) => {
       const post = await prisma.post.findUnique({ where: { id: postId }});
       if (!post || post.userId !== userId) throw new Error("Post not found");
+      const hasScheduledAtUpdate = scheduledAt !== undefined;
+      const parsedScheduledAt = parseScheduledAt(scheduledAt);
+      const nextScheduledAt = hasScheduledAtUpdate ? (parsedScheduledAt ?? null) : post.scheduledAt;
+      const nextStatus = status ?? post.status;
+      if (nextStatus === 'scheduled') {
+        if (!nextScheduledAt) throw new Error('scheduledAt is required when setting status to scheduled');
+        await assertCampaignHasActiveSocialAccount(prisma, post.campaignId);
+        await assertPostMediaReady(prisma, postId);
+      }
       const updated = await prisma.post.update({
         where: { id: postId },
         data: {
-          ...(textContent !== undefined && { textContent }),
-          ...(scheduledAt !== undefined && { scheduledAt: scheduledAt ? new Date(scheduledAt) : null }),
+          ...(textContent !== undefined && { textContent: textContent.trim() || null }),
+          ...(hasScheduledAtUpdate && { scheduledAt: nextScheduledAt }),
           ...(status !== undefined && { status })
         }
       });
@@ -1652,9 +1814,9 @@ Important workflow behavior:
     title: 'Add Media to Post',
     description: 'Add a media item (like an image from the library/album) to a post.',
     inputSchema: {
-      postId: z.string(),
-      sourceUrl: z.string().describe('The S3 key or URL of the media'),
-      type: z.string().describe('image, video, or gif'),
+      postId: z.string().min(1),
+      sourceUrl: z.string().min(1).describe('Internal S3 key for media owned by the authenticated user'),
+      type: z.enum(POST_MEDIA_TYPE_VALUES).describe('image, video, or gif'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     category: 'mutate',
@@ -1662,6 +1824,7 @@ Important workflow behavior:
     handler: async (userId, { postId, sourceUrl, type }) => {
       const post = await prisma.post.findUnique({ where: { id: postId }});
       if (!post || post.userId !== userId) throw new Error("Post not found");
+      const safeSourceUrl = await assertPostMediaSourceAllowed(prisma, userId, post.campaignId, sourceUrl);
       const max = await prisma.postMedia.aggregate({
         where: { postId },
         _max: { position: true },
@@ -1670,7 +1833,7 @@ Important workflow behavior:
       const media = await prisma.postMedia.create({
         data: {
           postId,
-          sourceUrl,
+          sourceUrl: safeSourceUrl,
           type,
           position: nextPosition,
           status: 'pending'
@@ -1685,7 +1848,7 @@ Important workflow behavior:
     title: 'Schedule Post',
     description: 'Update a post status to "scheduled" and set the scheduled time.',
     inputSchema: {
-      postId: z.string(),
+      postId: z.string().min(1),
       scheduledAt: z.string().describe('ISO date string (e.g. 2026-05-01T12:00:00Z)'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
@@ -1694,19 +1857,15 @@ Important workflow behavior:
     handler: async (userId, { postId, scheduledAt }) => {
       const post = await prisma.post.findUnique({ where: { id: postId }});
       if (!post || post.userId !== userId) throw new Error("Post not found");
-      
-      const campaign = await prisma.campaign.findUnique({
-        where: { id: post.campaignId },
-        include: { socialAccounts: true }
-      });
-      if (!campaign || campaign.socialAccounts.length === 0) {
-        throw new Error("Cannot schedule post: Campaign has no linked social accounts.");
-      }
+      const parsedScheduledAt = parseScheduledAt(scheduledAt);
+      if (!parsedScheduledAt) throw new Error('scheduledAt is required');
+      await assertCampaignHasActiveSocialAccount(prisma, post.campaignId);
+      await assertPostMediaReady(prisma, postId);
 
       const updated = await prisma.post.update({
         where: { id: postId },
         data: {
-          scheduledAt: new Date(scheduledAt),
+          scheduledAt: parsedScheduledAt,
           status: 'scheduled'
         }
       });
