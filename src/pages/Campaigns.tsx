@@ -9,9 +9,9 @@ import {
   Facebook,
   Globe,
   Instagram,
-  Layers,
   Linkedin,
   Megaphone,
+  MoreHorizontal,
   MoreVertical,
   Plus,
   Search,
@@ -100,7 +100,7 @@ export function Campaigns() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [campaigns, setCampaigns] = useState<CampaignCardModel[]>([]);
-  const [accountsById, setAccountsById] = useState<Record<string, SocialAccount>>({});
+
   const [isLoading, setIsLoading] = useState(true);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CampaignCardModel | null>(null);
@@ -111,14 +111,8 @@ export function Campaigns() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [campaignData, accountData] = await Promise.all([
-        fetchCampaigns(),
-        fetchSocialAccounts().catch(() => []),
-      ]);
+      const campaignData = await fetchCampaigns();
       setCampaigns(campaignData.map(mapCampaign));
-      setAccountsById(
-        Object.fromEntries((accountData as SocialAccount[]).map((account) => [account.id, account])),
-      );
     } catch (error) {
       toast.error('Failed to load campaigns');
     } finally {
@@ -279,137 +273,69 @@ export function Campaigns() {
                 {filteredCampaigns.map((campaign) => {
                   const completedPosts = Math.min(campaign.postedPosts, campaign.totalPosts);
                   const progress = campaign.totalPosts > 0 ? Math.round((completedPosts / campaign.totalPosts) * 100) : 0;
-                  const campaignAccounts = campaign.channels.map((id) => accountsById[id]).filter(Boolean);
-                  const visibleAccounts = campaignAccounts.slice(0, 3);
-                  const extraAccountCount = Math.max(campaignAccounts.length - 3, 0);
+
 
                   return (
                     <div
                       key={campaign.id}
-                      className="group relative cursor-pointer overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 dark:border-white/10 dark:bg-neutral-900"
+                      className="group relative flex flex-col justify-end cursor-pointer overflow-hidden rounded-[20px] h-72 shadow-sm transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
                       onClick={() => navigate(`/campaigns/${campaign.id}`)}
                     >
                       {/* Background Image Layer with Gradient Mask */}
-                      <div className="absolute inset-0 z-0">
+                      <div className="absolute inset-0 z-0 bg-neutral-900">
                         <div
-                          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                           style={{ backgroundImage: `url(${campaign.thumbnail})` }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/75 to-transparent dark:from-neutral-900 dark:via-neutral-900/75" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
                       </div>
 
-                      {/* Status Badge */}
-                      <div className="absolute right-4 top-4 z-20">
-                        <span className={cn(
-                          "inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold text-white shadow-lg backdrop-blur-md",
-                          campaign.status === 'Active' ? 'bg-emerald-500/90' : 'bg-amber-500/90',
-                        )}>
-                          {campaign.status}
-                        </span>
-                      </div>
-
-                      <div className="relative z-10 flex flex-col">
-                        {/* Top spacing to showcase the campaign image */}
-                        <div className="h-52" />
-
-                        {/* Header */}
-                        <div className="px-6 pt-3 pb-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 space-y-1">
-                              <h2 className="truncate text-2xl font-black tracking-tight text-neutral-900 drop-shadow-md dark:text-white">
-                                {campaign.name}
-                              </h2>
-                              <p className="line-clamp-2 text-sm font-medium leading-relaxed text-neutral-700/80 dark:text-white/80">
-                                {campaign.description}
-                              </p>
-                            </div>
-                            <div className="relative" onClick={(event) => event.stopPropagation()}>
-                              <button
-                                type="button"
-                                onClick={() => setOpenMenuId(openMenuId === campaign.id ? null : campaign.id)}
-                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </button>
-                              {openMenuId === campaign.id && (
-                                <div className="absolute right-0 top-10 z-30 w-44 overflow-hidden rounded-xl border border-neutral-200 bg-white/95 py-1 text-sm shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95">
-                                  <button className="block w-full px-4 py-2 text-left text-neutral-700 hover:bg-neutral-100 dark:text-white/80 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)}>
-                                    Edit Details
-                                  </button>
-                                  <button className="block w-full px-4 py-2 text-left text-neutral-700 hover:bg-neutral-100 dark:text-white/80 dark:hover:bg-white/10" onClick={() => void toggleCampaignStatus(campaign)}>
-                                    {campaign.status === 'Active' ? 'Pause Campaign' : 'Resume Campaign'}
-                                  </button>
-                                  <button className="flex w-full items-center gap-2 px-4 py-2 text-left text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10" onClick={() => setDeleteTarget(campaign)}>
-                                    <Trash2 className="h-4 w-4" />
-                                    Delete Campaign
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                      <div className="relative z-10 flex flex-col p-5 w-full">
+                        {/* Status Label */}
+                        <div className="text-[12px] font-bold tracking-widest text-white/80 mb-1 uppercase">
+                          {campaign.status === 'Active' ? 'Active Campaign' : 'Paused'}
                         </div>
-
-                        {/* Content */}
-                        <div className="space-y-6 px-6 pb-6">
-                          {/* Pill Stats */}
-                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-neutral-700/70 dark:text-white/60">
-                            <div className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-neutral-200/60 bg-neutral-100/40 px-2.5 py-1 shadow-sm dark:border-white/5 dark:bg-white/[0.05]">
-                              <Calendar className="h-3 w-3 text-indigo-500/80" />
-                              <span>{campaign.startDate}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-neutral-200/60 bg-neutral-100/40 px-2.5 py-1 shadow-sm dark:border-white/5 dark:bg-white/[0.05]">
-                              <Layers className="h-3 w-3 text-indigo-500/80" />
-                              <span>{campaign.channels.length} {campaign.channels.length === 1 ? 'Ch' : 'Chs'}</span>
-                            </div>
+                        
+                        {/* Title */}
+                        <h2 className="text-2xl font-medium tracking-tight text-white mb-2 line-clamp-1">
+                          {campaign.name}
+                        </h2>
+                        
+                        {/* Description */}
+                        <p className="text-[15px] font-medium leading-relaxed text-white/70 line-clamp-2 mb-4">
+                          {campaign.description}
+                        </p>
+                        
+                        {/* Bottom Row */}
+                        <div className="flex items-center justify-between text-white/90">
+                          <div className="flex items-center gap-2 font-medium text-[15px]">
+                            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>{campaign.totalPosts > 0 ? `${completedPosts}/${campaign.totalPosts} posts` : 'Setup'}</span>
                           </div>
 
-                          {/* Channels — the only frosted-glass surface on the card */}
-                          <div className="flex items-center justify-between rounded-xl border border-white/50 bg-white/20 px-3 py-2 shadow-sm backdrop-blur-xl transition-all hover:bg-white/30 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.06]">
-                            <div className="min-w-0">
-                              <p className="text-xs font-black tracking-tight text-neutral-900 dark:text-white">Channels</p>
-                              <p className="whitespace-nowrap text-[10px] font-medium text-neutral-500 dark:text-white/50">Integrated platforms</p>
-                            </div>
-                            <div className="flex -space-x-1.5">
-                              {visibleAccounts.map((account) => (
-                                <img
-                                  key={account.id}
-                                  src={account.avatarUrl || fallbackAvatar(account.id)}
-                                  alt={channelName(account)}
-                                  referrerPolicy="no-referrer"
-                                  className="h-7 w-7 rounded-full border-2 border-white bg-neutral-100 object-cover dark:border-neutral-900"
-                                />
-                              ))}
-                              {extraAccountCount > 0 && (
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-neutral-100 text-[10px] font-bold text-neutral-600 dark:border-neutral-900 dark:bg-neutral-800 dark:text-white">
-                                  +{extraAccountCount}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Progress */}
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-black uppercase tracking-tight text-neutral-900 dark:text-white">Progress</span>
-                              <span className="rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-bold text-indigo-600 dark:text-indigo-400">{completedPosts}/{campaign.totalPosts} posts</span>
-                            </div>
-                            <div className="h-2.5 overflow-hidden rounded-full bg-neutral-200/70 shadow-inner dark:bg-white/10">
-                              <div
-                                className="h-full rounded-full bg-indigo-600 shadow-[0_0_12px_rgba(99,102,241,0.6)] transition-all duration-700 dark:bg-indigo-500"
-                                style={{ width: `${progress}%` }}
-                              />
-                            </div>
-                            <p className="text-right text-xs font-bold text-neutral-500 dark:text-white/50">
-                              {campaign.totalPosts > 0 ? `${progress}% completed` : 'Initial Setup'}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="border-t border-neutral-100 bg-neutral-50/50 px-6 py-4 dark:border-white/5 dark:bg-white/[0.02]">
-                          <div className="flex w-full items-center justify-between text-neutral-500 transition-all duration-300 group-hover:text-indigo-600 dark:text-white/60 dark:group-hover:text-indigo-400">
-                            <span className="text-base font-black uppercase tracking-tight">View Campaign</span>
-                            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-2" />
+                          <div className="relative" onClick={(event) => event.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => setOpenMenuId(openMenuId === campaign.id ? null : campaign.id)}
+                              className="flex h-8 w-8 items-center justify-center rounded-full text-white/80 transition hover:bg-white/20 hover:text-white"
+                            >
+                              <MoreHorizontal className="h-5 w-5" />
+                            </button>
+                            {openMenuId === campaign.id && (
+                              <div className="absolute bottom-full right-0 mb-2 z-30 w-44 overflow-hidden rounded-xl border border-white/10 bg-neutral-900/95 py-1 text-sm shadow-2xl backdrop-blur-xl">
+                                <button className="block w-full px-4 py-2 text-left text-white/80 hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)}>
+                                  Edit Details
+                                </button>
+                                <button className="block w-full px-4 py-2 text-left text-white/80 hover:bg-white/10" onClick={() => void toggleCampaignStatus(campaign)}>
+                                  {campaign.status === 'Active' ? 'Pause Campaign' : 'Resume Campaign'}
+                                </button>
+                                <button className="block w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/10" onClick={() => setDeleteTarget(campaign)}>
+                                  Delete
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
