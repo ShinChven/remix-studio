@@ -1409,8 +1409,11 @@ export async function fetchRecentPosts(limit = 20): Promise<any[]> {
   return handleResponse<any[]>(res, 'Failed to fetch recent posts');
 }
 
-export async function fetchCampaignHistory(page = 1, pageSize = 25): Promise<{ items: any[], total: number, page: number, pageSize: number, totalPages: number }> {
+export async function fetchCampaignHistory(page = 1, pageSize = 25, startDate?: string, endDate?: string, q?: string): Promise<{ items: any[], total: number, page: number, pageSize: number, totalPages: number }> {
   const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
+  if (startDate) params.set('startDate', startDate);
+  if (endDate) params.set('endDate', endDate);
+  if (q) params.set('q', q);
   const res = await apiFetch(`/api/campaigns/history?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<any>(res, 'Failed to fetch campaign history');
 }

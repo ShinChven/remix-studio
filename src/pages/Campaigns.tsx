@@ -205,7 +205,7 @@ export function Campaigns() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Left Column: Campaign Grid */}
           <section className="lg:col-span-2 space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:h-10 sm:items-center sm:justify-between">
               <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
                 <Megaphone className="h-5 w-5 text-indigo-500" />
                 All Campaigns {filteredCampaigns.length > 0 && <span className="text-sm font-normal text-neutral-500 dark:text-neutral-500">({filteredCampaigns.length})</span>}

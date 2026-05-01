@@ -83,20 +83,44 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
     const pageSize = Math.max(1, Math.min(100, Number(c.req.query('pageSize') || 25)));
     const skip = (page - 1) * pageSize;
 
+    const startDateRaw = c.req.query('startDate');
+    const endDateRaw = c.req.query('endDate');
+    const q = c.req.query('q');
+
+    const dateFilter: any = {};
+    if (startDateRaw) {
+      dateFilter.gte = new Date(startDateRaw);
+    }
+    if (endDateRaw) {
+      const end = new Date(endDateRaw);
+      end.setUTCHours(23, 59, 59, 999);
+      dateFilter.lte = end;
+    }
+
+    const whereClause: any = {
+      userId: user.userId,
+      status: { in: ['completed', 'failed'] },
+    };
+
+    if (Object.keys(dateFilter).length > 0) {
+      whereClause.updatedAt = dateFilter;
+    }
+
+    if (q) {
+      whereClause.OR = [
+        { textContent: { contains: q, mode: 'insensitive' } },
+        { campaign: { name: { contains: q, mode: 'insensitive' } } }
+      ];
+    }
+
     try {
       console.log(`[DEBUG] Fetching history for user ${user.userId}, page ${page}, size ${pageSize}`);
       const [total, posts] = await Promise.all([
         prisma.post.count({
-          where: {
-            userId: user.userId,
-            status: { in: ['completed', 'failed'] },
-          },
+          where: whereClause,
         }),
         prisma.post.findMany({
-          where: {
-            userId: user.userId,
-            status: { in: ['completed', 'failed'] },
-          },
+          where: whereClause,
           include: {
             campaign: { select: { id: true, name: true } },
             media: { select: { id: true, thumbnailUrl: true, processedUrl: true, sourceUrl: true, type: true } },

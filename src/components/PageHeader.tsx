@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { cn } from '../lib/utils';
 import { ArrowLeft } from 'lucide-react';
 
 interface BackLink {
@@ -30,10 +31,10 @@ export function PageHeader({
   const isLarge = size === 'large';
 
   const titleEl = (
-    <h2 className={`
-      font-bold text-neutral-900 dark:text-white mb-2 font-display tracking-tight
-      ${isLarge ? 'text-2xl md:text-4xl' : 'text-2xl md:text-3xl'}
-    `}>
+    <h2 className={cn(
+      "font-bold text-neutral-900 dark:text-white mb-2 font-display tracking-tight",
+      isLarge ? "text-2xl md:text-4xl" : "text-2xl md:text-3xl"
+    )}>
       {title}
     </h2>
   );
@@ -59,12 +60,19 @@ export function PageHeader({
   );
 
   return (
-    <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-6 ${isLarge ? 'mb-8 md:mb-12' : 'mb-6 md:mb-8'} ${className}`}>
-      <header className={`flex-1 min-w-0 ${headerClassName}`}>
+    <div className={cn(
+      "flex flex-col lg:flex-row lg:items-center justify-between gap-0 md:gap-6",
+      isLarge ? "mb-8 md:mb-12" : "mb-6 md:mb-8",
+      className
+    )}>
+      <header className={cn("flex-1 min-w-0 mb-3 lg:mb-0", headerClassName)}>
         {backEl}
         {titleEl}
         {description && (
-          <div className={`text-sm md:text-base text-neutral-700 dark:text-neutral-400 leading-relaxed ${!isLarge ? 'max-w-2xl' : ''}`}>
+          <div className={cn(
+            "text-sm md:text-base text-neutral-700 dark:text-neutral-400 leading-relaxed",
+            !isLarge && "max-w-2xl"
+          )}>
             {description}
           </div>
         )}

@@ -33,11 +33,18 @@ export function CampaignHistory() {
 
   const page = parseInt(searchParams.get('page') || '1', 10);
   const pageSize = parseInt(searchParams.get('pageSize') || '25', 10);
+  const startDateParam = searchParams.get('startDate') || '';
+  const endDateParam = searchParams.get('endDate') || '';
+  const qParam = searchParams.get('q') || '';
+
+  const [startDate, setStartDate] = useState(startDateParam);
+  const [endDate, setEndDate] = useState(endDateParam);
+  const [searchQuery, setSearchQuery] = useState(qParam);
 
   const loadHistory = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchCampaignHistory(page, pageSize);
+      const data = await fetchCampaignHistory(page, pageSize, startDateParam, endDateParam, qParam);
       setHistory(data.items);
       setTotal(data.total);
       setTotalPages(data.totalPages);
@@ -51,7 +58,37 @@ export function CampaignHistory() {
 
   useEffect(() => {
     void loadHistory();
-  }, [page, pageSize]);
+    setStartDate(startDateParam);
+    setEndDate(endDateParam);
+    setSearchQuery(qParam);
+  }, [page, pageSize, startDateParam, endDateParam, qParam]);
+
+  const applyFilters = () => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', '1');
+    if (startDate) params.set('startDate', startDate);
+    else params.delete('startDate');
+    
+    if (endDate) params.set('endDate', endDate);
+    else params.delete('endDate');
+
+    if (searchQuery) params.set('q', searchQuery);
+    else params.delete('q');
+    
+    setSearchParams(params);
+  };
+
+  const clearFilters = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('startDate');
+    params.delete('endDate');
+    params.delete('q');
+    params.set('page', '1');
+    setStartDate('');
+    setEndDate('');
+    setSearchQuery('');
+    setSearchParams(params);
+  };
 
   const updatePage = (newPage: number) => {
     const params = new URLSearchParams(searchParams);
@@ -81,19 +118,68 @@ export function CampaignHistory() {
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
-      <div className="w-full space-y-8 pb-20">
+      <div className="w-full flex flex-col gap-3 md:gap-6 pb-20">
         <PageHeader
-          title="Campaign History"
-          description="A complete audit log of all your sent and failed posts."
-          backLink={{ to: '/campaigns', label: 'Back to Campaigns' }}
-          actions={
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                <History className="h-6 w-6" />
-              </div>
-            </div>
-          }
+          title="History"
+          description="Audit log of your posts."
+          backLink={{ to: '/campaigns', label: 'Back' }}
+          className="mb-0 md:mb-4"
         />
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
+          {/* Search bar */}
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Search history..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') applyFilters();
+              }}
+              className="w-full h-10 pl-10 pr-3 rounded-xl border border-neutral-200 bg-white text-sm text-neutral-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-white/10 dark:bg-neutral-900 dark:text-white transition-all shadow-sm"
+            />
+          </div>
+
+          {/* Date Range and Actions */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-1">
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full sm:w-40 h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs text-neutral-900 focus:border-indigo-500 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-white shadow-sm"
+              />
+              <span className="text-neutral-400 text-[10px] font-bold">TO</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full sm:w-40 h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs text-neutral-900 focus:border-indigo-500 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-white shadow-sm"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={applyFilters}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                title="Apply filters"
+              >
+                <Filter className="h-4 w-4" />
+              </button>
+              {(startDateParam || endDateParam || qParam) && (
+                <button
+                  onClick={clearFilters}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 transition-all shadow-sm"
+                  title="Clear filters"
+                >
+                  <XCircle className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
         <div className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white shadow-sm dark:border-white/5 dark:bg-neutral-900/50">
           {/* Header Row */}
