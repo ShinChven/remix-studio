@@ -23,10 +23,12 @@ import { createAudioRouter } from './server/routes/audios';
 import { createProviderRouter } from './server/routes/providers';
 import { createGenerateRouter } from './server/routes/generate';
 import { createTrashRouter } from './server/routes/trash';
+import { createCampaignsRouter } from './server/routes/campaigns';
 import { ProviderRepository } from './server/db/provider-repository';
 import { ProjectRepository } from './server/db/project-repository';
 import { createStorageRouter } from './server/routes/storage-router';
 import { createOAuthRouter } from './server/routes/oauth';
+import { createSocialRouter } from './server/routes/social';
 import { createMcpRouter } from './server/mcp/mcp-server';
 import { createAssistantRouter } from './server/routes/assistant';
 import { AssistantRepository } from './server/db/assistant-repository';
@@ -34,6 +36,8 @@ import { AssistantRunner } from './server/assistant/assistant-runner';
 import { QueueManager } from './server/queue/queue-manager';
 import { ExportManager } from './server/queue/export-manager';
 import { DeliveryManager } from './server/queue/delivery-manager';
+import { PostManager } from './server/queue/post-manager';
+import { MediaProcessingPoller } from './server/queue/media-processing-poller';
 import { ImageProcessor } from './server/queue/image-processor';
 import { TextProcessor } from './server/queue/text-processor';
 import { VideoProcessor } from './server/queue/video-processor';
@@ -119,10 +123,14 @@ async function startServer() {
 
   const exportManager = new ExportManager(repository, storage, exportStorage, userRepository);
   const deliveryManager = new DeliveryManager(repository, exportStorage, userRepository);
+  const postManager = new PostManager(prisma, storage);
+  const mediaProcessingPoller = new MediaProcessingPoller(prisma, storage);
 
   // Start background workers
   exportManager.startWorkerLoop();
   deliveryManager.startWorkerLoop();
+  postManager.start();
+  mediaProcessingPoller.start();
 
   // Purge expired refresh token sessions every hour
   const SESSION_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
@@ -183,7 +191,9 @@ async function startServer() {
   app.route('/', createGenerateRouter(providerRepository));
   app.route('/', createTrashRouter(repository, storage));
   app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));
+  app.route('/', createCampaignsRouter(prisma));
   app.route('/', createOAuthRouter(prisma));
+  app.route('/', createSocialRouter(prisma));
   app.route('/', createMcpRouter(prisma, repository, userRepository, providerRepository));
 
   // === Assistant chat runtime ===

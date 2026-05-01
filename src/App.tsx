@@ -36,6 +36,8 @@ import { AssistantPage } from './pages/AssistantPage.tsx';
 import { AssistantSettingsPage } from './pages/AssistantSettingsPage.tsx';
 import { ChatHistoryPage } from './pages/ChatHistoryPage.tsx';
 import { QueueMonitor } from './pages/QueueMonitor.tsx';
+import { Campaigns } from './pages/Campaigns.tsx';
+import { CampaignDetail } from './pages/CampaignDetail.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -71,6 +73,8 @@ export default function App() {
               <Route path="library/:id/import-export" element={<LibraryImportExport />} />
               <Route path="library/:id/cleanup" element={<LibraryCleanup />} />
               <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
+              <Route path="campaigns" element={<Campaigns />} />
+              <Route path="campaign/:id" element={<CampaignDetail />} />
               <Route path="admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
               <Route path="admin/invites" element={<ProtectedRoute adminOnly><AdminInvites /></ProtectedRoute>} />
               <Route path="providers" element={<Providers />} />

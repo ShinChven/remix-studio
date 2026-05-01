@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Activity, Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor } from 'lucide-react';
+import { Activity, Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor, Megaphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
@@ -246,6 +246,15 @@ export function MainLayout() {
             icon={<Folder className="w-5 h-5 flex-shrink-0" />}
             label={t('sidebar.libraries')}
             isActive={location.pathname === '/libraries' || location.pathname.startsWith('/library/')}
+            isCollapsed={isCollapsed}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          <NavItem
+            to="/campaigns"
+            icon={<Megaphone className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.campaigns', 'Campaigns')}
+            isActive={location.pathname === '/campaigns' || location.pathname.startsWith('/campaign/')}
             isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
           />

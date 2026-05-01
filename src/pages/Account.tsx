@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap, Sun, Moon, Monitor } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap, Sun, Moon, Monitor, Share2, Twitter } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, updatePassword } from '../api';
 import { PageHeader } from '../components/PageHeader';
@@ -11,8 +11,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { isPasskeySupported, serializeAttestationCredential, toPublicKeyCreationOptions } from '../lib/passkey';
 import { toast } from 'sonner';
 
-type AccountTab = 'overview' | 'storage' | 'security' | 'preferences';
-const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security', 'preferences'];
+type AccountTab = 'overview' | 'storage' | 'security' | 'preferences' | 'social';
+const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security', 'preferences', 'social'];
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -409,6 +409,7 @@ export function Account() {
               { id: 'storage' as const, label: t('account.tabs.storage'), icon: HardDrive },
               { id: 'security' as const, label: t('account.tabs.security'), icon: Shield },
               { id: 'preferences' as const, label: t('account.tabs.preferences'), icon: Globe },
+              { id: 'social' as const, label: t('account.tabs.social', 'Social Integrations'), icon: Share2 },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -1075,6 +1076,41 @@ export function Account() {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {activeTab === 'social' && (
+          <div className="space-y-6">
+            <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-300">
+                  <Share2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Social Integrations</h2>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">Connect your social accounts to publish campaigns directly.</p>
+                </div>
+              </div>
+
+              <div className="mt-8 space-y-4">
+                <div className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900/50">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center text-zinc-900 dark:text-zinc-100">
+                      <Twitter className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold dark:text-zinc-100">X (Twitter)</h3>
+                      <p className="text-sm text-zinc-500">Not connected</p>
+                    </div>
+                  </div>
+                  <button
+                    className="px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm font-medium hover:bg-indigo-600 transition-colors shadow-sm"
+                  >
+                    Connect
+                  </button>
                 </div>
               </div>
             </section>

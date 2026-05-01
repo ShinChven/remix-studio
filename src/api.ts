@@ -1395,3 +1395,25 @@ export async function summarizeAssistantConversationTitle(id: string): Promise<{
   });
   return handleResponse<{ title: string }>(res, 'Failed to summarize conversation');
 }
+
+// ========== Campaigns ==========
+
+export async function fetchCampaigns(): Promise<any[]> {
+  const res = await apiFetch('/api/campaigns', { headers: getHeaders() });
+  return handleResponse<any[]>(res, 'Failed to list campaigns');
+}
+
+export async function createCampaign(data: { name: string; description?: string }): Promise<any> {
+  const res = await apiFetch('/api/campaigns', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<any>(res, 'Failed to create campaign');
+}
+
+export async function fetchCampaign(id: string): Promise<any> {
+  const res = await apiFetch(`/api/campaigns/${id}`, { headers: getHeaders() });
+  return handleResponse<any>(res, 'Failed to get campaign');
+}
+
