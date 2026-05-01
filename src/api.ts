@@ -1515,6 +1515,10 @@ export async function sendPostNow(postId: string): Promise<any> {
     method: 'POST',
     headers: getHeaders(),
   });
+  // 422 = publish attempted but failed — return the body so the caller can show the real error
+  if (res.status === 422) {
+    return res.json();
+  }
   return handleResponse<any>(res, 'Failed to send post');
 }
 

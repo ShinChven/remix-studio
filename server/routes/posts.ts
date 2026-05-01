@@ -330,11 +330,11 @@ export function createPostsRouter(
       if (!post) {
         return c.json({ error: 'Post not found' }, 404);
       }
-      if (post.status === 'completed') {
-        return c.json({ error: 'Post already published' }, 400);
-      }
+      // Synchronously fan out and execute — wait for real results
+      const { results } = await postManager.fanOutAndExecute(id);
 
-      await postManager.fanOutPost(id);
+      const allOk = results.every((r) => r.ok);
+      const anyOk = results.some((r) => r.ok);
 
       const updated = await prisma.post.findUnique({
         where: { id },
@@ -343,7 +343,16 @@ export function createPostsRouter(
           executions: { include: { socialAccount: true } },
         },
       });
-      return c.json(await signPostMediaUrls(storage, updated));
+
+      const signedPost = await signPostMediaUrls(storage, updated);
+
+      if (!allOk) {
+        // Return 422 so the frontend can show the real error message
+        const firstError = results.find((r) => !r.ok)?.error || 'Publish failed';
+        return c.json({ error: firstError, partial: anyOk, results, post: signedPost }, 422);
+      }
+
+      return c.json({ results, post: signedPost });
     } catch (error: any) {
       console.error('Failed to send post:', error);
       return c.json({ error: error?.message || 'Failed to send post' }, 400);

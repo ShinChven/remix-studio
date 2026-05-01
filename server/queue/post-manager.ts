@@ -38,6 +38,43 @@ export class PostManager {
    * Throws on: post not found, no connected accounts, media not yet ready.
    * Returns silently (no executions) if the post was already fanned out.
    */
+  /**
+   * Fan out a post and immediately execute all resulting executions synchronously.
+   * Returns per-account results so callers can report real success/failure.
+   */
+  async fanOutAndExecute(postId: string): Promise<{ results: Array<{ accountId: string; platform: string; ok: boolean; externalId?: string; error?: string }> }> {
+    const { executions } = await this.fanOutPost(postId);
+
+    const results: Array<{ accountId: string; platform: string; ok: boolean; externalId?: string; error?: string }> = [];
+
+    for (const exec of executions) {
+      // Run execution and inspect the resulting DB state
+      await this.executePost(exec);
+      const updated = await this.prisma.postExecution.findUnique({
+        where: { id: exec.id },
+        include: { socialAccount: true },
+      });
+      results.push({
+        accountId: exec.socialAccountId,
+        platform: updated?.socialAccount?.platform ?? 'unknown',
+        ok: updated?.status === 'posted',
+        externalId: updated?.externalId ?? undefined,
+        error: updated?.errorMsg ?? undefined,
+      });
+    }
+
+    // Set post status based on real execution results
+    const anyPosted = results.some((r) => r.ok);
+    const allPosted = results.every((r) => r.ok);
+    const finalStatus = allPosted ? 'completed' : anyPosted ? 'completed' : 'failed';
+    await this.prisma.post.update({
+      where: { id: postId },
+      data: { status: finalStatus },
+    });
+
+    return { results };
+  }
+
   async fanOutPost(postId: string): Promise<{ executions: any[] }> {
     return this.prisma.$transaction(async (tx) => {
       const rows = await tx.$queryRaw<any[]>`
@@ -48,10 +85,6 @@ export class PostManager {
       }
       const post = rows[0];
 
-      // Already fanned out (or terminal). No-op for idempotency.
-      if (post.status === 'completed' || post.status === 'failed') {
-        return { executions: [] };
-      }
 
       const media = await tx.postMedia.findMany({ where: { postId: post.id } });
       const notReady = media.filter((m) => m.status !== 'ready');
@@ -85,10 +118,7 @@ export class PostManager {
         executions.push(exec);
       }
 
-      await tx.post.update({
-        where: { id: post.id },
-        data: { status: 'completed' },
-      });
+      // Do NOT mark the post as completed here — fanOutAndExecute will set status based on real results.
 
       return { executions };
     });
@@ -144,7 +174,7 @@ export class PostManager {
     }
   }
 
-  private async executePost(exec: any) {
+  async executePost(exec: any) {
     try {
       await this.prisma.postExecution.update({
         where: { id: exec.id },
@@ -200,7 +230,41 @@ export class PostManager {
         return { buffer, mimeType: m.mimeType || 'image/jpeg' };
       }));
 
-      const externalId = await channel.publish(post.textContent || '', mediaItems, { accessToken });
+      let externalId: string;
+      try {
+        externalId = await channel.publish(post.textContent || '', mediaItems, { accessToken });
+      } catch (publishErr: any) {
+        // Reactive refresh: if auth failed, refresh token and retry once
+        const isAuthError = publishErr.message && (
+          publishErr.message.includes('401') ||
+          publishErr.message.includes('403') ||
+          publishErr.message.includes('Unauthorized') ||
+          publishErr.message.includes('Forbidden')
+        );
+        if (isAuthError && account.refreshToken) {
+          console.log(`[PostManager] Auth error on publish, attempting reactive token refresh for account ${account.id}`);
+          let rt = account.refreshToken;
+          try { rt = decrypt(rt); } catch(e) {}
+          const newTokens = await channel.refreshTokens(rt);
+          accessToken = newTokens.accessToken;
+
+          const encryptedAccessToken = encrypt(newTokens.accessToken);
+          const encryptedRefreshToken = newTokens.refreshToken ? encrypt(newTokens.refreshToken) : undefined;
+          await this.prisma.socialAccount.update({
+            where: { id: account.id },
+            data: {
+              accessToken: encryptedAccessToken,
+              refreshToken: encryptedRefreshToken,
+              expiresAt: newTokens.expiresAt
+            }
+          });
+
+          // Retry with new token
+          externalId = await channel.publish(post.textContent || '', mediaItems, { accessToken });
+        } else {
+          throw publishErr;
+        }
+      }
 
       await this.prisma.postExecution.update({
         where: { id: exec.id },

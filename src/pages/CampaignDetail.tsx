@@ -363,11 +363,18 @@ export function CampaignDetail() {
     }
     try {
       setSendingPostId(postId);
-      await sendPostNow(postId);
-      toast.success('Post has been sent successfully');
+      const result = await sendPostNow(postId);
+      const allOk = result?.results?.every((r: any) => r.ok) ?? true;
+      if (allOk) {
+        toast.success('Post published successfully');
+      } else {
+        const firstError = result?.results?.find((r: any) => !r.ok)?.error || result?.error || 'Publish failed';
+        toast.error('Failed to publish post', { description: firstError });
+      }
       await loadCampaign(true);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to send post');
+      await loadCampaign(true);
     } finally {
       setSendingPostId(null);
     }

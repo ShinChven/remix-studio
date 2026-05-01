@@ -18,7 +18,7 @@ export class TwitterChannel implements ISocialChannel {
       response_type: 'code',
       client_id: this.clientId,
       redirect_uri: this.redirectUri,
-      scope: 'tweet.read tweet.write users.read offline.access',
+      scope: 'tweet.read tweet.write users.read media.write offline.access',
       state,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
