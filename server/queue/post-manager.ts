@@ -29,6 +29,71 @@ export class PostManager {
     this.executionTimer = null;
   }
 
+  /**
+   * Fans out a single post to its campaign's connected social accounts by
+   * creating one PostExecution per account and flipping the post to
+   * 'completed'. Atomic via SELECT … FOR UPDATE so the scheduler and a
+   * manual /send call can't double-fan-out the same post.
+   *
+   * Throws on: post not found, no connected accounts, media not yet ready.
+   * Returns silently (no executions) if the post was already fanned out.
+   */
+  async fanOutPost(postId: string): Promise<{ executions: any[] }> {
+    return this.prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<any[]>`
+        SELECT * FROM "Post" WHERE id = ${postId} FOR UPDATE
+      `;
+      if (rows.length === 0) {
+        throw new Error('Post not found');
+      }
+      const post = rows[0];
+
+      // Already fanned out (or terminal). No-op for idempotency.
+      if (post.status === 'completed' || post.status === 'failed') {
+        return { executions: [] };
+      }
+
+      const media = await tx.postMedia.findMany({ where: { postId: post.id } });
+      const notReady = media.filter((m) => m.status !== 'ready');
+      if (media.length > 0 && notReady.length > 0) {
+        throw new Error('Cannot publish: some media is still processing');
+      }
+
+      const campaign = await tx.campaign.findUnique({
+        where: { id: post.campaignId },
+        include: { socialAccounts: true },
+      });
+
+      if (!campaign || campaign.socialAccounts.length === 0) {
+        await tx.post.update({
+          where: { id: post.id },
+          data: { status: 'failed' },
+        });
+        throw new Error('No social accounts connected to this campaign');
+      }
+
+      const executions: any[] = [];
+      for (const account of campaign.socialAccounts) {
+        const exec = await tx.postExecution.create({
+          data: {
+            postId: post.id,
+            socialAccountId: account.id,
+            status: 'pending',
+            nextAttemptAt: new Date(),
+          },
+        });
+        executions.push(exec);
+      }
+
+      await tx.post.update({
+        where: { id: post.id },
+        data: { status: 'completed' },
+      });
+
+      return { executions };
+    });
+  }
+
   // 3.4 PostManager Fan-out Trigger
   private async fanOutPosts() {
     if (this.isFanningOut) return;
@@ -43,35 +108,11 @@ export class PostManager {
       `;
 
       for (const post of posts) {
-        const campaign = await this.prisma.campaign.findUnique({
-          where: { id: post.campaignId },
-          include: { socialAccounts: true }
-        });
-
-        if (!campaign || campaign.socialAccounts.length === 0) {
-          await this.prisma.post.update({
-            where: { id: post.id },
-            data: { status: 'failed' } // No accounts to post to
-          });
-          continue;
+        try {
+          await this.fanOutPost(post.id);
+        } catch (e) {
+          console.error(`[PostManager] fanOutPost(${post.id}) failed:`, e);
         }
-
-        // Fan out to executions
-        for (const account of campaign.socialAccounts) {
-          await this.prisma.postExecution.create({
-            data: {
-              postId: post.id,
-              socialAccountId: account.id,
-              status: 'pending',
-              nextAttemptAt: new Date(),
-            }
-          });
-        }
-
-        await this.prisma.post.update({
-          where: { id: post.id },
-          data: { status: 'completed' } // Completed fan-out
-        });
       }
     } catch (e) {
       console.error('[PostManager] Error in fanOutPosts:', e);
@@ -116,7 +157,7 @@ export class PostManager {
 
       const account = await this.prisma.socialAccount.findUnique({ where: { id: exec.socialAccountId } });
       if (!account) throw new Error('Social Account not found');
-      
+
       const post = await this.prisma.post.findUnique({ where: { id: exec.postId }, include: { media: true } });
       if (!post) throw new Error('Post not found');
 
@@ -125,7 +166,7 @@ export class PostManager {
       }
 
       const channel = SocialChannelFactory.getChannel(account.platform);
-      
+
       let accessToken = account.accessToken;
       if (accessToken) {
          try {
@@ -139,10 +180,10 @@ export class PostManager {
         try { rt = decrypt(rt); } catch(e) {}
         const tokens = await channel.refreshTokens(rt);
         accessToken = tokens.accessToken;
-        
+
         const encryptedAccessToken = encrypt(tokens.accessToken);
         const encryptedRefreshToken = tokens.refreshToken ? encrypt(tokens.refreshToken) : undefined;
-        
+
         await this.prisma.socialAccount.update({
           where: { id: account.id },
           data: {
@@ -158,7 +199,7 @@ export class PostManager {
         const buffer = await this.storage.read(key);
         return { buffer, mimeType: m.mimeType || 'image/jpeg' };
       }));
-      
+
       const externalId = await channel.publish(post.textContent || '', mediaItems, { accessToken });
 
       await this.prisma.postExecution.update({
@@ -173,7 +214,7 @@ export class PostManager {
     } catch (e: any) {
       // 3.6 Retry & Backoff Strategy
       console.error(`[PostManager] Error executing post ${exec.id}:`, e);
-      
+
       const maxRetries = 3;
       if (exec.attempts < maxRetries) {
         const backoffMs = [1000, 2500, 5000][exec.attempts] || 5000;

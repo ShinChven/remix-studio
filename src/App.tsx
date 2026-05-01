@@ -38,6 +38,8 @@ import { ChatHistoryPage } from './pages/ChatHistoryPage.tsx';
 import { QueueMonitor } from './pages/QueueMonitor.tsx';
 import { Campaigns } from './pages/Campaigns.tsx';
 import { CampaignDetail } from './pages/CampaignDetail.tsx';
+import { CampaignForm } from './pages/CampaignForm.tsx';
+import { PostForm } from './pages/PostForm.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -74,6 +76,11 @@ export default function App() {
               <Route path="library/:id/cleanup" element={<LibraryCleanup />} />
               <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
               <Route path="campaigns" element={<Campaigns />} />
+              <Route path="campaigns/new" element={<CampaignForm />} />
+              <Route path="campaigns/edit/:id" element={<CampaignForm />} />
+              <Route path="campaigns/:id" element={<CampaignDetail />} />
+              <Route path="campaigns/:campaignId/posts/new" element={<PostForm />} />
+              <Route path="campaigns/:campaignId/posts/edit/:postId" element={<PostForm />} />
               <Route path="campaign/:id" element={<CampaignDetail />} />
               <Route path="admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
               <Route path="admin/invites" element={<ProtectedRoute adminOnly><AdminInvites /></ProtectedRoute>} />

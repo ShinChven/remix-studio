@@ -24,6 +24,7 @@ import { createProviderRouter } from './server/routes/providers';
 import { createGenerateRouter } from './server/routes/generate';
 import { createTrashRouter } from './server/routes/trash';
 import { createCampaignsRouter } from './server/routes/campaigns';
+import { createPostsRouter } from './server/routes/posts';
 import { ProviderRepository } from './server/db/provider-repository';
 import { ProjectRepository } from './server/db/project-repository';
 import { createStorageRouter } from './server/routes/storage-router';
@@ -192,6 +193,7 @@ async function startServer() {
   app.route('/', createTrashRouter(repository, storage));
   app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));
   app.route('/', createCampaignsRouter(prisma));
+  app.route('/', createPostsRouter(prisma, postManager, providerRepository));
   app.route('/', createOAuthRouter(prisma));
   app.route('/', createSocialRouter(prisma));
   app.route('/', createMcpRouter(prisma, repository, userRepository, providerRepository));

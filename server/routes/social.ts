@@ -45,18 +45,18 @@ export function createSocialRouter(prisma: PrismaClient) {
     const user = c.get('user') as JwtPayload;
 
     if (errorParam) {
-      return c.redirect(`/account?tab=social&error=${encodeURIComponent(errorParam)}`);
+      return c.redirect(`/campaigns?error=${encodeURIComponent(errorParam)}`);
     }
 
     if (!code || !state) {
-      return c.redirect('/account?tab=social&error=missing_code_or_state');
+      return c.redirect('/campaigns?error=missing_code_or_state');
     }
 
     const savedState = getCookie(c, `oauth_${platform}_state`);
     const codeVerifier = getCookie(c, `oauth_${platform}_verifier`);
 
     if (!savedState || !codeVerifier || state !== savedState) {
-      return c.redirect('/account?tab=social&error=invalid_state_or_verifier');
+      return c.redirect('/campaigns?error=invalid_state_or_verifier');
     }
 
     try {
@@ -100,10 +100,35 @@ export function createSocialRouter(prisma: PrismaClient) {
         }
       });
 
-      return c.redirect('/account?tab=social&success=connected');
+      return c.redirect('/campaigns?success=connected');
     } catch (error: any) {
       console.error('[Social Callback]', error);
-      return c.redirect(`/account?tab=social&error=${encodeURIComponent(error.message)}`);
+      return c.redirect(`/campaigns?error=${encodeURIComponent(error.message)}`);
+    }
+  });
+
+  // Get social accounts for user
+  router.get('/api/social/accounts', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    
+    try {
+      const accounts = await prisma.socialAccount.findMany({
+        where: { userId: user.userId },
+        select: {
+          id: true,
+          platform: true,
+          accountId: true,
+          profileName: true,
+          avatarUrl: true,
+          status: true,
+          expiresAt: true,
+          updatedAt: true
+        }
+      });
+      return c.json(accounts);
+    } catch (error: any) {
+      console.error('[Social Accounts]', error);
+      return c.json({ error: error.message }, 500);
     }
   });
 

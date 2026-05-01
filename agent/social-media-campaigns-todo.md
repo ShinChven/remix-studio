@@ -46,7 +46,7 @@ This document serves as the master checklist connecting the four core architectu
 *   [x] **5.1 Navigation & Routing:** Add `/campaigns` and `/campaigns/:id` routes, and update the sidebar navigation. (Ref: *UI/UX Design*)
 *   [x] **5.2 Settings > Social Integrations:** Build the UI panel to connect/disconnect X accounts and display active/expired status.
 *   [x] **5.3 Campaigns Dashboard:** Build the list/grid view of campaigns with aggregated metrics.
-*   [x] **5.4 Campaign Detail (Kanban):** Implement the board showing Drafts, Scheduled, Published, and Failed posts.
+*   [x] **5.4 Campaign Detail:** Implement the campaign post management surface.
 *   [x] **5.5 Post Composer Modal:** Build the text area, dynamic character counter (warn only, do not block), and timezone-aware date picker.
 *   [x] **5.6 Media Picker & Async Indicators:** Build the UI to attach Library/Album items and display loading spinners while `PostMedia` is processing.
 *   [x] **5.7 Granular Execution Reporting:** Build the per-channel status chips on published/failed posts, surfacing exact error messages and actionable "Retry" buttons.
@@ -57,3 +57,21 @@ This document serves as the master checklist connecting the four core architectu
 *   [x] **6.2 API Compliance Audit:** Ensure the X API integration exclusively uses v2 endpoints and adheres strictly to the defined media size and chunking limits (2MB chunks).
 *   [x] **6.3 Concurrency Audit:** Review the `PostManager` and `MediaProcessingPoller` to confirm `SKIP LOCKED` is used correctly to prevent race conditions across worker instances.
 *   [x] **6.4 Architectural Verification:** Audit the frontend and backend to ensure save-time validation is permissive (allowing mixed media) and send-time execution gracefully handles platform-specific rejections.
+
+## Phase 7: Campaign UI Parity With Pilot Banana
+
+Correction: the target is not a Remix Studio-specific Kanban interpretation. The UI target is the Pilot Banana campaign surface in `learn/pilot-banana-private/src/Pilot.Console/src/pages/`:
+
+* `Campaigns.tsx`: searchable campaign dashboard with large image-backed cards, status badges, channel avatars, and progress bars.
+* `CampaignForm.tsx`: dedicated create/edit route with Basic Information, Selection Summary, and channel/account selection.
+* `CampaignProfile.tsx`: campaign profile layout with header controls, progress/sidebar stats, connected channels, status filters, and post feed cards.
+
+The current Remix implementation keeps existing backend/API capabilities but should follow those Pilot Banana page shapes as closely as the local component system allows. Kanban is not the parity target.
+
+*   [x] **7.1 Campaigns dashboard parity:** Replace the plain Remix cards with Pilot Banana-style image-backed cards, status badge, channel avatars, post progress, search, and card action menu.
+*   [x] **7.2 Dedicated campaign form parity:** Add `/campaigns/new` and `/campaigns/edit/:id` with Basic Information, Selection Summary, search/filter channel selection, and launch/save actions.
+*   [x] **7.3 Campaign profile parity:** Replace the Kanban board with a Pilot Banana-style profile layout: header controls, progress sidebar, connected channels, status filter stats, and post feed cards.
+*   [x] **7.4 Route compatibility:** Add Pilot-style plural routes while preserving the legacy `/campaign/:id` detail route.
+*   [x] **7.5 API data support:** Include post statuses in campaign list responses and allow campaign status updates for pause/resume UI.
+*   [x] **7.6 Post form parity:** Add Pilot-style `/campaigns/:campaignId/posts/new` and `/campaigns/:campaignId/posts/edit/:postId` pages with content/media card, click/drag file upload, scheduling card, target channels, and save/cancel actions.
+*   [ ] **7.7 Manual QA:** Walk `/campaigns`, `/campaigns/new`, `/campaigns/edit/:id`, `/campaigns/:id`, post create/edit pages, quick schedule, send now, and AI generate against seeded/real campaign data.

@@ -1403,7 +1403,7 @@ export async function fetchCampaigns(): Promise<any[]> {
   return handleResponse<any[]>(res, 'Failed to list campaigns');
 }
 
-export async function createCampaign(data: { name: string; description?: string }): Promise<any> {
+export async function createCampaign(data: { name: string; description?: string; socialAccountIds?: string[] }): Promise<any> {
   const res = await apiFetch('/api/campaigns', {
     method: 'POST',
     headers: getHeaders(),
@@ -1417,3 +1417,137 @@ export async function fetchCampaign(id: string): Promise<any> {
   return handleResponse<any>(res, 'Failed to get campaign');
 }
 
+export async function updateCampaign(id: string, data: { name?: string; description?: string | null; socialAccountIds?: string[]; status?: string }): Promise<any> {
+  const res = await apiFetch(`/api/campaigns/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<any>(res, 'Failed to update campaign');
+}
+
+export async function deleteCampaign(id: string): Promise<void> {
+  const res = await apiFetch(`/api/campaigns/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  return handleResponse<void>(res, 'Failed to delete campaign');
+}
+
+export async function createPost(data: { campaignId: string; textContent?: string; scheduledAt?: string | null; status?: string }): Promise<any> {
+  const res = await apiFetch('/api/posts', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<any>(res, 'Failed to create post');
+}
+
+export async function fetchPost(id: string): Promise<any> {
+  const res = await apiFetch(`/api/posts/${id}`, { headers: getHeaders() });
+  return handleResponse<any>(res, 'Failed to get post');
+}
+
+export async function updatePost(id: string, data: { textContent?: string; scheduledAt?: string | null; status?: string }): Promise<any> {
+  const res = await apiFetch(`/api/posts/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<any>(res, 'Failed to update post');
+}
+
+export async function deletePost(id: string): Promise<void> {
+  const res = await apiFetch(`/api/posts/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  return handleResponse<void>(res, 'Failed to delete post');
+}
+
+export async function addPostMedia(postId: string, data: { sourceUrl: string; type: string; mimeType?: string }): Promise<any> {
+  const res = await apiFetch(`/api/posts/${postId}/media`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<any>(res, 'Failed to add media');
+}
+
+export async function removePostMedia(mediaId: string): Promise<void> {
+  const res = await apiFetch(`/api/posts/media/${mediaId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  return handleResponse<void>(res, 'Failed to remove media');
+}
+
+export interface BatchScheduleItem {
+  postId: string;
+  scheduledAt: string; // ISO
+}
+
+export interface BatchOpResult {
+  updated: number;
+  skipped: Array<{ postId: string; reason: string }>;
+}
+
+export async function batchSchedulePosts(items: BatchScheduleItem[]): Promise<BatchOpResult> {
+  const res = await apiFetch('/api/posts/batch-schedule', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ items }),
+  });
+  return handleResponse<BatchOpResult>(res, 'Failed to batch-schedule posts');
+}
+
+export async function batchUnschedulePosts(postIds: string[]): Promise<BatchOpResult> {
+  const res = await apiFetch('/api/posts/batch-unschedule', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ postIds }),
+  });
+  return handleResponse<BatchOpResult>(res, 'Failed to batch-unschedule posts');
+}
+
+export async function sendPostNow(postId: string): Promise<any> {
+  const res = await apiFetch(`/api/posts/${postId}/send`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  return handleResponse<any>(res, 'Failed to send post');
+}
+
+export interface BatchGenerateTextResult {
+  results: Array<{ postId: string; ok: boolean; text?: string; error?: string }>;
+}
+
+export async function batchGeneratePostText(input: {
+  postIds: string[];
+  promptText: string;
+  includeImages?: boolean;
+  providerId: string;
+  modelId: string;
+}): Promise<BatchGenerateTextResult> {
+  const res = await apiFetch('/api/posts/batch-generate-text', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(input),
+  });
+  return handleResponse<BatchGenerateTextResult>(res, 'Failed to batch-generate post text');
+}
+
+// ========== Social Integrations ==========
+
+export async function fetchSocialAccounts(): Promise<any[]> {
+  const res = await apiFetch('/api/social/accounts', { headers: getHeaders() });
+  return handleResponse<any[]>(res, 'Failed to get social accounts');
+}
+
+export async function disconnectSocialAccount(platform: string, accountId: string): Promise<void> {
+  const res = await apiFetch(`/api/social/${platform}/${accountId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  return handleResponse<void>(res, 'Failed to disconnect social account');
+}
