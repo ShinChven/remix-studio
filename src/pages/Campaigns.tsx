@@ -422,7 +422,7 @@ export function Campaigns() {
 
           {/* Right Column: Recently Posted */}
           <aside className="lg:col-span-1 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex h-10 items-center justify-between">
               <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
                 <Activity className="h-5 w-5 text-indigo-500" />
                 Recently Posted
