@@ -379,14 +379,15 @@ npm version 1.0.0
 git push origin main --tags
 ```
 
+## Paid Support
+
+If your team needs professional assistance with deployment, cloud infrastructure setup, or enterprise-grade scaling of Remix Studio, paid support and consultancy are available. 
+
+Please contact the author for inquiries regarding:
+- Private cloud/on-premise deployment
+- Custom storage provider integration
+- Performance optimization and scaling
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-## Custom Development
-
-If you want to adapt Remix Studio for a specific workflow or internal use case, you can contact the author for custom development work.
-
-## Hire Me
-
-Based in New Zealand. Available for full-stack product development and AI integration work, including internal tools, workflow automation, and custom AI features.
