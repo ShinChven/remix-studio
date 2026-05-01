@@ -3,9 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowRight,
   Calendar,
-  Clock,
   Layers,
-  Loader2,
   Megaphone,
   MoreVertical,
   Plus,
@@ -16,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { deleteCampaign, fetchCampaigns, fetchSocialAccounts, updateCampaign } from '../api';
+import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 
 type CampaignStatus = 'Active' | 'Inactive';
@@ -161,39 +160,47 @@ export function Campaigns() {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-4 md:p-8">
-      <div className="mx-auto w-full max-w-7xl space-y-6 pb-20">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-neutral-950 dark:text-white">Campaigns</h1>
-            <p className="text-neutral-500 dark:text-neutral-400">Organize your posts into projects and track their progress.</p>
-          </div>
-          <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center md:w-auto">
-            <button
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 text-sm font-bold text-neutral-700 shadow-sm transition hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-950 active:translate-y-px dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-white/10 dark:hover:text-white sm:w-auto"
-              onClick={() => navigate('/campaigns/channels')}
-            >
-              <Share2 className="h-4 w-4" />
-              Channels
-            </button>
-            <div className="relative min-w-0 flex-1 sm:flex-none">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-              <input
-                placeholder="Search campaigns..."
-                className="h-10 w-full rounded-lg border border-neutral-200 bg-white pl-10 pr-3 text-sm font-medium text-neutral-900 outline-none transition focus:border-neutral-900 dark:border-white/10 dark:bg-neutral-900 dark:text-white dark:focus:border-white/60 sm:w-64"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
+      <div className="w-full space-y-8 pb-20">
+        <PageHeader
+          title="Campaigns"
+          description="Organize your posts into projects and track their progress."
+          actions={(
+            <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center lg:w-auto">
+              <button
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/40 px-4 text-sm font-bold text-neutral-700 shadow-sm backdrop-blur-3xl transition hover:bg-white/60 hover:text-neutral-950 active:scale-95 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-neutral-800/60 dark:hover:text-white sm:w-auto"
+                onClick={() => navigate('/campaigns/channels')}
+              >
+                <Share2 className="h-4 w-4" />
+                Channels
+              </button>
+              <div className="relative min-w-0 flex-1 sm:flex-none">
+                <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-neutral-500 dark:text-neutral-500" />
+                <input
+                  placeholder="Search campaigns..."
+                  className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white/40 py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 shadow-sm outline-none backdrop-blur-3xl transition-all placeholder:text-neutral-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 sm:w-64"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <button
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-95 sm:w-auto"
+                onClick={() => navigate('/campaigns/new')}
+              >
+                <Plus className="h-4 w-4" />
+                New Campaign
+              </button>
             </div>
-            <button
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-neutral-950 px-4 text-sm font-bold text-white shadow-lg shadow-black/10 transition hover:bg-neutral-800 active:translate-y-px dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 sm:w-auto"
-              onClick={() => navigate('/campaigns/new')}
-            >
-              <Plus className="h-4 w-4" />
-              New Campaign
-            </button>
+          )}
+        />
+
+        <section>
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
+              <Megaphone className="h-5 w-5 text-indigo-500" />
+              All Campaigns {filteredCampaigns.length > 0 && <span className="text-sm font-normal text-neutral-500 dark:text-neutral-500">({filteredCampaigns.length})</span>}
+            </h3>
           </div>
-        </div>
 
         {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -209,17 +216,17 @@ export function Campaigns() {
             ))}
           </div>
         ) : filteredCampaigns.length === 0 ? (
-          <div className="flex min-h-[400px] flex-col items-center justify-center rounded-3xl border border-dashed border-neutral-300 bg-white p-12 text-center dark:border-white/10 dark:bg-neutral-900/70">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-950/10 text-neutral-950 dark:bg-white/10 dark:text-white">
+          <div className="col-span-full flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-[2.5rem] border-2 border-dashed border-neutral-200 bg-white/40 p-12 text-center text-neutral-500 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40 dark:text-neutral-500">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
               <Megaphone className="h-8 w-8" />
             </div>
             <h3 className="text-xl font-bold text-neutral-950 dark:text-white">No campaigns yet</h3>
-            <p className="mt-2 mb-8 max-w-sm text-neutral-500 dark:text-neutral-400">
+            <p className="max-w-sm text-sm text-neutral-500 dark:text-neutral-400">
               Create your first campaign to start scheduling and automating your posts across channels.
             </p>
             <button
               onClick={() => navigate('/campaigns/new')}
-              className="inline-flex items-center gap-2 rounded-lg bg-neutral-950 px-4 py-2 text-sm font-bold text-white dark:bg-white dark:text-neutral-950"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-95"
             >
               <Plus className="h-4 w-4" />
               Create Campaign
@@ -237,38 +244,33 @@ export function Campaigns() {
               return (
                 <div
                   key={campaign.id}
-                  className="group relative cursor-pointer overflow-hidden rounded-xl border border-neutral-200 bg-white p-0 shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-black/10 dark:border-white/10 dark:bg-neutral-900"
+                  className="group relative flex min-h-[260px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-neutral-200/50 bg-white/70 p-5 text-left shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-white/80 hover:shadow-xl dark:border-white/5 dark:bg-neutral-900/70 dark:hover:bg-neutral-800/80"
                   onClick={() => navigate(`/campaigns/${campaign.id}`)}
                 >
-                  <div className="absolute inset-0 z-0">
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                      style={{ backgroundImage: `url(${campaign.thumbnail})` }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-white via-white/75 to-transparent dark:from-neutral-900 dark:via-neutral-900/75" />
-                  </div>
-
-                  <div className="absolute right-4 top-4 z-20">
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-indigo-500/10 text-indigo-500 shadow-lg shadow-indigo-500/5 transition-transform group-hover:scale-110">
+                      <img src={campaign.thumbnail} alt="" className="h-full w-full object-cover opacity-80" />
+                    </div>
                     <span
                       className={cn(
-                        'inline-flex rounded-full px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md',
-                        campaign.status === 'Active' ? 'bg-emerald-500/90' : 'bg-amber-500/90',
+                        'inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest',
+                        campaign.status === 'Active'
+                          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          : 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400',
                       )}
                     >
                       {campaign.status}
                     </span>
                   </div>
 
-                  <div className="relative z-10 flex flex-col">
-                    <div className="h-52" />
-
-                    <div className="px-5 pb-3 pt-3">
+                  <div className="flex flex-1 flex-col">
+                    <div className="mb-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 space-y-1">
-                          <h2 className="truncate text-2xl font-black tracking-tight text-neutral-950 drop-shadow-md dark:text-white">
+                          <h2 className="truncate text-lg font-semibold text-neutral-900 dark:text-white">
                             {campaign.name}
                           </h2>
-                          <p className="line-clamp-2 text-sm font-medium leading-relaxed text-neutral-700 dark:text-neutral-200">
+                          <p className="line-clamp-2 min-h-10 text-sm leading-5 text-neutral-600 dark:text-neutral-400">
                             {campaign.description}
                           </p>
                         </div>
@@ -276,7 +278,7 @@ export function Campaigns() {
                           <button
                             type="button"
                             onClick={() => setOpenMenuId(openMenuId === campaign.id ? null : campaign.id)}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition hover:bg-neutral-950/10 dark:hover:bg-white/10"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                             aria-label="Campaign menu"
                           >
                             <MoreVertical className="h-4 w-4" />
@@ -298,22 +300,21 @@ export function Campaigns() {
                         </div>
                       </div>
                     </div>
-
-                    <div className="space-y-6 px-5 pb-5">
-                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-neutral-600 dark:text-neutral-300">
-                        <div className="flex items-center gap-1.5 rounded-full border border-neutral-950/5 bg-neutral-100/70 px-2.5 py-1 shadow-sm dark:bg-white/5">
+                    <div className="mt-auto space-y-4">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-neutral-500 dark:text-neutral-500">
+                        <div className="flex items-center gap-1.5">
                           <Calendar className="h-3 w-3" />
-                          <span>{campaign.startDate}</span>
+                          <span className="font-bold">{campaign.startDate}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 rounded-full border border-neutral-950/5 bg-neutral-100/70 px-2.5 py-1 shadow-sm dark:bg-white/5">
+                        <div className="flex items-center gap-1.5">
                           <Layers className="h-3 w-3" />
-                          <span>{campaign.channels.length} {campaign.channels.length === 1 ? 'Ch' : 'Chs'}</span>
+                          <span className="font-bold">{campaign.channels.length} {campaign.channels.length === 1 ? 'channel' : 'channels'}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between rounded-xl border border-neutral-200/80 bg-white/40 px-3 py-2 backdrop-blur-md transition hover:bg-white/70 dark:border-white/10 dark:bg-white/[0.02] dark:hover:bg-white/[0.04]">
+                      <div className="flex items-center justify-between rounded-xl border border-neutral-200/50 bg-neutral-100/40 px-3 py-2 dark:border-white/5 dark:bg-white/5">
                         <div className="min-w-0">
-                          <p className="text-xs font-black tracking-tight text-neutral-950 dark:text-white">Channels</p>
+                          <p className="text-xs font-bold text-neutral-900 dark:text-white">Channels</p>
                           <p className="whitespace-nowrap text-[10px] font-medium text-neutral-500 dark:text-neutral-400">Integrated platforms</p>
                         </div>
                         <div className="flex -space-x-2">
@@ -332,7 +333,7 @@ export function Campaigns() {
                             </div>
                           )}
                           {visibleAccounts.length === 0 && (
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-950 text-white dark:bg-white dark:text-neutral-950">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500">
                               <Twitter className="h-3.5 w-3.5" />
                             </div>
                           )}
@@ -341,13 +342,13 @@ export function Campaigns() {
 
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-black uppercase tracking-tight text-neutral-950 dark:text-white">Progress</span>
-                          <span className="rounded-md bg-neutral-950/10 px-2 py-0.5 text-xs font-bold text-neutral-950 dark:bg-white/10 dark:text-white">
+                          <span className="text-sm font-semibold text-neutral-900 dark:text-white">Progress</span>
+                          <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs font-bold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300">
                             {completedPosts}/{campaign.totalPosts} posts
                           </span>
                         </div>
                         <div className="h-2.5 overflow-hidden rounded-full bg-neutral-200 shadow-inner dark:bg-neutral-800">
-                          <div className="h-full rounded-full bg-neutral-950 transition-all duration-700 dark:bg-white" style={{ width: `${progress}%` }} />
+                          <div className="h-full rounded-full bg-indigo-600 transition-all duration-700" style={{ width: `${progress}%` }} />
                         </div>
                         <p className="text-right text-xs font-bold text-neutral-500 dark:text-neutral-400">
                           {campaign.totalPosts > 0 ? `${progress}% completed` : 'Initial Setup'}
@@ -355,10 +356,10 @@ export function Campaigns() {
                       </div>
                     </div>
 
-                    <div className="mt-2 border-t border-neutral-950/10 bg-neutral-950/[0.02] px-7 py-4 dark:border-white/10 dark:bg-white/[0.02]">
-                      <div className="flex w-full items-center justify-between text-neutral-600 transition-all duration-300 group-hover:text-neutral-950 dark:text-neutral-300 dark:group-hover:text-white">
-                        <span className="text-base font-black uppercase tracking-tight">View Campaign</span>
-                        <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-2" />
+                    <div className="mt-4 border-t border-neutral-200/50 pt-4 dark:border-white/5">
+                      <div className="flex w-full items-center justify-between text-sm font-bold text-neutral-500 transition-all duration-300 group-hover:text-indigo-600 dark:text-neutral-400 dark:group-hover:text-indigo-400">
+                        <span>View Campaign</span>
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </div>
                     </div>
                   </div>
@@ -367,6 +368,7 @@ export function Campaigns() {
             })}
           </div>
         )}
+        </section>
       </div>
 
       {deleteTarget && (

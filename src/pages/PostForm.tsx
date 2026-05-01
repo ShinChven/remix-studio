@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowLeft,
   Calendar,
   GripVertical,
   ImagePlus,
@@ -22,6 +21,7 @@ import {
   saveVideo,
   updatePost,
 } from '../api';
+import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 
 interface SocialAccount {
@@ -222,31 +222,18 @@ export function PostForm() {
   }
 
   return (
-    <div className="h-full overflow-y-auto p-4 md:p-8">
-      <div className="mx-auto w-full max-w-7xl space-y-8 pb-20">
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-white/10 dark:hover:text-white"
-            onClick={() => navigate(`/campaigns/${campaignId}`)}
-            aria-label="Back"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-neutral-950 dark:text-white">
-              {isEditing ? 'Edit Post' : 'Create New Post'}
-            </h1>
-            <p className="text-neutral-500 dark:text-neutral-400">
-              {isEditing ? 'Update your campaign post.' : 'Add a new post to your campaign.'}
-            </p>
-          </div>
-        </div>
+    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
+      <div className="w-full space-y-8 pb-20">
+        <PageHeader
+          title={isEditing ? 'Edit Post' : 'Create New Post'}
+          description={isEditing ? 'Update your campaign post.' : 'Add a new post to your campaign.'}
+          backLink={{ to: `/campaigns/${campaignId}`, label: 'Back to Campaign' }}
+        />
 
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="min-w-0 space-y-6 lg:col-span-2">
-            <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-white/10 dark:bg-neutral-900">
-              <div className="border-b border-neutral-200 bg-neutral-100/60 p-6 dark:border-white/10 dark:bg-white/5">
+            <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+              <div className="border-b border-neutral-200/50 bg-neutral-100/60 p-6 dark:border-white/5 dark:bg-white/5">
                 <h2 className="text-lg font-semibold text-neutral-950 dark:text-white">Content & Media</h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">What would you like to share?</p>
               </div>
@@ -256,7 +243,7 @@ export function PostForm() {
                   <textarea
                     id="post-content"
                     placeholder="Type your post content here..."
-                    className="min-h-[220px] resize-none rounded-xl border border-neutral-200 bg-neutral-100/40 p-4 text-base leading-relaxed text-neutral-950 outline-none transition focus:border-neutral-950 dark:border-white/10 dark:bg-neutral-950 dark:text-white dark:focus:border-white"
+                    className="min-h-[220px] resize-none rounded-xl border border-neutral-200/50 bg-white/40 p-4 text-base leading-relaxed text-neutral-950 shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white"
                     value={content}
                     onChange={(event) => setContent(event.target.value)}
                   />
@@ -278,7 +265,7 @@ export function PostForm() {
                       <span className="text-xs font-bold text-neutral-400">{totalMediaCount}/4</span>
                       <button
                         type="button"
-                        className="flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-3 text-sm font-bold transition hover:bg-neutral-100 dark:border-white/10 dark:hover:bg-white/10"
+                        className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-950/30 dark:hover:bg-white/10"
                         onClick={() => fileInputRef.current?.click()}
                       >
                         <ImagePlus className="h-4 w-4" />
@@ -296,10 +283,10 @@ export function PostForm() {
                   </div>
 
                   {(visibleExistingMedia.length > 0 || newFiles.length > 0) ? (
-                    <div className={cn('space-y-3 rounded-2xl p-2 transition-all', isDragging && 'bg-neutral-950/5 ring-2 ring-neutral-950 ring-dashed dark:bg-white/5 dark:ring-white')}>
+                    <div className={cn('space-y-3 rounded-xl p-2 transition-all', isDragging && 'bg-indigo-500/10 ring-2 ring-indigo-500/40 ring-dashed')}>
                       {isDragging ? (
-                        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-950 bg-neutral-950/5 py-12 dark:border-white dark:bg-white/5">
-                          <Upload className="h-8 w-8 animate-bounce text-neutral-950 dark:text-white" />
+                        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-indigo-500/50 bg-indigo-500/10 py-12">
+                          <Upload className="h-8 w-8 animate-bounce text-indigo-600 dark:text-indigo-400" />
                           <p className="font-bold text-neutral-950 dark:text-white">Drop files to add</p>
                         </div>
                       ) : null}
@@ -329,13 +316,13 @@ export function PostForm() {
                       })}
 
                       {newFiles.map((file, index) => (
-                        <div key={`${file.name}-${index}`} className="flex min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-neutral-950/20 bg-neutral-950/5 p-3 shadow-sm dark:border-white/20 dark:bg-white/10">
+                        <div key={`${file.name}-${index}`} className="flex min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 shadow-sm">
                           <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800">
                             <NewFilePreview file={file} />
                           </div>
                           <div className="min-w-0 flex-1 truncate text-xs font-medium text-neutral-950 dark:text-white">{file.name}</div>
                           <span className="rounded-full border border-neutral-200 px-2 py-0.5 text-xs font-bold uppercase text-neutral-500 dark:border-white/10">{getFileMediaType(file)}</span>
-                          <span className="rounded-full bg-neutral-950 px-2 py-0.5 text-xs font-bold uppercase text-white dark:bg-white dark:text-neutral-950">New</span>
+                          <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-bold uppercase text-white">New</span>
                           <button className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-red-500/10 hover:text-red-600" onClick={() => setNewFiles((prev) => prev.filter((_, i) => i !== index))}>
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -346,10 +333,10 @@ export function PostForm() {
                     <div
                       className={cn(
                         'cursor-pointer rounded-2xl border-2 border-dashed py-12 text-center transition-all',
-                        isDragging ? 'scale-[0.99] border-neutral-950 bg-neutral-950/5 shadow-inner dark:border-white dark:bg-white/5' : 'border-neutral-200 bg-neutral-100/30 hover:border-neutral-400 hover:bg-neutral-100/60 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/30',
+                        isDragging ? 'scale-[0.99] border-indigo-500/50 bg-indigo-500/10 shadow-inner' : 'border-neutral-200 bg-white/40 hover:border-indigo-500/30 hover:bg-white/60 dark:border-neutral-800 dark:bg-neutral-950/40 dark:hover:border-indigo-500/30',
                       )}
                     >
-                      <div className={cn('mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full transition-all', isDragging ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950' : 'bg-neutral-200 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400')}>
+                      <div className={cn('mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full transition-all', isDragging ? 'bg-indigo-600 text-white' : 'bg-neutral-200 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400')}>
                         {isDragging ? <Upload className="h-6 w-6" /> : <ImagePlus className="h-6 w-6" />}
                       </div>
                       <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
@@ -364,8 +351,8 @@ export function PostForm() {
           </div>
 
           <aside className="space-y-6 lg:col-span-1">
-            <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-white/10 dark:bg-neutral-900">
-              <div className="border-b border-neutral-200 bg-neutral-100/60 p-6 dark:border-white/10 dark:bg-white/5">
+            <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+              <div className="border-b border-neutral-200/50 bg-neutral-100/60 p-6 dark:border-white/5 dark:bg-white/5">
                 <h2 className="text-lg font-semibold text-neutral-950 dark:text-white">Scheduling</h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">When should this be published?</p>
               </div>
@@ -380,7 +367,7 @@ export function PostForm() {
                       </button>
                     )}
                   </div>
-                  <div className="relative flex h-11 items-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100/40 transition-colors focus-within:border-neutral-950 dark:border-white/10 dark:bg-neutral-950 dark:focus-within:border-white">
+                  <div className="relative flex h-11 items-center overflow-hidden rounded-xl border border-neutral-200/50 bg-white/40 shadow-sm transition-colors focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-950/40">
                     <Calendar className="pointer-events-none absolute left-3 h-4 w-4 shrink-0 text-neutral-400" />
                     <input
                       id="scheduledAt"
@@ -417,11 +404,11 @@ export function PostForm() {
                   </p>
                 </div>
               </div>
-              <div className="border-t border-neutral-200 bg-neutral-100/60 p-6 dark:border-white/10 dark:bg-white/5">
+              <div className="border-t border-neutral-200/50 bg-neutral-100/60 p-6 dark:border-white/5 dark:bg-white/5">
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => void handleSave()}
-                    className="flex h-11 w-full items-center justify-center rounded-xl bg-neutral-950 font-bold text-white shadow-lg shadow-black/10 transition hover:bg-neutral-800 disabled:opacity-60 dark:bg-white dark:text-neutral-950"
+                    className="flex h-11 w-full items-center justify-center rounded-xl border border-indigo-700 bg-indigo-600 font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-60"
                     disabled={isSaving}
                   >
                     {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : isEditing ? 'Update Post' : 'Create Post'}

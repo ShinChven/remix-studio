@@ -1,11 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft,
-  CheckCircle2,
   Clock,
   Image as ImageIcon,
-  Layers,
   Loader2,
   MoreHorizontal,
   Plus,
@@ -24,6 +21,7 @@ import {
 } from '../api';
 import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
 import { BatchScheduleModal } from '../components/BatchScheduleModal';
+import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 
 interface BatchPost {
@@ -213,25 +211,21 @@ export function CampaignBatchActions() {
   }
 
   return (
-    <div className="h-full overflow-y-auto p-4 md:p-8">
-      <div className="mx-auto w-full max-w-7xl space-y-6 pb-24">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <button className="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-white/10 dark:hover:text-white" onClick={() => navigate(`/campaigns/${id}`)} aria-label="Back">
-              <ArrowLeft className="h-5 w-5" />
+    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
+      <div className="w-full space-y-8 pb-24">
+        <PageHeader
+          title="Batch Actions"
+          description={<>Manage multiple posts for <span className="font-semibold text-neutral-950 dark:text-white">{campaign?.name}</span></>}
+          backLink={{ to: `/campaigns/${id}`, label: 'Back to Campaign' }}
+          actions={(
+            <button className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-95" onClick={() => navigate(`/campaigns/${id}/batch/create`)}>
+              <Plus className="h-4 w-4" />
+              Create Batch
             </button>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-neutral-950 dark:text-white">Batch Actions</h1>
-              <p className="text-neutral-500 dark:text-neutral-400">Manage multiple posts for <span className="font-semibold text-neutral-950 dark:text-white">{campaign?.name}</span></p>
-            </div>
-          </div>
-          <button className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-neutral-950 px-4 text-sm font-bold text-white shadow-lg shadow-black/10 transition hover:bg-neutral-800 dark:bg-white dark:text-neutral-950" onClick={() => navigate(`/campaigns/${id}/batch/create`)}>
-            <Plus className="h-4 w-4" />
-            Create Batch
-          </button>
-        </div>
+          )}
+        />
 
-        <section className="rounded-[2rem] border border-neutral-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-neutral-900">
+        <section className="rounded-xl border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
             <div className="relative min-w-0 flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -239,17 +233,17 @@ export function CampaignBatchActions() {
                 value={searchQuery}
                 onChange={(event) => updateQuery({ q: event.target.value })}
                 placeholder="Search posts by content..."
-                className="h-10 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-10 pr-3 text-sm font-medium outline-none transition focus:border-neutral-950 dark:border-white/10 dark:bg-neutral-950 dark:text-white"
+                className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white/40 pl-10 pr-3 text-sm font-medium shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white"
               />
             </div>
-            <select value={statusFilter} onChange={(event) => updateQuery({ status: event.target.value })} className="h-10 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-sm font-bold outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-white">
+            <select value={statusFilter} onChange={(event) => updateQuery({ status: event.target.value })} className="h-10 rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold shadow-sm outline-none backdrop-blur-3xl focus:border-indigo-500/50 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white">
               <option value="all">All Status</option>
               <option value="draft">Draft</option>
               <option value="scheduled">Scheduled</option>
               <option value="completed">Posted</option>
               <option value="failed">Failed</option>
             </select>
-            <select value={sortKey} onChange={(event) => updateQuery({ sort: event.target.value })} className="h-10 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-sm font-bold outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-white">
+            <select value={sortKey} onChange={(event) => updateQuery({ sort: event.target.value })} className="h-10 rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold shadow-sm outline-none backdrop-blur-3xl focus:border-indigo-500/50 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white">
               <option value="scheduled_asc">Scheduled (Soonest First)</option>
               <option value="scheduled_desc">Scheduled (Latest First)</option>
               <option value="created_desc">Created (Newest First)</option>
@@ -258,7 +252,7 @@ export function CampaignBatchActions() {
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-neutral-200 pt-4 dark:border-white/10">
-            <div className="mr-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-bold text-neutral-700 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-200">
+            <div className="mr-2 rounded-xl border border-neutral-200/50 bg-white/40 px-4 py-2 text-sm font-bold text-neutral-700 dark:border-white/5 dark:bg-neutral-950/30 dark:text-neutral-200">
               {selectedPostIds.length} selected
             </div>
             <button disabled={selectedPostIds.length === 0} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 px-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => setAiOpen(true)}>
@@ -270,7 +264,7 @@ export function CampaignBatchActions() {
             <button disabled={selectedPostIds.length === 0} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 px-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => void handleBatchUnschedule()}>
               <X className="h-4 w-4" /> Unschedule
             </button>
-            <button disabled={selectedPostIds.length === 0 || campaign?.status !== 'active'} className="inline-flex h-9 items-center gap-2 rounded-xl bg-neutral-950 px-3 text-sm font-bold text-white transition hover:bg-neutral-800 disabled:opacity-40 dark:bg-white dark:text-neutral-950" onClick={() => void handleBatchSend()}>
+            <button disabled={selectedPostIds.length === 0 || campaign?.status !== 'active'} className="inline-flex h-9 items-center gap-2 rounded-xl bg-indigo-600 px-3 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-40" onClick={() => void handleBatchSend()}>
               <Send className="h-4 w-4" /> Send Now
             </button>
             <button disabled={selectedPostIds.length === 0} className="inline-flex h-9 items-center gap-2 rounded-xl bg-red-500/10 px-3 text-sm font-bold text-red-600 transition hover:bg-red-500/20 disabled:opacity-40" onClick={() => setDeleteOpen(true)}>
@@ -279,7 +273,7 @@ export function CampaignBatchActions() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-sm dark:border-white/10 dark:bg-neutral-900">
+        <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-left text-sm">
               <thead className="bg-neutral-100/70 text-xs uppercase tracking-wider text-neutral-500 dark:bg-white/5 dark:text-neutral-400">
@@ -350,10 +344,10 @@ export function CampaignBatchActions() {
 
       {previewMedia && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" onClick={() => setPreviewMedia(null)}>
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-white/10 bg-neutral-950 p-6" onClick={(event) => event.stopPropagation()}>
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-neutral-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95" onClick={(event) => event.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Post Media</h2>
-              <button className="rounded-full p-2 text-white hover:bg-white/10" onClick={() => setPreviewMedia(null)}><X className="h-5 w-5" /></button>
+              <h2 className="text-lg font-bold text-neutral-950 dark:text-white">Post Media</h2>
+              <button className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white" onClick={() => setPreviewMedia(null)}><X className="h-5 w-5" /></button>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               {previewMedia.map((url, index) => (

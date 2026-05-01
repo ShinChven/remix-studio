@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
   CheckCircle2,
   ExternalLink,
   Loader2,
@@ -12,6 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { disconnectSocialAccount, fetchSocialAccounts } from '../api';
+import { PageHeader } from '../components/PageHeader';
 
 interface SocialAccount {
   id: string;
@@ -33,7 +32,6 @@ function displayName(account: SocialAccount) {
 }
 
 export function CampaignChannels() {
-  const navigate = useNavigate();
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
@@ -69,36 +67,27 @@ export function CampaignChannels() {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-4 md:p-8">
-      <div className="mx-auto w-full max-w-5xl space-y-8 pb-20">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-white/10 dark:hover:text-white"
-              onClick={() => navigate('/campaigns')}
-              aria-label="Back to campaigns"
+    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
+      <div className="w-full space-y-8 pb-20">
+        <PageHeader
+          title="Channels"
+          description="Connect and manage the accounts campaigns publish to."
+          backLink={{ to: '/campaigns', label: 'Back to Campaigns' }}
+          actions={(
+            <a
+              href="/api/social/twitter/connect"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-95"
             >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-neutral-950 dark:text-white">Channels</h1>
-              <p className="text-neutral-500 dark:text-neutral-400">Connect and manage the accounts campaigns publish to.</p>
-            </div>
-          </div>
-          <a
-            href="/api/social/twitter/connect"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-neutral-950 px-4 text-sm font-bold text-white shadow-lg shadow-black/10 transition hover:bg-neutral-800 active:translate-y-px dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
-          >
-            <Plus className="h-4 w-4" />
-            Connect X
-          </a>
-        </div>
+              <Plus className="h-4 w-4" />
+              Connect X
+            </a>
+          )}
+        />
 
-        <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-white/10 dark:bg-neutral-900">
-          <div className="border-b border-neutral-200 bg-neutral-100/60 p-6 dark:border-white/10 dark:bg-white/5">
+        <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+          <div className="border-b border-neutral-200/50 bg-neutral-100/60 p-6 dark:border-white/5 dark:bg-white/5">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-500 shadow-lg shadow-indigo-500/5">
                 <Share2 className="h-5 w-5" />
               </div>
               <div>
@@ -123,7 +112,7 @@ export function CampaignChannels() {
               </p>
               <a
                 href="/api/social/twitter/connect"
-                className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-neutral-950 px-4 text-sm font-bold text-white transition hover:bg-neutral-800 dark:bg-white dark:text-neutral-950"
+                className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-4 text-sm font-bold text-white transition hover:bg-indigo-700"
               >
                 <Plus className="h-4 w-4" />
                 Connect X
@@ -160,7 +149,7 @@ export function CampaignChannels() {
                   <div className="flex items-center gap-2 sm:shrink-0">
                     <a
                       href="/api/social/twitter/connect"
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-neutral-200 px-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold text-neutral-700 transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-950/30 dark:text-neutral-200 dark:hover:bg-white/10"
                     >
                       <ExternalLink className="h-4 w-4" />
                       Reconnect
@@ -169,7 +158,7 @@ export function CampaignChannels() {
                       type="button"
                       disabled={disconnectingId === account.id}
                       onClick={() => void handleDisconnect(account)}
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-red-500/10 px-3 text-sm font-bold text-red-600 transition hover:bg-red-500/20 disabled:opacity-50"
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-red-500/10 px-3 text-sm font-bold text-red-600 transition hover:bg-red-500/20 disabled:opacity-50"
                     >
                       {disconnectingId === account.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       Disconnect

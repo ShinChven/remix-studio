@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowLeft,
   CheckCircle2,
   Image as ImageIcon,
   Loader2,
@@ -11,6 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { addPostMedia, createPost, fetchCampaign, saveImage, saveVideo } from '../api';
+import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 
 const POST_MEDIA_ACCEPT = 'image/*,video/mp4,video/webm,video/quicktime';
@@ -151,25 +151,21 @@ export function CampaignBatchCreate() {
   }
 
   return (
-    <div className="h-full overflow-y-auto p-4 md:p-8">
-      <div className="mx-auto w-full max-w-7xl space-y-8 pb-32">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <button className="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-white/10 dark:hover:text-white" onClick={() => navigate(`/campaigns/${id}/batch`)} aria-label="Back">
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-neutral-950 dark:text-white">Create Batch</h1>
-              <p className="text-neutral-500 dark:text-neutral-400">Upload image, GIF, or video posts for <span className="font-semibold text-neutral-950 dark:text-white">{campaign?.name}</span></p>
+    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
+      <div className="w-full space-y-8 pb-32">
+        <PageHeader
+          title="Create Batch"
+          description={<>Upload image, GIF, or video posts for <span className="font-semibold text-neutral-950 dark:text-white">{campaign?.name}</span></>}
+          backLink={{ to: `/campaigns/${id}/batch`, label: 'Back to Batch Actions' }}
+          actions={(
+            <div className="flex items-center gap-3">
+              <button className="h-10 rounded-xl border border-neutral-200/50 bg-white/40 px-4 text-sm font-bold text-neutral-700 shadow-sm backdrop-blur-3xl transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/${id}/batch`)}>Cancel</button>
+              <button className="inline-flex h-10 min-w-[150px] items-center justify-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-60" onClick={() => void handleConfirm()} disabled={isUploading || posts.length === 0}>
+                {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Uploading {uploadProgress}/{posts.length}...</> : <><CheckCircle2 className="h-4 w-4" /> Confirm Batch</>}
+              </button>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="h-10 rounded-xl border border-neutral-200 px-4 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/${id}/batch`)}>Cancel</button>
-            <button className="inline-flex h-10 min-w-[150px] items-center justify-center gap-2 rounded-xl bg-neutral-950 px-4 text-sm font-bold text-white transition hover:bg-neutral-800 disabled:opacity-60 dark:bg-white dark:text-neutral-950" onClick={() => void handleConfirm()} disabled={isUploading || posts.length === 0}>
-              {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Uploading {uploadProgress}/{posts.length}...</> : <><CheckCircle2 className="h-4 w-4" /> Confirm Batch</>}
-            </button>
-          </div>
-        </div>
+          )}
+        />
 
         <div
           onClick={() => fileInputRef.current?.click()}
@@ -187,14 +183,14 @@ export function CampaignBatchCreate() {
             if (event.dataTransfer.files.length > 0) handleFiles(event.dataTransfer.files);
           }}
           className={cn(
-            'group relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed p-12 transition-all',
+            'group relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-[2.5rem] border-2 border-dashed p-12 transition-all',
             isDragging
-              ? 'scale-[0.99] border-neutral-950 bg-neutral-950/5 shadow-inner dark:border-white dark:bg-white/5'
-              : 'border-neutral-200 bg-neutral-100/30 hover:border-neutral-400 hover:bg-neutral-100/60 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/30',
+              ? 'scale-[0.99] border-indigo-500/50 bg-indigo-500/10 shadow-inner'
+              : 'border-neutral-200 bg-white/40 hover:border-indigo-500/30 hover:bg-white/60 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:border-indigo-500/30 dark:hover:bg-neutral-800/60',
           )}
         >
           <input type="file" multiple accept={POST_MEDIA_ACCEPT} className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-          <div className={cn('flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm transition-all', isDragging ? 'border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-neutral-950' : 'border-neutral-200 bg-white text-neutral-500 group-hover:text-neutral-950 dark:border-white/10 dark:bg-neutral-900 dark:group-hover:text-white')}>
+          <div className={cn('flex h-16 w-16 items-center justify-center rounded-full border shadow-sm transition-all', isDragging ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-neutral-200 bg-white text-neutral-500 group-hover:text-indigo-500 dark:border-white/10 dark:bg-neutral-900')}>
             <Upload className={cn('h-8 w-8', isDragging && 'animate-bounce')} />
           </div>
           <div className="text-center">
@@ -225,7 +221,7 @@ export function CampaignBatchCreate() {
           {posts.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {posts.map((post) => (
-                <div key={post.id} className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-white/10 dark:bg-neutral-900">
+                <div key={post.id} className="group overflow-hidden rounded-2xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
                   <div className="flex h-48">
                     <div className="relative w-1/3 bg-neutral-100 dark:bg-neutral-800">
                       {getFileMediaType(post.file) === 'video' ? <video src={post.preview} className="h-full w-full object-cover" /> : <img src={post.preview} alt="" className="h-full w-full object-cover" />}
@@ -242,7 +238,7 @@ export function CampaignBatchCreate() {
                           <ImageIcon className="h-3.5 w-3.5 text-neutral-300" />
                         )}
                       </div>
-                      <textarea className="min-h-0 flex-1 resize-none rounded-xl border border-neutral-200 bg-neutral-100/40 p-3 text-sm outline-none focus:border-neutral-950 dark:border-white/10 dark:bg-neutral-950 dark:text-white" placeholder="Enter caption for this post..." value={post.content} onChange={(event) => updateContent(post.id, event.target.value)} />
+                      <textarea className="min-h-0 flex-1 resize-none rounded-xl border border-neutral-200/50 bg-white/40 p-3 text-sm outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white" placeholder="Enter caption for this post..." value={post.content} onChange={(event) => updateContent(post.id, event.target.value)} />
                     </div>
                   </div>
                 </div>
@@ -253,7 +249,7 @@ export function CampaignBatchCreate() {
               </button>
             </div>
           ) : (
-            <div className="flex h-64 flex-col items-center justify-center rounded-3xl border border-neutral-200 bg-neutral-100/20 dark:border-white/10 dark:bg-white/5">
+            <div className="flex h-64 flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-neutral-200 bg-white/40 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
               <ImageIcon className="mb-4 h-12 w-12 text-neutral-300" />
               <p className="font-medium text-neutral-500 dark:text-neutral-400">No files uploaded yet</p>
             </div>

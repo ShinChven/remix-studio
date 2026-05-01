@@ -91,11 +91,11 @@ export function BatchAiGenerateModal({ postIds, onClose, onComplete }: Props) {
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/10 rounded-[32px] shadow-[0_50px_100px_rgba(0,0,0,0.4)] dark:shadow-[0_50px_100px_rgba(0,0,0,0.8)] w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[95vh]"
+        className="flex max-h-[95vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-neutral-200/50 bg-white/90 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-300 dark:border-white/10 dark:bg-neutral-900/95"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-8 flex-1 overflow-y-auto">
-          <h2 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight leading-tight mb-2 flex items-center gap-2">
+          <h2 className="mb-2 flex items-center gap-2 text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
             <Sparkles className="w-5 h-5 text-indigo-500" />
             AI Generate Text
           </h2>
@@ -188,14 +188,14 @@ export function BatchAiGenerateModal({ postIds, onClose, onComplete }: Props) {
                 type="button"
                 onClick={onClose}
                 disabled={submitting}
-                className="mt-4 px-6 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all active:scale-95"
+                className="mt-4 rounded-xl px-4 py-2 text-sm font-bold text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 active:scale-95 dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-white"
               >
                 Close
               </button>
               <button
                 type="submit"
                 disabled={submitting || !providerId || !modelId || !promptText.trim()}
-                className="mt-4 px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest bg-indigo-600 hover:bg-neutral-900 dark:hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 flex items-center gap-2"
+                className="mt-4 flex items-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 Generate
