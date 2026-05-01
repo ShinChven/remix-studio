@@ -11,7 +11,7 @@ To act on behalf of a user (post tweets, upload media), the application must use
    - Create a high-entropy random string as the `code_verifier`.
    - Hash it using SHA-256 and base64url-encode it to create the `code_challenge`.
 2. **Authorization Request:**
-   - **Endpoint:** `GET https://twitter.com/i/oauth2/authorize`
+   - **Endpoint:** `GET https://x.com/i/oauth2/authorize`
    - **Parameters:**
      - `response_type=code`
      - `client_id={YOUR_CLIENT_ID}`
@@ -22,11 +22,11 @@ To act on behalf of a user (post tweets, upload media), the application must use
      - `code_challenge_method=S256`
 3. **Token Exchange:**
    - Upon redirect, extract the `code` and `state`.
-   - **Endpoint:** `POST https://api.twitter.com/2/oauth2/token`
+   - **Endpoint:** `POST https://api.x.com/2/oauth2/token`
    - **Body:** `grant_type=authorization_code`, `client_id`, `redirect_uri`, `code`, and the original plain-text `code_verifier`.
 4. **Token Refresh:**
    - Access tokens typically expire in 2 hours.
-   - **Endpoint:** `POST https://api.twitter.com/2/oauth2/token`
+   - **Endpoint:** `POST https://api.x.com/2/oauth2/token`
    - **Body:** `grant_type=refresh_token`, `client_id`, `refresh_token`.
 
 *Reference:* [X Developer Docs: OAuth 2.0](https://developer.x.com/en/docs/authentication/oauth-2-0)
@@ -108,7 +108,7 @@ While the official documentation suggests a unified chunked upload path, empiric
 
 Once tokens are acquired and media is fully uploaded and processed, the final step is creating the post.
 
-**Endpoint:** `POST https://api.twitter.com/2/tweets`
+**Endpoint:** `POST https://api.x.com/2/tweets`
 **Authentication:** OAuth 2.0 User Access Token (Bearer Token).
 
 ### Payload Constraints

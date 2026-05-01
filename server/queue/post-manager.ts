@@ -268,11 +268,11 @@ export class PostManager {
 
       let externalUrl: string | undefined;
       if (externalId) {
-        if (account.platform.toLowerCase() === 'twitter' || account.platform.toLowerCase() === 'x') {
-          // Fallback generic Twitter status URL if username is unknown.
-          externalUrl = `https://twitter.com/i/web/status/${externalId}`;
-          // If we have profileName and it looks like a handle, we could use it, but generic is safer.
-        } else if (account.platform.toLowerCase() === 'linkedin') {
+        const platform = account.platform.toLowerCase();
+        if (platform === 'twitter' || platform === 'x') {
+          // Fallback generic X status URL if username is unknown.
+          externalUrl = `https://x.com/i/web/status/${externalId}`;
+        } else if (platform === 'linkedin') {
           // LinkedIn URNs can be tricky, but typically:
           externalUrl = `https://www.linkedin.com/feed/update/${externalId}`;
         }

@@ -14,7 +14,7 @@ The `ASSISTANT_SYSTEM_PROMPT` in `server/assistant/system-prompt.ts` will be upd
 - **New Vocabulary:**
     - **Campaign:** A collection of posts focused on a specific goal.
     - **Post:** A single social media update containing text and media.
-    - **Social Account:** A connected platform profile (e.g., X/Twitter, LinkedIn).
+    - **Social Account:** A connected platform profile (e.g., X, LinkedIn).
 - **Tool Use Heuristics:** "When creating posts, the assistant should first list available social accounts and content (libraries/albums) to provide context for the user's campaign goals."
 
 ---
@@ -77,7 +77,7 @@ All new mutation tools (`create_campaign`, `create_post`, `add_media_to_post`, `
 1. **User:** "I want to start a campaign for my new AI art collection. Find the best images from my 'Surreal Landscapes' library and draft 3 tweets for next week."
 2. **Assistant:**
     - Calls `list_libraries` and `get_library_items` for 'Surreal Landscapes'.
-    - Calls `list_social_accounts` to find the X (Twitter) connection.
+    - Calls `list_social_accounts` to find the X connection.
     - Proposes a plan: "I'll create a campaign called 'Surreal Landscapes Launch', draft 3 posts with images X, Y, and Z, and schedule them for Monday, Wednesday, and Friday at 10 AM on X."
     - Calls `create_campaign`.
     - (User confirms)

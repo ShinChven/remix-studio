@@ -142,7 +142,7 @@ export function CampaignChannels() {
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
                         <span className="inline-flex items-center gap-1">
                           <Twitter className="h-3.5 w-3.5" />
-                          {account.platform === 'twitter' ? 'X (Twitter)' : account.platform}
+                          {account.platform === 'twitter' ? 'X' : account.platform}
                         </span>
                         <span>Account ID: {account.accountId}</span>
                       </div>

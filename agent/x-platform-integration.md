@@ -24,7 +24,7 @@ Key implementation entry points:
 
 ## Goals
 
-1. Use X API v2 endpoints only. No v1.1 or legacy `upload.twitter.com`.
+1. Use X API v2 endpoints only. No v1.1 or legacy `upload.x.com`.
 2. Use OAuth 2.0 user-context bearer tokens.
 3. Maintain a working image upload path via the direct upload endpoint.
 4. Support GIF and video via the chunked v2 media flow.
@@ -138,7 +138,7 @@ const params = new URLSearchParams({
   client_id: this.clientId,
 });
 
-const response = await fetch('https://api.twitter.com/2/oauth2/token', {
+const response = await fetch('https://api.x.com/2/oauth2/token', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/x-www-form-urlencoded',

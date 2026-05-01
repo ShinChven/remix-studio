@@ -18,9 +18,9 @@ export class SocialChannelFactory {
   static getChannel(platform: string): ISocialChannel {
     switch (platform) {
       case 'twitter':
-        // Validation logic for X (Twitter)
+        // Validation logic for X
         if (!process.env.X_CLIENT_ID || !process.env.X_CLIENT_SECRET) {
-          throw new Error('X_CLIENT_ID and X_CLIENT_SECRET must be configured to use the Twitter channel.');
+          throw new Error('X_CLIENT_ID and X_CLIENT_SECRET must be configured to use the X channel.');
         }
         return new TwitterChannel();
       default:

@@ -432,7 +432,7 @@ export function Campaigns() {
                       if (!externalUrl && primaryExecution?.externalId) {
                         const p = platform.toLowerCase();
                         if (p === 'twitter' || p === 'x') {
-                          externalUrl = `https://twitter.com/i/web/status/${primaryExecution.externalId}`;
+                          externalUrl = `https://x.com/i/web/status/${primaryExecution.externalId}`;
                         } else if (p === 'linkedin') {
                           externalUrl = `https://www.linkedin.com/feed/update/${primaryExecution.externalId}`;
                         }

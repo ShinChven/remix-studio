@@ -223,7 +223,7 @@ export function CampaignHistory() {
                 if (!externalUrl && execution?.externalId) {
                   const p = platform.toLowerCase();
                   if (p === 'twitter' || p === 'x') {
-                    externalUrl = `https://twitter.com/i/web/status/${execution.externalId}`;
+                    externalUrl = `https://x.com/i/web/status/${execution.externalId}`;
                   } else if (p === 'linkedin') {
                     externalUrl = `https://www.linkedin.com/feed/update/${execution.externalId}`;
                   }

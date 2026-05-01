@@ -24,7 +24,7 @@ export class TwitterChannel implements ISocialChannel {
       code_challenge_method: 'S256',
     });
 
-    return `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
+    return `https://x.com/i/oauth2/authorize?${params.toString()}`;
   }
 
   async exchangeCode(code: string, codeVerifier: string): Promise<TokenSet> {
@@ -38,7 +38,7 @@ export class TwitterChannel implements ISocialChannel {
       code_verifier: codeVerifier,
     });
 
-    const response = await fetch('https://api.twitter.com/2/oauth2/token', {
+    const response = await fetch('https://api.x.com/2/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -65,7 +65,7 @@ export class TwitterChannel implements ISocialChannel {
       client_id: this.clientId,
     });
 
-    const response = await fetch('https://api.twitter.com/2/oauth2/token', {
+    const response = await fetch('https://api.x.com/2/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -108,7 +108,7 @@ export class TwitterChannel implements ISocialChannel {
       payload.media = { media_ids: mediaIds };
     }
 
-    const response = await fetch('https://api.twitter.com/2/tweets', {
+    const response = await fetch('https://api.x.com/2/tweets', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${tokens.accessToken}`,

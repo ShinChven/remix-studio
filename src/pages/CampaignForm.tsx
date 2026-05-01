@@ -275,7 +275,7 @@ export function CampaignForm() {
                       onClick={() => setPlatformFilter(platformFilter === platform ? null : platform)}
                     >
                       {getPlatformIcon(platform)}
-                      <span>{platform === 'twitter' ? 'X (formerly Twitter)' : platform}</span>
+                      <span>{platform === 'twitter' ? 'X' : platform}</span>
                     </button>
                   ))}
                 </div>
