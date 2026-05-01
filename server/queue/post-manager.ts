@@ -7,6 +7,8 @@ export class PostManager {
   private executionTimer: NodeJS.Timeout | null = null;
   private isFanningOut = false;
   private isExecuting = false;
+  // In-process lock to prevent concurrent refresh races for the same account
+  private refreshLocks = new Map<string, Promise<string | null>>();
 
   constructor(
     private prisma: PrismaClient,
@@ -204,24 +206,11 @@ export class PostManager {
          } catch(e) {} // May not be encrypted in tests yet
       }
 
-      // Check refresh
-      if (account.expiresAt && account.expiresAt < new Date() && account.refreshToken) {
-        let rt = account.refreshToken;
-        try { rt = decrypt(rt); } catch(e) {}
-        const tokens = await channel.refreshTokens(rt);
-        accessToken = tokens.accessToken;
-
-        const encryptedAccessToken = encrypt(tokens.accessToken);
-        const encryptedRefreshToken = tokens.refreshToken ? encrypt(tokens.refreshToken) : undefined;
-
-        await this.prisma.socialAccount.update({
-          where: { id: account.id },
-          data: {
-             accessToken: encryptedAccessToken,
-             refreshToken: encryptedRefreshToken,
-             expiresAt: tokens.expiresAt
-          }
-        });
+      // Proactive refresh: refresh if expired or within 5 minutes of expiry
+      const fiveMinutes = 5 * 60 * 1000;
+      if (account.expiresAt && account.expiresAt.getTime() - Date.now() < fiveMinutes && account.refreshToken) {
+        const refreshed = await this.refreshAccountToken(account, channel);
+        if (refreshed) accessToken = refreshed;
       }
 
       const mediaItems = await Promise.all(post.media.map(async (m) => {
@@ -243,24 +232,13 @@ export class PostManager {
         );
         if (isAuthError && account.refreshToken) {
           console.log(`[PostManager] Auth error on publish, attempting reactive token refresh for account ${account.id}`);
-          let rt = account.refreshToken;
-          try { rt = decrypt(rt); } catch(e) {}
-          const newTokens = await channel.refreshTokens(rt);
-          accessToken = newTokens.accessToken;
-
-          const encryptedAccessToken = encrypt(newTokens.accessToken);
-          const encryptedRefreshToken = newTokens.refreshToken ? encrypt(newTokens.refreshToken) : undefined;
-          await this.prisma.socialAccount.update({
-            where: { id: account.id },
-            data: {
-              accessToken: encryptedAccessToken,
-              refreshToken: encryptedRefreshToken,
-              expiresAt: newTokens.expiresAt
-            }
-          });
-
-          // Retry with new token
-          externalId = await channel.publish(post.textContent || '', mediaItems, { accessToken });
+          const refreshed = await this.refreshAccountToken(account, channel, true);
+          if (refreshed) {
+            accessToken = refreshed;
+            externalId = await channel.publish(post.textContent || '', mediaItems, { accessToken });
+          } else {
+            throw publishErr;
+          }
         } else {
           throw publishErr;
         }
@@ -299,5 +277,54 @@ export class PostManager {
         });
       }
     }
+  }
+
+  /**
+   * Refresh an account's access token. Uses an in-process lock to prevent
+   * concurrent refresh races (thundering herd protection, matching pilot-banana).
+   * Preserves the old refresh token if X doesn't return a new one.
+   */
+  private async refreshAccountToken(account: any, channel: any, force = false): Promise<string | null> {
+    // If a refresh is already in flight for this account, wait for it
+    const existing = this.refreshLocks.get(account.id);
+    if (existing) {
+      console.log(`[PostManager] Refresh already in flight for account ${account.id}, waiting...`);
+      return existing;
+    }
+
+    const refreshPromise = (async (): Promise<string | null> => {
+      try {
+        let rt = account.refreshToken;
+        if (!rt) return null;
+        try { rt = decrypt(rt); } catch(e) {}
+
+        const tokens = await channel.refreshTokens(rt);
+
+        const encryptedAccessToken = encrypt(tokens.accessToken);
+        // Preserve old refresh token if X didn't return a new one (pilot-banana pattern)
+        const newRt = tokens.refreshToken ?? rt;
+        const encryptedRefreshToken = encrypt(newRt);
+
+        await this.prisma.socialAccount.update({
+          where: { id: account.id },
+          data: {
+            accessToken: encryptedAccessToken,
+            refreshToken: encryptedRefreshToken,
+            expiresAt: tokens.expiresAt,
+          },
+        });
+
+        console.log(`[PostManager] Token refreshed successfully for account ${account.id}`);
+        return tokens.accessToken;
+      } catch (err: any) {
+        console.error(`[PostManager] Token refresh failed for account ${account.id}:`, err.message);
+        return null;
+      } finally {
+        this.refreshLocks.delete(account.id);
+      }
+    })();
+
+    this.refreshLocks.set(account.id, refreshPromise);
+    return refreshPromise;
   }
 }
