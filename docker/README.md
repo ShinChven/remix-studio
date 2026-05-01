@@ -29,6 +29,7 @@ These templates are intended to be copied into a separate deployment repository 
 4. Replace all placeholder secrets before deployment
 5. If you use passkeys, set `WEBAUTHN_RP_ID` to the public site domain only, without protocol or port. Example: `app.example.com` or `example.com`
 6. If TLS terminates at a reverse proxy or load balancer, set `WEBAUTHN_ORIGIN` to the exact external origin, including `https://`. Example: `https://app.example.com`
+7. Before restarting after an application upgrade, run the upgrade step against the running app container: `docker exec -it remix-studio-app node /app/docker/upgrade.mjs`
 
 ## Image tags and cleanup
 

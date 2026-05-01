@@ -30,6 +30,7 @@ RUN npm run build
 FROM node:22-bookworm-slim AS runner
 
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN npm install -g pm2
 
 WORKDIR /app
 
@@ -51,8 +52,9 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/dist-server ./dist-server
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY docker/upgrade.mjs ./docker/upgrade.mjs
 
 EXPOSE 3000
 
-# Run migrations and start the server
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
+# Keep the app supervised in a single PM2 instance.
+CMD ["pm2-runtime", "start", "dist-server/server.js", "--name", "remix-studio", "--instances", "1"]

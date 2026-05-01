@@ -1,5 +1,5 @@
 -- Add position column with default 0
-ALTER TABLE "PostMedia" ADD COLUMN "position" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "PostMedia" ADD COLUMN IF NOT EXISTS "position" INTEGER NOT NULL DEFAULT 0;
 
 -- Backfill position by createdAt ascending within each post
 WITH ordered AS (
@@ -11,4 +11,4 @@ FROM ordered
 WHERE pm.id = ordered.id;
 
 -- Index for fast ordered reads per post
-CREATE INDEX "PostMedia_postId_position_idx" ON "PostMedia"("postId", "position");
+CREATE INDEX IF NOT EXISTS "PostMedia_postId_position_idx" ON "PostMedia"("postId", "position");

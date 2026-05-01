@@ -349,7 +349,7 @@ This starts:
 - `minio` API on `9000`
 - `minio` console on `9001`
 
-The application container runs `prisma migrate deploy` on startup before launching the server.
+Before restarting the app after an upgrade, run the dedicated upgrade step against the running app container with `docker exec` so Prisma migrations are applied before the server comes up. See [UPGRADING.md](UPGRADING.md) for the exact command.
 
 ### 4. View logs
 
