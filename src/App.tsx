@@ -89,7 +89,6 @@ export default function App() {
               <Route path="campaigns/:id/batch/create" element={<CampaignBatchCreate />} />
               <Route path="campaigns/:campaignId/posts/new" element={<PostForm />} />
               <Route path="campaigns/:campaignId/posts/edit/:postId" element={<PostForm />} />
-              <Route path="campaign/:id" element={<CampaignDetail />} />
               <Route path="admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
               <Route path="admin/invites" element={<ProtectedRoute adminOnly><AdminInvites /></ProtectedRoute>} />
               <Route path="providers" element={<Providers />} />

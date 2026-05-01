@@ -227,7 +227,7 @@ export function PostForm() {
         <PageHeader
           title={isEditing ? 'Edit Post' : 'Create New Post'}
           description={isEditing ? 'Update your campaign post.' : 'Add a new post to your campaign.'}
-          backLink={{ to: `/campaigns/${campaignId}`, label: 'Back to Campaign' }}
+          backLink={{ label: 'Back', onClick: () => navigate(-1) }}
         />
 
         <div className="grid gap-8 lg:grid-cols-3">

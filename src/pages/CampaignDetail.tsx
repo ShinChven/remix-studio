@@ -616,7 +616,7 @@ export function CampaignDetail() {
                     </div>
 
                     <div className="space-y-4">
-                      <Link to={`/campaigns/${id}`} className="block whitespace-pre-wrap text-base font-medium leading-relaxed tracking-tight text-neutral-950 transition hover:text-neutral-700 dark:text-white dark:hover:text-neutral-300">
+                      <Link to={`/campaigns/${id}/posts/edit/${post.id}`} className="block whitespace-pre-wrap text-base font-medium leading-relaxed tracking-tight text-neutral-950 transition hover:text-neutral-700 dark:text-white dark:hover:text-neutral-300">
                         {post.textContent || 'Empty Post Content'}
                       </Link>
                       {post.media && post.media.length > 0 && (

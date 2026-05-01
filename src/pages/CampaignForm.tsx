@@ -175,7 +175,7 @@ export function CampaignForm() {
         <PageHeader
           title={isEditing ? 'Edit Campaign' : 'Create New Campaign'}
           description={isEditing ? 'Update your campaign settings and target channels.' : 'Set up a new campaign and select which channels will participate.'}
-          backLink={{ to: isEditing && id ? `/campaigns/${id}` : '/campaigns', label: isEditing ? 'Back to Campaign' : 'Back to Campaigns' }}
+          backLink={{ label: 'Back', onClick: () => navigate(-1) }}
         />
 
         <div className="grid gap-8 lg:grid-cols-3">
