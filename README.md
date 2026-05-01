@@ -13,9 +13,9 @@
 [![S3 Compatible](https://img.shields.io/badge/Storage-S3%20compatible-16a34a?style=flat-square)](./README.md#deployment)
 [![i18n](https://img.shields.io/badge/i18n-English%20%7C%20%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%20%7C%20%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87%20%7C%20%E6%97%A5%E6%9C%AC%E8%AA%9E%20%7C%20%ED%95%9C%EA%B5%AD%EC%96%B4%20%7C%20Fran%C3%A7ais-7c3aed?style=flat-square)](./README.md#what-remix-studio-is-for)
 
-Remix Studio is a self-hosted AI assistant workspace for orchestration and batch content generation, with a built-in assistant powered by Gemini models. Instead of prompting one asset at a time, you build workflows from reusable libraries plus direct text, image, video, and audio inputs, then let the app expand those inputs into draft sets you can run as full combination sweeps or randomized samples.
+Remix Studio is a self-hosted AI assistant workspace for orchestration, batch content generation, and social campaign planning, with a built-in assistant powered by Gemini models. Instead of prompting one asset at a time, you build workflows from reusable libraries plus direct text, image, video, and audio inputs, then let the app expand those inputs into draft sets you can run as full combination sweeps or randomized samples.
 
-It combines three layers in one product: an in-app assistant for planning and operating workflows, a project system for composing workflows from library-backed and direct inputs, and a background execution stack for queueing, storing, exporting, and delivering results. The same shared tool layer also powers MCP access, so clients like Claude and Codex can help create libraries, inspect albums and model availability, and assemble projects around the same workflow model used in the UI.
+It combines four layers in one product: an in-app assistant for planning and operating workflows, a project system for composing workflows from library-backed and direct inputs, a campaign workspace for scheduling and publishing social posts, and a background execution stack for queueing, storing, exporting, and delivering results. The same shared tool layer also powers MCP access, so clients like Claude and Codex can help create libraries, inspect albums and model availability, and assemble projects around the same workflow model used in the UI.
 
 This project is built with **Google AI Studio** and **Antigravity**.
 
@@ -30,6 +30,7 @@ This project is built with **Google AI Studio** and **Antigravity**.
 - Create drafts in bulk, then queue only the runs you want to execute
 - Manage provider credentials, model profiles, custom aliases, and provider-level concurrency limits
 - Review generated outputs in-app, retry failures, and export finished results as ZIP archives
+- Plan social campaigns, generate post copy in batches, attach reusable media, and schedule posts across connected channels
 - Deliver completed export packages to external destinations such as Google Drive
 - Keep generated assets in S3-compatible storage such as AWS S3 or MinIO
 - Operate the system through the UI, the in-app assistant, or external MCP clients
@@ -40,6 +41,7 @@ This project is built with **Google AI Studio** and **Antigravity**.
 
 - **Assistant-first orchestration**: the built-in assistant can inspect libraries, album summaries, model availability, and storage status, then prepare project mutations behind explicit confirmation.
 - **Combination engine**: workflows are built from reusable inputs, then expanded into draft permutations instead of forcing you to handcraft each prompt variant.
+- **Campaign workspace**: campaign timelines connect generated copy, reusable media, scheduling, post history, and social channel delivery in the same app.
 - **Batch execution**: generation runs through a recoverable queue with provider-specific concurrency and detached polling for async providers.
 - **Self-hosted control**: providers, storage, exports, auth, and automation all stay in your own deployment.
 
@@ -84,6 +86,14 @@ flowchart TD
         E --> IMG[Image]
         E --> MED[Audio / Video]
     end
+
+    subgraph Campaigns [Campaign Planning]
+        TXT --> CPOST[Campaign Posts]
+        IMG --> CPOST
+        MED --> CPOST
+        CPOST --> SCH[Scheduling Timeline]
+        SCH --> SOC[Social Channels]
+    end
 ```
 
 1. Save prompt fragments, tags, and media inputs into reusable libraries.
@@ -94,6 +104,7 @@ flowchart TD
 6. Expand the workflow into draft permutations, or sample it with shuffle mode.
 7. Queue all or selected drafts with provider-level concurrency limits.
 8. Review outputs, retry failures, export archives, and optionally deliver them to Google Drive.
+9. Turn generated copy and media into campaign posts, schedule them on a timeline, and publish through connected social channels.
 
 ## Supported Workflows
 
@@ -120,6 +131,7 @@ These are the model profiles currently bundled with the app.
 | **OpenAI** | `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` | `GPT Image 2`, `GPT Image 1.5`, `GPT Image 1 Mini` | `Sora 2`, `Sora 2 Pro` | - |
 | **Grok** | `Grok 4.20`, `Grok 4.1 Fast` | `Grok Imagine`, `Grok Imagine Pro` | `Grok Imagine Video` | - |
 | **Claude** | `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` | - | - | - |
+| **Alibaba Cloud DashScope** | `Qwen3.6 Max`, `Qwen3.6 Plus`, `Qwen3.6 Flash`, `Qwen3.6 VL Max`, `Qwen3.6 VL Plus` | - | - | - |
 | **RunningHub** | - | `nano banana 2`, `Qwen Image 2 Pro` | `Seedance 2.0 Global`, `Seedance 2.0 Global Multimodal Reference` | - |
 | **BytePlus** | - | `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I` | `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` | - |
 | **Kling AI** | - | `Kling Image O1`, `Kling V3 Omni`, `Kling V3 Standard`, `Kling V2.1 Standard`, `Kling V2 Standard`, `Kling V1.5 Standard`, `Kling V1 Standard` | `Kling Video O1`, `Kling V3 Omni Video` | - |
@@ -328,7 +340,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 docker compose -f docker/compose.minio.yml --env-file .env.docker up -d
 ```
 
-The compose templates default to `ghcr.io/shinchven/remix-studio:latest`, which tracks the latest successful build from the main branch. For release deployments, set `REMIX_STUDIO_IMAGE` in `.env.docker` to a version tag such as `ghcr.io/shinchven/remix-studio:1.0.0`.
+The compose templates default to `ghcr.io/shinchven/remix-studio:latest`, which tracks the newest release image. For pinned release deployments, set `REMIX_STUDIO_IMAGE` in `.env.docker` to a version tag such as `ghcr.io/shinchven/remix-studio:1.5.0`.
 
 This starts:
 

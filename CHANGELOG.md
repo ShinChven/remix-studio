@@ -2,6 +2,34 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.5.0] - 2026-05-02
+
+### Added
+
+- Added social campaign management with campaign lists, detail pages, history, channel configuration, scheduled posts, and post creation flows.
+- Added backend campaign, post, social account, and post execution models with API routes and repository support.
+- Added X/Twitter channel integration foundations for social posting workflows.
+- Added batch campaign post creation, batch AI generation, and batch scheduling UI flows.
+- Added campaign media imports from libraries and projects with associated storage cleanup.
+- Added media storage tracking and scheduling timeline support for campaigns.
+- Added MCP tool support for campaign-oriented workflows.
+
+### Changed
+
+- Updated the assistant system prompt and planning docs for social campaign orchestration.
+- Added release and Docker image status badges to the README.
+
+## [1.4.2] - 2026-05-01
+
+### Added
+
+- Enabled automated GitHub releases from the Docker workflow.
+
+### Changed
+
+- Updated README deployment and support guidance.
+- Updated package metadata for the 1.4.2 release.
+
 ## [1.4.1] - 2026-05-01
 
 ### Fixed
@@ -92,6 +120,8 @@ All notable changes to Remix Studio are documented here by version number.
 - Authentication, admin controls, 2FA, passkeys, and user storage limits.
 - Internationalized UI for English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French.
 
+[1.5.0]: https://github.com/ShinChven/remix-studio/compare/v1.4.2...v1.5.0
+[1.4.2]: https://github.com/ShinChven/remix-studio/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/ShinChven/remix-studio/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/ShinChven/remix-studio/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/ShinChven/remix-studio/compare/v1.2.0...v1.3.0
