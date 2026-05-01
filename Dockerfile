@@ -29,7 +29,7 @@ RUN npm run build
 # Production stage
 FROM node:22-bookworm-slim AS runner
 
-RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates postgresql-client && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -51,6 +51,11 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/dist-server ./dist-server
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+
+# Copy backup/restore scripts and create backup directory
+COPY docker/backup.sh /app/backup.sh
+COPY docker/restore.sh /app/restore.sh
+RUN chmod +x /app/backup.sh /app/restore.sh && mkdir -p /app/backups
 
 EXPOSE 3000
 

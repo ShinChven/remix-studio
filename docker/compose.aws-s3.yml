@@ -28,6 +28,9 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
       TRUST_PROXY: ${TRUST_PROXY:-}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-7}
+    volumes:
+      - ${BACKUP_DIR:-./volumes/backups}:/app/backups
     depends_on:
       postgres:
         condition: service_healthy

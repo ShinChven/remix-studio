@@ -30,6 +30,9 @@ services:
       TRUST_PROXY: ${TRUST_PROXY:-}
       NODE_ENV: production
       PORT: 3000
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-7}
+    volumes:
+      - ${BACKUP_DIR:-./data/backups}:/app/backups
     depends_on:
       postgres:
         condition: service_healthy
