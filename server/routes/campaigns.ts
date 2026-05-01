@@ -174,7 +174,7 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
         where: { userId: user.userId },
         include: {
           socialAccounts: true,
-          posts: { select: { id: true, status: true } },
+          posts: { select: { id: true, status: true, scheduledAt: true } },
           _count: { select: { posts: true } },
         },
         orderBy: { createdAt: 'desc' }

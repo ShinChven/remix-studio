@@ -6,7 +6,10 @@ import {
   Image as ImageIcon,
   Layers,
   Loader2,
+  Plus,
   Search,
+  Trash2,
+  Upload,
   Video,
   X,
 } from 'lucide-react';
@@ -20,38 +23,90 @@ import {
   fetchProjects,
   imageDisplayUrl,
   importCampaignMediaPosts,
+  updatePost,
+  uploadCampaignMediaPosts,
 } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { AlbumItem, Library, LibraryItem, Project } from '../types';
 import { cn } from '../lib/utils';
 
+const POST_MEDIA_ACCEPT = 'image/*,video/mp4,video/webm,video/quicktime';
+
 type PickerMode = 'library' | 'album';
+type MediaType = 'image' | 'video';
 
 interface PickerSource {
   id: string;
   name: string;
   description?: string;
-  type: 'image' | 'video';
+  type: MediaType;
   itemCount: number;
 }
 
 interface PickerItem {
   id: string;
   title?: string;
-  mediaType: 'image' | 'video';
+  mediaType: MediaType;
   previewUrl?: string;
   rawUrl?: string;
   sourceLabel: string;
 }
 
+type BatchQueueItem =
+  | {
+      id: string;
+      kind: 'local';
+      file: File;
+      preview: string;
+      mediaType: MediaType;
+      content: string;
+    }
+  | {
+      id: string;
+      kind: 'library';
+      libraryId: string;
+      itemId: string;
+      preview?: string;
+      title?: string;
+      rawUrl?: string;
+      mediaType: MediaType;
+      content: string;
+    }
+  | {
+      id: string;
+      kind: 'album';
+      projectId: string;
+      itemId: string;
+      preview?: string;
+      title?: string;
+      rawUrl?: string;
+      mediaType: MediaType;
+      content: string;
+    };
+
 function importKey(mode: PickerMode, sourceId: string, itemId: string) {
   return JSON.stringify([mode, sourceId, itemId]);
 }
 
-function parseImportKey(key: string): CampaignMediaImportSource {
-  const [mode, sourceId, itemId] = JSON.parse(key) as [PickerMode, string, string];
-  if (mode === 'library') return { kind: 'library', libraryId: sourceId, itemId };
-  return { kind: 'album', projectId: sourceId, itemId };
+function parseImportKey(key: string): [PickerMode, string, string] {
+  return JSON.parse(key) as [PickerMode, string, string];
+}
+
+function mediaSourceLabel(type: MediaType) {
+  return type === 'video' ? 'Video' : 'Image';
+}
+
+function getFileMediaType(file: File): MediaType {
+  return file.type.startsWith('video/') ? 'video' : 'image';
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target?.result as string);
+    reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
 }
 
 function libraryItemToPickerItem(item: LibraryItem, library: PickerSource): PickerItem {
@@ -76,10 +131,6 @@ function albumItemToPickerItem(item: AlbumItem, project: PickerSource): PickerIt
   };
 }
 
-function mediaSourceLabel(type: 'image' | 'video') {
-  return type === 'video' ? 'Video' : 'Image';
-}
-
 interface MediaPickerModalProps {
   mode: PickerMode;
   sources: PickerSource[];
@@ -87,11 +138,10 @@ interface MediaPickerModalProps {
   items: PickerItem[];
   selectedKeys: Set<string>;
   isLoadingItems: boolean;
-  isImporting: boolean;
   onClose: () => void;
   onSelectSource: (sourceId: string) => void;
   onToggleItem: (key: string) => void;
-  onCreateSelected: () => void;
+  onAddSelected: () => void;
 }
 
 function MediaPickerModal({
@@ -101,11 +151,10 @@ function MediaPickerModal({
   items,
   selectedKeys,
   isLoadingItems,
-  isImporting,
   onClose,
   onSelectSource,
   onToggleItem,
-  onCreateSelected,
+  onAddSelected,
 }: MediaPickerModalProps) {
   const [query, setQuery] = useState('');
   const activeSource = sources.find((source) => source.id === activeSourceId);
@@ -118,19 +167,17 @@ function MediaPickerModal({
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return items;
-    return items.filter((item) => {
-      return (
-        item.title?.toLowerCase().includes(q) ||
-        item.sourceLabel.toLowerCase().includes(q) ||
-        item.rawUrl?.toLowerCase().includes(q)
-      );
-    });
+    return items.filter((item) => (
+      item.title?.toLowerCase().includes(q) ||
+      item.sourceLabel.toLowerCase().includes(q) ||
+      item.rawUrl?.toLowerCase().includes(q)
+    ));
   }, [items, query]);
 
   return (
-    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={isImporting ? undefined : onClose} />
-      <div className="relative flex h-[86vh] w-full max-w-7xl overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-2xl dark:border-white/10 dark:bg-neutral-950">
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 md:p-8">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose} />
+      <div className="relative flex h-[88vh] w-full max-w-7xl overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-2xl dark:border-white/10 dark:bg-neutral-950 md:rounded-[2rem]">
         <aside className="hidden w-80 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 p-5 dark:border-white/10 dark:bg-neutral-900/80 md:flex">
           <div className="mb-5 flex shrink-0 items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
@@ -138,7 +185,7 @@ function MediaPickerModal({
             </div>
             <div>
               <h3 className="font-bold text-neutral-950 dark:text-white">{mode === 'library' ? 'Pick from Library' : 'Pick from Album'}</h3>
-              <p className="text-xs text-neutral-500">Select image/video media</p>
+              <p className="text-xs text-neutral-500">Add selected media to queue</p>
             </div>
           </div>
 
@@ -155,7 +202,6 @@ function MediaPickerModal({
                       : 'border-neutral-200 bg-white hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-950 dark:hover:border-white/20',
                   )}
                   onClick={() => onSelectSource(source.id)}
-                  disabled={isImporting}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="truncate text-sm font-bold text-neutral-950 dark:text-white">{source.name}</span>
@@ -171,22 +217,19 @@ function MediaPickerModal({
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-start justify-between gap-4 border-b border-neutral-200 p-5 dark:border-white/10">
+          <div className="flex items-start justify-between gap-4 border-b border-neutral-200 p-4 dark:border-white/10 md:p-5">
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
                 {activeSource ? `${activeSource.name} · ${activeSource.itemCount} items` : 'No source selected'}
               </p>
-              <h2 className="mt-1 text-xl font-bold text-neutral-950 dark:text-white">
+              <h2 className="mt-1 text-lg font-bold text-neutral-950 dark:text-white md:text-xl">
                 {mode === 'library' ? 'Library Media Picker' : 'Album Media Picker'}
               </h2>
-              <p className="mt-1 text-sm text-neutral-500">
-                Selection creates posts immediately: one selected media item becomes one draft post.
-              </p>
+              <p className="mt-1 text-sm text-neutral-500">Selected media will be added to the batch queue.</p>
             </div>
             <button
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white"
               onClick={onClose}
-              disabled={isImporting}
             >
               <X className="h-5 w-5" />
             </button>
@@ -197,7 +240,6 @@ function MediaPickerModal({
               className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white"
               value={activeSourceId || ''}
               onChange={(event) => onSelectSource(event.target.value)}
-              disabled={isImporting}
             >
               {sources.map((source) => (
                 <option key={source.id} value={source.id}>{source.name}</option>
@@ -213,12 +255,11 @@ function MediaPickerModal({
                 placeholder="Search selected source..."
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                disabled={isImporting}
               />
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">
             {sources.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-neutral-200 text-center dark:border-white/10">
                 <Images className="mb-4 h-12 w-12 text-neutral-300" />
@@ -234,10 +275,9 @@ function MediaPickerModal({
               <div className="flex h-full flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-neutral-200 text-center dark:border-white/10">
                 <Search className="mb-4 h-12 w-12 text-neutral-300" />
                 <p className="font-bold text-neutral-950 dark:text-white">No media found</p>
-                <p className="mt-1 text-sm text-neutral-500">Try another source or search term.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
                 {filteredItems.map((item) => {
                   const key = importKey(mode, activeSourceId || '', item.id);
                   const selected = selectedKeys.has(key);
@@ -251,7 +291,6 @@ function MediaPickerModal({
                           : 'border-neutral-200 hover:border-indigo-400/50 dark:border-white/10',
                       )}
                       onClick={() => onToggleItem(key)}
-                      disabled={isImporting}
                     >
                       <div className="relative aspect-video bg-neutral-100 dark:bg-neutral-800">
                         {item.previewUrl ? (
@@ -283,24 +322,16 @@ function MediaPickerModal({
             )}
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-neutral-200 p-5 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-neutral-200 p-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between md:p-5">
             <p className="text-sm text-neutral-500">
               <span className="font-bold text-neutral-950 dark:text-white">{selectedCount}</span> selected
             </p>
             <div className="flex items-center gap-3">
-              <button
-                className="h-10 rounded-xl border border-neutral-200 px-4 text-sm font-bold text-neutral-600 transition hover:bg-neutral-50 dark:border-white/10 dark:text-neutral-300 dark:hover:bg-white/10"
-                onClick={onClose}
-                disabled={isImporting}
-              >
+              <button className="h-10 rounded-xl border border-neutral-200 px-4 text-sm font-bold text-neutral-600 transition hover:bg-neutral-50 dark:border-white/10 dark:text-neutral-300 dark:hover:bg-white/10" onClick={onClose}>
                 Cancel
               </button>
-              <button
-                className="inline-flex h-10 min-w-[170px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-60"
-                onClick={onCreateSelected}
-                disabled={isImporting || selectedCount === 0}
-              >
-                {isImporting ? <><Loader2 className="h-4 w-4 animate-spin" /> Creating...</> : <><CheckCircle2 className="h-4 w-4" /> Use Selected Now</>}
+              <button className="inline-flex h-10 min-w-[160px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-60" onClick={onAddSelected} disabled={selectedCount === 0}>
+                <Plus className="h-4 w-4" /> Add to Queue
               </button>
             </div>
           </div>
@@ -313,10 +344,15 @@ function MediaPickerModal({
 export function CampaignBatchCreate() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [campaign, setCampaign] = useState<any>(null);
+  const [queue, setQueue] = useState<BatchQueueItem[]>([]);
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const [pickerMode, setPickerMode] = useState<PickerMode | null>(null);
   const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
@@ -324,7 +360,6 @@ export function CampaignBatchCreate() {
   const [albumItems, setAlbumItems] = useState<AlbumItem[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [isLoadingItems, setIsLoadingItems] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -338,14 +373,13 @@ export function CampaignBatchCreate() {
           fetchLibraries(1, 100, undefined, false),
           fetchProjects(1, 100, undefined, 'all'),
         ]);
-
         if (cancelled) return;
         setCampaign(campaignData);
         setLibraries(librariesData.items || []);
         setProjects(projectsData.items || []);
       } catch (error: any) {
         if (!cancelled) {
-          toast.error(error?.message || 'Failed to load batch picker');
+          toast.error(error?.message || 'Failed to load campaign');
           navigate('/campaigns');
         }
       } finally {
@@ -356,32 +390,38 @@ export function CampaignBatchCreate() {
     void loadPage();
     return () => {
       cancelled = true;
+      setQueue((items) => {
+        for (const item of items) {
+          if (item.kind === 'local') URL.revokeObjectURL(item.preview);
+        }
+        return items;
+      });
     };
   }, [id, navigate]);
 
-  const librarySources = useMemo<PickerSource[]>(() => {
-    return libraries
+  const librarySources = useMemo<PickerSource[]>(() => (
+    libraries
       .filter((library) => library.type === 'image' || library.type === 'video')
       .map((library) => ({
         id: library.id,
         name: library.name,
         description: library.description,
-        type: library.type as 'image' | 'video',
+        type: library.type as MediaType,
         itemCount: library.itemCount ?? library.items?.length ?? 0,
-      }));
-  }, [libraries]);
+      }))
+  ), [libraries]);
 
-  const albumSources = useMemo<PickerSource[]>(() => {
-    return projects
+  const albumSources = useMemo<PickerSource[]>(() => (
+    projects
       .filter((project) => (project.type === 'image' || project.type === 'video') && ((project as any).albumCount ?? 0) > 0)
       .map((project) => ({
         id: project.id,
         name: project.name,
         description: project.description,
-        type: project.type as 'image' | 'video',
+        type: project.type as MediaType,
         itemCount: (project as any).albumCount ?? project.album?.length ?? 0,
-      }));
-  }, [projects]);
+      }))
+  ), [projects]);
 
   const activeLibrarySource = useMemo(
     () => librarySources.find((source) => source.id === activeLibraryId) || null,
@@ -411,7 +451,6 @@ export function CampaignBatchCreate() {
         setLibraryItems([]);
         return;
       }
-
       setIsLoadingItems(true);
       try {
         const data = await fetchLibraryItems(activeLibraryId, 1, 500);
@@ -437,7 +476,6 @@ export function CampaignBatchCreate() {
         setAlbumItems([]);
         return;
       }
-
       setIsLoadingItems(true);
       try {
         const project = await fetchProject(activeProjectId);
@@ -471,21 +509,58 @@ export function CampaignBatchCreate() {
   const openPicker = (mode: PickerMode) => {
     setSelectedKeys(new Set());
     setPickerMode(mode);
-    if (mode === 'library' && !activeLibraryId && librarySources.length > 0) {
-      setActiveLibraryId(librarySources[0].id);
-    }
-    if (mode === 'album' && !activeProjectId && albumSources.length > 0) {
-      setActiveProjectId(albumSources[0].id);
-    }
+    if (mode === 'library' && !activeLibraryId && librarySources.length > 0) setActiveLibraryId(librarySources[0].id);
+    if (mode === 'album' && !activeProjectId && albumSources.length > 0) setActiveProjectId(albumSources[0].id);
   };
 
   const closePicker = () => {
-    if (isImporting) return;
     setPickerMode(null);
     setSelectedKeys(new Set());
   };
 
-  const toggleItem = (key: string) => {
+  const handleFiles = (files: FileList | File[]) => {
+    const nextFiles = Array.from(files);
+    const unsupported = nextFiles.find((file) => !file.type.startsWith('image/') && !file.type.startsWith('video/'));
+    if (unsupported) {
+      toast.error('Only images and videos are supported');
+      return;
+    }
+    const drafts: BatchQueueItem[] = nextFiles.map((file) => ({
+      id: crypto.randomUUID(),
+      kind: 'local',
+      file,
+      preview: URL.createObjectURL(file),
+      mediaType: getFileMediaType(file),
+      content: '',
+    }));
+    setQueue((prev) => [...prev, ...drafts]);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) handleFiles(event.target.files);
+    event.target.value = '';
+  };
+
+  const removeQueueItem = (itemId: string) => {
+    setQueue((prev) => {
+      const item = prev.find((queueItem) => queueItem.id === itemId);
+      if (item?.kind === 'local') URL.revokeObjectURL(item.preview);
+      return prev.filter((queueItem) => queueItem.id !== itemId);
+    });
+  };
+
+  const clearQueue = () => {
+    for (const item of queue) {
+      if (item.kind === 'local') URL.revokeObjectURL(item.preview);
+    }
+    setQueue([]);
+  };
+
+  const updateContent = (itemId: string, content: string) => {
+    setQueue((prev) => prev.map((item) => item.id === itemId ? { ...item, content } : item));
+  };
+
+  const togglePickerItem = (key: string) => {
     setSelectedKeys((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -494,19 +569,106 @@ export function CampaignBatchCreate() {
     });
   };
 
-  const createSelectedPosts = async () => {
-    if (!id || selectedKeys.size === 0) return;
-    const sources = Array.from(selectedKeys).map(parseImportKey);
+  const addSelectedToQueue = () => {
+    if (!pickerMode || !activeSourceId || selectedKeys.size === 0) return;
+    const source = pickerMode === 'library' ? activeLibrarySource : activeAlbumSource;
+    if (!source) return;
 
-    setIsImporting(true);
+    const existingKeys = new Set(queue.map((item) => {
+      if (item.kind === 'library') return importKey('library', item.libraryId, item.itemId);
+      if (item.kind === 'album') return importKey('album', item.projectId, item.itemId);
+      return item.id;
+    }));
+
+    const additions: BatchQueueItem[] = [];
+    for (const key of selectedKeys) {
+      if (existingKeys.has(key)) continue;
+      const [mode, sourceId, itemId] = parseImportKey(key);
+      const pickerItem = pickerItems.find((item) => item.id === itemId);
+      if (!pickerItem) continue;
+      additions.push(mode === 'library'
+        ? {
+            id: crypto.randomUUID(),
+            kind: 'library',
+            libraryId: sourceId,
+            itemId,
+            preview: pickerItem.previewUrl,
+            title: pickerItem.title || source.name,
+            rawUrl: pickerItem.rawUrl,
+            mediaType: pickerItem.mediaType,
+            content: '',
+          }
+        : {
+            id: crypto.randomUUID(),
+            kind: 'album',
+            projectId: sourceId,
+            itemId,
+            preview: pickerItem.previewUrl,
+            title: pickerItem.title || source.name,
+            rawUrl: pickerItem.rawUrl,
+            mediaType: pickerItem.mediaType,
+            content: '',
+          });
+    }
+
+    if (additions.length > 0) {
+      setQueue((prev) => [...prev, ...additions]);
+      toast.success(`Added ${additions.length} item${additions.length === 1 ? '' : 's'} to queue`);
+    }
+    closePicker();
+  };
+
+  const updateCreatedPostCaptions = async (created: Array<{ postId: string }>, items: BatchQueueItem[]) => {
+    await Promise.all(created.map((entry, index) => {
+      const content = items[index]?.content?.trim();
+      if (!content) return Promise.resolve();
+      return updatePost(entry.postId, { textContent: content, status: 'draft' });
+    }));
+  };
+
+  const handleConfirm = async () => {
+    if (!id || queue.length === 0) {
+      toast.error('Please add at least one media item');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
     try {
-      const result = await importCampaignMediaPosts(id, sources);
-      toast.success(`Created ${result.count} post${result.count === 1 ? '' : 's'} for ${campaign?.name || 'campaign'}`);
+      const localItems = queue.filter((item): item is Extract<BatchQueueItem, { kind: 'local' }> => item.kind === 'local');
+      const importItems = queue.filter((item): item is Extract<BatchQueueItem, { kind: 'library' | 'album' }> => item.kind !== 'local');
+      let createdCount = 0;
+
+      if (localItems.length > 0) {
+        const files = await Promise.all(localItems.map(async (item) => ({
+          base64: await readFileAsDataUrl(item.file),
+          name: item.file.name,
+        })));
+        const result = await uploadCampaignMediaPosts(id, files);
+        await updateCreatedPostCaptions(result.created, localItems);
+        createdCount += result.count;
+        setUploadProgress(createdCount);
+      }
+
+      if (importItems.length > 0) {
+        const sources: CampaignMediaImportSource[] = importItems.map((item) => (
+          item.kind === 'library'
+            ? { kind: 'library', libraryId: item.libraryId, itemId: item.itemId }
+            : { kind: 'album', projectId: item.projectId, itemId: item.itemId }
+        ));
+        const result = await importCampaignMediaPosts(id, sources);
+        await updateCreatedPostCaptions(result.created, importItems);
+        createdCount += result.count;
+        setUploadProgress(createdCount);
+      }
+
+      toast.success(`Successfully created ${createdCount} posts for ${campaign?.name}`);
+      clearQueue();
       navigate(`/campaigns/${id}/batch`);
     } catch (error: any) {
-      toast.error(error?.message || 'Failed to create posts');
+      toast.error(error?.message || 'An error occurred during batch creation');
     } finally {
-      setIsImporting(false);
+      setIsUploading(false);
     }
   };
 
@@ -524,66 +686,128 @@ export function CampaignBatchCreate() {
       <div className="w-full space-y-8 pb-32">
         <PageHeader
           title="Create Batch"
-          description={<>Pick media for <span className="font-semibold text-neutral-950 dark:text-white">{campaign?.name}</span>. Each selected item becomes one draft post immediately.</>}
+          description={<>Queue media from uploads, libraries, or albums for <span className="font-semibold text-neutral-950 dark:text-white">{campaign?.name}</span></>}
           backLink={{ to: `/campaigns/${id}/batch`, label: 'Back to Batch Actions' }}
           actions={(
-            <button
-              className="h-10 rounded-xl border border-neutral-200/50 bg-white/40 px-4 text-sm font-bold text-neutral-700 shadow-sm backdrop-blur-3xl transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-white/10"
-              onClick={() => navigate(`/campaigns/${id}/batch`)}
-            >
-              Cancel
-            </button>
+            <div className="flex items-center gap-3">
+              <button className="h-10 rounded-xl border border-neutral-200/50 bg-white/40 px-4 text-sm font-bold text-neutral-700 shadow-sm backdrop-blur-3xl transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/${id}/batch`)}>Cancel</button>
+              <button className="inline-flex h-10 min-w-[150px] items-center justify-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-60" onClick={() => void handleConfirm()} disabled={isUploading || queue.length === 0}>
+                {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Processing {uploadProgress}/{queue.length}...</> : <><CheckCircle2 className="h-4 w-4" /> Confirm Batch</>}
+              </button>
+            </div>
           )}
         />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <button
-            className="group relative overflow-hidden rounded-[2rem] border border-neutral-200 bg-white p-8 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-400/50 hover:shadow-xl dark:border-white/10 dark:bg-neutral-900"
-            onClick={() => openPicker('library')}
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,70,229,0.18),transparent_45%)] opacity-0 transition group-hover:opacity-100" />
-            <div className="relative">
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
-                <Images className="h-7 w-7" />
-              </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">{librarySources.length} media libraries</p>
-              <h2 className="mt-2 text-2xl font-bold text-neutral-950 dark:text-white">Pick from Image/Video Library</h2>
-              <p className="mt-3 max-w-lg text-sm leading-6 text-neutral-500">
-                Select multiple image or video library items. Images are imported as 4K JPEG 90 raw plus opt and thumb; videos keep the original file.
-              </p>
-            </div>
+        <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200/60 bg-white/50 p-3 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50 sm:flex-row sm:flex-wrap sm:items-center">
+          <button className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-bold text-neutral-700 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-200" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="h-4 w-4" /> Upload Files
           </button>
-
-          <button
-            className="group relative overflow-hidden rounded-[2rem] border border-neutral-200 bg-white p-8 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-400/50 hover:shadow-xl dark:border-white/10 dark:bg-neutral-900"
-            onClick={() => openPicker('album')}
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.18),transparent_45%)] opacity-0 transition group-hover:opacity-100" />
-            <div className="relative">
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20">
-                <Layers className="h-7 w-7" />
-              </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">{albumSources.length} media albums</p>
-              <h2 className="mt-2 text-2xl font-bold text-neutral-950 dark:text-white">Pick from Album</h2>
-              <p className="mt-3 max-w-lg text-sm leading-6 text-neutral-500">
-                Select generated media from image or video project albums. The selected media is copied into post storage before posts are created.
-              </p>
-            </div>
+          <button className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-bold text-neutral-700 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-200" onClick={() => openPicker('library')}>
+            <Images className="h-4 w-4" /> Pick Library
           </button>
+          <button className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-bold text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-600 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-200" onClick={() => openPicker('album')}>
+            <Layers className="h-4 w-4" /> Pick Album
+          </button>
+          <div className="text-xs font-medium text-neutral-500 sm:ml-auto">
+            {queue.length} queued · 1 media item per post
+          </div>
         </div>
 
-        <div className="rounded-[2rem] border border-neutral-200 bg-white/60 p-6 text-sm text-neutral-500 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/60">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h3 className="font-bold text-neutral-950 dark:text-white">Creation behavior</h3>
-              <p className="mt-1">No staging list and no confirm step. After picker selection is submitted, processing starts and the page returns to batch actions.</p>
-            </div>
-            <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
-              <span className="rounded-full bg-neutral-100 px-3 py-1 text-neutral-600 dark:bg-white/10 dark:text-neutral-300">1 media = 1 post</span>
-              <span className="rounded-full bg-neutral-100 px-3 py-1 text-neutral-600 dark:bg-white/10 dark:text-neutral-300">raw + opt + thumb</span>
-              <span className="rounded-full bg-neutral-100 px-3 py-1 text-neutral-600 dark:bg-white/10 dark:text-neutral-300">draft status</span>
-            </div>
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={(event) => {
+            event.preventDefault();
+            setIsDragging(false);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDragging(false);
+            if (event.dataTransfer.files.length > 0) handleFiles(event.dataTransfer.files);
+          }}
+          className={cn(
+            'group relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-[2.5rem] border-2 border-dashed p-8 transition-all md:p-12',
+            isDragging
+              ? 'scale-[0.99] border-indigo-500/50 bg-indigo-500/10 shadow-inner'
+              : 'border-neutral-200 bg-white/40 hover:border-indigo-500/30 hover:bg-white/60 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:border-indigo-500/30 dark:hover:bg-neutral-800/60',
+          )}
+        >
+          <input type="file" multiple accept={POST_MEDIA_ACCEPT} className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+          <div className={cn('flex h-16 w-16 items-center justify-center rounded-full border shadow-sm transition-all', isDragging ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-neutral-200 bg-white text-neutral-500 group-hover:text-indigo-500 dark:border-white/10 dark:bg-neutral-900')}>
+            <Upload className={cn('h-8 w-8', isDragging && 'animate-bounce')} />
           </div>
+          <div className="text-center">
+            <p className="text-lg font-semibold text-neutral-950 dark:text-white">{isDragging ? 'Drop files to queue' : 'Drag and drop images or video here'}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">or click to browse from your computer</p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            <span>JPG, PNG, WEBP, GIF, MP4</span>
+            <span className="h-1 w-1 rounded-full bg-neutral-400" />
+            <span>Library and album picks use the same queue below</span>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-neutral-950 dark:text-white">
+              Batch Queue
+              <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-bold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300">{queue.length}</span>
+            </h2>
+            {queue.length > 0 && (
+              <button className="rounded-lg px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-500/10" onClick={clearQueue}>Clear All</button>
+            )}
+          </div>
+
+          {queue.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {queue.map((item) => {
+                const preview = item.kind === 'local' ? item.preview : item.preview;
+                return (
+                  <div key={item.id} className="group overflow-hidden rounded-2xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+                    <div className="flex h-48">
+                      <div className="relative w-1/3 bg-neutral-100 dark:bg-neutral-800">
+                        {preview ? (
+                          item.mediaType === 'video' && item.kind === 'local'
+                            ? <video src={preview} className="h-full w-full object-cover" />
+                            : <img src={item.kind === 'local' ? preview : imageDisplayUrl(preview)} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            {item.mediaType === 'video' ? <Video className="h-6 w-6 text-neutral-400" /> : <ImageIcon className="h-6 w-6 text-neutral-400" />}
+                          </div>
+                        )}
+                        <button className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-red-600 text-white opacity-0 transition-opacity group-hover:opacity-100" onClick={(event) => { event.stopPropagation(); removeQueueItem(item.id); }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+                            {item.kind === 'local' ? item.file.name : item.title || item.rawUrl || item.itemId}
+                          </span>
+                          <span className="shrink-0 rounded bg-neutral-950/10 px-1 text-[9px] font-bold uppercase text-neutral-700 dark:bg-white/10 dark:text-neutral-200">
+                            {item.kind} · {mediaSourceLabel(item.mediaType)}
+                          </span>
+                        </div>
+                        <textarea className="min-h-0 flex-1 resize-none rounded-xl border border-neutral-200/50 bg-white/40 p-3 text-sm outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white" placeholder="Enter caption for this post..." value={item.content} onChange={(event) => updateContent(item.id, event.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <button onClick={() => fileInputRef.current?.click()} className="flex h-48 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-100/20 text-neutral-500 transition hover:border-neutral-300 hover:bg-neutral-100/50 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20">
+                <Plus className="h-6 w-6" />
+                <span className="text-sm font-medium">Add more files</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex h-64 flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-neutral-200 bg-white/40 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
+              <ImageIcon className="mb-4 h-12 w-12 text-neutral-300" />
+              <p className="font-medium text-neutral-500 dark:text-neutral-400">No media queued yet</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -595,11 +819,10 @@ export function CampaignBatchCreate() {
           items={pickerItems}
           selectedKeys={selectedKeys}
           isLoadingItems={isLoadingItems}
-          isImporting={isImporting}
           onClose={closePicker}
           onSelectSource={pickerMode === 'library' ? setActiveLibraryId : setActiveProjectId}
-          onToggleItem={toggleItem}
-          onCreateSelected={() => void createSelectedPosts()}
+          onToggleItem={togglePickerItem}
+          onAddSelected={addSelectedToQueue}
         />
       )}
     </div>

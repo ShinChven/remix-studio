@@ -60,6 +60,7 @@ interface PostMedia {
   sourceUrl?: string | null;
   processedUrl?: string | null;
   thumbnailUrl?: string | null;
+  size?: number | null;
   type?: string;
   status?: string;
   errorMsg?: string | null;
@@ -147,6 +148,24 @@ function statusClasses(status: string) {
   if (status === 'queued') return 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
   if (status === 'completed') return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
   return 'bg-red-500/10 text-red-600 dark:text-red-400';
+}
+
+function formatBytes(bytes: number) {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function formatDateTime(date: Date | null) {
+  if (!date) return 'Not scheduled';
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export function CampaignDetail() {
@@ -448,6 +467,15 @@ export function CampaignDetail() {
 
   const totalPosts = posts.length;
   const progress = totalPosts > 0 ? Math.round((counts.completed / totalPosts) * 100) : 0;
+  const totalMediaSize = posts.reduce((sum, post) => {
+    return sum + (post.media || []).reduce((mediaSum, media) => mediaSum + Number(media.size || 0), 0);
+  }, 0);
+  const totalMediaCount = posts.reduce((sum, post) => sum + (post.media?.length || 0), 0);
+  const scheduledTimes = posts
+    .map((post) => post.scheduledAt ? new Date(post.scheduledAt).getTime() : Number.NaN)
+    .filter((time) => Number.isFinite(time));
+  const campaignStartDate = scheduledTimes.length > 0 ? new Date(Math.min(...scheduledTimes)) : null;
+  const campaignEndDate = scheduledTimes.length > 0 ? new Date(Math.max(...scheduledTimes)) : null;
   const currentEditingPost = posts.find((post) => post.id === editingPostId);
   const currentHasPendingMedia = currentEditingPost?.media?.some((media) => media.status === 'pending' || media.status === 'processing');
 
@@ -523,6 +551,7 @@ export function CampaignDetail() {
                     onClick={() => setStatusFilter(statusFilter === key && key !== 'all' ? 'all' : key)}
                     className={cn(
                       'flex flex-col items-center justify-center rounded-lg border p-2 transition-all',
+                      key === 'all' && 'col-span-2',
                       statusFilter === key ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'border-neutral-200/50 bg-neutral-100/40 text-neutral-600 hover:bg-neutral-100 dark:border-white/5 dark:bg-white/5 dark:text-neutral-300 dark:hover:bg-white/10',
                     )}
                   >
@@ -552,7 +581,18 @@ export function CampaignDetail() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-neutral-500 dark:text-neutral-400">Start Date</span>
-                  <span className="font-medium text-neutral-950 dark:text-white">{new Date(campaign.createdAt).toLocaleDateString()}</span>
+                  <span className="text-right font-medium text-neutral-950 dark:text-white">{formatDateTime(campaignStartDate)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-500 dark:text-neutral-400">End Date</span>
+                  <span className="text-right font-medium text-neutral-950 dark:text-white">{formatDateTime(campaignEndDate)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-neutral-500 dark:text-neutral-400">Media Storage</span>
+                  <span className="text-right font-medium text-neutral-950 dark:text-white">
+                    {formatBytes(totalMediaSize)}
+                    <span className="ml-1 text-xs font-normal text-neutral-500">({totalMediaCount})</span>
+                  </span>
                 </div>
                 <div className="h-px bg-neutral-200 dark:bg-white/10" />
                 <div className="space-y-3">

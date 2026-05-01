@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
@@ -18,6 +19,7 @@ import { collectPostMediaStorageKeys, deleteStorageKeys } from '../utils/post-me
 
 const POST_IMAGE_RAW_MAX_DIMENSION = 4096;
 const POST_IMAGE_RAW_QUALITY = 90;
+const CAMPAIGN_MEDIA_UPLOAD_LIMIT_BYTES = 500 * 1024 * 1024;
 
 type ImportSource =
   | { kind: 'library'; libraryId: string; itemId: string }
@@ -96,10 +98,35 @@ function videoMimeFromExt(ext: string): string {
   }
 }
 
+function videoMimeExt(mimeType: string): string {
+  switch (mimeType) {
+    case 'video/webm':
+      return 'webm';
+    case 'video/quicktime':
+      return 'mov';
+    case 'video/x-matroska':
+      return 'mkv';
+    case 'video/mp4':
+    default:
+      return 'mp4';
+  }
+}
+
+function dataUrlMimeType(value: string): string | null {
+  const match = value.match(/^data:([\w/+.-]+);base64,/);
+  return match?.[1] || null;
+}
+
 function bufferFromDataUrl(value: string, expectedPrefix: 'image' | 'video'): Buffer | null {
   const match = value.match(new RegExp(`^data:${expectedPrefix}/[\\w+.-]+;base64,(.+)$`));
   if (!match) return null;
   return Buffer.from(match[1], 'base64');
+}
+
+function readMediaBufferFromDataUrl(value: string, expectedPrefix: 'image' | 'video'): Buffer {
+  const buffer = bufferFromDataUrl(value, expectedPrefix);
+  if (!buffer) throw new Error(`Invalid ${expectedPrefix} data URL`);
+  return buffer;
 }
 
 async function readMediaBuffer(storage: S3Storage, value: string | undefined, bucket: string, expectedPrefix: 'image' | 'video'): Promise<Buffer> {
@@ -462,6 +489,155 @@ export function createPostsRouter(
       return c.json({ error: error?.message || 'Failed to import media posts' }, 400);
     }
   });
+
+  const uploadMediaPostsSchema = z.object({
+    files: z.array(z.object({
+      base64: z.string().min(1),
+      name: z.string().optional(),
+    })).min(1).max(100),
+  });
+
+  postsRouter.post(
+    '/api/campaigns/:campaignId/posts/upload-media',
+    authMiddleware,
+    bodyLimit({
+      maxSize: CAMPAIGN_MEDIA_UPLOAD_LIMIT_BYTES,
+      onError: (c) => c.json({ error: 'Upload too large (max 500MB per batch)' }, 413),
+    }),
+    async (c) => {
+      const user = c.get('user') as JwtPayload;
+      const campaignId = c.req.param('campaignId');
+
+      try {
+        const body = await c.req.json();
+        const data = uploadMediaPostsSchema.parse(body);
+
+        const campaign = await prisma.campaign.findFirst({
+          where: { id: campaignId, userId: user.userId },
+          select: { id: true },
+        });
+        if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
+
+        const safeCampaignId = campaignId.replace(/[^a-zA-Z0-9-_]/g, '_');
+        const created: Array<{ postId: string; mediaId: string }> = [];
+
+        for (const file of data.files) {
+          const mimeType = dataUrlMimeType(file.base64);
+          const isImage = Boolean(mimeType?.startsWith('image/'));
+          const isVideo = Boolean(mimeType?.startsWith('video/'));
+          if (!mimeType || (!isImage && !isVideo)) {
+            throw new Error(`Unsupported media type${file.name ? ` for ${file.name}` : ''}`);
+          }
+
+          const postId = randomUUID();
+          const mediaId = randomUUID();
+          const baseKey = `campaigns/${safeCampaignId}/posts/${postId}/media/${mediaId}`;
+          let rawKey: string;
+          let processedKey: string;
+          let thumbKey: string;
+          let storedSize = 0;
+
+          if (isImage) {
+            const sourceBuffer = readMediaBufferFromDataUrl(file.base64, 'image');
+            const rawBuffer = await processPostRawImage(sourceBuffer);
+            const optBuffer = await generateOptimized(rawBuffer);
+            const thumbBuffer = await generateThumbnail(rawBuffer);
+
+            storedSize = rawBuffer.length + optBuffer.length + thumbBuffer.length;
+            const { allowed, currentUsage, limit } = await checkStorageLimit(
+              user.userId,
+              storedSize,
+              userRepository,
+              storage,
+              exportStorage,
+              repository,
+            );
+            if (!allowed) {
+              return c.json({
+                error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(storedSize / (1024 * 1024)).toFixed(1)}MB.`,
+              }, 403);
+            }
+
+            rawKey = `${baseKey}.raw.jpg`;
+            processedKey = `${baseKey}.opt.jpg`;
+            thumbKey = `${baseKey}.thumb.jpg`;
+
+            await Promise.all([
+              storage.save(rawKey, rawBuffer, 'image/jpeg'),
+              storage.save(processedKey, optBuffer, 'image/jpeg'),
+              storage.save(thumbKey, thumbBuffer, 'image/jpeg'),
+            ]);
+          } else {
+            const sourceBuffer = readMediaBufferFromDataUrl(file.base64, 'video');
+            const ext = videoMimeExt(mimeType);
+            const posterPng = await extractFirstFramePng(sourceBuffer);
+            const optBuffer = await generateOptimized(posterPng);
+            const thumbBuffer = await generateThumbnail(posterPng);
+
+            storedSize = sourceBuffer.length + optBuffer.length + thumbBuffer.length;
+            const { allowed, currentUsage, limit } = await checkStorageLimit(
+              user.userId,
+              storedSize,
+              userRepository,
+              storage,
+              exportStorage,
+              repository,
+            );
+            if (!allowed) {
+              return c.json({
+                error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(storedSize / (1024 * 1024)).toFixed(1)}MB.`,
+              }, 403);
+            }
+
+            rawKey = `${baseKey}.raw.${ext}`;
+            processedKey = rawKey;
+            thumbKey = `${baseKey}.thumb.jpg`;
+            const optKey = `${baseKey}.opt.jpg`;
+
+            await Promise.all([
+              storage.save(rawKey, sourceBuffer, mimeType),
+              storage.save(optKey, optBuffer, 'image/jpeg'),
+              storage.save(thumbKey, thumbBuffer, 'image/jpeg'),
+            ]);
+          }
+
+          await prisma.$transaction([
+            prisma.post.create({
+              data: {
+                id: postId,
+                userId: user.userId,
+                campaignId,
+                textContent: '',
+                status: 'draft',
+              },
+            }),
+            prisma.postMedia.create({
+              data: {
+                id: mediaId,
+                postId,
+                sourceUrl: rawKey,
+                processedUrl: processedKey,
+                thumbnailUrl: thumbKey,
+                type: isVideo ? 'video' : 'image',
+                status: 'ready',
+                quality: 'high',
+                mimeType: isVideo ? mimeType : 'image/jpeg',
+                size: storedSize,
+                position: 0,
+              },
+            }),
+          ]);
+
+          created.push({ postId, mediaId });
+        }
+
+        return c.json({ created, count: created.length });
+      } catch (error: any) {
+        console.error('Failed to upload campaign media posts:', error);
+        return c.json({ error: error?.message || 'Failed to upload media posts' }, 400);
+      }
+    },
+  );
 
   // ========== Scheduled Posts ==========
 

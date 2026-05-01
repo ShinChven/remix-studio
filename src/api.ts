@@ -1505,6 +1505,18 @@ export async function importCampaignMediaPosts(
   return handleResponse<{ created: Array<{ postId: string; mediaId: string }>; count: number }>(res, 'Failed to import media posts');
 }
 
+export async function uploadCampaignMediaPosts(
+  campaignId: string,
+  files: Array<{ base64: string; name?: string }>,
+): Promise<{ created: Array<{ postId: string; mediaId: string }>; count: number }> {
+  const res = await apiFetch(`/api/campaigns/${campaignId}/posts/upload-media`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ files }),
+  });
+  return handleResponse<{ created: Array<{ postId: string; mediaId: string }>; count: number }>(res, 'Failed to upload media posts');
+}
+
 export async function removePostMedia(mediaId: string): Promise<void> {
   const res = await apiFetch(`/api/posts/media/${mediaId}`, {
     method: 'DELETE',

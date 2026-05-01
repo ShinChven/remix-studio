@@ -40,6 +40,7 @@ interface CampaignCardModel {
   description: string;
   status: CampaignStatus;
   startDate: string;
+  endDate: string;
   channels: string[];
   totalPosts: number;
   postedPosts: number;
@@ -62,17 +63,36 @@ function campaignThumbnail(id: string) {
   return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(id)}&backgroundColor=0f172a,1e293b,334155&shape1Color=6366f1,818cf8,4f46e5`;
 }
 
+function formatCampaignDateTime(value: Date) {
+  return value.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 function mapCampaign(raw: any): CampaignCardModel {
   const posts = Array.isArray(raw.posts) ? raw.posts : [];
   const totalPosts = raw._count?.posts ?? posts.length ?? 0;
   const postedPosts = posts.filter((post: any) => post.status === 'completed' || post.status === 'posted').length;
+  const scheduledTimes = posts
+    .map((post: any) => (post.scheduledAt ? new Date(post.scheduledAt).getTime() : Number.NaN))
+    .filter(Number.isFinite);
+  const startDate = scheduledTimes.length > 0
+    ? formatCampaignDateTime(new Date(Math.min(...scheduledTimes)))
+    : 'Not scheduled';
+  const endDate = scheduledTimes.length > 0
+    ? formatCampaignDateTime(new Date(Math.max(...scheduledTimes)))
+    : 'Not scheduled';
 
   return {
     id: raw.id,
     name: raw.name,
     description: raw.description || `Campaign created on ${new Date(raw.createdAt).toLocaleDateString()}`,
     status: toCampaignStatus(raw.status),
-    startDate: raw.createdAt ? new Date(raw.createdAt).toLocaleDateString() : '-',
+    startDate,
+    endDate,
     channels: (raw.socialAccounts || []).map((account: SocialAccount) => account.id),
     totalPosts,
     postedPosts,
@@ -320,6 +340,17 @@ export function Campaigns() {
                         <p className="text-[15px] font-medium leading-relaxed text-white/70 line-clamp-2 mb-4">
                           {campaign.description}
                         </p>
+
+                        <div className="mb-4 grid grid-cols-2 gap-2">
+                          <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-md">
+                            <div className="mb-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white/45">Start</div>
+                            <div className="truncate text-[12px] font-bold text-white/90">{campaign.startDate}</div>
+                          </div>
+                          <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-md">
+                            <div className="mb-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white/45">End</div>
+                            <div className="truncate text-[12px] font-bold text-white/90">{campaign.endDate}</div>
+                          </div>
+                        </div>
                         
                         {/* Bottom Row */}
                         <div className="flex items-center justify-between text-white/90">
