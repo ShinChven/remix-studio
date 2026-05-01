@@ -40,6 +40,9 @@ model User {
   personalAccessTokens    PersonalAccessToken[]
   sessions              UserSession[]
   assistantConversations AssistantConversation[]
+  socialAccounts        SocialAccount[]
+  campaigns             Campaign[]
+  posts                 Post[]
   createdByUser User? @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdUsers  User[] @relation("UserCreation")
   createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
@@ -534,4 +537,111 @@ model AssistantPendingConfirmation {
 
   @@index([conversationId])
   @@index([conversationId, status])
+}
+
+model SocialAccount {
+  id               String    @id @default(uuid())
+  userId           String
+  platform         String    // "twitter", "linkedin", "facebook"
+  accountId        String    // Remote provider ID (e.g., Twitter user ID)
+  profileName      String?   // Display name
+  avatarUrl        String?
+  accessToken      String    @db.Text // Encrypted at rest
+  refreshToken     String?   @db.Text // Encrypted at rest
+  scopes           Json?     // Array of granted OAuth scopes
+  expiresAt        DateTime?
+  status           String    @default("active") // "active", "disconnected", "expired"
+  rateLimitResetAt DateTime? // Optional: Track when the next API call is allowed globally
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaigns        Campaign[] // Implicit many-to-many relation
+  postExecutions   PostExecution[]
+  
+  @@unique([userId, platform, accountId])
+  @@index([status])
+}
+
+model Campaign {
+  id             String          @id @default(uuid())
+  userId         String
+  name           String
+  description    String?         @db.Text
+  status         String          @default("active") // "active", "completed", "archived"
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts          Post[]
+  socialAccounts SocialAccount[] // Implicit many-to-many: target channels
+  
+  @@index([userId, status])
+}
+
+model Post {
+  id          String   @id @default(uuid())
+  campaignId  String
+  userId      String
+  textContent String?  @db.Text
+  status      String   @default("draft") // "draft", "scheduled", "completed", "failed"
+  scheduledAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign    Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media       PostMedia[]
+  executions  PostExecution[] 
+  
+  // High-frequency index for the polling engine looking for due posts
+  @@index([status, scheduledAt]) 
+}
+
+model PostMedia {
+  id           String   @id @default(uuid())
+  postId       String
+  sourceUrl    String   // Reference to internal Library/Album S3 key
+  processedUrl String?  // Target S3 key after format/compression
+  thumbnailUrl String?
+  type         String   // "image", "video", "gif"
+  status       String   @default("pending") // "pending", "processing", "ready", "failed"
+  quality      String   @default("high")    // "raw", "high", "medium", "low"
+  mimeType     String?
+  width        Int?
+  height       Int?
+  size         BigInt?
+  position     Int      @default(0)
+  errorMsg     String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([postId, position])
+}
+
+model PostExecution {
+  id               String   @id @default(uuid())
+  postId           String
+  socialAccountId  String
+  status           String   @default("pending") // "pending", "publishing", "posted", "failed"
+  externalId       String?  // The Tweet ID or LinkedIn URN
+  externalUrl      String?  // Direct link to the public post
+  errorMsg         String?  @db.Text
+  
+  // Resilience & Backoff fields
+  attempts         Int      @default(0)
+  lastAttemptAt    DateTime?
+  nextAttemptAt    DateTime? // For rate limit and exponential backoff
+  
+  publishedAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  post             Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  socialAccount    SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+
+  // Critical index for the execution worker loop
+  @@index([status, nextAttemptAt])
 }

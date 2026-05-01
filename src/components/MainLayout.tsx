@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Activity, Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor } from 'lucide-react';
+import { Activity, Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor, Send } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
@@ -145,10 +145,10 @@ export function MainLayout() {
   return (
     <div className="flex h-screen w-screen bg-transparent text-neutral-900 dark:text-neutral-200 font-sans overflow-hidden">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/40 dark:bg-black/40 backdrop-blur-3xl border-b border-neutral-200/50 dark:border-white/5 px-4 flex items-center gap-2 z-[100] shadow-sm">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-black/40 backdrop-blur-3xl border-b border-neutral-200/50 dark:border-white/5 px-4 flex items-center gap-2 z-[100] shadow-sm">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 text-neutral-600 dark:text-neutral-400 hover:text-white transition-all active:scale-95"
+          className="p-2 text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-white transition-all active:scale-95"
           aria-label={t('mainLayout.toggleMenu')}
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -176,7 +176,7 @@ export function MainLayout() {
         fixed inset-y-0 left-0 z-[120] transition-all duration-300 ease-in-out lg:relative
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         ${isCollapsed ? 'lg:w-20' : 'lg:w-64'} w-72
-        bg-white/10 dark:bg-black/10 border-r border-neutral-200/50 dark:border-white/5 flex flex-col group backdrop-blur-3xl shadow-2xl shadow-black/10 dark:shadow-black/40
+        bg-white/95 dark:bg-black/10 border-r border-neutral-200/50 dark:border-white/5 flex flex-col group backdrop-blur-3xl shadow-2xl shadow-black/10 dark:shadow-black/40
       `}>
         <div className="p-4 border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
           <Link
@@ -198,7 +198,7 @@ export function MainLayout() {
           </button>
           <button
             onClick={() => setIsMobileMenuOpen(false)}
-            className="lg:hidden p-2 text-neutral-600 dark:text-neutral-400 hover:text-white"
+            className="lg:hidden p-2 text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -246,6 +246,15 @@ export function MainLayout() {
             icon={<Folder className="w-5 h-5 flex-shrink-0" />}
             label={t('sidebar.libraries')}
             isActive={location.pathname === '/libraries' || location.pathname.startsWith('/library/')}
+            isCollapsed={isCollapsed}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          <NavItem
+            to="/campaigns"
+            icon={<Send className="w-5 h-5 flex-shrink-0" />}
+            label={t('sidebar.campaigns', 'Campaigns')}
+            isActive={location.pathname === '/campaigns' || location.pathname.startsWith('/campaigns/') || location.pathname.startsWith('/campaign/')}
             isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
           />

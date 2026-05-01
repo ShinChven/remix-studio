@@ -36,6 +36,15 @@ import { AssistantPage } from './pages/AssistantPage.tsx';
 import { AssistantSettingsPage } from './pages/AssistantSettingsPage.tsx';
 import { ChatHistoryPage } from './pages/ChatHistoryPage.tsx';
 import { QueueMonitor } from './pages/QueueMonitor.tsx';
+import { Campaigns } from './pages/Campaigns.tsx';
+import { CampaignDetail } from './pages/CampaignDetail.tsx';
+import { CampaignForm } from './pages/CampaignForm.tsx';
+import { CampaignChannels } from './pages/CampaignChannels.tsx';
+import { CampaignBatchActions } from './pages/CampaignBatchActions.tsx';
+import { CampaignBatchCreate } from './pages/CampaignBatchCreate.tsx';
+import { PostForm } from './pages/PostForm.tsx';
+import { CampaignHistory } from './pages/CampaignHistory.tsx';
+import { ScheduledPosts } from './pages/ScheduledPosts.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -71,6 +80,19 @@ export default function App() {
               <Route path="library/:id/import-export" element={<LibraryImportExport />} />
               <Route path="library/:id/cleanup" element={<LibraryCleanup />} />
               <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
+                <Route path="campaigns">
+                  <Route index element={<Campaigns />} />
+                  <Route path="history" element={<CampaignHistory />} />
+                  <Route path="scheduled" element={<ScheduledPosts />} />
+                  <Route path="channels" element={<CampaignChannels />} />
+                  <Route path="new" element={<CampaignForm />} />
+                  <Route path="edit/:id" element={<CampaignForm />} />
+                  <Route path=":campaignId/posts/new" element={<PostForm />} />
+                  <Route path=":campaignId/posts/edit/:postId" element={<PostForm />} />
+                  <Route path=":id" element={<CampaignDetail />} />
+                  <Route path=":id/batch" element={<CampaignBatchActions />} />
+                  <Route path=":id/batch/create" element={<CampaignBatchCreate />} />
+                </Route>
               <Route path="admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
               <Route path="admin/invites" element={<ProtectedRoute adminOnly><AdminInvites /></ProtectedRoute>} />
               <Route path="providers" element={<Providers />} />

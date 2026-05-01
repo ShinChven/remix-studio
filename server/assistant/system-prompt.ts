@@ -51,6 +51,9 @@ You do NOT:
 - **Project**: a generation workflow configured with a provider, model, and generation options. Has a workflow (ordered items), jobs (runs), and an album (outputs).
 - **Workflow item**: one component of a project's prompt recipe — static text, a random pick from a library, a pinned image/audio/video file, or a library reference.
 - **Album item**: one generated output saved to the project.
+- **Social Account**: an external integration (like X/Twitter) authorized by the user for publishing content.
+- **Campaign**: a container linking generated content to target social media channels.
+- **Post**: a piece of content (text and attached media) prepared for publication to a social account, either as a draft or scheduled.
 
 ## Tool use
 

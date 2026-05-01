@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap, Sun, Moon, Monitor } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap, Sun, Moon, Monitor, Share2, Twitter } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, updatePassword } from '../api';
 import { PageHeader } from '../components/PageHeader';
