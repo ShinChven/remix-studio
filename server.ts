@@ -193,7 +193,7 @@ async function startServer() {
   app.route('/', createTrashRouter(repository, storage));
   app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));
   app.route('/', createCampaignsRouter(prisma, storage));
-  app.route('/', createPostsRouter(prisma, postManager, providerRepository, storage));
+  app.route('/', createPostsRouter(prisma, postManager, providerRepository, storage, exportStorage, repository, userRepository));
   app.route('/', createOAuthRouter(prisma));
   app.route('/', createSocialRouter(prisma));
   app.route('/', createMcpRouter(prisma, repository, userRepository, providerRepository));

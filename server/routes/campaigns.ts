@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { S3Storage } from '../storage/s3-storage';
+import { collectPostMediaStorageKeys, deleteStorageKeys, safeStorageKeyPart } from '../utils/post-media-cleanup';
 
 async function presignStorageValue(storage: S3Storage, value?: string | null): Promise<string | null | undefined> {
   if (!value) return value;
@@ -301,11 +302,37 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
     try {
       const campaign = await prisma.campaign.findFirst({
         where: { id, userId: user.userId },
+        include: {
+          posts: {
+            include: { media: true },
+          },
+        },
       });
 
       if (!campaign) {
         return c.json({ error: 'Campaign not found' }, 404);
       }
+
+      const keys = new Set<string>();
+      for (const post of campaign.posts) {
+        const postKeys = collectPostMediaStorageKeys(post.media, storage, {
+          userId: user.userId,
+          campaignId: campaign.id,
+        });
+        postKeys.forEach((key) => keys.add(key));
+      }
+
+      // New batch imports live under this dedicated prefix. Listing it also
+      // cleans up files that were written before a DB transaction failed.
+      try {
+        const importedPrefix = `campaigns/${safeStorageKeyPart(campaign.id)}/`;
+        const importedObjects = await storage.listObjects(importedPrefix);
+        importedObjects.forEach((key) => keys.add(key));
+      } catch (storageError) {
+        console.warn(`[CampaignDelete:${campaign.id}] Failed to list campaign storage prefix:`, storageError);
+      }
+
+      await deleteStorageKeys(storage, Array.from(keys), `[CampaignDelete:${campaign.id}]`);
 
       await prisma.campaign.delete({
         where: { id },

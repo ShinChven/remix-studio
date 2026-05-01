@@ -10,6 +10,7 @@ import { UserRepository } from '../auth/user-repository';
  *
  * Size breakdown:
  *  - Projects (album + workflow): DB size fields on each item
+ *  - Campaigns: DB size fields on post media
  *  - Libraries: DB size fields on each library item
  *  - Trash: DB size fields on each trash item
  *  - Archives (exports): S3 HeadObject on each completed export task's s3Key
@@ -35,7 +36,7 @@ export async function getUserStorageUsage(
     const type = item._type;
     const itemSize = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
 
-    if (type === 'ALBUM' || type === 'LIBRARY_ITEM' || type === 'WORKFLOW_ITEM') {
+    if (type === 'ALBUM' || type === 'LIBRARY_ITEM' || type === 'WORKFLOW_ITEM' || type === 'POST_MEDIA') {
       totalSize += itemSize;
     } else if (type === 'EXPORT') {
       exportTasks.push(item);

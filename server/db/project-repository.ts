@@ -672,14 +672,19 @@ export class ProjectRepository {
    */
   async getStorageUsageAggregate(userId: string): Promise<{
     projects: number;
+    campaigns: number;
     libraries: number;
     archives: number;
     trash: number;
   }> {
-    const [albumAgg, libAgg, exportAgg, trashAgg] = await Promise.all([
+    const [albumAgg, postMediaAgg, libAgg, exportAgg, trashAgg] = await Promise.all([
       this.prisma.albumItem.aggregate({
         where: { userId },
         _sum: { size: true, optimizedSize: true, thumbnailSize: true },
+      }),
+      this.prisma.postMedia.aggregate({
+        where: { post: { userId } },
+        _sum: { size: true },
       }),
       this.prisma.libraryItem.aggregate({
         where: { library: { userId } },
@@ -702,6 +707,7 @@ export class ProjectRepository {
 
     return {
       projects: sum3(albumAgg),
+      campaigns: Number(postMediaAgg._sum.size || 0),
       libraries: Number(libAgg._sum.size || 0),
       archives: Number(exportAgg._sum.size || 0),
       trash: sum3(trashAgg),
@@ -709,13 +715,17 @@ export class ProjectRepository {
   }
 
   async getAllUserItems(userId: string): Promise<any[]> {
-    const [jobs, albumItems, trashItems, exportTasks, libraryItems, workflowItems] = await Promise.all([
+    const [jobs, albumItems, trashItems, exportTasks, libraryItems, workflowItems, postMedia] = await Promise.all([
       this.prisma.job.findMany({ where: { userId } }),
       this.prisma.albumItem.findMany({ where: { userId } }),
       this.prisma.trashItem.findMany({ where: { userId } }),
       this.prisma.exportTask.findMany({ where: { userId } }),
       this.prisma.libraryItem.findMany({ where: { library: { userId } } }),
       this.prisma.workflowItem.findMany({ where: { project: { userId } } }),
+      this.prisma.postMedia.findMany({
+        where: { post: { userId } },
+        include: { post: { select: { campaignId: true } } },
+      }),
     ]);
 
     return [
@@ -725,6 +735,16 @@ export class ProjectRepository {
       ...exportTasks.map((e) => ({ ...this.mapExportTask(e), _type: 'EXPORT', projectId: e.projectId ?? undefined })),
       ...libraryItems.map((l) => ({ ...this.mapLibItem(l), _type: 'LIBRARY_ITEM' })),
       ...workflowItems.map((w) => ({ ...this.mapWorkflow(w), _type: 'WORKFLOW_ITEM', projectId: w.projectId })),
+      ...postMedia.map((m) => ({
+        id: m.id,
+        postId: m.postId,
+        campaignId: m.post.campaignId,
+        sourceUrl: m.sourceUrl ?? undefined,
+        processedUrl: m.processedUrl ?? undefined,
+        thumbnailUrl: m.thumbnailUrl ?? undefined,
+        size: m.size != null ? Number(m.size) : 0,
+        _type: 'POST_MEDIA',
+      })),
     ];
   }
 

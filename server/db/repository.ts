@@ -76,6 +76,7 @@ export interface IRepository {
   /** Per-category storage usage computed via SQL aggregates. */
   getStorageUsageAggregate(userId: string): Promise<{
     projects: number;
+    campaigns: number;
     libraries: number;
     archives: number;
     trash: number;

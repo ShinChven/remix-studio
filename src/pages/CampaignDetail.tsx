@@ -121,6 +121,13 @@ function mediaUrl(media: PostMedia) {
   return `/api/storage/${value}`;
 }
 
+function mediaPosterUrl(media: PostMedia) {
+  const value = media.thumbnailUrl || '';
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value) || value.startsWith('/')) return value;
+  return `/api/storage/${value}`;
+}
+
 function mediaFullUrl(media: PostMedia) {
   const value = media.processedUrl || media.sourceUrl || media.thumbnailUrl || '';
   if (!value) return '';
@@ -623,6 +630,7 @@ export function CampaignDetail() {
                         <div className={cn('grid gap-1.5 overflow-hidden rounded-xl border border-neutral-200 shadow-sm dark:border-white/10', post.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
                           {post.media.slice(0, 4).map((media, index) => {
                             const url = mediaUrl(media);
+                            const posterUrl = media.type === 'video' ? mediaPosterUrl(media) : '';
                             return (
                               <button
                                 key={media.id}
@@ -633,8 +641,10 @@ export function CampaignDetail() {
                               >
                                 {url && media.type !== 'video' ? (
                                   <img src={url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover transition-transform duration-500 group-hover/media:scale-105" />
+                                ) : posterUrl && media.type === 'video' ? (
+                                  <img src={posterUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover transition-transform duration-500 group-hover/media:scale-105" />
                                 ) : url && media.type === 'video' ? (
-                                  <video src={url} className="h-full w-full object-cover transition-transform duration-500 group-hover/media:scale-105" muted playsInline preload="metadata" />
+                                  <video src={mediaFullUrl(media)} className="h-full w-full object-cover transition-transform duration-500 group-hover/media:scale-105" muted playsInline preload="metadata" />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center text-neutral-400">
                                     <ImageIcon className="h-6 w-6" />
@@ -813,6 +823,7 @@ export function CampaignDetail() {
                   <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {currentEditingPost.media.map((media) => {
                       const url = mediaUrl(media);
+                      const posterUrl = media.type === 'video' ? mediaPosterUrl(media) : '';
                       return (
                         <div key={media.id} className="group relative aspect-square overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-950">
                           {(media.status === 'pending' || media.status === 'processing') && (
@@ -829,6 +840,8 @@ export function CampaignDetail() {
                           )}
                           {url && media.type !== 'video' ? (
                             <img src={url} alt="Attached media" className="h-full w-full object-cover" />
+                          ) : posterUrl && media.type === 'video' ? (
+                            <img src={posterUrl} alt="Attached video" className="h-full w-full object-cover" />
                           ) : (
                             <ImageIcon className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 text-neutral-400" />
                           )}

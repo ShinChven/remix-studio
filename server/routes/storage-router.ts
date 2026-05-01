@@ -32,6 +32,7 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
       const projectBreakdown: Record<string, { total: number; album: number; drafts: number; workflow: number; orphans: number; name: string }> = {};
       const exportTasks: any[] = [];
       let totalLibrarySize = 0;
+      let totalCampaignSize = 0;
 
       // Trash: sum size + optimizedSize + thumbnailSize from DB records (same as Trash page)
       const totalTrashSize = trashItems.reduce((sum, item) => {
@@ -86,6 +87,11 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
           markKey(item.content);
           markKey(item.thumbnailUrl);
           markKey(item.optimizedUrl);
+        } else if (type === 'POST_MEDIA') {
+          totalCampaignSize += itemSize;
+          markKey(item.sourceUrl);
+          markKey(item.processedUrl);
+          markKey(item.thumbnailUrl);
         } else if (type === 'TRASH') {
           // Trash size is already calculated from trashItems fetch, just mark keys for orphan detection
           markKey(item.imageUrl);
@@ -154,7 +160,7 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
       const totalWorkflowSize = Object.values(projectBreakdown).reduce((acc, p) => acc + p.workflow, 0);
       const totalOrphansSize = Object.values(projectBreakdown).reduce((acc, p) => acc + p.orphans, 0);
 
-      const totalSize = totalProjectsSize + totalLibrarySize + totalExportSize + totalTrashSize;
+      const totalSize = totalProjectsSize + totalCampaignSize + totalLibrarySize + totalExportSize + totalTrashSize;
 
       return c.json({
         totalSize,
@@ -166,6 +172,7 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
             { id: 'orphans', name: 'Orphans', size: totalOrphansSize },
           ]},
           { id: 'libraries', name: 'Libraries', size: totalLibrarySize },
+          { id: 'campaigns', name: 'Campaigns', size: totalCampaignSize },
           { id: 'archives', name: 'Archives (Exports)', size: totalExportSize },
           { id: 'trash', name: 'Recycle Bin', size: totalTrashSize },
         ],

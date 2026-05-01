@@ -1489,6 +1489,22 @@ export async function addPostMedia(postId: string, data: { sourceUrl: string; ty
   return handleResponse<any>(res, 'Failed to add media');
 }
 
+export type CampaignMediaImportSource =
+  | { kind: 'library'; libraryId: string; itemId: string }
+  | { kind: 'album'; projectId: string; itemId: string };
+
+export async function importCampaignMediaPosts(
+  campaignId: string,
+  sources: CampaignMediaImportSource[],
+): Promise<{ created: Array<{ postId: string; mediaId: string }>; count: number }> {
+  const res = await apiFetch(`/api/campaigns/${campaignId}/posts/import-media`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ sources }),
+  });
+  return handleResponse<{ created: Array<{ postId: string; mediaId: string }>; count: number }>(res, 'Failed to import media posts');
+}
+
 export async function removePostMedia(mediaId: string): Promise<void> {
   const res = await apiFetch(`/api/posts/media/${mediaId}`, {
     method: 'DELETE',

@@ -1,11 +1,36 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
+import path from 'node:path';
+import sharp from 'sharp';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { PostManager } from '../queue/post-manager';
 import { ProviderRepository } from '../db/provider-repository';
 import { resolveChatProvider } from '../assistant/chat-provider-factory';
 import { S3Storage } from '../storage/s3-storage';
+import { IRepository } from '../db/repository';
+import { UserRepository } from '../auth/user-repository';
+import { generateOptimized, generateThumbnail } from '../utils/image-utils';
+import { extractFirstFramePng } from '../utils/video-utils';
+import { checkStorageLimit } from '../utils/storage-check';
+import { collectPostMediaStorageKeys, deleteStorageKeys } from '../utils/post-media-cleanup';
+
+const POST_IMAGE_RAW_MAX_DIMENSION = 4096;
+const POST_IMAGE_RAW_QUALITY = 90;
+
+type ImportSource =
+  | { kind: 'library'; libraryId: string; itemId: string }
+  | { kind: 'album'; projectId: string; itemId: string };
+
+type ResolvedImportMedia = {
+  source: ImportSource;
+  mediaType: 'image' | 'video';
+  rawValue?: string | null;
+  thumbnailValue?: string | null;
+  optimizedValue?: string | null;
+  rawSize?: number | null;
+};
 
 async function presignStorageValue(storage: S3Storage, value?: string | null): Promise<string | null | undefined> {
   if (!value) return value;
@@ -31,11 +56,109 @@ async function signPostMediaUrls(storage: S3Storage, post: any) {
   };
 }
 
+function stripToStorageKey(value: string | null | undefined, bucket: string): string | undefined {
+  if (!value || value.startsWith('data:')) return value || undefined;
+  if (!/^https?:\/\//i.test(value)) return value;
+
+  try {
+    const url = new URL(value);
+    const pathStylePrefix = `/${bucket}/`;
+    if (url.pathname.startsWith(pathStylePrefix)) {
+      return decodeURIComponent(url.pathname.slice(pathStylePrefix.length));
+    }
+    if (url.hostname.startsWith(`${bucket}.`)) {
+      return decodeURIComponent(url.pathname.slice(1));
+    }
+  } catch {
+    return value;
+  }
+
+  return value;
+}
+
+function storageKeyExt(key: string | undefined, fallback: string): string {
+  if (!key) return fallback;
+  const ext = path.extname(key.split('?')[0]).replace('.', '').toLowerCase();
+  return ext || fallback;
+}
+
+function videoMimeFromExt(ext: string): string {
+  switch (ext.toLowerCase()) {
+    case 'webm':
+      return 'video/webm';
+    case 'mov':
+      return 'video/quicktime';
+    case 'mkv':
+      return 'video/x-matroska';
+    case 'mp4':
+    default:
+      return 'video/mp4';
+  }
+}
+
+function bufferFromDataUrl(value: string, expectedPrefix: 'image' | 'video'): Buffer | null {
+  const match = value.match(new RegExp(`^data:${expectedPrefix}/[\\w+.-]+;base64,(.+)$`));
+  if (!match) return null;
+  return Buffer.from(match[1], 'base64');
+}
+
+async function readMediaBuffer(storage: S3Storage, value: string | undefined, bucket: string, expectedPrefix: 'image' | 'video'): Promise<Buffer> {
+  if (!value) throw new Error('Media source is missing');
+  if (value.startsWith('data:')) {
+    const buffer = bufferFromDataUrl(value, expectedPrefix);
+    if (!buffer) throw new Error('Unsupported data URL media source');
+    return buffer;
+  }
+
+  const key = stripToStorageKey(value, bucket);
+  if (!key || /^https?:\/\//i.test(key)) {
+    throw new Error('External media URLs cannot be imported');
+  }
+  return storage.read(key);
+}
+
+async function processPostRawImage(buffer: Buffer): Promise<Buffer> {
+  return sharp(buffer)
+    .rotate()
+    .resize(POST_IMAGE_RAW_MAX_DIMENSION, POST_IMAGE_RAW_MAX_DIMENSION, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .jpeg({ quality: POST_IMAGE_RAW_QUALITY })
+    .toBuffer();
+}
+
+async function copyIfStorageKey(
+  storage: S3Storage,
+  sourceValue: string | null | undefined,
+  destinationKey: string,
+  bucket: string,
+): Promise<boolean> {
+  const sourceKey = stripToStorageKey(sourceValue, bucket);
+  if (!sourceKey || sourceKey.startsWith('data:') || /^https?:\/\//i.test(sourceKey)) return false;
+  await storage.copy(sourceKey, destinationKey);
+  return true;
+}
+
+async function getStorageValueSize(storage: S3Storage, value: string | null | undefined, bucket: string): Promise<number> {
+  if (!value) return 0;
+  if (value.startsWith('data:')) {
+    const comma = value.indexOf(',');
+    return comma >= 0 ? Buffer.byteLength(value.slice(comma + 1), 'base64') : 0;
+  }
+  const key = stripToStorageKey(value, bucket);
+  if (!key || /^https?:\/\//i.test(key)) return 0;
+  return (await storage.getSize(key)) || 0;
+}
+
 export function createPostsRouter(
   prisma: PrismaClient,
   postManager: PostManager,
   providerRepository: ProviderRepository,
   storage: S3Storage,
+  exportStorage: S3Storage,
+  repository: IRepository,
+  userRepository: UserRepository,
 ) {
   const postsRouter = new Hono<{ Variables: { user: JwtPayload } }>();
 
@@ -73,6 +196,270 @@ export function createPostsRouter(
     } catch (error) {
       console.error('Failed to create post:', error);
       return c.json({ error: 'Failed to create post' }, 400);
+    }
+  });
+
+  const importSourceSchema = z.discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('library'),
+      libraryId: z.string().min(1),
+      itemId: z.string().min(1),
+    }),
+    z.object({
+      kind: z.literal('album'),
+      projectId: z.string().min(1),
+      itemId: z.string().min(1),
+    }),
+  ]);
+
+  const importMediaPostsSchema = z.object({
+    sources: z.array(importSourceSchema).min(1).max(100),
+  });
+
+  async function resolveImportSources(userId: string, sources: ImportSource[]): Promise<ResolvedImportMedia[]> {
+    const resolved = new Map<string, ResolvedImportMedia>();
+    const librarySourceGroups = new Map<string, ImportSource[]>();
+    const albumSourceGroups = new Map<string, ImportSource[]>();
+
+    for (const source of sources) {
+      if (source.kind === 'library') {
+        const group = librarySourceGroups.get(source.libraryId) || [];
+        group.push(source);
+        librarySourceGroups.set(source.libraryId, group);
+      } else {
+        const group = albumSourceGroups.get(source.projectId) || [];
+        group.push(source);
+        albumSourceGroups.set(source.projectId, group);
+      }
+    }
+
+    for (const [libraryId, group] of librarySourceGroups) {
+      const itemIds = group.map((source) => source.itemId);
+      const items = await prisma.libraryItem.findMany({
+        where: {
+          id: { in: itemIds },
+          libraryId,
+          library: {
+            userId,
+            type: { in: ['image', 'video'] },
+          },
+        },
+        include: {
+          library: {
+            select: { type: true },
+          },
+        },
+      });
+
+      for (const item of items) {
+        resolved.set(`library:${libraryId}:${item.id}`, {
+          source: { kind: 'library', libraryId, itemId: item.id },
+          mediaType: item.library.type === 'video' ? 'video' : 'image',
+          rawValue: item.content,
+          thumbnailValue: item.thumbnailUrl,
+          optimizedValue: item.optimizedUrl,
+          rawSize: item.size == null ? undefined : Number(item.size),
+        });
+      }
+    }
+
+    for (const [projectId, group] of albumSourceGroups) {
+      const itemIds = group.map((source) => source.itemId);
+      const items = await prisma.albumItem.findMany({
+        where: {
+          id: { in: itemIds },
+          projectId,
+          userId,
+          project: {
+            userId,
+            type: { in: ['image', 'video'] },
+          },
+        },
+        include: {
+          project: {
+            select: { type: true },
+          },
+        },
+      });
+
+      for (const item of items) {
+        resolved.set(`album:${projectId}:${item.id}`, {
+          source: { kind: 'album', projectId, itemId: item.id },
+          mediaType: item.project.type === 'video' ? 'video' : 'image',
+          rawValue: item.imageUrl,
+          thumbnailValue: item.thumbnailUrl,
+          optimizedValue: item.optimizedUrl,
+          rawSize: item.size == null ? undefined : Number(item.size),
+        });
+      }
+    }
+
+    return sources.map((source) => {
+      const key = source.kind === 'library'
+        ? `library:${source.libraryId}:${source.itemId}`
+        : `album:${source.projectId}:${source.itemId}`;
+      const item = resolved.get(key);
+      if (!item) {
+        throw new Error(`Media item not found or unsupported: ${key}`);
+      }
+      return item;
+    });
+  }
+
+  postsRouter.post('/api/campaigns/:campaignId/posts/import-media', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const campaignId = c.req.param('campaignId');
+
+    try {
+      const body = await c.req.json();
+      const data = importMediaPostsSchema.parse(body);
+
+      const campaign = await prisma.campaign.findFirst({
+        where: { id: campaignId, userId: user.userId },
+        select: { id: true },
+      });
+      if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
+
+      const bucket = storage.getBucketName();
+      const safeCampaignId = campaignId.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const sources = await resolveImportSources(user.userId, data.sources);
+      const created: Array<{ postId: string; mediaId: string }> = [];
+
+      for (const item of sources) {
+        const postId = randomUUID();
+        const mediaId = randomUUID();
+        const baseKey = `campaigns/${safeCampaignId}/posts/${postId}/media/${mediaId}`;
+        let rawKey: string;
+        let optimizedKey: string;
+        let thumbKey: string;
+        let mimeType: string;
+        let storedSize = 0;
+
+        if (item.mediaType === 'image') {
+          const sourceBuffer = await readMediaBuffer(storage, item.rawValue || undefined, bucket, 'image');
+          const rawBuffer = await processPostRawImage(sourceBuffer);
+          const optBuffer = await generateOptimized(rawBuffer);
+          const thumbBuffer = await generateThumbnail(rawBuffer);
+
+          storedSize = rawBuffer.length + optBuffer.length + thumbBuffer.length;
+          const { allowed, currentUsage, limit } = await checkStorageLimit(
+            user.userId,
+            storedSize,
+            userRepository,
+            storage,
+            exportStorage,
+            repository,
+          );
+          if (!allowed) {
+            return c.json({
+              error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(storedSize / (1024 * 1024)).toFixed(1)}MB.`,
+            }, 403);
+          }
+
+          rawKey = `${baseKey}.raw.jpg`;
+          optimizedKey = `${baseKey}.opt.jpg`;
+          thumbKey = `${baseKey}.thumb.jpg`;
+          mimeType = 'image/jpeg';
+
+          await Promise.all([
+            storage.save(rawKey, rawBuffer, 'image/jpeg'),
+            storage.save(optimizedKey, optBuffer, 'image/jpeg'),
+            storage.save(thumbKey, thumbBuffer, 'image/jpeg'),
+          ]);
+        } else {
+          const sourceRawKey = stripToStorageKey(item.rawValue, bucket);
+          if (!sourceRawKey || sourceRawKey.startsWith('data:') || /^https?:\/\//i.test(sourceRawKey)) {
+            throw new Error('Video import requires an internal storage object');
+          }
+
+          const ext = storageKeyExt(sourceRawKey, 'mp4');
+          mimeType = videoMimeFromExt(ext);
+          rawKey = `${baseKey}.raw.${ext}`;
+          optimizedKey = `${baseKey}.opt.jpg`;
+          thumbKey = `${baseKey}.thumb.jpg`;
+
+          const rawSize = item.rawSize || (await storage.getSize(sourceRawKey)) || 0;
+          let optSize = await getStorageValueSize(storage, item.optimizedValue, bucket);
+          let thumbSize = await getStorageValueSize(storage, item.thumbnailValue, bucket);
+
+          let generatedOpt: Buffer | null = null;
+          let generatedThumb: Buffer | null = null;
+          const hasCopiedOpt = optSize > 0;
+          const hasCopiedThumb = thumbSize > 0;
+
+          if (!hasCopiedOpt || !hasCopiedThumb) {
+            const rawBuffer = await storage.read(sourceRawKey);
+            const posterPng = await extractFirstFramePng(rawBuffer);
+            if (!hasCopiedOpt) {
+              generatedOpt = await generateOptimized(posterPng);
+              optSize = generatedOpt.length;
+            }
+            if (!hasCopiedThumb) {
+              generatedThumb = await generateThumbnail(posterPng);
+              thumbSize = generatedThumb.length;
+            }
+          }
+
+          storedSize = rawSize + optSize + thumbSize;
+          const { allowed, currentUsage, limit } = await checkStorageLimit(
+            user.userId,
+            storedSize,
+            userRepository,
+            storage,
+            exportStorage,
+            repository,
+          );
+          if (!allowed) {
+            return c.json({
+              error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(storedSize / (1024 * 1024)).toFixed(1)}MB.`,
+            }, 403);
+          }
+
+          await storage.copy(sourceRawKey, rawKey);
+
+          if (!(await copyIfStorageKey(storage, item.optimizedValue, optimizedKey, bucket)) && generatedOpt) {
+            await storage.save(optimizedKey, generatedOpt, 'image/jpeg');
+          }
+
+          if (!(await copyIfStorageKey(storage, item.thumbnailValue, thumbKey, bucket)) && generatedThumb) {
+            await storage.save(thumbKey, generatedThumb, 'image/jpeg');
+          }
+        }
+
+        await prisma.$transaction([
+          prisma.post.create({
+            data: {
+              id: postId,
+              userId: user.userId,
+              campaignId,
+              textContent: '',
+              status: 'draft',
+            },
+          }),
+          prisma.postMedia.create({
+            data: {
+              id: mediaId,
+              postId,
+              sourceUrl: rawKey,
+              processedUrl: item.mediaType === 'video' ? rawKey : optimizedKey,
+              thumbnailUrl: thumbKey,
+              type: item.mediaType,
+              status: 'ready',
+              quality: 'high',
+              mimeType,
+              size: storedSize,
+              position: 0,
+            },
+          }),
+        ]);
+
+        created.push({ postId, mediaId });
+      }
+
+      return c.json({ created, count: created.length });
+    } catch (error: any) {
+      console.error('Failed to import campaign media posts:', error);
+      return c.json({ error: error?.message || 'Failed to import media posts' }, 400);
     }
   });
 
@@ -212,9 +599,23 @@ export function createPostsRouter(
     const id = c.req.param('id');
 
     try {
-      await prisma.post.deleteMany({
+      const post = await prisma.post.findFirst({
         where: { id, userId: user.userId },
+        include: { media: true },
       });
+
+      if (!post) {
+        return c.json({ error: 'Post not found' }, 404);
+      }
+
+      const keys = collectPostMediaStorageKeys(post.media, storage, {
+        userId: user.userId,
+        campaignId: post.campaignId,
+        postId: post.id,
+      });
+      await deleteStorageKeys(storage, keys, `[PostDelete:${post.id}]`);
+
+      await prisma.post.delete({ where: { id: post.id } });
       return c.json({ success: true });
     } catch (error) {
       console.error('Failed to delete post:', error);
@@ -325,6 +726,13 @@ export function createPostsRouter(
       if (!media || media.post.userId !== user.userId) {
         return c.json({ error: 'Media not found' }, 404);
       }
+
+      const keys = collectPostMediaStorageKeys([media], storage, {
+        userId: user.userId,
+        campaignId: media.post.campaignId,
+        postId: media.postId,
+      });
+      await deleteStorageKeys(storage, keys, `[PostMediaDelete:${media.id}]`);
 
       await prisma.postMedia.delete({
         where: { id: mediaId }

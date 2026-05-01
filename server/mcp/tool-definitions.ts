@@ -454,7 +454,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'get_storage_usage',
     title: 'Get Storage Usage',
-    description: 'Get storage usage summary for the authenticated user. Returns total usage, storage limit, and breakdown by category (projects, libraries, archives, trash). Computed via SQL aggregates — cheap to call.',
+    description: 'Get storage usage summary for the authenticated user. Returns total usage, storage limit, and breakdown by category (projects, campaigns, libraries, archives, trash). Computed via SQL aggregates — cheap to call.',
     inputSchema: {},
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     category: 'read',
@@ -465,7 +465,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       ]);
 
       const storageLimit = userRecord?.storageLimit || 5 * 1024 * 1024 * 1024;
-      const totalSize = breakdown.projects + breakdown.libraries + breakdown.archives + breakdown.trash;
+      const totalSize = breakdown.projects + breakdown.campaigns + breakdown.libraries + breakdown.archives + breakdown.trash;
 
       return {
         text: JSON.stringify({
@@ -476,6 +476,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
           usagePercent: Number(((totalSize / storageLimit) * 100).toFixed(1)),
           categories: {
             projects: { size: breakdown.projects, formatted: formatSize(breakdown.projects) },
+            campaigns: { size: breakdown.campaigns, formatted: formatSize(breakdown.campaigns) },
             libraries: { size: breakdown.libraries, formatted: formatSize(breakdown.libraries) },
             archives: { size: breakdown.archives, formatted: formatSize(breakdown.archives) },
             trash: { size: breakdown.trash, formatted: formatSize(breakdown.trash) },
