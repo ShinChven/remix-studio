@@ -1,5 +1,7 @@
 # Remix Studio
 
+[![Latest Release](https://img.shields.io/github/v/release/ShinChven/remix-studio?style=flat-square)](https://github.com/ShinChven/remix-studio/releases)
+[![Docker Image](https://img.shields.io/badge/docker-ghcr.io-blue?logo=docker&style=flat-square)](https://github.com/ShinChven/remix-studio/pkgs/container/remix-studio)
 [![Self-Hosted](https://img.shields.io/badge/self--hosted-ready-111111?style=flat-square)](./README.md)
 [![Gemini Assistant](https://img.shields.io/badge/Gemini-powered%20assistant-0f766e?style=flat-square)](./README.md)
 [![Batch Generation](https://img.shields.io/badge/Batch-permutation%20engine-15803d?style=flat-square)](./README.md)
