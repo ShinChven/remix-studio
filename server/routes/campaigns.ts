@@ -2,8 +2,33 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { authMiddleware, JwtPayload } from '../auth/auth';
+import { S3Storage } from '../storage/s3-storage';
 
-export function createCampaignsRouter(prisma: PrismaClient) {
+async function presignStorageValue(storage: S3Storage, value?: string | null): Promise<string | null | undefined> {
+  if (!value) return value;
+  if (/^https?:\/\//i.test(value) || value.startsWith('/') || value.startsWith('data:')) return value;
+  try {
+    return await storage.getPresignedUrl(value);
+  } catch {
+    return value;
+  }
+}
+
+async function signPostMediaUrls(storage: S3Storage, post: any) {
+  if (!post?.media) return post;
+  return {
+    ...post,
+    media: await Promise.all(post.media.map(async (media: any) => ({
+      ...media,
+      size: media.size == null ? media.size : Number(media.size),
+      sourceUrl: await presignStorageValue(storage, media.sourceUrl),
+      processedUrl: await presignStorageValue(storage, media.processedUrl),
+      thumbnailUrl: await presignStorageValue(storage, media.thumbnailUrl),
+    }))),
+  };
+}
+
+export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) {
   const campaignsRouter = new Hono<{ Variables: { user: JwtPayload } }>();
 
   campaignsRouter.get('/api/campaigns', authMiddleware, async (c) => {
@@ -79,7 +104,10 @@ export function createCampaignsRouter(prisma: PrismaClient) {
       if (!campaign) {
         return c.json({ error: 'Campaign not found' }, 404);
       }
-      return c.json(campaign);
+      return c.json({
+        ...campaign,
+        posts: await Promise.all(campaign.posts.map((post) => signPostMediaUrls(storage, post))),
+      });
     } catch (error) {
       console.error('Failed to get campaign:', error);
       return c.json({ error: 'Failed to get campaign' }, 500);

@@ -5,11 +5,37 @@ import { authMiddleware, JwtPayload } from '../auth/auth';
 import { PostManager } from '../queue/post-manager';
 import { ProviderRepository } from '../db/provider-repository';
 import { resolveChatProvider } from '../assistant/chat-provider-factory';
+import { S3Storage } from '../storage/s3-storage';
+
+async function presignStorageValue(storage: S3Storage, value?: string | null): Promise<string | null | undefined> {
+  if (!value) return value;
+  if (/^https?:\/\//i.test(value) || value.startsWith('/') || value.startsWith('data:')) return value;
+  try {
+    return await storage.getPresignedUrl(value);
+  } catch {
+    return value;
+  }
+}
+
+async function signPostMediaUrls(storage: S3Storage, post: any) {
+  if (!post?.media) return post;
+  return {
+    ...post,
+    media: await Promise.all(post.media.map(async (media: any) => ({
+      ...media,
+      size: media.size == null ? media.size : Number(media.size),
+      sourceUrl: await presignStorageValue(storage, media.sourceUrl),
+      processedUrl: await presignStorageValue(storage, media.processedUrl),
+      thumbnailUrl: await presignStorageValue(storage, media.thumbnailUrl),
+    }))),
+  };
+}
 
 export function createPostsRouter(
   prisma: PrismaClient,
   postManager: PostManager,
   providerRepository: ProviderRepository,
+  storage: S3Storage,
 ) {
   const postsRouter = new Hono<{ Variables: { user: JwtPayload } }>();
 
@@ -43,7 +69,7 @@ export function createPostsRouter(
           status: data.status,
         },
       });
-      return c.json(post);
+      return c.json(await signPostMediaUrls(storage, post));
     } catch (error) {
       console.error('Failed to create post:', error);
       return c.json({ error: 'Failed to create post' }, 400);
@@ -317,7 +343,7 @@ export function createPostsRouter(
           executions: { include: { socialAccount: true } },
         },
       });
-      return c.json(updated);
+      return c.json(await signPostMediaUrls(storage, updated));
     } catch (error: any) {
       console.error('Failed to send post:', error);
       return c.json({ error: error?.message || 'Failed to send post' }, 400);

@@ -10,6 +10,7 @@ import {
   MoreVertical,
   Plus,
   Search,
+  Share2,
   Trash2,
   Twitter,
 } from 'lucide-react';
@@ -168,6 +169,13 @@ export function Campaigns() {
             <p className="text-neutral-500 dark:text-neutral-400">Organize your posts into projects and track their progress.</p>
           </div>
           <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center md:w-auto">
+            <button
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 text-sm font-bold text-neutral-700 shadow-sm transition hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-950 active:translate-y-px dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-white/10 dark:hover:text-white sm:w-auto"
+              onClick={() => navigate('/campaigns/channels')}
+            >
+              <Share2 className="h-4 w-4" />
+              Channels
+            </button>
             <div className="relative min-w-0 flex-1 sm:flex-none">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
               <input

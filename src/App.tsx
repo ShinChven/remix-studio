@@ -39,6 +39,9 @@ import { QueueMonitor } from './pages/QueueMonitor.tsx';
 import { Campaigns } from './pages/Campaigns.tsx';
 import { CampaignDetail } from './pages/CampaignDetail.tsx';
 import { CampaignForm } from './pages/CampaignForm.tsx';
+import { CampaignChannels } from './pages/CampaignChannels.tsx';
+import { CampaignBatchActions } from './pages/CampaignBatchActions.tsx';
+import { CampaignBatchCreate } from './pages/CampaignBatchCreate.tsx';
 import { PostForm } from './pages/PostForm.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
@@ -76,9 +79,12 @@ export default function App() {
               <Route path="library/:id/cleanup" element={<LibraryCleanup />} />
               <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
               <Route path="campaigns" element={<Campaigns />} />
+              <Route path="campaigns/channels" element={<CampaignChannels />} />
               <Route path="campaigns/new" element={<CampaignForm />} />
               <Route path="campaigns/edit/:id" element={<CampaignForm />} />
               <Route path="campaigns/:id" element={<CampaignDetail />} />
+              <Route path="campaigns/:id/batch" element={<CampaignBatchActions />} />
+              <Route path="campaigns/:id/batch/create" element={<CampaignBatchCreate />} />
               <Route path="campaigns/:campaignId/posts/new" element={<PostForm />} />
               <Route path="campaigns/:campaignId/posts/edit/:postId" element={<PostForm />} />
               <Route path="campaign/:id" element={<CampaignDetail />} />

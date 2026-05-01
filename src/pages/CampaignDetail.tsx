@@ -5,6 +5,8 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   ExternalLink,
   Facebook,
@@ -120,6 +122,13 @@ function mediaUrl(media: PostMedia) {
   return `/api/storage/${value}`;
 }
 
+function mediaFullUrl(media: PostMedia) {
+  const value = media.processedUrl || media.sourceUrl || media.thumbnailUrl || '';
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value) || value.startsWith('/')) return value;
+  return `/api/storage/${value}`;
+}
+
 function statusLabel(status: string) {
   if (status === 'completed') return 'Posted';
   return status.slice(0, 1).toUpperCase() + status.slice(1);
@@ -158,6 +167,7 @@ export function CampaignDetail() {
   const [sendingPostId, setSendingPostId] = useState<string | null>(null);
   const [deletePostTarget, setDeletePostTarget] = useState<CampaignPost | null>(null);
   const [aiPostId, setAiPostId] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ media: PostMedia[]; index: number } | null>(null);
 
   const loadCampaign = async (silent = false) => {
     if (!id) return;
@@ -216,6 +226,32 @@ export function CampaignDetail() {
         return aScheduled - bScheduled;
       });
   }, [posts, searchQuery, sortKey, statusFilter]);
+
+  useEffect(() => {
+    if (!lightbox) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setLightbox(null);
+        return;
+      }
+      if (event.key === 'ArrowRight') {
+        setLightbox((current) => {
+          if (!current) return current;
+          return { ...current, index: (current.index + 1) % current.media.length };
+        });
+      }
+      if (event.key === 'ArrowLeft') {
+        setLightbox((current) => {
+          if (!current) return current;
+          return { ...current, index: (current.index - 1 + current.media.length) % current.media.length };
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightbox]);
 
   const openEditPostModal = (post: CampaignPost) => {
     navigate(`/campaigns/${id}/posts/edit/${post.id}`);
@@ -447,7 +483,7 @@ export function CampaignDetail() {
             <button className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 transition hover:bg-neutral-100 dark:border-white/10 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)} title="Settings">
               <Settings className="h-4 w-4" />
             </button>
-            <button className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 transition hover:bg-neutral-100 dark:border-white/10 dark:hover:bg-white/10" onClick={() => setAiPostId(filteredPosts[0]?.id || null)} title="AI Generate First Visible Post" disabled={filteredPosts.length === 0}>
+            <button className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 transition hover:bg-neutral-100 dark:border-white/10 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/${campaign.id}/batch`)} title="Batch Actions">
               <Layers className="h-4 w-4" />
             </button>
             <button className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-950 text-white shadow-lg shadow-black/10 transition hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200" onClick={openNewPostModal} title="Add Post">
@@ -588,9 +624,17 @@ export function CampaignDetail() {
                           {post.media.slice(0, 4).map((media, index) => {
                             const url = mediaUrl(media);
                             return (
-                              <div key={media.id} className="relative aspect-video bg-neutral-100 dark:bg-neutral-800">
+                              <button
+                                key={media.id}
+                                type="button"
+                                className="group/media relative aspect-video overflow-hidden bg-neutral-100 text-left dark:bg-neutral-800"
+                                onClick={() => setLightbox({ media: post.media || [], index })}
+                                aria-label={`Open media ${index + 1}`}
+                              >
                                 {url && media.type !== 'video' ? (
-                                  <img src={url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
+                                  <img src={url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover transition-transform duration-500 group-hover/media:scale-105" />
+                                ) : url && media.type === 'video' ? (
+                                  <video src={url} className="h-full w-full object-cover transition-transform duration-500 group-hover/media:scale-105" muted playsInline preload="metadata" />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center text-neutral-400">
                                     <ImageIcon className="h-6 w-6" />
@@ -599,7 +643,7 @@ export function CampaignDetail() {
                                 {post.media!.length > 4 && index === 3 && (
                                   <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xl font-bold text-white">+{post.media!.length - 4}</div>
                                 )}
-                              </div>
+                              </button>
                             );
                           })}
                         </div>
@@ -696,6 +740,66 @@ export function CampaignDetail() {
           </main>
         </div>
       </div>
+
+      {lightbox && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/95 p-4 backdrop-blur-md" onClick={() => setLightbox(null)}>
+          <button
+            type="button"
+            className="absolute right-5 top-5 z-[122] flex h-11 w-11 items-center justify-center rounded-full text-white transition hover:bg-white/10"
+            onClick={() => setLightbox(null)}
+            aria-label="Close media viewer"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {lightbox.media.length > 1 && (
+            <>
+              <button
+                type="button"
+                className="absolute left-4 top-1/2 z-[122] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full text-white transition hover:bg-white/10 md:flex"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setLightbox((current) => current ? { ...current, index: (current.index - 1 + current.media.length) % current.media.length } : current);
+                }}
+                aria-label="Previous media"
+              >
+                <ChevronLeft className="h-8 w-8" />
+              </button>
+              <button
+                type="button"
+                className="absolute right-4 top-1/2 z-[122] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full text-white transition hover:bg-white/10 md:flex"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setLightbox((current) => current ? { ...current, index: (current.index + 1) % current.media.length } : current);
+                }}
+                aria-label="Next media"
+              >
+                <ChevronRight className="h-8 w-8" />
+              </button>
+            </>
+          )}
+
+          <div className="flex h-full w-full items-center justify-center" onClick={(event) => event.stopPropagation()}>
+            {(() => {
+              const item = lightbox.media[lightbox.index];
+              const url = item ? mediaFullUrl(item) : '';
+              if (!url) {
+                return <div className="text-sm font-medium text-white/70">Media is not available</div>;
+              }
+              if (item.type === 'video') {
+                return <video src={url} className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" controls autoPlay playsInline />;
+              }
+              return <img src={url} alt="" referrerPolicy="no-referrer" className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" />;
+            })()}
+          </div>
+
+          {lightbox.media.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 z-[122] flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/40 px-3 py-2 text-xs font-bold text-white/80 backdrop-blur">
+              {lightbox.index + 1} / {lightbox.media.length}
+            </div>
+          )}
+        </div>
+      )}
 
       {composerOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md sm:p-6">
