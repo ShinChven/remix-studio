@@ -55,11 +55,11 @@ function channelName(account?: SocialAccount) {
 }
 
 function fallbackAvatar(id: string) {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(id)}`;
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(id)}&backgroundColor=6366f1,4f46e5,4338ca`;
 }
 
 function campaignThumbnail(id: string) {
-  return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(id)}&backgroundColor=f1f5f9`;
+  return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(id)}&backgroundColor=0f172a,1e293b,334155&shape1Color=6366f1,818cf8,4f46e5`;
 }
 
 function mapCampaign(raw: any): CampaignCardModel {
@@ -198,53 +198,72 @@ export function Campaigns() {
           title="Campaigns"
           description="Organize your posts into projects and track their progress."
           actions={(
-            <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center lg:w-auto">
-              <button
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/40 px-4 text-sm font-bold text-neutral-700 shadow-sm backdrop-blur-3xl transition hover:bg-white/60 hover:text-neutral-950 active:scale-95 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-neutral-800/60 dark:hover:text-white sm:w-auto"
-                onClick={() => navigate('/campaigns/channels')}
-              >
-                <Share2 className="h-4 w-4" />
-                Channels
-              </button>
-              <div className="relative min-w-0 flex-1 sm:flex-none">
-                <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-neutral-500 dark:text-neutral-500" />
-                <input
-                  placeholder="Search campaigns..."
-                  className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white/40 py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 shadow-sm outline-none backdrop-blur-3xl transition-all placeholder:text-neutral-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 sm:w-64"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <button
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-indigo-700 bg-indigo-600 text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-95"
-                onClick={() => navigate('/campaigns/new')}
-                title="New Campaign"
-                aria-label="New Campaign"
-              >
-                <Plus className="h-5 w-5" />
-              </button>
-            </div>
+            <button
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/40 px-4 text-sm font-bold text-neutral-700 shadow-sm backdrop-blur-3xl transition hover:bg-white/60 hover:text-neutral-950 active:scale-95 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-neutral-800/60 dark:hover:text-white sm:w-auto"
+              onClick={() => navigate('/campaigns/channels')}
+            >
+              <Share2 className="h-4 w-4" />
+              Channels
+            </button>
           )}
         />
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Left Column: Campaign Grid */}
           <section className="lg:col-span-2 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
                 <Megaphone className="h-5 w-5 text-indigo-500" />
                 All Campaigns {filteredCampaigns.length > 0 && <span className="text-sm font-normal text-neutral-500 dark:text-neutral-500">({filteredCampaigns.length})</span>}
               </h3>
+
+              <div className="flex items-center gap-3">
+                <div className="relative min-w-0 flex-1 sm:flex-none">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-neutral-500 dark:text-neutral-500" />
+                  <input
+                    placeholder="Search campaigns..."
+                    className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white/40 py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 shadow-sm outline-none backdrop-blur-3xl transition-all placeholder:text-neutral-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 sm:w-64"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-indigo-700 bg-indigo-600 text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-95"
+                  onClick={() => navigate('/campaigns/new')}
+                  title="New Campaign"
+                  aria-label="New Campaign"
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             {isLoading ? (
               <div className="grid gap-6 md:grid-cols-2">
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div key={index} className="overflow-hidden rounded-xl border border-neutral-200 bg-white p-0 dark:border-white/10 dark:bg-neutral-900">
-                    <div className="h-40 animate-pulse bg-neutral-200 dark:bg-neutral-800" />
-                    <div className="space-y-4 p-5">
+                    <div className="h-52 animate-pulse bg-neutral-200 dark:bg-neutral-800" />
+                    <div className="space-y-3 px-6 pt-3 pb-3">
                       <div className="h-7 w-3/4 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+                      <div className="h-4 w-full animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+                      <div className="h-4 w-2/3 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+                    </div>
+                    <div className="space-y-6 px-6 pb-6">
+                      <div className="flex gap-1.5">
+                        <div className="h-6 w-20 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-800" />
+                        <div className="h-6 w-16 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-800" />
+                      </div>
                       <div className="h-12 w-full animate-pulse rounded-xl bg-neutral-200 dark:bg-neutral-800" />
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <div className="h-4 w-16 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+                          <div className="h-4 w-20 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+                        </div>
+                        <div className="h-2.5 w-full animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-800" />
+                      </div>
+                    </div>
+                    <div className="border-t border-neutral-100 px-6 py-4 dark:border-white/5">
+                      <div className="h-5 w-32 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
                     </div>
                   </div>
                 ))}
@@ -267,33 +286,40 @@ export function Campaigns() {
                   return (
                     <div
                       key={campaign.id}
-                      className="group relative flex min-h-[260px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-neutral-200/50 bg-white/70 p-5 text-left shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-white/80 hover:shadow-xl dark:border-white/5 dark:bg-neutral-900/70 dark:hover:bg-neutral-800/80"
+                      className="group relative cursor-pointer overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 dark:border-white/10 dark:bg-neutral-900"
                       onClick={() => navigate(`/campaigns/${campaign.id}`)}
                     >
-                      <div className="mb-4 flex items-start justify-between gap-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-indigo-500/10 text-indigo-500 shadow-lg shadow-indigo-500/5 transition-transform group-hover:scale-110">
-                          <img src={campaign.thumbnail} alt="" className="h-full w-full object-cover opacity-80" />
-                        </div>
-                        <span
-                          className={cn(
-                            'inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest',
-                            campaign.status === 'Active'
-                              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                              : 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400',
-                          )}
-                        >
+                      {/* Background Image Layer with Gradient Mask */}
+                      <div className="absolute inset-0 z-0">
+                        <div
+                          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                          style={{ backgroundImage: `url(${campaign.thumbnail})` }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/75 to-transparent dark:from-neutral-900 dark:via-neutral-900/75" />
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className="absolute right-4 top-4 z-20">
+                        <span className={cn(
+                          "inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold text-white shadow-lg backdrop-blur-md",
+                          campaign.status === 'Active' ? 'bg-emerald-500/90' : 'bg-amber-500/90',
+                        )}>
                           {campaign.status}
                         </span>
                       </div>
 
-                      <div className="flex flex-1 flex-col">
-                        <div className="mb-4">
+                      <div className="relative z-10 flex flex-col">
+                        {/* Top spacing to showcase the campaign image */}
+                        <div className="h-52" />
+
+                        {/* Header */}
+                        <div className="px-6 pt-3 pb-3">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 space-y-1">
-                              <h2 className="truncate text-lg font-semibold text-neutral-900 dark:text-white">
+                              <h2 className="truncate text-2xl font-black tracking-tight text-neutral-900 drop-shadow-md dark:text-white">
                                 {campaign.name}
                               </h2>
-                              <p className="line-clamp-2 min-h-10 text-sm leading-5 text-neutral-600 dark:text-neutral-400">
+                              <p className="line-clamp-2 text-sm font-medium leading-relaxed text-neutral-700/80 dark:text-white/80">
                                 {campaign.description}
                               </p>
                             </div>
@@ -301,19 +327,19 @@ export function Campaigns() {
                               <button
                                 type="button"
                                 onClick={() => setOpenMenuId(openMenuId === campaign.id ? null : campaign.id)}
-                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </button>
                               {openMenuId === campaign.id && (
-                                <div className="absolute right-0 top-10 z-30 w-44 overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 text-sm shadow-xl dark:border-white/10 dark:bg-neutral-900">
-                                  <button className="block w-full px-3 py-2 text-left hover:bg-neutral-100 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)}>
+                                <div className="absolute right-0 top-10 z-30 w-44 overflow-hidden rounded-xl border border-neutral-200 bg-white/95 py-1 text-sm shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95">
+                                  <button className="block w-full px-4 py-2 text-left text-neutral-700 hover:bg-neutral-100 dark:text-white/80 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)}>
                                     Edit Details
                                   </button>
-                                  <button className="block w-full px-3 py-2 text-left hover:bg-neutral-100 dark:hover:bg-white/10" onClick={() => void toggleCampaignStatus(campaign)}>
+                                  <button className="block w-full px-4 py-2 text-left text-neutral-700 hover:bg-neutral-100 dark:text-white/80 dark:hover:bg-white/10" onClick={() => void toggleCampaignStatus(campaign)}>
                                     {campaign.status === 'Active' ? 'Pause Campaign' : 'Resume Campaign'}
                                   </button>
-                                  <button className="flex w-full items-center gap-2 px-3 py-2 text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10" onClick={() => setDeleteTarget(campaign)}>
+                                  <button className="flex w-full items-center gap-2 px-4 py-2 text-left text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10" onClick={() => setDeleteTarget(campaign)}>
                                     <Trash2 className="h-4 w-4" />
                                     Delete Campaign
                                   </button>
@@ -322,66 +348,68 @@ export function Campaigns() {
                             </div>
                           </div>
                         </div>
-                        <div className="mt-auto space-y-4">
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-neutral-500 dark:text-neutral-500">
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="h-3 w-3" />
-                              <span className="font-bold">{campaign.startDate}</span>
+
+                        {/* Content */}
+                        <div className="space-y-6 px-6 pb-6">
+                          {/* Pill Stats */}
+                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-neutral-700/70 dark:text-white/60">
+                            <div className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-neutral-200/60 bg-neutral-100/40 px-2.5 py-1 shadow-sm dark:border-white/5 dark:bg-white/[0.05]">
+                              <Calendar className="h-3 w-3 text-indigo-500/80" />
+                              <span>{campaign.startDate}</span>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <Layers className="h-3 w-3" />
-                              <span className="font-bold">{campaign.channels.length} {campaign.channels.length === 1 ? 'channel' : 'channels'}</span>
+                            <div className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-neutral-200/60 bg-neutral-100/40 px-2.5 py-1 shadow-sm dark:border-white/5 dark:bg-white/[0.05]">
+                              <Layers className="h-3 w-3 text-indigo-500/80" />
+                              <span>{campaign.channels.length} {campaign.channels.length === 1 ? 'Ch' : 'Chs'}</span>
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between rounded-xl border border-neutral-200/50 bg-neutral-100/40 px-3 py-2 dark:border-white/5 dark:bg-white/5">
+                          {/* Channels — the only frosted-glass surface on the card */}
+                          <div className="flex items-center justify-between rounded-xl border border-white/50 bg-white/20 px-3 py-2 shadow-sm backdrop-blur-xl transition-all hover:bg-white/30 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.06]">
                             <div className="min-w-0">
-                              <p className="text-xs font-bold text-neutral-900 dark:text-white">Channels</p>
-                              <p className="whitespace-nowrap text-[10px] font-medium text-neutral-500 dark:text-neutral-400">Integrated platforms</p>
+                              <p className="text-xs font-black tracking-tight text-neutral-900 dark:text-white">Channels</p>
+                              <p className="whitespace-nowrap text-[10px] font-medium text-neutral-500 dark:text-white/50">Integrated platforms</p>
                             </div>
-                            <div className="flex -space-x-2">
+                            <div className="flex -space-x-1.5">
                               {visibleAccounts.map((account) => (
                                 <img
                                   key={account.id}
                                   src={account.avatarUrl || fallbackAvatar(account.id)}
                                   alt={channelName(account)}
                                   referrerPolicy="no-referrer"
-                                  className="h-7 w-7 rounded-full border-2 border-white bg-neutral-200 object-cover dark:border-neutral-900"
+                                  className="h-7 w-7 rounded-full border-2 border-white bg-neutral-100 object-cover dark:border-neutral-900"
                                 />
                               ))}
                               {extraAccountCount > 0 && (
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-neutral-200 text-[10px] font-bold text-neutral-700 dark:border-neutral-900 dark:bg-neutral-800 dark:text-neutral-200">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-neutral-100 text-[10px] font-bold text-neutral-600 dark:border-neutral-900 dark:bg-neutral-800 dark:text-white">
                                   +{extraAccountCount}
-                                </div>
-                              )}
-                              {visibleAccounts.length === 0 && (
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500">
-                                  <Twitter className="h-3.5 w-3.5" />
                                 </div>
                               )}
                             </div>
                           </div>
 
+                          {/* Progress */}
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold text-neutral-900 dark:text-white">Progress</span>
-                              <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs font-bold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300">
-                                {completedPosts}/{campaign.totalPosts} posts
-                              </span>
+                              <span className="text-sm font-black uppercase tracking-tight text-neutral-900 dark:text-white">Progress</span>
+                              <span className="rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-bold text-indigo-600 dark:text-indigo-400">{completedPosts}/{campaign.totalPosts} posts</span>
                             </div>
-                            <div className="h-2.5 overflow-hidden rounded-full bg-neutral-200 shadow-inner dark:bg-neutral-800">
-                              <div className="h-full rounded-full bg-indigo-600 transition-all duration-700" style={{ width: `${progress}%` }} />
+                            <div className="h-2.5 overflow-hidden rounded-full bg-neutral-200/70 shadow-inner dark:bg-white/10">
+                              <div
+                                className="h-full rounded-full bg-indigo-600 shadow-[0_0_12px_rgba(99,102,241,0.6)] transition-all duration-700 dark:bg-indigo-500"
+                                style={{ width: `${progress}%` }}
+                              />
                             </div>
-                            <p className="text-right text-xs font-bold text-neutral-500 dark:text-neutral-400">
+                            <p className="text-right text-xs font-bold text-neutral-500 dark:text-white/50">
                               {campaign.totalPosts > 0 ? `${progress}% completed` : 'Initial Setup'}
                             </p>
                           </div>
                         </div>
 
-                        <div className="mt-4 border-t border-neutral-200/50 pt-4 dark:border-white/5">
-                          <div className="flex w-full items-center justify-between text-sm font-bold text-neutral-500 transition-all duration-300 group-hover:text-indigo-600 dark:text-neutral-400 dark:group-hover:text-indigo-400">
-                            <span>View Campaign</span>
-                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        {/* Footer */}
+                        <div className="border-t border-neutral-100 bg-neutral-50/50 px-6 py-4 dark:border-white/5 dark:bg-white/[0.02]">
+                          <div className="flex w-full items-center justify-between text-neutral-500 transition-all duration-300 group-hover:text-indigo-600 dark:text-white/60 dark:group-hover:text-indigo-400">
+                            <span className="text-base font-black uppercase tracking-tight">View Campaign</span>
+                            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-2" />
                           </div>
                         </div>
                       </div>
@@ -505,7 +533,7 @@ export function Campaigns() {
 
               {recentPosts.length > 0 && (
                 <button
-                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-neutral-100/40 py-2.5 text-sm font-bold text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 dark:border-white/5 dark:bg-white/5 dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-300/70 bg-neutral-200/60 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-200 hover:text-neutral-900 dark:border-white/10 dark:bg-white/10 dark:text-neutral-300 dark:hover:bg-white/15 dark:hover:text-white"
                   onClick={() => navigate('/campaigns/history')}
                 >
                   View All History
