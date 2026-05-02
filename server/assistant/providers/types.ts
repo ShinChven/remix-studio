@@ -32,6 +32,7 @@ export interface ChatRequest {
   temperature?: number;
   maxTokens?: number;
   abortSignal?: AbortSignal;
+  includeThoughts?: boolean;
   onThought?: (update: ThoughtUpdate) => void;
 }
 

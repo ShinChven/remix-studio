@@ -57,12 +57,16 @@ export class GoogleAIChatProvider implements ChatProvider {
       ...(tools ? { tools } : {}),
     };
 
+    const includeThoughts = req.includeThoughts ?? typeof req.onThought === 'function';
+
     if (realModelId.includes('gemma-4')) {
       config.thinkingConfig = { thinkingLevel: 'HIGH' } as any;
     } else if (
-      realModelId.includes('gemini-3') ||
-      realModelId.includes('gemini-2.5') ||
-      realModelId.includes('thinking')
+      includeThoughts && (
+        realModelId.includes('gemini-3') ||
+        realModelId.includes('gemini-2.5') ||
+        realModelId.includes('thinking')
+      )
     ) {
       config.thinkingConfig = { includeThoughts: true };
     }

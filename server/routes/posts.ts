@@ -125,6 +125,14 @@ function videoMimeFromExt(ext: string): string {
   }
 }
 
+function cleanGeneratedPostText(value: string): string {
+  return value
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<think>[\s\S]*$/gi, '')
+    .replace(/<\/?think>/gi, '')
+    .trim();
+}
+
 function videoMimeExt(mimeType: string): string {
   switch (mimeType) {
     case 'video/webm':
@@ -287,15 +295,16 @@ export function createPostsRouter(
           const response = await provider.chat({
             modelId: task.modelId,
             messages: [
-              { role: 'system', content: 'You write short social media posts. Reply with only the post text — no quotes, no preface, no explanations.' },
+              { role: 'system', content: 'You write short social media posts for an automated generation job. Reply with only the final post text. Do not include reasoning, analysis, <think> tags, quotes, prefaces, markdown, or explanations.' },
               userMessage,
             ],
             tools: [],
             temperature: 0.8,
             maxTokens: 600,
+            includeThoughts: false,
           });
 
-          const text = (response.text || '').trim();
+          const text = cleanGeneratedPostText(response.text || '');
           if (!text) {
             result.status = 'failed';
             result.error = 'Empty response';
