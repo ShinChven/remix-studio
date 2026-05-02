@@ -83,8 +83,9 @@ function mapCampaign(raw: any): CampaignCardModel {
     : 'Not scheduled';
 
   let latestPostThumbnail = '';
-  if (posts.length > 0 && posts[0].media && posts[0].media.length > 0) {
-    latestPostThumbnail = posts[0].media[0].thumbnailUrl || posts[0].media[0].url || '';
+  const postWithMedia = posts.find((p: any) => p.media && p.media.length > 0);
+  if (postWithMedia) {
+    latestPostThumbnail = postWithMedia.media[0].thumbnailUrl || postWithMedia.media[0].url || '';
   }
 
   return {

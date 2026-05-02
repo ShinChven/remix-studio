@@ -122,6 +122,17 @@ function formatCompactDateTime(value?: number) {
   });
 }
 
+function projectThumbnail(id: string, type: ProjectType = 'image') {
+  let colors = '6366f1,818cf8,4f46e5'; // default indigo
+  switch (type) {
+    case 'text': colors = '3b82f6,60a5fa,2563eb'; break; // blue
+    case 'video': colors = 'a855f7,c084fc,9333ea'; break; // purple
+    case 'audio': colors = '06b6d4,22d3ee,0891b2'; break; // cyan
+    case 'image': default: colors = '10b981,34d399,059669'; break; // emerald
+  }
+  return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(id)}&backgroundColor=0f172a,1e293b,334155&shape1Color=${colors}`;
+}
+
 interface ProjectCardProps {
   project: Project;
   isToggling?: boolean;
@@ -154,18 +165,13 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
   }, [isMenuOpen]);
 
   const lastAlbumItem = project.album && project.album.length > 0 ? project.album[project.album.length - 1] : null;
-  // Use thumbnail first to improve loading times on the project list view
-  const bgImage = lastAlbumItem ? (lastAlbumItem.thumbnailUrl || lastAlbumItem.optimizedUrl || lastAlbumItem.imageUrl) : null;
+  
+  // Use thumbnail/optimized image if available. Only use imageUrl directly for image projects.
+  const albumImage = lastAlbumItem?.thumbnailUrl || 
+                     lastAlbumItem?.optimizedUrl || 
+                     (project.type === 'image' ? lastAlbumItem?.imageUrl : null);
 
-  let bgClass = "bg-neutral-900";
-  if (!bgImage) {
-    switch (project.type) {
-      case 'text': bgClass = "bg-blue-950"; break;
-      case 'video': bgClass = "bg-purple-950"; break;
-      case 'audio': bgClass = "bg-cyan-950"; break;
-      case 'image': default: bgClass = "bg-emerald-950"; break;
-    }
-  }
+  const bgImage = albumImage || projectThumbnail(project.id, project.type);
 
   return (
     <Link
@@ -173,14 +179,10 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
       className={`group relative block h-[280px] rounded-[20px] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-white/5 bg-neutral-900`}
     >
       {/* Background Image or Fallback */}
-      {bgImage ? (
-        <div 
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-          style={{ backgroundImage: `url(${bgImage})` }}
-        />
-      ) : (
-        <div className={`absolute inset-0 opacity-40 transition-transform duration-700 group-hover:scale-105 bg-gradient-to-br from-transparent to-black/50 ${bgClass}`} />
-      )}
+      <div 
+        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+        style={{ backgroundImage: `url(${bgImage})` }}
+      />
 
       {/* Gradient & Blur Overlay */}
       <div 
