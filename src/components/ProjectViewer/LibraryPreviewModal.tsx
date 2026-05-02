@@ -244,7 +244,7 @@ export function LibraryPreviewModal({
                         <img 
                           src={imageDisplayUrl(item.thumbnailUrl || item.content)} 
                           alt={item.content} 
-                          className="w-full h-full object-cover group-hover/img-container:scale-105 transition-transform duration-500" 
+                          className="w-full h-full object-cover" 
                         />
                         {isSelectionMode && (
                           <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover/img-container:opacity-100 transition-opacity flex items-center justify-center">

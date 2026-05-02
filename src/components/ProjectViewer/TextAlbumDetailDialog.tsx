@@ -162,7 +162,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
                           <img
                             src={imageDisplayUrl(src)}
                             alt={t('projectViewer.textDetail.referenceAlt', { index: idx + 1 })}
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            className="h-full w-full object-cover"
                             referrerPolicy="no-referrer"
                           />
                           <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-left text-[9px] font-black uppercase tracking-[0.18em] text-white/80">

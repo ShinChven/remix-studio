@@ -252,7 +252,7 @@ export function LibraryCard({ library, isCheckingRefs = false, onTogglePin, onSt
       className={`${isPinned ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-200/60 dark:border-blue-500/20' : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5'} border backdrop-blur-xl ${typeMeta.borderClassName} p-5 rounded-card text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 duration-300`}
     >
       <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 rounded-xl group-hover:scale-105 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
+        <div className={`p-3 rounded-xl shadow-lg ${typeMeta.iconClassName}`}>
           <TypeIcon className="w-5 h-5" />
         </div>
         <div className="flex items-center gap-1.5">

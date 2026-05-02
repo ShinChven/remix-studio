@@ -294,7 +294,7 @@ function MediaPickerModal({
                     >
                       <div className="relative aspect-video bg-neutral-100 dark:bg-neutral-800">
                         {item.previewUrl ? (
-                          <img src={imageDisplayUrl(item.previewUrl)} alt={item.title || item.id} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                          <img src={imageDisplayUrl(item.previewUrl)} alt={item.title || item.id} className="h-full w-full object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center">
                             {item.mediaType === 'video' ? <Video className="h-8 w-8 text-neutral-400" /> : <ImageIcon className="h-8 w-8 text-neutral-400" />}

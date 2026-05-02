@@ -65,7 +65,7 @@ export function DraftsTab({
             return (
               <div 
                 key={item.id}
-                className="absolute inset-0 transition-all duration-500 ease-out group-hover:scale-105"
+                className="absolute inset-0"
                 style={{
                   transform: `rotate(${rotations[idx % rotations.length]}deg) translate(${xOffsets[idx % xOffsets.length]}px, ${yOffsets[idx % yOffsets.length]}px)`,
                   zIndex: displayAlbumItems.length - idx

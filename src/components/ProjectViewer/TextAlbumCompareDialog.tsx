@@ -109,7 +109,7 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
                             <img
                               src={imageDisplayUrl(src)}
                               alt={t('projectViewer.compare.referenceAlt', { index: refIndex + 1 })}
-                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              className="h-full w-full object-cover"
                               referrerPolicy="no-referrer"
                             />
                           </button>

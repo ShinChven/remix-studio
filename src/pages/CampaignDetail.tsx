@@ -738,11 +738,11 @@ export function CampaignDetail() {
                                 aria-label={`Open media ${index + 1}`}
                               >
                                 {url && media.type !== 'video' ? (
-                                  <img src={url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover transition-transform duration-500 group-hover/media:scale-105" />
+                                  <img src={url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                                 ) : posterUrl && media.type === 'video' ? (
-                                  <img src={posterUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover transition-transform duration-500 group-hover/media:scale-105" />
+                                  <img src={posterUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                                 ) : url && media.type === 'video' ? (
-                                  <video src={mediaFullUrl(media)} className="h-full w-full object-cover transition-transform duration-500 group-hover/media:scale-105" muted playsInline preload="metadata" />
+                                  <video src={mediaFullUrl(media)} className="h-full w-full object-cover" muted playsInline preload="metadata" />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center text-neutral-400">
                                     <ImageIcon className="h-6 w-6" />
