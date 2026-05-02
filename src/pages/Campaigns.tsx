@@ -446,13 +446,13 @@ export function Campaigns() {
                       }
 
                       return (
-                        <div key={post.id} className="group flex items-start gap-4">
+                        <div key={post.id} className="group flex items-center gap-4 rounded-2xl p-2 -m-2 transition-all hover:bg-neutral-50/50 dark:hover:bg-white/5">
                           <div className="relative shrink-0">
-                            <Link to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`} className={cn("relative", "block")}>
+                            <Link to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`} className={cn("relative", "block transition-transform group-hover:scale-105")}>
                               <img
                                 src={avatar}
                                 alt={name}
-                                className="h-10 w-10 rounded-full border border-neutral-200 object-cover transition group-hover:border-indigo-500/50 dark:border-white/10"
+                                className="h-10 w-10 rounded-full border border-neutral-200 object-cover shadow-sm dark:border-white/10"
                                 referrerPolicy="no-referrer"
                               />
                               <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-white text-neutral-900 shadow-sm dark:border-neutral-900 dark:bg-neutral-800 dark:text-white">
@@ -460,19 +460,19 @@ export function Campaigns() {
                               </div>
                             </Link>
                           </div>
-                          <div className="min-w-0 flex-1 space-y-1">
+                          <div className="min-w-0 flex-1 space-y-0.5">
                             <div className="flex items-center justify-between gap-2">
                               <Link
                                 to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`}
                                 className={cn(
-                                  "truncate text-sm font-bold text-neutral-900 dark:text-white",
-                                  "hover:text-indigo-600 dark:hover:text-indigo-400"
+                                  "truncate text-[14px] font-bold text-neutral-900 dark:text-white",
+                                  "hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                                 )}
                               >
                                 {name}
                               </Link>
                               <span className={cn(
-                                "shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider",
+                                "shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
                                 post.status === 'completed'
                                   ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                                   : "bg-red-500/10 text-red-600 dark:text-red-400"
@@ -480,30 +480,32 @@ export function Campaigns() {
                                 {post.status === 'completed' ? 'Published' : 'Failed'}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 text-xs font-medium text-neutral-500">
+                            <div className="flex items-center gap-2 text-[12px] font-medium text-neutral-500">
                               <Link
-                                className="cursor-pointer truncate hover:text-indigo-600 hover:underline"
+                                className="cursor-pointer truncate hover:text-indigo-600 hover:underline transition-colors"
                                 to={`/campaigns/${post.campaignId || post.campaign?.id}`}
                               >
                                 {post.campaign?.name}
                               </Link>
-                              <span className="shrink-0">•</span>
-                              <span className="shrink-0 flex items-center gap-1">
-                                <Clock className="h-2.5 w-2.5" />
+                              <span className="shrink-0 text-neutral-300 dark:text-neutral-700">•</span>
+                              <span className="shrink-0 flex items-center gap-1 opacity-80">
+                                <Clock className="h-3 w-3" />
                                 {new Date(post.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
                           </div>
-                          {externalUrl && (
+                          {externalUrl ? (
                             <a
                               href={externalUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition hover:border-indigo-500/50 hover:bg-indigo-50/50 hover:text-indigo-600 dark:border-white/10 dark:hover:bg-white/5 dark:hover:text-white"
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 opacity-0 transition-all group-hover:opacity-100 hover:border-indigo-500/50 hover:bg-indigo-50/50 hover:text-indigo-600 dark:border-white/10 dark:hover:bg-white/5 dark:hover:text-white"
                               title="View live post"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
                             </a>
+                          ) : (
+                            <div className="w-8 shrink-0" />
                           )}
                         </div>
                       );
@@ -555,40 +557,40 @@ export function Campaigns() {
                     </div>
                   ) : (
                     scheduledPosts.map((post) => (
-                      <div key={post.id} className="group flex items-start gap-4">
+                      <div key={post.id} className="group flex items-center gap-4 rounded-2xl p-2 -m-2 transition-all hover:bg-neutral-50/50 dark:hover:bg-white/5">
                         <Link 
-                          className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800"
+                          className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 shadow-sm transition-transform group-hover:scale-105 dark:border-white/10 dark:bg-neutral-800"
                           to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`}
                         >
                           {post.media?.[0]?.thumbnailUrl ? (
                             <img src={post.media[0].thumbnailUrl} className="h-full w-full object-cover object-top" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center">
-                              <Calendar className="h-5 w-5 text-neutral-400" />
+                              <Calendar className="h-6 w-6 text-neutral-400" />
                             </div>
                           )}
                         </Link>
                         <div className="min-w-0 flex-1 space-y-1">
                           <Link 
-                            className="truncate text-sm font-bold text-neutral-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-400 transition-colors"
+                            className="block line-clamp-1 text-[15px] font-semibold text-neutral-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-400 transition-colors"
                             to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`}
                           >
                             {post.textContent || <span className="italic font-normal text-neutral-400">No text content</span>}
                           </Link>
-                          <div className="flex items-center gap-2 text-[11px] font-medium text-neutral-500">
-                            <span className="flex items-center gap-1 font-bold text-indigo-600 dark:text-indigo-400">
-                              <Clock className="h-3 w-3" />
+                          <div className="flex items-center gap-2 text-[13px] font-medium text-neutral-500">
+                            <span className="flex items-center gap-1.5 font-bold text-indigo-600 dark:text-indigo-400">
+                              <Clock className="h-3.5 w-3.5" />
                               {new Date(post.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             </span>
-                            <span className="shrink-0">•</span>
-                            <span className="truncate">{post.campaign?.name}</span>
+                            <span className="shrink-0 text-neutral-300 dark:text-neutral-700">•</span>
+                            <span className="truncate opacity-80">{post.campaign?.name}</span>
                           </div>
                         </div>
                         <Link
                           to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`}
-                          className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition hover:border-indigo-500/50 hover:bg-indigo-50/50 hover:text-indigo-600 dark:border-white/10 dark:hover:bg-white/5 dark:hover:text-white"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 opacity-0 transition-all group-hover:opacity-100 hover:border-indigo-500/50 hover:bg-indigo-50/50 hover:text-indigo-600 dark:border-white/10 dark:hover:bg-white/5 dark:hover:text-white"
                         >
-                          <ArrowRight className="h-3.5 w-3.5" />
+                          <ArrowRight className="h-4 w-4" />
                         </Link>
                       </div>
                     ))
@@ -596,11 +598,11 @@ export function Campaigns() {
                 </div>
 
                 <button
-                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-300/70 bg-neutral-200/60 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-200 hover:text-neutral-900 dark:border-white/10 dark:bg-white/10 dark:text-neutral-300 dark:hover:bg-white/15 dark:hover:text-white"
+                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white/50 py-3 text-[15px] font-bold text-neutral-700 shadow-sm backdrop-blur-xl transition-all hover:bg-white hover:text-neutral-950 hover:shadow-md active:scale-[0.98] dark:border-white/10 dark:bg-white/5 dark:text-neutral-300 dark:hover:bg-white/10 dark:hover:text-white"
                   onClick={() => navigate('/campaigns/scheduled')}
                 >
                   {scheduledPosts.length > 0 ? t('viewAllScheduled') : t('openCalendar')}
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </button>
               </div>
             </div>

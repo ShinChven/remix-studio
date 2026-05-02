@@ -56,6 +56,8 @@ function parseBooleanEnv(value: string | undefined, fallback: boolean): boolean 
   return fallback;
 }
 
+const memMb = (b: number) => +(b / 1024 / 1024).toFixed(1);
+
 // ========== Production secret guard ==========
 if (process.env.NODE_ENV === 'production') {
   const required = ['JWT_SECRET', 'DATABASE_URL', 'PROVIDER_ENCRYPTION_KEY'];
@@ -146,6 +148,15 @@ async function startServer() {
   runSessionCleanup(); // run once immediately on startup
   setInterval(runSessionCleanup, SESSION_CLEANUP_INTERVAL_MS);
 
+  // Periodic memory snapshot to distinguish heap leak vs native (Sharp/ffmpeg) growth.
+  const MEMORY_LOG_INTERVAL_MS = 30 * 1000;
+  setInterval(() => {
+    const m = process.memoryUsage();
+    console.log(
+      `[mem] rss=${memMb(m.rss)}MB heap=${memMb(m.heapUsed)}/${memMb(m.heapTotal)}MB ext=${memMb(m.external)}MB`
+    );
+  }, MEMORY_LOG_INTERVAL_MS);
+
   // === Auto-provision default admin ===
   const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
   const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
@@ -179,6 +190,19 @@ async function startServer() {
       console.error('[GET /readyz]', error);
       return c.json({ ok: false }, 503);
     }
+  });
+
+  app.get('/api/internal/memory', (c) => {
+    const m = process.memoryUsage();
+    return c.json({
+      rss: memMb(m.rss),
+      heapUsed: memMb(m.heapUsed),
+      heapTotal: memMb(m.heapTotal),
+      external: memMb(m.external),
+      arrayBuffers: memMb(m.arrayBuffers),
+      uptimeSec: Math.round(process.uptime()),
+      unit: 'MB',
+    });
   });
 
   // Mount routers
