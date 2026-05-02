@@ -71,7 +71,7 @@ function formatCampaignDateTime(value: Date) {
 function mapCampaign(raw: any): CampaignCardModel {
   const posts = Array.isArray(raw.posts) ? raw.posts : [];
   const totalPosts = raw._count?.posts ?? posts.length ?? 0;
-  const postedPosts = posts.filter((post: any) => post.status === 'completed' || post.status === 'posted').length;
+  const postedPosts = raw.completedPostsCount ?? posts.filter((post: any) => post.status === 'completed' || post.status === 'posted').length;
   const scheduledTimes = posts
     .map((post: any) => (post.scheduledAt ? new Date(post.scheduledAt).getTime() : Number.NaN))
     .filter(Number.isFinite);
