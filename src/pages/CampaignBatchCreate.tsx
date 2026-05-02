@@ -174,10 +174,17 @@ function MediaPickerModal({
   onAddSelected,
 }: MediaPickerModalProps) {
   const [query, setQuery] = useState('');
+  const [sourceQuery, setSourceQuery] = useState('');
   const [aspectRatioFilter, setAspectRatioFilter] = useState<string>('all');
   const [lastSelectedKey, setLastSelectedKey] = useState<string | null>(null);
   const activeSource = sources.find((source) => source.id === activeSourceId);
   const selectedCount = selectedKeys.size;
+
+  const filteredSources = useMemo(() => {
+    const q = sourceQuery.trim().toLowerCase();
+    if (!q) return sources;
+    return sources.filter((s) => s.name.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q));
+  }, [sources, sourceQuery]);
 
   const availableAspectRatios = useMemo(() => {
     const ratios = new Set<string>();
@@ -262,30 +269,50 @@ function MediaPickerModal({
             </div>
           </div>
 
+          <div className="mb-4 shrink-0">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+              <input
+                className="h-9 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-3 text-xs outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-950 dark:text-white"
+                placeholder={mode === 'library' ? 'Search libraries...' : 'Search projects...'}
+                value={sourceQuery}
+                onChange={(e) => setSourceQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-            {sources.map((source) => {
-              const active = source.id === activeSourceId;
-              return (
-                <button
-                  key={source.id}
-                  className={cn(
-                    'w-full rounded-card border p-4 text-left transition',
-                    active
-                      ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
-                      : 'border-neutral-200 bg-white hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-950 dark:hover:border-white/20',
-                  )}
-                  onClick={() => onSelectSource(source.id)}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="truncate text-sm font-bold text-neutral-950 dark:text-white">{source.name}</span>
-                    <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase text-neutral-500 dark:bg-white/10">
-                      {mediaSourceLabel(source.type)}
-                    </span>
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{source.description || `${source.itemCount} items`}</p>
-                </button>
-              );
-            })}
+            {filteredSources.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 py-10 text-center dark:border-white/10">
+                <Search className="mb-3 h-8 w-8 text-neutral-300" />
+                <p className="px-4 text-xs font-bold text-neutral-950 dark:text-white">No matches found</p>
+                <p className="mt-1 px-4 text-[10px] text-neutral-500">Try a different search term</p>
+              </div>
+            ) : (
+              filteredSources.map((source) => {
+                const active = source.id === activeSourceId;
+                return (
+                  <button
+                    key={source.id}
+                    className={cn(
+                      'w-full rounded-card border p-4 text-left transition',
+                      active
+                        ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                        : 'border-neutral-200 bg-white hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-950 dark:hover:border-white/20',
+                    )}
+                    onClick={() => onSelectSource(source.id)}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="truncate text-sm font-bold text-neutral-950 dark:text-white">{source.name}</span>
+                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase text-neutral-500 dark:bg-white/10">
+                        {mediaSourceLabel(source.type)}
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{source.description || `${source.itemCount} items`}</p>
+                  </button>
+                );
+              })
+            )}
           </div>
         </aside>
 
@@ -308,13 +335,23 @@ function MediaPickerModal({
             </button>
           </div>
 
-          <div className="border-b border-neutral-200 p-4 dark:border-white/10 md:hidden">
+          <div className="flex flex-col gap-3 border-b border-neutral-200 p-4 dark:border-white/10 md:hidden">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+              <input
+                className="h-11 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-900 dark:text-white"
+                placeholder={mode === 'library' ? 'Search libraries...' : 'Search projects...'}
+                value={sourceQuery}
+                onChange={(e) => setSourceQuery(e.target.value)}
+              />
+            </div>
             <select
               className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white"
               value={activeSourceId || ''}
               onChange={(event) => onSelectSource(event.target.value)}
             >
-              {sources.map((source) => (
+              {!activeSourceId && <option value="">Select source...</option>}
+              {filteredSources.map((source) => (
                 <option key={source.id} value={source.id}>{source.name}</option>
               ))}
             </select>
