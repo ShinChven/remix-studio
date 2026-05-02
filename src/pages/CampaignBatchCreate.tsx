@@ -50,6 +50,7 @@ interface PickerItem {
   previewUrl?: string;
   rawUrl?: string;
   sourceLabel: string;
+  aspectRatio?: string;
 }
 
 type BatchQueueItem =
@@ -128,6 +129,7 @@ function albumItemToPickerItem(item: AlbumItem, project: PickerSource): PickerIt
     previewUrl: project.type === 'video' ? item.thumbnailUrl : (item.thumbnailUrl || item.optimizedUrl || item.imageUrl),
     rawUrl: item.imageUrl,
     sourceLabel: project.name,
+    aspectRatio: item.aspectRatio,
   };
 }
 
@@ -157,22 +159,55 @@ function MediaPickerModal({
   onAddSelected,
 }: MediaPickerModalProps) {
   const [query, setQuery] = useState('');
+  const [aspectRatioFilter, setAspectRatioFilter] = useState<string>('all');
   const activeSource = sources.find((source) => source.id === activeSourceId);
   const selectedCount = selectedKeys.size;
 
+  const availableAspectRatios = useMemo(() => {
+    const ratios = new Set<string>();
+    items.forEach((item) => {
+      if (item.aspectRatio) ratios.add(item.aspectRatio);
+    });
+    return Array.from(ratios).sort();
+  }, [items]);
+
   useEffect(() => {
     setQuery('');
+    setAspectRatioFilter('all');
   }, [activeSourceId]);
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((item) => (
-      item.title?.toLowerCase().includes(q) ||
-      item.sourceLabel.toLowerCase().includes(q) ||
-      item.rawUrl?.toLowerCase().includes(q)
-    ));
-  }, [items, query]);
+    return items.filter((item) => {
+      const matchesQuery = !q || (
+        item.title?.toLowerCase().includes(q) ||
+        item.sourceLabel.toLowerCase().includes(q) ||
+        item.rawUrl?.toLowerCase().includes(q)
+      );
+      const matchesRatio = aspectRatioFilter === 'all' || item.aspectRatio === aspectRatioFilter;
+      return matchesQuery && matchesRatio;
+    });
+  }, [items, query, aspectRatioFilter]);
+
+  const filteredKeys = useMemo(() => (
+    filteredItems.map((item) => importKey(mode, activeSourceId || '', item.id))
+  ), [filteredItems, mode, activeSourceId]);
+
+  const isAllFilteredSelected = filteredKeys.length > 0 && filteredKeys.every((key) => selectedKeys.has(key));
+
+  const handleToggleSelectAll = () => {
+    if (isAllFilteredSelected) {
+      // Deselect all filtered items
+      filteredKeys.forEach((key) => {
+        if (selectedKeys.has(key)) onToggleItem(key);
+      });
+    } else {
+      // Select all filtered items
+      filteredKeys.forEach((key) => {
+        if (!selectedKeys.has(key)) onToggleItem(key);
+      });
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 md:p-8">
@@ -247,15 +282,42 @@ function MediaPickerModal({
             </select>
           </div>
 
-          <div className="border-b border-neutral-200 p-4 dark:border-white/10">
-            <div className="relative">
+          <div className="flex flex-col gap-3 border-b border-neutral-200 p-4 dark:border-white/10 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
               <input
                 className="h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-11 pr-4 text-sm outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-900 dark:text-white"
-                placeholder="Search selected source..."
+                placeholder="Search items..."
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
+            </div>
+            
+            <div className="flex shrink-0 items-center gap-3">
+              {mode === 'album' && availableAspectRatios.length > 0 && (
+                <select
+                  className="h-11 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white"
+                  value={aspectRatioFilter}
+                  onChange={(e) => setAspectRatioFilter(e.target.value)}
+                >
+                  <option value="all">All Ratios</option>
+                  {availableAspectRatios.map((ratio) => (
+                    <option key={ratio} value={ratio}>{ratio}</option>
+                  ))}
+                </select>
+              )}
+              
+              <button
+                onClick={handleToggleSelectAll}
+                className={cn(
+                  "h-11 rounded-xl border px-4 text-sm font-bold transition whitespace-nowrap",
+                  isAllFilteredSelected
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
+                    : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-white/10"
+                )}
+              >
+                {isAllFilteredSelected ? "Deselect All" : "Select All"}
+              </button>
             </div>
           </div>
 
@@ -300,8 +362,15 @@ function MediaPickerModal({
                             {item.mediaType === 'video' ? <Video className="h-8 w-8 text-neutral-400" /> : <ImageIcon className="h-8 w-8 text-neutral-400" />}
                           </div>
                         )}
-                        <div className="absolute left-2 top-2 rounded-lg bg-black/70 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-white">
-                          {mediaSourceLabel(item.mediaType)}
+                        <div className="absolute left-2 top-2 flex flex-col gap-1">
+                          <div className="rounded-lg bg-black/70 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-white w-fit">
+                            {mediaSourceLabel(item.mediaType)}
+                          </div>
+                          {item.aspectRatio && (
+                            <div className="rounded-lg bg-indigo-600/80 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-white w-fit">
+                              {item.aspectRatio}
+                            </div>
+                          )}
                         </div>
                         {selected && (
                           <div className="absolute inset-0 flex items-center justify-center bg-indigo-600/30">

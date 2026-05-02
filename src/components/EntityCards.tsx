@@ -154,8 +154,8 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
   }, [isMenuOpen]);
 
   const lastAlbumItem = project.album && project.album.length > 0 ? project.album[project.album.length - 1] : null;
-  // Use optimizedUrl first for a crisp image on standard card sizes, falling back to thumbnail
-  const bgImage = lastAlbumItem ? (lastAlbumItem.optimizedUrl || lastAlbumItem.thumbnailUrl || lastAlbumItem.imageUrl) : null;
+  // Use thumbnail first to improve loading times on the project list view
+  const bgImage = lastAlbumItem ? (lastAlbumItem.thumbnailUrl || lastAlbumItem.optimizedUrl || lastAlbumItem.imageUrl) : null;
 
   let bgClass = "bg-neutral-900";
   if (!bgImage) {
