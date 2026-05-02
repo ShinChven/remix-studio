@@ -1,6 +1,6 @@
 {
   "sidebar": {
-    "dashboard": "Dashboard",
+    "home": "Home",
     "projects": "Projects",
     "queueMonitor": "Queues",
     "libraries": "Libraries",

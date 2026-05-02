@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Library, Project, ProjectStatus } from '../types';
-import { Plus, LayoutGrid, Clock, Loader2, Sparkles, Trash2 } from 'lucide-react';
-import { PageHeader } from './PageHeader';
-import { fetchProjects, fetchLibraries, fetchAssistantProviders, deleteProject } from '../api';
+import { Library, Project } from '../types';
+import { Plus, LayoutGrid, Clock, Loader2, Sparkles, Megaphone } from 'lucide-react';
+import { fetchProjects, fetchLibraries, fetchAssistantProviders, deleteProject, fetchCampaigns } from '../api';
 import { Provider } from '../types';
 import type { BoundContext, AttachedImage } from './Assistant/AssistantComposer';
 import { LibraryCard, ProjectCard } from './EntityCards';
@@ -14,12 +13,13 @@ import {
 } from '../lib/assistant-provider-settings';
 import { AssistantHero } from './Assistant/AssistantHero';
 
-export function Dashboard() {
+export function Home() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [libraries, setLibraries] = useState<Library[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // AI Chat State
@@ -40,16 +40,18 @@ export function Dashboard() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [projRes, libRes, provRes] = await Promise.all([
+        const [projRes, libRes, provRes, campRes] = await Promise.all([
           fetchProjects(1, 8, undefined, 'active'),
           fetchLibraries(1, 8),
           fetchAssistantProviders(),
+          fetchCampaigns().catch(() => []), // Fallback to empty if fails
         ]);
         if (mounted) {
           const enabledProviders = filterEnabledAssistantProviders(provRes.providers);
           setProjects(projRes.items);
           setLibraries(libRes.items);
           setProviders(enabledProviders);
+          setCampaigns(Array.isArray(campRes) ? campRes.slice(0, 8) : []);
 
           const normalizedSelection = normalizeAssistantProviderSelection(
             enabledProviders,
@@ -60,7 +62,7 @@ export function Dashboard() {
           setSelectedModelId(normalizedSelection.modelId);
         }
       } catch (err) {
-        console.error('Failed to load dashboard data:', err);
+        console.error('Failed to load home data:', err);
       } finally {
         if (mounted) setIsLoading(false);
       }
@@ -134,8 +136,6 @@ export function Dashboard() {
       } 
     });
   };
-
-  // Key handler removed - handled by AssistantComposer
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
@@ -261,7 +261,66 @@ export function Dashboard() {
                 )}
               </div>
             </section>
-          </>
+
+<section>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg md:text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+                  <Megaphone className="w-5 h-5 text-indigo-500" />
+                  {t('sidebar.campaigns', 'Campaigns')}
+                </h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => navigate('/campaigns/new')}
+                    className="p-2.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl transition-all flex items-center justify-center border border-indigo-700 shadow-lg shadow-indigo-600/10 active:scale-95"
+                    title={t('campaigns.new', 'New Campaign')}
+                    aria-label={t('campaigns.new', 'New Campaign')}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex overflow-x-auto gap-6 pb-6 -mx-4 px-4 scrollbar-hide">
+                {campaigns.map(campaign => {
+                  const thumbnail = `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(campaign.id)}&backgroundColor=0f172a,1e293b,334155&shape1Color=6366f1,818cf8,4f46e5`;
+                  return (
+                    <div
+                      key={campaign.id}
+                      className="min-w-[300px] sm:min-w-[320px] flex-shrink-0 group relative flex flex-col justify-end cursor-pointer overflow-hidden rounded-[20px] h-[280px] shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-white/5 bg-neutral-900"
+                      onClick={() => navigate(`/campaigns/${campaign.id}`)}
+                    >
+                      <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                        style={{ backgroundImage: `url(${thumbnail})` }}
+                      />
+                      <div
+                        className="absolute inset-x-0 bottom-0 h-[55%] pointer-events-none transition-opacity duration-300 backdrop-blur-md bg-gradient-to-t from-black/80 via-black/30 to-transparent"
+                        style={{
+                          maskImage: 'linear-gradient(to top, black 20%, transparent 100%)',
+                          WebkitMaskImage: 'linear-gradient(to top, black 20%, transparent 100%)'
+                        }}
+                      />
+                      <div className="absolute inset-0 p-5 md:p-6 flex flex-col justify-end z-10 text-white">
+                        <div className="text-[11px] font-medium uppercase tracking-wider text-white/60 mb-1 flex items-center gap-2">
+                          {campaign.status === 'active' ? 'Active' : 'Paused'}
+                        </div>
+                        <h4 className="text-xl md:text-2xl font-medium leading-tight mb-1.5 truncate text-white/95">
+                          {campaign.name}
+                        </h4>
+                        <p className="text-sm text-white/60 line-clamp-2 mb-4 leading-relaxed font-normal">
+                          {campaign.description || 'Campaign'}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {campaigns.length === 0 && (
+                  <div className="flex-1 p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
+                    {t('campaigns.noCampaigns', 'No campaigns yet.')}
+                  </div>
+                )}
+              </div>
+            </section>
+            </>
         )}
       </div>
     </div>

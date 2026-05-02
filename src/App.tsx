@@ -8,7 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { ApiKeyCheck } from './components/ApiKeyCheck';
 import { MainLayout } from './components/MainLayout';
-import { Dashboard } from './components/Dashboard';
+import { Home } from './components/Home';
 import { LibraryRoute } from './components/LibraryRoute';
 import { ProjectRoute } from './components/ProjectRoute';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -66,7 +66,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             
             <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-              <Route index element={<Dashboard />} />
+              <Route index element={<Home />} />
               <Route path="libraries" element={<Libraries />} />
               <Route path="library/new" element={<LibraryForm />} />
               <Route path="library/:id/edit" element={<LibraryForm />} />

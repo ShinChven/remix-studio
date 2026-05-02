@@ -1,6 +1,6 @@
 {
   "sidebar": {
-    "dashboard": "대시보드",
+    "home": "홈",
     "projects": "프로젝트",
     "queueMonitor": "대기열",
     "libraries": "라이브러리",

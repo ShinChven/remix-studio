@@ -1,6 +1,6 @@
 {
   "sidebar": {
-    "dashboard": "仪表盘",
+    "home": "首页",
     "projects": "项目",
     "queueMonitor": "队列",
     "libraries": "库",
