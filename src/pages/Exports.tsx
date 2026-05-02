@@ -219,53 +219,62 @@ export function Exports() {
       <PageHeader
         title={t('exports.title')}
         description={t('exports.description')}
-      />
+        actions={
+          <div className="flex items-center flex-wrap gap-3">
+            {/* Google Drive control */}
+            {user?.googleDriveConnected ? (
+              <div className="flex-shrink-0 flex items-center gap-3 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card shadow-sm backdrop-blur-md h-[42px]">
+                <div className="flex items-center gap-2">
+                  <HardDrive className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                  <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest">{t('exports.drive.connected')}</span>
+                </div>
+                <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-800" />
+                <button
+                  onClick={handleDisconnectDrive}
+                  disabled={disconnecting}
+                  className="flex items-center gap-1.5 text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest hover:text-red-500 transition disabled:opacity-50"
+                >
+                  {disconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3.5 w-3.5" />}
+                  <span>{t('exports.drive.disconnect')}</span>
+                </button>
+              </div>
+            ) : (
+              <a
+                href="/api/auth/google-drive/connect"
+                className="flex-shrink-0 flex items-center justify-center gap-2 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition shadow-sm backdrop-blur-md h-[42px]"
+              >
+                <HardDrive className="h-4 w-4 text-neutral-600 dark:text-neutral-500 flex-shrink-0" />
+                <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest text-center">{t('exports.drive.connect')}</span>
+              </a>
+            )}
 
-      {/* Stats + Google Drive controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end gap-3 mb-8">
-        {/* Google Drive control */}
-        {user?.googleDriveConnected ? (
-          <div className="flex items-center justify-between sm:justify-start gap-3 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card shadow-sm backdrop-blur-md">
-            <div className="flex items-center gap-2">
-              <HardDrive className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-              <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest">{t('exports.drive.connected')}</span>
+            {/* Combined Stats Pill */}
+            <div className="flex-shrink-0 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card flex items-center gap-4 shadow-sm backdrop-blur-md h-[42px]">
+              {/* Database */}
+              <div className="flex items-center gap-2">
+                <List className="h-4 w-4 text-neutral-500 dark:text-neutral-500 flex-shrink-0" />
+                <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-300 uppercase tracking-widest">
+                  {exports.length} <span className="opacity-50 ml-0.5">{t('exports.stats.total')}</span>
+                </span>
+              </div>
+              
+              <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-800" />
+              
+              {/* In Progress */}
+              <div className="flex items-center gap-2">
+                {exports.filter(t => t.status === 'pending' || t.status === 'processing').length > 0 ? (
+                  <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+                )}
+                <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                  {exports.filter(t => t.status === 'pending' || t.status === 'processing').length} <span className="opacity-50 ml-0.5">{t('exports.stats.active')}</span>
+                </span>
+              </div>
             </div>
-            <div className="hidden sm:block w-px h-4 bg-emerald-500/20" />
-            <button
-              onClick={handleDisconnectDrive}
-              disabled={disconnecting}
-              className="flex items-center gap-1.5 text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest hover:text-red-500 transition disabled:opacity-50"
-            >
-              {disconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3.5 w-3.5" />}
-              <span className="sm:hidden">{t('exports.drive.disconnect')}</span>
-              <span className="hidden sm:inline">{t('exports.drive.disconnect')}</span>
-            </button>
           </div>
-        ) : (
-          <a
-            href="/api/auth/google-drive/connect"
-            className="flex items-center justify-center gap-2 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition shadow-sm backdrop-blur-md"
-          >
-            <HardDrive className="h-4 w-4 text-neutral-600 dark:text-neutral-500 flex-shrink-0" />
-            <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest text-center">{t('exports.drive.connect')}</span>
-          </a>
-        )}
-
-        {/* Database stats */}
-        <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card flex items-center justify-between sm:justify-start gap-4 shadow-sm backdrop-blur-md">
-          <div className="flex flex-col">
-            <p className="text-[8px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">{t('exports.stats.database')}</p>
-            <p className="text-xs font-bold text-neutral-900 dark:text-white">{exports.length} {t('exports.stats.total')}</p>
-          </div>
-          <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-800" />
-          <div className="flex flex-col">
-            <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest">{t('exports.stats.inProgress')}</p>
-            <p className="text-xs font-bold text-neutral-900 dark:text-white">
-              {exports.filter(t => t.status === 'pending' || t.status === 'processing').length} {t('exports.stats.active')}
-            </p>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {!loading && exports.length === 0 ? (
         <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
