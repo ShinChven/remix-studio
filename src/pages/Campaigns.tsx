@@ -572,7 +572,7 @@ export function Campaigns() {
                         </Link>
                         <div className="min-w-0 flex-1 space-y-1">
                           <Link 
-                            className="block line-clamp-1 text-[15px] font-semibold text-neutral-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-400 transition-colors"
+                            className="block truncate text-[15px] font-semibold text-neutral-900 transition-colors hover:text-indigo-600 dark:text-white dark:hover:text-indigo-400"
                             to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`}
                           >
                             {post.textContent || <span className="italic font-normal text-neutral-400">No text content</span>}
