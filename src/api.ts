@@ -1587,7 +1587,14 @@ export async function sendPostNow(postId: string): Promise<any> {
 }
 
 export interface BatchGenerateTextResult {
-  results: Array<{ postId: string; ok: boolean; text?: string; error?: string }>;
+  batchId: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  total: number;
+  completed: number;
+  results: Array<{ postId: string; status: 'queued' | 'running' | 'completed' | 'failed'; ok: boolean; text?: string; error?: string }>;
+  error?: string;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export async function batchGeneratePostText(input: {
@@ -1602,7 +1609,14 @@ export async function batchGeneratePostText(input: {
     headers: getHeaders(),
     body: JSON.stringify(input),
   });
-  return handleResponse<BatchGenerateTextResult>(res, 'Failed to batch-generate post text');
+  return handleResponse<BatchGenerateTextResult>(res, 'Failed to queue batch text generation');
+}
+
+export async function fetchBatchGeneratePostTextStatus(batchId: string): Promise<BatchGenerateTextResult> {
+  const res = await apiFetch(`/api/posts/batch-generate-text/${batchId}`, {
+    headers: getHeaders(false),
+  });
+  return handleResponse<BatchGenerateTextResult>(res, 'Failed to fetch batch text generation status');
 }
 
 // ========== Social Integrations ==========

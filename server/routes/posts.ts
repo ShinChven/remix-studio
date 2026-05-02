@@ -34,6 +34,33 @@ type ResolvedImportMedia = {
   rawSize?: number | null;
 };
 
+type BatchGenerateTextStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+type BatchGenerateTextItem = {
+  postId: string;
+  status: BatchGenerateTextStatus;
+  ok: boolean;
+  text?: string;
+  error?: string;
+};
+
+type BatchGenerateTextTask = {
+  id: string;
+  userId: string;
+  postIds: string[];
+  promptText: string;
+  includeImages: boolean;
+  providerId: string;
+  modelId: string;
+  status: BatchGenerateTextStatus;
+  total: number;
+  completed: number;
+  results: BatchGenerateTextItem[];
+  error?: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
 async function presignStorageValue(storage: S3Storage, value?: string | null): Promise<string | null | undefined> {
   if (!value) return value;
   if (/^https?:\/\//i.test(value) || value.startsWith('/') || value.startsWith('data:')) return value;
@@ -188,6 +215,150 @@ export function createPostsRouter(
   userRepository: UserRepository,
 ) {
   const postsRouter = new Hono<{ Variables: { user: JwtPayload } }>();
+  const batchGenerateTextTasks = new Map<string, BatchGenerateTextTask>();
+  const pendingBatchGenerateTextTaskIds: string[] = [];
+  let activeBatchGenerateTextTasks = 0;
+  const maxActiveBatchGenerateTextTasks = 2;
+  const maxBatchGenerateTextItemConcurrency = 3;
+  const batchGenerateTextRetentionMs = 30 * 60 * 1000;
+
+  const cleanupBatchGenerateTextTasks = () => {
+    const now = Date.now();
+    for (const [id, task] of batchGenerateTextTasks) {
+      if ((task.status === 'completed' || task.status === 'failed') && now - task.updatedAt > batchGenerateTextRetentionMs) {
+        batchGenerateTextTasks.delete(id);
+      }
+    }
+  };
+
+  const serializeBatchGenerateTextTask = (task: BatchGenerateTextTask) => ({
+    batchId: task.id,
+    status: task.status,
+    total: task.total,
+    completed: task.completed,
+    results: task.results,
+    error: task.error,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+  });
+
+  const processBatchGenerateTextTask = async (task: BatchGenerateTextTask) => {
+    task.status = 'running';
+    task.updatedAt = Date.now();
+
+    try {
+      const { provider } = await resolveChatProvider(providerRepository, task.userId, task.providerId);
+      const pendingPostIds = [...task.postIds];
+
+      const runOne = async (postId: string) => {
+        const result = task.results.find((item) => item.postId === postId);
+        if (!result) return;
+
+        result.status = 'running';
+        task.updatedAt = Date.now();
+
+        try {
+          const post = await prisma.post.findFirst({
+            where: { id: postId, userId: task.userId },
+            include: { media: { orderBy: { position: 'asc' } } },
+          });
+          if (!post) {
+            result.status = 'failed';
+            result.error = 'Not found';
+            return;
+          }
+
+          const userMessage: any = {
+            role: 'user',
+            content: task.promptText,
+          };
+
+          if (task.includeImages) {
+            const firstImage = post.media.find(
+              (m) => m.type === 'image' && (m.thumbnailUrl || m.processedUrl || m.sourceUrl),
+            );
+            if (firstImage) {
+              // Adapter expects base64 data URIs; we pass no inline image here.
+              // This keeps behavior aligned with the previous synchronous endpoint.
+              userMessage.images = [];
+            }
+          }
+
+          const response = await provider.chat({
+            modelId: task.modelId,
+            messages: [
+              { role: 'system', content: 'You write short social media posts. Reply with only the post text — no quotes, no preface, no explanations.' },
+              userMessage,
+            ],
+            tools: [],
+            temperature: 0.8,
+            maxTokens: 600,
+          });
+
+          const text = (response.text || '').trim();
+          if (!text) {
+            result.status = 'failed';
+            result.error = 'Empty response';
+            return;
+          }
+
+          await prisma.post.update({
+            where: { id: post.id },
+            data: { textContent: text },
+          });
+          result.status = 'completed';
+          result.ok = true;
+          result.text = text;
+        } catch (err: any) {
+          result.status = 'failed';
+          result.error = err?.message || 'Generation failed';
+        } finally {
+          task.completed = task.results.filter((item) => item.status === 'completed' || item.status === 'failed').length;
+          task.updatedAt = Date.now();
+        }
+      };
+
+      const worker = async () => {
+        while (pendingPostIds.length > 0) {
+          const next = pendingPostIds.shift();
+          if (!next) break;
+          await runOne(next);
+        }
+      };
+
+      const workerCount = Math.min(maxBatchGenerateTextItemConcurrency, pendingPostIds.length);
+      await Promise.all(Array.from({ length: workerCount }, () => worker()));
+
+      task.status = 'completed';
+      task.completed = task.total;
+      task.updatedAt = Date.now();
+    } catch (error: any) {
+      task.status = 'failed';
+      task.error = error?.message || 'Failed to batch-generate text';
+      task.results = task.results.map((result) => (
+        result.status === 'queued' || result.status === 'running'
+          ? { ...result, status: 'failed', ok: false, error: task.error }
+          : result
+      ));
+      task.completed = task.total;
+      task.updatedAt = Date.now();
+    } finally {
+      activeBatchGenerateTextTasks = Math.max(0, activeBatchGenerateTextTasks - 1);
+      cleanupBatchGenerateTextTasks();
+      void startNextBatchGenerateTextTask();
+    }
+  };
+
+  const startNextBatchGenerateTextTask = async () => {
+    while (activeBatchGenerateTextTasks < maxActiveBatchGenerateTextTasks && pendingBatchGenerateTextTaskIds.length > 0) {
+      const nextId = pendingBatchGenerateTextTaskIds.shift();
+      if (!nextId) return;
+      const task = batchGenerateTextTasks.get(nextId);
+      if (!task || task.status !== 'queued') continue;
+      activeBatchGenerateTextTasks++;
+      void processBatchGenerateTextTask(task);
+    }
+  };
 
   const createPostSchema = z.object({
     campaignId: z.string().min(1),
@@ -1114,91 +1285,44 @@ export function createPostsRouter(
       const body = await c.req.json();
       const data = batchGenerateTextSchema.parse(body);
 
-      const { provider } = await resolveChatProvider(providerRepository, user.userId, data.providerId);
-
-      const concurrency = 3;
-      const results: Array<{ postId: string; ok: boolean; text?: string; error?: string }> = [];
-
-      const queue = [...data.postIds];
-      const workers: Promise<void>[] = [];
-
-      const runOne = async (postId: string) => {
-        try {
-          const post = await prisma.post.findFirst({
-            where: { id: postId, userId: user.userId },
-            include: { media: { orderBy: { position: 'asc' } } },
-          });
-          if (!post) {
-            results.push({ postId, ok: false, error: 'Not found' });
-            return;
-          }
-
-          const userMessage: any = {
-            role: 'user',
-            content: data.promptText,
-          };
-
-          if (data.includeImages) {
-            const firstImage = post.media.find(
-              (m) => m.type === 'image' && (m.thumbnailUrl || m.processedUrl || m.sourceUrl),
-            );
-            if (firstImage) {
-              // Adapter expects base64 data URIs; we pass the storage URL hint
-              // through a textual reference since we don't have inline buffers here.
-              // Adapters that don't support images will ignore the field.
-              userMessage.images = [];
-            }
-          }
-
-          const response = await provider.chat({
-            modelId: data.modelId,
-            messages: [
-              { role: 'system', content: 'You write short social media posts. Reply with only the post text — no quotes, no preface, no explanations.' },
-              userMessage,
-            ],
-            tools: [],
-            temperature: 0.8,
-            maxTokens: 600,
-          });
-
-          const text = (response.text || '').trim();
-          if (!text) {
-            results.push({ postId, ok: false, error: 'Empty response' });
-            return;
-          }
-
-          await prisma.post.update({
-            where: { id: post.id },
-            data: { textContent: text },
-          });
-          results.push({ postId, ok: true, text });
-        } catch (err: any) {
-          results.push({ postId, ok: false, error: err?.message || 'Generation failed' });
-        }
+      const batchId = randomUUID();
+      const task: BatchGenerateTextTask = {
+        id: batchId,
+        userId: user.userId,
+        postIds: data.postIds,
+        promptText: data.promptText,
+        includeImages: data.includeImages ?? false,
+        providerId: data.providerId,
+        modelId: data.modelId,
+        status: 'queued',
+        total: data.postIds.length,
+        completed: 0,
+        results: data.postIds.map((postId) => ({ postId, status: 'queued', ok: false })),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
       };
 
-      const worker = async () => {
-        while (queue.length > 0) {
-          const next = queue.shift();
-          if (!next) break;
-          await runOne(next);
-        }
-      };
+      batchGenerateTextTasks.set(batchId, task);
+      pendingBatchGenerateTextTaskIds.push(batchId);
+      void startNextBatchGenerateTextTask();
 
-      for (let i = 0; i < Math.min(concurrency, data.postIds.length); i++) {
-        workers.push(worker());
-      }
-      await Promise.all(workers);
-
-      // Preserve original order
-      const indexById = new Map(data.postIds.map((id, i) => [id, i]));
-      results.sort((a, b) => (indexById.get(a.postId) ?? 0) - (indexById.get(b.postId) ?? 0));
-
-      return c.json({ results });
+      return c.json(serializeBatchGenerateTextTask(task), 202);
     } catch (error: any) {
       console.error('Failed to batch-generate text:', error);
       return c.json({ error: error?.message || 'Failed to batch-generate text' }, 400);
     }
+  });
+
+  postsRouter.get('/api/posts/batch-generate-text/:batchId', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const batchId = c.req.param('batchId');
+    const task = batchGenerateTextTasks.get(batchId);
+
+    if (!task || task.userId !== user.userId) {
+      return c.json({ error: 'Batch not found' }, 404);
+    }
+
+    return c.json(serializeBatchGenerateTextTask(task));
   });
 
 
