@@ -64,6 +64,8 @@
     "editTags": "Edit Tags",
     "refineInFullEditor": "Refine in Full Editor",
     "deleteFragment": "Delete Fragment",
+    "copiedToClipboard": "Copied to clipboard",
+    "copyContent": "Copy Content",
     "fullSource": "Full Source",
     "markdownEnabled": "Markdown Enabled",
     "noResultsFound": "No results found",

@@ -58,6 +58,8 @@
     "editTags": "タグを編集",
     "refineInFullEditor": "フルエディタで詳細編集",
     "deleteFragment": "フラグメントを削除",
+    "copiedToClipboard": "クリップボードにコピーしました",
+    "copyContent": "内容をコピー",
     "fullSource": "フルソース",
     "markdownEnabled": "Markdown 有効",
     "noResultsFound": "結果が見つかりません",

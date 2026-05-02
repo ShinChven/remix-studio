@@ -64,6 +64,8 @@
     "editTags": "編輯標籤",
     "refineInFullEditor": "在完整編輯器中完善",
     "deleteFragment": "刪除片段",
+    "copiedToClipboard": "已複製到剪貼簿",
+    "copyContent": "複製內容",
     "fullSource": "完整源碼",
     "markdownEnabled": "Markdown 已啟用",
     "noResultsFound": "未找到結果",

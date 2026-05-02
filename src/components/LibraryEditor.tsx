@@ -877,10 +877,23 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                           )}
                           <div className="space-y-2">
                              <div className="flex items-center justify-between">
-                               <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('libraryEditor.fullSource')}</label>
+                               <div className="flex items-center gap-3">
+                                 <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('libraryEditor.fullSource')}</label>
+                                 <button
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     navigator.clipboard.writeText(item.content);
+                                     toast.success(t('libraryEditor.copiedToClipboard', { defaultValue: 'Copied to clipboard' }));
+                                   }}
+                                   className="p-1 text-neutral-500 hover:text-blue-500 transition-colors"
+                                   title={t('libraryEditor.copyContent', { defaultValue: 'Copy Content' })}
+                                 >
+                                   <Copy className="w-3.5 h-3.5" />
+                                 </button>
+                               </div>
                                <span className="text-[8px] font-bold text-neutral-700 uppercase tracking-tighter">{t('libraryEditor.markdownEnabled')}</span>
                              </div>
-                             <div className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 select-all whitespace-pre-wrap font-mono">
+                             <div className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 whitespace-pre-wrap font-mono">
                                {item.content}
                              </div>
                           </div>

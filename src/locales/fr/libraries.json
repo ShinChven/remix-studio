@@ -58,6 +58,8 @@
     "editTags": "Modifier les tags",
     "refineInFullEditor": "Affiner dans l'éditeur complet",
     "deleteFragment": "Supprimer le fragment",
+    "copiedToClipboard": "Copié dans le presse-papier",
+    "copyContent": "Copier le contenu",
     "fullSource": "Source complète",
     "markdownEnabled": "Markdown activé",
     "noResultsFound": "Aucun résultat trouvé",

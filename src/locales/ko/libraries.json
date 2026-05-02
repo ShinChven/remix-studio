@@ -58,6 +58,8 @@
     "editTags": "태그 편집",
     "refineInFullEditor": "전체 에디터에서 다듬기",
     "deleteFragment": "프래그먼트 삭제",
+    "copiedToClipboard": "클립보드에 복사됨",
+    "copyContent": "콘텐츠 복사",
     "fullSource": "전체 소스",
     "markdownEnabled": "마크다운 활성화됨",
     "noResultsFound": "결과 없음",
