@@ -57,7 +57,7 @@ function ThemeSwitcher({ isCollapsed }: { isCollapsed: boolean }) {
           <button
             key={option.value}
             type="button"
-            onClick={() => setTheme(option.value)}
+            onClick={(e) => setTheme(option.value, e)}
             className={`group relative flex flex-1 items-center justify-center rounded-[8px] transition-all duration-300 ease-out border ${
               isCollapsed ? 'h-10 w-full' : 'h-9 w-full'
             } ${

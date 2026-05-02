@@ -1061,7 +1061,7 @@ export function Account() {
                       <button
                         key={item.id}
                         type="button"
-                        onClick={() => setTheme(item.id as 'light' | 'dark' | 'system')}
+                        onClick={(e) => setTheme(item.id as 'light' | 'dark' | 'system', e)}
                         className={`flex items-center gap-3 rounded-card border px-5 py-4 text-sm font-bold transition-all ${
                           isActive
                             ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 shadow-md scale-[1.02]'

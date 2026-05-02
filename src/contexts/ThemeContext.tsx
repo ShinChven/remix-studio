@@ -36,7 +36,7 @@ function applyTheme(theme: Theme): ResolvedTheme {
 interface ThemeContextType {
   theme: Theme;
   resolvedTheme: ResolvedTheme;
-  setTheme: (theme: Theme) => void;
+  setTheme: (theme: Theme, event?: React.MouseEvent | MouseEvent) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -49,10 +49,46 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return resolveTheme(getStoredTheme());
   });
 
-  const setTheme = useCallback((nextTheme: Theme) => {
-    setThemeState(nextTheme);
-    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
-    setResolvedTheme(applyTheme(nextTheme));
+  const setTheme = useCallback((nextTheme: Theme, event?: React.MouseEvent | MouseEvent) => {
+    const isAppearanceTransition =
+      (document as any).startViewTransition &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!isAppearanceTransition || !event) {
+      setThemeState(nextTheme);
+      localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      setResolvedTheme(applyTheme(nextTheme));
+      return;
+    }
+
+    const { clientX: x, clientY: y } = event;
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    const transition = (document as any).startViewTransition(async () => {
+      setThemeState(nextTheme);
+      localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      setResolvedTheme(applyTheme(nextTheme));
+    });
+
+    transition.ready.then(() => {
+      const clipPath = [
+        `circle(0px at ${x}px ${y}px)`,
+        `circle(${endRadius}px at ${x}px ${y}px)`,
+      ];
+      document.documentElement.animate(
+        {
+          clipPath: clipPath,
+        },
+        {
+          duration: 450,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          pseudoElement: '::view-transition-new(root)',
+        }
+      );
+    });
   }, []);
 
   useEffect(() => {
