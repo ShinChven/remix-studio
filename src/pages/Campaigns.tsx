@@ -561,7 +561,7 @@ export function Campaigns() {
                           to={`/campaigns/${post.campaignId || post.campaign?.id}/posts/edit/${post.id}`}
                         >
                           {post.media?.[0]?.thumbnailUrl ? (
-                            <img src={post.media[0].thumbnailUrl} className="h-full w-full object-cover" />
+                            <img src={post.media[0].thumbnailUrl} className="h-full w-full object-cover object-top" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center">
                               <Calendar className="h-5 w-5 text-neutral-400" />

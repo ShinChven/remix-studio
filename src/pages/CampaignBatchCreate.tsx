@@ -687,14 +687,6 @@ export function CampaignBatchCreate() {
     closePicker();
   };
 
-  const updateCreatedPostCaptions = async (created: Array<{ postId: string }>, items: BatchQueueItem[]) => {
-    await Promise.all(created.map((entry, index) => {
-      const content = items[index]?.content?.trim();
-      if (!content) return Promise.resolve();
-      return updatePost(entry.postId, { textContent: content, status: 'draft' });
-    }));
-  };
-
   const handleConfirm = async () => {
     if (!id || queue.length === 0) {
       toast.error('Please add at least one media item');
@@ -703,41 +695,56 @@ export function CampaignBatchCreate() {
 
     setIsUploading(true);
     setUploadProgress(0);
-    try {
-      const localItems = queue.filter((item): item is Extract<BatchQueueItem, { kind: 'local' }> => item.kind === 'local');
-      const importItems = queue.filter((item): item is Extract<BatchQueueItem, { kind: 'library' | 'album' }> => item.kind !== 'local');
-      let createdCount = 0;
 
-      if (localItems.length > 0) {
-        const files = await Promise.all(localItems.map(async (item) => ({
-          base64: await readFileAsDataUrl(item.file),
-          name: item.file.name,
-        })));
-        const result = await uploadCampaignMediaPosts(id, files);
-        await updateCreatedPostCaptions(result.created, localItems);
-        createdCount += result.count;
-        setUploadProgress(createdCount);
-      }
+    let createdCount = 0;
+    const failures: string[] = [];
 
-      if (importItems.length > 0) {
-        const sources: CampaignMediaImportSource[] = importItems.map((item) => (
-          item.kind === 'library'
+    for (const item of queue) {
+      try {
+        let postId: string | undefined;
+        if (item.kind === 'local') {
+          const base64 = await readFileAsDataUrl(item.file);
+          const result = await uploadCampaignMediaPosts(id, [{ base64, name: item.file.name }]);
+          postId = result.created[0]?.postId;
+          createdCount += result.count;
+        } else {
+          const source: CampaignMediaImportSource = item.kind === 'library'
             ? { kind: 'library', libraryId: item.libraryId, itemId: item.itemId }
-            : { kind: 'album', projectId: item.projectId, itemId: item.itemId }
-        ));
-        const result = await importCampaignMediaPosts(id, sources);
-        await updateCreatedPostCaptions(result.created, importItems);
-        createdCount += result.count;
-        setUploadProgress(createdCount);
-      }
+            : { kind: 'album', projectId: item.projectId, itemId: item.itemId };
+          const result = await importCampaignMediaPosts(id, [source]);
+          postId = result.created[0]?.postId;
+          createdCount += result.count;
+        }
 
+        const content = item.content?.trim();
+        if (postId && content) {
+          try {
+            await updatePost(postId, { textContent: content, status: 'draft' });
+          } catch (captionError: any) {
+            console.warn('Failed to update caption', captionError);
+          }
+        }
+      } catch (error: any) {
+        const label = item.kind === 'local' ? item.file.name : item.title || item.itemId;
+        failures.push(label);
+        console.error('Batch item failed', error);
+      } finally {
+        setUploadProgress((prev) => prev + 1);
+      }
+    }
+
+    setIsUploading(false);
+
+    if (createdCount > 0) {
       toast.success(`Successfully created ${createdCount} posts for ${campaign?.name}`);
+    }
+    if (failures.length > 0) {
+      toast.error(`Failed to process ${failures.length} item${failures.length === 1 ? '' : 's'}`);
+    }
+
+    if (createdCount > 0) {
       clearQueue();
       navigate(`/campaigns/${id}/batch`);
-    } catch (error: any) {
-      toast.error(error?.message || 'An error occurred during batch creation');
-    } finally {
-      setIsUploading(false);
     }
   };
 

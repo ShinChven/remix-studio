@@ -738,11 +738,11 @@ export function CampaignDetail() {
                                 aria-label={`Open media ${index + 1}`}
                               >
                                 {url && media.type !== 'video' ? (
-                                  <img src={url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                                  <img src={url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover object-top" />
                                 ) : posterUrl && media.type === 'video' ? (
-                                  <img src={posterUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                                  <img src={posterUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover object-top" />
                                 ) : url && media.type === 'video' ? (
-                                  <video src={mediaFullUrl(media)} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+                                  <video src={mediaFullUrl(media)} className="h-full w-full object-cover object-top" muted playsInline preload="metadata" />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center text-neutral-400">
                                     <ImageIcon className="h-6 w-6" />
@@ -937,9 +937,9 @@ export function CampaignDetail() {
                             </div>
                           )}
                           {url && media.type !== 'video' ? (
-                            <img src={url} alt="Attached media" className="h-full w-full object-cover" />
+                            <img src={url} alt="Attached media" className="h-full w-full object-cover object-top" />
                           ) : posterUrl && media.type === 'video' ? (
-                            <img src={posterUrl} alt="Attached video" className="h-full w-full object-cover" />
+                            <img src={posterUrl} alt="Attached video" className="h-full w-full object-cover object-top" />
                           ) : (
                             <ImageIcon className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 text-neutral-400" />
                           )}
