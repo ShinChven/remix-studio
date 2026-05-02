@@ -209,7 +209,7 @@ export function Home() {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex overflow-x-auto gap-6 pb-6 -mx-4 px-4 scrollbar-hide">
+              <div className="flex overflow-x-auto gap-6 pb-6 pt-4 -mx-4 px-4 scrollbar-hide">
                 {projects.map(project => (
                   <div key={project.id} className="min-w-[300px] sm:min-w-[320px] flex-shrink-0">
                     <ProjectCard
@@ -245,7 +245,7 @@ export function Home() {
                   </button>
                 </div>
               </div>
-              <div className="flex overflow-x-auto gap-6 pb-6 -mx-4 px-4 scrollbar-hide">
+              <div className="flex overflow-x-auto gap-6 pb-6 pt-4 -mx-4 px-4 scrollbar-hide">
                 {libraries.map(lib => (
                   <div key={lib.id} className="min-w-[260px] sm:min-w-[300px] flex-shrink-0">
                     <LibraryCard
@@ -279,7 +279,7 @@ export function Home() {
                   </button>
                 </div>
               </div>
-              <div className="flex overflow-x-auto gap-6 pb-6 -mx-4 px-4 scrollbar-hide">
+              <div className="flex overflow-x-auto gap-6 pb-6 pt-4 -mx-4 px-4 scrollbar-hide">
                 {campaigns.map(campaign => {
                   const thumbnail = `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(campaign.id)}&backgroundColor=0f172a,1e293b,334155&shape1Color=6366f1,818cf8,4f46e5`;
                   return (

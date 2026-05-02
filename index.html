@@ -16,7 +16,7 @@
       const storedTheme = localStorage.getItem('theme');
       const theme = storedTheme === 'light' || storedTheme === 'dark' || storedTheme === 'system'
         ? storedTheme
-        : 'dark';
+        : 'system';
       const resolvedTheme = theme === 'system'
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : theme;

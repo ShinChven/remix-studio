@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
-const DEFAULT_THEME: Theme = 'dark';
+const DEFAULT_THEME: Theme = 'system';
 
 function getStoredTheme(): Theme {
   const storedTheme = localStorage.getItem('theme');
