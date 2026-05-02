@@ -2,6 +2,50 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.6.0] - 2026-05-02
+
+### Added
+
+- Added `ConfirmDialog` component and replaced browser `window.confirm` with it for better UX.
+- Implemented polling for batch AI text generation with status tracking and progress visualization.
+- Added persistent prompt library integration and storage to `BatchAiGenerateModal`.
+- Added `includeThoughts` toggle to assistant provider and automatic reasoning tag stripping from generated posts.
+- Implemented polling for AI text generation status and integrated image processing for LLM context.
+- Implemented paginated post fetching for campaigns.
+- Added copy-to-clipboard functionality to library content.
+- Added queue clear functionality and refactored the Queue Monitor UI.
+
+### Changed
+
+- Standardized UI component corners with a consistent `rounded-card` utility class.
+
+## [1.5.3] - 2026-05-02
+
+### Added
+
+- Added database backup and restore scripts with automated retention support.
+- Added `APP_URL` and X (Twitter) OAuth environment variables to docker configurations.
+
+### Changed
+
+- Migrated all Twitter API endpoints and branding to X (formerly Twitter) domain.
+
+## [1.5.2] - 2026-05-02
+
+### Added
+
+- Introduced PM2-based deployment upgrade workflow.
+
+### Changed
+
+- Automated Prisma migrations on container startup.
+
+## [1.5.1] - 2026-05-02
+
+### Added
+
+- Added validation and security constraints to campaign and post MCP tools.
+
 ## [1.5.0] - 2026-05-02
 
 ### Added
@@ -120,6 +164,10 @@ All notable changes to Remix Studio are documented here by version number.
 - Authentication, admin controls, 2FA, passkeys, and user storage limits.
 - Internationalized UI for English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French.
 
+[1.6.0]: https://github.com/ShinChven/remix-studio/compare/v1.5.3...v1.6.0
+[1.5.3]: https://github.com/ShinChven/remix-studio/compare/v1.5.2...v1.5.3
+[1.5.2]: https://github.com/ShinChven/remix-studio/compare/v1.5.1...v1.5.2
+[1.5.1]: https://github.com/ShinChven/remix-studio/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/ShinChven/remix-studio/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/ShinChven/remix-studio/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/ShinChven/remix-studio/compare/v1.4.0...v1.4.1
