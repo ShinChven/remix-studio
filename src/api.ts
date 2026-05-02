@@ -478,6 +478,18 @@ export async function fetchQueueStatus(view: QueueMonitorView): Promise<QueueMon
   return handleResponse<QueueMonitorStatus>(res, 'Failed to load queue status');
 }
 
+export async function clearFailedQueueJobs(scope: { projectId?: string; providerId?: string } = {}): Promise<{ cleared: number; resumedProjects: number }> {
+  const params = new URLSearchParams();
+  if (scope.projectId) params.set('projectId', scope.projectId);
+  if (scope.providerId) params.set('providerId', scope.providerId);
+  const query = params.toString();
+  const res = await apiFetch(`/api/queue-status/failed${query ? `?${query}` : ''}`, {
+    method: 'DELETE',
+    headers: getHeaders(false),
+  });
+  return handleResponse<{ cleared: number; resumedProjects: number }>(res, 'Failed to clear failed jobs');
+}
+
 export async function createProject(project: Project): Promise<void> {
   const res = await apiFetch('/api/projects', {
     method: 'POST',

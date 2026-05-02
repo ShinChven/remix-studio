@@ -326,6 +326,62 @@ export class QueueManager {
     };
   }
 
+  public async clearFailedJobs(userId: string, scope: { projectId?: string; providerId?: string } = {}): Promise<{ cleared: number; resumedProjects: number }> {
+    const where: any = {
+      userId,
+      status: 'failed',
+    };
+
+    if (scope.projectId) {
+      where.projectId = scope.projectId;
+    }
+
+    if (scope.providerId) {
+      where.OR = [
+        { providerId: scope.providerId },
+        { providerId: null, project: { providerId: scope.providerId } },
+      ];
+    }
+
+    const failedJobs = await this.prisma.job.findMany({
+      where,
+      select: { id: true, projectId: true },
+    });
+
+    if (failedJobs.length === 0) {
+      return { cleared: 0, resumedProjects: 0 };
+    }
+
+    const failedJobIds = failedJobs.map((job) => job.id);
+    const affectedProjectIds = Array.from(new Set(failedJobs.map((job) => job.projectId)));
+
+    const result = await this.prisma.job.deleteMany({
+      where: {
+        userId,
+        id: { in: failedJobIds },
+      },
+    });
+
+    const pendingProjects = await this.prisma.job.findMany({
+      where: {
+        userId,
+        status: 'pending',
+        projectId: { in: affectedProjectIds },
+      },
+      select: { projectId: true },
+      distinct: ['projectId'],
+    });
+
+    for (const { projectId } of pendingProjects) {
+      await this.enqueueProject(userId, projectId);
+    }
+
+    return {
+      cleared: result.count,
+      resumedProjects: pendingProjects.length,
+    };
+  }
+
   /**
    * Scan for pending jobs in a project and add them to the correct provider's queue.
    */

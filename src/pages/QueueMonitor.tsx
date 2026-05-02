@@ -2,15 +2,22 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Activity, AlertCircle, ChevronDown, Clock, Layers3, Loader2, RefreshCw, Rows3, Server, Timer, Video } from 'lucide-react';
-import { fetchQueueStatus } from '../api';
+import { toast } from 'sonner';
+import { AlertCircle, BrushCleaning, ChevronDown, Clock, Layers3, Loader2, RefreshCw, Rows3, Server, Timer } from 'lucide-react';
+import { clearFailedQueueJobs, fetchQueueStatus } from '../api';
 import { PageHeader } from '../components/PageHeader';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { InfoChip } from '../components/ProjectViewer/InfoChip';
 import { ProviderIcon } from '../components/ProviderIcon';
 import type { QueueMonitorJob, QueueMonitorProject, QueueMonitorProvider, QueueMonitorStatus, QueueMonitorView } from '../types';
 import type { TFunction } from 'i18next';
 
 const VIEW_PARAM_VALUES: QueueMonitorView[] = ['projects', 'providers'];
+
+type ClearFailedTarget =
+  | { type: 'all'; name: string }
+  | { type: 'project'; id: string; name: string }
+  | { type: 'provider'; id: string; name: string };
 
 function resolveView(value: string | null): QueueMonitorView {
   return VIEW_PARAM_VALUES.includes(value as QueueMonitorView) ? value as QueueMonitorView : 'projects';
@@ -36,7 +43,17 @@ function jobStateClass(job: QueueMonitorJob) {
   return 'text-neutral-500 dark:text-neutral-400 bg-neutral-500/10 border-neutral-500/20';
 }
 
-function Metric({ label, value, tone = 'neutral' }: { label: string; value: number; tone?: 'neutral' | 'blue' | 'amber' | 'red' }) {
+function Metric({
+  label,
+  value,
+  tone = 'neutral',
+  layout = 'stacked',
+}: {
+  label: string;
+  value: number;
+  tone?: 'neutral' | 'blue' | 'amber' | 'red';
+  layout?: 'stacked' | 'inline';
+}) {
   const toneClass = {
     neutral: 'text-neutral-900 dark:text-white',
     blue: 'text-blue-600 dark:text-blue-400',
@@ -44,11 +61,37 @@ function Metric({ label, value, tone = 'neutral' }: { label: string; value: numb
     red: 'text-red-500',
   }[tone];
 
+  if (layout === 'inline') {
+    return (
+      <div className="flex min-h-10 min-w-0 items-center justify-between gap-4 rounded-lg border border-neutral-200/50 bg-white/50 px-3 py-2 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/40 sm:min-w-28">
+        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{label}</p>
+        <p className={`text-base font-semibold tabular-nums ${toneClass}`}>{value}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-lg border border-neutral-200/50 dark:border-white/5 bg-white/50 dark:bg-neutral-900/40 px-3 py-2 shadow-sm backdrop-blur-xl">
       <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{label}</p>
       <p className={`mt-1 text-lg font-semibold tabular-nums ${toneClass}`}>{value}</p>
     </div>
+  );
+}
+
+function ClearFailedButton({ onClick, isClearing, className = '' }: { onClick: () => void; isClearing: boolean; className?: string }) {
+  const { t } = useTranslation();
+
+  return (
+    <button
+      onClick={onClick}
+      className={`flex min-h-10 min-w-0 items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 shadow-sm backdrop-blur-xl transition-all hover:bg-red-500/20 active:scale-95 disabled:opacity-40 sm:min-w-28 ${className}`}
+      disabled={isClearing}
+      title={t('projectViewer.queue.clearAllFailed')}
+      aria-label={t('projectViewer.queue.clearAllFailed')}
+    >
+      {isClearing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BrushCleaning className="h-3.5 w-3.5" />}
+      <span className="truncate">{t('projectViewer.queue.clearAllFailed')}</span>
+    </button>
   );
 }
 
@@ -138,7 +181,15 @@ function JobRow({ job, showProject = false, showProvider = false }: { job: Queue
   );
 }
 
-function ProjectPanel({ project }: { project: QueueMonitorProject }) {
+function ProjectPanel({
+  project,
+  onClearFailed,
+  isClearingFailed,
+}: {
+  project: QueueMonitorProject;
+  onClearFailed: (target: ClearFailedTarget) => void;
+  isClearingFailed: boolean;
+}) {
   const { t } = useTranslation();
 
   return (
@@ -159,10 +210,16 @@ function ProjectPanel({ project }: { project: QueueMonitorProject }) {
             })}
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
-          <Metric label={t('queueMonitor.metrics.running')} value={project.runningJobs + project.detachedJobs} tone="blue" />
-          <Metric label={t('queueMonitor.metrics.queued')} value={project.queuedJobs + project.waitingJobs} tone="amber" />
-          <Metric label={t('queueMonitor.metrics.failed')} value={project.failedJobs} tone={project.failedJobs > 0 ? 'red' : 'neutral'} />
+        <div className={project.failedJobs > 0 ? 'grid grid-cols-2 gap-2 sm:flex sm:items-center' : 'grid grid-cols-3 gap-2 sm:flex sm:items-center'}>
+          <Metric layout="inline" label={t('queueMonitor.metrics.running')} value={project.runningJobs + project.detachedJobs} tone="blue" />
+          <Metric layout="inline" label={t('queueMonitor.metrics.queued')} value={project.queuedJobs + project.waitingJobs} tone="amber" />
+          <Metric layout="inline" label={t('queueMonitor.metrics.failed')} value={project.failedJobs} tone={project.failedJobs > 0 ? 'red' : 'neutral'} />
+          {project.failedJobs > 0 && (
+            <ClearFailedButton
+              isClearing={isClearingFailed}
+              onClick={() => onClearFailed({ type: 'project', id: project.id, name: project.name })}
+            />
+          )}
         </div>
       </div>
       <div>
@@ -172,7 +229,15 @@ function ProjectPanel({ project }: { project: QueueMonitorProject }) {
   );
 }
 
-function ProviderPanel({ provider }: { provider: QueueMonitorProvider }) {
+function ProviderPanel({
+  provider,
+  onClearFailed,
+  isClearingFailed,
+}: {
+  provider: QueueMonitorProvider;
+  onClearFailed: (target: ClearFailedTarget) => void;
+  isClearingFailed: boolean;
+}) {
   const { t } = useTranslation();
   const slotPercent = provider.concurrency > 0 ? Math.min(100, (provider.activeSlots / provider.concurrency) * 100) : 0;
 
@@ -195,11 +260,18 @@ function ProviderPanel({ provider }: { provider: QueueMonitorProvider }) {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          <Metric label={t('queueMonitor.metrics.slots')} value={provider.activeSlots} tone="blue" />
-          <Metric label={t('queueMonitor.metrics.limit')} value={provider.concurrency} />
-          <Metric label={t('queueMonitor.metrics.queued')} value={provider.queuedJobs + provider.waitingJobs} tone="amber" />
-          <Metric label={t('queueMonitor.metrics.failed')} value={provider.failedJobs} tone={provider.failedJobs > 0 ? 'red' : 'neutral'} />
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+          <Metric layout="inline" label={t('queueMonitor.metrics.slots')} value={provider.activeSlots} tone="blue" />
+          <Metric layout="inline" label={t('queueMonitor.metrics.limit')} value={provider.concurrency} />
+          <Metric layout="inline" label={t('queueMonitor.metrics.queued')} value={provider.queuedJobs + provider.waitingJobs} tone="amber" />
+          <Metric layout="inline" label={t('queueMonitor.metrics.failed')} value={provider.failedJobs} tone={provider.failedJobs > 0 ? 'red' : 'neutral'} />
+          {provider.failedJobs > 0 && (
+            <ClearFailedButton
+              isClearing={isClearingFailed}
+              className="col-span-2 w-full min-w-0 sm:col-span-1 sm:w-auto sm:min-w-28"
+              onClick={() => onClearFailed({ type: 'provider', id: provider.id, name: provider.name })}
+            />
+          )}
         </div>
       </div>
       {provider.jobs.length > 0 ? (
@@ -217,6 +289,8 @@ export function QueueMonitor() {
   const view = resolveView(searchParams.get('view'));
   const [status, setStatus] = useState<QueueMonitorStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isClearingFailed, setIsClearingFailed] = useState(false);
+  const [clearFailedTarget, setClearFailedTarget] = useState<ClearFailedTarget | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = async (nextView = view, showLoading = true) => {
@@ -274,9 +348,36 @@ export function QueueMonitor() {
     });
   };
 
+  const handleClearFailedJobs = async () => {
+    const target = clearFailedTarget;
+    if (!target) return;
+
+    setIsClearingFailed(true);
+    try {
+      const result = await clearFailedQueueJobs(
+        target.type === 'project'
+          ? { projectId: target.id }
+          : target.type === 'provider'
+            ? { providerId: target.id }
+            : {}
+      );
+      toast.success(t('queueMonitor.clearFailedSuccess', {
+        count: result.cleared,
+        defaultValue: `Cleared ${result.cleared} failed job${result.cleared === 1 ? '' : 's'}`,
+      }));
+      await load(view, false);
+    } catch (err) {
+      console.error(err);
+      toast.error(t('queueMonitor.clearFailedError', { defaultValue: 'Failed to clear failed jobs.' }));
+    } finally {
+      setIsClearingFailed(false);
+    }
+  };
+
   const totals = status?.totals;
   const projects = status?.projects || [];
   const providers = status?.providers || [];
+  const hasFailedJobs = (totals?.failedJobs || 0) > 0;
 
   return (
     <div className="p-4 md:p-8 w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -284,14 +385,26 @@ export function QueueMonitor() {
         title={t('queueMonitor.title')}
         description={t('queueMonitor.description')}
         actions={
-          <button
-            onClick={() => load(view)}
-            className="flex items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/60 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-neutral-700 shadow-sm backdrop-blur-xl transition-all hover:bg-neutral-100 active:scale-95 disabled:opacity-40 dark:border-white/5 dark:bg-neutral-900/60 dark:text-neutral-300 dark:hover:bg-neutral-800"
-            disabled={isLoading}
-          >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            {t('queueMonitor.refresh')}
-          </button>
+          <>
+            {hasFailedJobs && (
+              <button
+                onClick={() => setClearFailedTarget({ type: 'all', name: t('queueMonitor.title') })}
+                className="flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-red-500 shadow-sm backdrop-blur-xl transition-all hover:bg-red-500/20 active:scale-95 disabled:opacity-40"
+                disabled={isClearingFailed}
+              >
+                {isClearingFailed ? <Loader2 className="h-4 w-4 animate-spin" /> : <BrushCleaning className="h-4 w-4" />}
+                {t('projectViewer.queue.clearAllFailed')}
+              </button>
+            )}
+            <button
+              onClick={() => load(view)}
+              className="flex items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/60 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-neutral-700 shadow-sm backdrop-blur-xl transition-all hover:bg-neutral-100 active:scale-95 disabled:opacity-40 dark:border-white/5 dark:bg-neutral-900/60 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {t('queueMonitor.refresh')}
+            </button>
+          </>
         }
       />
 
@@ -350,7 +463,14 @@ export function QueueMonitor() {
       ) : view === 'projects' ? (
         <section className="space-y-3">
           {projects.length > 0 ? (
-            projects.map((project) => <ProjectPanel key={project.id} project={project} />)
+            projects.map((project) => (
+              <ProjectPanel
+                key={project.id}
+                project={project}
+                isClearingFailed={isClearingFailed}
+                onClearFailed={setClearFailedTarget}
+              />
+            ))
           ) : (
             <EmptyMonitorState icon={<Rows3 className="h-8 w-8" />} title={t('queueMonitor.empty.projectsTitle')} />
           )}
@@ -358,12 +478,41 @@ export function QueueMonitor() {
       ) : (
         <section className="space-y-3">
           {providers.length > 0 ? (
-            providers.map((provider) => <ProviderPanel key={provider.id} provider={provider} />)
+            providers.map((provider) => (
+              <ProviderPanel
+                key={provider.id}
+                provider={provider}
+                isClearingFailed={isClearingFailed}
+                onClearFailed={setClearFailedTarget}
+              />
+            ))
           ) : (
             <EmptyMonitorState icon={<Server className="h-8 w-8" />} title={t('queueMonitor.empty.providersTitle')} />
           )}
         </section>
       )}
+
+      <ConfirmModal
+        isOpen={clearFailedTarget !== null}
+        onClose={() => setClearFailedTarget(null)}
+        onConfirm={handleClearFailedJobs}
+        title={t('projectViewer.confirm.clearFailedJobs.title')}
+        message={
+          clearFailedTarget?.type === 'project'
+            ? t('queueMonitor.confirm.clearProjectFailed', {
+              name: clearFailedTarget.name,
+              defaultValue: `Clear failed jobs for project "${clearFailedTarget.name}"?`,
+            })
+            : clearFailedTarget?.type === 'provider'
+              ? t('queueMonitor.confirm.clearProviderFailed', {
+                name: clearFailedTarget.name,
+                defaultValue: `Clear failed jobs for provider queue "${clearFailedTarget.name}"?`,
+              })
+              : t('projectViewer.confirm.clearFailedJobs.message')
+        }
+        confirmText={t('projectViewer.confirm.clearFailedJobs.confirm')}
+        type="danger"
+      />
     </div>
   );
 }

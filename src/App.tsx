@@ -71,7 +71,8 @@ export default function App() {
               <Route path="library/new" element={<LibraryForm />} />
               <Route path="library/:id/edit" element={<LibraryForm />} />
               <Route path="projects" element={<Projects />} />
-              <Route path="queues" element={<QueueMonitor />} />
+              <Route path="projects/queues" element={<QueueMonitor />} />
+              <Route path="queues" element={<Navigate to="/projects/queues" replace />} />
               <Route path="project/new" element={<ProjectForm />} />
               <Route path="project/:id" element={<ProjectRoute />} />
               <Route path="project/:id/edit" element={<ProjectForm />} />

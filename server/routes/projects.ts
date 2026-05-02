@@ -250,6 +250,21 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+  router.delete('/api/queue-status/failed', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.query('projectId')?.trim() || undefined;
+      const providerId = c.req.query('providerId')?.trim() || undefined;
+      if (projectId && providerId) {
+        return c.json({ error: 'Choose projectId or providerId, not both' }, 400);
+      }
+      return c.json(await queueManager.clearFailedJobs(user.userId, { projectId, providerId }));
+    } catch (e) {
+      console.error('[DELETE /api/queue-status/failed]', e);
+      return c.json({ error: 'Failed to clear failed jobs' }, 500);
+    }
+  });
+
   router.get('/api/projects/:id', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

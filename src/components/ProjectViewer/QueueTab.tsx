@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trash2, Play, Loader2, List, OctagonX } from 'lucide-react';
+import { Trash2, Play, Loader2, List, BrushCleaning } from 'lucide-react';
 import { Job } from '../../types';
 import { imageDisplayUrl } from '../../api';
 import { SelectionToolbar } from './SelectionToolbar';
@@ -84,8 +84,8 @@ export function QueueTab({
                     aria-label={t('projectViewer.queue.clearAllFailed')}
                     className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                   >
-                    <OctagonX className="w-3 h-3" />
-                    <span className="hidden sm:inline">{t('projectViewer.queue.clearAllFailed')}</span>
+                    <BrushCleaning className="w-3 h-3" />
+                    <span>{t('projectViewer.queue.clearAllFailed')}</span>
                   </button>
                 )}
               </>
