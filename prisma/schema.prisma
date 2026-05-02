@@ -43,6 +43,7 @@ model User {
   socialAccounts        SocialAccount[]
   campaigns             Campaign[]
   posts                 Post[]
+  postWatermarkSetting  PostWatermarkSetting?
   createdByUser User? @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdUsers  User[] @relation("UserCreation")
   createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
@@ -577,6 +578,24 @@ model Campaign {
   socialAccounts SocialAccount[] // Implicit many-to-many: target channels
   
   @@index([userId, status])
+}
+
+model PostWatermarkSetting {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  enabled   Boolean  @default(false)
+  text      String   @default("") @db.Text
+  position  String   @default("center")
+  padding   Int      @default(32)
+  fontSize  Int      @default(48)
+  opacity   Float    @default(0.35)
+  color     String   @default("#ffffff")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Post {

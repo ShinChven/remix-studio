@@ -1545,14 +1545,52 @@ export type CampaignMediaImportSource =
   | { kind: 'library'; libraryId: string; itemId: string }
   | { kind: 'album'; projectId: string; itemId: string };
 
+export type PostWatermarkPosition =
+  | 'top'
+  | 'bottom'
+  | 'left'
+  | 'right'
+  | 'center'
+  | 'top_left'
+  | 'top_right'
+  | 'bottom_left'
+  | 'bottom_right';
+
+export interface PostWatermarkSettings {
+  id?: string;
+  userId?: string;
+  enabled: boolean;
+  text: string;
+  position: PostWatermarkPosition;
+  padding: number;
+  fontSize: number;
+  opacity: number;
+  color: string;
+}
+
+export async function fetchPostWatermarkSettings(): Promise<PostWatermarkSettings> {
+  const res = await apiFetch('/api/posts/watermark-settings', { headers: getHeaders(false) });
+  return handleResponse<PostWatermarkSettings>(res, 'Failed to fetch watermark settings');
+}
+
+export async function updatePostWatermarkSettings(settings: Partial<PostWatermarkSettings>): Promise<PostWatermarkSettings> {
+  const res = await apiFetch('/api/posts/watermark-settings', {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(settings),
+  });
+  return handleResponse<PostWatermarkSettings>(res, 'Failed to update watermark settings');
+}
+
 export async function importCampaignMediaPosts(
   campaignId: string,
   sources: CampaignMediaImportSource[],
+  watermarkSettings?: PostWatermarkSettings,
 ): Promise<{ created: Array<{ postId: string; mediaId: string }>; count: number }> {
   const res = await apiFetch(`/api/campaigns/${campaignId}/posts/import-media`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ sources }),
+    body: JSON.stringify({ sources, ...(watermarkSettings ? { watermarkSettings } : {}) }),
   });
   return handleResponse<{ created: Array<{ postId: string; mediaId: string }>; count: number }>(res, 'Failed to import media posts');
 }
@@ -1560,11 +1598,12 @@ export async function importCampaignMediaPosts(
 export async function uploadCampaignMediaPosts(
   campaignId: string,
   files: Array<{ base64: string; name?: string }>,
+  watermarkSettings?: PostWatermarkSettings,
 ): Promise<{ created: Array<{ postId: string; mediaId: string }>; count: number }> {
   const res = await apiFetch(`/api/campaigns/${campaignId}/posts/upload-media`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ files }),
+    body: JSON.stringify({ files, ...(watermarkSettings ? { watermarkSettings } : {}) }),
   });
   return handleResponse<{ created: Array<{ postId: string; mediaId: string }>; count: number }>(res, 'Failed to upload media posts');
 }

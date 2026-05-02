@@ -59,6 +59,11 @@ function parsePositiveInt(value: string | null, fallback: number) {
   return Number.isFinite(number) ? Math.max(1, Math.floor(number)) : fallback;
 }
 
+function parsePageSize(value: string | null, fallback = DEFAULT_PAGE_SIZE) {
+  const parsed = parsePositiveInt(value, fallback);
+  return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : fallback;
+}
+
 function parseStatusFilter(value: string | null): StatusFilter {
   return STATUS_FILTERS.includes(value as StatusFilter) ? (value as StatusFilter) : 'all';
 }
@@ -218,7 +223,7 @@ export function CampaignDetail() {
   const statusFilter = parseStatusFilter(searchParams.get('status'));
   const sortKey = parseSortKey(searchParams.get('sort'));
   const page = parsePositiveInt(searchParams.get('page'), 1);
-  const pageSize = Math.min(100, parsePositiveInt(searchParams.get('pageSize'), DEFAULT_PAGE_SIZE));
+  const pageSize = parsePageSize(searchParams.get('pageSize') || searchParams.get('limit'));
 
   const [composerOpen, setComposerOpen] = useState(false);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
@@ -320,6 +325,26 @@ export function CampaignDetail() {
   useEffect(() => {
     void loadCampaign();
   }, [id]);
+
+  useEffect(() => {
+    const rawPageSize = searchParams.get('pageSize');
+    const legacyLimit = searchParams.get('limit');
+    const pageSizeParam = rawPageSize || legacyLimit;
+    if (!pageSizeParam) return;
+
+    const normalizedPageSize = parsePageSize(pageSizeParam);
+    if (rawPageSize === String(normalizedPageSize) && !legacyLimit) return;
+
+    const params = new URLSearchParams(searchParams);
+    params.delete('limit');
+    params.delete('page');
+    if (normalizedPageSize === DEFAULT_PAGE_SIZE) {
+      params.delete('pageSize');
+    } else {
+      params.set('pageSize', String(normalizedPageSize));
+    }
+    setSearchParams(params, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     void loadPosts();

@@ -22,6 +22,7 @@ const POST_IMAGE_RAW_QUALITY = 90;
 const CAMPAIGN_MEDIA_UPLOAD_LIMIT_BYTES = 500 * 1024 * 1024;
 const POST_AI_CONTEXT_IMAGE_MAX_DIMENSION = 1024;
 const POST_AI_CONTEXT_IMAGE_QUALITY = 82;
+const POST_WATERMARK_BASE_SHORT_EDGE = 1080;
 
 type ImportSource =
   | { kind: 'library'; libraryId: string; itemId: string }
@@ -35,6 +36,50 @@ type ResolvedImportMedia = {
   optimizedValue?: string | null;
   rawSize?: number | null;
 };
+
+const postWatermarkPositions = [
+  'top',
+  'bottom',
+  'left',
+  'right',
+  'center',
+  'top_left',
+  'top_right',
+  'bottom_left',
+  'bottom_right',
+] as const;
+
+type PostWatermarkPosition = typeof postWatermarkPositions[number];
+
+type PostWatermarkConfig = {
+  enabled: boolean;
+  text: string;
+  position: PostWatermarkPosition;
+  padding: number;
+  fontSize: number;
+  opacity: number;
+  color: string;
+};
+
+const DEFAULT_POST_WATERMARK_SETTING: PostWatermarkConfig = {
+  enabled: false,
+  text: '',
+  position: 'center',
+  padding: 32,
+  fontSize: 48,
+  opacity: 0.35,
+  color: '#ffffff',
+};
+
+const postWatermarkSettingSchema = z.object({
+  enabled: z.boolean().optional(),
+  text: z.string().max(200).optional(),
+  position: z.enum(postWatermarkPositions).optional(),
+  padding: z.number().int().min(0).max(512).optional(),
+  fontSize: z.number().int().min(8).max(256).optional(),
+  opacity: z.number().min(0).max(1).optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+});
 
 type BatchGenerateTextStatus = 'queued' | 'running' | 'completed' | 'failed';
 
@@ -133,6 +178,88 @@ function cleanGeneratedPostText(value: string): string {
     .replace(/<think>[\s\S]*$/gi, '')
     .replace(/<\/?think>/gi, '')
     .trim();
+}
+
+function escapeSvgText(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function getWatermarkPoint(
+  position: PostWatermarkPosition,
+  width: number,
+  height: number,
+  padding: number,
+  fontSize: number,
+) {
+  const topY = padding + (fontSize / 2);
+  const bottomY = height - padding - (fontSize / 2);
+  switch (position) {
+    case 'top':
+      return { x: width / 2, y: topY, anchor: 'middle' };
+    case 'bottom':
+      return { x: width / 2, y: bottomY, anchor: 'middle' };
+    case 'left':
+      return { x: padding, y: height / 2, anchor: 'start' };
+    case 'right':
+      return { x: width - padding, y: height / 2, anchor: 'end' };
+    case 'top_left':
+      return { x: padding, y: topY, anchor: 'start' };
+    case 'top_right':
+      return { x: width - padding, y: topY, anchor: 'end' };
+    case 'bottom_left':
+      return { x: padding, y: bottomY, anchor: 'start' };
+    case 'bottom_right':
+      return { x: width - padding, y: bottomY, anchor: 'end' };
+    case 'center':
+    default:
+      return { x: width / 2, y: height / 2, anchor: 'middle' };
+  }
+}
+
+function getScaledWatermarkMetrics(width: number, height: number, setting: PostWatermarkConfig) {
+  const shortEdge = Math.min(width, height);
+  const scale = shortEdge / POST_WATERMARK_BASE_SHORT_EDGE;
+  const fontSize = Math.max(1, Math.min(setting.fontSize * scale, shortEdge * 0.5));
+  const padding = Math.max(0, Math.min(setting.padding * scale, shortEdge / 2));
+  return { fontSize, padding };
+}
+
+async function applyPostWatermark(buffer: Buffer, setting?: PostWatermarkConfig | null): Promise<Buffer> {
+  const text = setting?.text?.trim();
+  if (!setting?.enabled || !text) return buffer;
+
+  const image = sharp(buffer);
+  const metadata = await image.metadata();
+  const width = metadata.width || 0;
+  const height = metadata.height || 0;
+  if (!width || !height) return buffer;
+
+  const { padding, fontSize } = getScaledWatermarkMetrics(width, height, setting);
+  const point = getWatermarkPoint(setting.position, width, height, padding, fontSize);
+  const svg = `
+    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+      <text
+        x="${point.x}"
+        y="${point.y}"
+        text-anchor="${point.anchor}"
+        dominant-baseline="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="${fontSize}"
+        font-weight="700"
+        fill="${setting.color}"
+        fill-opacity="${setting.opacity}"
+      >${escapeSvgText(text)}</text>
+    </svg>`;
+
+  return sharp(buffer)
+    .composite([{ input: Buffer.from(svg), blend: 'over' }])
+    .jpeg({ quality: POST_IMAGE_RAW_QUALITY })
+    .toBuffer();
 }
 
 function videoMimeExt(mimeType: string): string {
@@ -260,6 +387,37 @@ export function createPostsRouter(
   const maxActiveBatchGenerateTextTasks = 2;
   const maxBatchGenerateTextItemConcurrency = 3;
   const batchGenerateTextRetentionMs = 30 * 60 * 1000;
+
+  const serializePostWatermarkSetting = (setting: any): PostWatermarkConfig & { id?: string; userId?: string } => ({
+    id: setting.id,
+    userId: setting.userId,
+    enabled: Boolean(setting.enabled),
+    text: setting.text || '',
+    position: postWatermarkPositions.includes(setting.position) ? setting.position : DEFAULT_POST_WATERMARK_SETTING.position,
+    padding: Number.isFinite(setting.padding) ? setting.padding : DEFAULT_POST_WATERMARK_SETTING.padding,
+    fontSize: Number.isFinite(setting.fontSize) ? setting.fontSize : DEFAULT_POST_WATERMARK_SETTING.fontSize,
+    opacity: Number.isFinite(setting.opacity) ? setting.opacity : DEFAULT_POST_WATERMARK_SETTING.opacity,
+    color: /^#[0-9a-fA-F]{6}$/.test(setting.color || '') ? setting.color : DEFAULT_POST_WATERMARK_SETTING.color,
+  });
+
+  const normalizePostWatermarkPayload = (setting: z.infer<typeof postWatermarkSettingSchema>): PostWatermarkConfig => (
+    serializePostWatermarkSetting({ ...DEFAULT_POST_WATERMARK_SETTING, ...setting })
+  );
+
+  const ensurePostWatermarkSetting = async (userId: string) => {
+    const setting = await prisma.postWatermarkSetting.upsert({
+      where: { userId },
+      update: {},
+      create: { userId, ...DEFAULT_POST_WATERMARK_SETTING },
+    });
+    return serializePostWatermarkSetting(setting);
+  };
+
+  const findPostWatermarkSetting = async (userId: string): Promise<PostWatermarkConfig | null> => {
+    const setting = await prisma.postWatermarkSetting.findUnique({ where: { userId } });
+    if (!setting) return null;
+    return serializePostWatermarkSetting(setting);
+  };
 
   const cleanupBatchGenerateTextTasks = () => {
     const now = Date.now();
@@ -578,6 +736,7 @@ export function createPostsRouter(
 
   const importMediaPostsSchema = z.object({
     sources: z.array(importSourceSchema).min(1).max(100),
+    watermarkSettings: postWatermarkSettingSchema.optional(),
   });
 
   async function resolveImportSources(userId: string, sources: ImportSource[]): Promise<ResolvedImportMedia[]> {
@@ -686,6 +845,9 @@ export function createPostsRouter(
 
       const bucket = storage.getBucketName();
       const safeCampaignId = campaignId.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const watermarkSetting = data.watermarkSettings
+        ? normalizePostWatermarkPayload(data.watermarkSettings)
+        : await findPostWatermarkSetting(user.userId);
       const sources = await resolveImportSources(user.userId, data.sources);
       const created: Array<{ postId: string; mediaId: string }> = [];
 
@@ -701,7 +863,7 @@ export function createPostsRouter(
 
         if (item.mediaType === 'image') {
           const sourceBuffer = await readMediaBuffer(storage, item.rawValue || undefined, bucket, 'image');
-          const rawBuffer = await processPostRawImage(sourceBuffer);
+          const rawBuffer = await applyPostWatermark(await processPostRawImage(sourceBuffer), watermarkSetting);
           const optBuffer = await generateOptimized(rawBuffer);
           const thumbBuffer = await generateThumbnail(rawBuffer);
 
@@ -832,6 +994,7 @@ export function createPostsRouter(
       base64: z.string().min(1),
       name: z.string().optional(),
     })).min(1).max(100),
+    watermarkSettings: postWatermarkSettingSchema.optional(),
   });
 
   postsRouter.post(
@@ -856,6 +1019,9 @@ export function createPostsRouter(
         if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
 
         const safeCampaignId = campaignId.replace(/[^a-zA-Z0-9-_]/g, '_');
+        const watermarkSetting = data.watermarkSettings
+          ? normalizePostWatermarkPayload(data.watermarkSettings)
+          : await findPostWatermarkSetting(user.userId);
         const created: Array<{ postId: string; mediaId: string }> = [];
 
         for (const file of data.files) {
@@ -876,7 +1042,7 @@ export function createPostsRouter(
 
           if (isImage) {
             const sourceBuffer = readMediaBufferFromDataUrl(file.base64, 'image');
-            const rawBuffer = await processPostRawImage(sourceBuffer);
+            const rawBuffer = await applyPostWatermark(await processPostRawImage(sourceBuffer), watermarkSetting);
             const optBuffer = await generateOptimized(rawBuffer);
             const thumbBuffer = await generateThumbnail(rawBuffer);
 
@@ -1079,6 +1245,40 @@ export function createPostsRouter(
     } catch (error) {
       console.error('Failed to get scheduled counts:', error);
       return c.json({ error: 'Failed to fetch scheduled counts' }, 500);
+    }
+  });
+
+  postsRouter.get('/api/posts/watermark-settings', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+
+    try {
+      return c.json(await ensurePostWatermarkSetting(user.userId));
+    } catch (error) {
+      console.error('Failed to get watermark settings:', error);
+      return c.json({ error: 'Failed to get watermark settings' }, 500);
+    }
+  });
+
+  postsRouter.put('/api/posts/watermark-settings', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+
+    try {
+      const body = await c.req.json();
+      const data = postWatermarkSettingSchema.parse(body);
+      const updated = await prisma.postWatermarkSetting.upsert({
+        where: { userId: user.userId },
+        update: data,
+        create: {
+          userId: user.userId,
+          ...DEFAULT_POST_WATERMARK_SETTING,
+          ...data,
+        },
+      });
+
+      return c.json(serializePostWatermarkSetting(updated));
+    } catch (error: any) {
+      console.error('Failed to update watermark settings:', error);
+      return c.json({ error: error?.message || 'Failed to update watermark settings' }, 400);
     }
   });
 

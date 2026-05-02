@@ -211,7 +211,7 @@ export function Home() {
               </div>
               <div className="flex overflow-x-auto gap-6 pb-6 pt-4 -mx-4 px-4 scrollbar-hide">
                 {projects.map(project => (
-                  <div key={project.id} className="min-w-[300px] sm:min-w-[320px] flex-shrink-0">
+                  <div key={project.id} className="w-[300px] sm:w-[320px] flex-shrink-0">
                     <ProjectCard
                       project={project}
                       onStartAssistantChat={handleStartProjectChat}
@@ -247,7 +247,7 @@ export function Home() {
               </div>
               <div className="flex overflow-x-auto gap-6 pb-6 pt-4 -mx-4 px-4 scrollbar-hide">
                 {libraries.map(lib => (
-                  <div key={lib.id} className="min-w-[300px] sm:min-w-[320px] flex-shrink-0">
+                  <div key={lib.id} className="w-[300px] sm:w-[320px] flex-shrink-0">
                     <LibraryCard
                       library={lib}
                       onStartAssistantChat={handleStartLibraryChat}
@@ -289,7 +289,7 @@ export function Home() {
                   return (
                     <div
                       key={campaign.id}
-                      className="min-w-[300px] sm:min-w-[320px] flex-shrink-0 group relative flex flex-col justify-end cursor-pointer overflow-hidden rounded-[20px] h-[280px] shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-white/5 bg-neutral-900"
+                      className="w-[300px] sm:w-[320px] flex-shrink-0 group relative flex flex-col justify-end cursor-pointer overflow-hidden rounded-[20px] h-[280px] shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-white/5 bg-neutral-900"
                       onClick={() => navigate(`/campaigns/${campaign.id}`)}
                     >
                       <div

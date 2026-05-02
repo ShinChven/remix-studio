@@ -45,6 +45,15 @@ interface BatchPost {
 
 type SortKey = 'scheduled_asc' | 'scheduled_desc' | 'created_desc' | 'created_asc';
 
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 250, 500, 1000];
+const DEFAULT_PAGE_SIZE = 50;
+
+function parsePageSize(value: string | null, fallback = DEFAULT_PAGE_SIZE) {
+  const number = Number(value);
+  const parsed = Number.isFinite(number) ? Math.max(1, Math.floor(number)) : fallback;
+  return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : fallback;
+}
+
 function statusLabel(status: string) {
   if (status === 'completed') return 'Posted';
   return status.slice(0, 1).toUpperCase() + status.slice(1);
@@ -87,7 +96,7 @@ export function CampaignBatchActions() {
   const statusFilter = searchParams.get('status') || 'all';
   const sortKey = (searchParams.get('sort') || 'scheduled_desc') as SortKey;
   const page = Math.max(1, Number(searchParams.get('page') || 1));
-  const pageSize = Math.max(1, Math.min(1000, Number(searchParams.get('pageSize') || 50)));
+  const pageSize = parsePageSize(searchParams.get('pageSize') || searchParams.get('limit'));
 
   const updateQuery = (updates: Record<string, string>) => {
     const params = new URLSearchParams(searchParams);
@@ -130,6 +139,26 @@ export function CampaignBatchActions() {
   useEffect(() => {
     void loadData(false, true);
   }, [id, page, pageSize, searchQuery, statusFilter, sortKey]);
+
+  useEffect(() => {
+    const rawPageSize = searchParams.get('pageSize');
+    const legacyLimit = searchParams.get('limit');
+    const pageSizeParam = rawPageSize || legacyLimit;
+    if (!pageSizeParam) return;
+
+    const normalizedPageSize = parsePageSize(pageSizeParam);
+    if (rawPageSize === String(normalizedPageSize) && !legacyLimit) return;
+
+    const params = new URLSearchParams(searchParams);
+    params.delete('limit');
+    params.set('page', '1');
+    if (normalizedPageSize === DEFAULT_PAGE_SIZE) {
+      params.delete('pageSize');
+    } else {
+      params.set('pageSize', String(normalizedPageSize));
+    }
+    setSearchParams(params, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!aiTask?.batchId || aiTask.status === 'completed' || aiTask.status === 'failed') return;
@@ -321,12 +350,9 @@ export function CampaignBatchActions() {
               <option value="created_asc">Created (Oldest First)</option>
             </select>
             <select value={pageSize} onChange={(event) => updateQuery({ pageSize: event.target.value })} className="h-10 rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold shadow-sm outline-none backdrop-blur-3xl focus:border-indigo-500/50 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white">
-              <option value="25">25 / page</option>
-              <option value="50">50 / page</option>
-              <option value="100">100 / page</option>
-              <option value="250">250 / page</option>
-              <option value="500">500 / page</option>
-              <option value="1000">1000 / page</option>
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option} / page</option>
+              ))}
             </select>
           </div>
 

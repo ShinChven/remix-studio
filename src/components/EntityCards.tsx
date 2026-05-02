@@ -407,10 +407,10 @@ export function LibraryCard({ library, isCheckingRefs = false, onTogglePin, onSt
         </div>
       </div>
 
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <h4 className="text-lg font-bold text-neutral-900 dark:text-white truncate mb-2">{library.name}</h4>
         {library.description && (
-          <p className="line-clamp-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 mb-4">
+          <p className="line-clamp-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 mb-4 break-words">
             {library.description}
           </p>
         )}
