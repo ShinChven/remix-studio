@@ -367,6 +367,7 @@ If you prefer AWS S3 or another external S3-compatible service, point `S3_ENDPOI
 
 ## At a Glance
 
+- See [docs/X_PLATFORM_SETUP.md](docs/X_PLATFORM_SETUP.md) for X (Twitter) platform API configuration
 - See [agent/system-overview.md](agent/system-overview.md) for the stack, auth model, queue behavior, providers, libraries, exports, storage model, and repository structure
 - See [docker/README.md](docker/README.md) for compose templates and deployment layouts
 - See [UPGRADING.md](UPGRADING.md) for migration and compatibility notes
