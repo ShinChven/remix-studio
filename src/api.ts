@@ -1448,7 +1448,20 @@ export async function fetchCampaign(id: string, includePosts = true): Promise<an
 export async function fetchCampaignPosts(
   campaignId: string,
   params: { page?: number; pageSize?: number; q?: string; status?: string; sort?: string } = {},
-): Promise<{ items: any[]; total: number; page: number; pageSize: number; totalPages: number }> {
+): Promise<{
+  items: any[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  statusCounts?: Record<string, number>;
+  summary?: {
+    mediaSize: number;
+    mediaCount: number;
+    scheduledStart: string | null;
+    scheduledEnd: string | null;
+  };
+}> {
   const search = new URLSearchParams();
   search.set('page', String(params.page || 1));
   search.set('pageSize', String(params.pageSize || 50));

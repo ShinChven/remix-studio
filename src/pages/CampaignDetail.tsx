@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   CheckCircle2,
@@ -31,11 +31,11 @@ import {
   BatchGenerateTextResult,
   addPostMedia,
   batchUnschedulePosts,
-  createPost,
   deleteCampaign,
   deletePost,
   fetchBatchGeneratePostTextStatus,
   fetchCampaign,
+  fetchCampaignPosts,
   removePostMedia,
   sendPostNow,
   updateCampaign,
@@ -48,6 +48,24 @@ import { cn } from '../lib/utils';
 
 type StatusFilter = 'all' | 'draft' | 'scheduled' | 'queued' | 'completed' | 'failed';
 type SortKey = 'scheduled_asc' | 'scheduled_desc' | 'created_desc' | 'created_asc';
+
+const STATUS_FILTERS: StatusFilter[] = ['all', 'draft', 'scheduled', 'queued', 'completed', 'failed'];
+const SORT_KEYS: SortKey[] = ['scheduled_asc', 'scheduled_desc', 'created_desc', 'created_asc'];
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const DEFAULT_PAGE_SIZE = 25;
+
+function parsePositiveInt(value: string | null, fallback: number) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(1, Math.floor(number)) : fallback;
+}
+
+function parseStatusFilter(value: string | null): StatusFilter {
+  return STATUS_FILTERS.includes(value as StatusFilter) ? (value as StatusFilter) : 'all';
+}
+
+function parseSortKey(value: string | null): SortKey {
+  return SORT_KEYS.includes(value as SortKey) ? (value as SortKey) : 'scheduled_asc';
+}
 
 interface SocialAccount {
   id: string;
@@ -174,12 +192,33 @@ function formatDateTime(date: Date | null) {
 export function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [campaign, setCampaign] = useState<any>(null);
+  const [posts, setPosts] = useState<CampaignPost[]>([]);
+  const [matchingPosts, setMatchingPosts] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [statusCounts, setStatusCounts] = useState<Record<StatusFilter, number>>({
+    all: 0,
+    draft: 0,
+    scheduled: 0,
+    queued: 0,
+    completed: 0,
+    failed: 0,
+  });
+  const [postSummary, setPostSummary] = useState({
+    mediaSize: 0,
+    mediaCount: 0,
+    scheduledStart: null as string | null,
+    scheduledEnd: null as string | null,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [sortKey, setSortKey] = useState<SortKey>('scheduled_asc');
+  const searchQuery = searchParams.get('q') || '';
+  const statusFilter = parseStatusFilter(searchParams.get('status'));
+  const sortKey = parseSortKey(searchParams.get('sort'));
+  const page = parsePositiveInt(searchParams.get('page'), 1);
+  const pageSize = Math.min(100, parsePositiveInt(searchParams.get('pageSize'), DEFAULT_PAGE_SIZE));
 
   const [composerOpen, setComposerOpen] = useState(false);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
@@ -202,11 +241,37 @@ export function CampaignDetail() {
   const [aiTask, setAiTask] = useState<BatchGenerateTextResult | null>(null);
   const [lightbox, setLightbox] = useState<{ media: PostMedia[]; index: number } | null>(null);
 
+  const updateQuery = (updates: Record<string, string>, replace = false) => {
+    const params = new URLSearchParams(searchParams);
+    const resetsPage = Object.keys(updates).some((key) => key !== 'page');
+
+    for (const [key, value] of Object.entries(updates)) {
+      const trimmed = value.trim();
+      if (
+        trimmed &&
+        !(key === 'status' && trimmed === 'all') &&
+        !(key === 'sort' && trimmed === 'scheduled_asc') &&
+        !(key === 'pageSize' && trimmed === String(DEFAULT_PAGE_SIZE)) &&
+        !(key === 'page' && trimmed === '1')
+      ) {
+        params.set(key, trimmed);
+      } else {
+        params.delete(key);
+      }
+    }
+
+    if (resetsPage) {
+      params.delete('page');
+    }
+
+    setSearchParams(params, { replace });
+  };
+
   const loadCampaign = async (silent = false) => {
     if (!id) return;
     if (!silent) setLoading(true);
     try {
-      const data = await fetchCampaign(id);
+      const data = await fetchCampaign(id, false);
       setCampaign(data);
       setError(null);
     } catch (err: any) {
@@ -216,9 +281,49 @@ export function CampaignDetail() {
     }
   };
 
+  const loadPosts = async (silent = false) => {
+    if (!id) return;
+    if (!silent) setPostsLoading(true);
+    try {
+      const data = await fetchCampaignPosts(id, { page, pageSize, q: searchQuery, status: statusFilter, sort: sortKey });
+      const nextTotalPages = Math.max(1, data.totalPages || 1);
+      if (page > nextTotalPages) {
+        updateQuery({ page: String(nextTotalPages) }, true);
+        return;
+      }
+
+      setPosts(data.items || []);
+      setMatchingPosts(data.total || 0);
+      setTotalPages(nextTotalPages);
+      setStatusCounts({
+        all: data.statusCounts?.all || 0,
+        draft: data.statusCounts?.draft || 0,
+        scheduled: data.statusCounts?.scheduled || 0,
+        queued: data.statusCounts?.queued || 0,
+        completed: data.statusCounts?.completed || 0,
+        failed: data.statusCounts?.failed || 0,
+      });
+      setPostSummary({
+        mediaSize: data.summary?.mediaSize || 0,
+        mediaCount: data.summary?.mediaCount || 0,
+        scheduledStart: data.summary?.scheduledStart || null,
+        scheduledEnd: data.summary?.scheduledEnd || null,
+      });
+      setError(null);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to load campaign posts');
+    } finally {
+      if (!silent) setPostsLoading(false);
+    }
+  };
+
   useEffect(() => {
     void loadCampaign();
   }, [id]);
+
+  useEffect(() => {
+    void loadPosts();
+  }, [id, page, pageSize, searchQuery, statusFilter, sortKey]);
 
   useEffect(() => {
     if (!aiTask?.batchId || aiTask.status === 'completed' || aiTask.status === 'failed') return;
@@ -235,7 +340,7 @@ export function CampaignDetail() {
 
         setAiTask(status);
         if (status.completed !== aiTask.completed) {
-          await loadCampaign(true);
+          await loadPosts(true);
         }
 
         if (status.status === 'completed' || status.status === 'failed') {
@@ -248,7 +353,7 @@ export function CampaignDetail() {
           } else {
             toast.success(`Generated text for ${ok} post${ok === 1 ? '' : 's'}`);
           }
-          await loadCampaign(true);
+          await loadPosts(true);
         }
       } catch (error: any) {
         if (!cancelled) {
@@ -271,43 +376,17 @@ export function CampaignDetail() {
 
   useEffect(() => {
     if (!composerOpen || !editingPostId) return;
-    const currentPost = campaign?.posts?.find((post: CampaignPost) => post.id === editingPostId);
+    const currentPost = posts.find((post) => post.id === editingPostId);
     const hasPendingMedia = currentPost?.media?.some((media: PostMedia) => media.status === 'pending' || media.status === 'processing');
     if (!hasPendingMedia) return;
 
-    const timer = window.setInterval(() => void loadCampaign(true), 3000);
+    const timer = window.setInterval(() => void loadPosts(true), 3000);
     return () => window.clearInterval(timer);
-  }, [composerOpen, editingPostId, campaign]);
+  }, [composerOpen, editingPostId, posts]);
 
-  const posts: CampaignPost[] = campaign?.posts || [];
   const connectedAccounts: SocialAccount[] = campaign?.socialAccounts || [];
   const active = campaign?.status === 'active';
-
-  const counts = useMemo(() => ({
-    all: posts.length,
-    draft: posts.filter((post) => post.status === 'draft').length,
-    scheduled: posts.filter((post) => post.status === 'scheduled').length,
-    completed: posts.filter((post) => post.status === 'completed').length,
-    failed: posts.filter((post) => post.status === 'failed').length,
-  }), [posts]);
-
-  const filteredPosts = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return posts
-      .filter((post) => statusFilter === 'all' || post.status === statusFilter)
-      .filter((post) => !q || (post.textContent || '').toLowerCase().includes(q))
-      .slice()
-      .sort((a, b) => {
-        const aCreated = new Date(a.createdAt || 0).getTime();
-        const bCreated = new Date(b.createdAt || 0).getTime();
-        const aScheduled = a.scheduledAt ? new Date(a.scheduledAt).getTime() : Number.POSITIVE_INFINITY;
-        const bScheduled = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Number.POSITIVE_INFINITY;
-        if (sortKey === 'scheduled_desc') return bScheduled - aScheduled;
-        if (sortKey === 'created_desc') return bCreated - aCreated;
-        if (sortKey === 'created_asc') return aCreated - bCreated;
-        return aScheduled - bScheduled;
-      });
-  }, [posts, searchQuery, sortKey, statusFilter]);
+  const counts = statusCounts;
 
   useEffect(() => {
     if (!lightbox) return;
@@ -375,7 +454,7 @@ export function CampaignDetail() {
       });
       toast.success('Post saved successfully');
       setComposerOpen(false);
-      await loadCampaign(true);
+      await loadPosts(true);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to save post');
     } finally {
@@ -389,7 +468,7 @@ export function CampaignDetail() {
       setAttachingMedia(true);
       await addPostMedia(editingPostId, { sourceUrl: mediaUrlInput.trim(), type: mediaTypeInput });
       setMediaUrlInput('');
-      await loadCampaign(true);
+      await loadPosts(true);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to attach media');
     } finally {
@@ -400,7 +479,7 @@ export function CampaignDetail() {
   const handleRemoveMedia = async (mediaId: string) => {
     try {
       await removePostMedia(mediaId);
-      await loadCampaign(true);
+      await loadPosts(true);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to remove media');
     }
@@ -421,7 +500,7 @@ export function CampaignDetail() {
       toast.success('Post scheduled');
       setQuickSchedulingId(null);
       setQuickDate('');
-      await loadCampaign(true);
+      await loadPosts(true);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to schedule post');
     } finally {
@@ -433,7 +512,7 @@ export function CampaignDetail() {
     try {
       await batchUnschedulePosts([postId]);
       toast.success('Post unscheduled');
-      await loadCampaign(true);
+      await loadPosts(true);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to unschedule post');
     }
@@ -454,10 +533,10 @@ export function CampaignDetail() {
         const firstError = result?.results?.find((r: any) => !r.ok)?.error || result?.error || 'Publish failed';
         toast.error('Failed to publish post', { description: firstError });
       }
-      await loadCampaign(true);
+      await loadPosts(true);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to send post');
-      await loadCampaign(true);
+      await loadPosts(true);
     } finally {
       setSendingPostId(null);
     }
@@ -469,7 +548,7 @@ export function CampaignDetail() {
       await deletePost(deletePostTarget.id);
       toast.success('Post deleted');
       setDeletePostTarget(null);
-      await loadCampaign(true);
+      await loadPosts(true);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to delete post');
     }
@@ -523,17 +602,12 @@ export function CampaignDetail() {
     );
   }
 
-  const totalPosts = posts.length;
+  const totalPosts = counts.all;
   const progress = totalPosts > 0 ? Math.round((counts.completed / totalPosts) * 100) : 0;
-  const totalMediaSize = posts.reduce((sum, post) => {
-    return sum + (post.media || []).reduce((mediaSum, media) => mediaSum + Number(media.size || 0), 0);
-  }, 0);
-  const totalMediaCount = posts.reduce((sum, post) => sum + (post.media?.length || 0), 0);
-  const scheduledTimes = posts
-    .map((post) => post.scheduledAt ? new Date(post.scheduledAt).getTime() : Number.NaN)
-    .filter((time) => Number.isFinite(time));
-  const campaignStartDate = scheduledTimes.length > 0 ? new Date(Math.min(...scheduledTimes)) : null;
-  const campaignEndDate = scheduledTimes.length > 0 ? new Date(Math.max(...scheduledTimes)) : null;
+  const totalMediaSize = postSummary.mediaSize;
+  const totalMediaCount = postSummary.mediaCount;
+  const campaignStartDate = postSummary.scheduledStart ? new Date(postSummary.scheduledStart) : null;
+  const campaignEndDate = postSummary.scheduledEnd ? new Date(postSummary.scheduledEnd) : null;
   const currentEditingPost = posts.find((post) => post.id === editingPostId);
   const currentHasPendingMedia = currentEditingPost?.media?.some((media) => media.status === 'pending' || media.status === 'processing');
 
@@ -559,12 +633,12 @@ export function CampaignDetail() {
                 placeholder="Search posts..."
                 className="h-10 w-full rounded-card border border-neutral-200/50 bg-white/40 pl-10 pr-3 text-sm font-medium text-neutral-950 shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900/40 dark:text-white sm:w-64"
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={(event) => updateQuery({ q: event.target.value }, true)}
               />
             </div>
             <select
               value={sortKey}
-              onChange={(event) => setSortKey(event.target.value as SortKey)}
+              onChange={(event) => updateQuery({ sort: event.target.value })}
               className="h-10 rounded-card border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold text-neutral-700 shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200"
             >
               <option value="scheduled_asc">Scheduled (Soonest First)</option>
@@ -606,7 +680,7 @@ export function CampaignDetail() {
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setStatusFilter(statusFilter === key && key !== 'all' ? 'all' : key)}
+                    onClick={() => updateQuery({ status: statusFilter === key && key !== 'all' ? 'all' : key })}
                     className={cn(
                       'flex flex-col items-center justify-center rounded-lg border p-2 transition-all',
                       key === 'all' && 'col-span-2',
@@ -679,7 +753,14 @@ export function CampaignDetail() {
 
           <main className="space-y-6 lg:col-span-3">
             <div className="space-y-8">
-              {filteredPosts.map((post) => (
+              {postsLoading && (
+                <div className="flex items-center justify-center rounded-card border border-neutral-200/50 bg-white/50 py-10 text-sm font-bold text-neutral-500 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/50 dark:text-neutral-400">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading posts...
+                </div>
+              )}
+
+              {!postsLoading && posts.map((post) => (
                 <article key={post.id} className="group overflow-hidden rounded-card border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-xl dark:border-white/5 dark:bg-neutral-900/70 dark:hover:bg-neutral-800/80">
                   <div className="space-y-6 p-4 sm:p-6 lg:p-8">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -838,12 +919,50 @@ export function CampaignDetail() {
                 </article>
               ))}
 
-              {filteredPosts.length === 0 && (
+              {!postsLoading && posts.length === 0 && (
                 <div className="rounded-card border-2 border-dashed border-neutral-200 bg-white/40 py-12 text-center shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
                   <p className="text-neutral-500 dark:text-neutral-400">No posts found in this campaign.</p>
                   <button className="mt-2 text-sm font-bold text-neutral-950 underline dark:text-white" onClick={openNewPostModal}>Create your first post</button>
                 </div>
               )}
+
+              <div className="flex flex-col gap-3 rounded-card border border-neutral-200/50 bg-white/70 px-5 py-4 text-sm font-medium text-neutral-500 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span>
+                    Showing {matchingPosts === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, matchingPosts)} of {matchingPosts}
+                  </span>
+                  <select
+                    value={pageSize}
+                    onChange={(event) => updateQuery({ pageSize: event.target.value })}
+                    className="h-9 rounded-lg border border-neutral-200 bg-white px-2 text-xs font-bold text-neutral-700 outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-200"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>{option} / page</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={page <= 1 || postsLoading}
+                    className="rounded-lg border border-neutral-200 px-3 py-1.5 font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
+                    onClick={() => updateQuery({ page: String(page - 1) })}
+                  >
+                    Previous
+                  </button>
+                  <span className="px-2 text-xs font-black uppercase tracking-widest">
+                    Page {page} / {Math.max(1, totalPages)}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={page >= totalPages || postsLoading}
+                    className="rounded-lg border border-neutral-200 px-3 py-1.5 font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
+                    onClick={() => updateQuery({ page: String(page + 1) })}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
           </main>
         </div>
@@ -996,7 +1115,7 @@ export function CampaignDetail() {
                 </div>
 
                 <div className="mt-8 flex justify-end gap-3 border-t border-neutral-200 pt-6 dark:border-white/10">
-                  <button type="button" onClick={() => { setComposerOpen(false); void loadCampaign(true); }} className="rounded-card px-4 py-2 text-sm font-bold text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-white">
+                  <button type="button" onClick={() => { setComposerOpen(false); void loadPosts(true); }} className="rounded-card px-4 py-2 text-sm font-bold text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-white">
                     Close
                   </button>
                   <button type="submit" disabled={savingPost || textContent.length > 280 || currentHasPendingMedia} className="flex items-center gap-2 rounded-card border border-indigo-700 bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">

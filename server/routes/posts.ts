@@ -441,7 +441,8 @@ export function createPostsRouter(
       if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
 
       const where = buildCampaignPostWhere(user.userId, campaignId, q, status);
-      const [total, posts] = await Promise.all([
+      const countWhere = buildCampaignPostWhere(user.userId, campaignId, null, null);
+      const [total, posts, statusTotals, mediaTotals, scheduledRange] = await Promise.all([
         prisma.post.count({ where }),
         prisma.post.findMany({
           where,
@@ -453,7 +454,36 @@ export function createPostsRouter(
           skip,
           take: pageSize,
         }),
+        prisma.post.groupBy({
+          by: ['status'],
+          where: countWhere,
+          _count: { id: true },
+        }),
+        prisma.postMedia.aggregate({
+          where: {
+            post: {
+              campaignId,
+              userId: user.userId,
+            },
+          },
+          _count: { id: true },
+          _sum: { size: true },
+        }),
+        prisma.post.aggregate({
+          where: {
+            campaignId,
+            userId: user.userId,
+            scheduledAt: { not: null },
+          },
+          _min: { scheduledAt: true },
+          _max: { scheduledAt: true },
+        }),
       ]);
+      const statusCounts = statusTotals.reduce<Record<string, number>>((acc, item) => {
+        acc[item.status] = item._count.id;
+        acc.all += item._count.id;
+        return acc;
+      }, { all: 0, draft: 0, scheduled: 0, queued: 0, completed: 0, failed: 0 });
 
       return c.json({
         items: await Promise.all(posts.map((post) => signPostMediaUrls(storage, post))),
@@ -461,6 +491,13 @@ export function createPostsRouter(
         page,
         pageSize,
         totalPages: Math.ceil(total / pageSize),
+        statusCounts,
+        summary: {
+          mediaSize: Number(mediaTotals._sum.size || 0),
+          mediaCount: mediaTotals._count.id,
+          scheduledStart: scheduledRange._min.scheduledAt?.toISOString() || null,
+          scheduledEnd: scheduledRange._max.scheduledAt?.toISOString() || null,
+        },
       });
     } catch (error) {
       console.error('Failed to fetch campaign posts:', error);
