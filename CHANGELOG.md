@@ -2,6 +2,32 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.7.0] - 2026-05-02
+
+### Added
+
+- **Media-Focused Home**: Replaced the legacy Dashboard with a modernized Home component featuring horizontal scrolling media carousels.
+- **New Card Designs**: Completely redesigned `ProjectCard` and `LibraryCard` with image backgrounds, glassmorphism overlays, and quick-action context menus.
+- **Geometric Fallbacks**: Implemented color-coded geometric placeholders (DiceBear) for projects and campaigns based on content type.
+- **Campaign i18n**: Full internationalization support for the Campaigns module in English, French, Japanese, Korean, and Chinese (Simplified/Traditional).
+- **Enhanced Media Picker**: Added aspect ratio filtering and bulk selection support to the `CampaignBatchCreate` media picker.
+- **Project Deletion**: Added direct project deletion functionality from the project list and card menus.
+- **Documentation**: Added dedicated `BACKUP_AND_RESTORE.md` documentation.
+
+### Fixed
+
+- **API Serialization**: Fixed a `TypeError: Do not know how to serialize a BigInt` in the campaign API response.
+- **Image Alignment**: Fixed background cropping on portrait images by anchoring covers to the top.
+- **Theme Persistence**: Set default theme to "System" for better user integration.
+
+### Changed
+
+- **Campaign API Optimization**: Implemented server-side aggregation for accurate post counts and S3 URL presigning for media covers.
+- **UI Consistency**: Standardized padding and scrolling behavior across all main containers.
+- **Terminology Refactor**: Renamed "Prompt Fragments" to "Items" across the codebase and localized strings for better clarity.
+- **Layout Migration**: Moved export controls and statistics to the `PageHeader` actions slot for a cleaner interface.
+- **User Management**: Redesigned the admin user filtering interface with modernized inputs.
+
 ## [1.6.0] - 2026-05-02
 
 ### Added
@@ -164,6 +190,7 @@ All notable changes to Remix Studio are documented here by version number.
 - Authentication, admin controls, 2FA, passkeys, and user storage limits.
 - Internationalized UI for English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French.
 
+[1.7.0]: https://github.com/ShinChven/remix-studio/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/ShinChven/remix-studio/compare/v1.5.3...v1.6.0
 [1.5.3]: https://github.com/ShinChven/remix-studio/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/ShinChven/remix-studio/compare/v1.5.1...v1.5.2
