@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../contexts/ThemeContext';
 import {
   Archive,
   ArchiveRestore,
@@ -122,7 +123,7 @@ function formatCompactDateTime(value?: number) {
   });
 }
 
-function projectThumbnail(id: string, type: ProjectType = 'image') {
+function projectThumbnail(id: string, type: ProjectType = 'image', resolvedTheme: 'light' | 'dark' = 'dark') {
   let colors = '6366f1,818cf8,4f46e5'; // default indigo
   switch (type) {
     case 'text': colors = '3b82f6,60a5fa,2563eb'; break; // blue
@@ -130,7 +131,9 @@ function projectThumbnail(id: string, type: ProjectType = 'image') {
     case 'audio': colors = '06b6d4,22d3ee,0891b2'; break; // cyan
     case 'image': default: colors = '10b981,34d399,059669'; break; // emerald
   }
-  return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(id)}&backgroundColor=0f172a,1e293b,334155&shape1Color=${colors}`;
+  
+  const backgroundColor = resolvedTheme === 'dark' ? '0f172a,1e293b,334155' : 'f1f5f9,e2e8f0,cbd5e1';
+  return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(id)}&backgroundColor=${backgroundColor}&shape1Color=${colors}`;
 }
 
 interface ProjectCardProps {
@@ -144,6 +147,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, isToggling = false, onStartAssistantChat, onToggleArchive, onDuplicate, onDelete }: ProjectCardProps) {
   const { t } = useTranslation();
+  const { resolvedTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const typeMeta = getProjectTypeMeta(project.type);
@@ -171,12 +175,12 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
                      lastAlbumItem?.optimizedUrl || 
                      (project.type === 'image' ? lastAlbumItem?.imageUrl : null);
 
-  const bgImage = albumImage || projectThumbnail(project.id, project.type);
+  const bgImage = albumImage || projectThumbnail(project.id, project.type, resolvedTheme);
 
   return (
     <Link
       to={`/project/${project.id}`}
-      className={`group relative block h-[280px] rounded-[20px] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-white/5 bg-neutral-900`}
+      className={`group relative block h-[280px] rounded-[20px] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-neutral-200/50 dark:border-white/10 bg-white dark:bg-neutral-900`}
     >
       {/* Background Image or Fallback */}
       <div 

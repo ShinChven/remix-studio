@@ -8,6 +8,7 @@ import { fetchProjects, updateProject, deleteProject } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import type { BoundContext } from '../components/Assistant/AssistantComposer';
 import { ProjectCard } from '../components/EntityCards';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 type StatusFilter = 'active' | 'archived' | 'all';
 
@@ -29,6 +30,7 @@ export function Projects() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchInput, setSearchInput] = useState(q);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
 
   const navigate = useNavigate();
 
@@ -109,12 +111,13 @@ export function Projects() {
     }
   };
 
-  const handleDeleteProject = async (project: Project) => {
-    if (!window.confirm(t('projects.deleteConfirmation', { name: project.name }))) return;
-    setTogglingId(project.id);
+  const confirmDeleteProject = async () => {
+    if (!deleteTarget) return;
+    setTogglingId(deleteTarget.id);
     try {
-      await deleteProject(project.id);
-      toast.success(t('projects.deleteSuccess', { name: project.name }));
+      await deleteProject(deleteTarget.id);
+      toast.success(t('projects.deleteSuccess', { name: deleteTarget.name }));
+      setDeleteTarget(null);
       await loadProjects();
     } catch (e) {
       console.error(e);
@@ -242,7 +245,7 @@ export function Projects() {
                     onStartAssistantChat={handleStartAssistantChat}
                     onToggleArchive={handleToggleArchive}
                     onDuplicate={(item) => navigate('/project/new', { state: { copyFrom: item.id } })}
-                    onDelete={handleDeleteProject}
+                    onDelete={setDeleteTarget}
                   />
                 ))}
 
@@ -289,6 +292,17 @@ export function Projects() {
       >
         <Plus className="w-8 h-8" />
       </button>
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title={t('projects.deleteTitle', { defaultValue: 'Delete Project' })}
+        description={t('projects.deleteConfirmation', { name: deleteTarget?.name })}
+        confirmLabel={t('common.delete', { defaultValue: 'Delete' })}
+        cancelLabel={t('common.cancel', { defaultValue: 'Cancel' })}
+        onConfirm={confirmDeleteProject}
+        onCancel={() => setDeleteTarget(null)}
+        variant="danger"
+      />
     </div>
   );
 }
