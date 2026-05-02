@@ -4,7 +4,7 @@
   },
   "libraries": {
     "title": "Libraries",
-    "description": "Manage your reusable prompts and image collections.",
+    "description": "Create, manage, and reuse prompt fragments and media collections to streamline your AI content generation workflows.",
     "allLibraries": "All Libraries",
     "searchPlaceholder": "Search libraries by name or ID...",
     "newLibrary": "New Library",
@@ -12,7 +12,7 @@
     "new": "New",
     "noLibraries": {
       "title": "No libraries yet",
-      "description": "Create one to store reusable prompts or images."
+      "description": "Create a library to organize your reusable prompt fragments or media assets."
     },
     "libraryCard": {
       "items": "{{count}} items",

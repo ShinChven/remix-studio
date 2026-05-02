@@ -4,7 +4,7 @@
   },
   "libraries": {
     "title": "资源库",
-    "description": "管理您的可复用提示词和图像集合。",
+    "description": "创建、管理和复用提示词片段与媒体集合，以优化您的 AI 内容生成工作流。",
     "allLibraries": "所有资源库",
     "searchPlaceholder": "搜索资源库名称或 ID...",
     "newLibrary": "新建资源库",
@@ -12,7 +12,7 @@
     "new": "新建",
     "noLibraries": {
       "title": "暂无资源库",
-      "description": "创建一个资源库来存储可复用的提示词或图像。"
+      "description": "创建一个资源库来整理您的可复用提示词片段或媒体资产。"
     },
     "libraryCard": {
       "items": "{{count}} 个项目",
