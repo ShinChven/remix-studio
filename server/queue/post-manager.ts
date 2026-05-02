@@ -37,7 +37,8 @@ export class PostManager {
    * 'completed'. Atomic via SELECT … FOR UPDATE so the scheduler and a
    * manual /send call can't double-fan-out the same post.
    *
-   * Throws on: post not found, no connected accounts, media not yet ready.
+   * Throws on: post not found, inactive campaign, no connected accounts,
+   * media not yet ready.
    * Returns silently (no executions) if the post was already fanned out.
    */
   /**
@@ -98,6 +99,14 @@ export class PostManager {
         where: { id: post.campaignId },
         include: { socialAccounts: true },
       });
+
+      if (!campaign || campaign.status !== 'active') {
+        await tx.post.update({
+          where: { id: post.id },
+          data: { status: 'failed' },
+        });
+        throw new Error('Campaign is inactive');
+      }
 
       if (!campaign || campaign.socialAccounts.length === 0) {
         await tx.post.update({
@@ -187,6 +196,12 @@ export class PostManager {
 
   // Update Post status once all its PostExecutions are no longer pending/publishing
   private async settlePostStatus(postId: string) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { status: true },
+    });
+    if (post?.status === 'failed') return;
+
     const executions = await this.prisma.postExecution.findMany({ where: { postId } });
     const allSettled = executions.every((e) => e.status === 'posted' || e.status === 'failed');
     if (!allSettled) return; // still executing
@@ -200,6 +215,20 @@ export class PostManager {
 
   async executePost(exec: any) {
     try {
+      const post = await this.prisma.post.findUnique({
+        where: { id: exec.postId },
+        include: {
+          campaign: { select: { status: true } },
+          media: { orderBy: { position: 'asc' } },
+        },
+      });
+      if (!post) throw new Error('Post not found');
+
+      if (post.campaign.status !== 'active') {
+        await this.failPostForInactiveCampaign(post.id);
+        return;
+      }
+
       await this.prisma.postExecution.update({
         where: { id: exec.id },
         data: {
@@ -211,9 +240,6 @@ export class PostManager {
 
       const account = await this.prisma.socialAccount.findUnique({ where: { id: exec.socialAccountId } });
       if (!account) throw new Error('Social Account not found');
-
-      const post = await this.prisma.post.findUnique({ where: { id: exec.postId }, include: { media: { orderBy: { position: 'asc' } } } });
-      if (!post) throw new Error('Post not found');
 
       if (post.userId !== account.userId) {
         throw new Error('Tenant isolation mismatch: Post and Social Account belong to different users.');
@@ -312,6 +338,25 @@ export class PostManager {
         });
       }
     }
+  }
+
+  private async failPostForInactiveCampaign(postId: string) {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.post.update({
+        where: { id: postId },
+        data: { status: 'failed' },
+      });
+      await tx.postExecution.updateMany({
+        where: {
+          postId,
+          status: { in: ['pending', 'publishing'] },
+        },
+        data: {
+          status: 'failed',
+          errorMsg: 'Campaign is inactive',
+        },
+      });
+    });
   }
 
   /**

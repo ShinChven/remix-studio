@@ -334,7 +334,6 @@ export function createPostsRouter(
             ],
             tools: [],
             temperature: 0.8,
-            maxTokens: 600,
             includeThoughts: false,
           });
 
