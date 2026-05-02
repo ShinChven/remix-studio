@@ -588,7 +588,7 @@ export function CampaignDetail() {
         <div className="grid gap-6 lg:grid-cols-4">
           <aside className="space-y-6 lg:col-span-1">
             <section className="rounded-card border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
-              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">Campaign Progress</h2>
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Campaign Progress</h2>
               <div className="mt-4 text-3xl font-bold text-indigo-600 dark:text-indigo-400">{progress}%</div>
               <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
                 <div className="h-full bg-indigo-600" style={{ width: `${progress}%` }} />
