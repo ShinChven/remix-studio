@@ -940,10 +940,10 @@ export function CampaignBatchCreate() {
                         </button>
                       </div>
                       <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+                        <div className="flex min-w-0 items-center justify-between gap-2">
+                          <div className="min-w-0 flex-1 truncate text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400" title={item.kind === 'local' ? item.file.name : item.title || item.rawUrl || item.itemId}>
                             {item.kind === 'local' ? item.file.name : item.title || item.rawUrl || item.itemId}
-                          </span>
+                          </div>
                           <span className="shrink-0 rounded bg-neutral-950/10 px-1 text-[9px] font-bold uppercase text-neutral-700 dark:bg-white/10 dark:text-neutral-200">
                             {item.kind} · {mediaSourceLabel(item.mediaType)}
                           </span>

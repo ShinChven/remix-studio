@@ -399,9 +399,9 @@ export function PostForm() {
                                 <div className="flex h-full w-full items-center justify-center text-xs font-bold text-neutral-400">{media.type || 'media'}</div>
                               )}
                             </div>
-                            <div className="min-w-0 flex-1 truncate font-mono text-xs text-neutral-500 dark:text-neutral-400">{prettyMediaName(media.sourceUrl)}</div>
-                            <span className="rounded-full border border-neutral-200 px-2 py-0.5 text-xs font-bold uppercase text-neutral-500 dark:border-white/10">Existing</span>
-                            <button className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-red-500/10 hover:text-red-600" onClick={() => setMediaToRemove(media.id)}>
+                            <div className="min-w-0 flex-1 truncate font-mono text-xs text-neutral-500 dark:text-neutral-400" title={prettyMediaName(media.sourceUrl)}>{prettyMediaName(media.sourceUrl)}</div>
+                            <span className="shrink-0 rounded-full border border-neutral-200 px-2 py-0.5 text-xs font-bold uppercase text-neutral-500 dark:border-white/10">Existing</span>
+                            <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-red-500/10 hover:text-red-600" onClick={() => setMediaToRemove(media.id)}>
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
@@ -432,10 +432,10 @@ export function PostForm() {
                             <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800">
                               <NewFilePreview file={file} />
                             </div>
-                            <div className="min-w-0 flex-1 truncate text-xs font-medium text-neutral-950 dark:text-white">{file.name}</div>
-                            <span className="rounded-full border border-neutral-200 px-2 py-0.5 text-xs font-bold uppercase text-neutral-500 dark:border-white/10">{getFileMediaType(file)}</span>
-                            <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-bold uppercase text-white">New</span>
-                            <button className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-red-500/10 hover:text-red-600" onClick={() => setNewFiles((prev) => prev.filter((_, i) => i !== index))}>
+                            <div className="min-w-0 flex-1 truncate text-xs font-medium text-neutral-950 dark:text-white" title={file.name}>{file.name}</div>
+                            <span className="shrink-0 rounded-full border border-neutral-200 px-2 py-0.5 text-xs font-bold uppercase text-neutral-500 dark:border-white/10">{getFileMediaType(file)}</span>
+                            <span className="shrink-0 rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-bold uppercase text-white">New</span>
+                            <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-red-500/10 hover:text-red-600" onClick={() => setNewFiles((prev) => prev.filter((_, i) => i !== index))}>
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
