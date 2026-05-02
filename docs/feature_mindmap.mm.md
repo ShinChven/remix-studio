@@ -1,0 +1,145 @@
+# Remix Studio Feature Mindmap
+
+- # Remix Studio
+  - ## 🔐 Authentication & Account Management
+    - **Login & Registration**
+      - Passkey login & registration
+      - Google OAuth integration
+      - Invite codes based registration
+    - **Security Settings**
+      - 2FA (Two-Factor Authentication) setup & management
+      - Password management (Update, Remove)
+    - **Account Preferences**
+      - Storage limit tracking
+      - Security settings overview
+  - ## 🎨 Media Projects & Workspace
+    - **Project Management**
+      - Create, read, update, delete (CRUD) projects
+      - Project types: Image, Text, Video, Audio
+      - Project states (active, archived)
+      - Rename project folders
+      - Duplicate/Copy workflows from existing projects
+    - **Media Handling (Album)**
+      - Upload images, videos, and audio directly to projects
+      - Rename album items
+      - Run project workflows
+    - **Orphan Files Management**
+      - Detect and delete orphan files in projects
+  - ## 📚 Media Library & Prompts
+    - **Library Organization**
+      - Create, update, delete, duplicate libraries
+      - Pin libraries to sidebar (max 6)
+      - Check/remove library references
+      - Library cleanup tool
+    - **Library Items & Prompt Editor**
+      - Add, update, delete items
+      - Batch create items
+      - Copy/move items between libraries
+      - Filter items by tags, sort by time/name
+      - **Prompt Editor:**
+        - View modes: Edit (raw markdown), Preview (rendered markdown), Split (side-by-side)
+        - Fullscreen editing mode
+        - Word & Character count metrics
+        - Manage item tags via TagModal
+    - **Import/Export**
+      - Export media library as ZIP
+      - Bulk Import via text file upload/drag-and-drop (.txt, .md)
+      - Parse tags directly from imported text
+      - Export text modes: "Tagged" or "Plain"
+  - ## 🤖 AI Providers & Models
+    - **Provider Configuration**
+      - Add and configure AI providers (API Keys, Secrets, Endpoints)
+      - Manage concurrency limits
+    - **Supported Providers**
+      - Google AI / Vertex AI
+      - OpenAI
+      - Grok
+      - Claude
+      - Kling AI
+      - Running Hub
+      - BytePlus
+      - Replicate
+      - Black Forest Labs
+      - Alibaba Cloud
+    - **Model Management**
+      - Discover supported models from providers (Text, Image, Video, Audio)
+      - Configure custom model aliases
+  - ## 💬 AI Assistant & Agentic Features
+    - **Chat Interface**
+      - Create and manage conversations
+      - Select provider and model config for conversation
+      - Send/edit messages
+      - Context Binding (attach contexts to prompts)
+      - Multi-modal support (attach images to prompts)
+      - Chain of Thought rendering (`<think>` blocks support)
+      - Audio transcription support
+      - Auto-summarize conversation titles
+    - **Assistant Settings**
+      - Manage Enabled Providers for the assistant
+      - Manage Assistant Skills (create/edit custom instructions stored as library items)
+    - **Tool Calling (Agentic Capabilities)**
+      - Discover available assistant tools (Read, Mutate, Destructive)
+      - View Tool Schemas (properties, types)
+      - Human-in-the-loop tool execution (Confirm/Cancel actions)
+    - **History**
+      - Search and browse chat history
+  - ## 📢 Social Media Campaigns
+    - **Campaign Management**
+      - Create and organize marketing campaigns
+      - Link social accounts to campaigns
+      - Track campaign history and recent posts
+    - **Post Creation & Scheduling**
+      - Draft posts with text and media
+      - Import media from Library or Project Album
+      - Upload new media for posts
+      - Reorder post media
+      - Schedule posts (Date/Time)
+      - Global Scheduled Posts views: List view and Calendar view (month navigation, daily counts)
+    - **Batch Operations**
+      - Multi-select posts (including shift-click range selection)
+      - Batch Schedule / Unschedule posts
+      - Batch Send immediately
+      - Batch AI Text Generation (Generate text for multiple posts simultaneously with background polling)
+    - **Social Integrations**
+      - Connect/Disconnect social accounts (Supported: X/Twitter, Instagram, LinkedIn, Facebook)
+      - View scheduled posts calendar/counts
+    - **Publishing Engine (Backend)**
+      - Concurrent "Fan-Out" publishing to multiple platforms simultaneously
+      - Automatic token refresh during publishing
+      - Post Execution Resilience (Exponential backoff, attempt tracking, rate-limit awareness)
+      - Post Media Preprocessing States (Pending, Processing, Ready, Failed)
+  - ## 📤 Export & Integrations
+    - **Local Exports**
+      - Background Zip Streaming (low-memory impact streaming archiver)
+      - Export album items (Raw or Optimized versions)
+      - View export tasks status and history
+    - **Cloud Storage (Google Drive)**
+      - Connect Google Drive
+      - Resumable background uploads for large exported packages
+      - Track delivery status
+    - **MCP (Model Context Protocol) & Developer API**
+      - Register and manage OAuth Clients (Update redirect URIs, Revoke)
+      - Generate Personal Access Tokens (PAT) with configurable expiry (7/30/90/365 days)
+      - Copy Client IDs and Secrets
+      - Integration setups for MCP servers
+  - ## 🗑️ Trash & Cleanup
+    - **Recycle Bin**
+      - Move items/projects to trash (Soft delete)
+      - Restore items individually or in batch
+      - Permanently delete items or empty trash
+  - ## ⚙️ System Administration
+    - **User Management**
+      - View user list with roles and statuses
+      - Create new users
+      - Update user roles, statuses, and storage limits
+      - Admin password reset
+      - Session invalidation & version tracking
+    - **System Metrics & Background Jobs**
+      - Storage analysis
+      - Background Job Queue Monitor
+        - View by Projects or by Providers
+        - Track job states (queued, running, detached, failed)
+        - View job configuration details (aspect ratio, duration, resolution, quality, format, sound, errors)
+        - Clear failed queue jobs (Globally, by Project, or by Provider)
+    - **Access Control**
+      - Generate and manage invite codes (Note, Max Uses, Membership Tier)
