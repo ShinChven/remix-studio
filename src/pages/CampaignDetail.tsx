@@ -119,7 +119,7 @@ function getPlatformIcon(platform = '') {
 }
 
 function mediaUrl(media: PostMedia) {
-  const value = media.thumbnailUrl || media.processedUrl || media.sourceUrl || '';
+  const value = media.processedUrl || media.sourceUrl || media.thumbnailUrl || '';
   if (!value) return '';
   if (/^https?:\/\//i.test(value) || value.startsWith('/')) return value;
   return `/api/storage/${value}`;
