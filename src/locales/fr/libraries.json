@@ -40,7 +40,7 @@
     "filterItems": "Filtrer les éléments...",
     "uploading": "Téléchargement...",
     "upload": "Télécharger",
-    "addFragment": "Ajouter un fragment",
+    "addItem": "Ajouter un élément",
     "editLibrarySettings": "Modifier les paramètres de la bibliothèque",
     "importOutput": "Import / Export",
     "exportLibrary": "Exporter la bibliothèque",
@@ -49,7 +49,7 @@
     "selectedCount": "{{count}} sélectionné(s)",
     "filterByTag": "Filtrer par tag",
     "tagsSelected": "{{count}} tag(s) sélectionné(s)",
-    "allFragments": "Tous les fragments",
+    "allItems": "Tous les éléments",
     "batchTag": "Tag en lot",
     "delete": "Supprimer",
     "imageLabel": "IMG_{{index}}",
@@ -57,7 +57,7 @@
     "renameItem": "Renommer l'élément",
     "editTags": "Modifier les tags",
     "refineInFullEditor": "Affiner dans l'éditeur complet",
-    "deleteFragment": "Supprimer le fragment",
+    "deleteItem": "Supprimer le élément",
     "copiedToClipboard": "Copié dans le presse-papier",
     "copyContent": "Copier le contenu",
     "fullSource": "Source complète",
@@ -75,17 +75,17 @@
     "confirm": {
       "deleteLibrary": {
         "title": "Supprimer la bibliothèque",
-        "message": "Cela supprimera définitivement la collection \"{{name}}\" et tous ses fragments. Cette action est irréversible.",
+        "message": "Cela supprimera définitivement la collection \"{{name}}\" et tous ses éléments. Cette action est irréversible.",
         "confirm": "Supprimer"
       },
-      "expungeFragment": {
-        "title": "Expurger le fragment",
-        "message": "Voulez-vous vraiment supprimer ce fragment de la collection ?",
+      "removeItem": {
+        "title": "Expurger le élément",
+        "message": "Voulez-vous vraiment supprimer ce élément de la collection ?",
         "confirm": "Supprimer maintenant"
       },
       "deleteSelected": {
-        "title": "Supprimer les fragments sélectionnés",
-        "message": "Voulez-vous vraiment supprimer {{count}} fragments ?",
+        "title": "Supprimer les éléments sélectionnés",
+        "message": "Voulez-vous vraiment supprimer {{count}} éléments ?",
         "confirm": "Supprimer la sélection"
       }
     },
@@ -117,7 +117,7 @@
   "libraryImportExport": {
     "badge": "Espace de travail de la bibliothèque de texte",
     "title": "Importation et Sortie",
-    "description": "Chargez en masse des fragments d'invites, préservez les tags à la sortie et maintenez un format d'importation propre pour l'édition en dehors de l'application.",
+    "description": "Chargez en masse des éléments d'invites, préservez les tags à la sortie et maintenez un format d'importation propre pour l'édition en dehors de l'application.",
     "toasts": {
       "importFailed": "Échec de l'importation des éléments.",
       "outputCopied": "Sortie de la bibliothèque copiée dans le presse-papiers",

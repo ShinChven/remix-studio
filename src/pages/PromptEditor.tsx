@@ -108,7 +108,7 @@ export function PromptEditor() {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={isNew ? t('promptEditor.titlePlaceholder') : t('promptEditor.fragmentTitlePlaceholder')}
+                placeholder={isNew ? t('promptEditor.titlePlaceholder') : t('promptEditor.itemTitlePlaceholder')}
                 className="bg-transparent border-none text-lg md:text-xl font-bold text-neutral-900 dark:text-white tracking-tight focus:outline-none focus:ring-0 p-0 placeholder:text-neutral-700 w-full truncate"
               />
               <div className="flex items-center gap-2 mt-0.5">

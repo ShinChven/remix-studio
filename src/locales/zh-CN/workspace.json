@@ -110,7 +110,7 @@
   },
   "promptEditor": {
     "titlePlaceholder": "标题...",
-    "fragmentTitlePlaceholder": "片段标题",
+    "itemTitlePlaceholder": "提示词标题",
     "addTags": "添加标签",
     "tagsCount": "{{count}} 个标签",
     "backToLibrary": "返回库",
@@ -123,7 +123,7 @@
     "save": "保存",
     "sourceContent": "源内容",
     "markdownSupport": "支持 GFM Markdown",
-    "editorPlaceholder": "在此使用 Markdown 撰写您的库片段...",
+    "editorPlaceholder": "在此使用 Markdown 编写您的提示词...",
     "dynamicPreview": "动态预览",
     "previewPlaceholder": "在这里撰写内容以查看预览...",
     "words": "字数：{{count}}",

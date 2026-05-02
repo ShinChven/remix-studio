@@ -110,7 +110,7 @@
   },
   "promptEditor": {
     "titlePlaceholder": "タイトル...",
-    "fragmentTitlePlaceholder": "フラグメントタイトル",
+    "itemTitlePlaceholder": "アイテムタイトル",
     "addTags": "タグを追加",
     "tagsCount": "{{count}} 個のタグ",
     "backToLibrary": "ライブラリに戻る",
@@ -123,7 +123,7 @@
     "save": "保存",
     "sourceContent": "ソースコンテンツ",
     "markdownSupport": "GFM Markdownをサポート",
-    "editorPlaceholder": "ここにMarkdownを使用してライブラリフラグメントを作成してください...",
+    "editorPlaceholder": "ここにMarkdownを使用してライブラリアイテムを作成してください...",
     "dynamicPreview": "ダイナミックプレビュー",
     "previewPlaceholder": "プレビューを表示するには何か入力してください...",
     "words": "単語数: {{count}}",

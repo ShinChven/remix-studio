@@ -4,7 +4,7 @@
   },
   "libraries": {
     "title": "資源庫",
-    "description": "管理您的可重複使用提示詞和圖像集合。",
+    "description": "建立、管理和復用提示詞提示詞與媒體集合，以優化您的 AI 內容生成工作流。",
     "allLibraries": "所有資源庫",
     "searchPlaceholder": "搜尋資源庫名稱或 ID...",
     "newLibrary": "新建資源庫",
@@ -12,7 +12,7 @@
     "new": "新建",
     "noLibraries": {
       "title": "暫無資源庫",
-      "description": "創建一個資源庫來存儲可重複使用的提示詞或圖像。"
+      "description": "建立一個資源庫來整理您的可復用提示詞提示詞或媒體資產。"
     },
     "libraryCard": {
       "items": "{{count}} 個項目",
@@ -40,7 +40,7 @@
     "filterItems": "篩選項目...",
     "uploading": "正在上傳...",
     "upload": "上傳",
-    "addFragment": "添加片段",
+    "addItem": "添加提示詞",
     "editLibrarySettings": "編輯庫設置",
     "importOutput": "導入 / 匯出",
     "exportLibrary": "匯出素材庫",
@@ -55,7 +55,7 @@
     },
     "filterByTag": "按標籤篩選",
     "tagsSelected": "已選擇 {{count}} 個標籤",
-    "allFragments": "所有片段",
+    "allItems": "所有提示詞",
     "batchTag": "批量標籤",
     "delete": "刪除",
     "imageLabel": "IMG_{{index}}",
@@ -63,7 +63,7 @@
     "renameItem": "重命名項目",
     "editTags": "編輯標籤",
     "refineInFullEditor": "在完整編輯器中完善",
-    "deleteFragment": "刪除片段",
+    "deleteItem": "刪除提示詞",
     "copiedToClipboard": "已複製到剪貼簿",
     "copyContent": "複製內容",
     "fullSource": "完整源碼",
@@ -81,17 +81,17 @@
     "confirm": {
       "deleteLibrary": {
         "title": "刪除庫",
-        "message": "這將永久刪除集合 \"{{name}}\" 及其所有片段。此操作不可逆。",
+        "message": "這將永久刪除集合 \"{{name}}\" 及其所有提示詞。此操作不可逆。",
         "confirm": "刪除"
       },
-      "expungeFragment": {
-        "title": "刪除片段",
-        "message": "確定要從集合中移除此片段嗎？",
+      "removeItem": {
+        "title": "刪除提示詞",
+        "message": "確定要從集合中移除此提示詞嗎？",
         "confirm": "立即移除"
       },
       "deleteSelected": {
-        "title": "刪除所選片段",
-        "message": "確定要刪除 {{count}} 個片段嗎？",
+        "title": "刪除所選提示詞",
+        "message": "確定要刪除 {{count}} 個提示詞嗎？",
         "confirm": "刪除所選"
       }
     },
@@ -117,7 +117,7 @@
   "libraryImportExport": {
     "badge": "文字資源庫工作區",
     "title": "匯入與匯出",
-    "description": "批次匯入提示片段，在輸出中保留標籤，並維持適合在應用程式外編輯的整潔格式。",
+    "description": "批次匯入提示提示詞，在輸出中保留標籤，並維持適合在應用程式外編輯的整潔格式。",
     "toasts": {
       "importFailed": "匯入項目失敗。",
       "outputCopied": "資源庫輸出已複製到剪貼簿",
@@ -157,7 +157,7 @@
     "parseIssues": {
       "missingListMarker": "缺少 \"- \" 清單標記",
       "emptyAfterMarker": "\"- \" 之後內容為空",
-      "missingContentBeforeTags": "標籤片段之前缺少內容",
+      "missingContentBeforeTags": "標籤提示詞之前缺少內容",
       "missingContentAfterTitle": "標題分隔符號之後缺少內容"
     },
     "importAction": "匯入 {{count}} 個項目",

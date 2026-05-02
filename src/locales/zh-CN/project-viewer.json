@@ -182,7 +182,7 @@
       "openFullLibrary": "打开完整库"
     },
     "promptModal": {
-      "title": "编辑提示词片段",
+      "title": "编辑提示词提示词",
       "description": "工作流文本块",
       "placeholder": "在这里输入提示词...",
       "characterCount": "字符数：{{count}}",

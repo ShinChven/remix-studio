@@ -40,7 +40,7 @@
     "filterItems": "アイテムを絞り込む...",
     "uploading": "アップロード中...",
     "upload": "アップロード",
-    "addFragment": "フラグメントを追加",
+    "addItem": "アイテムを追加",
     "editLibrarySettings": "ライブラリ設定を編集",
     "importOutput": "インポート / エクスポート",
     "exportLibrary": "ライブラリをエクスポート",
@@ -49,7 +49,7 @@
     "selectedCount": "{{count}} 個選択済み",
     "filterByTag": "タグで絞り込む",
     "tagsSelected": "{{count}} 個のタグを選択済み",
-    "allFragments": "すべてのフラグメント",
+    "allItems": "すべてのアイテム",
     "batchTag": "一括タグ付け",
     "delete": "削除",
     "imageLabel": "IMG_{{index}}",
@@ -57,7 +57,7 @@
     "renameItem": "アイテム名を変更",
     "editTags": "タグを編集",
     "refineInFullEditor": "フルエディタで詳細編集",
-    "deleteFragment": "フラグメントを削除",
+    "deleteItem": "アイテムを削除",
     "copiedToClipboard": "クリップボードにコピーしました",
     "copyContent": "内容をコピー",
     "fullSource": "フルソース",
@@ -75,17 +75,17 @@
     "confirm": {
       "deleteLibrary": {
         "title": "ライブラリを削除",
-        "message": "コレクション \"{{name}}\" とそのすべてのフラグメントを完全に削除します。この操作は取り消せません。",
+        "message": "コレクション \"{{name}}\" とそのすべてのアイテムを完全に削除します。この操作は取り消せません。",
         "confirm": "削除"
       },
-      "expungeFragment": {
-        "title": "フラグメントを抹消",
-        "message": "このフラグメントをコレクションから削除してもよろしいですか？",
+      "removeItem": {
+        "title": "アイテムを抹消",
+        "message": "このアイテムをコレクションから削除してもよろしいですか？",
         "confirm": "今すぐ削除"
       },
       "deleteSelected": {
-        "title": "選択したフラグメントを削除",
-        "message": "{{count}} 個のフラグメントを削除してもよろしいですか？",
+        "title": "選択したアイテムを削除",
+        "message": "{{count}} 個のアイテムを削除してもよろしいですか？",
         "confirm": "選択したものを削除"
       }
     },
@@ -117,7 +117,7 @@
   "libraryImportExport": {
     "badge": "テキストライブラリワークスペース",
     "title": "インポートと出力",
-    "description": "プロンプトフラグメントを一括読み込みし、出力時にタグを保持します。アプリ外での編集用にクリーンなインポート形式を維持します。",
+    "description": "プロンプトアイテムを一括読み込みし、出力時にタグを保持します。アプリ外での編集用にクリーンなインポート形式を維持します。",
     "toasts": {
       "importFailed": "項目のインポートに失敗しました。",
       "outputCopied": "ライブラリの出力がクリップボードにコピーされました",

@@ -182,7 +182,7 @@
       "openFullLibrary": "Ouvrir la bibliothèque complète"
     },
     "promptModal": {
-      "title": "Modifier le fragment de prompt",
+      "title": "Modifier le élément de prompt",
       "description": "Bloc texte du workflow",
       "placeholder": "Saisissez votre prompt ici...",
       "characterCount": "Nombre de caractères : {{count}}",

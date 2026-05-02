@@ -4,7 +4,7 @@
   },
   "libraries": {
     "title": "Libraries",
-    "description": "Create, manage, and reuse prompt fragments and media collections to streamline your AI content generation workflows.",
+    "description": "Create, manage, and reuse prompts and media collections to streamline your AI content generation workflows.",
     "allLibraries": "All Libraries",
     "searchPlaceholder": "Search libraries by name or ID...",
     "newLibrary": "New Library",
@@ -12,7 +12,7 @@
     "new": "New",
     "noLibraries": {
       "title": "No libraries yet",
-      "description": "Create a library to organize your reusable prompt fragments or media assets."
+      "description": "Create a library to organize your reusable prompts or media assets."
     },
     "libraryCard": {
       "items": "{{count}} items",
@@ -40,7 +40,7 @@
     "filterItems": "Filter items...",
     "uploading": "Uploading...",
     "upload": "Upload",
-    "addFragment": "Add Fragment",
+    "addItem": "Add Item",
     "editLibrarySettings": "Edit Library Settings",
     "importOutput": "Import / Output",
     "exportLibrary": "Export Library",
@@ -55,7 +55,7 @@
     },
     "filterByTag": "Filter by Tag",
     "tagsSelected": "{{count}} Tags Selected",
-    "allFragments": "All Fragments",
+    "allItems": "All Items",
     "batchTag": "Batch Tag",
     "delete": "Delete",
     "imageLabel": "IMG_{{index}}",
@@ -63,7 +63,7 @@
     "renameItem": "Rename Item",
     "editTags": "Edit Tags",
     "refineInFullEditor": "Refine in Full Editor",
-    "deleteFragment": "Delete Fragment",
+    "deleteItem": "Delete Item",
     "copiedToClipboard": "Copied to clipboard",
     "copyContent": "Copy Content",
     "fullSource": "Full Source",
@@ -81,17 +81,17 @@
     "confirm": {
       "deleteLibrary": {
         "title": "Delete Library",
-        "message": "This will permanently delete the collection \"{{name}}\" and all its fragments. This action is irreversible.",
+        "message": "This will permanently delete the collection \"{{name}}\" and all its items. This action is irreversible.",
         "confirm": "Delete"
       },
-      "expungeFragment": {
-        "title": "Expunge Fragment",
-        "message": "Are you sure you want to remove this fragment from the collection?",
+      "removeItem": {
+        "title": "Remove Item",
+        "message": "Are you sure you want to remove this item from the collection?",
         "confirm": "Remove Now"
       },
       "deleteSelected": {
-        "title": "Delete Selected Fragments",
-        "message": "Are you sure you want to delete {{count}} fragment(s)?",
+        "title": "Delete Selected Items",
+        "message": "Are you sure you want to delete {{count}} item(s)?",
         "confirm": "Delete Selected"
       }
     },
@@ -115,9 +115,9 @@
     }
   },
   "libraryImportExport": {
-    "badge": "Text Library Workspace",
+    "badge": "Prompt Library Workspace",
     "title": "Import & Output",
-    "description": "Bulk load prompt fragments, preserve tags in output, and keep a clean import format for editing outside the app.",
+    "description": "Bulk load prompts, preserve tags in output, and keep a clean import format for editing outside the app.",
     "toasts": {
       "importFailed": "Failed to import items.",
       "outputCopied": "Library output copied to clipboard",

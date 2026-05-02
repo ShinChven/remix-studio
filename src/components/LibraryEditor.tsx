@@ -453,8 +453,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 <button
                   onClick={() => navigate(`/library/${library.id}/prompt/new`)}
                   className="p-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-all border border-blue-700 active:scale-95 group shadow-lg shadow-blue-600/10"
-                  title={t('libraryEditor.addFragment')}
-                  aria-label={t('libraryEditor.addFragment')}
+                  title={t('libraryEditor.addItem')}
+                  aria-label={t('libraryEditor.addItem')}
                 >
                   <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
                 </button>
@@ -605,7 +605,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                         selectedFilterTags.length === 0 ? 'bg-blue-600 text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
                       }`}
                     >
-                      {t('libraryEditor.allFragments')}
+                      {t('libraryEditor.allItems')}
                     </button>
                     <div className="max-h-64 overflow-y-auto custom-scrollbar">
                       {availableTags.map(tag => (
@@ -850,7 +850,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                             <button
                               onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }}
                               className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all active:scale-95"
-                              title={t('libraryEditor.deleteFragment')}
+                              title={t('libraryEditor.deleteItem')}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1033,9 +1033,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         isOpen={itemToRemoveIndex !== null}
         onClose={() => setItemToRemoveIndex(null)}
         onConfirm={confirmRemoveItem}
-        title={t('libraryEditor.confirm.expungeFragment.title')}
-        message={t('libraryEditor.confirm.expungeFragment.message')}
-        confirmText={t('libraryEditor.confirm.expungeFragment.confirm')}
+        title={t('libraryEditor.confirm.removeItem.title')}
+        message={t('libraryEditor.confirm.removeItem.message')}
+        confirmText={t('libraryEditor.confirm.removeItem.confirm')}
         type="danger"
       />
 

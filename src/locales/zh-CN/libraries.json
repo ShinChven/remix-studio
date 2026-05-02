@@ -4,7 +4,7 @@
   },
   "libraries": {
     "title": "资源库",
-    "description": "创建、管理和复用提示词片段与媒体集合，以优化您的 AI 内容生成工作流。",
+    "description": "创建、管理和复用提示词提示词与媒体集合，以优化您的 AI 内容生成工作流。",
     "allLibraries": "所有资源库",
     "searchPlaceholder": "搜索资源库名称或 ID...",
     "newLibrary": "新建资源库",
@@ -12,7 +12,7 @@
     "new": "新建",
     "noLibraries": {
       "title": "暂无资源库",
-      "description": "创建一个资源库来整理您的可复用提示词片段或媒体资产。"
+      "description": "创建一个资源库来整理您的可复用提示词提示词或媒体资产。"
     },
     "libraryCard": {
       "items": "{{count}} 个项目",
@@ -40,7 +40,7 @@
     "filterItems": "筛选项目...",
     "uploading": "正在上传...",
     "upload": "上传",
-    "addFragment": "添加片段",
+    "addItem": "添加提示词",
     "editLibrarySettings": "编辑库设置",
     "importOutput": "导入 / 导出",
     "exportLibrary": "导出媒体库",
@@ -55,7 +55,7 @@
     },
     "filterByTag": "按标签筛选",
     "tagsSelected": "已选择 {{count}} 个标签",
-    "allFragments": "所有片段",
+    "allItems": "所有项目",
     "batchTag": "批量标签",
     "delete": "删除",
     "imageLabel": "IMG_{{index}}",
@@ -63,7 +63,7 @@
     "renameItem": "重命名项目",
     "editTags": "编辑标签",
     "refineInFullEditor": "在完整编辑器中完善",
-    "deleteFragment": "删除片段",
+    "deleteItem": "删除提示词",
     "copiedToClipboard": "已复制到剪贴板",
     "copyContent": "复制内容",
     "fullSource": "完整源码",
@@ -81,17 +81,17 @@
     "confirm": {
       "deleteLibrary": {
         "title": "删除库",
-        "message": "这将永久删除集合 \"{{name}}\" 及其所有片段。此操作不可逆。",
+        "message": "这将永久删除集合 \"{{name}}\" 及其所有项目。此操作不可逆。",
         "confirm": "删除"
       },
-      "expungeFragment": {
-        "title": "删除片段",
-        "message": "确定要从集合中移除此片段吗？",
+      "removeItem": {
+        "title": "移除项目",
+        "message": "确定要从集合中移除此项目吗？",
         "confirm": "立即移除"
       },
       "deleteSelected": {
-        "title": "删除所选片段",
-        "message": "确定要删除 {{count}} 个片段吗？",
+        "title": "删除所选项目",
+        "message": "确定要删除 {{count}} 个项目吗？",
         "confirm": "删除所选"
       }
     },
@@ -117,7 +117,7 @@
   "libraryImportExport": {
     "badge": "文本资源库工作区",
     "title": "导入与导出",
-    "description": "批量导入提示片段，在导出中保留标签，并保持适合在应用外编辑的整洁格式。",
+    "description": "批量导入提示提示词，在导出中保留标签，并保持适合在应用外编辑的整洁格式。",
     "toasts": {
       "importFailed": "导入项目失败。",
       "outputCopied": "资源库输出已复制到剪贴板",
@@ -157,7 +157,7 @@
     "parseIssues": {
       "missingListMarker": "缺少 \"- \" 列表标记",
       "emptyAfterMarker": "\"- \" 之后内容为空",
-      "missingContentBeforeTags": "标签片段之前缺少内容",
+      "missingContentBeforeTags": "标签提示词之前缺少内容",
       "missingContentAfterTitle": "标题分隔符之后缺少内容"
     },
     "importAction": "导入 {{count}} 个项目",

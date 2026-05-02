@@ -182,7 +182,7 @@
       "openFullLibrary": "Open Full Library"
     },
     "promptModal": {
-      "title": "Edit Prompt Fragment",
+      "title": "Edit Prompt",
       "description": "Workflow Text Block",
       "placeholder": "Type your prompt here...",
       "characterCount": "Character count: {{count}}",
