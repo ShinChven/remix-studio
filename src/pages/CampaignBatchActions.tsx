@@ -513,14 +513,14 @@ export function CampaignBatchActions() {
 
       {previewMedia && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" onClick={() => setPreviewMedia(null)}>
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-neutral-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95" onClick={(event) => event.stopPropagation()}>
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-card border border-neutral-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95" onClick={(event) => event.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-neutral-950 dark:text-white">Post Media</h2>
               <button className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white" onClick={() => setPreviewMedia(null)}><X className="h-5 w-5" /></button>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               {previewMedia.map((url, index) => (
-                <div key={`${url}-${index}`} className="aspect-square overflow-hidden rounded-2xl bg-neutral-900">
+                <div key={`${url}-${index}`} className="aspect-square overflow-hidden rounded-card bg-neutral-900">
                   <img src={url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                 </div>
               ))}
@@ -531,7 +531,7 @@ export function CampaignBatchActions() {
 
       {deleteOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md" onClick={() => setDeleteOpen(false)}>
-          <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
+          <div className="w-full max-w-md rounded-card border border-neutral-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
             <h2 className="flex items-center gap-2 text-xl font-bold text-red-600"><Trash2 className="h-5 w-5" /> Confirm Batch Delete</h2>
             <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">Delete <strong>{selectedPostIds.length}</strong> selected posts? This cannot be undone.</p>
             <div className="mt-6 flex justify-end gap-3">

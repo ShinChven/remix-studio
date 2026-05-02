@@ -31,10 +31,10 @@ export function PromptLimitModal({
     <div className="fixed inset-0 z-[320] flex items-center justify-center p-4 md:p-8">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onCancel} />
 
-      <div className="relative w-full max-w-xl overflow-hidden rounded-[28px] border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl">
+      <div className="relative w-full max-w-xl overflow-hidden rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl">
         <div className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 p-6">
           <div className="flex items-start gap-4">
-            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 text-amber-400">
+            <div className="rounded-card border border-amber-500/20 bg-amber-500/10 p-3 text-amber-400">
               <AlertTriangle className="h-6 w-6" />
             </div>
             <div className="min-w-0">

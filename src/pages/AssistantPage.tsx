@@ -902,7 +902,7 @@ export function AssistantPage() {
                 </div>
               </details>
               {target && (
-                <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                <div className="rounded-card border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/20">
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 rounded-xl bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400">
                       {target.entityType === 'project' ? (
@@ -1133,7 +1133,7 @@ export function AssistantPage() {
                   {msg.role === 'user' && (
                     <div className="flex justify-end group/message">
                       {editingMessageId === msg.id ? (
-                        <div className="max-w-[80%] w-full flex flex-col gap-2 bg-neutral-100 dark:bg-neutral-800 rounded-2xl rounded-br-md px-4 py-3 shadow-sm relative">
+                        <div className="max-w-[80%] w-full flex flex-col gap-2 bg-neutral-100 dark:bg-neutral-800 rounded-card rounded-br-md px-4 py-3 shadow-sm relative">
                            <textarea
                              autoFocus
                              className="w-full bg-transparent text-neutral-900 dark:text-white placeholder-neutral-500 outline-none resize-y text-sm min-h-[100px]"
@@ -1158,7 +1158,7 @@ export function AssistantPage() {
                         </div>
                       ) : (
                         <div className="max-w-[80%] flex flex-col items-end gap-1">
-                          <div className="bg-indigo-600 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm w-full">
+                          <div className="bg-indigo-600 text-white rounded-card rounded-br-md px-4 py-3 shadow-sm w-full">
                             {(() => {
                                const { textContent: rawText, images: msgImages } = parseUserMessageImages(msg.content);
                                const boundContextMatch = rawText.match(/<bound_context>([\s\S]*?)<\/bound_context>/);
@@ -1280,7 +1280,7 @@ export function AssistantPage() {
                             <>
                               {shouldRenderThoughtOutsideBubble && renderMessageContent(msg.content)}
                                 {hasRenderableAssistantBubble(msg) && (
-                                  <div className={`bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-white/40 dark:border-white/10 ${
+                                  <div className={`bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl rounded-card rounded-tl-md px-4 py-3 shadow-sm border border-white/40 dark:border-white/10 ${
                                     msg.status === 'error' ? 'border-red-300 dark:border-red-800/40' : ''
                                   }`}>
                                     {renderMessageContent(msg.content)}

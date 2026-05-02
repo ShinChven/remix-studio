@@ -83,7 +83,7 @@ export function DraftsTab({
           })}
           
           {displayAlbumItems.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl opacity-20">
+            <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card opacity-20">
               <Plus className="w-12 h-12 text-neutral-500 dark:text-neutral-500" />
             </div>
           )}

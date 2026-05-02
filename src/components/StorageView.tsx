@@ -112,7 +112,7 @@ export function StorageView() {
           {/* Main 3x2 (or adaptive) Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 1. Capacity & Consumption Overview Card */}
-            <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-3xl h-full min-h-[220px] shadow-sm">
+            <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-card p-5 flex flex-col justify-between backdrop-blur-3xl h-full min-h-[220px] shadow-sm">
               <div>
                 <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 font-black mb-4 block">{t('storageView.capacityOverview')}</span>
                 <div className="space-y-4">
@@ -193,7 +193,7 @@ export function StorageView() {
               );
 
               const cardClasses = `
-                p-5 rounded-2xl transition-all duration-300 group flex flex-col justify-between h-full min-h-[220px]
+                p-5 rounded-card transition-all duration-300 group flex flex-col justify-between h-full min-h-[220px]
                 ${hoveredCategory === cat.id ? 'bg-white/80 dark:bg-neutral-900/80' : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5'}
                 border backdrop-blur-xl shadow-sm ${href ? 'cursor-pointer' : 'cursor-default'}
               `;
@@ -233,14 +233,14 @@ export function StorageView() {
           </div>
 
           {/* Quick Stats Panel (Storage Optimization) */}
-          <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-3xl p-8 backdrop-blur-3xl shadow-sm">
+          <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-card p-8 backdrop-blur-3xl shadow-sm">
             <h2 className="text-xl font-black text-neutral-900 dark:text-white mb-6 flex items-center gap-2">
               <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
               {t('storageView.optimizationTitle')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="flex gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 rounded-card bg-orange-500/10 flex items-center justify-center flex-shrink-0">
                      <AlertCircle className="w-6 h-6 text-orange-400" />
                   </div>
                   <div>
@@ -249,7 +249,7 @@ export function StorageView() {
                   </div>
                </div>
                 <Link to="/trash" className="flex gap-4 group cursor-pointer">
-                  <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-red-500/20 transition-colors">
+                  <div className="w-12 h-12 rounded-card bg-red-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-red-500/20 transition-colors">
                      <Trash2 className="w-6 h-6 text-red-400" />
                   </div>
                   <div>
@@ -336,7 +336,7 @@ export function StorageView() {
             <Link 
               key={proj.id} 
               to={`/project/${proj.id}`}
-              className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 rounded-2xl p-5 hover:border-blue-500/50 hover:bg-white/80 dark:hover:bg-neutral-900/80 backdrop-blur-xl transition-all group flex flex-col justify-between h-full min-h-[160px] shadow-sm"
+              className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 rounded-card p-5 hover:border-blue-500/50 hover:bg-white/80 dark:hover:bg-neutral-900/80 backdrop-blur-xl transition-all group flex flex-col justify-between h-full min-h-[160px] shadow-sm"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">

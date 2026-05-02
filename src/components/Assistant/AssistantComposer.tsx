@@ -733,11 +733,11 @@ export function AssistantComposer({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 opacity-20 blur transition duration-1000 group-focus-within:opacity-40 group-focus-within:duration-200" />
+      <div className="absolute -inset-1 rounded-card bg-gradient-to-r from-indigo-500 to-purple-600 opacity-20 blur transition duration-1000 group-focus-within:opacity-40 group-focus-within:duration-200" />
 
       {/* Drag overlay */}
       {isDraggingOver && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl border-2 border-dashed border-indigo-400 bg-indigo-50/90 dark:bg-indigo-950/90 backdrop-blur-sm pointer-events-none">
+        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-card border-2 border-dashed border-indigo-400 bg-indigo-50/90 dark:bg-indigo-950/90 backdrop-blur-sm pointer-events-none">
           <div className="flex flex-col items-center gap-2 text-indigo-600 dark:text-indigo-300">
             <ImagePlus className="h-8 w-8" />
             <span className="text-sm font-semibold">{t('assistant.dropImagesHere')}</span>
@@ -745,7 +745,7 @@ export function AssistantComposer({
         </div>
       )}
 
-      <div className="relative rounded-2xl border border-neutral-200/50 bg-white/80 p-4 shadow-2xl backdrop-blur-2xl transition-all duration-300 group-focus-within:shadow-indigo-500/10 dark:border-white/10 dark:bg-neutral-900/80">
+      <div className="relative rounded-card border border-neutral-200/50 bg-white/80 p-4 shadow-2xl backdrop-blur-2xl transition-all duration-300 group-focus-within:shadow-indigo-500/10 dark:border-white/10 dark:bg-neutral-900/80">
         <div className="space-y-4">
           {/* Model selector row */}
           <div className="flex items-center gap-2 px-2">

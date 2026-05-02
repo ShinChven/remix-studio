@@ -193,7 +193,7 @@ export function ProviderForm() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Form Fields - Left Column */}
             <form id="provider-form" onSubmit={handleSubmit} autoComplete="off" className="lg:col-span-5 xl:col-span-4 space-y-8 h-fit">
-              <div className="space-y-8 bg-neutral-200/20 dark:bg-black/20 p-8 rounded-2xl border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl shadow-xl">
+              <div className="space-y-8 bg-neutral-200/20 dark:bg-black/20 p-8 rounded-card border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl shadow-xl">
                 {/* Name */}
                 <div className="space-y-2.5">
                   <label className="text-[10px] font-black uppercase tracking-[0.25em] text-neutral-400 dark:text-neutral-500 ml-1">
@@ -354,7 +354,7 @@ export function ProviderForm() {
 
             {/* Supported Models Display - Right Column */}
             <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
-              <div className="flex-1 rounded-2xl bg-neutral-100/50 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl flex flex-col overflow-hidden">
+              <div className="flex-1 rounded-card bg-neutral-100/50 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl flex flex-col overflow-hidden">
                  <div className="px-8 py-6 border-b border-neutral-200 dark:border-white/5">
                     <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
                       {t('providerForm.supportedModels')}

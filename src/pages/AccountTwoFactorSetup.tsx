@@ -143,14 +143,14 @@ export function AccountTwoFactorSetup() {
         </div>
 
         {error && (
-          <div className="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div className="flex items-start gap-3 rounded-card border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+          <div className="flex items-start gap-3 rounded-card border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
             <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <span>{success}</span>
           </div>
@@ -158,9 +158,9 @@ export function AccountTwoFactorSetup() {
 
         {!user?.twoFactorEnabled && (
           <>
-            <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6 shadow-sm">
+            <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-300">
+                <div className="flex h-10 w-10 items-center justify-center rounded-card bg-amber-500/10 text-amber-300">
                   <Shield className="h-5 w-5" />
                 </div>
                 <div>
@@ -179,7 +179,7 @@ export function AccountTwoFactorSetup() {
                       type="password"
                       value={setupPassword}
                       onChange={(event) => setSetupPassword(event.target.value)}
-                      className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                      className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
                       required
                     />
                   </div>
@@ -187,7 +187,7 @@ export function AccountTwoFactorSetup() {
                 <button
                   type="submit"
                   disabled={settingUp}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-2 rounded-card bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {settingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
                   {t('accountTwoFactorSetup.step1.action')}
@@ -196,9 +196,9 @@ export function AccountTwoFactorSetup() {
             </section>
 
             {pendingSetup && (
-              <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6 shadow-sm">
+              <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6 shadow-sm">
                 <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-                  <div className="flex flex-col items-center rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 shadow-sm">
+                  <div className="flex flex-col items-center rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 shadow-sm">
                     <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-500">{t('accountTwoFactorSetup.scanQr')}</p>
                     {qrCode ? (
                       <img
@@ -240,14 +240,14 @@ export function AccountTwoFactorSetup() {
                           maxLength={6}
                           value={verificationCode}
                           onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50 font-mono tracking-[0.3em]"
+                          className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50 font-mono tracking-[0.3em]"
                           required
                         />
                       </div>
                       <button
                         type="submit"
                         disabled={enabling}
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center justify-center gap-2 rounded-card bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {enabling ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                         {t('accountTwoFactorSetup.enable')}

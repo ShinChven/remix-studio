@@ -135,7 +135,7 @@ export function TrashView() {
           description={t('trash.description')}
         />
 
-      <div className="sticky top-0 z-20 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 p-4 rounded-2xl shadow-lg shadow-black/20">
+      <div className="sticky top-0 z-20 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 p-4 rounded-card shadow-lg shadow-black/20">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">
             {t('trash.stats.items', { count: items.length })}
@@ -176,7 +176,7 @@ export function TrashView() {
       </div>
 
       {!loading && items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-neutral-900/40 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-[40px] text-center space-y-6 transition-colors hover:border-neutral-700 backdrop-blur-3xl shadow-sm">
+        <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-neutral-900/40 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-card text-center space-y-6 transition-colors hover:border-neutral-700 backdrop-blur-3xl shadow-sm">
           <div className="p-6 bg-white/50 dark:bg-neutral-900/50 rounded-full border border-neutral-200 dark:border-neutral-800">
             <Trash2 className="w-12 h-12 text-neutral-800" />
           </div>
@@ -192,7 +192,7 @@ export function TrashView() {
             return (
               <div 
                 key={item.id} 
-                className={`group relative bg-white/70 dark:bg-neutral-900/70 border rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 backdrop-blur-xl
+                className={`group relative bg-white/70 dark:bg-neutral-900/70 border rounded-card overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 backdrop-blur-xl
                   ${isSelected ? 'border-blue-500 ring-4 ring-blue-500/10 bg-blue-500/5' : 'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/30'}`}
               >
                 {/* Image Section */}

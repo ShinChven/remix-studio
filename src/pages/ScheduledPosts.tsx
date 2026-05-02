@@ -249,7 +249,7 @@ export function ScheduledPosts() {
               </button>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-neutral-200/50 bg-white shadow-sm dark:border-white/5 dark:bg-neutral-900/50">
+            <div className="overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-sm dark:border-white/5 dark:bg-neutral-900/50">
               <div className="hidden lg:grid lg:grid-cols-[1fr_200px_180px_100px] items-center gap-4 px-6 py-3 bg-neutral-50 dark:bg-white/5 border-b border-neutral-200/50 dark:border-white/5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
                 <span>Post Content</span>
                 <span>Campaign</span>
@@ -360,7 +360,7 @@ export function ScheduledPosts() {
               </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-white/10 rounded-2xl overflow-hidden border border-neutral-200 dark:border-white/10">
+            <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-white/10 rounded-card overflow-hidden border border-neutral-200 dark:border-white/10">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                 <div key={day} className="bg-neutral-50 dark:bg-neutral-900 py-3 text-center text-[10px] font-black uppercase tracking-widest text-neutral-500">
                   {day}

@@ -48,7 +48,7 @@ export function ModelSelectorModal({
       onClick={onClose}
     >
       <div 
-        className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl rounded-[32px] md:rounded-[40px] shadow-[0_50px_100px_rgba(0,0,0,0.9)] max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
+        className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl rounded-card md:rounded-[40px] shadow-[0_50px_100px_rgba(0,0,0,0.9)] max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -60,7 +60,7 @@ export function ModelSelectorModal({
             </div>
             <button 
               onClick={onClose}
-              className="p-2.5 md:p-3 bg-neutral-200/50 dark:bg-neutral-800/50 hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-white rounded-xl md:rounded-2xl transition-all active:scale-90 border border-neutral-700/30 shrink-0"
+              className="p-2.5 md:p-3 bg-neutral-200/50 dark:bg-neutral-800/50 hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-white rounded-xl md:rounded-card transition-all active:scale-90 border border-neutral-700/30 shrink-0"
             >
               <X className="w-4 h-4 md:w-5 md:h-5" />
             </button>
@@ -76,7 +76,7 @@ export function ModelSelectorModal({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('projectViewer.modelSelector.searchPlaceholder')}
-              className="w-full bg-neutral-50/50 dark:bg-neutral-950/50 border border-neutral-200 dark:border-neutral-800 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 rounded-2xl py-3 pl-11 pr-4 text-sm text-neutral-900 dark:text-white placeholder-neutral-500 outline-none transition-all"
+              className="w-full bg-neutral-50/50 dark:bg-neutral-950/50 border border-neutral-200 dark:border-neutral-800 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 rounded-card py-3 pl-11 pr-4 text-sm text-neutral-900 dark:text-white placeholder-neutral-500 outline-none transition-all"
             />
           </div>
         </div>
@@ -84,7 +84,7 @@ export function ModelSelectorModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
           {providers.length === 0 ? (
-            <div className="text-center py-20 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-[32px] border border-dashed border-neutral-200 dark:border-neutral-800">
+            <div className="text-center py-20 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-card border border-dashed border-neutral-200 dark:border-neutral-800">
               <AlertCircle className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
               <p className="text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-widest text-xs">{t('projectViewer.modelSelector.noProviders')}</p>
               <p className="text-neutral-600 text-sm mt-2">{t('projectViewer.modelSelector.noProvidersHint')}</p>

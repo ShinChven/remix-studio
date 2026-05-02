@@ -297,7 +297,7 @@ export function Campaigns() {
                 ))}
               </div>
             ) : filteredCampaigns.length === 0 ? (
-              <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-[2.5rem] border-2 border-dashed border-neutral-200 bg-white/40 p-12 text-center text-neutral-500 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
+              <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-card border-2 border-dashed border-neutral-200 bg-white/40 p-12 text-center text-neutral-500 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
                 <Megaphone className="h-8 w-8 opacity-20" />
                 <h3 className="text-xl font-bold text-neutral-950 dark:text-white">No campaigns found</h3>
                 <button onClick={() => navigate('/campaigns/new')} className="text-indigo-600 font-bold hover:underline">Create one now</button>
@@ -312,7 +312,7 @@ export function Campaigns() {
                   return (
                     <div
                       key={campaign.id}
-                      className="group relative flex flex-col justify-end cursor-pointer overflow-hidden rounded-[20px] h-72 shadow-sm transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
+                      className="group relative flex flex-col justify-end cursor-pointer overflow-hidden rounded-card h-72 shadow-sm transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
                       onClick={() => navigate(`/campaigns/${campaign.id}`)}
                     >
                       {/* Background Image Layer with Gradient Mask */}
@@ -401,7 +401,7 @@ export function Campaigns() {
                 </h3>
               </div>
 
-              <div className="rounded-3xl border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+              <div className="rounded-card border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
                 <div className="space-y-6">
                   {recentPostsLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
@@ -523,7 +523,7 @@ export function Campaigns() {
                 </h3>
               </div>
 
-              <div className="rounded-3xl border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+              <div className="rounded-card border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
                 <div className="space-y-6">
                   {scheduledPostsLoading ? (
                     Array.from({ length: 3 }).map((_, i) => (

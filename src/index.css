@@ -5,6 +5,8 @@
   --color-white: #ffffff;
   --color-neutral-50: #f4f4f4;
 
+  --radius-card: 20px;
+
   --animate-text-gradient: text-gradient 3s linear infinite;
   --animate-spin-slow: spin-slow 4s linear infinite;
   --animate-material-spinner: material-spinner-spin 1.4s linear infinite;

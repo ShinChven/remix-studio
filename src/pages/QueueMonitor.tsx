@@ -521,7 +521,7 @@ function EmptyMonitorState({ icon, title }: { icon: ReactNode; title: string }) 
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-[2rem] border-2 border-dashed border-neutral-200 bg-white/40 py-20 text-center text-neutral-500 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40 dark:text-neutral-500">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-card border-2 border-dashed border-neutral-200 bg-white/40 py-20 text-center text-neutral-500 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40 dark:text-neutral-500">
       <div className="rounded-full border border-neutral-200 bg-white p-4 text-neutral-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
         {icon}
       </div>

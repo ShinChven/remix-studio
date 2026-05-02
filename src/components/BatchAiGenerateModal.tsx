@@ -248,7 +248,7 @@ export function BatchAiGenerateModal({ postIds, onClose, onQueued }: Props) {
       }}
     >
       <div
-        className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-neutral-200/50 bg-white/90 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-300 dark:border-white/10 dark:bg-neutral-900/95"
+        className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-card border border-neutral-200/50 bg-white/90 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-300 dark:border-white/10 dark:bg-neutral-900/95"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-8 flex-1 overflow-y-auto">
@@ -295,7 +295,7 @@ export function BatchAiGenerateModal({ postIds, onClose, onQueued }: Props) {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-neutral-200 bg-white/70 p-4 dark:border-white/10 dark:bg-neutral-950/40">
+            <div className="rounded-card border border-neutral-200 bg-white/70 p-4 dark:border-white/10 dark:bg-neutral-950/40">
               <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
                   <BookOpen className="h-4 w-4 text-indigo-500" />
@@ -401,7 +401,7 @@ export function BatchAiGenerateModal({ postIds, onClose, onQueued }: Props) {
                 }}
                 rows={4}
                 disabled={submitting}
-                className="min-h-32 w-full resize-y rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm font-medium text-neutral-900 shadow-inner outline-none ring-indigo-500/10 transition focus:border-indigo-500/50 focus:ring-4 dark:border-neutral-800 dark:bg-black/20 dark:text-neutral-100"
+                className="min-h-32 w-full resize-y rounded-card border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm font-medium text-neutral-900 shadow-inner outline-none ring-indigo-500/10 transition focus:border-indigo-500/50 focus:ring-4 dark:border-neutral-800 dark:bg-black/20 dark:text-neutral-100"
                 placeholder="e.g., Write a punchy launch announcement for the attached image, under 240 chars."
                 autoFocus
               />

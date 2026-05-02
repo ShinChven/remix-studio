@@ -138,7 +138,7 @@ export function CampaignHistory() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') applyFilters();
               }}
-              className="w-full h-10 pl-10 pr-3 rounded-xl border border-neutral-200 bg-white text-sm text-neutral-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-white/10 dark:bg-neutral-900 dark:text-white transition-all shadow-sm"
+              className="w-full h-10 pl-10 pr-3 rounded-card border border-neutral-200 bg-white text-sm text-neutral-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-white/10 dark:bg-neutral-900 dark:text-white transition-all shadow-sm"
             />
           </div>
 
@@ -149,21 +149,21 @@ export function CampaignHistory() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full sm:w-40 h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs text-neutral-900 focus:border-indigo-500 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-white shadow-sm"
+                className="w-full sm:w-40 h-10 rounded-card border border-neutral-200 bg-white px-3 text-xs text-neutral-900 focus:border-indigo-500 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-white shadow-sm"
               />
               <span className="text-neutral-400 text-[10px] font-bold">TO</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full sm:w-40 h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs text-neutral-900 focus:border-indigo-500 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-white shadow-sm"
+                className="w-full sm:w-40 h-10 rounded-card border border-neutral-200 bg-white px-3 text-xs text-neutral-900 focus:border-indigo-500 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-white shadow-sm"
               />
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={applyFilters}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                className="flex h-10 w-10 items-center justify-center rounded-card bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
                 title="Apply filters"
               >
                 <Filter className="h-4 w-4" />
@@ -171,7 +171,7 @@ export function CampaignHistory() {
               {(startDateParam || endDateParam || qParam) && (
                 <button
                   onClick={clearFilters}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 transition-all shadow-sm"
+                  className="flex h-10 w-10 items-center justify-center rounded-card border border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 transition-all shadow-sm"
                   title="Clear filters"
                 >
                   <XCircle className="h-4 w-4" />
@@ -181,7 +181,7 @@ export function CampaignHistory() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white shadow-sm dark:border-white/5 dark:bg-neutral-900/50">
+        <div className="overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-sm dark:border-white/5 dark:bg-neutral-900/50">
           {/* Header Row */}
           <div className="hidden lg:grid lg:grid-cols-[240px_1fr_1fr_160px_100px] items-center gap-4 px-6 py-3 bg-neutral-50 dark:bg-white/5 border-b border-neutral-200/50 dark:border-white/5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
             <span>Social Account</span>
@@ -201,7 +201,7 @@ export function CampaignHistory() {
               ))}
             </div>
           ) : history.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+            <div className="col-span-full py-20 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/20 shadow-sm">
               <div className="h-16 w-16 rounded-full bg-neutral-50 dark:bg-white/5 flex items-center justify-center mb-4">
                 <History className="h-8 w-8 text-neutral-300" />
               </div>
@@ -294,7 +294,7 @@ export function CampaignHistory() {
                           href={externalUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-600 dark:border-white/10 dark:text-neutral-500 dark:hover:bg-white/10 dark:hover:text-white transition-all"
+                          className="flex h-8 w-8 items-center justify-center rounded-card border border-neutral-200 text-neutral-400 hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-600 dark:border-white/10 dark:text-neutral-500 dark:hover:bg-white/10 dark:hover:text-white transition-all"
                           title="View live post"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
@@ -302,7 +302,7 @@ export function CampaignHistory() {
                       )}
                       <button
                         onClick={() => navigate(`/campaigns/${post.campaign?.id}/posts/edit/${post.id}`)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-600 dark:border-white/10 dark:text-neutral-500 dark:hover:bg-white/10 dark:hover:text-white transition-all"
+                        className="flex h-8 w-8 items-center justify-center rounded-card border border-neutral-200 text-neutral-400 hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-600 dark:border-white/10 dark:text-neutral-500 dark:hover:bg-white/10 dark:hover:text-white transition-all"
                         title="Manage"
                       >
                         <ArrowRight className="h-3.5 w-3.5" />

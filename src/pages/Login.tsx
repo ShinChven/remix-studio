@@ -189,7 +189,7 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-black">
       <Starfield />
 
-      <div className="relative z-10 max-w-md w-full p-8 rounded-[2.5rem] bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 shadow-2xl flex flex-col items-center backdrop-blur-3xl">
+      <div className="relative z-10 max-w-md w-full p-8 rounded-card bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 shadow-2xl flex flex-col items-center backdrop-blur-3xl">
         <img src="/favicon.svg" alt="Remix Studio Logo" className="w-16 h-16 mb-6" />
         <h2 className="text-3xl font-bold text-center text-zinc-100 mb-2">
           {isTwoFactorStep ? t('login.twoFactorVerification') : registerMode ? t('login.completeRegistration') : t('login.welcomeBack')}
@@ -218,7 +218,7 @@ export function Login() {
                 maxLength={6}
                 value={twoFactorCode}
                 onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.3em] backdrop-blur-md"
+                className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.3em] backdrop-blur-md"
                 required
               />
             </div>
@@ -242,7 +242,7 @@ export function Login() {
           <form onSubmit={handleGoogleRegistration} className="w-full space-y-6">
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-2">{t('login.googleSignIn')}</label>
-              <div className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm text-zinc-400 backdrop-blur-md">
+              <div className="w-full rounded-card border border-white/10 bg-black/10 px-4 py-3 text-sm text-zinc-400 backdrop-blur-md">
                 {t('login.verifiedSuccessfully')}
               </div>
             </div>
@@ -253,7 +253,7 @@ export function Login() {
                 value={inviteCode}
                 onChange={(event) => setInviteCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                 placeholder={t('login.enterInviteCode')}
-                className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.2em] backdrop-blur-md"
+                className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.2em] backdrop-blur-md"
                 required
               />
               <p className="mt-2 text-xs text-zinc-500">{t('login.inviteCodeDescription')}</p>
@@ -261,14 +261,14 @@ export function Login() {
             <button
               type="submit"
               disabled={registerLoading}
-              className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-semibold py-3.5 rounded-2xl transition-all active:scale-[0.98] shadow-lg disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-semibold py-3.5 rounded-card transition-all active:scale-[0.98] shadow-lg disabled:opacity-50"
             >
               {registerLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Ticket className="w-5 h-5" />}
               {t('login.finishRegistration')}
             </button>
             <a
               href={googleAuthUrl}
-              className="block w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-center text-sm text-zinc-100 transition-all hover:bg-white/10"
+              className="block w-full rounded-card border border-white/10 bg-black/20 px-4 py-3 text-center text-sm text-zinc-100 transition-all hover:bg-white/10"
             >
               {t('login.restartGoogle')}
             </a>
@@ -282,7 +282,7 @@ export function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
+                  className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
                   required
                 />
               </div>
@@ -292,14 +292,14 @@ export function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
+                  className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-neutral-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
                   required
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-semibold py-3.5 rounded-2xl transition-all active:scale-[0.98] shadow-lg disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-semibold py-3.5 rounded-card transition-all active:scale-[0.98] shadow-lg disabled:opacity-50"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('login.signIn')}
               </button>
@@ -316,7 +316,7 @@ export function Login() {
                 type="button"
                 onClick={handlePasskeyLogin}
                 disabled={passkeyLoading}
-                className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50 backdrop-blur-md"
+                className="flex items-center justify-center gap-2 rounded-card border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50 backdrop-blur-md"
               >
                 {passkeyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />}
                 {t('login.passkey')}
@@ -324,7 +324,7 @@ export function Login() {
 
               <a
                 href={googleAuthUrl}
-                className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98] backdrop-blur-md"
+                className="flex items-center justify-center gap-2 rounded-card border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98] backdrop-blur-md"
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" aria-hidden="true">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />

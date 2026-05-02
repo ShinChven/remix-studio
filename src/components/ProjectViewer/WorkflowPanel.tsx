@@ -260,7 +260,7 @@ export function WorkflowPanel({
           onClick={() => setIsProjectInfoOpen(false)}
         >
           <div
-            className="w-full max-w-md overflow-hidden rounded-3xl border border-neutral-200/60 dark:border-white/10 bg-white/95 dark:bg-neutral-900/95 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-200"
+            className="w-full max-w-md overflow-hidden rounded-card border border-neutral-200/60 dark:border-white/10 bg-white/95 dark:bg-neutral-900/95 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-200"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 border-b border-neutral-200/60 dark:border-white/10 p-5">
@@ -283,7 +283,7 @@ export function WorkflowPanel({
             </div>
 
             <div className="space-y-3 p-5">
-              <div className="rounded-2xl border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
+              <div className="rounded-card border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
                 <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
                   <Type className="h-3.5 w-3.5" />
                   {t('projectViewer.main.projectTitle', { defaultValue: 'Title' })}
@@ -292,7 +292,7 @@ export function WorkflowPanel({
               </div>
 
               {localProject.description && (
-                <div className="rounded-2xl border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
+                <div className="rounded-card border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
                   <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
                     <LibraryIcon className="h-3.5 w-3.5" />
                     {t('projectViewer.main.projectDescription', { defaultValue: 'Description' })}
@@ -301,7 +301,7 @@ export function WorkflowPanel({
                 </div>
               )}
 
-              <div className="rounded-2xl border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
+              <div className="rounded-card border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
                 <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
                   <Hash className="h-3.5 w-3.5" />
                   {t('projectViewer.main.id', { defaultValue: 'ID' })}
@@ -309,7 +309,7 @@ export function WorkflowPanel({
                 <p className="break-all font-mono text-xs font-semibold text-neutral-900 dark:text-white">{localProject.id || project.id}</p>
               </div>
 
-              <div className="rounded-2xl border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
+              <div className="rounded-card border border-neutral-200/70 dark:border-white/10 bg-neutral-50/80 dark:bg-black/20 p-4">
                 <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
                   <HardDrive className="h-3.5 w-3.5" />
                   {t('projectViewer.main.storageUsage', { defaultValue: 'Storage usage' })}

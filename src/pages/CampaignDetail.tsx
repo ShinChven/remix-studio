@@ -557,7 +557,7 @@ export function CampaignDetail() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
               <input
                 placeholder="Search posts..."
-                className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white/40 pl-10 pr-3 text-sm font-medium text-neutral-950 shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900/40 dark:text-white sm:w-64"
+                className="h-10 w-full rounded-card border border-neutral-200/50 bg-white/40 pl-10 pr-3 text-sm font-medium text-neutral-950 shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900/40 dark:text-white sm:w-64"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
@@ -565,20 +565,20 @@ export function CampaignDetail() {
             <select
               value={sortKey}
               onChange={(event) => setSortKey(event.target.value as SortKey)}
-              className="h-10 rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold text-neutral-700 shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200"
+              className="h-10 rounded-card border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold text-neutral-700 shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200"
             >
               <option value="scheduled_asc">Scheduled (Soonest First)</option>
               <option value="scheduled_desc">Scheduled (Latest First)</option>
               <option value="created_desc">Created (Newest First)</option>
               <option value="created_asc">Created (Oldest First)</option>
             </select>
-            <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200/50 bg-white/40 text-neutral-700 shadow-sm transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)} title="Settings">
+            <button className="flex h-10 w-10 items-center justify-center rounded-card border border-neutral-200/50 bg-white/40 text-neutral-700 shadow-sm transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)} title="Settings">
               <Settings className="h-4 w-4" />
             </button>
-            <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200/50 bg-white/40 text-neutral-700 shadow-sm transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/${campaign.id}/batch`)} title="Batch Actions">
+            <button className="flex h-10 w-10 items-center justify-center rounded-card border border-neutral-200/50 bg-white/40 text-neutral-700 shadow-sm transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/${campaign.id}/batch`)} title="Batch Actions">
               <Layers className="h-4 w-4" />
             </button>
-            <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-700 bg-indigo-600 text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-95" onClick={openNewPostModal} title="Add Post">
+            <button className="flex h-10 w-10 items-center justify-center rounded-card border border-indigo-700 bg-indigo-600 text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-95" onClick={openNewPostModal} title="Add Post">
               <Plus className="h-4 w-4" />
             </button>
           </div>
@@ -587,7 +587,7 @@ export function CampaignDetail() {
 
         <div className="grid gap-6 lg:grid-cols-4">
           <aside className="space-y-6 lg:col-span-1">
-            <section className="rounded-xl border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+            <section className="rounded-card border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">Campaign Progress</h2>
               <div className="mt-4 text-3xl font-bold text-indigo-600 dark:text-indigo-400">{progress}%</div>
               <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
@@ -634,7 +634,7 @@ export function CampaignDetail() {
               </button>
             </section>
 
-            <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+            <section className="overflow-hidden rounded-card border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Campaign Info</h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between text-sm">
@@ -680,7 +680,7 @@ export function CampaignDetail() {
           <main className="space-y-6 lg:col-span-3">
             <div className="space-y-8">
               {filteredPosts.map((post) => (
-                <article key={post.id} className="group overflow-hidden rounded-2xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-xl dark:border-white/5 dark:bg-neutral-900/70 dark:hover:bg-neutral-800/80">
+                <article key={post.id} className="group overflow-hidden rounded-card border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-xl dark:border-white/5 dark:bg-neutral-900/70 dark:hover:bg-neutral-800/80">
                   <div className="space-y-6 p-4 sm:p-6 lg:p-8">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex items-center gap-4">
@@ -725,7 +725,7 @@ export function CampaignDetail() {
                         {post.textContent || 'Empty Post Content'}
                       </Link>
                       {post.media && post.media.length > 0 && (
-                        <div className={cn('grid gap-1.5 overflow-hidden rounded-xl border border-neutral-200 shadow-sm dark:border-white/10', post.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
+                        <div className={cn('grid gap-1.5 overflow-hidden rounded-card border border-neutral-200 shadow-sm dark:border-white/10', post.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
                           {post.media.slice(0, 4).map((media, index) => {
                             const url = mediaUrl(media);
                             const posterUrl = media.type === 'video' ? mediaPosterUrl(media) : '';
@@ -764,11 +764,11 @@ export function CampaignDetail() {
                           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                             <input
                               type="datetime-local"
-                              className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-xs outline-none focus:border-indigo-500/50 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white sm:w-48"
+                              className="h-10 w-full rounded-card border border-neutral-200/50 bg-white/40 px-3 text-xs outline-none focus:border-indigo-500/50 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white sm:w-48"
                               value={quickDate}
                               onChange={(event) => setQuickDate(event.target.value)}
                             />
-                            <button className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white hover:bg-indigo-700" onClick={() => void handleQuickScheduleSave(post)} disabled={quickSavingId === post.id}>
+                            <button className="h-10 rounded-card bg-indigo-600 px-4 text-sm font-bold text-white hover:bg-indigo-700" onClick={() => void handleQuickScheduleSave(post)} disabled={quickSavingId === post.id}>
                               {quickSavingId === post.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
                             </button>
                             <button className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/10" onClick={() => setQuickSchedulingId(null)}>
@@ -777,7 +777,7 @@ export function CampaignDetail() {
                           </div>
                         ) : (
                           <>
-                            <button className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-50 sm:w-auto" onClick={() => void handleSendNow(post.id)} disabled={!active || sendingPostId === post.id}>
+                            <button className="flex h-10 w-full items-center justify-center gap-2 rounded-card bg-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-50 sm:w-auto" onClick={() => void handleSendNow(post.id)} disabled={!active || sendingPostId === post.id}>
                               {sendingPostId === post.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                               {post.status === 'completed' ? 'Send Again' : 'Send Now'}
                             </button>
@@ -839,7 +839,7 @@ export function CampaignDetail() {
               ))}
 
               {filteredPosts.length === 0 && (
-                <div className="rounded-[2.5rem] border-2 border-dashed border-neutral-200 bg-white/40 py-12 text-center shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
+                <div className="rounded-card border-2 border-dashed border-neutral-200 bg-white/40 py-12 text-center shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
                   <p className="text-neutral-500 dark:text-neutral-400">No posts found in this campaign.</p>
                   <button className="mt-2 text-sm font-bold text-neutral-950 underline dark:text-white" onClick={openNewPostModal}>Create your first post</button>
                 </div>
@@ -911,7 +911,7 @@ export function CampaignDetail() {
 
       {composerOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md sm:p-6">
-          <div className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-neutral-200/50 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95">
+          <div className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-card border border-neutral-200/50 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95">
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
               <h2 className="mb-8 text-xl font-bold tracking-tight text-neutral-950 dark:text-white">Composer</h2>
 
@@ -923,7 +923,7 @@ export function CampaignDetail() {
                       const url = mediaUrl(media);
                       const posterUrl = media.type === 'video' ? mediaPosterUrl(media) : '';
                       return (
-                        <div key={media.id} className="group relative aspect-square overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-950">
+                        <div key={media.id} className="group relative aspect-square overflow-hidden rounded-card border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-950">
                           {(media.status === 'pending' || media.status === 'processing') && (
                             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
                               <Loader2 className="mb-2 h-6 w-6 animate-spin text-white" />
@@ -953,13 +953,13 @@ export function CampaignDetail() {
                 )}
                 {(!currentEditingPost?.media || currentEditingPost.media.length < 4) && (
                   <div className="flex gap-2">
-                    <select value={mediaTypeInput} onChange={(event) => setMediaTypeInput(event.target.value)} className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm font-bold outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-white">
+                    <select value={mediaTypeInput} onChange={(event) => setMediaTypeInput(event.target.value)} className="rounded-card border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm font-bold outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-white">
                       <option value="image">Image</option>
                       <option value="video">Video</option>
                       <option value="gif">GIF</option>
                     </select>
-                    <input value={mediaUrlInput} onChange={(event) => setMediaUrlInput(event.target.value)} placeholder="Paste S3 key or URL..." className="min-w-0 flex-1 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-white" />
-                    <button onClick={() => void handleAttachMedia()} disabled={attachingMedia || !mediaUrlInput.trim()} className="flex items-center gap-2 rounded-xl bg-neutral-200 px-4 py-2 font-bold text-neutral-700 transition hover:bg-neutral-300 disabled:opacity-50 dark:bg-neutral-800 dark:text-neutral-300">
+                    <input value={mediaUrlInput} onChange={(event) => setMediaUrlInput(event.target.value)} placeholder="Paste S3 key or URL..." className="min-w-0 flex-1 rounded-card border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-white" />
+                    <button onClick={() => void handleAttachMedia()} disabled={attachingMedia || !mediaUrlInput.trim()} className="flex items-center gap-2 rounded-card bg-neutral-200 px-4 py-2 font-bold text-neutral-700 transition hover:bg-neutral-300 disabled:opacity-50 dark:bg-neutral-800 dark:text-neutral-300">
                       {attachingMedia ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                       Add
                     </button>
@@ -970,7 +970,7 @@ export function CampaignDetail() {
               <form onSubmit={handleSavePost} className="space-y-6">
                 <div>
                   <label className="mb-3 block text-[10px] font-black uppercase tracking-widest text-neutral-500">Text Content</label>
-                  <textarea value={textContent} onChange={(event) => setTextContent(event.target.value)} rows={6} className={cn('w-full resize-none rounded-2xl border bg-neutral-50 px-5 py-4 text-sm font-medium text-neutral-950 shadow-inner outline-none transition dark:bg-black/20 dark:text-white', textContent.length > 280 ? 'border-red-500/50 focus:border-red-500/80' : 'border-neutral-200 focus:border-neutral-950 dark:border-white/10')} placeholder="What's happening?" autoFocus />
+                  <textarea value={textContent} onChange={(event) => setTextContent(event.target.value)} rows={6} className={cn('w-full resize-none rounded-card border bg-neutral-50 px-5 py-4 text-sm font-medium text-neutral-950 shadow-inner outline-none transition dark:bg-black/20 dark:text-white', textContent.length > 280 ? 'border-red-500/50 focus:border-red-500/80' : 'border-neutral-200 focus:border-neutral-950 dark:border-white/10')} placeholder="What's happening?" autoFocus />
                   <div className="mt-2 flex justify-end">
                     <span className={cn('text-[10px] font-black uppercase tracking-widest', textContent.length > 280 ? 'text-red-500' : textContent.length > 250 ? 'text-orange-500' : 'text-neutral-400')}>
                       {textContent.length} / 280
@@ -981,7 +981,7 @@ export function CampaignDetail() {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
                     <label className="mb-3 block text-[10px] font-black uppercase tracking-widest text-neutral-500">Action</label>
-                    <select value={postStatus} onChange={(event) => setPostStatus(event.target.value)} className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3.5 text-sm font-bold text-neutral-950 outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-white">
+                    <select value={postStatus} onChange={(event) => setPostStatus(event.target.value)} className="w-full rounded-card border border-neutral-200 bg-white px-4 py-3.5 text-sm font-bold text-neutral-950 outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-white">
                       <option value="draft">Save as Draft</option>
                       <option value="scheduled">Schedule for Later</option>
                     </select>
@@ -991,15 +991,15 @@ export function CampaignDetail() {
                       <span>Publish Time</span>
                       <span className="font-medium lowercase text-neutral-950 dark:text-white">Local Time</span>
                     </label>
-                    <input type="datetime-local" required={postStatus === 'scheduled'} disabled={postStatus !== 'scheduled'} value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3.5 text-sm font-bold text-neutral-950 outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-white" />
+                    <input type="datetime-local" required={postStatus === 'scheduled'} disabled={postStatus !== 'scheduled'} value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} className="w-full rounded-card border border-neutral-200 bg-white px-4 py-3.5 text-sm font-bold text-neutral-950 outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-white" />
                   </div>
                 </div>
 
                 <div className="mt-8 flex justify-end gap-3 border-t border-neutral-200 pt-6 dark:border-white/10">
-                  <button type="button" onClick={() => { setComposerOpen(false); void loadCampaign(true); }} className="rounded-xl px-4 py-2 text-sm font-bold text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-white">
+                  <button type="button" onClick={() => { setComposerOpen(false); void loadCampaign(true); }} className="rounded-card px-4 py-2 text-sm font-bold text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-white">
                     Close
                   </button>
-                  <button type="submit" disabled={savingPost || textContent.length > 280 || currentHasPendingMedia} className="flex items-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
+                  <button type="submit" disabled={savingPost || textContent.length > 280 || currentHasPendingMedia} className="flex items-center gap-2 rounded-card border border-indigo-700 bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
                     {savingPost && <Loader2 className="h-4 w-4 animate-spin" />}
                     {postStatus === 'scheduled' ? 'Schedule Post' : 'Save Draft'}
                   </button>
@@ -1012,7 +1012,7 @@ export function CampaignDetail() {
 
       {deletePostTarget && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md" onClick={() => setDeletePostTarget(null)}>
-          <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
+          <div className="w-full max-w-md rounded-card border border-neutral-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
             <h2 className="text-xl font-bold text-neutral-950 dark:text-white">Delete Post</h2>
             <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Are you sure you want to delete this post? This action cannot be undone.</p>
             <p className="mt-4 line-clamp-3 border-l-2 pl-3 text-sm italic text-neutral-500">"{deletePostTarget.textContent || 'Empty Post Content'}"</p>

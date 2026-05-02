@@ -132,12 +132,12 @@ export function CopyToLibraryDialog({
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
 
       <div
-        className="relative w-full max-w-xl max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(820px,calc(100dvh-2rem))] overflow-hidden rounded-[24px] sm:rounded-[32px] border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-[0_50px_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300"
+        className="relative w-full max-w-xl max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(820px,calc(100dvh-2rem))] overflow-hidden rounded-card sm:rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-[0_50px_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-950/30 p-4 sm:p-6">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <div className="rounded-xl sm:rounded-2xl border border-blue-500/20 bg-blue-500/10 p-2.5 sm:p-3 text-blue-400">
+            <div className="rounded-xl sm:rounded-card border border-blue-500/20 bg-blue-500/10 p-2.5 sm:p-3 text-blue-400">
               <AccentIcon className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <div className="min-w-0">
@@ -162,7 +162,7 @@ export function CopyToLibraryDialog({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <button
                 onClick={() => setMode('new')}
-                className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all ${
+                className={`flex flex-col items-center gap-3 p-4 rounded-card border transition-all ${
                   mode === 'new'
                     ? 'bg-blue-600/10 border-blue-500/50 text-blue-400 shadow-lg shadow-blue-500/10'
                     : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-800/50'
@@ -174,7 +174,7 @@ export function CopyToLibraryDialog({
               <button
                 disabled={existingLibraries.length === 0}
                 onClick={() => setMode('existing')}
-                className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all ${
+                className={`flex flex-col items-center gap-3 p-4 rounded-card border transition-all ${
                   mode === 'existing'
                     ? 'bg-blue-600/10 border-blue-500/50 text-blue-400 shadow-lg shadow-blue-500/10'
                     : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-800/50 disabled:opacity-30 disabled:cursor-not-allowed'
@@ -191,7 +191,7 @@ export function CopyToLibraryDialog({
                   type="text"
                   value={newLibraryName}
                   onChange={(e) => setNewLibraryName(e.target.value)}
-                  className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 sm:px-5 py-3.5 sm:py-4 text-sm text-neutral-900 dark:text-white outline-none transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 sm:px-5 py-3.5 sm:py-4 text-sm text-neutral-900 dark:text-white outline-none transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
                   placeholder={t('projectViewer.copyToLibrary.newLibraryName')}
                   autoFocus
                 />
@@ -206,7 +206,7 @@ export function CopyToLibraryDialog({
                   <select
                     value={selectedLibraryId}
                     onChange={(e) => setSelectedLibraryId(e.target.value)}
-                    className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 sm:px-5 py-3.5 sm:py-4 text-sm text-neutral-900 dark:text-white outline-none transition-all focus:border-blue-500/50"
+                    className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 sm:px-5 py-3.5 sm:py-4 text-sm text-neutral-900 dark:text-white outline-none transition-all focus:border-blue-500/50"
                   >
                     {existingLibraries.map((lib) => (
                       <option key={lib.id} value={lib.id}>
@@ -225,7 +225,7 @@ export function CopyToLibraryDialog({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <button
                   onClick={() => setVersion('optimized')}
-                  className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
+                  className={`flex items-center gap-3 p-4 rounded-card border transition-all ${
                     version === 'optimized'
                       ? 'bg-neutral-200 dark:bg-neutral-800 border-neutral-600 text-neutral-900 dark:text-white'
                       : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-800/50'
@@ -239,7 +239,7 @@ export function CopyToLibraryDialog({
                 </button>
                 <button
                   onClick={() => setVersion('raw')}
-                  className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
+                  className={`flex items-center gap-3 p-4 rounded-card border transition-all ${
                     version === 'raw'
                       ? 'bg-neutral-200 dark:bg-neutral-800 border-neutral-600 text-neutral-900 dark:text-white'
                       : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-800/50'
@@ -267,7 +267,7 @@ export function CopyToLibraryDialog({
           <button
             onClick={() => void handleSubmit()}
             disabled={isSubmitting || (mode === 'new' && !newLibraryName.trim()) || (mode === 'existing' && !selectedLibraryId)}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-blue-600 px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-neutral-900 dark:text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-card bg-blue-600 px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-neutral-900 dark:text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? (
               <>

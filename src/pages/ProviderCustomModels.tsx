@@ -175,7 +175,7 @@ export function ProviderCustomModels() {
 
         {/* Editor panel (create / edit) */}
         {editor && (
-          <div className="bg-white/40 dark:bg-neutral-900/40 border border-cyan-600/30 rounded-2xl p-5 space-y-4 backdrop-blur-3xl shadow-sm">
+          <div className="bg-white/40 dark:bg-neutral-900/40 border border-cyan-600/30 rounded-card p-5 space-y-4 backdrop-blur-3xl shadow-sm">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
                 {editor.mode === 'create' ? t('providerCustomModels.newVariant') : t('providerCustomModels.editVariant')}
@@ -269,7 +269,7 @@ export function ProviderCustomModels() {
 
         {/* List */}
         {customModels.length === 0 && !editor ? (
-          <div className="col-span-full py-20 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-[2.5rem] text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl shadow-sm">
+          <div className="col-span-full py-20 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-card text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl shadow-sm">
             <div className="p-4 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
               <Layers className="w-8 h-8 text-neutral-600 dark:text-neutral-700" />
             </div>
@@ -286,7 +286,7 @@ export function ProviderCustomModels() {
               return (
                 <div
                   key={idx}
-                  className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 hover:border-neutral-400 dark:hover:border-neutral-700 px-5 py-4 rounded-2xl transition-all flex items-center justify-between gap-4 shadow-sm hover:shadow-md backdrop-blur-xl"
+                  className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 hover:border-neutral-400 dark:hover:border-neutral-700 px-5 py-4 rounded-card transition-all flex items-center justify-between gap-4 shadow-sm hover:shadow-md backdrop-blur-xl"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">

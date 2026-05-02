@@ -177,7 +177,7 @@ function MediaPickerModal({
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 md:p-8">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose} />
-      <div className="relative flex h-[88vh] w-full max-w-7xl overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-2xl dark:border-white/10 dark:bg-neutral-950 md:rounded-[2rem]">
+      <div className="relative flex h-[88vh] w-full max-w-7xl overflow-hidden rounded-card border border-neutral-200 bg-white shadow-2xl dark:border-white/10 dark:bg-neutral-950">
         <aside className="hidden w-80 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 p-5 dark:border-white/10 dark:bg-neutral-900/80 md:flex">
           <div className="mb-5 flex shrink-0 items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
@@ -196,7 +196,7 @@ function MediaPickerModal({
                 <button
                   key={source.id}
                   className={cn(
-                    'w-full rounded-2xl border p-4 text-left transition',
+                    'w-full rounded-card border p-4 text-left transition',
                     active
                       ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
                       : 'border-neutral-200 bg-white hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-950 dark:hover:border-white/20',
@@ -261,7 +261,7 @@ function MediaPickerModal({
 
           <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">
             {sources.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-neutral-200 text-center dark:border-white/10">
+              <div className="flex h-full flex-col items-center justify-center rounded-card border-2 border-dashed border-neutral-200 text-center dark:border-white/10">
                 <Images className="mb-4 h-12 w-12 text-neutral-300" />
                 <p className="font-bold text-neutral-950 dark:text-white">No image or video sources found</p>
                 <p className="mt-1 text-sm text-neutral-500">Create an image/video library or album first.</p>
@@ -272,7 +272,7 @@ function MediaPickerModal({
                 <p className="text-sm font-medium text-neutral-500">Loading media...</p>
               </div>
             ) : filteredItems.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-neutral-200 text-center dark:border-white/10">
+              <div className="flex h-full flex-col items-center justify-center rounded-card border-2 border-dashed border-neutral-200 text-center dark:border-white/10">
                 <Search className="mb-4 h-12 w-12 text-neutral-300" />
                 <p className="font-bold text-neutral-950 dark:text-white">No media found</p>
               </div>
@@ -285,7 +285,7 @@ function MediaPickerModal({
                     <button
                       key={item.id}
                       className={cn(
-                        'group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition active:scale-[0.99] dark:bg-neutral-900',
+                        'group overflow-hidden rounded-card border bg-white text-left shadow-sm transition active:scale-[0.99] dark:bg-neutral-900',
                         selected
                           ? 'border-indigo-500 ring-2 ring-indigo-500/30'
                           : 'border-neutral-200 hover:border-indigo-400/50 dark:border-white/10',
@@ -698,7 +698,7 @@ export function CampaignBatchCreate() {
           )}
         />
 
-        <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200/60 bg-white/50 p-3 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex flex-col gap-3 rounded-card border border-neutral-200/60 bg-white/50 p-3 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50 sm:flex-row sm:flex-wrap sm:items-center">
           <button className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-bold text-neutral-700 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-200" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4" /> Upload Files
           </button>
@@ -729,7 +729,7 @@ export function CampaignBatchCreate() {
             if (event.dataTransfer.files.length > 0) handleFiles(event.dataTransfer.files);
           }}
           className={cn(
-            'group relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-[2.5rem] border-2 border-dashed p-8 transition-all md:p-12',
+            'group relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-card border-2 border-dashed p-8 transition-all md:p-12',
             isDragging
               ? 'scale-[0.99] border-indigo-500/50 bg-indigo-500/10 shadow-inner'
               : 'border-neutral-200 bg-white/40 hover:border-indigo-500/30 hover:bg-white/60 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:border-indigo-500/30 dark:hover:bg-neutral-800/60',
@@ -766,7 +766,7 @@ export function CampaignBatchCreate() {
               {queue.map((item) => {
                 const preview = item.kind === 'local' ? item.preview : item.preview;
                 return (
-                  <div key={item.id} className="group overflow-hidden rounded-2xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+                  <div key={item.id} className="group overflow-hidden rounded-card border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
                     <div className="flex h-48">
                       <div className="relative w-1/3 bg-neutral-100 dark:bg-neutral-800">
                         {preview ? (
@@ -797,13 +797,13 @@ export function CampaignBatchCreate() {
                   </div>
                 );
               })}
-              <button onClick={() => fileInputRef.current?.click()} className="flex h-48 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-100/20 text-neutral-500 transition hover:border-neutral-300 hover:bg-neutral-100/50 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20">
+              <button onClick={() => fileInputRef.current?.click()} className="flex h-48 flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-neutral-200 bg-neutral-100/20 text-neutral-500 transition hover:border-neutral-300 hover:bg-neutral-100/50 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20">
                 <Plus className="h-6 w-6" />
                 <span className="text-sm font-medium">Add more files</span>
               </button>
             </div>
           ) : (
-            <div className="flex h-64 flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-neutral-200 bg-white/40 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
+            <div className="flex h-64 flex-col items-center justify-center rounded-card border-2 border-dashed border-neutral-200 bg-white/40 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
               <ImageIcon className="mb-4 h-12 w-12 text-neutral-300" />
               <p className="font-medium text-neutral-500 dark:text-neutral-400">No media queued yet</p>
             </div>

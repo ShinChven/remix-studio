@@ -42,7 +42,7 @@ export function LibrarySelectionModal({
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8">
       <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={onClose} />
       
-      <div className="relative w-full max-w-4xl max-h-[80vh] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="relative w-full max-w-4xl max-h-[80vh] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
         <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/20 dark:bg-neutral-950/20">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-emerald-600/10 rounded-xl">
@@ -112,7 +112,7 @@ export function LibrarySelectionModal({
                     key={lib.id}
                     onClick={() => !isSelected && onSelect(lib.id)}
                     disabled={isSelected}
-                    className={`group flex items-start gap-4 p-5 border rounded-2xl text-left transition-all ${
+                    className={`group flex items-start gap-4 p-5 border rounded-card text-left transition-all ${
                       isSelected 
                         ? 'bg-white/20 dark:bg-neutral-900/20 border-neutral-200 dark:border-neutral-800 opacity-50 cursor-not-allowed' 
                         : 'bg-neutral-50/40 dark:bg-neutral-950/40 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-800 hover:border-emerald-500/30 hover:scale-[1.02] active:scale-100'

@@ -253,7 +253,7 @@ export function AdminUsers() {
             <>
               <Link
                 to="/admin/invites"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-600 dark:bg-emerald-500/15 px-5 py-3 text-sm font-black text-white dark:text-emerald-200 transition hover:bg-emerald-700 dark:hover:bg-emerald-500/25 shrink-0 shadow-lg shadow-emerald-600/10 active:scale-95 uppercase tracking-widest"
+                className="inline-flex items-center justify-center gap-2 rounded-card border border-emerald-500/30 bg-emerald-600 dark:bg-emerald-500/15 px-5 py-3 text-sm font-black text-white dark:text-emerald-200 transition hover:bg-emerald-700 dark:hover:bg-emerald-500/25 shrink-0 shadow-lg shadow-emerald-600/10 active:scale-95 uppercase tracking-widest"
               >
                 <Mail className="h-4 w-4" />
                 {t('adminUsers.inviteUsers')}
@@ -261,7 +261,7 @@ export function AdminUsers() {
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(true)}
-                className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-600 dark:bg-blue-500/15 px-5 py-3 text-sm font-black text-white dark:text-blue-200 transition hover:bg-blue-700 dark:hover:bg-blue-500/25 shrink-0 shadow-lg shadow-blue-600/10 active:scale-95 uppercase tracking-widest"
+                className="inline-flex items-center gap-2 rounded-card border border-blue-500/30 bg-blue-600 dark:bg-blue-500/15 px-5 py-3 text-sm font-black text-white dark:text-blue-200 transition hover:bg-blue-700 dark:hover:bg-blue-500/25 shrink-0 shadow-lg shadow-blue-600/10 active:scale-95 uppercase tracking-widest"
               >
                 <UserPlus className="h-4 w-4" />
                 {t('adminUsers.createUser')}
@@ -270,7 +270,7 @@ export function AdminUsers() {
           )}
         />
 
-        <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 overflow-hidden shadow-sm backdrop-blur-3xl">
+        <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 overflow-hidden shadow-sm backdrop-blur-3xl">
           <form onSubmit={(e) => e.preventDefault()} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
             <label className="flex items-center gap-3 border-r border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-950/40 px-6 py-4">
               <Search className="h-4 w-4 text-neutral-400 dark:text-neutral-500" />
@@ -306,13 +306,13 @@ export function AdminUsers() {
         </section>
 
         {error && (
-          <div className="flex items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div className="flex items-center gap-2 rounded-card border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <section className="overflow-hidden rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
+        <section className="overflow-hidden rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
           {loading ? (
             <div className="flex items-center justify-center py-24">
               <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
@@ -346,7 +346,7 @@ export function AdminUsers() {
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-card bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
                           <Mail className="h-4 w-4" />
                         </div>
                         <div className="min-w-0">
@@ -398,7 +398,7 @@ export function AdminUsers() {
           )}
         </section>
 
-        <div className="flex flex-col gap-3 rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 px-6 py-4 md:flex-row md:items-center md:justify-between shadow-sm backdrop-blur-3xl">
+        <div className="flex flex-col gap-3 rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 px-6 py-4 md:flex-row md:items-center md:justify-between shadow-sm backdrop-blur-3xl">
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
             {total > 0 ? t('adminUsers.showingUsers', { count: users.length, total }) : t('adminUsers.noUsersToShow')}
           </div>
@@ -435,7 +435,7 @@ export function AdminUsers() {
 
       {isCreateOpen && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 dark:bg-black/60 p-6 backdrop-blur-md">
-          <div className="w-full max-w-xl rounded-[28px] border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 shadow-2xl overflow-hidden backdrop-blur-3xl">
+          <div className="w-full max-w-xl rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 shadow-2xl overflow-hidden backdrop-blur-3xl">
             <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-6 py-5">
               <div>
                 <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('adminUsers.createModal.title')}</h3>
@@ -454,7 +454,7 @@ export function AdminUsers() {
                   required
                   value={createForm.email}
                   onChange={(e) => setCreateForm((current) => ({ ...current, email: e.target.value }))}
-                  className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+                  className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
                 />
               </label>
 
@@ -466,7 +466,7 @@ export function AdminUsers() {
                   value={createForm.password}
                   onChange={(e) => setCreateForm((current) => ({ ...current, password: e.target.value }))}
                   placeholder={t('adminUsers.createModal.passwordPlaceholder')}
-                  className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+                  className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
                 />
               </label>
 
@@ -476,7 +476,7 @@ export function AdminUsers() {
                   <select
                     value={createForm.role}
                     onChange={(e) => setCreateForm((current) => ({ ...current, role: e.target.value as UserRole }))}
-                    className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
+                    className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
                   >
                     <option value="user">{t('adminUsers.user')}</option>
                     <option value="admin">{t('adminUsers.admin')}</option>
@@ -488,7 +488,7 @@ export function AdminUsers() {
                   <select
                     value={createForm.status}
                     onChange={(e) => setCreateForm((current) => ({ ...current, status: e.target.value as UserStatus }))}
-                    className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
+                    className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
                   >
                     <option value="active">{t('adminUsers.active')}</option>
                     <option value="disabled">{t('adminUsers.disabled')}</option>
@@ -500,7 +500,7 @@ export function AdminUsers() {
                   <select
                     value={createForm.storageLimit}
                     onChange={(e) => setCreateForm((current) => ({ ...current, storageLimit: Number(e.target.value) }))}
-                    className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
+                    className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
                   >
                     {STORAGE_TIERS.map((tier) => (
                       <option key={tier.value} value={tier.value}>{tier.name}</option>
@@ -510,13 +510,13 @@ export function AdminUsers() {
               </div>
 
               <div className="flex items-center justify-end gap-3 border-t border-neutral-200 dark:border-neutral-800 pt-4">
-                <button type="button" onClick={() => setIsCreateOpen(false)} className="rounded-2xl px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 transition hover:bg-neutral-800 hover:text-white">
+                <button type="button" onClick={() => setIsCreateOpen(false)} className="rounded-card px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 transition hover:bg-neutral-800 hover:text-white">
                   {t('adminUsers.createModal.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={createLoading}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-100 transition hover:bg-blue-500/25 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-card border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-100 transition hover:bg-blue-500/25 disabled:opacity-60"
                 >
                   {createLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
                   {t('adminUsers.createModal.submit')}
@@ -546,13 +546,13 @@ export function AdminUsers() {
                   <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
                 </div>
               ) : detailError ? (
-                <div className="m-6 flex items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <div className="m-6 flex items-center gap-2 rounded-card border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                   <AlertCircle className="h-4 w-4" />
                   <span>{detailError}</span>
                 </div>
               ) : activeUser ? (
                 <div className="space-y-6 p-6">
-                  <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
+                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.account')}</p>
@@ -583,7 +583,7 @@ export function AdminUsers() {
                     <MiniCard label={t('adminUsers.detail.exports')} value={activeUser.exportCount} />
                   </section>
 
-                  <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
+                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
                     <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.storageBreakdown')}</p>
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
                       <StorageRow label={t('adminUsers.detail.projects')} value={activeUser.storageBreakdown.projects} />
@@ -593,7 +593,7 @@ export function AdminUsers() {
                     </div>
                   </section>
 
-                  <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
+                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
                     <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.adminControls')}</p>
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
                       <label className="space-y-2">
@@ -602,7 +602,7 @@ export function AdminUsers() {
                           value={activeUser.role}
                           disabled={activeUser.id === currentUser?.id}
                           onChange={(e) => void handleRoleChange(activeUser.id, e.target.value as UserRole)}
-                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none disabled:opacity-50"
+                          className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none disabled:opacity-50"
                         >
                           <option value="user">{t('adminUsers.user')}</option>
                           <option value="admin">{t('adminUsers.admin')}</option>
@@ -614,7 +614,7 @@ export function AdminUsers() {
                         <select
                           value={activeUser.storageLimit || STORAGE_TIERS[0].value}
                           onChange={(e) => void handleStorageLimitChange(activeUser.id, Number(e.target.value))}
-                          className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
+                          className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
                         >
                           {STORAGE_TIERS.map((tier) => (
                             <option key={tier.value} value={tier.value}>{tier.name}</option>
@@ -632,7 +632,7 @@ export function AdminUsers() {
                           status: activeUser.status === 'active' ? 'disabled' : 'active',
                           email: activeUser.email,
                         })}
-                        className={`rounded-2xl px-4 py-3 text-sm font-medium transition disabled:opacity-50 ${
+                        className={`rounded-card px-4 py-3 text-sm font-medium transition disabled:opacity-50 ${
                           activeUser.status === 'active'
                             ? 'border border-red-500/30 bg-red-500/10 text-red-200 hover:bg-red-500/20'
                             : 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20'
@@ -643,7 +643,7 @@ export function AdminUsers() {
                     </div>
                   </section>
 
-                  <section className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
+                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
                     <div className="flex items-center gap-2">
                       <KeyRound className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
                       <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.passwordReset')}</p>
@@ -658,13 +658,13 @@ export function AdminUsers() {
                             required
                             value={resetPassword}
                             onChange={(e) => setResetPassword(e.target.value)}
-                            className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none shadow-sm"
+                            className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none shadow-sm"
                           />
                         </label>
                         <button
                           type="submit"
                           disabled={resettingPassword}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-100 transition hover:bg-blue-500/25 disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded-card border border-blue-500/30 bg-blue-500/15 px-4 py-3 text-sm font-medium text-blue-100 transition hover:bg-blue-500/25 disabled:opacity-60"
                         >
                           {resettingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                           {t('adminUsers.detail.resetSubmit')}
@@ -696,7 +696,7 @@ export function AdminUsers() {
 
 function Stat({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-950/70 p-4 backdrop-blur-xl shadow-sm">
+    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-950/70 p-4 backdrop-blur-xl shadow-sm">
       <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">
         {icon}
         <span>{label}</span>
@@ -708,7 +708,7 @@ function Stat({ label, value, icon }: { label: string; value: string; icon: Reac
 
 function MiniCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-3xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 p-5 backdrop-blur-xl shadow-sm">
+    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 p-5 backdrop-blur-xl shadow-sm">
       <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{label}</p>
       <p className="mt-3 text-3xl font-semibold text-neutral-900 dark:text-white">{value}</p>
     </div>
@@ -717,7 +717,7 @@ function MiniCard({ label, value }: { label: string; value: number }) {
 
 function StorageRow({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-950/70 px-4 py-3 backdrop-blur-xl shadow-sm">
+    <div className="flex items-center justify-between rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-950/70 px-4 py-3 backdrop-blur-xl shadow-sm">
       <span className="text-sm text-neutral-600 dark:text-neutral-400">{label}</span>
       <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{formatBytes(value)}</span>
     </div>

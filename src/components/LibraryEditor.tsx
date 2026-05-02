@@ -548,7 +548,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         {/* Batch Action Toolbar (Mirrors item style) */}
         {items.length > -1 && (
           <div className={`
-            sticky top-0 z-20 flex flex-nowrap items-center justify-between gap-2 p-3 rounded-2xl border transition-all duration-300 shadow-xl
+            sticky top-0 z-20 flex flex-nowrap items-center justify-between gap-2 p-3 rounded-card border transition-all duration-300 shadow-xl
             ${selectedItemIds.size > 0
               ? 'bg-blue-600 text-white border-blue-700'
               : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800'}
@@ -595,7 +595,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                  </button>
 
                 {showTagFilterDropdown && (
-                  <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-card shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
                     <button
                       onClick={() => {
                         setSelectedFilterTags([]);
@@ -713,8 +713,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                     ? 'border-blue-600 bg-blue-50 dark:bg-blue-900 shadow-[0_0_20px_rgba(59,130,246,0.15)] z-10'
                     : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-400 dark:hover:border-neutral-700 shadow-sm'}
                   ${library.type === 'image'
-                    ? 'rounded-3xl aspect-square p-3'
-                    : 'rounded-2xl cursor-pointer'}
+                    ? 'rounded-card aspect-square p-3'
+                    : 'rounded-card cursor-pointer'}
                 `}>
                   {library.type !== 'text' ? (
                     <div className={`relative flex-1 rounded-xl overflow-hidden cursor-pointer transition-all ${isSelected ? 'ring-4 ring-blue-500/50 scale-95' : ''}`} onClick={(e) => {
@@ -914,8 +914,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           })}
 
           {items.length === 0 && !loadingItems && (
-            <div className="col-span-full py-24 m-4 md:m-8 text-center border-2 border-dashed border-neutral-200/50 dark:border-neutral-800/50 rounded-[40px] bg-white/10 dark:bg-neutral-900/10 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95">
-              <div className="p-8 rounded-[32px] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl">
+            <div className="col-span-full py-24 m-4 md:m-8 text-center border-2 border-dashed border-neutral-200/50 dark:border-neutral-800/50 rounded-card bg-white/10 dark:bg-neutral-900/10 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95">
+              <div className="p-8 rounded-card bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl">
                 {hasActiveItemFilters ? <Search className="w-16 h-16 text-neutral-800" /> : <Plus className="w-16 h-16 text-neutral-800" />}
               </div>
               <div className="space-y-2">
@@ -936,7 +936,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-white hover:border-neutral-700 rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+              className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-white hover:border-neutral-700 rounded-card transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -958,7 +958,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-white hover:border-neutral-700 rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+              className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-white hover:border-neutral-700 rounded-card transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
             >
               <ArrowRight className="w-5 h-5" />
             </button>
@@ -983,12 +983,12 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           onClick={() => setShowReferencesModal(false)}
         >
           <div
-            className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/50 rounded-[32px] shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300"
+            className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/50 rounded-card shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-8">
               <div className="flex items-start gap-6">
-                <div className="p-4 rounded-3xl flex-shrink-0 bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <div className="p-4 rounded-card flex-shrink-0 bg-amber-500/10 text-amber-500 border border-amber-500/20">
                   <AlertCircle className="w-8 h-8" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1019,7 +1019,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   setShowReferencesModal(false);
                   navigate(`/library/${library.id}/cleanup`);
                 }}
-                className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-500 text-neutral-900 dark:text-white shadow-2xl shadow-amber-500/20 transition-all active:scale-[0.98]"
+                className="px-8 py-3 rounded-card text-xs font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-500 text-neutral-900 dark:text-white shadow-2xl shadow-amber-500/20 transition-all active:scale-[0.98]"
               >
                 {t('libraryEditor.references.resolve')}
               </button>

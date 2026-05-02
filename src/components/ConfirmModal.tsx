@@ -35,12 +35,12 @@ export function ConfirmModal({
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-neutral-900/90 border border-neutral-200/50 dark:border-white/5 backdrop-blur-2xl rounded-[24px] sm:rounded-[32px] shadow-[0_50px_100px_rgba(0,0,0,0.3)] dark:shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-md w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(720px,calc(100dvh-3rem))] overflow-hidden animate-in zoom-in-95 duration-300"
+        className="bg-white dark:bg-neutral-900/90 border border-neutral-200/50 dark:border-white/5 backdrop-blur-2xl rounded-card sm:rounded-card shadow-[0_50px_100px_rgba(0,0,0,0.3)] dark:shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-md w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(720px,calc(100dvh-3rem))] overflow-hidden animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5 sm:p-8 overflow-y-auto">
           <div className="flex items-start gap-4 sm:gap-6">
-            <div className={`p-3 sm:p-4 rounded-2xl sm:rounded-3xl flex-shrink-0 ${
+            <div className={`p-3 sm:p-4 rounded-card sm:rounded-card flex-shrink-0 ${
               type === 'danger' 
                 ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
                 : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
@@ -71,7 +71,7 @@ export function ConfirmModal({
               onConfirm();
               onClose();
             }}
-            className={`w-full sm:w-auto px-5 sm:px-8 py-3 rounded-xl sm:rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-[0.98] ${
+            className={`w-full sm:w-auto px-5 sm:px-8 py-3 rounded-xl sm:rounded-card text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-[0.98] ${
               type === 'danger' 
                 ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-500/20' 
                 : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'

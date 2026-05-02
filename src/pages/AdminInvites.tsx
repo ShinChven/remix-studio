@@ -117,7 +117,7 @@ export function AdminInvites() {
               type="button"
               onClick={() => setIsCreateOpen(true)}
               disabled={creating}
-              className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/20 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-700 dark:text-emerald-200 transition hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 disabled:opacity-60 shrink-0"
+              className="inline-flex items-center gap-2 rounded-card border border-emerald-500/20 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-700 dark:text-emerald-200 transition hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 disabled:opacity-60 shrink-0"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               {t('adminInvites.createInvite')}
@@ -126,12 +126,12 @@ export function AdminInvites() {
         />
 
         {error && (
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+          <div className="rounded-card border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {error}
           </div>
         )}
 
-        <section className="rounded-3xl border border-neutral-200 dark:border-white/5 bg-white dark:bg-neutral-900/40 backdrop-blur-3xl p-4 lg:p-6 shadow-sm">
+        <section className="rounded-card border border-neutral-200 dark:border-white/5 bg-white dark:bg-neutral-900/40 backdrop-blur-3xl p-4 lg:p-6 shadow-sm">
           {loading ? (
             <div className="flex min-h-48 items-center justify-center text-neutral-600 dark:text-neutral-400">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -231,7 +231,7 @@ export function AdminInvites() {
           }}
         >
           <div
-            className="w-full max-w-lg rounded-[28px] border border-neutral-200/60 dark:border-white/10 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-3xl p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-card border border-neutral-200/60 dark:border-white/10 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-3xl p-6 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('adminInvites.createModal.title')}</h3>
@@ -242,7 +242,7 @@ export function AdminInvites() {
               <select
                 value={membershipTier}
                 onChange={(event) => setMembershipTier(event.target.value as InviteCode['membershipTier'])}
-                className="w-full rounded-2xl border border-neutral-300 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 outline-none"
+                className="w-full rounded-card border border-neutral-300 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 outline-none"
               >
                 {MEMBERSHIP_TIERS.map((tier) => (
                   <option key={tier.value} value={tier.value}>{tier.label}</option>
@@ -258,7 +258,7 @@ export function AdminInvites() {
                 max={1000}
                 value={maxUses}
                 onChange={(event) => setMaxUses(event.target.value)}
-                className="w-full rounded-2xl border border-neutral-300 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 outline-none"
+                className="w-full rounded-card border border-neutral-300 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 outline-none"
               />
             </label>
 
@@ -270,7 +270,7 @@ export function AdminInvites() {
                 rows={4}
                 onChange={(event) => setNote(event.target.value)}
                 placeholder={t('adminInvites.createModal.notePlaceholder')}
-                className="w-full resize-none rounded-2xl border border-neutral-300 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 outline-none placeholder:text-neutral-400"
+                className="w-full resize-none rounded-card border border-neutral-300 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 outline-none placeholder:text-neutral-400"
               />
               <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-500">{note.length}/200</p>
             </label>
@@ -285,7 +285,7 @@ export function AdminInvites() {
                   setMembershipTier('free');
                 }}
                 disabled={creating}
-                className="rounded-2xl border border-neutral-200 dark:border-neutral-800 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 transition hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-60"
+                className="rounded-card border border-neutral-200 dark:border-neutral-800 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 transition hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-60"
               >
                 {t('adminInvites.createModal.cancel')}
               </button>
@@ -293,7 +293,7 @@ export function AdminInvites() {
                 type="button"
                 onClick={handleCreateInvite}
                 disabled={creating}
-                className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/20 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-600 dark:text-emerald-300 transition hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-card border border-emerald-500/20 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 px-4 py-3 text-sm font-medium text-emerald-600 dark:text-emerald-300 transition hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 disabled:opacity-60"
               >
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 {t('adminInvites.createModal.submit')}

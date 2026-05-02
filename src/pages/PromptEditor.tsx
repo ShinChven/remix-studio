@@ -91,11 +91,11 @@ export function PromptEditor() {
       <div className="w-full flex flex-col h-full gap-6 animate-in fade-in duration-500">
 
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-2xl md:rounded-3xl p-4 md:pl-6 shadow-2xl backdrop-blur-3xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-card md:rounded-card p-4 md:pl-6 shadow-2xl backdrop-blur-3xl">
           <div className="flex items-center gap-3 md:gap-4 flex-1">
             <button
               onClick={() => navigate(`/library/${id}`)}
-              className="p-2 md:p-3 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-xl md:rounded-2xl transition-all border border-neutral-200/50 dark:border-neutral-800/50"
+              className="p-2 md:p-3 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-xl md:rounded-card transition-all border border-neutral-200/50 dark:border-neutral-800/50"
               title={t('promptEditor.backToLibrary')}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -128,7 +128,7 @@ export function PromptEditor() {
           </div>
 
           <div className="flex items-center gap-2 md:gap-3 justify-between md:justify-end">
-             <div className="flex items-center bg-neutral-50 dark:bg-neutral-950 p-1 rounded-xl md:rounded-2xl border border-neutral-200 dark:border-neutral-800 mr-1 md:mr-2">
+             <div className="flex items-center bg-neutral-50 dark:bg-neutral-950 p-1 rounded-xl md:rounded-card border border-neutral-200 dark:border-neutral-800 mr-1 md:mr-2">
                 <button
                   onClick={() => setViewMode('edit')}
                   className={`p-1.5 md:p-2 rounded-lg md:rounded-xl transition-all ${viewMode === 'edit' ? 'bg-neutral-200 dark:bg-neutral-800 text-blue-400 shadow-sm' : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-300'}`}
@@ -154,7 +154,7 @@ export function PromptEditor() {
 
              <button
                onClick={() => setIsFullScreen(!isFullScreen)}
-               className="p-2 md:p-3 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-xl md:rounded-2xl transition-all border border-neutral-200/50 dark:border-neutral-800/50"
+               className="p-2 md:p-3 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-xl md:rounded-card transition-all border border-neutral-200/50 dark:border-neutral-800/50"
                title={t('promptEditor.toggleFullscreen')}
              >
                {isFullScreen ? <Minimize2 className="w-4 md:w-5 h-4 md:h-5" /> : <Maximize2 className="w-4 md:w-5 h-4 md:h-5" />}
@@ -163,7 +163,7 @@ export function PromptEditor() {
              <button
                onClick={() => handleSubmit()}
                disabled={isSubmitting || (content.trim() === '' && !isNew)}
-               className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-500 text-neutral-900 dark:text-white rounded-xl md:rounded-2xl font-bold uppercase tracking-widest text-[10px] md:text-xs transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-30 flex items-center justify-center gap-2 md:gap-3"
+               className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-500 text-neutral-900 dark:text-white rounded-xl md:rounded-card font-bold uppercase tracking-widest text-[10px] md:text-xs transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-30 flex items-center justify-center gap-2 md:gap-3"
              >
                <Save className="w-3.5 md:w-4 h-3.5 md:h-4" />
                <span className="hidden xs:inline">{t('promptEditor.save')}</span>
@@ -173,7 +173,7 @@ export function PromptEditor() {
         </div>
 
         {/* Editor Content */}
-        <div className="flex-1 min-h-0 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-3xl md:rounded-[40px] overflow-hidden flex shadow-2xl flex-col backdrop-blur-3xl">
+        <div className="flex-1 min-h-0 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-card md:rounded-card overflow-hidden flex shadow-2xl flex-col backdrop-blur-3xl">
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
 
             {(viewMode === 'edit' || viewMode === 'split') && (

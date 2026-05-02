@@ -87,7 +87,7 @@ export function Providers() {
             </h3>
             <button
               onClick={() => navigate('/provider/new')}
-              className="p-2.5 bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 rounded-xl transition-all flex items-center justify-center border border-amber-600/30 shadow-lg shadow-amber-600/10 active:scale-95"
+              className="p-2.5 bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 rounded-card transition-all flex items-center justify-center border border-amber-600/30 shadow-lg shadow-amber-600/10 active:scale-95"
               title={t('providers.newProvider')}
               aria-label={t('providers.newProvider')}
             >
@@ -96,7 +96,7 @@ export function Providers() {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-card text-red-400 text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
@@ -105,10 +105,10 @@ export function Providers() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5">
             {isLoading ? (
               [1, 2, 3].map(i => (
-                <div key={i} className="h-14 rounded-xl bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 animate-pulse" />
+                <div key={i} className="h-14 rounded-card bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 animate-pulse" />
               ))
             ) : providers.length === 0 ? (
-              <div className="py-20 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
+              <div className="py-20 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
                 <div className="p-4 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
                   <Key className="w-8 h-8 text-neutral-700" />
                 </div>
@@ -129,7 +129,7 @@ export function Providers() {
                   <div
                     key={provider.id}
                     onClick={() => navigate(`/provider/${provider.id}`)}
-                    className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-800/80 px-4 py-4 rounded-xl text-left transition-all group flex items-center justify-between gap-3 cursor-pointer shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5"
+                    className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-800/80 px-4 py-4 rounded-card text-left transition-all group flex items-center justify-between gap-3 cursor-pointer shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5"
                   >
                     <div className="flex items-center gap-2.5 md:gap-3 overflow-hidden min-w-0">
                       <div className={`flex-shrink-0 p-1.5 md:p-2 rounded-lg ${colors.icon} group-hover:scale-110 transition-transform`}>
@@ -162,14 +162,14 @@ export function Providers() {
                     <div className="flex items-center gap-0.5 flex-shrink-0">
                        <button
                         onClick={(e) => { e.stopPropagation(); navigate(`/provider/${provider.id}/edit`); }}
-                        className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-all active:scale-90 border border-transparent hover:border-blue-100"
+                        className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-card transition-all active:scale-90 border border-transparent hover:border-blue-100"
                         title={t('providerCustomModels.edit')}
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); setDeleteTarget(provider); }}
-                        className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all active:scale-90 border border-transparent hover:border-red-100"
+                        className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-card transition-all active:scale-90 border border-transparent hover:border-red-100"
                         title={t('providerCustomModels.delete')}
                       >
                         <Trash2 className="w-4 h-4" />

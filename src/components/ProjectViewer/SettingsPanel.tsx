@@ -218,7 +218,7 @@ export function SettingsPanel({
             </label>
             <button
               onClick={() => setIsModelSelectorOpen(true)}
-              className={`w-full border rounded-2xl p-4 text-left transition-all group/model-btn relative overflow-hidden shadow-sm hover:shadow-md ${
+              className={`w-full border rounded-card p-4 text-left transition-all group/model-btn relative overflow-hidden shadow-sm hover:shadow-md ${
                 !hasSelectedModel
                   ? 'bg-amber-500/5 border-amber-500/50 hover:bg-amber-500/10'
                   : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:border-blue-500/50'

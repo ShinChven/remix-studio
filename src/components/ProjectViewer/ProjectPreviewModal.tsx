@@ -35,7 +35,7 @@ export function ProjectPreviewModal({
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8">
       <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={onClose} />
       
-      <div className="relative w-full max-w-4xl h-[85vh] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="relative w-full max-w-4xl h-[85vh] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
         {/* Header */}
         <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/20 dark:bg-neutral-950/20">
           <div className="flex items-center gap-3">
@@ -83,11 +83,11 @@ export function ProjectPreviewModal({
                    AI CONFIGURATION
                 </div>
                 <div className="space-y-3">
-                  <div className="p-4 bg-white/50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-white/5 rounded-2xl shadow-sm">
+                  <div className="p-4 bg-white/50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-white/5 rounded-card shadow-sm">
                     <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Provider</div>
                     <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{project.providerId || 'Not set'}</div>
                   </div>
-                  <div className="p-4 bg-white/50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-white/5 rounded-2xl shadow-sm">
+                  <div className="p-4 bg-white/50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-white/5 rounded-card shadow-sm">
                     <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Model</div>
                     <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 font-mono">{project.modelConfigId || 'Not set'}</div>
                   </div>
@@ -138,7 +138,7 @@ export function ProjectPreviewModal({
                 {(project.workflow || []).map((item, index) => (
                   <div 
                     key={item.id}
-                    className={`bg-white/70 dark:bg-neutral-800/60 border border-neutral-200/50 dark:border-white/5 rounded-2xl p-4 shadow-sm backdrop-blur-md ${item.disabled ? 'opacity-40 grayscale-[0.5]' : ''}`}
+                    className={`bg-white/70 dark:bg-neutral-800/60 border border-neutral-200/50 dark:border-white/5 rounded-card p-4 shadow-sm backdrop-blur-md ${item.disabled ? 'opacity-40 grayscale-[0.5]' : ''}`}
                   >
                     <div className="flex items-center justify-between mb-2 pb-2 border-b border-neutral-200/20 dark:border-white/5">
                       <div className="flex items-center gap-2">
@@ -192,7 +192,7 @@ export function ProjectPreviewModal({
                   </div>
                 ))}
                 {(project.workflow || []).length === 0 && (
-                   <div className="py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl flex flex-col items-center justify-center opacity-40">
+                   <div className="py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card flex flex-col items-center justify-center opacity-40">
                       <Layers className="w-10 h-10 mb-2 stroke-1" />
                       <div className="text-[10px] font-black uppercase tracking-widest">No workflow steps</div>
                    </div>

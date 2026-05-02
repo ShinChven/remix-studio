@@ -123,14 +123,14 @@ export function Dashboard() {
       <div className="w-full space-y-8">
         {!isLoading && providers.length === 0 && (
           <section className="animate-in fade-in slide-in-from-top-4 duration-700">
-            <div className="relative overflow-hidden rounded-[32px] border border-indigo-500/20 bg-indigo-500/5 p-6 md:p-8 backdrop-blur-3xl dark:border-indigo-500/30 dark:bg-indigo-500/10">
+            <div className="relative overflow-hidden rounded-card border border-indigo-500/20 bg-indigo-500/5 p-6 md:p-8 backdrop-blur-3xl dark:border-indigo-500/30 dark:bg-indigo-500/10">
               {/* Decorative elements */}
               <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-indigo-500/10 blur-3xl" />
               <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-indigo-500/5 blur-3xl" />
               <Sparkles className="absolute -right-4 top-4 h-16 w-16 text-indigo-500/10 group-hover:rotate-12 transition-transform duration-500" />
               
               <div className="relative flex flex-col items-center gap-6 md:flex-row">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-xl shadow-indigo-600/20">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-card bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-xl shadow-indigo-600/20">
                   <Sparkles className="h-8 w-8" />
                 </div>
                 

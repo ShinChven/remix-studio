@@ -445,7 +445,7 @@ export function PostForm() {
                   ) : (
                     <div
                       className={cn(
-                        'cursor-pointer rounded-2xl border-2 border-dashed py-12 text-center transition-all',
+                        'cursor-pointer rounded-card border-2 border-dashed py-12 text-center transition-all',
                         isDragging ? 'scale-[0.99] border-indigo-500/50 bg-indigo-500/10 shadow-inner' : 'border-neutral-200 bg-white/40 hover:border-indigo-500/30 hover:bg-white/60 dark:border-neutral-800 dark:bg-neutral-950/40 dark:hover:border-indigo-500/30',
                       )}
                     >
@@ -537,7 +537,7 @@ export function PostForm() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-6">
+            <section className="rounded-card border border-emerald-500/10 bg-emerald-500/5 p-6">
               <div className="flex gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
                   <Send className="h-5 w-5 text-emerald-500" />
@@ -556,7 +556,7 @@ export function PostForm() {
 
       {mediaToRemove && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md" onClick={() => setMediaToRemove(null)}>
-          <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
+          <div className="w-full max-w-md rounded-card border border-neutral-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
             <h2 className="text-xl font-bold text-neutral-950 dark:text-white">Remove Media</h2>
             <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
               Are you sure you want to remove this existing media file? It will be removed when you save the post.

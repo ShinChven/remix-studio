@@ -37,7 +37,7 @@ export function ConfirmDialog({
       
       {/* Dialog */}
       <div 
-        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900 animate-in fade-in zoom-in duration-200"
+        className="relative w-full max-w-md overflow-hidden rounded-card border border-neutral-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900 animate-in fade-in zoom-in duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-4">

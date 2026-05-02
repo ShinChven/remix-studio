@@ -123,7 +123,7 @@ export function LibraryCleanup() {
 
         {/* Warning banner */}
         {!allCleaned && (
-          <div className="flex items-start gap-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl p-5">
+          <div className="flex items-start gap-4 bg-amber-500/5 border border-amber-500/20 rounded-card p-5">
             <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-amber-400">
@@ -166,7 +166,7 @@ export function LibraryCleanup() {
           })}
 
           {allCleaned && (
-            <div className="py-12 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-2xl text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl">
+            <div className="py-12 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-card text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl">
               <Unlink className="w-10 h-10 text-neutral-700" />
               <div>
                 <p className="text-base font-medium text-neutral-600 dark:text-neutral-400">{t('libraryCleanup.allCleared')}</p>
@@ -182,7 +182,7 @@ export function LibraryCleanup() {
             <button
               onClick={() => setShowDeleteModal(true)}
               disabled={cleaningAll}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-neutral-900 dark:text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-card text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-neutral-900 dark:text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {cleaningAll ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -195,7 +195,7 @@ export function LibraryCleanup() {
             <button
               onClick={handleDeleteAfterClean}
               disabled={cleaningAll}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-neutral-900 dark:text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-card text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-neutral-900 dark:text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {cleaningAll ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

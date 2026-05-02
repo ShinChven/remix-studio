@@ -109,7 +109,7 @@ const AspectRatioFilterControl = memo(function AspectRatioFilterControl({
       </button>
 
       {showAspectRatioFilter && (
-        <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-card shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
           <button
             type="button"
             onClick={onClear}
@@ -511,7 +511,7 @@ export function AlbumTab({
               return (
                 <div
                   key={item.id}
-                  className={`group rounded-2xl border px-4 py-3 transition-all backdrop-blur-xl ${isSelected ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:border-cyan-500/30'}`}
+                  className={`group rounded-card border px-4 py-3 transition-all backdrop-blur-xl ${isSelected ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:border-cyan-500/30'}`}
                 >
                   <div className="flex items-center gap-2 sm:gap-3">
                     <button
@@ -848,7 +848,7 @@ export function AlbumTab({
               }
               controls
               autoPlay
-              className="w-full max-h-[85vh] rounded-2xl bg-black shadow-2xl"
+              className="w-full max-h-[85vh] rounded-card bg-black shadow-2xl"
             />
             <button
               type="button"
@@ -864,7 +864,7 @@ export function AlbumTab({
       <AlbumPromptModal item={promptItem} onClose={() => setPromptItem(null)} />
       {renameItem && (
         <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !isRenaming && setRenameItem(null)}>
-          <div className="w-full max-w-md rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-5 py-4">
               <h2 className="text-sm font-black text-neutral-900 dark:text-white">{t('projectViewer.album.editFilename')}</h2>
               <button

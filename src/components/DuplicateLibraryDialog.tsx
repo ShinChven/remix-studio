@@ -46,13 +46,13 @@ export function DuplicateLibraryDialog({
       onClick={() => !submitting && onClose()}
     >
       <div
-        className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl rounded-[32px] shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-300"
+        className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl rounded-card shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-8">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-5 min-w-0">
-              <div className="p-4 rounded-3xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex-shrink-0">
+              <div className="p-4 rounded-card bg-blue-500/10 text-blue-400 border border-blue-500/20 flex-shrink-0">
                 <Copy className="w-7 h-7" />
               </div>
               <div className="min-w-0">
@@ -84,7 +84,7 @@ export function DuplicateLibraryDialog({
                 }
               }}
               autoFocus
-              className="mt-2 w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-white outline-none transition-colors focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
+              className="mt-2 w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-white outline-none transition-colors focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
               placeholder={t('libraries.duplicateDialog.placeholder')}
             />
           </div>
@@ -102,7 +102,7 @@ export function DuplicateLibraryDialog({
           <button
             onClick={() => void handleConfirm()}
             disabled={submitting || !name.trim()}
-            className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-[0.98] bg-blue-600 hover:bg-blue-500 text-neutral-900 dark:text-white shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-8 py-3 rounded-card text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-[0.98] bg-blue-600 hover:bg-blue-500 text-neutral-900 dark:text-white shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <span className="flex items-center gap-2">

@@ -48,12 +48,12 @@ export function ExportPackageDialog({
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
 
       <div
-        className="relative w-full max-w-lg max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(720px,calc(100dvh-2rem))] overflow-hidden rounded-[24px] sm:rounded-[32px] border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-[0_50px_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300"
+        className="relative w-full max-w-lg max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(720px,calc(100dvh-2rem))] overflow-hidden rounded-card sm:rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-[0_50px_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-950/30 p-4 sm:p-6">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl sm:rounded-2xl border border-blue-500/20 bg-blue-500/10 p-2.5 sm:p-3 text-blue-400">
+            <div className="rounded-xl sm:rounded-card border border-blue-500/20 bg-blue-500/10 p-2.5 sm:p-3 text-blue-400">
               <Package className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
@@ -72,7 +72,7 @@ export function ExportPackageDialog({
         </div>
 
         <div className="space-y-4 sm:space-y-5 p-4 sm:p-6 overflow-y-auto">
-          <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/60 px-4 py-3">
+          <div className="rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/60 px-4 py-3">
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-neutral-500 dark:text-neutral-500">
               {t('projectViewer.exportDialog.itemCount', { count: itemCount })}
             </p>
@@ -92,7 +92,7 @@ export function ExportPackageDialog({
                   void handleSubmit();
                 }
               }}
-              className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-white outline-none transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-white outline-none transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
               placeholder={t('projectViewer.exportDialog.placeholder')}
               autoFocus
             />
@@ -102,7 +102,7 @@ export function ExportPackageDialog({
             <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.24em] text-neutral-500 dark:text-neutral-500">
               {t('projectViewer.exportDialog.version')}
             </span>
-            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-1">
+            <div className="grid grid-cols-2 gap-2 rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-1">
               {[
                 { value: 'raw' as const, label: t('projectViewer.exportDialog.raw'), icon: Image },
                 { value: 'optimized' as const, label: t('projectViewer.exportDialog.optimized'), icon: Sparkles },
@@ -137,7 +137,7 @@ export function ExportPackageDialog({
           <button
             onClick={() => void handleSubmit()}
             disabled={!packageName.trim() || isSubmitting}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-blue-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-900 dark:text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-card bg-blue-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-900 dark:text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download className="h-3.5 w-3.5" />
             {isSubmitting ? t('projectViewer.exportDialog.queueing') : t('projectViewer.exportDialog.startExport')}

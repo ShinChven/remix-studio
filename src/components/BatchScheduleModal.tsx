@@ -101,7 +101,7 @@ export function BatchScheduleModal({ postIds, onClose, onComplete }: Props) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md overflow-hidden rounded-2xl border border-neutral-200/50 bg-white/90 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-300 dark:border-white/10 dark:bg-neutral-900/95"
+        className="w-full max-w-md overflow-hidden rounded-card border border-neutral-200/50 bg-white/90 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-300 dark:border-white/10 dark:bg-neutral-900/95"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-8">

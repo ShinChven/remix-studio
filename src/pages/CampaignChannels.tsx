@@ -105,7 +105,7 @@ export function CampaignChannels() {
             </div>
           ) : accounts.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-700 dark:bg-white/10 dark:text-white">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-card bg-neutral-100 text-neutral-700 dark:bg-white/10 dark:text-white">
                 <Twitter className="h-8 w-8" />
               </div>
               <h3 className="text-xl font-bold text-neutral-950 dark:text-white">No channels connected</h3>

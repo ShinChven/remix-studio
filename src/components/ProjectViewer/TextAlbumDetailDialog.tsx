@@ -157,7 +157,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
                           key={`${item.id}-ref-${idx}`}
                           type="button"
                           onClick={() => setLightboxData({ images: referenceImages.map(imageDisplayUrl), index: idx })}
-                          className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+                          className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
                         >
                           <img
                             src={imageDisplayUrl(src)}

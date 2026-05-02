@@ -270,10 +270,10 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
           />
         )}
 
-        <section className="rounded-xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl overflow-hidden relative group shadow-sm">
+        <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl overflow-hidden relative group shadow-sm">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-amber-500/5 opacity-50" />
           <div className="relative p-5 md:p-8 flex flex-col md:flex-row items-start gap-4 md:gap-6">
-            <div className="flex-shrink-0 rounded-2xl bg-sky-500/10 p-3 text-sky-400 border border-sky-500/20 shadow-lg shadow-sky-500/5">
+            <div className="flex-shrink-0 rounded-card bg-sky-500/10 p-3 text-sky-400 border border-sky-500/20 shadow-lg shadow-sky-500/5">
               <AlertCircle className="h-5 w-5 md:h-6 md:w-6" />
             </div>
             <div className="flex-1 space-y-6 md:space-y-8">
@@ -285,7 +285,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4 md:p-5 transition-transform hover:scale-[1.01] duration-300">
+                <div className="rounded-card border border-blue-500/20 bg-blue-500/5 p-4 md:p-5 transition-transform hover:scale-[1.01] duration-300">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                     <p className="text-sm font-bold text-blue-300">{t('mcpConnections.connectSection.oauthMethod.title')}</p>
@@ -294,7 +294,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                     {t('mcpConnections.connectSection.oauthMethod.description')}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 md:p-5 transition-transform hover:scale-[1.01] duration-300">
+                <div className="rounded-card border border-amber-500/20 bg-amber-500/5 p-4 md:p-5 transition-transform hover:scale-[1.01] duration-300">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                     <p className="text-sm font-bold text-amber-300">{t('mcpConnections.connectSection.tokenMethod.title')}</p>
@@ -306,7 +306,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-950/60 p-4 md:p-5 shadow-inner">
+                <div className="rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-950/60 p-4 md:p-5 shadow-inner">
                   <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-3">{t('mcpConnections.connectSection.appAddress.label')}</p>
                   <div className="flex items-center gap-2">
                     <code className="min-w-0 flex-1 break-all rounded-xl bg-white dark:bg-neutral-900 px-4 py-3 text-xs md:text-sm text-sky-700 dark:text-sky-300 font-mono border border-neutral-200 dark:border-neutral-800 shadow-sm">{mcpUrl}</code>
@@ -322,7 +322,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                     {t('mcpConnections.connectSection.appAddress.instruction')}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-950/60 p-4 md:p-5 shadow-inner">
+                <div className="rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-950/60 p-4 md:p-5 shadow-inner">
                   <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-3">{t('mcpConnections.connectSection.advancedUrl.label')}</p>
                   <div className="flex items-center gap-2">
                     <code className="min-w-0 flex-1 break-all rounded-xl bg-white dark:bg-neutral-900 px-4 py-3 text-xs md:text-sm text-blue-700 dark:text-blue-300 font-mono border border-neutral-200 dark:border-neutral-800 shadow-sm">{oauthMetadataUrl}</code>
@@ -346,7 +346,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                   { title: t('mcpConnections.connectSection.steps.2.title'), desc: t('mcpConnections.connectSection.steps.2.desc') },
                   { title: t('mcpConnections.connectSection.steps.3.title'), desc: t('mcpConnections.connectSection.steps.3.desc') }
                 ].map((step, i) => (
-                  <div key={i} className="rounded-2xl border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-md p-4 relative overflow-hidden group/step shadow-sm hover:shadow-md transition-shadow">
+                  <div key={i} className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-md p-4 relative overflow-hidden group/step shadow-sm hover:shadow-md transition-shadow">
                     <div className="absolute -right-2 -bottom-2 text-6xl font-display font-black text-neutral-800/10 select-none group-hover/step:text-sky-500/5 transition-colors">{i + 1}</div>
                     <p className="text-xs font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-400 mb-1 relative z-10">{step.title}</p>
                     <p className="text-sm text-neutral-500 dark:text-neutral-500 relative z-10 leading-relaxed">{step.desc}</p>
@@ -354,7 +354,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                 ))}
               </div>
 
-              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 overflow-hidden shadow-inner">
+              <div className="rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 overflow-hidden shadow-inner">
                 <button
                   onClick={() => setShowJsonSetup(!showJsonSetup)}
                   className="w-full flex items-center justify-between p-4 md:p-5 text-left transition-colors hover:bg-neutral-900/50"
@@ -450,7 +450,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
             </button>
           </div>
 
-          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 relative overflow-hidden group/tip">
+          <div className="rounded-card border border-amber-500/20 bg-amber-500/5 p-5 relative overflow-hidden group/tip">
             <div className="absolute right-0 top-0 p-4 opacity-10 group-hover/tip:opacity-20 transition-opacity">
               <Shield className="w-12 h-12 text-amber-500" />
             </div>
@@ -542,10 +542,10 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
           <div className="grid gap-4">
             {isLoading ? (
               [1, 2].map((i) => (
-                <div key={i} className="h-24 rounded-2xl bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 animate-pulse" />
+                <div key={i} className="h-24 rounded-card bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 animate-pulse" />
               ))
             ) : tokens.length === 0 ? (
-              <div className="py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/10 shadow-sm">
+              <div className="py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/10 shadow-sm">
                 <div className="p-4 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                   <Key className="w-8 h-8 text-neutral-700" />
                 </div>
@@ -625,7 +625,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
             </button>
           </div>
 
-          <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5 relative overflow-hidden group/tip">
+          <div className="rounded-card border border-blue-500/20 bg-blue-500/5 p-5 relative overflow-hidden group/tip">
             <div className="absolute right-0 top-0 p-4 opacity-10 group-hover/tip:opacity-20 transition-opacity">
               <CheckCircle className="w-12 h-12 text-blue-500" />
             </div>
@@ -799,10 +799,10 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
           <div className="grid gap-4">
             {isLoading ? (
               [1, 2].map((i) => (
-                <div key={i} className="h-24 rounded-2xl bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 animate-pulse" />
+                <div key={i} className="h-24 rounded-card bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 animate-pulse" />
               ))
             ) : clients.length === 0 ? (
-              <div className="py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/10 shadow-sm">
+              <div className="py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/10 shadow-sm">
                 <div className="p-4 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                   <Shield className="w-8 h-8 text-neutral-700" />
                 </div>
