@@ -67,8 +67,9 @@ jobs:
           generate_release_notes: true
           body: |
             ## Docker Image
-            - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}`
-            - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest` (if on main)
+            ```bash
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            ```
             
             You can pull this version using:
             ```bash
