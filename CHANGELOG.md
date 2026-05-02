@@ -2,6 +2,22 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.7.1] - 2026-05-02
+
+### Added
+
+- **Smooth Theme Transitions**: Implemented circular ripple animation for theme switching using the browser's View Transitions API.
+- **Theme-Aware Thumbnails**: Enhanced `ProjectCard` with theme-aware border styling.
+
+### Fixed
+
+- **Theme Synchronization**: Implemented automated system theme resolution and synchronization in `ThemeContext` to ensure the UI matches the OS preference.
+
+### Changed
+
+- **UX Refinement**: Replaced browser-native `window.confirm` with a custom `ConfirmDialog` for project deletions.
+- **Provider Settings**: Updated assistant provider settings to auto-save on toggle, removing the manual save button.
+
 ## [1.7.0] - 2026-05-02
 
 ### Added
@@ -190,6 +206,7 @@ All notable changes to Remix Studio are documented here by version number.
 - Authentication, admin controls, 2FA, passkeys, and user storage limits.
 - Internationalized UI for English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French.
 
+[1.7.1]: https://github.com/ShinChven/remix-studio/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/ShinChven/remix-studio/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/ShinChven/remix-studio/compare/v1.5.3...v1.6.0
 [1.5.3]: https://github.com/ShinChven/remix-studio/compare/v1.5.2...v1.5.3
