@@ -23,6 +23,11 @@ export class CampaignRepository {
       },
       include: {
         socialAccounts: true,
+        posts: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: { media: true }
+        },
         _count: {
           select: { posts: true }
         }

@@ -338,7 +338,7 @@ export function LibraryCard({ library, isCheckingRefs = false, onTogglePin, onSt
   return (
     <Link
       to={`/library/${library.id}`}
-      className={`${isPinned ? 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-200/60 dark:border-blue-500/30' : 'bg-white/80 dark:bg-neutral-900/40 border-neutral-200/50 dark:border-white/10'} border backdrop-blur-2xl ${typeMeta.borderClassName} p-6 rounded-[20px] text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 flex flex-col h-full`}
+      className={`${isPinned ? 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-200/60 dark:border-blue-500/30' : 'bg-white/80 dark:bg-neutral-900/40 border-neutral-200/50 dark:border-white/10'} border backdrop-blur-2xl ${typeMeta.borderClassName} p-6 rounded-[20px] text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 flex flex-col h-[280px]`}
     >
       <div className="flex items-start justify-between mb-6">
         <div className={`p-3 rounded-xl shadow-sm ${typeMeta.iconClassName}`}>

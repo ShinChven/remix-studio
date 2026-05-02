@@ -207,7 +207,7 @@ export function MainLayout() {
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           <NavItem
             to="/"
-            icon={<LayoutGrid className="w-5 h-5 flex-shrink-0" />}
+            icon={<Compass className="w-5 h-5 flex-shrink-0" />}
             label={t('sidebar.home', 'Home')}
             isActive={location.pathname === '/'}
             isCollapsed={isCollapsed}

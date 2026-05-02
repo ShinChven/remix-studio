@@ -247,7 +247,7 @@ export function Home() {
               </div>
               <div className="flex overflow-x-auto gap-6 pb-6 pt-4 -mx-4 px-4 scrollbar-hide">
                 {libraries.map(lib => (
-                  <div key={lib.id} className="min-w-[260px] sm:min-w-[300px] flex-shrink-0">
+                  <div key={lib.id} className="min-w-[300px] sm:min-w-[320px] flex-shrink-0">
                     <LibraryCard
                       library={lib}
                       onStartAssistantChat={handleStartLibraryChat}
@@ -281,7 +281,10 @@ export function Home() {
               </div>
               <div className="flex overflow-x-auto gap-6 pb-6 pt-4 -mx-4 px-4 scrollbar-hide">
                 {campaigns.map(campaign => {
-                  const thumbnail = `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(campaign.id)}&backgroundColor=0f172a,1e293b,334155&shape1Color=6366f1,818cf8,4f46e5`;
+                  let thumbnail = `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(campaign.id)}&backgroundColor=0f172a,1e293b,334155&shape1Color=6366f1,818cf8,4f46e5`;
+                  if (campaign.posts && campaign.posts.length > 0 && campaign.posts[0].media && campaign.posts[0].media.length > 0) {
+                    thumbnail = campaign.posts[0].media[0].thumbnailUrl || campaign.posts[0].media[0].url || thumbnail;
+                  }
                   return (
                     <div
                       key={campaign.id}

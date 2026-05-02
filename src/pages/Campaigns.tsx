@@ -82,6 +82,11 @@ function mapCampaign(raw: any): CampaignCardModel {
     ? formatCampaignDateTime(new Date(Math.max(...scheduledTimes)))
     : 'Not scheduled';
 
+  let latestPostThumbnail = '';
+  if (posts.length > 0 && posts[0].media && posts[0].media.length > 0) {
+    latestPostThumbnail = posts[0].media[0].thumbnailUrl || posts[0].media[0].url || '';
+  }
+
   return {
     id: raw.id,
     name: raw.name,
@@ -92,7 +97,7 @@ function mapCampaign(raw: any): CampaignCardModel {
     channels: (raw.socialAccounts || []).map((account: SocialAccount) => account.id),
     totalPosts,
     postedPosts,
-    thumbnail: campaignThumbnail(raw.id),
+    thumbnail: latestPostThumbnail || campaignThumbnail(raw.id),
   };
 }
 
