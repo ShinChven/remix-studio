@@ -43,6 +43,11 @@ export class ProjectRepository {
         take: limit,
         include: {
           _count: { select: { jobs: true, albumItems: true } },
+          albumItems: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { id: true, thumbnailUrl: true, optimizedUrl: true, imageUrl: true }
+          }
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
@@ -90,7 +95,7 @@ export class ProjectRepository {
       createdAt: p.createdAt.getTime(),
       workflow: [],
       jobs: [],
-      album: [],
+      album: (p as any).albumItems || [],
       jobCount: p._count.jobs,
       albumCount: p._count.albumItems,
       totalSize: projectSizes[p.id] || 0,

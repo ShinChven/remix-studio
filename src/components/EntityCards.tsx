@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,6 +16,7 @@ import {
   Trash2,
   Type,
   Video,
+  MoreHorizontal,
 } from 'lucide-react';
 import { Library, Project, ProjectType } from '../types';
 
@@ -130,103 +132,175 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, isToggling = false, onStartAssistantChat, onToggleArchive, onDuplicate }: ProjectCardProps) {
   const { t } = useTranslation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const typeMeta = getProjectTypeMeta(project.type);
-  const ProjectIcon = typeMeta.icon;
   const AssetIcon = typeMeta.assetIcon;
   const isArchived = project.status === 'archived';
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.addEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  const lastAlbumItem = project.album && project.album.length > 0 ? project.album[project.album.length - 1] : null;
+  // Use optimizedUrl first for a crisp image on standard card sizes, falling back to thumbnail
+  const bgImage = lastAlbumItem ? (lastAlbumItem.optimizedUrl || lastAlbumItem.thumbnailUrl || lastAlbumItem.imageUrl) : null;
+
+  let bgClass = "bg-neutral-900";
+  if (!bgImage) {
+    switch (project.type) {
+      case 'text': bgClass = "bg-blue-950"; break;
+      case 'video': bgClass = "bg-purple-950"; break;
+      case 'audio': bgClass = "bg-cyan-950"; break;
+      case 'image': default: bgClass = "bg-emerald-950"; break;
+    }
+  }
 
   return (
     <Link
       to={`/project/${project.id}`}
-      className={`bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl ${typeMeta.borderClassName} p-5 md:p-6 rounded-card text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 ${isArchived ? 'opacity-75' : ''} flex min-h-[260px] flex-col`}
+      className={`group relative block h-[280px] rounded-[20px] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-white/5 bg-neutral-900`}
     >
-      <div className="flex items-start justify-between mb-3 md:mb-4">
-        <div className={`p-2.5 md:p-3 rounded-xl group-hover:scale-110 transition-transform shadow-lg ${typeMeta.iconClassName}`}>
-          <ProjectIcon className="w-5 h-5 md:w-6 md:h-6" />
-        </div>
-        <div className="flex items-center gap-2">
-          {onStartAssistantChat && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onStartAssistantChat(project);
-              }}
-              className="p-1.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-all"
-              title={t('projects.projectCard.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })}
-              aria-label={t('projects.projectCard.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })}
-            >
-              <Stars className="w-3.5 h-3.5" />
-            </button>
-          )}
-          {onToggleArchive && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!isToggling) onToggleArchive(project);
-              }}
-              disabled={isToggling}
-              className={`p-1.5 rounded-lg transition-all ${isArchived ? 'text-amber-500 hover:text-amber-400 hover:bg-amber-500/10' : 'text-neutral-500 hover:text-amber-500 hover:bg-amber-500/10'} disabled:opacity-50`}
-              title={t(isArchived ? 'projects.unarchiveProject' : 'projects.archiveProject')}
-            >
-              {isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
-            </button>
-          )}
-          {onDuplicate && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onDuplicate(project);
-              }}
-              className="p-1.5 text-neutral-500 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all"
-              title={t('projectViewer.main.duplicateProject')}
-            >
-              <Copy className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Background Image or Fallback */}
+      {bgImage ? (
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+          style={{ backgroundImage: `url(${bgImage})` }}
+        />
+      ) : (
+        <div className={`absolute inset-0 opacity-40 transition-transform duration-700 group-hover:scale-105 bg-gradient-to-br from-transparent to-black/50 ${bgClass}`} />
+      )}
 
-      <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-base md:text-lg font-semibold text-neutral-900 dark:text-white truncate">{project.name}</h4>
-        {isArchived && (
-          <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 leading-none shrink-0">
-            <Archive className="w-2.5 h-2.5" />
+      {/* Gradient & Blur Overlay */}
+      <div 
+        className="absolute inset-x-0 bottom-0 h-[55%] pointer-events-none transition-opacity duration-300 backdrop-blur-md bg-gradient-to-t from-black/80 via-black/30 to-transparent"
+        style={{
+          maskImage: 'linear-gradient(to top, black 20%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to top, black 20%, transparent 100%)'
+        }}
+      />
+
+      {/* Archived Badge Top-Left */}
+      {isArchived && (
+        <div className="absolute top-4 left-4 z-20">
+          <span className="flex items-center gap-1 bg-black/40 backdrop-blur-md text-white/90 border border-white/20 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest shadow-sm">
+            <Archive className="w-3 h-3" />
             {t('projects.archivedBadge')}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="flex-1">
-        {project.description && (
-          <p className="line-clamp-2 min-h-10 text-sm leading-5 text-neutral-600 dark:text-neutral-400">
-          {project.description}
+      {/* Content */}
+      <div className="absolute inset-0 p-5 md:p-6 flex flex-col justify-end z-10 text-white">
+        
+        {/* Kicker */}
+        <div className="text-[11px] font-medium uppercase tracking-wider text-white/60 mb-1 flex items-center gap-2">
+          {project.type === 'image' ? 'IMAGE' : project.type === 'video' ? 'VIDEO' : project.type === 'audio' ? 'AUDIO' : 'TEXT'}
+        </div>
+
+        {/* Title */}
+        <h4 className="text-xl md:text-2xl font-medium leading-tight mb-1.5 truncate text-white/95">
+          {project.name}
+        </h4>
+
+        {/* Description */}
+        {project.description ? (
+          <p className="text-sm text-white/60 line-clamp-2 mb-4 leading-relaxed font-normal">
+            {project.description}
           </p>
+        ) : (
+          <div className="mb-4" />
         )}
-      </div>
 
-      <div className="mt-4 grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-sm text-neutral-500 dark:text-neutral-500">
-        <div className="flex items-center gap-1.5">
-          <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" />
-          <span className="font-bold">{t('projects.projectCard.jobs', { count: (project.jobCount ?? project.jobs?.length) || 0 })}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <AssetIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-          <span className="font-bold">{t(`projects.projectCard.assets.${typeMeta.assetLabel}`, { count: (project.albumCount ?? project.album?.length) || 0 })}</span>
-        </div>
-        <div className={`flex items-center gap-1.5 font-medium ${typeMeta.accentClassName}`}>
-          <HardDrive className="w-3.5 h-3.5 md:w-4 md:h-4" />
-          <span className="font-bold">{formatSize(project.totalSize || 0)}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5 md:w-4 md:h-4" />
-          <span className="truncate font-bold">{new Date(project.createdAt).toLocaleDateString()}</span>
+        {/* Footer */}
+        <div className="flex items-center justify-between text-white/50">
+          <div className="flex items-center gap-1.5 text-sm font-medium">
+            <AssetIcon className="w-4 h-4" />
+            <span className="w-1 h-1 rounded-full bg-white/30" />
+            <span>{t(`projects.projectCard.assets.${typeMeta.assetLabel}`, { count: (project.albumCount ?? project.album?.length) || 0 })}</span>
+            {(project.totalSize || 0) > 0 && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-white/30" />
+                <span>{formatSize(project.totalSize || 0)}</span>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {onStartAssistantChat && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onStartAssistantChat(project);
+                }}
+                className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors backdrop-blur-sm"
+                title={t('projects.projectCard.startAssistantChat', { defaultValue: 'Start Assistant Chat' })}
+              >
+                <Stars className="w-4 h-4" />
+              </button>
+            )}
+
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsMenuOpen(!isMenuOpen);
+                }}
+                className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors backdrop-blur-sm"
+                title={t('common.moreOptions', { defaultValue: 'More options' })}
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
+
+              {isMenuOpen && (
+                <div className="absolute bottom-full right-0 mb-2 w-48 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-700 py-1 z-50 overflow-hidden text-sm animate-in fade-in slide-in-from-bottom-2">
+                  {onDuplicate && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsMenuOpen(false);
+                        onDuplicate(project);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                    >
+                      <Copy className="w-4 h-4" />
+                      {t('projectViewer.main.duplicateProject')}
+                    </button>
+                  )}
+                  {onToggleArchive && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsMenuOpen(false);
+                        if (!isToggling) onToggleArchive(project);
+                      }}
+                      disabled={isToggling}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50"
+                    >
+                      {isArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
+                      {t(isArchived ? 'projects.unarchiveProject' : 'projects.archiveProject')}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-
-      <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
     </Link>
   );
 }
