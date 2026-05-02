@@ -10,6 +10,7 @@
     "exports": "내보내기",
     "recycleBin": "휴지통",
     "storage": "저장공간",
+    "campaigns": "캠페인",
     "userManagement": "사용자 관리"
   },
   "mainLayout": {

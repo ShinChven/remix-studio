@@ -10,6 +10,7 @@
     "exports": "匯出",
     "recycleBin": "資源回收筒",
     "storage": "存儲",
+    "campaigns": "行銷活動",
     "userManagement": "用戶管理"
   },
   "mainLayout": {

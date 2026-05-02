@@ -1,0 +1,32 @@
+{
+  "title": "Campaigns",
+  "description": "Plan, schedule, and manage multi-channel social media marketing campaigns with AI content assistance and real-time publishing tracking.",
+  "allCampaigns": "All Campaigns",
+  "searchPlaceholder": "Search campaigns...",
+  "noCampaigns": "No campaigns found",
+  "createOne": "Create one now",
+  "recentlyPosted": "Recently Posted",
+  "scheduledPosts": "Scheduled Posts",
+  "upcomingQueue": "Upcoming Queue",
+  "viewAllHistory": "View All History",
+  "viewAllScheduled": "View All Scheduled",
+  "openCalendar": "Open Calendar",
+  "status": {
+    "active": "Active Campaign",
+    "paused": "Paused",
+    "setup": "Setup"
+  },
+  "menu": {
+    "edit": "Edit Details",
+    "pause": "Pause Campaign",
+    "resume": "Resume Campaign",
+    "delete": "Delete"
+  },
+  "deleteDialog": {
+    "title": "Delete Campaign",
+    "description": "Delete \"{{name}}\"? This cannot be undone and will delete all associated posts.",
+    "confirm": "Delete Campaign",
+    "cancel": "Cancel",
+    "deleting": "Deleting..."
+  }
+}

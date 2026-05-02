@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Activity,
   ArrowRight,
@@ -112,6 +113,7 @@ function getPlatformIcon(platform = '', className = "h-3.5 w-3.5") {
 }
 
 export function Campaigns() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [campaigns, setCampaigns] = useState<CampaignCardModel[]>([]);
@@ -223,15 +225,15 @@ export function Campaigns() {
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
       <div className="w-full space-y-8 pb-20">
         <PageHeader
-          title="Campaigns"
-          description="Organize your posts into projects and track their progress."
+          title={t('title')}
+          description={t('description')}
           actions={(
             <button
               className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/40 px-4 text-sm font-bold text-neutral-700 shadow-sm backdrop-blur-3xl transition hover:bg-white/60 hover:text-neutral-950 active:scale-95 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-neutral-800/60 dark:hover:text-white sm:w-auto"
               onClick={() => navigate('/campaigns/channels')}
             >
               <Share2 className="h-4 w-4" />
-              Channels
+              {t('channels')}
             </button>
           )}
         />
@@ -242,14 +244,14 @@ export function Campaigns() {
             <div className="flex flex-col gap-4 sm:flex-row sm:h-10 sm:items-center sm:justify-between">
               <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
                 <Megaphone className="h-5 w-5 text-indigo-500" />
-                All Campaigns {filteredCampaigns.length > 0 && <span className="text-sm font-normal text-neutral-500 dark:text-neutral-500">({filteredCampaigns.length})</span>}
+                {t('allCampaigns')} {filteredCampaigns.length > 0 && <span className="text-sm font-normal text-neutral-500 dark:text-neutral-500">({filteredCampaigns.length})</span>}
               </h3>
 
               <div className="flex items-center gap-3">
                 <div className="relative min-w-0 flex-1 sm:flex-none">
                   <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-neutral-500 dark:text-neutral-500" />
                   <input
-                    placeholder="Search campaigns..."
+                    placeholder={t('searchPlaceholder')}
                     className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white/40 py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 shadow-sm outline-none backdrop-blur-3xl transition-all placeholder:text-neutral-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 sm:w-64"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -299,8 +301,8 @@ export function Campaigns() {
             ) : filteredCampaigns.length === 0 ? (
               <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-card border-2 border-dashed border-neutral-200 bg-white/40 p-12 text-center text-neutral-500 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
                 <Megaphone className="h-8 w-8 opacity-20" />
-                <h3 className="text-xl font-bold text-neutral-950 dark:text-white">No campaigns found</h3>
-                <button onClick={() => navigate('/campaigns/new')} className="text-indigo-600 font-bold hover:underline">Create one now</button>
+                <h3 className="text-xl font-bold text-neutral-950 dark:text-white">{t('noCampaigns')}</h3>
+                <button onClick={() => navigate('/campaigns/new')} className="text-indigo-600 font-bold hover:underline">{t('createOne')}</button>
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2">
@@ -327,7 +329,7 @@ export function Campaigns() {
                       <div className="relative z-10 flex flex-col p-5 w-full">
                         {/* Status Label */}
                         <div className="text-[12px] font-bold tracking-widest text-white/80 mb-1 uppercase">
-                          {campaign.status === 'Active' ? 'Active Campaign' : 'Paused'}
+                          {campaign.status === 'Active' ? t('status.active') : t('status.paused')}
                         </div>
                         
                         {/* Title */}
@@ -357,7 +359,7 @@ export function Campaigns() {
                             <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z"/>
                             </svg>
-                            <span>{campaign.totalPosts > 0 ? `${completedPosts}/${campaign.totalPosts} posts` : 'Setup'}</span>
+                            <span>{campaign.totalPosts > 0 ? `${completedPosts}/${campaign.totalPosts} posts` : t('status.setup')}</span>
                           </div>
 
                           <div className="relative" onClick={(event) => event.stopPropagation()}>
@@ -371,13 +373,13 @@ export function Campaigns() {
                             {openMenuId === campaign.id && (
                               <div className="absolute bottom-full right-0 mb-2 z-30 w-44 overflow-hidden rounded-xl border border-white/10 bg-neutral-900/95 py-1 text-sm shadow-2xl backdrop-blur-xl">
                                 <button className="block w-full px-4 py-2 text-left text-white/80 hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)}>
-                                  Edit Details
+                                  {t('menu.edit')}
                                 </button>
                                 <button className="block w-full px-4 py-2 text-left text-white/80 hover:bg-white/10" onClick={() => void toggleCampaignStatus(campaign)}>
-                                  {campaign.status === 'Active' ? 'Pause Campaign' : 'Resume Campaign'}
+                                  {campaign.status === 'Active' ? t('menu.pause') : t('menu.resume')}
                                 </button>
                                 <button className="block w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/10" onClick={() => { setOpenMenuId(null); setDeleteTarget(campaign); }}>
-                                  Delete
+                                  {t('menu.delete')}
                                 </button>
                               </div>
                             )}
@@ -397,7 +399,7 @@ export function Campaigns() {
               <div className="flex h-10 items-center justify-between">
                 <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
                   <Activity className="h-5 w-5 text-indigo-500" />
-                  Recently Posted
+                  {t('recentlyPosted')}
                 </h3>
               </div>
 
@@ -508,7 +510,7 @@ export function Campaigns() {
                     className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-300/70 bg-neutral-200/60 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-200 hover:text-neutral-900 dark:border-white/10 dark:bg-white/10 dark:text-neutral-300 dark:hover:bg-white/15 dark:hover:text-white"
                     onClick={() => navigate('/campaigns/history')}
                   >
-                    View All History
+                    {t('viewAllHistory')}
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 )}
@@ -519,7 +521,7 @@ export function Campaigns() {
               <div className="flex h-10 items-center justify-between">
                 <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
                   <Calendar className="h-5 w-5 text-indigo-500" />
-                  Scheduled Posts
+                  {t('scheduledPosts')}
                 </h3>
               </div>
 
@@ -540,7 +542,7 @@ export function Campaigns() {
                       <div className="h-12 w-12 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center mb-4">
                         <Clock className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                       </div>
-                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white">Upcoming Queue</h4>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white">{t('upcomingQueue')}</h4>
                       <p className="text-xs text-neutral-500 mt-1 mb-6 max-w-[200px]">
                         No scheduled posts found. Start planning your campaigns!
                       </p>
@@ -591,7 +593,7 @@ export function Campaigns() {
                   className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-300/70 bg-neutral-200/60 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-200 hover:text-neutral-900 dark:border-white/10 dark:bg-white/10 dark:text-neutral-300 dark:hover:bg-white/15 dark:hover:text-white"
                   onClick={() => navigate('/campaigns/scheduled')}
                 >
-                  {scheduledPosts.length > 0 ? 'View All Scheduled' : 'Open Calendar'}
+                  {scheduledPosts.length > 0 ? t('viewAllScheduled') : t('openCalendar')}
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
@@ -602,10 +604,10 @@ export function Campaigns() {
 
       <ConfirmDialog
         isOpen={!!deleteTarget}
-        title="Delete Campaign"
-        description={`Delete ${deleteTarget?.name || 'this campaign'}? This cannot be undone and will delete all associated posts.`}
-        confirmLabel={deletingCampaignId ? 'Deleting...' : 'Delete Campaign'}
-        cancelLabel="Cancel"
+        title={t('deleteDialog.title')}
+        description={t('deleteDialog.description', { name: deleteTarget?.name || 'this campaign' })}
+        confirmLabel={deletingCampaignId ? t('deleteDialog.deleting') : t('deleteDialog.confirm')}
+        cancelLabel={t('deleteDialog.cancel')}
         confirmDisabled={!!deletingCampaignId}
         onConfirm={() => void confirmDelete()}
         onCancel={() => {

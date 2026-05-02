@@ -10,6 +10,7 @@
     "exports": "Exports",
     "recycleBin": "Recycle Bin",
     "storage": "Storage",
+    "campaigns": "Campaigns",
     "userManagement": "User Management"
   },
   "mainLayout": {

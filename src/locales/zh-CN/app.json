@@ -10,6 +10,7 @@
     "exports": "导出",
     "recycleBin": "回收站",
     "storage": "存储",
+    "campaigns": "营销活动",
     "userManagement": "用户管理"
   },
   "mainLayout": {

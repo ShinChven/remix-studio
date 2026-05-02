@@ -10,6 +10,7 @@
     "exports": "エクスポート",
     "recycleBin": "ゴミ箱",
     "storage": "ストレージ",
+    "campaigns": "キャンペーン",
     "userManagement": "ユーザー管理"
   },
   "mainLayout": {

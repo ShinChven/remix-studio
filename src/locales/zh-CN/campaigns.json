@@ -1,0 +1,33 @@
+{
+  "title": "营销活动",
+  "description": "规划、定时并管理多渠道社交媒体营销活动，支持 AI 内容创作助手和实时发布进度跟踪。",
+  "channels": "渠道管理",
+  "allCampaigns": "所有活动",
+  "searchPlaceholder": "搜索活动...",
+  "noCampaigns": "未找到活动",
+  "createOne": "现在创建一个",
+  "recentlyPosted": "最近发布",
+  "scheduledPosts": "定时发布",
+  "upcomingQueue": "待发布队列",
+  "viewAllHistory": "查看所有历史",
+  "viewAllScheduled": "查看所有定时",
+  "openCalendar": "打开日历",
+  "status": {
+    "active": "正在进行",
+    "paused": "已暂停",
+    "setup": "待设置"
+  },
+  "menu": {
+    "edit": "编辑详情",
+    "pause": "暂停活动",
+    "resume": "恢复活动",
+    "delete": "删除"
+  },
+  "deleteDialog": {
+    "title": "删除活动",
+    "description": "删除“{{name}}”？此操作无法撤销，且将删除所有相关帖子。",
+    "confirm": "删除活动",
+    "cancel": "取消",
+    "deleting": "正在删除..."
+  }
+}

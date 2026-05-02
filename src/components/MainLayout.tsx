@@ -244,7 +244,7 @@ export function MainLayout() {
           <NavItem
             to="/campaigns"
             icon={<Send className="w-5 h-5 flex-shrink-0" />}
-            label={t('sidebar.campaigns', 'Campaigns')}
+            label={t('sidebar.campaigns')}
             isActive={location.pathname === '/campaigns' || location.pathname.startsWith('/campaigns/') || location.pathname.startsWith('/campaign/')}
             isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
