@@ -12,15 +12,14 @@ import {
   Linkedin,
   Megaphone,
   MoreHorizontal,
-  MoreVertical,
   Plus,
   Search,
   Share2,
-  Trash2,
   Twitter,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { deleteCampaign, fetchCampaigns, fetchRecentPosts, fetchScheduledPosts, fetchSocialAccounts, updateCampaign } from '../api';
+import { deleteCampaign, fetchCampaigns, fetchRecentPosts, fetchScheduledPosts, updateCampaign } from '../api';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 
@@ -49,10 +48,6 @@ interface CampaignCardModel {
 
 function toCampaignStatus(status?: string): CampaignStatus {
   return status === 'active' ? 'Active' : 'Inactive';
-}
-
-function channelName(account?: SocialAccount) {
-  return account?.profileName || account?.platform || 'Channel';
 }
 
 function fallbackAvatar(id: string) {
@@ -124,6 +119,7 @@ export function Campaigns() {
   const [isLoading, setIsLoading] = useState(true);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CampaignCardModel | null>(null);
+  const [deletingCampaignId, setDeletingCampaignId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
   const [recentPostsLoading, setRecentPostsLoading] = useState(true);
@@ -211,12 +207,15 @@ export function Campaigns() {
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
+      setDeletingCampaignId(deleteTarget.id);
       await deleteCampaign(deleteTarget.id);
       setCampaigns((prev) => prev.filter((campaign) => campaign.id !== deleteTarget.id));
       setDeleteTarget(null);
       toast.success('Campaign deleted');
     } catch (error: any) {
       toast.error(error?.message || 'Failed to delete campaign');
+    } finally {
+      setDeletingCampaignId(null);
     }
   };
 
@@ -377,7 +376,7 @@ export function Campaigns() {
                                 <button className="block w-full px-4 py-2 text-left text-white/80 hover:bg-white/10" onClick={() => void toggleCampaignStatus(campaign)}>
                                   {campaign.status === 'Active' ? 'Pause Campaign' : 'Resume Campaign'}
                                 </button>
-                                <button className="block w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/10" onClick={() => setDeleteTarget(campaign)}>
+                                <button className="block w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/10" onClick={() => { setOpenMenuId(null); setDeleteTarget(campaign); }}>
                                   Delete
                                 </button>
                               </div>
@@ -601,24 +600,19 @@ export function Campaigns() {
         </div>
       </div>
 
-      {deleteTarget && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md" onClick={() => setDeleteTarget(null)}>
-          <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
-            <h2 className="text-xl font-bold text-neutral-950 dark:text-white">Delete Campaign</h2>
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-              Are you sure you want to delete <strong>{deleteTarget.name}</strong>? This action cannot be undone and will delete all associated posts.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button className="rounded-lg px-4 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10" onClick={() => setDeleteTarget(null)}>
-                Cancel
-              </button>
-              <button className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700" onClick={() => void confirmDelete()}>
-                Delete Campaign
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Campaign"
+        description={`Delete ${deleteTarget?.name || 'this campaign'}? This cannot be undone and will delete all associated posts.`}
+        confirmLabel={deletingCampaignId ? 'Deleting...' : 'Delete Campaign'}
+        cancelLabel="Cancel"
+        confirmDisabled={!!deletingCampaignId}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => {
+          if (!deletingCampaignId) setDeleteTarget(null);
+        }}
+        variant="danger"
+      />
     </div>
   );
 }

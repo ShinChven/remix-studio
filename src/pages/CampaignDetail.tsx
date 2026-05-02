@@ -40,6 +40,7 @@ import {
   updatePost,
 } from '../api';
 import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 
@@ -193,6 +194,8 @@ export function CampaignDetail() {
   const [quickSavingId, setQuickSavingId] = useState<string | null>(null);
   const [sendingPostId, setSendingPostId] = useState<string | null>(null);
   const [deletePostTarget, setDeletePostTarget] = useState<CampaignPost | null>(null);
+  const [deleteCampaignOpen, setDeleteCampaignOpen] = useState(false);
+  const [deletingCampaign, setDeletingCampaign] = useState(false);
   const [aiPostId, setAiPostId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ media: PostMedia[]; index: number } | null>(null);
 
@@ -434,13 +437,16 @@ export function CampaignDetail() {
 
   const handleDeleteCampaign = async () => {
     if (!id) return;
-    if (!window.confirm('Are you sure you want to completely delete this campaign and all its posts? This action cannot be undone.')) return;
     try {
+      setDeletingCampaign(true);
       await deleteCampaign(id);
       toast.success('Campaign deleted');
       navigate('/campaigns');
     } catch (error: any) {
       toast.error(error?.message || 'Failed to delete campaign');
+    } finally {
+      setDeletingCampaign(false);
+      setDeleteCampaignOpen(false);
     }
   };
 
@@ -611,7 +617,7 @@ export function CampaignDetail() {
                   </div>
                 </div>
                 <div className="h-px bg-neutral-200 dark:bg-white/10" />
-                <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-500/20" onClick={() => void handleDeleteCampaign()}>
+                <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-500/20" onClick={() => setDeleteCampaignOpen(true)}>
                   <Trash2 className="h-4 w-4" />
                   Delete Campaign
                 </button>
@@ -965,6 +971,20 @@ export function CampaignDetail() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteCampaignOpen}
+        title="Delete Campaign"
+        description={`Delete ${campaign.name}? This cannot be undone and will delete all associated posts.`}
+        confirmLabel={deletingCampaign ? 'Deleting...' : 'Delete Campaign'}
+        cancelLabel="Cancel"
+        confirmDisabled={deletingCampaign}
+        onConfirm={() => void handleDeleteCampaign()}
+        onCancel={() => {
+          if (!deletingCampaign) setDeleteCampaignOpen(false);
+        }}
+        variant="danger"
+      />
 
       {aiPostId && (
         <BatchAiGenerateModal

@@ -1,3 +1,5 @@
+## Overview
+
 - Read what's in ./design folder for specific job.
 - all delete actions should have confirmation.
 - the app listens to port 3000.
@@ -13,3 +15,7 @@
 
 ## Database Migrations
 - **ALWAYS PREPARE FOR MIGRATION**: When modifying `schema.prisma` or adding database fields, you must always provide or generate the corresponding Prisma migration files to ensure online instances and production environments can migrate successfully smoothly.
+
+## UX
+
+- Ban Window.confirm. should use common component to better UX.
