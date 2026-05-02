@@ -55,9 +55,10 @@ COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 # Copy backup/restore scripts and create backup directory
 COPY docker/backup.sh /app/backup.sh
 COPY docker/restore.sh /app/restore.sh
-RUN chmod +x /app/backup.sh /app/restore.sh && mkdir -p /app/backups
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/backup.sh /app/restore.sh /app/docker-entrypoint.sh && mkdir -p /app/backups
 
 EXPOSE 3000
 
 # Run migrations and start the server.
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
+CMD ["/app/docker-entrypoint.sh"]
