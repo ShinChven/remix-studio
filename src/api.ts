@@ -1439,9 +1439,36 @@ export async function createCampaign(data: { name: string; description?: string;
   return handleResponse<any>(res, 'Failed to create campaign');
 }
 
-export async function fetchCampaign(id: string): Promise<any> {
-  const res = await apiFetch(`/api/campaigns/${id}`, { headers: getHeaders() });
+export async function fetchCampaign(id: string, includePosts = true): Promise<any> {
+  const params = includePosts ? '' : '?includePosts=false';
+  const res = await apiFetch(`/api/campaigns/${id}${params}`, { headers: getHeaders() });
   return handleResponse<any>(res, 'Failed to get campaign');
+}
+
+export async function fetchCampaignPosts(
+  campaignId: string,
+  params: { page?: number; pageSize?: number; q?: string; status?: string; sort?: string } = {},
+): Promise<{ items: any[]; total: number; page: number; pageSize: number; totalPages: number }> {
+  const search = new URLSearchParams();
+  search.set('page', String(params.page || 1));
+  search.set('pageSize', String(params.pageSize || 50));
+  if (params.q) search.set('q', params.q);
+  if (params.status && params.status !== 'all') search.set('status', params.status);
+  if (params.sort) search.set('sort', params.sort);
+  const res = await apiFetch(`/api/campaigns/${campaignId}/posts?${search.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<any>(res, 'Failed to fetch campaign posts');
+}
+
+export async function fetchCampaignPostIds(
+  campaignId: string,
+  params: { q?: string; status?: string; sort?: string } = {},
+): Promise<{ ids: string[]; total: number }> {
+  const search = new URLSearchParams();
+  if (params.q) search.set('q', params.q);
+  if (params.status && params.status !== 'all') search.set('status', params.status);
+  if (params.sort) search.set('sort', params.sort);
+  const res = await apiFetch(`/api/campaigns/${campaignId}/posts/ids?${search.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<any>(res, 'Failed to fetch campaign post ids');
 }
 
 export async function updateCampaign(id: string, data: { name?: string; description?: string | null; socialAccountIds?: string[]; status?: string }): Promise<any> {

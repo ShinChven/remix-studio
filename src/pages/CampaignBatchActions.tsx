@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Clock,
@@ -19,6 +19,8 @@ import {
   deletePost,
   fetchCampaign,
   fetchBatchGeneratePostTextStatus,
+  fetchCampaignPostIds,
+  fetchCampaignPosts,
   sendPostNow,
 } from '../api';
 import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
@@ -68,8 +70,11 @@ export function CampaignBatchActions() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [campaign, setCampaign] = useState<any>(null);
   const [posts, setPosts] = useState<BatchPost[]>([]);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([]);
+  const [allMatchingSelected, setAllMatchingSelected] = useState(false);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -81,24 +86,40 @@ export function CampaignBatchActions() {
   const searchQuery = searchParams.get('q') || '';
   const statusFilter = searchParams.get('status') || 'all';
   const sortKey = (searchParams.get('sort') || 'scheduled_desc') as SortKey;
+  const page = Math.max(1, Number(searchParams.get('page') || 1));
+  const pageSize = Math.max(1, Math.min(1000, Number(searchParams.get('pageSize') || 50)));
 
   const updateQuery = (updates: Record<string, string>) => {
     const params = new URLSearchParams(searchParams);
+    const resetsSelection = Object.keys(updates).some((key) => key !== 'page');
     for (const [key, value] of Object.entries(updates)) {
       if (value) params.set(key, value);
       else params.delete(key);
     }
+    if (resetsSelection) {
+      params.set('page', '1');
+      setSelectedPostIds([]);
+      setAllMatchingSelected(false);
+    }
     setSearchParams(params);
   };
 
-  const loadData = async (silent = false, preserveSelection = false) => {
+  const loadData = async (silent = false, preserveSelection = true) => {
     if (!id) return;
     if (!silent) setIsLoading(true);
     try {
-      const data = await fetchCampaign(id);
-      setCampaign(data);
-      setPosts(data.posts || []);
-      if (!preserveSelection) setSelectedPostIds([]);
+      const [campaignData, postData] = await Promise.all([
+        campaign ? Promise.resolve(campaign) : fetchCampaign(id, false),
+        fetchCampaignPosts(id, { page, pageSize, q: searchQuery, status: statusFilter, sort: sortKey }),
+      ]);
+      setCampaign(campaignData);
+      setPosts(postData.items || []);
+      setTotalPosts(postData.total || 0);
+      setTotalPages(postData.totalPages || 1);
+      if (!preserveSelection) {
+        setSelectedPostIds([]);
+        setAllMatchingSelected(false);
+      }
     } catch (error: any) {
       toast.error(error?.message || 'Failed to load batch actions');
     } finally {
@@ -107,8 +128,8 @@ export function CampaignBatchActions() {
   };
 
   useEffect(() => {
-    void loadData();
-  }, [id]);
+    void loadData(false, true);
+  }, [id, page, pageSize, searchQuery, statusFilter, sortKey]);
 
   useEffect(() => {
     if (!aiTask?.batchId || aiTask.status === 'completed' || aiTask.status === 'failed') return;
@@ -159,23 +180,7 @@ export function CampaignBatchActions() {
     };
   }, [aiTask?.batchId, aiTask?.completed, aiTask?.status]);
 
-  const visiblePosts = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return posts
-      .filter((post) => statusFilter === 'all' || post.status === statusFilter)
-      .filter((post) => !q || (post.textContent || '').toLowerCase().includes(q))
-      .slice()
-      .sort((a, b) => {
-        const aCreated = new Date(a.createdAt || 0).getTime();
-        const bCreated = new Date(b.createdAt || 0).getTime();
-        const aScheduled = a.scheduledAt ? new Date(a.scheduledAt).getTime() : Number.POSITIVE_INFINITY;
-        const bScheduled = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Number.POSITIVE_INFINITY;
-        if (sortKey === 'scheduled_asc') return aScheduled - bScheduled;
-        if (sortKey === 'created_desc') return bCreated - aCreated;
-        if (sortKey === 'created_asc') return aCreated - bCreated;
-        return bScheduled - aScheduled;
-      });
-  }, [posts, searchQuery, sortKey, statusFilter]);
+  const visiblePosts = posts;
 
   const allVisibleSelected = visiblePosts.length > 0 && visiblePosts.every((post) => selectedPostIds.includes(post.id));
 
@@ -183,12 +188,14 @@ export function CampaignBatchActions() {
     if (allVisibleSelected) {
       const visibleIds = new Set(visiblePosts.map((post) => post.id));
       setSelectedPostIds((prev) => prev.filter((id) => !visibleIds.has(id)));
+      setAllMatchingSelected(false);
     } else {
       setSelectedPostIds((prev) => Array.from(new Set([...prev, ...visiblePosts.map((post) => post.id)])));
     }
   };
 
   const toggleSelectPost = (postId: string, index: number, shiftKey?: boolean) => {
+    setAllMatchingSelected(false);
     setSelectedPostIds((prev) => {
       if (shiftKey && lastSelectedIndex !== null) {
         const start = Math.min(lastSelectedIndex, index);
@@ -199,6 +206,18 @@ export function CampaignBatchActions() {
       setLastSelectedIndex(index);
       return prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId];
     });
+  };
+
+  const selectAllMatchingPosts = async () => {
+    if (!id) return;
+    try {
+      const data = await fetchCampaignPostIds(id, { q: searchQuery, status: statusFilter, sort: sortKey });
+      setSelectedPostIds(data.ids);
+      setAllMatchingSelected(true);
+      toast.success(`Selected ${data.total} matching post${data.total === 1 ? '' : 's'}`);
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to select matching posts');
+    }
   };
 
   const handleBatchSend = async () => {
@@ -219,7 +238,7 @@ export function CampaignBatchActions() {
     }
     if (fail > 0) toast.warning(`Sent ${ok}, failed ${fail}`);
     else toast.success(`Sent ${ok} post${ok === 1 ? '' : 's'}`);
-    await loadData(true);
+    await loadData(true, false);
   };
 
   const handleBatchUnschedule = async () => {
@@ -228,7 +247,7 @@ export function CampaignBatchActions() {
       const result = await batchUnschedulePosts(selectedPostIds);
       if (result.skipped.length > 0) toast.warning(`Unscheduled ${result.updated}. Skipped ${result.skipped.length}.`);
       else toast.success(`Unscheduled ${result.updated} post${result.updated === 1 ? '' : 's'}`);
-      await loadData(true);
+      await loadData(true, false);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to unschedule posts');
     }
@@ -245,7 +264,7 @@ export function CampaignBatchActions() {
       }
       toast.success(`Deleted ${ok} post${ok === 1 ? '' : 's'}`);
       setDeleteOpen(false);
-      await loadData(true);
+      await loadData(true, false);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to delete posts');
     } finally {
@@ -301,6 +320,14 @@ export function CampaignBatchActions() {
               <option value="created_desc">Created (Newest First)</option>
               <option value="created_asc">Created (Oldest First)</option>
             </select>
+            <select value={pageSize} onChange={(event) => updateQuery({ pageSize: event.target.value })} className="h-10 rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold shadow-sm outline-none backdrop-blur-3xl focus:border-indigo-500/50 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white">
+              <option value="25">25 / page</option>
+              <option value="50">50 / page</option>
+              <option value="100">100 / page</option>
+              <option value="250">250 / page</option>
+              <option value="500">500 / page</option>
+              <option value="1000">1000 / page</option>
+            </select>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-neutral-200 pt-4 dark:border-white/10">
@@ -323,6 +350,35 @@ export function CampaignBatchActions() {
               <Trash2 className="h-4 w-4" /> Delete
             </button>
           </div>
+
+          {allVisibleSelected && totalPosts > visiblePosts.length && !allMatchingSelected && (
+            <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-800 dark:text-amber-200">
+              All {visiblePosts.length} posts on this page are selected.
+              <button
+                type="button"
+                className="ml-2 font-black text-amber-900 underline underline-offset-2 dark:text-amber-100"
+                onClick={() => void selectAllMatchingPosts()}
+              >
+                Select all {totalPosts} matching posts
+              </button>
+            </div>
+          )}
+
+          {allMatchingSelected && (
+            <div className="mt-4 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-4 py-3 text-sm font-medium text-indigo-800 dark:text-indigo-200">
+              All {selectedPostIds.length} matching posts are selected.
+              <button
+                type="button"
+                className="ml-2 font-black text-indigo-900 underline underline-offset-2 dark:text-indigo-100"
+                onClick={() => {
+                  setSelectedPostIds([]);
+                  setAllMatchingSelected(false);
+                }}
+              >
+                Clear selection
+              </button>
+            </div>
+          )}
 
           {aiTask && (
             <div className="mt-4 rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-4">
@@ -425,6 +481,32 @@ export function CampaignBatchActions() {
                 )}
               </tbody>
             </table>
+          </div>
+          <div className="flex flex-col gap-3 border-t border-neutral-200 px-5 py-4 text-sm font-medium text-neutral-500 dark:border-white/10 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              Showing {totalPosts === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, totalPosts)} of {totalPosts}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={page <= 1}
+                className="rounded-lg border border-neutral-200 px-3 py-1.5 font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
+                onClick={() => updateQuery({ page: String(page - 1) })}
+              >
+                Previous
+              </button>
+              <span className="px-2 text-xs font-black uppercase tracking-widest">
+                Page {page} / {Math.max(1, totalPages)}
+              </span>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                className="rounded-lg border border-neutral-200 px-3 py-1.5 font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
+                onClick={() => updateQuery({ page: String(page + 1) })}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </section>
       </div>

@@ -221,28 +221,32 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
   campaignsRouter.get('/api/campaigns/:id', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;
     const id = c.req.param('id');
+    const includePosts = c.req.query('includePosts') !== 'false';
     
     try {
       const campaign = await prisma.campaign.findFirst({
         where: { id, userId: user.userId },
         include: {
           socialAccounts: true,
-          posts: {
+          ...(includePosts ? { posts: {
             include: {
               media: { orderBy: { position: 'asc' } },
               executions: { include: { socialAccount: true } }
             },
             orderBy: { createdAt: 'desc' }
-          }
+          } } : {})
         }
       });
       
       if (!campaign) {
         return c.json({ error: 'Campaign not found' }, 404);
       }
+      if (!includePosts) {
+        return c.json(campaign);
+      }
       return c.json({
         ...campaign,
-        posts: await Promise.all(campaign.posts.map((post) => signPostMediaUrls(storage, post))),
+        posts: await Promise.all((campaign as any).posts.map((post: any) => signPostMediaUrls(storage, post))),
       });
     } catch (error) {
       console.error('Failed to get campaign:', error);

@@ -410,6 +410,93 @@ export function createPostsRouter(
     status: z.string().optional().default('draft'),
   });
 
+  const buildCampaignPostWhere = (userId: string, campaignId: string, q?: string | null, status?: string | null) => ({
+    userId,
+    campaignId,
+    ...(status && status !== 'all' ? { status } : {}),
+    ...(q?.trim() ? { textContent: { contains: q.trim(), mode: 'insensitive' as const } } : {}),
+  });
+
+  const campaignPostOrderBy = (sort = 'scheduled_desc') => {
+    if (sort === 'scheduled_asc') return [{ scheduledAt: 'asc' as const }, { createdAt: 'desc' as const }];
+    if (sort === 'created_asc') return [{ createdAt: 'asc' as const }];
+    if (sort === 'created_desc') return [{ createdAt: 'desc' as const }];
+    return [{ scheduledAt: 'desc' as const }, { createdAt: 'desc' as const }];
+  };
+
+  postsRouter.get('/api/campaigns/:campaignId/posts', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const campaignId = c.req.param('campaignId');
+    const page = Math.max(1, Number(c.req.query('page') || 1));
+    const pageSize = Math.max(1, Math.min(1000, Number(c.req.query('pageSize') || 50)));
+    const skip = (page - 1) * pageSize;
+    const q = c.req.query('q');
+    const status = c.req.query('status');
+    const sort = c.req.query('sort') || 'scheduled_desc';
+
+    try {
+      const campaign = await prisma.campaign.findFirst({
+        where: { id: campaignId, userId: user.userId },
+        select: { id: true },
+      });
+      if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
+
+      const where = buildCampaignPostWhere(user.userId, campaignId, q, status);
+      const [total, posts] = await Promise.all([
+        prisma.post.count({ where }),
+        prisma.post.findMany({
+          where,
+          include: {
+            media: { orderBy: { position: 'asc' } },
+            executions: { include: { socialAccount: true } },
+          },
+          orderBy: campaignPostOrderBy(sort),
+          skip,
+          take: pageSize,
+        }),
+      ]);
+
+      return c.json({
+        items: await Promise.all(posts.map((post) => signPostMediaUrls(storage, post))),
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      });
+    } catch (error) {
+      console.error('Failed to fetch campaign posts:', error);
+      return c.json({ error: 'Failed to fetch campaign posts' }, 500);
+    }
+  });
+
+  postsRouter.get('/api/campaigns/:campaignId/posts/ids', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const campaignId = c.req.param('campaignId');
+    const q = c.req.query('q');
+    const status = c.req.query('status');
+    const sort = c.req.query('sort') || 'scheduled_desc';
+
+    try {
+      const campaign = await prisma.campaign.findFirst({
+        where: { id: campaignId, userId: user.userId },
+        select: { id: true },
+      });
+      if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
+
+      const where = buildCampaignPostWhere(user.userId, campaignId, q, status);
+      const posts = await prisma.post.findMany({
+        where,
+        select: { id: true },
+        orderBy: campaignPostOrderBy(sort),
+      });
+
+      return c.json({ ids: posts.map((post) => post.id), total: posts.length });
+    } catch (error) {
+      console.error('Failed to fetch campaign post ids:', error);
+      return c.json({ error: 'Failed to fetch campaign post ids' }, 500);
+    }
+  });
+
   postsRouter.post('/api/posts', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;
     try {
