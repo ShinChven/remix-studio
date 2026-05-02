@@ -40,13 +40,13 @@ All notable changes to Remix Studio are documented here by version number.
 
 - Automated Prisma migrations on container startup.
 
-## [1.5.1] - 2026-05-02
+## [1.5.1] - 2026-05-02 (This version is broken)
 
 ### Added
 
 - Added validation and security constraints to campaign and post MCP tools.
 
-## [1.5.0] - 2026-05-02
+## [1.5.0] - 2026-05-02 (This version is broken)
 
 ### Added
 
