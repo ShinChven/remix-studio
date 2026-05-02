@@ -122,6 +122,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [selectedQueueIds, setSelectedQueueIds] = useState<Set<string>>(new Set());
   const [selectedAlbumIds, setSelectedAlbumIds] = useState<Set<string>>(new Set());
   const [lastSelectedAlbumId, setLastSelectedAlbumId] = useState<string | null>(null);
+  const [lastSelectedDraftId, setLastSelectedDraftId] = useState<string | null>(null);
+  const [lastSelectedQueueId, setLastSelectedQueueId] = useState<string | null>(null);
+  const [lastSelectedCompletedId, setLastSelectedCompletedId] = useState<string | null>(null);
   const [showDeleteAlbumModal, setShowDeleteAlbumModal] = useState(false);
   const [showDeleteCompletedSelectedModal, setShowDeleteCompletedSelectedModal] = useState(false);
   const [showDeleteQueueSelectedModal, setShowDeleteQueueSelectedModal] = useState(false);
@@ -777,12 +780,27 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
 
-  const toggleDraftSelection = (jobId: string) => {
+  const toggleDraftSelection = (jobId: string, isShiftPressed: boolean, scopeIds: string[]) => {
     setSelectedDraftIds(prev => {
       const next = new Set(prev);
-      if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+      if (isShiftPressed && lastSelectedDraftId !== null) {
+        const lastIndex = scopeIds.indexOf(lastSelectedDraftId);
+        const currentIndex = scopeIds.indexOf(jobId);
+        if (lastIndex !== -1 && currentIndex !== -1) {
+          const start = Math.min(lastIndex, currentIndex);
+          const end = Math.max(lastIndex, currentIndex);
+          const shouldSelect = !prev.has(jobId);
+          for (let i = start; i <= end; i++) {
+            if (shouldSelect) next.add(scopeIds[i]);
+            else next.delete(scopeIds[i]);
+          }
+        }
+      } else {
+        if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+      }
       return next;
     });
+    setLastSelectedDraftId(jobId);
   };
 
   const toggleSelectAllDrafts = () => {
@@ -790,12 +808,27 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setSelectedDraftIds(selectedDraftIds.size === draftIds.length ? new Set() : new Set(draftIds));
   };
 
-  const toggleQueueSelection = (jobId: string) => {
+  const toggleQueueSelection = (jobId: string, isShiftPressed: boolean, scopeIds: string[]) => {
     setSelectedQueueIds(prev => {
       const next = new Set(prev);
-      if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+      if (isShiftPressed && lastSelectedQueueId !== null) {
+        const lastIndex = scopeIds.indexOf(lastSelectedQueueId);
+        const currentIndex = scopeIds.indexOf(jobId);
+        if (lastIndex !== -1 && currentIndex !== -1) {
+          const start = Math.min(lastIndex, currentIndex);
+          const end = Math.max(lastIndex, currentIndex);
+          const shouldSelect = !prev.has(jobId);
+          for (let i = start; i <= end; i++) {
+            if (shouldSelect) next.add(scopeIds[i]);
+            else next.delete(scopeIds[i]);
+          }
+        }
+      } else {
+        if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+      }
       return next;
     });
+    setLastSelectedQueueId(jobId);
   };
 
   const toggleSelectAllQueue = () => {
@@ -828,12 +861,27 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   };
 
-  const toggleCompletedSelection = (jobId: string) => {
+  const toggleCompletedSelection = (jobId: string, isShiftPressed: boolean, scopeIds: string[]) => {
     setSelectedCompletedIds(prev => {
       const next = new Set(prev);
-      if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+      if (isShiftPressed && lastSelectedCompletedId !== null) {
+        const lastIndex = scopeIds.indexOf(lastSelectedCompletedId);
+        const currentIndex = scopeIds.indexOf(jobId);
+        if (lastIndex !== -1 && currentIndex !== -1) {
+          const start = Math.min(lastIndex, currentIndex);
+          const end = Math.max(lastIndex, currentIndex);
+          const shouldSelect = !prev.has(jobId);
+          for (let i = start; i <= end; i++) {
+            if (shouldSelect) next.add(scopeIds[i]);
+            else next.delete(scopeIds[i]);
+          }
+        }
+      } else {
+        if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+      }
       return next;
     });
+    setLastSelectedCompletedId(jobId);
   };
 
   const toggleSelectAllCompleted = () => {

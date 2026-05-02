@@ -18,7 +18,7 @@ interface JobListItemProps {
   actionButtons?: React.ReactNode;
   expandedContent?: React.ReactNode;
   onToggleExpand: (id: string) => void;
-  onToggleSelect: (id: string) => void;
+  onToggleSelect: (id: string, isShiftPressed: boolean) => void;
 }
 
 const accentClasses: Record<AccentColor, string> = {
@@ -77,7 +77,7 @@ export function JobListItem({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onToggleSelect(job.id);
+              onToggleSelect(job.id, e.shiftKey);
             }}
             className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isSelected ? selectedTextClasses[accentColor] : 'text-neutral-500 dark:text-neutral-500 hover:text-white'}`}
           >

@@ -51,6 +51,8 @@ interface PickerItem {
   rawUrl?: string;
   sourceLabel: string;
   aspectRatio?: string;
+  quality?: string;
+  resolution?: string;
 }
 
 type BatchQueueItem =
@@ -87,6 +89,17 @@ type BatchQueueItem =
 
 function importKey(mode: PickerMode, sourceId: string, itemId: string) {
   return JSON.stringify([mode, sourceId, itemId]);
+}
+
+function getCssAspectRatio(value?: string) {
+  const ratio = value?.trim();
+  if (!ratio) return '1 / 1';
+  const match = ratio.match(/^(\d+(?:\.\d+)?)\s*[:x]\s*(\d+(?:\.\d+)?)$/i);
+  if (!match) return '1 / 1';
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (!width || !height) return '1 / 1';
+  return `${width} / ${height}`;
 }
 
 function parseImportKey(key: string): [PickerMode, string, string] {
@@ -130,6 +143,8 @@ function albumItemToPickerItem(item: AlbumItem, project: PickerSource): PickerIt
     rawUrl: item.imageUrl,
     sourceLabel: project.name,
     aspectRatio: item.aspectRatio,
+    quality: item.quality,
+    resolution: item.resolution,
   };
 }
 
@@ -160,6 +175,7 @@ function MediaPickerModal({
 }: MediaPickerModalProps) {
   const [query, setQuery] = useState('');
   const [aspectRatioFilter, setAspectRatioFilter] = useState<string>('all');
+  const [lastSelectedKey, setLastSelectedKey] = useState<string | null>(null);
   const activeSource = sources.find((source) => source.id === activeSourceId);
   const selectedCount = selectedKeys.size;
 
@@ -174,6 +190,7 @@ function MediaPickerModal({
   useEffect(() => {
     setQuery('');
     setAspectRatioFilter('all');
+    setLastSelectedKey(null);
   }, [activeSourceId]);
 
   const filteredItems = useMemo(() => {
@@ -194,6 +211,27 @@ function MediaPickerModal({
   ), [filteredItems, mode, activeSourceId]);
 
   const isAllFilteredSelected = filteredKeys.length > 0 && filteredKeys.every((key) => selectedKeys.has(key));
+
+  const handleItemClick = (key: string, isShiftPressed: boolean) => {
+    if (isShiftPressed && lastSelectedKey && lastSelectedKey !== key) {
+      const lastIndex = filteredKeys.indexOf(lastSelectedKey);
+      const currentIndex = filteredKeys.indexOf(key);
+      if (lastIndex !== -1 && currentIndex !== -1) {
+        const start = Math.min(lastIndex, currentIndex);
+        const end = Math.max(lastIndex, currentIndex);
+        const shouldSelect = !selectedKeys.has(key);
+        for (let i = start; i <= end; i++) {
+          const rangeKey = filteredKeys[i];
+          const isSelected = selectedKeys.has(rangeKey);
+          if (shouldSelect !== isSelected) onToggleItem(rangeKey);
+        }
+        setLastSelectedKey(key);
+        return;
+      }
+    }
+    onToggleItem(key);
+    setLastSelectedKey(key);
+  };
 
   const handleToggleSelectAll = () => {
     if (isAllFilteredSelected) {
@@ -343,18 +381,19 @@ function MediaPickerModal({
                 {filteredItems.map((item) => {
                   const key = importKey(mode, activeSourceId || '', item.id);
                   const selected = selectedKeys.has(key);
+                  const aspectRatioStr = getCssAspectRatio(item.aspectRatio);
                   return (
                     <button
                       key={item.id}
                       className={cn(
-                        'group overflow-hidden rounded-card border bg-white text-left shadow-sm transition active:scale-[0.99] dark:bg-neutral-900',
+                        'group flex flex-col overflow-hidden rounded-card border bg-white text-left shadow-sm transition active:scale-[0.99] dark:bg-neutral-900',
                         selected
                           ? 'border-indigo-500 ring-2 ring-indigo-500/30'
                           : 'border-neutral-200 hover:border-indigo-400/50 dark:border-white/10',
                       )}
-                      onClick={() => onToggleItem(key)}
+                      onClick={(e) => handleItemClick(key, e.shiftKey)}
                     >
-                      <div className="relative aspect-video bg-neutral-100 dark:bg-neutral-800">
+                      <div className="relative w-full shrink-0 bg-neutral-100 dark:bg-neutral-800" style={{ aspectRatio: aspectRatioStr }}>
                         {item.previewUrl ? (
                           <img src={imageDisplayUrl(item.previewUrl)} alt={item.title || item.id} className="h-full w-full object-cover" />
                         ) : (
@@ -371,6 +410,11 @@ function MediaPickerModal({
                               {item.aspectRatio}
                             </div>
                           )}
+                          {(item.resolution || item.quality) && (
+                            <div className="rounded-lg bg-emerald-600/80 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-white w-fit">
+                              {item.resolution || item.quality}
+                            </div>
+                          )}
                         </div>
                         {selected && (
                           <div className="absolute inset-0 flex items-center justify-center bg-indigo-600/30">
@@ -380,7 +424,7 @@ function MediaPickerModal({
                           </div>
                         )}
                       </div>
-                      <div className="p-3">
+                      <div className="mt-auto w-full p-3">
                         <p className="truncate text-sm font-bold text-neutral-950 dark:text-white">{item.title || item.id}</p>
                         <p className="mt-1 truncate font-mono text-[10px] text-neutral-500">{item.rawUrl || 'No raw key'}</p>
                       </div>

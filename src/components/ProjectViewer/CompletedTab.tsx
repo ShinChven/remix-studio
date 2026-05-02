@@ -16,7 +16,7 @@ interface CompletedTabProps {
   setJobToDeleteId: (id: string) => void;
   setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void, onIndexChange?: (index: number) => void } | null) => void;
   selectedCompletedIds: Set<string>;
-  toggleCompletedSelection: (id: string) => void;
+  toggleCompletedSelection: (id: string, isShiftPressed: boolean, scopeIds: string[]) => void;
   toggleSelectAllCompleted: () => void;
   setShowDeleteSelectedModal: (show: boolean) => void;
   projectType?: ProjectType;
@@ -67,7 +67,9 @@ export function CompletedTab({
 
         {/* Jobs List */}
         <div className="space-y-0">
-          {completedJobs.map(job => {
+          {(() => {
+            const scopeIds = completedJobs.map(j => j.id);
+            return completedJobs.map(job => {
             const isExpanded = expandedJobId === job.id;
             const isSelected = selectedCompletedIds.has(job.id);
 
@@ -81,7 +83,7 @@ export function CompletedTab({
                 providerName={getProviderName(job.providerId)}
                 modelName={getModelName(job.providerId, job.modelConfigId)}
                 onToggleExpand={toggleJobExpand}
-                onToggleSelect={toggleCompletedSelection}
+                onToggleSelect={(id, isShiftPressed) => toggleCompletedSelection(id, isShiftPressed, scopeIds)}
                 statusBadge={
                   <InfoChip className="text-emerald-500 bg-emerald-500/5 border-emerald-500/20">
                     {t('projectViewer.completed.completed')}
@@ -137,7 +139,8 @@ export function CompletedTab({
                 }
               />
             );
-          })}
+          });
+          })()}
 
           {completedJobs.length === 0 && (
             <EmptyState

@@ -12,7 +12,7 @@ interface QueueTabProps {
   queueJobs: Job[];
   selectedQueueIds: Set<string>;
   toggleSelectAllQueue: () => void;
-  toggleQueueSelection: (id: string) => void;
+  toggleQueueSelection: (id: string, isShiftPressed: boolean, scopeIds: string[]) => void;
   retrySelectedQueue: () => void;
   deleteSelectedQueue: () => void;
   clearAllFailed: () => void;
@@ -95,7 +95,9 @@ export function QueueTab({
 
         {/* Active Jobs */}
         <div className="space-y-0">
-            {queueJobs.map(task => {
+            {(() => {
+              const scopeIds = queueJobs.map(j => j.id);
+              return queueJobs.map(task => {
               const isExpanded = expandedJobId === task.id;
               const isSelected = selectedQueueIds.has(task.id);
               return (
@@ -109,7 +111,7 @@ export function QueueTab({
                   providerName={getProviderName(task.providerId)}
                   modelName={getModelName(task.providerId, task.modelConfigId)}
                   onToggleExpand={toggleJobExpand}
-                  onToggleSelect={toggleQueueSelection}
+                  onToggleSelect={(id, isShiftPressed) => toggleQueueSelection(id, isShiftPressed, scopeIds)}
                   metaChips={
                     <>
                       {task.aspectRatio && (
@@ -235,7 +237,8 @@ export function QueueTab({
                   }
                 />
               );
-            })}
+            });
+            })()}
             {queueJobs.length === 0 && (
               <EmptyState
                 Icon={List}

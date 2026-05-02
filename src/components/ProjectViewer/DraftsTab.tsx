@@ -17,7 +17,7 @@ interface DraftsTabProps {
   runAllDrafts: () => void;
   expandedJobId: string | null;
   toggleJobExpand: (id: string) => void;
-  toggleDraftSelection: (id: string) => void;
+  toggleDraftSelection: (id: string, isShiftPressed: boolean, scopeIds: string[]) => void;
   getProviderName: (id?: string) => string;
   getModelName: (providerId?: string, modelId?: string) => string;
   runJob: (id: string) => void;
@@ -155,7 +155,9 @@ export function DraftsTab({
           />
         )}
         <div className="space-y-0">
-            {draftJobs.map(task => {
+            {(() => {
+              const scopeIds = draftJobs.map(j => j.id);
+              return draftJobs.map(task => {
               const isExpanded = expandedJobId === task.id;
               const isSelected = selectedDraftIds.has(task.id);
               return (
@@ -168,7 +170,7 @@ export function DraftsTab({
                   providerName={getProviderName(task.providerId)}
                   modelName={getModelName(task.providerId, task.modelConfigId)}
                   onToggleExpand={toggleJobExpand}
-                  onToggleSelect={toggleDraftSelection}
+                  onToggleSelect={(id, isShiftPressed) => toggleDraftSelection(id, isShiftPressed, scopeIds)}
                   metaChips={
                     <>
                       {task.aspectRatio && (
@@ -277,7 +279,8 @@ export function DraftsTab({
                   }
                 />
               );
-            })}
+            });
+            })()}
             {draftJobs.length === 0 && <StackedGallery />}
         </div>
       </div>
