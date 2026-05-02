@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Library, Project } from '../types';
-import { Plus, LayoutGrid, Clock, Loader2, Sparkles } from 'lucide-react';
+import { Library, Project, ProjectStatus } from '../types';
+import { Plus, LayoutGrid, Clock, Loader2, Sparkles, Trash2 } from 'lucide-react';
 import { PageHeader } from './PageHeader';
-import { fetchProjects, fetchLibraries, fetchAssistantProviders } from '../api';
+import { fetchProjects, fetchLibraries, fetchAssistantProviders, deleteProject } from '../api';
 import { Provider } from '../types';
 import type { BoundContext, AttachedImage } from './Assistant/AssistantComposer';
 import { LibraryCard, ProjectCard } from './EntityCards';
@@ -68,6 +68,25 @@ export function Dashboard() {
     load();
     return () => { mounted = false; };
   }, []);
+  
+  const loadProjects = async () => {
+    try {
+      const projRes = await fetchProjects(1, 8, undefined, 'active');
+      setProjects(projRes.items);
+    } catch (err) {
+      console.error('Failed to reload projects:', err);
+    }
+  };
+
+  const handleDeleteProject = async (project: Project) => {
+    if (!window.confirm(t('projects.deleteConfirmation', { name: project.name }))) return;
+    try {
+      await deleteProject(project.id);
+      await loadProjects();
+    } catch (err) {
+      console.error('Failed to delete project:', err);
+    }
+  };
 
   const addProject = () => navigate('/project/new');
   const addLibrary = () => navigate('/library/new');
@@ -156,7 +175,7 @@ export function Dashboard() {
         )}
 
         {/* Unified Hero Section - Matrix Style */}
-        <section className="flex flex-col items-center justify-center py-8 md:py-16">
+        <section className="flex flex-col items-center justify-center py-10 md:py-24">
           <AssistantHero
             selectedProviderId={selectedProviderId}
             setSelectedProviderId={setSelectedProviderId}
@@ -190,17 +209,19 @@ export function Dashboard() {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="flex overflow-x-auto gap-6 pb-6 -mx-4 px-4 scrollbar-hide">
                 {projects.map(project => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    onStartAssistantChat={handleStartProjectChat}
-                    onDuplicate={(item) => navigate('/project/new', { state: { copyFrom: item.id } })}
-                  />
+                  <div key={project.id} className="min-w-[300px] sm:min-w-[320px] flex-shrink-0">
+                    <ProjectCard
+                      project={project}
+                      onStartAssistantChat={handleStartProjectChat}
+                      onDuplicate={(item) => navigate('/project/new', { state: { copyFrom: item.id } })}
+                      onDelete={handleDeleteProject}
+                    />
+                  </div>
                 ))}
                 {projects.length === 0 && (
-                  <div className="col-span-full p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
+                  <div className="flex-1 p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
                     {t('dashboard.noProjects')}
                   </div>
                 )}
@@ -224,16 +245,17 @@ export function Dashboard() {
                   </button>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex overflow-x-auto gap-6 pb-6 -mx-4 px-4 scrollbar-hide">
                 {libraries.map(lib => (
-                  <LibraryCard
-                    key={lib.id}
-                    library={lib}
-                    onStartAssistantChat={handleStartLibraryChat}
-                  />
+                  <div key={lib.id} className="min-w-[260px] sm:min-w-[300px] flex-shrink-0">
+                    <LibraryCard
+                      library={lib}
+                      onStartAssistantChat={handleStartLibraryChat}
+                    />
+                  </div>
                 ))}
                 {libraries.length === 0 && (
-                  <div className="col-span-full p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
+                  <div className="flex-1 p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
                     {t('dashboard.noLibraries')}
                   </div>
                 )}

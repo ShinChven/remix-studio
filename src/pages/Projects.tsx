@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Project } from '../types';
 import { Activity, Plus, Play, Clock, ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
-import { fetchProjects, updateProject } from '../api';
+import { fetchProjects, updateProject, deleteProject } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import type { BoundContext } from '../components/Assistant/AssistantComposer';
 import { ProjectCard } from '../components/EntityCards';
@@ -104,6 +104,21 @@ export function Projects() {
     } catch (e) {
       console.error(e);
       toast.error(t('projects.archiveFailed'));
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const handleDeleteProject = async (project: Project) => {
+    if (!window.confirm(t('projects.deleteConfirmation', { name: project.name }))) return;
+    setTogglingId(project.id);
+    try {
+      await deleteProject(project.id);
+      toast.success(t('projects.deleteSuccess', { name: project.name }));
+      await loadProjects();
+    } catch (e) {
+      console.error(e);
+      toast.error(t('projects.deleteFailed'));
     } finally {
       setTogglingId(null);
     }
@@ -227,6 +242,7 @@ export function Projects() {
                     onStartAssistantChat={handleStartAssistantChat}
                     onToggleArchive={handleToggleArchive}
                     onDuplicate={(item) => navigate('/project/new', { state: { copyFrom: item.id } })}
+                    onDelete={handleDeleteProject}
                   />
                 ))}
 

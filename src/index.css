@@ -217,3 +217,12 @@ button:disabled,
 .json-null {
   @apply text-rose-500 dark:text-rose-400 italic;
 }
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -128,9 +128,10 @@ interface ProjectCardProps {
   onStartAssistantChat?: (project: Project) => void;
   onToggleArchive?: (project: Project) => void;
   onDuplicate?: (project: Project) => void;
+  onDelete?: (project: Project) => void;
 }
 
-export function ProjectCard({ project, isToggling = false, onStartAssistantChat, onToggleArchive, onDuplicate }: ProjectCardProps) {
+export function ProjectCard({ project, isToggling = false, onStartAssistantChat, onToggleArchive, onDuplicate, onDelete }: ProjectCardProps) {
   const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -295,6 +296,20 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
                       {t(isArchived ? 'projects.unarchiveProject' : 'projects.archiveProject')}
                     </button>
                   )}
+                  {onDelete && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsMenuOpen(false);
+                        onDelete(project);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {t('common.delete', { defaultValue: 'Delete' })}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -323,13 +338,13 @@ export function LibraryCard({ library, isCheckingRefs = false, onTogglePin, onSt
   return (
     <Link
       to={`/library/${library.id}`}
-      className={`${isPinned ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-200/60 dark:border-blue-500/20' : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5'} border backdrop-blur-xl ${typeMeta.borderClassName} p-5 rounded-card text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 duration-300`}
+      className={`${isPinned ? 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-200/60 dark:border-blue-500/30' : 'bg-white/80 dark:bg-neutral-900/40 border-neutral-200/50 dark:border-white/10'} border backdrop-blur-2xl ${typeMeta.borderClassName} p-6 rounded-[20px] text-left transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 flex flex-col h-full`}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 rounded-xl shadow-lg ${typeMeta.iconClassName}`}>
+      <div className="flex items-start justify-between mb-6">
+        <div className={`p-3 rounded-xl shadow-sm ${typeMeta.iconClassName}`}>
           <TypeIcon className="w-5 h-5" />
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {onTogglePin && (
             <button
               onClick={(e) => {
@@ -337,10 +352,10 @@ export function LibraryCard({ library, isCheckingRefs = false, onTogglePin, onSt
                 e.stopPropagation();
                 onTogglePin(library);
               }}
-              className="p-1.5 text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
+              className="p-2 text-neutral-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-full transition-all"
               title={isPinned ? t('libraries.libraryCard.unpin') : t('libraries.libraryCard.pin')}
             >
-              {isPinned ? <Pin className="w-3.5 h-3.5" fill="currentColor" /> : <Pin className="w-3.5 h-3.5" />}
+              {isPinned ? <Pin className="w-4 h-4" fill="currentColor" /> : <Pin className="w-4 h-4" />}
             </button>
           )}
           {onStartAssistantChat && (
@@ -350,11 +365,10 @@ export function LibraryCard({ library, isCheckingRefs = false, onTogglePin, onSt
                 e.stopPropagation();
                 onStartAssistantChat(library);
               }}
-              className="p-1.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-all"
-              title={t('libraries.libraryCard.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
-              aria-label={t('libraries.libraryCard.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
+              className="p-2 text-neutral-500 hover:text-amber-500 hover:bg-amber-500/10 rounded-full transition-all"
+              title={t('libraries.libraryCard.startAssistantChat')}
             >
-              <Stars className="w-3.5 h-3.5" />
+              <Stars className="w-4 h-4" />
             </button>
           )}
           {onDuplicate && (
@@ -364,10 +378,10 @@ export function LibraryCard({ library, isCheckingRefs = false, onTogglePin, onSt
                 e.stopPropagation();
                 onDuplicate(library);
               }}
-              className="p-1.5 text-neutral-500 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all"
+              className="p-2 text-neutral-500 hover:text-green-500 hover:bg-green-500/10 rounded-full transition-all"
               title={t('libraries.libraryCard.duplicate')}
             >
-              <Copy className="w-3.5 h-3.5" />
+              <Copy className="w-4 h-4" />
             </button>
           )}
           {onDelete && (
@@ -378,41 +392,34 @@ export function LibraryCard({ library, isCheckingRefs = false, onTogglePin, onSt
                 onDelete(library);
               }}
               disabled={isCheckingRefs}
-              className="p-1.5 text-neutral-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all disabled:opacity-50"
+              className="p-2 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all disabled:opacity-50"
               title={t('libraryEditor.deleteLibrary')}
             >
-              {isCheckingRefs ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              {isCheckingRefs ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             </button>
           )}
         </div>
       </div>
 
-      <h4 className="text-base font-bold text-neutral-900 dark:text-white truncate mb-2">{library.name}</h4>
-
-      {library.description && (
-        <p className="mb-4 line-clamp-2 min-h-10 text-sm leading-5 text-neutral-600 dark:text-neutral-400">
-          {library.description}
-        </p>
-      )}
-
-      <div className="flex items-center gap-x-4 gap-y-1.5 text-xs text-neutral-500 dark:text-neutral-500">
-        <div className="flex items-center gap-1.5 capitalize">
-          <TypeIcon className="w-3.5 h-3.5" />
-          <span>{library.type || 'text'}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <LayoutGrid className="w-3.5 h-3.5" />
-          <span>{t('libraries.libraryCard.items', { count: library.itemCount ?? library.items?.length ?? 0 })}</span>
-        </div>
-        {library.updatedAt && (
-          <div className="flex min-w-0 items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5" />
-            <span className="truncate">{formatCompactDateTime(library.updatedAt)}</span>
-          </div>
+      <div className="flex-1">
+        <h4 className="text-lg font-bold text-neutral-900 dark:text-white truncate mb-2">{library.name}</h4>
+        {library.description && (
+          <p className="line-clamp-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 mb-4">
+            {library.description}
+          </p>
         )}
       </div>
 
-      <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${typeMeta.glowClassName} to-transparent opacity-100 transition-opacity`} />
+      <div className="flex items-center gap-4 text-[11px] font-medium text-neutral-500 dark:text-neutral-500 mt-auto pt-4 border-t border-neutral-200/50 dark:border-white/5">
+        <div className="flex items-center gap-1.5 uppercase tracking-wider">
+          <TypeIcon className="w-3.5 h-3.5" />
+          <span>{library.type || 'text'}</span>
+        </div>
+        <div className="flex items-center gap-1.5 uppercase tracking-wider">
+          <LayoutGrid className="w-3.5 h-3.5" />
+          <span>{t('libraries.libraryCard.items', { count: library.itemCount ?? library.items?.length ?? 0 })}</span>
+        </div>
+      </div>
     </Link>
   );
 }
