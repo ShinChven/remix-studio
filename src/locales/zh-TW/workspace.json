@@ -291,6 +291,7 @@
   },
   "assistant": {
     "title": "助手",
+    "chatProvidersTitle": "為助手啟用服務商",
     "newChat": "新建對話",
     "conversations": "對話列表",
     "noConversations": "尚無對話",

@@ -291,6 +291,7 @@
   },
   "assistant": {
     "title": "アシスタント",
+    "chatProvidersTitle": "アシスタントのプロバイダーを有効にする",
     "newChat": "新しいチャット",
     "conversations": "会話一覧",
     "noConversations": "会話はまだありません",

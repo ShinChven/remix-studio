@@ -291,6 +291,7 @@
   },
   "assistant": {
     "title": "Assistant",
+    "chatProvidersTitle": "Activer les fournisseurs pour l'Assistant",
     "newChat": "Nouvelle discussion",
     "conversations": "Discussions",
     "noConversations": "Aucune discussion pour le moment",

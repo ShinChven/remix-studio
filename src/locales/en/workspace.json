@@ -286,6 +286,7 @@
   },
   "assistant": {
     "title": "Assistant",
+    "chatProvidersTitle": "Enable providers for Assistant",
     "greetings": {
       "0": "What do you have in mind?",
       "1": "What do you want to create today?",

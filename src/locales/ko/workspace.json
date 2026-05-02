@@ -291,6 +291,7 @@
   },
   "assistant": {
     "title": "어시스턴트",
+    "chatProvidersTitle": "어시스턴트용 제공자 활성화",
     "newChat": "새 대화",
     "conversations": "대화 목록",
     "noConversations": "대화가 없습니다",

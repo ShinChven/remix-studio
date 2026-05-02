@@ -294,29 +294,25 @@ export function AssistantSettingsPage() {
     setSearchParams(next, { replace: true });
   };
 
-  const handleToggleProvider = (providerId: string) => {
-    setEnabledProviderIds((current) => {
-      const isEnabled = current.includes(providerId);
-      if (isEnabled && current.length === 1) {
-        toast.error(
-          t('assistant.minimumProviderValidation', {
-            defaultValue: 'Keep at least one provider enabled for chat.',
-          }),
-        );
-        return current;
-      }
+  const handleToggleProvider = async (providerId: string) => {
+    const isEnabled = enabledProviderIds.includes(providerId);
+    if (isEnabled && enabledProviderIds.length === 1) {
+      toast.error(
+        t('assistant.minimumProviderValidation', {
+          defaultValue: 'Keep at least one provider enabled for chat.',
+        }),
+      );
+      return;
+    }
 
-      return isEnabled
-        ? current.filter((id) => id !== providerId)
-        : [...current, providerId];
-    });
-  };
+    const nextEnabledIds = isEnabled
+      ? enabledProviderIds.filter((id) => id !== providerId)
+      : [...enabledProviderIds, providerId];
 
-  const handleSaveProviders = async () => {
     const validProviderIds = providerEntries
       .filter(({ models }) => models.length > 0)
       .map(({ provider }) => provider.id);
-    const normalizedEnabledIds = enabledProviderIds.filter((providerId) => validProviderIds.includes(providerId));
+    const normalizedEnabledIds = nextEnabledIds.filter((id) => validProviderIds.includes(id));
 
     if (normalizedEnabledIds.length === 0) {
       toast.error(
@@ -331,7 +327,7 @@ export function AssistantSettingsPage() {
     try {
       setStoredEnabledAssistantProviderIds(normalizedEnabledIds);
 
-      const enabledProviders = providers.filter((provider) => normalizedEnabledIds.includes(provider.id));
+      const enabledProviders = providers.filter((p) => normalizedEnabledIds.includes(p.id));
       const normalizedSelection = normalizeAssistantProviderSelection(
         enabledProviders,
         getStoredValue(PROVIDER_STORAGE_KEY),
@@ -343,7 +339,7 @@ export function AssistantSettingsPage() {
       setEnabledProviderIds(normalizedEnabledIds);
       toast.success(
         t('assistant.providersSaved', {
-          defaultValue: 'Chat-enabled providers updated for all chats.',
+          defaultValue: 'Chat-enabled providers updated.',
         }),
       );
     } catch (error) {
@@ -518,7 +514,7 @@ export function AssistantSettingsPage() {
                     {t('assistant.chatProvidersSection', { defaultValue: 'Chat providers' })}
                   </p>
                   <h2 className="mt-2 text-xl font-bold text-neutral-900 dark:text-white">
-                    {t('assistant.chatProvidersTitle', { defaultValue: 'Enable providers for all chats' })}
+                    {t('assistant.chatProvidersTitle', { defaultValue: 'Enable providers for Assistant' })}
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm text-neutral-600 dark:text-neutral-400">
                     {t('assistant.chatProvidersDescription', {
@@ -534,26 +530,17 @@ export function AssistantSettingsPage() {
                   </Link>
                 </div>
 
-                <div className="flex flex-col items-start gap-3 rounded-card border border-neutral-200/60 bg-white/70 px-4 py-3 text-sm shadow-sm dark:border-white/5 dark:bg-neutral-900/60 lg:min-w-60">
-                  <div className="flex items-center gap-2">
-                    <Layers3 className="h-4 w-4 text-indigo-500" />
-                    <span className="font-semibold text-neutral-900 dark:text-white">
-                      {t('assistant.enabledProviderCount', {
-                        defaultValue: '{{count}} enabled',
-                        count: enabledProviderIds.length,
-                      })}
-                    </span>
+                  <div className="flex flex-col items-start gap-3 rounded-card border border-neutral-200/60 bg-white/70 px-4 py-3 text-sm shadow-sm dark:border-white/5 dark:bg-neutral-900/60 lg:min-w-60">
+                    <div className="flex items-center gap-2">
+                      <Layers3 className="h-4 w-4 text-indigo-500" />
+                      <span className="font-semibold text-neutral-900 dark:text-white">
+                        {t('assistant.enabledProviderCount', {
+                          defaultValue: '{{count}} enabled',
+                          count: enabledProviderIds.length,
+                        })}
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleSaveProviders}
-                    disabled={isSavingProviders || isLoadingProviders}
-                    className="inline-flex items-center justify-center gap-2 rounded-card bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSavingProviders ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                    {t('assistant.saveProviderSettings', { defaultValue: 'Save provider settings' })}
-                  </button>
-                </div>
               </div>
 
               <div className="mt-6 space-y-4">
