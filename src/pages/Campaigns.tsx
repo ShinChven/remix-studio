@@ -326,7 +326,7 @@ export function Campaigns() {
                       {/* Background Image Layer with Gradient Mask */}
                       <div className="absolute inset-0 z-0 bg-neutral-900">
                         <div
-                          className="absolute inset-0 bg-cover bg-center"
+                          className="absolute inset-0 bg-cover bg-top"
                           style={{ backgroundImage: `url(${campaign.thumbnail})` }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />

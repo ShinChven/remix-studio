@@ -293,7 +293,7 @@ export function Home() {
                       onClick={() => navigate(`/campaigns/${campaign.id}`)}
                     >
                       <div
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                        className="absolute inset-0 bg-cover bg-top transition-transform duration-700 group-hover:scale-105"
                         style={{ backgroundImage: `url(${thumbnail})` }}
                       />
                       <div
