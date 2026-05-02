@@ -270,39 +270,36 @@ export function AdminUsers() {
           )}
         />
 
-        <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 overflow-hidden shadow-sm backdrop-blur-3xl">
-          <form onSubmit={(e) => e.preventDefault()} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
-            <label className="flex items-center gap-3 border-r border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-950/40 px-6 py-4">
-              <Search className="h-4 w-4 text-neutral-400 dark:text-neutral-500" />
+        <section className="rounded-xl border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
               <input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('adminUsers.searchPlaceholder')}
-                className="w-full bg-transparent text-sm font-medium text-neutral-900 dark:text-neutral-100 outline-none placeholder:text-neutral-500"
+                className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white/40 pl-10 pr-3 text-sm font-medium shadow-sm outline-none backdrop-blur-3xl transition focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white"
               />
-            </label>
-
+            </div>
             <select
               value={filters.role}
               onChange={(e) => setFilters((current) => ({ ...current, role: e.target.value as UserRole | 'all', page: 1 }))}
-              className="border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-6 py-4 text-sm font-bold text-neutral-900 dark:text-neutral-200 outline-none appearance-none cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+              className="h-10 rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold shadow-sm outline-none backdrop-blur-3xl focus:border-blue-500/50 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white"
             >
               <option value="all">{t('adminUsers.allRoles')}</option>
               <option value="admin">{t('adminUsers.admin')}</option>
               <option value="user">{t('adminUsers.user')}</option>
             </select>
-
             <select
               value={filters.status}
               onChange={(e) => setFilters((current) => ({ ...current, status: e.target.value as UserStatus | 'all', page: 1 }))}
-              className="border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-6 py-4 text-sm font-bold text-neutral-900 dark:text-neutral-200 outline-none appearance-none cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+              className="h-10 rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold shadow-sm outline-none backdrop-blur-3xl focus:border-blue-500/50 dark:border-white/5 dark:bg-neutral-950/40 dark:text-white"
             >
               <option value="all">{t('adminUsers.allStatuses')}</option>
               <option value="active">{t('adminUsers.active')}</option>
               <option value="disabled">{t('adminUsers.disabled')}</option>
             </select>
-
-          </form>
+          </div>
         </section>
 
         {error && (
