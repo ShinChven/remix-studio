@@ -20,6 +20,8 @@ import { collectPostMediaStorageKeys, deleteStorageKeys } from '../utils/post-me
 const POST_IMAGE_RAW_MAX_DIMENSION = 4096;
 const POST_IMAGE_RAW_QUALITY = 90;
 const CAMPAIGN_MEDIA_UPLOAD_LIMIT_BYTES = 500 * 1024 * 1024;
+const POST_AI_CONTEXT_IMAGE_MAX_DIMENSION = 1024;
+const POST_AI_CONTEXT_IMAGE_QUALITY = 82;
 
 type ImportSource =
   | { kind: 'library'; libraryId: string; itemId: string }
@@ -179,6 +181,35 @@ async function readMediaBuffer(storage: S3Storage, value: string | undefined, bu
   return storage.read(key);
 }
 
+async function imageValueToModelDataUri(storage: S3Storage, value: string | null | undefined, bucket: string): Promise<string | null> {
+  if (!value) return null;
+  let buffer: Buffer;
+
+  if (value.startsWith('data:image/')) {
+    const parsed = bufferFromDataUrl(value, 'image');
+    if (!parsed) return null;
+    buffer = parsed;
+  } else {
+    if (/^https?:\/\//i.test(value)) return null;
+
+    const key = stripToStorageKey(value, bucket);
+    if (!key || key.startsWith('data:') || /^https?:\/\//i.test(key)) return null;
+
+    buffer = await storage.read(key);
+  }
+
+  const resized = await sharp(buffer)
+    .rotate()
+    .resize(POST_AI_CONTEXT_IMAGE_MAX_DIMENSION, POST_AI_CONTEXT_IMAGE_MAX_DIMENSION, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .jpeg({ quality: POST_AI_CONTEXT_IMAGE_QUALITY })
+    .toBuffer();
+
+  return `data:image/jpeg;base64,${resized.toString('base64')}`;
+}
+
 async function processPostRawImage(buffer: Buffer): Promise<Buffer> {
   return sharp(buffer)
     .rotate()
@@ -286,9 +317,12 @@ export function createPostsRouter(
               (m) => m.type === 'image' && (m.thumbnailUrl || m.processedUrl || m.sourceUrl),
             );
             if (firstImage) {
-              // Adapter expects base64 data URIs; we pass no inline image here.
-              // This keeps behavior aligned with the previous synchronous endpoint.
-              userMessage.images = [];
+              const dataUri = await imageValueToModelDataUri(
+                storage,
+                firstImage.processedUrl || firstImage.sourceUrl || firstImage.thumbnailUrl,
+                storage.getBucketName(),
+              );
+              if (dataUri) userMessage.images = [dataUri];
             }
           }
 

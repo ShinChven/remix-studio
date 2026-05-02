@@ -14,9 +14,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  BatchGenerateTextResult,
   batchUnschedulePosts,
   deletePost,
   fetchCampaign,
+  fetchBatchGeneratePostTextStatus,
   sendPostNow,
 } from '../api';
 import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
@@ -72,6 +74,7 @@ export function CampaignBatchActions() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiTask, setAiTask] = useState<BatchGenerateTextResult | null>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [previewMedia, setPreviewMedia] = useState<string[] | null>(null);
 
@@ -88,14 +91,14 @@ export function CampaignBatchActions() {
     setSearchParams(params);
   };
 
-  const loadData = async (silent = false) => {
+  const loadData = async (silent = false, preserveSelection = false) => {
     if (!id) return;
     if (!silent) setIsLoading(true);
     try {
       const data = await fetchCampaign(id);
       setCampaign(data);
       setPosts(data.posts || []);
-      setSelectedPostIds([]);
+      if (!preserveSelection) setSelectedPostIds([]);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to load batch actions');
     } finally {
@@ -106,6 +109,55 @@ export function CampaignBatchActions() {
   useEffect(() => {
     void loadData();
   }, [id]);
+
+  useEffect(() => {
+    if (!aiTask?.batchId || aiTask.status === 'completed' || aiTask.status === 'failed') return;
+
+    let cancelled = false;
+    let polling = false;
+
+    const pollAiTask = async () => {
+      if (polling || !aiTask.batchId) return;
+      polling = true;
+      try {
+        const status = await fetchBatchGeneratePostTextStatus(aiTask.batchId);
+        if (cancelled) return;
+
+        setAiTask(status);
+        if (status.completed !== aiTask.completed) {
+          await loadData(true, true);
+        }
+
+        if (status.status === 'completed' || status.status === 'failed') {
+          const ok = status.results.filter((result) => result.ok).length;
+          const fail = status.results.length - ok;
+          if (status.status === 'failed') {
+            toast.error(status.error || `Generated ${ok}, failed ${fail}`);
+          } else if (fail > 0) {
+            toast.warning(`Generated ${ok}, failed ${fail}`);
+          } else {
+            toast.success(`Generated text for ${ok} post${ok === 1 ? '' : 's'}`);
+          }
+          await loadData(true, true);
+        }
+      } catch (error: any) {
+        if (!cancelled) {
+          toast.error(error?.message || 'Failed to refresh AI generation status');
+          setAiTask(null);
+        }
+      } finally {
+        polling = false;
+      }
+    };
+
+    void pollAiTask();
+    const timer = window.setInterval(() => void pollAiTask(), 1500);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [aiTask?.batchId, aiTask?.completed, aiTask?.status]);
 
   const visiblePosts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -271,6 +323,41 @@ export function CampaignBatchActions() {
               <Trash2 className="h-4 w-4" /> Delete
             </button>
           </div>
+
+          {aiTask && (
+            <div className="mt-4 rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  {aiTask.status === 'queued' || aiTask.status === 'running' ? (
+                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-indigo-600 dark:text-indigo-400" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-neutral-950 dark:text-white">
+                      AI text generation {aiTask.status}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                      {aiTask.completed} of {aiTask.total} posts processed
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="self-start rounded-lg px-2 py-1 text-xs font-bold text-neutral-500 transition hover:bg-white/50 hover:text-neutral-900 dark:hover:bg-white/10 dark:hover:text-white sm:self-auto"
+                  onClick={() => setAiTask(null)}
+                >
+                  Dismiss
+                </button>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/70 dark:bg-neutral-800">
+                <div
+                  className="h-full rounded-full bg-indigo-600 transition-all"
+                  style={{ width: `${aiTask.total > 0 ? Math.round((aiTask.completed / aiTask.total) * 100) : 0}%` }}
+                />
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
@@ -379,9 +466,9 @@ export function CampaignBatchActions() {
         <BatchAiGenerateModal
           postIds={selectedPostIds}
           onClose={() => setAiOpen(false)}
-          onComplete={() => {
+          onQueued={(task) => {
+            setAiTask(task);
             setAiOpen(false);
-            void loadData(true);
           }}
         />
       )}

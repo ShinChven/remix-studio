@@ -1,22 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, Sparkles, CheckCircle2, AlertCircle, BookOpen, Search, ChevronDown } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2, BookOpen, Search, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { batchGeneratePostText, fetchAssistantProviders, fetchBatchGeneratePostTextStatus, fetchLibraries, fetchLibraryItems } from '../api';
+import { BatchGenerateTextResult, batchGeneratePostText, fetchAssistantProviders, fetchLibraries, fetchLibraryItems } from '../api';
 import { getTextModelsForProvider, Library, LibraryItem, Provider } from '../types';
 import { cn } from '../lib/utils';
 
 interface Props {
   postIds: string[];
   onClose: () => void;
-  onComplete: () => void;
-}
-
-interface GenResult {
-  postId: string;
-  status: 'queued' | 'running' | 'completed' | 'failed';
-  ok: boolean;
-  text?: string;
-  error?: string;
+  onQueued: (task: BatchGenerateTextResult) => void;
 }
 
 const LAST_TEXT_MODEL_KEY = 'remixStudio.batchAiGenerate.lastModel';
@@ -95,7 +87,7 @@ function resolveInitialTextModelChoice(providers: Provider[]): { providerId: str
   return { providerId: firstWithModels.id, modelId: firstModel.id };
 }
 
-export function BatchAiGenerateModal({ postIds, onClose, onComplete }: Props) {
+export function BatchAiGenerateModal({ postIds, onClose, onQueued }: Props) {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [libraryId, setLibraryId] = useState<string>(() => readLastPromptChoice()?.libraryId || '');
@@ -109,11 +101,6 @@ export function BatchAiGenerateModal({ postIds, onClose, onComplete }: Props) {
   const [loadingLibraries, setLoadingLibraries] = useState(false);
   const [loadingPrompts, setLoadingPrompts] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [batchId, setBatchId] = useState('');
-  const [batchStatus, setBatchStatus] = useState<'queued' | 'running' | 'completed' | 'failed' | ''>('');
-  const [completedCount, setCompletedCount] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [results, setResults] = useState<GenResult[]>([]);
 
   useEffect(() => {
     fetchAssistantProviders()
@@ -220,57 +207,6 @@ export function BatchAiGenerateModal({ postIds, onClose, onComplete }: Props) {
     setPromptText(item.content || '');
   };
 
-  useEffect(() => {
-    if (!batchId || !submitting) return;
-
-    let cancelled = false;
-    let polling = false;
-
-    const applyStatus = async () => {
-      if (polling) return;
-      polling = true;
-      try {
-        const status = await fetchBatchGeneratePostTextStatus(batchId);
-        if (cancelled) return;
-
-        setBatchStatus(status.status);
-        setCompletedCount(status.completed);
-        setTotalCount(status.total);
-        setResults(status.results);
-
-        if (status.status === 'completed' || status.status === 'failed') {
-          cancelled = true;
-          const ok = status.results.filter((r) => r.ok).length;
-          const fail = status.results.length - ok;
-          if (status.status === 'failed') {
-            toast.error(status.error || `Generated ${ok}, failed ${fail}`);
-          } else if (fail === 0) {
-            toast.success(`Generated text for ${ok} post${ok === 1 ? '' : 's'}`);
-          } else {
-            toast.warning(`Generated ${ok}, failed ${fail}`);
-          }
-          setSubmitting(false);
-          onComplete();
-        }
-      } catch (error: any) {
-        if (!cancelled) {
-          toast.error(error?.message || 'Failed to fetch generation status');
-          setSubmitting(false);
-        }
-      } finally {
-        polling = false;
-      }
-    };
-
-    void applyStatus();
-    const timer = window.setInterval(() => void applyStatus(), 1500);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [batchId, onComplete, submitting]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!providerId || !modelId) {
@@ -283,11 +219,6 @@ export function BatchAiGenerateModal({ postIds, onClose, onComplete }: Props) {
     }
     try {
       setSubmitting(true);
-      setResults([]);
-      setBatchId('');
-      setBatchStatus('queued');
-      setCompletedCount(0);
-      setTotalCount(postIds.length);
       writeLastPromptChoice({
         promptText,
         libraryId: libraryId || undefined,
@@ -300,11 +231,9 @@ export function BatchAiGenerateModal({ postIds, onClose, onComplete }: Props) {
         providerId,
         modelId,
       });
-      setBatchId(task.batchId);
-      setBatchStatus(task.status);
-      setCompletedCount(task.completed);
-      setTotalCount(task.total);
-      setResults(task.results);
+      toast.success(`Queued text generation for ${task.total} post${task.total === 1 ? '' : 's'}`);
+      onQueued(task);
+      onClose();
     } catch (err: any) {
       toast.error(err?.message || 'Failed to generate text');
       setSubmitting(false);
@@ -491,52 +420,6 @@ export function BatchAiGenerateModal({ postIds, onClose, onComplete }: Props) {
               </span>
             </label>
 
-            {batchId && (
-              <div className="rounded-2xl border border-neutral-200 bg-white/70 p-4 dark:border-neutral-800 dark:bg-neutral-950/40">
-                <div className="mb-2 flex items-center justify-between gap-3 text-xs font-bold">
-                  <span className="uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
-                    {batchStatus || 'queued'}
-                  </span>
-                  <span className="text-neutral-700 dark:text-neutral-300">
-                    {completedCount} / {totalCount}
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-                  <div
-                    className="h-full rounded-full bg-indigo-600 transition-all"
-                    style={{ width: `${totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {results.length > 0 && (
-              <div className="border border-neutral-200 dark:border-neutral-800 rounded-2xl divide-y divide-neutral-200 dark:divide-neutral-800 max-h-64 overflow-y-auto">
-                {results.map((r) => (
-                  <div key={r.postId} className="p-3 flex items-start gap-3 text-xs">
-                    {r.ok ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                    ) : r.status === 'queued' || r.status === 'running' ? (
-                      <Loader2 className={cn('w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5', r.status === 'running' && 'animate-spin')} />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <div className="font-mono text-[10px] text-neutral-400 truncate">{r.postId}</div>
-                        <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-neutral-500 dark:bg-neutral-800">
-                          {r.status}
-                        </span>
-                      </div>
-                      <div className="text-neutral-700 dark:text-neutral-300 mt-1 whitespace-pre-wrap break-words">
-                        {r.ok ? r.text : r.error || (r.status === 'running' ? 'Generating...' : 'Waiting...')}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
             <div className="pt-2 flex justify-end gap-3 border-t border-neutral-200/50 dark:border-white/5">
               <button
                 type="button"
@@ -552,7 +435,7 @@ export function BatchAiGenerateModal({ postIds, onClose, onComplete }: Props) {
                 className="mt-4 flex items-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                {batchId ? 'Generating...' : 'Generate'}
+                {submitting ? 'Queueing...' : 'Generate'}
               </button>
             </div>
           </form>

@@ -28,11 +28,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  BatchGenerateTextResult,
   addPostMedia,
   batchUnschedulePosts,
   createPost,
   deleteCampaign,
   deletePost,
+  fetchBatchGeneratePostTextStatus,
   fetchCampaign,
   removePostMedia,
   sendPostNow,
@@ -176,7 +178,7 @@ export function CampaignDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('scheduled');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey>('scheduled_asc');
 
   const [composerOpen, setComposerOpen] = useState(false);
@@ -197,6 +199,7 @@ export function CampaignDetail() {
   const [deleteCampaignOpen, setDeleteCampaignOpen] = useState(false);
   const [deletingCampaign, setDeletingCampaign] = useState(false);
   const [aiPostId, setAiPostId] = useState<string | null>(null);
+  const [aiTask, setAiTask] = useState<BatchGenerateTextResult | null>(null);
   const [lightbox, setLightbox] = useState<{ media: PostMedia[]; index: number } | null>(null);
 
   const loadCampaign = async (silent = false) => {
@@ -216,6 +219,55 @@ export function CampaignDetail() {
   useEffect(() => {
     void loadCampaign();
   }, [id]);
+
+  useEffect(() => {
+    if (!aiTask?.batchId || aiTask.status === 'completed' || aiTask.status === 'failed') return;
+
+    let cancelled = false;
+    let polling = false;
+
+    const pollAiTask = async () => {
+      if (polling || !aiTask.batchId) return;
+      polling = true;
+      try {
+        const status = await fetchBatchGeneratePostTextStatus(aiTask.batchId);
+        if (cancelled) return;
+
+        setAiTask(status);
+        if (status.completed !== aiTask.completed) {
+          await loadCampaign(true);
+        }
+
+        if (status.status === 'completed' || status.status === 'failed') {
+          const ok = status.results.filter((result) => result.ok).length;
+          const fail = status.results.length - ok;
+          if (status.status === 'failed') {
+            toast.error(status.error || `Generated ${ok}, failed ${fail}`);
+          } else if (fail > 0) {
+            toast.warning(`Generated ${ok}, failed ${fail}`);
+          } else {
+            toast.success(`Generated text for ${ok} post${ok === 1 ? '' : 's'}`);
+          }
+          await loadCampaign(true);
+        }
+      } catch (error: any) {
+        if (!cancelled) {
+          toast.error(error?.message || 'Failed to refresh AI generation status');
+          setAiTask(null);
+        }
+      } finally {
+        polling = false;
+      }
+    };
+
+    void pollAiTask();
+    const timer = window.setInterval(() => void pollAiTask(), 1500);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [aiTask?.batchId, aiTask?.completed, aiTask?.status]);
 
   useEffect(() => {
     if (!composerOpen || !editingPostId) return;
@@ -545,11 +597,11 @@ export function CampaignDetail() {
 
               <div className="mb-4 grid grid-cols-2 gap-2 text-xs">
                 {([
+                  ['all', 'Total', counts.all],
                   ['draft', 'Draft', counts.draft],
                   ['scheduled', 'Scheduled', counts.scheduled],
                   ['completed', 'Posted', counts.completed],
                   ['failed', 'Failed', counts.failed],
-                  ['all', 'Total', counts.all],
                 ] as Array<[StatusFilter, string, number]>).map(([key, label, count]) => (
                   <button
                     key={key}
@@ -990,9 +1042,9 @@ export function CampaignDetail() {
         <BatchAiGenerateModal
           postIds={[aiPostId]}
           onClose={() => setAiPostId(null)}
-          onComplete={() => {
+          onQueued={(task) => {
+            setAiTask(task);
             setAiPostId(null);
-            void loadCampaign(true);
           }}
         />
       )}
