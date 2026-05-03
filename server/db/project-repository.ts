@@ -123,7 +123,7 @@ export class ProjectRepository {
       include: {
         jobs: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
         workflowItems: { orderBy: [{ order: 'asc' }, { id: 'asc' }] },
-        albumItems: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+        albumItems: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] },
       },
     });
     if (!p) return null;
@@ -788,7 +788,6 @@ export class ProjectRepository {
       content: l.content,
       title: l.title ?? undefined,
       tags: (l.tags as string[]) ?? [],
-      order: l.order ?? undefined,
       thumbnailUrl: l.thumbnailUrl ?? undefined,
       optimizedUrl: l.optimizedUrl ?? undefined,
       size: l.size != null ? Number(l.size) : undefined,

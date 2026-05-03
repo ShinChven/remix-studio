@@ -353,7 +353,6 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           id: crypto.randomUUID(),
           content: result.key,
           title: file.name,
-          order: totalItems + files.indexOf(file),
           thumbnailUrl: 'thumbnailKey' in result ? result.thumbnailKey : undefined,
           optimizedUrl: 'optimizedKey' in result ? result.optimizedKey : undefined,
           size: result.size

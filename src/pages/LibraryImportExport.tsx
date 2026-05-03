@@ -225,12 +225,11 @@ export function LibraryImportExport() {
     setIsImporting(true);
 
     try {
-      const itemsToCreate: LibraryItem[] = previewItems.map((item, index) => ({
+      const itemsToCreate: LibraryItem[] = previewItems.map((item) => ({
         id: crypto.randomUUID(),
         content: item.content,
         title: item.title,
         tags: item.tags.length > 0 ? item.tags : undefined,
-        order: library.items.length + index,
       }));
 
       await createLibraryItemsBatch(id, itemsToCreate);

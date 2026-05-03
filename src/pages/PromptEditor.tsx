@@ -64,7 +64,6 @@ export function PromptEditor() {
           content,
           title: title.trim(),
           tags,
-          order: library.items.length,
         };
         await createLibraryItem(id, newItem);
       } else {

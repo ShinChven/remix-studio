@@ -2,6 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   CheckCircle2,
+  ArrowDownAZ,
+  ArrowDownNarrowWide,
+  ArrowUpAZ,
+  ArrowUpNarrowWide,
   Droplets,
   Images,
   Image as ImageIcon,
@@ -63,6 +67,8 @@ const WATERMARK_BASE_SHORT_EDGE = 1080;
 
 type PickerMode = 'library' | 'album';
 type MediaType = 'image' | 'video';
+type PickerSort = 'newest' | 'oldest' | 'name-asc' | 'name-desc';
+type SourceSort = 'newest' | 'oldest' | 'name-asc' | 'name-desc';
 
 interface PickerSource {
   id: string;
@@ -70,6 +76,7 @@ interface PickerSource {
   description?: string;
   type: MediaType;
   itemCount: number;
+  createdAt?: number;
 }
 
 interface PickerItem {
@@ -82,6 +89,7 @@ interface PickerItem {
   aspectRatio?: string;
   quality?: string;
   resolution?: string;
+  createdAt?: number;
 }
 
 type BatchQueueItem =
@@ -160,6 +168,7 @@ function libraryItemToPickerItem(item: LibraryItem, library: PickerSource): Pick
     previewUrl: library.type === 'video' ? item.thumbnailUrl : (item.thumbnailUrl || item.optimizedUrl || item.content),
     rawUrl: item.content,
     sourceLabel: library.name,
+    createdAt: item.createdAt,
   };
 }
 
@@ -174,6 +183,7 @@ function albumItemToPickerItem(item: AlbumItem, project: PickerSource): PickerIt
     aspectRatio: item.aspectRatio,
     quality: item.quality,
     resolution: item.resolution,
+    createdAt: item.createdAt,
   };
 }
 
@@ -205,15 +215,28 @@ function MediaPickerModal({
   const [query, setQuery] = useState('');
   const [sourceQuery, setSourceQuery] = useState('');
   const [aspectRatioFilter, setAspectRatioFilter] = useState<string>('all');
+  const [sort, setSort] = useState<PickerSort>('newest');
+  const [sourceSort, setSourceSort] = useState<SourceSort>('newest');
   const [lastSelectedKey, setLastSelectedKey] = useState<string | null>(null);
   const activeSource = sources.find((source) => source.id === activeSourceId);
   const selectedCount = selectedKeys.size;
 
   const filteredSources = useMemo(() => {
     const q = sourceQuery.trim().toLowerCase();
-    if (!q) return sources;
-    return sources.filter((s) => s.name.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q));
-  }, [sources, sourceQuery]);
+    const visibleSources = !q
+      ? sources
+      : sources.filter((s) => s.name.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q));
+
+    return [...visibleSources].sort((a, b) => {
+      if (sourceSort === 'name-asc' || sourceSort === 'name-desc') {
+        const diff = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id);
+        return sourceSort === 'name-asc' ? diff : -diff;
+      }
+
+      const diff = (a.createdAt ?? 0) - (b.createdAt ?? 0) || a.id.localeCompare(b.id);
+      return sourceSort === 'newest' ? -diff : diff;
+    });
+  }, [sources, sourceQuery, sourceSort]);
 
   const availableAspectRatios = useMemo(() => {
     const ratios = new Set<string>();
@@ -231,7 +254,7 @@ function MediaPickerModal({
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return items.filter((item) => {
+    const visibleItems = items.filter((item) => {
       const matchesQuery = !q || (
         item.title?.toLowerCase().includes(q) ||
         item.sourceLabel.toLowerCase().includes(q) ||
@@ -240,7 +263,19 @@ function MediaPickerModal({
       const matchesRatio = aspectRatioFilter === 'all' || item.aspectRatio === aspectRatioFilter;
       return matchesQuery && matchesRatio;
     });
-  }, [items, query, aspectRatioFilter]);
+
+    return [...visibleItems].sort((a, b) => {
+      if (sort === 'name-asc' || sort === 'name-desc') {
+        const aName = (a.title || a.rawUrl || a.id).trim();
+        const bName = (b.title || b.rawUrl || b.id).trim();
+        const diff = aName.localeCompare(bName, undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id);
+        return sort === 'name-asc' ? diff : -diff;
+      }
+
+      const diff = (a.createdAt ?? 0) - (b.createdAt ?? 0) || a.id.localeCompare(b.id);
+      return sort === 'newest' ? -diff : diff;
+    });
+  }, [items, query, aspectRatioFilter, sort]);
 
   const filteredKeys = useMemo(() => (
     filteredItems.map((item) => importKey(mode, activeSourceId || '', item.id))
@@ -299,7 +334,7 @@ function MediaPickerModal({
           </div>
 
           <div className="mb-4 shrink-0">
-            <div className="relative">
+            <div className="relative mb-2">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
               <input
                 className="h-9 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-3 text-xs outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-950 dark:text-white"
@@ -307,6 +342,25 @@ function MediaPickerModal({
                 value={sourceQuery}
                 onChange={(e) => setSourceQuery(e.target.value)}
               />
+            </div>
+            <div className="relative">
+              <select
+                className="h-9 w-full appearance-none rounded-lg border border-neutral-200 bg-white pl-3 pr-9 text-xs font-semibold dark:border-white/10 dark:bg-neutral-950 dark:text-white"
+                value={sourceSort}
+                onChange={(event) => setSourceSort(event.target.value as SourceSort)}
+                aria-label={mode === 'library' ? 'Sort libraries' : 'Sort projects'}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="name-asc">Name A-Z</option>
+                <option value="name-desc">Name Z-A</option>
+              </select>
+              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500">
+                {sourceSort === 'oldest' ? <ArrowUpNarrowWide className="h-3.5 w-3.5" /> :
+                 sourceSort === 'name-asc' ? <ArrowDownAZ className="h-3.5 w-3.5" /> :
+                 sourceSort === 'name-desc' ? <ArrowUpAZ className="h-3.5 w-3.5" /> :
+                 <ArrowDownNarrowWide className="h-3.5 w-3.5" />}
+              </div>
             </div>
           </div>
 
@@ -384,6 +438,25 @@ function MediaPickerModal({
                 <option key={source.id} value={source.id}>{source.name}</option>
               ))}
             </select>
+            <div className="relative">
+              <select
+                className="h-11 w-full appearance-none rounded-xl border border-neutral-200 bg-white px-3 pr-10 text-sm font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white"
+                value={sourceSort}
+                onChange={(event) => setSourceSort(event.target.value as SourceSort)}
+                aria-label={mode === 'library' ? 'Sort libraries' : 'Sort projects'}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="name-asc">Name A-Z</option>
+                <option value="name-desc">Name Z-A</option>
+              </select>
+              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500">
+                {sourceSort === 'oldest' ? <ArrowUpNarrowWide className="h-3.5 w-3.5" /> :
+                 sourceSort === 'name-asc' ? <ArrowDownAZ className="h-3.5 w-3.5" /> :
+                 sourceSort === 'name-desc' ? <ArrowUpAZ className="h-3.5 w-3.5" /> :
+                 <ArrowDownNarrowWide className="h-3.5 w-3.5" />}
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3 border-b border-neutral-200 p-4 dark:border-white/10 lg:flex-row lg:items-center">
@@ -410,6 +483,25 @@ function MediaPickerModal({
                   ))}
                 </select>
               )}
+              <div className="relative">
+                <select
+                  className="h-11 appearance-none rounded-xl border border-neutral-200 bg-white pl-3 pr-10 text-sm font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white"
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value as PickerSort)}
+                  aria-label="Sort media"
+                >
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="name-asc">Name A-Z</option>
+                  <option value="name-desc">Name Z-A</option>
+                </select>
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500">
+                  {sort === 'oldest' ? <ArrowUpNarrowWide className="h-3.5 w-3.5" /> :
+                   sort === 'name-asc' ? <ArrowDownAZ className="h-3.5 w-3.5" /> :
+                   sort === 'name-desc' ? <ArrowUpAZ className="h-3.5 w-3.5" /> :
+                   <ArrowDownNarrowWide className="h-3.5 w-3.5" />}
+                </div>
+              </div>
               
               <button
                 onClick={handleToggleSelectAll}
@@ -869,6 +961,7 @@ export function CampaignBatchCreate() {
         description: library.description,
         type: library.type as MediaType,
         itemCount: library.itemCount ?? library.items?.length ?? 0,
+        createdAt: library.createdAt,
       }))
   ), [libraries]);
 
@@ -881,6 +974,7 @@ export function CampaignBatchCreate() {
         description: project.description,
         type: project.type as MediaType,
         itemCount: (project as any).albumCount ?? project.album?.length ?? 0,
+        createdAt: project.createdAt,
       }))
   ), [projects]);
 

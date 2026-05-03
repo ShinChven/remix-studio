@@ -45,7 +45,7 @@ export class LibraryRepository {
         include: includeItems
           ? {
               items: {
-                orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }],
+                orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
               },
               _count: { select: { items: true } },
             }
@@ -80,7 +80,7 @@ export class LibraryRepository {
       where: { id: libraryId, userId },
       include: {
         items: {
-          orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }],
+          orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         },
       },
     });
@@ -142,7 +142,7 @@ export class LibraryRepository {
 
     const items = await this.prisma.libraryItem.findMany({
       where: { libraryId },
-      orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }],
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
     });
     return items.map((item) => this.mapItem(item));
   }
@@ -255,7 +255,6 @@ export class LibraryRepository {
     const data: any = {};
     if (updates.content !== undefined) data.content = updates.content;
     if (updates.title !== undefined) data.title = updates.title;
-    if (updates.order !== undefined) data.order = updates.order;
     if (updates.thumbnailUrl !== undefined) data.thumbnailUrl = updates.thumbnailUrl;
     if (updates.optimizedUrl !== undefined) data.optimizedUrl = updates.optimizedUrl;
     if (updates.tags !== undefined) data.tags = updates.tags;
@@ -320,9 +319,7 @@ export class LibraryRepository {
       where.tags = { array_contains: options.tags };
     }
 
-    const orderBy = options.libraryId
-      ? [{ order: { sort: 'asc' as const, nulls: 'last' as const } }, { createdAt: 'desc' as const }, { id: 'asc' as const }]
-      : [{ createdAt: 'desc' as const }, { id: 'asc' as const }];
+    const orderBy = [{ createdAt: 'desc' as const }, { id: 'asc' as const }];
 
     const [total, items] = await Promise.all([
       this.prisma.libraryItem.count({ where }),
@@ -354,7 +351,6 @@ export class LibraryRepository {
       content: item.content,
       title: item.title ?? undefined,
       tags: (item.tags as string[]) ?? [],
-      order: item.order ?? undefined,
       thumbnailUrl: item.thumbnailUrl ?? undefined,
       optimizedUrl: item.optimizedUrl ?? undefined,
       size: item.size != null ? Number(item.size) : undefined,

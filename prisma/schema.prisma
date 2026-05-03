@@ -164,7 +164,6 @@ model LibraryItem {
   content      String   @db.Text
   title        String?
   tags         Json?    // String[]
-  order        Int?
   thumbnailUrl String?
   optimizedUrl String?
   size         BigInt?
@@ -174,7 +173,6 @@ model LibraryItem {
   library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
 
   @@index([libraryId])
-  @@index([libraryId, order])
   @@index([libraryId, createdAt])
 }
 

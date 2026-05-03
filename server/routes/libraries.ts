@@ -652,25 +652,14 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
         return c.json({ success: true, count: 0 }, 200);
       }
 
-      const destItems = await repository.getLibraryItemsPaginated(user.userId, destinationLibraryId, 1, 1);
-      const startOrder = destItems.total;
-
-      for (let i = 0; i < itemsToMove.length; i++) {
-        const item = itemsToMove[i];
-        await repository.updateLibraryItem(user.userId, libId, item.id, {
-          order: startOrder + i
-        });
-        
+      for (const item of itemsToMove) {
         // Use Prisma directly to update the libraryId since the repository interface
         // doesn't support changing the libraryId through updateLibraryItem.
         // Or we can delete and create. Since Prisma schema cascades, delete/create is safer?
         // Wait, repository.updateLibraryItem doesn't allow changing libraryId.
         // Let's just delete from source and create in destination.
         await repository.deleteLibraryItem(user.userId, libId, item.id);
-        await repository.createLibraryItem(user.userId, destinationLibraryId, {
-          ...item,
-          order: startOrder + i
-        });
+        await repository.createLibraryItem(user.userId, destinationLibraryId, item);
       }
 
       return c.json({ success: true, count: itemsToMove.length });
