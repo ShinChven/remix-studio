@@ -88,6 +88,24 @@ export function summarizeToolEffect(
         ? `Update project ${getLabel(objectArgs.projectId, 'project')}.`
         : `Update project ${getLabel(objectArgs.projectId, 'project')} and replace its workflow with ${workflowCount} item${workflowCount === 1 ? '' : 's'}. Existing workflow items not included in this replacement will be removed.`;
     }
+    case 'create_campaign':
+      return `Create campaign named "${String(objectArgs.name ?? '')}".`;
+    case 'update_campaign': {
+      const fields = ['name', 'description', 'status', 'socialAccountIds'].filter((key) => Object.prototype.hasOwnProperty.call(objectArgs, key));
+      return `Update campaign ${getLabel(objectArgs.campaignId, 'campaign')}${fields.length ? ` (${fields.join(', ')})` : ''}.`;
+    }
+    case 'create_post':
+      return `Create a post in campaign ${getLabel(objectArgs.campaignId, 'campaign')}.`;
+    case 'update_post': {
+      const fields = ['textContent', 'scheduledAt', 'status'].filter((key) => Object.prototype.hasOwnProperty.call(objectArgs, key));
+      return `Update post ${getLabel(objectArgs.postId, 'post')}${fields.length ? ` (${fields.join(', ')})` : ''}.`;
+    }
+    case 'update_post_text':
+      return `Update text for post ${getLabel(objectArgs.postId, 'post')}.`;
+    case 'add_media_to_post':
+      return `Add media to post ${getLabel(objectArgs.postId, 'post')}.`;
+    case 'schedule_post':
+      return `Schedule post ${getLabel(objectArgs.postId, 'post')}.`;
     default:
       return tool.category === 'destructive'
         ? `Run destructive tool "${tool.title}".`

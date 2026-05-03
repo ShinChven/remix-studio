@@ -1662,7 +1662,7 @@ Important workflow behavior:
         },
         include: { socialAccounts: { select: SAFE_SOCIAL_ACCOUNT_SELECT } }
       });
-      return { text: JSON.stringify(campaign) };
+      return { text: JSON.stringify(campaign), structuredContent: campaign };
     }
   });
 
@@ -1680,7 +1680,7 @@ Important workflow behavior:
         where: { userId, ...(status ? { status } : {}) },
         include: { socialAccounts: { select: SAFE_SOCIAL_ACCOUNT_SELECT }, _count: { select: { posts: true } } }
       });
-      return { text: JSON.stringify(campaigns) };
+      return { text: JSON.stringify(campaigns), structuredContent: { campaigns } };
     }
   });
 
@@ -1714,7 +1714,7 @@ Important workflow behavior:
         },
         include: { socialAccounts: { select: SAFE_SOCIAL_ACCOUNT_SELECT } }
       });
-      return { text: JSON.stringify(updated) };
+      return { text: JSON.stringify(updated), structuredContent: updated };
     }
   });
 
@@ -1749,7 +1749,7 @@ Important workflow behavior:
           status: nextStatus,
         }
       });
-      return { text: JSON.stringify(post) };
+      return { text: JSON.stringify(post), structuredContent: post };
     }
   });
 
@@ -1768,7 +1768,46 @@ Important workflow behavior:
         include: { media: { orderBy: { position: 'asc' } }, executions: true }
       });
       if (!post) throw new Error("Post not found");
-      return { text: JSON.stringify(post) };
+      return { text: JSON.stringify(post), structuredContent: post };
+    }
+  });
+
+  tools.push({
+    name: 'get_post_text',
+    title: 'Get Post Text',
+    description: 'Read only the text content and basic status metadata for a specific campaign post. Use this before update_post_text when revising post copy.',
+    inputSchema: {
+      postId: z.string().min(1),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, { postId }) => {
+      const post = await prisma.post.findFirst({
+        where: { id: postId, userId },
+        select: {
+          id: true,
+          campaignId: true,
+          textContent: true,
+          status: true,
+          scheduledAt: true,
+          createdAt: true,
+          updatedAt: true,
+          campaign: { select: { id: true, name: true } },
+        },
+      });
+      if (!post) throw new Error("Post not found");
+      const payload = {
+        postId: post.id,
+        campaignId: post.campaignId,
+        campaignName: post.campaign?.name ?? null,
+        textContent: post.textContent ?? '',
+        textLength: (post.textContent ?? '').length,
+        status: post.status,
+        scheduledAt: post.scheduledAt,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
+      };
+      return { text: JSON.stringify(payload), structuredContent: payload };
     }
   });
 
@@ -1805,7 +1844,51 @@ Important workflow behavior:
           ...(status !== undefined && { status })
         }
       });
-      return { text: JSON.stringify(updated) };
+      return { text: JSON.stringify(updated), structuredContent: updated };
+    }
+  });
+
+  tools.push({
+    name: 'update_post_text',
+    title: 'Update Post Text',
+    description: 'Update only the text content for a campaign post. Use get_post_text first when editing existing copy so the assistant can preserve unchanged text intentionally.',
+    inputSchema: {
+      postId: z.string().min(1),
+      textContent: z.string().max(28000).describe('Replacement post text. Pass an empty string to clear the post text.'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'mutate',
+    requiresConfirmation: true,
+    handler: async (userId, { postId, textContent }) => {
+      const post = await prisma.post.findUnique({ where: { id: postId }});
+      if (!post || post.userId !== userId) throw new Error("Post not found");
+      const nextTextContent = textContent.trim() || null;
+      const updated = await prisma.post.update({
+        where: { id: postId },
+        data: { textContent: nextTextContent },
+        select: {
+          id: true,
+          campaignId: true,
+          textContent: true,
+          status: true,
+          scheduledAt: true,
+          updatedAt: true,
+          campaign: { select: { id: true, name: true } },
+        },
+      });
+      const payload = {
+        postId: updated.id,
+        campaignId: updated.campaignId,
+        campaignName: updated.campaign?.name ?? null,
+        textContent: updated.textContent ?? '',
+        textLength: (updated.textContent ?? '').length,
+        status: updated.status,
+        scheduledAt: updated.scheduledAt,
+        updatedAt: updated.updatedAt,
+        previousTextLength: (post.textContent ?? '').length,
+        message: 'Post text updated successfully.',
+      };
+      return { text: JSON.stringify(payload), structuredContent: payload };
     }
   });
 
@@ -1839,7 +1922,10 @@ Important workflow behavior:
           status: 'pending'
         }
       });
-      return { text: JSON.stringify(media) };
+      return {
+        text: JSON.stringify({ ...media, campaignId: post.campaignId }),
+        structuredContent: { ...media, campaignId: post.campaignId },
+      };
     }
   });
 
@@ -1869,7 +1955,7 @@ Important workflow behavior:
           status: 'scheduled'
         }
       });
-      return { text: JSON.stringify(updated) };
+      return { text: JSON.stringify(updated), structuredContent: updated };
     }
   });
 

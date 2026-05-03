@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, AlertTriangle, Bot, FolderOpen, Sparkles, ExternalLink, Settings2, Copy, Pencil, Search } from 'lucide-react';
+import { Plus, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, AlertTriangle, Bot, FolderOpen, Sparkles, ExternalLink, Settings2, Copy, Pencil, Search, Megaphone, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -149,7 +149,7 @@ function prettyToolData(value: unknown) {
 }
 
 type AssistantMutationTarget = {
-  entityType: 'library' | 'project';
+  entityType: 'library' | 'project' | 'campaign' | 'post';
   id: string;
   name: string | null;
   href: string;
@@ -189,6 +189,48 @@ function extractMutationTarget(
     ? toolResultJson as Record<string, unknown>
     : null;
   const normalizedToolName = String(toolName || '');
+
+  const postToolNames = new Set([
+    'create_post',
+    'get_post',
+    'get_post_text',
+    'update_post',
+    'update_post_text',
+    'add_media_to_post',
+    'schedule_post',
+  ]);
+  const postId = getStringField(result, 'postId')
+    ?? (postToolNames.has(normalizedToolName) ? getStringField(result, 'id') : null)
+    ?? getStringField(args, 'postId');
+  const postCampaignId = getStringField(result, 'campaignId') ?? getStringField(args, 'campaignId');
+  if (postId && postCampaignId) {
+    return {
+      entityType: 'post',
+      id: postId,
+      name: `Post ${postId.slice(0, 8)}`,
+      href: `/campaigns/${postCampaignId}/posts/edit/${postId}`,
+      summary: normalizedToolName.includes('update') || normalizedToolName === 'schedule_post' || normalizedToolName === 'add_media_to_post'
+        ? 'Post was updated.'
+        : 'Post is ready.',
+    };
+  }
+
+  const campaignToolNames = new Set(['create_campaign', 'list_campaigns', 'update_campaign']);
+  const campaignId = getStringField(result, 'campaignId')
+    ?? getStringField(args, 'campaignId')
+    ?? (campaignToolNames.has(normalizedToolName) ? getStringField(result, 'id') : null);
+  if (campaignId) {
+    const name = getStringField(result, 'name') ?? getStringField(args, 'name');
+    return {
+      entityType: 'campaign',
+      id: campaignId,
+      name,
+      href: `/campaigns/${campaignId}`,
+      summary: normalizedToolName === 'update_campaign'
+        ? (name ? `Campaign "${name}" was updated.` : 'Campaign was updated.')
+        : (name ? `Campaign "${name}" is ready.` : 'Campaign is ready.'),
+    };
+  }
 
   const projectId = getStringField(result, 'projectId') ?? getStringField(args, 'projectId');
   if (projectId) {
@@ -292,6 +334,24 @@ function summarizePendingConfirmation(
         ? `Update project "${String(args.projectId ?? '')}".`
         : `Update project "${String(args.projectId ?? '')}" and replace its workflow with ${workflowCount} item${workflowCount === 1 ? '' : 's'}. Existing workflow items not included will be removed.`;
     }
+    case 'create_campaign':
+      return `Create campaign "${String(args.name ?? '')}".`;
+    case 'update_campaign': {
+      const fields = ['name', 'description', 'status', 'socialAccountIds'].filter((key) => Object.prototype.hasOwnProperty.call(args, key));
+      return `Update campaign "${String(args.campaignId ?? '')}"${fields.length ? ` (${fields.join(', ')})` : ''}.`;
+    }
+    case 'create_post':
+      return `Create a post in campaign "${String(args.campaignId ?? '')}".`;
+    case 'update_post': {
+      const fields = ['textContent', 'scheduledAt', 'status'].filter((key) => Object.prototype.hasOwnProperty.call(args, key));
+      return `Update post "${String(args.postId ?? '')}"${fields.length ? ` (${fields.join(', ')})` : ''}.`;
+    }
+    case 'update_post_text':
+      return `Update text for post "${String(args.postId ?? '')}".`;
+    case 'add_media_to_post':
+      return `Add media to post "${String(args.postId ?? '')}".`;
+    case 'schedule_post':
+      return `Schedule post "${String(args.postId ?? '')}".`;
     default:
       return `Apply ${pendingConfirmation.toolName}.`;
   }
@@ -905,17 +965,20 @@ export function AssistantPage() {
                 <div className="rounded-card border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/20">
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 rounded-xl bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400">
-                      {target.entityType === 'project' ? (
-                        <Sparkles className="w-4 h-4" />
-                      ) : (
-                        <FolderOpen className="w-4 h-4" />
-                      )}
+                      {target.entityType === 'project' && <Sparkles className="w-4 h-4" />}
+                      {target.entityType === 'library' && <FolderOpen className="w-4 h-4" />}
+                      {target.entityType === 'campaign' && <Megaphone className="w-4 h-4" />}
+                      {target.entityType === 'post' && <FileText className="w-4 h-4" />}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-700/80 dark:text-emerald-300/80">
                         {target.entityType === 'project'
                           ? t('assistant.targetProject', 'Project target')
-                          : t('assistant.targetLibrary', 'Library target')}
+                          : target.entityType === 'library'
+                            ? t('assistant.targetLibrary', 'Library target')
+                            : target.entityType === 'campaign'
+                              ? t('assistant.targetCampaign', 'Campaign target')
+                              : t('assistant.targetPost', 'Post target')}
                       </p>
                       <p className="mt-1 text-sm font-semibold text-neutral-900 dark:text-white">
                         {target.name || target.id}
@@ -928,8 +991,20 @@ export function AssistantPage() {
                         className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
                       >
                         {t(
-                          target.entityType === 'project' ? 'assistant.openProject' : 'assistant.openLibrary',
-                          target.entityType === 'project' ? 'Open project' : 'Open library',
+                          target.entityType === 'project'
+                            ? 'assistant.openProject'
+                            : target.entityType === 'library'
+                              ? 'assistant.openLibrary'
+                              : target.entityType === 'campaign'
+                                ? 'assistant.openCampaign'
+                                : 'assistant.openPost',
+                          target.entityType === 'project'
+                            ? 'Open project'
+                            : target.entityType === 'library'
+                              ? 'Open library'
+                              : target.entityType === 'campaign'
+                                ? 'Open campaign'
+                                : 'Open post',
                         )}
                         <ChevronRight className="w-3.5 h-3.5" />
                       </Link>
