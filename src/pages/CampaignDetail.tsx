@@ -814,6 +814,9 @@ export function CampaignDetail() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 self-end transition-all duration-300 sm:self-auto sm:opacity-0 sm:group-hover:opacity-100">
+                        <button className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white" title="View Post" onClick={() => navigate(`/campaigns/${id}/posts/${post.id}`)}>
+                          <ExternalLink className="h-4 w-4" />
+                        </button>
                         <button className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white" title="Edit Post" onClick={() => openEditPostModal(post)}>
                           <Pencil className="h-4 w-4" />
                         </button>
@@ -827,9 +830,11 @@ export function CampaignDetail() {
                     </div>
 
                     <div className="space-y-4">
-                      <Link to={`/campaigns/${id}/posts/edit/${post.id}`} className="block whitespace-pre-wrap text-base font-medium leading-relaxed tracking-tight text-neutral-950 transition hover:text-neutral-700 dark:text-white dark:hover:text-neutral-300">
-                        {post.textContent || 'Empty Post Content'}
-                      </Link>
+                      {post.textContent?.trim() && (
+                        <Link to={`/campaigns/${id}/posts/${post.id}`} className="block whitespace-pre-wrap text-base font-medium leading-relaxed tracking-tight text-neutral-950 transition hover:text-neutral-700 dark:text-white dark:hover:text-neutral-300">
+                          {post.textContent}
+                        </Link>
+                      )}
                       {post.media && post.media.length > 0 && (
                         <div className={cn('grid gap-1.5 overflow-hidden rounded-card border border-neutral-200 shadow-sm dark:border-white/10', post.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
                           {post.media.slice(0, 4).map((media, index) => {
@@ -1159,7 +1164,9 @@ export function CampaignDetail() {
           <div className="w-full max-w-md rounded-card border border-neutral-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
             <h2 className="text-xl font-bold text-neutral-950 dark:text-white">Delete Post</h2>
             <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Are you sure you want to delete this post? This action cannot be undone.</p>
-            <p className="mt-4 line-clamp-3 border-l-2 pl-3 text-sm italic text-neutral-500">"{deletePostTarget.textContent || 'Empty Post Content'}"</p>
+            {deletePostTarget.textContent?.trim() && (
+              <p className="mt-4 line-clamp-3 border-l-2 pl-3 text-sm italic text-neutral-500">"{deletePostTarget.textContent}"</p>
+            )}
             <div className="mt-6 flex justify-end gap-3">
               <button className="rounded-lg px-4 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10" onClick={() => setDeletePostTarget(null)}>Cancel</button>
               <button className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700" onClick={() => void confirmDeletePost()}>Delete Post</button>

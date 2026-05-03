@@ -43,6 +43,7 @@ import { CampaignChannels } from './pages/CampaignChannels.tsx';
 import { CampaignBatchActions } from './pages/CampaignBatchActions.tsx';
 import { CampaignBatchCreate } from './pages/CampaignBatchCreate.tsx';
 import { PostForm } from './pages/PostForm.tsx';
+import { CampaignPostDetail } from './pages/CampaignPostDetail.tsx';
 import { CampaignHistory } from './pages/CampaignHistory.tsx';
 import { ScheduledPosts } from './pages/ScheduledPosts.tsx';
 
@@ -90,6 +91,7 @@ export default function App() {
                   <Route path="edit/:id" element={<CampaignForm />} />
                   <Route path=":campaignId/posts/new" element={<PostForm />} />
                   <Route path=":campaignId/posts/edit/:postId" element={<PostForm />} />
+                  <Route path=":campaignId/posts/:postId" element={<CampaignPostDetail />} />
                   <Route path=":id" element={<CampaignDetail />} />
                   <Route path=":id/batch" element={<CampaignBatchActions />} />
                   <Route path=":id/batch/create" element={<CampaignBatchCreate />} />
