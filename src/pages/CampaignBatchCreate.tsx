@@ -2,10 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   CheckCircle2,
-  ArrowDownAZ,
-  ArrowDownNarrowWide,
-  ArrowUpAZ,
-  ArrowUpNarrowWide,
   Droplets,
   Images,
   Image as ImageIcon,
@@ -13,21 +9,15 @@ import {
   Loader2,
   Paintbrush,
   Plus,
-  Search,
   Trash2,
   Upload,
   Video,
-  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   CampaignMediaImportSource,
   fetchCampaign,
-  fetchLibraries,
-  fetchLibraryItems,
   fetchPostWatermarkSettings,
-  fetchProject,
-  fetchProjects,
   imageDisplayUrl,
   importCampaignMediaPosts,
   PostWatermarkPosition,
@@ -37,7 +27,7 @@ import {
   uploadCampaignMediaPosts,
 } from '../api';
 import { PageHeader } from '../components/PageHeader';
-import { AlbumItem, Library, LibraryItem, Project } from '../types';
+import { UniversalMediaPicker, UniversalPickedItem } from '../components/UniversalMediaPicker';
 import { cn } from '../lib/utils';
 
 const POST_MEDIA_ACCEPT = 'image/*,video/mp4,video/webm,video/quicktime';
@@ -67,30 +57,6 @@ const WATERMARK_BASE_SHORT_EDGE = 1080;
 
 type PickerMode = 'library' | 'album';
 type MediaType = 'image' | 'video';
-type PickerSort = 'newest' | 'oldest' | 'name-asc' | 'name-desc';
-type SourceSort = 'newest' | 'oldest' | 'name-asc' | 'name-desc';
-
-interface PickerSource {
-  id: string;
-  name: string;
-  description?: string;
-  type: MediaType;
-  itemCount: number;
-  createdAt?: number;
-}
-
-interface PickerItem {
-  id: string;
-  title?: string;
-  mediaType: MediaType;
-  previewUrl?: string;
-  rawUrl?: string;
-  sourceLabel: string;
-  aspectRatio?: string;
-  quality?: string;
-  resolution?: string;
-  createdAt?: number;
-}
 
 type BatchQueueItem =
   | {
@@ -128,21 +94,6 @@ function importKey(mode: PickerMode, sourceId: string, itemId: string) {
   return JSON.stringify([mode, sourceId, itemId]);
 }
 
-function getCssAspectRatio(value?: string) {
-  const ratio = value?.trim();
-  if (!ratio) return '1 / 1';
-  const match = ratio.match(/^(\d+(?:\.\d+)?)\s*[:x]\s*(\d+(?:\.\d+)?)$/i);
-  if (!match) return '1 / 1';
-  const width = Number(match[1]);
-  const height = Number(match[2]);
-  if (!width || !height) return '1 / 1';
-  return `${width} / ${height}`;
-}
-
-function parseImportKey(key: string): [PickerMode, string, string] {
-  return JSON.parse(key) as [PickerMode, string, string];
-}
-
 function mediaSourceLabel(type: MediaType) {
   return type === 'video' ? 'Video' : 'Image';
 }
@@ -158,458 +109,6 @@ function readFileAsDataUrl(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
     reader.readAsDataURL(file);
   });
-}
-
-function libraryItemToPickerItem(item: LibraryItem, library: PickerSource): PickerItem {
-  return {
-    id: item.id,
-    title: item.title,
-    mediaType: library.type,
-    previewUrl: library.type === 'video' ? item.thumbnailUrl : (item.thumbnailUrl || item.optimizedUrl || item.content),
-    rawUrl: item.content,
-    sourceLabel: library.name,
-    createdAt: item.createdAt,
-  };
-}
-
-function albumItemToPickerItem(item: AlbumItem, project: PickerSource): PickerItem {
-  return {
-    id: item.id,
-    title: item.prompt || item.textContent || undefined,
-    mediaType: project.type,
-    previewUrl: project.type === 'video' ? item.thumbnailUrl : (item.thumbnailUrl || item.optimizedUrl || item.imageUrl),
-    rawUrl: item.imageUrl,
-    sourceLabel: project.name,
-    aspectRatio: item.aspectRatio,
-    quality: item.quality,
-    resolution: item.resolution,
-    createdAt: item.createdAt,
-  };
-}
-
-interface MediaPickerModalProps {
-  mode: PickerMode;
-  sources: PickerSource[];
-  activeSourceId: string | null;
-  items: PickerItem[];
-  selectedKeys: Set<string>;
-  isLoadingItems: boolean;
-  onClose: () => void;
-  onSelectSource: (sourceId: string) => void;
-  onToggleItem: (key: string) => void;
-  onAddSelected: () => void;
-}
-
-function MediaPickerModal({
-  mode,
-  sources,
-  activeSourceId,
-  items,
-  selectedKeys,
-  isLoadingItems,
-  onClose,
-  onSelectSource,
-  onToggleItem,
-  onAddSelected,
-}: MediaPickerModalProps) {
-  const [query, setQuery] = useState('');
-  const [sourceQuery, setSourceQuery] = useState('');
-  const [aspectRatioFilter, setAspectRatioFilter] = useState<string>('all');
-  const [sort, setSort] = useState<PickerSort>('newest');
-  const [sourceSort, setSourceSort] = useState<SourceSort>('newest');
-  const [lastSelectedKey, setLastSelectedKey] = useState<string | null>(null);
-  const activeSource = sources.find((source) => source.id === activeSourceId);
-  const selectedCount = selectedKeys.size;
-
-  const filteredSources = useMemo(() => {
-    const q = sourceQuery.trim().toLowerCase();
-    const visibleSources = !q
-      ? sources
-      : sources.filter((s) => s.name.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q));
-
-    return [...visibleSources].sort((a, b) => {
-      if (sourceSort === 'name-asc' || sourceSort === 'name-desc') {
-        const diff = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id);
-        return sourceSort === 'name-asc' ? diff : -diff;
-      }
-
-      const diff = (a.createdAt ?? 0) - (b.createdAt ?? 0) || a.id.localeCompare(b.id);
-      return sourceSort === 'newest' ? -diff : diff;
-    });
-  }, [sources, sourceQuery, sourceSort]);
-
-  const availableAspectRatios = useMemo(() => {
-    const ratios = new Set<string>();
-    items.forEach((item) => {
-      if (item.aspectRatio) ratios.add(item.aspectRatio);
-    });
-    return Array.from(ratios).sort();
-  }, [items]);
-
-  useEffect(() => {
-    setQuery('');
-    setAspectRatioFilter('all');
-    setLastSelectedKey(null);
-  }, [activeSourceId]);
-
-  const filteredItems = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const visibleItems = items.filter((item) => {
-      const matchesQuery = !q || (
-        item.title?.toLowerCase().includes(q) ||
-        item.sourceLabel.toLowerCase().includes(q) ||
-        item.rawUrl?.toLowerCase().includes(q)
-      );
-      const matchesRatio = aspectRatioFilter === 'all' || item.aspectRatio === aspectRatioFilter;
-      return matchesQuery && matchesRatio;
-    });
-
-    return [...visibleItems].sort((a, b) => {
-      if (sort === 'name-asc' || sort === 'name-desc') {
-        const aName = (a.title || a.rawUrl || a.id).trim();
-        const bName = (b.title || b.rawUrl || b.id).trim();
-        const diff = aName.localeCompare(bName, undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id);
-        return sort === 'name-asc' ? diff : -diff;
-      }
-
-      const diff = (a.createdAt ?? 0) - (b.createdAt ?? 0) || a.id.localeCompare(b.id);
-      return sort === 'newest' ? -diff : diff;
-    });
-  }, [items, query, aspectRatioFilter, sort]);
-
-  const filteredKeys = useMemo(() => (
-    filteredItems.map((item) => importKey(mode, activeSourceId || '', item.id))
-  ), [filteredItems, mode, activeSourceId]);
-
-  const isAllFilteredSelected = filteredKeys.length > 0 && filteredKeys.every((key) => selectedKeys.has(key));
-
-  const handleItemClick = (key: string, isShiftPressed: boolean) => {
-    if (isShiftPressed && lastSelectedKey && lastSelectedKey !== key) {
-      const lastIndex = filteredKeys.indexOf(lastSelectedKey);
-      const currentIndex = filteredKeys.indexOf(key);
-      if (lastIndex !== -1 && currentIndex !== -1) {
-        const start = Math.min(lastIndex, currentIndex);
-        const end = Math.max(lastIndex, currentIndex);
-        const shouldSelect = !selectedKeys.has(key);
-        for (let i = start; i <= end; i++) {
-          const rangeKey = filteredKeys[i];
-          const isSelected = selectedKeys.has(rangeKey);
-          if (shouldSelect !== isSelected) onToggleItem(rangeKey);
-        }
-        setLastSelectedKey(key);
-        return;
-      }
-    }
-    onToggleItem(key);
-    setLastSelectedKey(key);
-  };
-
-  const handleToggleSelectAll = () => {
-    if (isAllFilteredSelected) {
-      // Deselect all filtered items
-      filteredKeys.forEach((key) => {
-        if (selectedKeys.has(key)) onToggleItem(key);
-      });
-    } else {
-      // Select all filtered items
-      filteredKeys.forEach((key) => {
-        if (!selectedKeys.has(key)) onToggleItem(key);
-      });
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 md:p-8">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose} />
-      <div className="relative flex h-[88vh] w-full max-w-7xl overflow-hidden rounded-card border border-neutral-200 bg-white shadow-2xl dark:border-white/10 dark:bg-neutral-950">
-        <aside className="hidden w-80 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 p-5 dark:border-white/10 dark:bg-neutral-900/80 md:flex">
-          <div className="mb-5 flex shrink-0 items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
-              {mode === 'library' ? <Images className="h-5 w-5" /> : <Layers className="h-5 w-5" />}
-            </div>
-            <div>
-              <h3 className="font-bold text-neutral-950 dark:text-white">{mode === 'library' ? 'Pick from Library' : 'Pick from Album'}</h3>
-              <p className="text-xs text-neutral-500">Add selected media to queue</p>
-            </div>
-          </div>
-
-          <div className="mb-4 shrink-0">
-            <div className="relative mb-2">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
-              <input
-                className="h-9 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-3 text-xs outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-950 dark:text-white"
-                placeholder={mode === 'library' ? 'Search libraries...' : 'Search projects...'}
-                value={sourceQuery}
-                onChange={(e) => setSourceQuery(e.target.value)}
-              />
-            </div>
-            <div className="relative">
-              <select
-                className="h-9 w-full appearance-none rounded-lg border border-neutral-200 bg-white pl-3 pr-9 text-xs font-semibold dark:border-white/10 dark:bg-neutral-950 dark:text-white"
-                value={sourceSort}
-                onChange={(event) => setSourceSort(event.target.value as SourceSort)}
-                aria-label={mode === 'library' ? 'Sort libraries' : 'Sort projects'}
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="name-asc">Name A-Z</option>
-                <option value="name-desc">Name Z-A</option>
-              </select>
-              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500">
-                {sourceSort === 'oldest' ? <ArrowUpNarrowWide className="h-3.5 w-3.5" /> :
-                 sourceSort === 'name-asc' ? <ArrowDownAZ className="h-3.5 w-3.5" /> :
-                 sourceSort === 'name-desc' ? <ArrowUpAZ className="h-3.5 w-3.5" /> :
-                 <ArrowDownNarrowWide className="h-3.5 w-3.5" />}
-              </div>
-            </div>
-          </div>
-
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-            {filteredSources.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 py-10 text-center dark:border-white/10">
-                <Search className="mb-3 h-8 w-8 text-neutral-300" />
-                <p className="px-4 text-xs font-bold text-neutral-950 dark:text-white">No matches found</p>
-                <p className="mt-1 px-4 text-[10px] text-neutral-500">Try a different search term</p>
-              </div>
-            ) : (
-              filteredSources.map((source) => {
-                const active = source.id === activeSourceId;
-                return (
-                  <button
-                    key={source.id}
-                    className={cn(
-                      'w-full rounded-card border p-4 text-left transition',
-                      active
-                        ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
-                        : 'border-neutral-200 bg-white hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-950 dark:hover:border-white/20',
-                    )}
-                    onClick={() => onSelectSource(source.id)}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="truncate text-sm font-bold text-neutral-950 dark:text-white">{source.name}</span>
-                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase text-neutral-500 dark:bg-white/10">
-                        {mediaSourceLabel(source.type)}
-                      </span>
-                    </div>
-                    <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{source.description || `${source.itemCount} items`}</p>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </aside>
-
-        <main className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-start justify-between gap-4 border-b border-neutral-200 p-4 dark:border-white/10 md:p-5">
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
-                {activeSource ? `${activeSource.name} · ${activeSource.itemCount} items` : 'No source selected'}
-              </p>
-              <h2 className="mt-1 text-lg font-bold text-neutral-950 dark:text-white md:text-xl">
-                {mode === 'library' ? 'Library Media Picker' : 'Album Media Picker'}
-              </h2>
-              <p className="mt-1 text-sm text-neutral-500">Selected media will be added to the batch queue.</p>
-            </div>
-            <button
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white"
-              onClick={onClose}
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-3 border-b border-neutral-200 p-4 dark:border-white/10 md:hidden">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
-              <input
-                className="h-11 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-900 dark:text-white"
-                placeholder={mode === 'library' ? 'Search libraries...' : 'Search projects...'}
-                value={sourceQuery}
-                onChange={(e) => setSourceQuery(e.target.value)}
-              />
-            </div>
-            <select
-              className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white"
-              value={activeSourceId || ''}
-              onChange={(event) => onSelectSource(event.target.value)}
-            >
-              {!activeSourceId && <option value="">Select source...</option>}
-              {filteredSources.map((source) => (
-                <option key={source.id} value={source.id}>{source.name}</option>
-              ))}
-            </select>
-            <div className="relative">
-              <select
-                className="h-11 w-full appearance-none rounded-xl border border-neutral-200 bg-white px-3 pr-10 text-sm font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white"
-                value={sourceSort}
-                onChange={(event) => setSourceSort(event.target.value as SourceSort)}
-                aria-label={mode === 'library' ? 'Sort libraries' : 'Sort projects'}
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="name-asc">Name A-Z</option>
-                <option value="name-desc">Name Z-A</option>
-              </select>
-              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500">
-                {sourceSort === 'oldest' ? <ArrowUpNarrowWide className="h-3.5 w-3.5" /> :
-                 sourceSort === 'name-asc' ? <ArrowDownAZ className="h-3.5 w-3.5" /> :
-                 sourceSort === 'name-desc' ? <ArrowUpAZ className="h-3.5 w-3.5" /> :
-                 <ArrowDownNarrowWide className="h-3.5 w-3.5" />}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 border-b border-neutral-200 p-4 dark:border-white/10 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-              <input
-                className="h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-11 pr-4 text-sm outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-900 dark:text-white"
-                placeholder="Search items..."
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </div>
-            
-            <div className="flex shrink-0 items-center gap-3">
-              {mode === 'album' && availableAspectRatios.length > 0 && (
-                <select
-                  className="h-11 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white"
-                  value={aspectRatioFilter}
-                  onChange={(e) => setAspectRatioFilter(e.target.value)}
-                >
-                  <option value="all">All Ratios</option>
-                  {availableAspectRatios.map((ratio) => (
-                    <option key={ratio} value={ratio}>{ratio}</option>
-                  ))}
-                </select>
-              )}
-              <div className="relative">
-                <select
-                  className="h-11 appearance-none rounded-xl border border-neutral-200 bg-white pl-3 pr-10 text-sm font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white"
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value as PickerSort)}
-                  aria-label="Sort media"
-                >
-                  <option value="newest">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                  <option value="name-asc">Name A-Z</option>
-                  <option value="name-desc">Name Z-A</option>
-                </select>
-                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500">
-                  {sort === 'oldest' ? <ArrowUpNarrowWide className="h-3.5 w-3.5" /> :
-                   sort === 'name-asc' ? <ArrowDownAZ className="h-3.5 w-3.5" /> :
-                   sort === 'name-desc' ? <ArrowUpAZ className="h-3.5 w-3.5" /> :
-                   <ArrowDownNarrowWide className="h-3.5 w-3.5" />}
-                </div>
-              </div>
-              
-              <button
-                onClick={handleToggleSelectAll}
-                className={cn(
-                  "h-11 rounded-xl border px-4 text-sm font-bold transition whitespace-nowrap",
-                  isAllFilteredSelected
-                    ? "border-indigo-500 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
-                    : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-white/10"
-                )}
-              >
-                {isAllFilteredSelected ? "Deselect All" : "Select All"}
-              </button>
-            </div>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">
-            {sources.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center rounded-card border-2 border-dashed border-neutral-200 text-center dark:border-white/10">
-                <Images className="mb-4 h-12 w-12 text-neutral-300" />
-                <p className="font-bold text-neutral-950 dark:text-white">No image or video sources found</p>
-                <p className="mt-1 text-sm text-neutral-500">Create an image/video library or album first.</p>
-              </div>
-            ) : isLoadingItems ? (
-              <div className="flex h-full flex-col items-center justify-center gap-3">
-                <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
-                <p className="text-sm font-medium text-neutral-500">Loading media...</p>
-              </div>
-            ) : filteredItems.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center rounded-card border-2 border-dashed border-neutral-200 text-center dark:border-white/10">
-                <Search className="mb-4 h-12 w-12 text-neutral-300" />
-                <p className="font-bold text-neutral-950 dark:text-white">No media found</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-                {filteredItems.map((item) => {
-                  const key = importKey(mode, activeSourceId || '', item.id);
-                  const selected = selectedKeys.has(key);
-                  const aspectRatioStr = getCssAspectRatio(item.aspectRatio);
-                  return (
-                    <button
-                      key={item.id}
-                      className={cn(
-                        'group flex flex-col overflow-hidden rounded-card border bg-white text-left shadow-sm transition active:scale-[0.99] dark:bg-neutral-900',
-                        selected
-                          ? 'border-indigo-500 ring-2 ring-indigo-500/30'
-                          : 'border-neutral-200 hover:border-indigo-400/50 dark:border-white/10',
-                      )}
-                      onClick={(e) => handleItemClick(key, e.shiftKey)}
-                    >
-                      <div className="relative w-full shrink-0 bg-neutral-100 dark:bg-neutral-800" style={{ aspectRatio: aspectRatioStr }}>
-                        {item.previewUrl ? (
-                          <img src={imageDisplayUrl(item.previewUrl)} alt={item.title || item.id} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            {item.mediaType === 'video' ? <Video className="h-8 w-8 text-neutral-400" /> : <ImageIcon className="h-8 w-8 text-neutral-400" />}
-                          </div>
-                        )}
-                        <div className="absolute left-2 top-2 flex flex-col gap-1">
-                          <div className="rounded-lg bg-black/70 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-white w-fit">
-                            {mediaSourceLabel(item.mediaType)}
-                          </div>
-                          {item.aspectRatio && (
-                            <div className="rounded-lg bg-indigo-600/80 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-white w-fit">
-                              {item.aspectRatio}
-                            </div>
-                          )}
-                          {(item.resolution || item.quality) && (
-                            <div className="rounded-lg bg-emerald-600/80 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-white w-fit">
-                              {item.resolution || item.quality}
-                            </div>
-                          )}
-                        </div>
-                        {selected && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-indigo-600/30">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg">
-                              <CheckCircle2 className="h-6 w-6" />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-auto w-full p-3">
-                        <p className="truncate text-sm font-bold text-neutral-950 dark:text-white">{item.title || item.id}</p>
-                        <p className="mt-1 truncate font-mono text-[10px] text-neutral-500">{item.rawUrl || 'No raw key'}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-3 border-t border-neutral-200 p-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between md:p-5">
-            <p className="text-sm text-neutral-500">
-              <span className="font-bold text-neutral-950 dark:text-white">{selectedCount}</span> selected
-            </p>
-            <div className="flex items-center gap-3">
-              <button className="h-10 rounded-xl border border-neutral-200 px-4 text-sm font-bold text-neutral-600 transition hover:bg-neutral-50 dark:border-white/10 dark:text-neutral-300 dark:hover:bg-white/10" onClick={onClose}>
-                Cancel
-              </button>
-              <button className="inline-flex h-10 min-w-[160px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-60" onClick={onAddSelected} disabled={selectedCount === 0}>
-                <Plus className="h-4 w-4" /> Add to Queue
-              </button>
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
 }
 
 function getScaledPreviewWatermarkMetrics(width: number, height: number, settings: PostWatermarkSettings) {
@@ -889,8 +388,6 @@ export function CampaignBatchCreate() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [campaign, setCampaign] = useState<any>(null);
   const [queue, setQueue] = useState<BatchQueueItem[]>([]);
-  const [libraries, setLibraries] = useState<Library[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [watermarkSettings, setWatermarkSettings] = useState<PostWatermarkSettings>(DEFAULT_WATERMARK_SETTINGS);
   const [watermarkLoaded, setWatermarkLoaded] = useState(false);
   const [isWatermarkSaving, setIsWatermarkSaving] = useState(false);
@@ -899,12 +396,6 @@ export function CampaignBatchCreate() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [pickerMode, setPickerMode] = useState<PickerMode | null>(null);
-  const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
-  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
-  const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
-  const [albumItems, setAlbumItems] = useState<AlbumItem[]>([]);
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -918,16 +409,12 @@ export function CampaignBatchCreate() {
           toast.error('Failed to load watermark settings');
           return DEFAULT_WATERMARK_SETTINGS;
         });
-        const [campaignData, librariesData, projectsData, watermarkData] = await Promise.all([
+        const [campaignData, watermarkData] = await Promise.all([
           fetchCampaign(id),
-          fetchLibraries(1, 100, undefined, false),
-          fetchProjects(1, 100, undefined, 'all'),
           watermarkPromise,
         ]);
         if (cancelled) return;
         setCampaign(campaignData);
-        setLibraries(librariesData.items || []);
-        setProjects(projectsData.items || []);
         setWatermarkSettings({ ...DEFAULT_WATERMARK_SETTINGS, ...watermarkData });
         setWatermarkLoaded(true);
       } catch (error: any) {
@@ -952,115 +439,6 @@ export function CampaignBatchCreate() {
     };
   }, [id, navigate]);
 
-  const librarySources = useMemo<PickerSource[]>(() => (
-    libraries
-      .filter((library) => library.type === 'image' || library.type === 'video')
-      .map((library) => ({
-        id: library.id,
-        name: library.name,
-        description: library.description,
-        type: library.type as MediaType,
-        itemCount: library.itemCount ?? library.items?.length ?? 0,
-        createdAt: library.createdAt,
-      }))
-  ), [libraries]);
-
-  const albumSources = useMemo<PickerSource[]>(() => (
-    projects
-      .filter((project) => (project.type === 'image' || project.type === 'video') && ((project as any).albumCount ?? 0) > 0)
-      .map((project) => ({
-        id: project.id,
-        name: project.name,
-        description: project.description,
-        type: project.type as MediaType,
-        itemCount: (project as any).albumCount ?? project.album?.length ?? 0,
-        createdAt: project.createdAt,
-      }))
-  ), [projects]);
-
-  const activeLibrarySource = useMemo(
-    () => librarySources.find((source) => source.id === activeLibraryId) || null,
-    [activeLibraryId, librarySources],
-  );
-
-  const activeAlbumSource = useMemo(
-    () => albumSources.find((source) => source.id === activeProjectId) || null,
-    [activeProjectId, albumSources],
-  );
-
-  useEffect(() => {
-    if (pickerMode !== 'library' || activeLibraryId || librarySources.length === 0) return;
-    setActiveLibraryId(librarySources[0].id);
-  }, [activeLibraryId, librarySources, pickerMode]);
-
-  useEffect(() => {
-    if (pickerMode !== 'album' || activeProjectId || albumSources.length === 0) return;
-    setActiveProjectId(albumSources[0].id);
-  }, [activeProjectId, albumSources, pickerMode]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadLibraryItems() {
-      if (pickerMode !== 'library' || !activeLibraryId) {
-        setLibraryItems([]);
-        return;
-      }
-      setIsLoadingItems(true);
-      try {
-        const data = await fetchLibraryItems(activeLibraryId, 1, 500);
-        if (!cancelled) setLibraryItems(data.items || []);
-      } catch (error: any) {
-        if (!cancelled) toast.error(error?.message || 'Failed to load library items');
-      } finally {
-        if (!cancelled) setIsLoadingItems(false);
-      }
-    }
-
-    void loadLibraryItems();
-    return () => {
-      cancelled = true;
-    };
-  }, [activeLibraryId, pickerMode]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadAlbumItems() {
-      if (pickerMode !== 'album' || !activeProjectId) {
-        setAlbumItems([]);
-        return;
-      }
-      setIsLoadingItems(true);
-      try {
-        const project = await fetchProject(activeProjectId);
-        if (!cancelled) setAlbumItems(project.album || []);
-      } catch (error: any) {
-        if (!cancelled) toast.error(error?.message || 'Failed to load album items');
-      } finally {
-        if (!cancelled) setIsLoadingItems(false);
-      }
-    }
-
-    void loadAlbumItems();
-    return () => {
-      cancelled = true;
-    };
-  }, [activeProjectId, pickerMode]);
-
-  const pickerSources = pickerMode === 'library' ? librarySources : albumSources;
-  const activeSourceId = pickerMode === 'library' ? activeLibraryId : activeProjectId;
-  const activeSource = pickerMode === 'library' ? activeLibrarySource : activeAlbumSource;
-  const pickerItems = useMemo<PickerItem[]>(() => {
-    if (!activeSource) return [];
-    if (pickerMode === 'library') {
-      return libraryItems.map((item) => libraryItemToPickerItem(item, activeSource));
-    }
-    return albumItems
-      .filter((item) => item.imageUrl)
-      .map((item) => albumItemToPickerItem(item, activeSource));
-  }, [activeSource, albumItems, libraryItems, pickerMode]);
-
   const watermarkPreviewUrl = useMemo(() => {
     const imageItem = queue.find((item) => item.mediaType === 'image');
     if (!imageItem) return undefined;
@@ -1068,15 +446,54 @@ export function CampaignBatchCreate() {
   }, [queue]);
 
   const openPicker = (mode: PickerMode) => {
-    setSelectedKeys(new Set());
     setPickerMode(mode);
-    if (mode === 'library' && !activeLibraryId && librarySources.length > 0) setActiveLibraryId(librarySources[0].id);
-    if (mode === 'album' && !activeProjectId && albumSources.length > 0) setActiveProjectId(albumSources[0].id);
   };
 
   const closePicker = () => {
     setPickerMode(null);
-    setSelectedKeys(new Set());
+  };
+
+  const addPickedItemsToQueue = (pickedItems: UniversalPickedItem[]) => {
+    const existingKeys = new Set(queue.map((item) => {
+      if (item.kind === 'library') return importKey('library', item.libraryId, item.itemId);
+      if (item.kind === 'album') return importKey('album', item.projectId, item.itemId);
+      return item.id;
+    }));
+
+    const additions = pickedItems.flatMap<BatchQueueItem>((item) => {
+      if (item.type !== 'image' && item.type !== 'video') return [];
+      const key = importKey(item.sourceKind, item.sourceId, item.itemId);
+      if (existingKeys.has(key)) return [];
+
+      return item.sourceKind === 'library'
+        ? [{
+            id: crypto.randomUUID(),
+            kind: 'library',
+            libraryId: item.sourceId,
+            itemId: item.itemId,
+            preview: item.previewUrl,
+            title: item.title || item.sourceName,
+            rawUrl: item.rawUrl,
+            mediaType: item.type,
+            content: '',
+          }]
+        : [{
+            id: crypto.randomUUID(),
+            kind: 'album',
+            projectId: item.sourceId,
+            itemId: item.itemId,
+            preview: item.previewUrl,
+            title: item.title || item.sourceName,
+            rawUrl: item.rawUrl,
+            mediaType: item.type,
+            content: '',
+          }];
+    });
+
+    if (additions.length > 0) {
+      setQueue((prev) => [...prev, ...additions]);
+      toast.success(`Added ${additions.length} item${additions.length === 1 ? '' : 's'} to queue`);
+    }
   };
 
   const handleFiles = (files: FileList | File[]) => {
@@ -1119,64 +536,6 @@ export function CampaignBatchCreate() {
 
   const updateContent = (itemId: string, content: string) => {
     setQueue((prev) => prev.map((item) => item.id === itemId ? { ...item, content } : item));
-  };
-
-  const togglePickerItem = (key: string) => {
-    setSelectedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  const addSelectedToQueue = () => {
-    if (!pickerMode || !activeSourceId || selectedKeys.size === 0) return;
-    const source = pickerMode === 'library' ? activeLibrarySource : activeAlbumSource;
-    if (!source) return;
-
-    const existingKeys = new Set(queue.map((item) => {
-      if (item.kind === 'library') return importKey('library', item.libraryId, item.itemId);
-      if (item.kind === 'album') return importKey('album', item.projectId, item.itemId);
-      return item.id;
-    }));
-
-    const additions: BatchQueueItem[] = [];
-    for (const key of selectedKeys) {
-      if (existingKeys.has(key)) continue;
-      const [mode, sourceId, itemId] = parseImportKey(key);
-      const pickerItem = pickerItems.find((item) => item.id === itemId);
-      if (!pickerItem) continue;
-      additions.push(mode === 'library'
-        ? {
-            id: crypto.randomUUID(),
-            kind: 'library',
-            libraryId: sourceId,
-            itemId,
-            preview: pickerItem.previewUrl,
-            title: pickerItem.title || source.name,
-            rawUrl: pickerItem.rawUrl,
-            mediaType: pickerItem.mediaType,
-            content: '',
-          }
-        : {
-            id: crypto.randomUUID(),
-            kind: 'album',
-            projectId: sourceId,
-            itemId,
-            preview: pickerItem.previewUrl,
-            title: pickerItem.title || source.name,
-            rawUrl: pickerItem.rawUrl,
-            mediaType: pickerItem.mediaType,
-            content: '',
-          });
-    }
-
-    if (additions.length > 0) {
-      setQueue((prev) => [...prev, ...additions]);
-      toast.success(`Added ${additions.length} item${additions.length === 1 ? '' : 's'} to queue`);
-    }
-    closePicker();
   };
 
   const handleConfirm = async () => {
@@ -1397,20 +756,15 @@ export function CampaignBatchCreate() {
         </div>
       </div>
 
-      {pickerMode && (
-        <MediaPickerModal
-          mode={pickerMode}
-          sources={pickerSources}
-          activeSourceId={activeSourceId}
-          items={pickerItems}
-          selectedKeys={selectedKeys}
-          isLoadingItems={isLoadingItems}
-          onClose={closePicker}
-          onSelectSource={pickerMode === 'library' ? setActiveLibraryId : setActiveProjectId}
-          onToggleItem={togglePickerItem}
-          onAddSelected={addSelectedToQueue}
-        />
-      )}
+      <UniversalMediaPicker
+        isOpen={pickerMode !== null}
+        title="Media Picker"
+        allowedTypes={['image', 'video']}
+        defaultSourceKind={pickerMode || 'library'}
+        multiple
+        onClose={closePicker}
+        onConfirm={addPickedItemsToQueue}
+      />
     </div>
   );
 }

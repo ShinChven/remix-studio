@@ -25,6 +25,7 @@ import { CheckCircle2, List, Grid, ChevronLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
+import { UniversalMediaPicker, UniversalPickedItem } from './UniversalMediaPicker';
 
 // Sub-components
 import { ModelSelectorModal } from './ProjectViewer/ModelSelectorModal';
@@ -1223,34 +1224,42 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       <ConfirmModal isOpen={showDeleteProjectModal} onClose={() => setShowDeleteProjectModal(false)} onConfirm={onDelete} title={t('projectViewer.confirm.deleteProject.title')} message={t('projectViewer.confirm.deleteProject.message', { name: localProject.name })} confirmText={t('projectViewer.confirm.deleteProject.confirm')} type="danger" />
       <ConfirmModal isOpen={jobToDeleteId !== null} onClose={() => setJobToDeleteId(null)} onConfirm={() => { if (jobToDeleteId) { deleteJob(jobToDeleteId); setJobToDeleteId(null); } }} title={t('projectViewer.confirm.deleteJob.title')} message={t('projectViewer.confirm.deleteJob.message')} confirmText={t('projectViewer.confirm.deleteJob.confirm')} type="danger" />
       <LibrarySelectionModal
-        isOpen={showLibrarySelector || !!selectingLibraryForItemId}
+        isOpen={showLibrarySelector}
         onClose={() => {
           setShowLibrarySelector(false);
-          setSelectingLibraryForItemId(null);
         }}
         onSelect={(libraryId) => {
-          if (selectingLibraryForItemId) {
-            const lib = liveLibraries.find(l => l.id === libraryId);
-            if (lib) {
-              void openLibraryPreview(lib, selectingLibraryForItemId);
-            }
-          } else {
-            handleLibrarySelect(libraryId);
-          }
+          handleLibrarySelect(libraryId);
         }}
         libraries={(() => {
-          if (!selectingLibraryForItemId) {
-            return isAudioProject ? liveLibraries.filter((library) => library.type === 'text') : liveLibraries;
-          }
-          const item = (localProject.workflow || []).find(i => i.id === selectingLibraryForItemId);
-          if (!item) {
-            return isAudioProject ? liveLibraries.filter((library) => library.type === 'text') : liveLibraries;
-          }
-          return liveLibraries.filter(l => l.type === item.type);
+          return isAudioProject ? liveLibraries.filter((library) => library.type === 'text') : liveLibraries;
         })()}
         selectedLibraryIds={(localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)}
         isLoading={isRefreshingLibraries}
         error={libraryRefreshError}
+      />
+      <UniversalMediaPicker
+        isOpen={!!selectingLibraryForItemId}
+        title="Pick Workflow Item"
+        allowedTypes={(() => {
+          const item = (localProject.workflow || []).find((workflowItem) => workflowItem.id === selectingLibraryForItemId);
+          return item && item.type !== 'library' ? [item.type] : ['text'];
+        })()}
+        defaultSourceKind="library"
+        multiple={false}
+        onClose={() => setSelectingLibraryForItemId(null)}
+        onConfirm={(items: UniversalPickedItem[]) => {
+          const picked = items[0];
+          if (!selectingLibraryForItemId || !picked) return;
+          updateWorkflowItem(
+            selectingLibraryForItemId,
+            picked.value,
+            picked.thumbnailUrl,
+            picked.optimizedUrl,
+            picked.size,
+          );
+          setSelectingLibraryForItemId(null);
+        }}
       />
       <LibraryPreviewModal
         library={previewingLibrary}
