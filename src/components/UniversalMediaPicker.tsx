@@ -175,8 +175,11 @@ export function UniversalMediaPicker({
   onClose,
   onConfirm,
 }: UniversalMediaPickerProps) {
-  const enabledTypeSet = useMemo(() => new Set(allowedTypes), [allowedTypes]);
-  const enabledKinds = useMemo(() => sourceKinds.filter((kind) => DEFAULT_SOURCE_KINDS.includes(kind)), [sourceKinds]);
+  const allowedTypeKey = allowedTypes.join('|');
+  const sourceKindKey = sourceKinds.join('|');
+  const enabledTypeSet = useMemo(() => new Set(allowedTypes), [allowedTypeKey]);
+  const enabledKinds = useMemo(() => sourceKinds.filter((kind) => DEFAULT_SOURCE_KINDS.includes(kind)), [sourceKindKey]);
+  const enabledKindKey = enabledKinds.join('|');
   const initialKind = enabledKinds.includes(defaultSourceKind) ? defaultSourceKind : (enabledKinds[0] || 'library');
 
   const [activeKind, setActiveKind] = useState<PickerSourceKind>(initialKind);
@@ -205,7 +208,7 @@ export function UniversalMediaPicker({
     setSelectedKeys(new Set());
     setSelectedItemMap({});
     setItems([]);
-  }, [allowedTypes, initialKind, isOpen]);
+  }, [allowedTypeKey, initialKind, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -235,7 +238,7 @@ export function UniversalMediaPicker({
     return () => {
       cancelled = true;
     };
-  }, [enabledKinds, isOpen]);
+  }, [enabledKindKey, isOpen]);
 
   const librarySources = useMemo<PickerSource[]>(() => (
     libraries
@@ -359,6 +362,14 @@ export function UniversalMediaPicker({
   };
 
   const toggleItem = (key: string, shiftKey: boolean) => {
+    if (!multiple) {
+      const item = filteredItemByKey.get(key);
+      if (!item) return;
+      onConfirm([item]);
+      onClose();
+      return;
+    }
+
     const nextKeys = new Set(selectedKeys);
     if (shiftKey && multiple && lastSelectedKey && lastSelectedKey !== key) {
       const lastIndex = filteredKeys.indexOf(lastSelectedKey);
@@ -372,17 +383,14 @@ export function UniversalMediaPicker({
           else nextKeys.delete(filteredKeys[index]);
         }
       }
-    } else if (multiple) {
+    } else {
       if (nextKeys.has(key)) nextKeys.delete(key);
       else nextKeys.add(key);
-    } else {
-      nextKeys.clear();
-      nextKeys.add(key);
     }
 
     setSelectedKeys(nextKeys);
     setSelectedItemMap((current) => {
-      const nextMap = multiple ? { ...current } : {};
+      const nextMap = { ...current };
       Object.keys(nextMap).forEach((existingKey) => {
         if (!nextKeys.has(existingKey)) delete nextMap[existingKey];
       });
@@ -539,7 +547,9 @@ export function UniversalMediaPicker({
                 {activeSource ? `${sourceKindLabel(activeSource.kind)} / ${activeSource.name} · ${activeSource.itemCount} items` : 'No source selected'}
               </p>
               <h2 className="mt-1 text-lg font-bold text-neutral-950 dark:text-white md:text-xl">{title}</h2>
-              <p className="mt-1 text-sm text-neutral-500">Use filters and sorting to find the item you need.</p>
+              <p className="mt-1 text-sm text-neutral-500">
+                {multiple ? 'Use filters and sorting to find the items you need.' : 'Choose a source, then click an item to use it.'}
+              </p>
             </div>
             <button
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white"
@@ -713,16 +723,22 @@ export function UniversalMediaPicker({
           </div>
 
           <div className="flex flex-col gap-3 border-t border-neutral-200 p-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between md:p-5">
-            <p className="text-sm text-neutral-500">
-              <span className="font-bold text-neutral-950 dark:text-white">{selectedItems.length}</span> selected
-            </p>
+            {multiple ? (
+              <p className="text-sm text-neutral-500">
+                <span className="font-bold text-neutral-950 dark:text-white">{selectedItems.length}</span> selected
+              </p>
+            ) : (
+              <p className="text-sm text-neutral-500">Click any item above to select it.</p>
+            )}
             <div className="flex items-center gap-3">
               <button className="h-10 rounded-xl border border-neutral-200 px-4 text-sm font-bold text-neutral-600 transition hover:bg-neutral-50 dark:border-white/10 dark:text-neutral-300 dark:hover:bg-white/10" onClick={onClose}>
                 Cancel
               </button>
-              <button className="inline-flex h-10 min-w-[150px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-60" onClick={submit} disabled={selectedItems.length === 0}>
-                <CheckCircle2 className="h-4 w-4" /> {multiple ? 'Add Selected' : 'Select Item'}
-              </button>
+              {multiple && (
+                <button className="inline-flex h-10 min-w-[150px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-60" onClick={submit} disabled={selectedItems.length === 0}>
+                  <CheckCircle2 className="h-4 w-4" /> Add Selected
+                </button>
+              )}
             </div>
           </div>
         </main>
