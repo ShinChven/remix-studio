@@ -12,6 +12,7 @@ import {
   normalizeAssistantProviderSelection,
 } from '../lib/assistant-provider-settings';
 import { AssistantHero } from './Assistant/AssistantHero';
+import { ConfirmDialog } from './ConfirmDialog';
 
 export function Home() {
   const { t } = useTranslation();
@@ -21,6 +22,8 @@ export function Home() {
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
 
   // AI Chat State
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -80,13 +83,17 @@ export function Home() {
     }
   };
 
-  const handleDeleteProject = async (project: Project) => {
-    if (!window.confirm(t('projects.deleteConfirmation', { name: project.name }))) return;
+  const confirmDeleteProject = async () => {
+    if (!deleteTarget) return;
+    setIsDeletingProject(true);
     try {
-      await deleteProject(project.id);
+      await deleteProject(deleteTarget.id);
+      setDeleteTarget(null);
       await loadProjects();
     } catch (err) {
       console.error('Failed to delete project:', err);
+    } finally {
+      setIsDeletingProject(false);
     }
   };
 
@@ -216,7 +223,7 @@ export function Home() {
                       project={project}
                       onStartAssistantChat={handleStartProjectChat}
                       onDuplicate={(item) => navigate('/project/new', { state: { copyFrom: item.id } })}
-                      onDelete={handleDeleteProject}
+                      onDelete={setDeleteTarget}
                     />
                   </div>
                 ))}
@@ -327,6 +334,19 @@ export function Home() {
             </>
         )}
       </div>
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title={t('projects.deleteTitle', { defaultValue: 'Delete Project' })}
+        description={t('projects.deleteConfirmation', { name: deleteTarget?.name })}
+        confirmLabel={isDeletingProject ? t('projects.deleting', { defaultValue: 'Deleting...' }) : t('common.delete', { defaultValue: 'Delete' })}
+        cancelLabel={t('confirmModal.cancel', { defaultValue: 'Cancel' })}
+        confirmDisabled={isDeletingProject}
+        onConfirm={() => void confirmDeleteProject()}
+        onCancel={() => {
+          if (!isDeletingProject) setDeleteTarget(null);
+        }}
+        variant="danger"
+      />
     </div>
   );
 }
