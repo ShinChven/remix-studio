@@ -2,6 +2,68 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.7.5] - 2026-05-03
+
+### Added
+
+- **Campaign Post Detail**: Added a dedicated post detail view with scheduling controls, AI generation, and post management actions.
+- **Campaign Analytics**: Added campaign post status counts, summary metadata, and URL-synced pagination and filtering.
+- **Batch Watermarking**: Added configurable batch image post watermarking with a live preview.
+- **Campaign MCP Tools**: Added campaign and post management MCP tools with assistant-side mutation handling.
+- **Universal Media Picker**: Introduced a shared `UniversalMediaPicker` for standardized asset selection in project and campaign workflows.
+
+### Fixed
+
+- **Media Display**: Prioritized processed and source URLs over thumbnails when resolving media display assets.
+- **Media Layout**: Improved truncation titles and flexible button spacing for media items.
+- **Project Deletion Dialog**: Replaced browser-native project deletion confirmation with `ConfirmDialog`.
+
+### Changed
+
+- **Manual Sorting**: Removed the `LibraryItem` order column and implemented manual sorting for library and project picker lists.
+- **Media Picker UX**: Streamlined single-item selection and optimized hook dependencies in `UniversalMediaPicker`.
+
+## [1.7.4] - 2026-05-03
+
+### Added
+
+- **Media Source Filtering**: Added source filtering with search inputs to `MediaPickerModal`.
+
+### Fixed
+
+- **Campaign Execution Validation**: Added campaign status validation to prevent posts from executing when their campaign is inactive.
+- **Campaign Link Layout**: Updated campaign post link styling to use truncation for long links.
+
+### Changed
+
+- **Provider Configuration**: Removed redundant `maxTokens` configuration from campaign execution flows.
+
+## [1.7.3] - 2026-05-03
+
+### Added
+
+- **Memory Monitoring**: Added a server memory monitoring endpoint, logging, and dedicated documentation.
+
+### Changed
+
+- **Campaign List UI**: Refined campaign list item layout and related UI behavior.
+
+## [1.7.2] - 2026-05-02
+
+### Added
+
+- **Feature Mindmap**: Added a Remix Studio architecture and capabilities mindmap.
+- **Range Selection**: Added shift-click range selection for project jobs and media picker items.
+
+### Fixed
+
+- **Batch Upload Reliability**: Improved batch uploads with per-item error handling.
+- **Media Thumbnails**: Updated media thumbnails to use top-aligned cropping.
+
+### Changed
+
+- **Campaign Batch Creation**: Refined batch campaign creation selection behavior and related campaign UI details.
+
 ## [1.7.1] - 2026-05-02
 
 ### Added
