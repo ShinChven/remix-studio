@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor, Send, Compass } from 'lucide-react';
+import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor, Send, Compass, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { CommandPalette } from './CommandPalette';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -205,6 +206,23 @@ export function MainLayout() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              window.dispatchEvent(new CustomEvent('open-command-palette'));
+            }}
+            className={`w-full px-3 py-2.5 rounded-xl flex items-center transition-all border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 shadow-sm gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+            title="Search"
+          >
+            <Search className="w-5 h-5 flex-shrink-0" />
+            <span className={`font-medium text-sm overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-[200px] opacity-100 flex-1 text-left flex items-center justify-between'}`}>
+              Search
+              <kbd className="hidden lg:inline-flex items-center gap-1 rounded border border-neutral-200 dark:border-white/10 bg-neutral-100 dark:bg-neutral-800 px-1.5 font-mono text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </span>
+          </button>
+
           <NavItem
             to="/"
             icon={<Compass className="w-5 h-5 flex-shrink-0" />}
@@ -333,6 +351,7 @@ export function MainLayout() {
       </div>
 
       <div className="flex-1 overflow-hidden bg-transparent flex flex-col mt-16 lg:mt-0 min-w-0 relative">
+        <CommandPalette />
         <div className="flex-1 overflow-y-auto min-w-0 custom-scrollbar">
           <Outlet />
         </div>
