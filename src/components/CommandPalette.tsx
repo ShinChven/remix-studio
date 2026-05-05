@@ -24,6 +24,10 @@ export function CommandPalette() {
         e.preventDefault();
         setOpen((open) => !open);
       }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+      }
     };
     
     const handleOpenEvent = () => setOpen(true);
