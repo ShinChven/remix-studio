@@ -2,6 +2,12 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.8.0] - 2026-05-05
+
+### Added
+
+- **Command Palette**: Added command palette for navigation and entity creation with ⌘K shortcut.
+
 ## [1.7.5] - 2026-05-03
 
 ### Added
