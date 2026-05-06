@@ -720,6 +720,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'openai-gpt-5.5-text',
+      name: 'GPT-5.5',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-5.5',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
+    {
       id: 'openai-gpt-5.4-text',
       name: 'GPT-5.4',
       generatorId: 'OpenAI',
