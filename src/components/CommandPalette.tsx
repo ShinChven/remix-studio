@@ -69,8 +69,8 @@ export function CommandPalette() {
         const limit = query ? 20 : 10;
         
         const [projectsRes, librariesRes, campaignsRes] = await Promise.all([
-          fetchProjects(1, limit, query),
-          fetchLibraries(1, limit, query),
+          fetchProjects(1, limit, query, undefined, true),
+          fetchLibraries(1, limit, query, false, true),
           fetchCampaigns() // backend does not support query yet, we will filter locally
         ]);
         setProjects(projectsRes.items || []);

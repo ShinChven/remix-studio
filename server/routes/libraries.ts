@@ -151,8 +151,9 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       const limit = parseInt(c.req.query('limit') || '50', 10);
       const q = c.req.query('q');
       const includeItems = c.req.query('includeItems') === 'true';
+      const nameOnly = c.req.query('nameOnly') === 'true';
 
-      const result = await repository.getUserLibraries(user.userId, page, limit, q, includeItems);
+      const result = await repository.getUserLibraries(user.userId, page, limit, q, includeItems, undefined, nameOnly);
 
       if (!includeItems) {
         return c.json(result);

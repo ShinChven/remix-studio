@@ -16,7 +16,7 @@ export class LibraryRepository {
     }
   }
 
-  async getUserLibraries(userId: string, page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, type?: LibraryType): Promise<{ items: Library[], total: number, page: number, pages: number }> {
+  async getUserLibraries(userId: string, page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, type?: LibraryType, nameOnly: boolean = false): Promise<{ items: Library[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
     const where: any = { userId };
@@ -24,11 +24,15 @@ export class LibraryRepository {
       where.type = type;
     }
     if (q) {
-      where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { id: { contains: q, mode: 'insensitive' } },
-        { description: { contains: q, mode: 'insensitive' } },
-      ];
+      where.OR = nameOnly
+        ? [
+            { name: { contains: q, mode: 'insensitive' } },
+          ]
+        : [
+            { name: { contains: q, mode: 'insensitive' } },
+            { id: { contains: q, mode: 'insensitive' } },
+            { description: { contains: q, mode: 'insensitive' } },
+          ];
     }
 
     const [total, libs] = await Promise.all([
