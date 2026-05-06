@@ -816,6 +816,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'grok-4.3-text',
+      name: 'Grok 4.3',
+      generatorId: 'Grok',
+      modelId: 'grok-4.3',
+      category: 'text',
+      promptLimit: { value: 2000000, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
+      },
+    },
+    {
       id: 'grok-4.1-fast-text',
       name: 'Grok 4.1 Fast',
       generatorId: 'Grok',
