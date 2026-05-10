@@ -37,7 +37,12 @@
       "uploadFailed": "上傳到 Google Drive 失敗",
       "openFile": "開啟檔案",
       "uploading": "正在上傳到 Drive...",
-      "uploadToDrive": "上傳到 Google Drive"
+      "uploadToDrive": "上傳到 Google Drive",
+      "confirmDialog": {
+        "title": "上傳到 Google Drive？",
+        "message": "將「{{name}}」上傳到已連接的 Google Drive？大型壓縮檔可能需要一些時間。",
+        "confirm": "上傳"
+      }
     },
     "stores": {
       "headerLink": "店鋪",

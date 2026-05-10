@@ -23,6 +23,7 @@ export function Exports() {
   const [pages, setPages] = useState(1);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [taskToUploadDrive, setTaskToUploadDrive] = useState<ExportTask | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
 
   // deliveryId → DeliveryStatus for in-progress uploads (drive + gumroad)
@@ -275,15 +276,26 @@ export function Exports() {
     }
   };
 
-  const handleUploadToDrive = async (task: ExportTask) => {
-    // Disable if already uploading
+  const handleUploadToDrive = (task: ExportTask) => {
     if (pendingDeliveries[task.id]) return;
+    setTaskToUploadDrive(task);
+  };
+
+  const confirmUploadToDrive = async () => {
+    const task = taskToUploadDrive;
+    if (!task) return;
+    if (pendingDeliveries[task.id]) {
+      setTaskToUploadDrive(null);
+      return;
+    }
     try {
       const { deliveryTaskId } = await uploadExportToDrive(task.id);
       setPendingDeliveries(prev => ({ ...prev, [task.id]: deliveryTaskId }));
       toast.success(t('exports.drive.uploadQueued'));
     } catch (err: any) {
       toast.error(err.message || t('exports.drive.uploadFailed'));
+    } finally {
+      setTaskToUploadDrive(null);
     }
   };
 
@@ -304,27 +316,28 @@ export function Exports() {
         description={t('exports.description')}
         actions={
           <div className="flex items-center flex-wrap gap-3">
-            {/* Stores entry */}
-            <Link
-              to="/exports/stores"
-              className="flex-shrink-0 flex items-center justify-center gap-2 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition shadow-sm backdrop-blur-md h-[42px]"
-            >
-              <StoreIcon className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
-              <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest text-center">
-                {t('exports.stores.headerLink')}
-              </span>
-            </Link>
-
-            {/* Store upload history entry */}
-            <Link
-              to="/exports/uploads"
-              className="flex-shrink-0 flex items-center justify-center gap-2 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition shadow-sm backdrop-blur-md h-[42px]"
-            >
-              <HistoryIcon className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
-              <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest text-center">
-                {t('exports.uploads.headerLink')}
-              </span>
-            </Link>
+            {/* Stores + Upload history capsule */}
+            <div className="flex-shrink-0 flex items-center gap-3 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card shadow-sm backdrop-blur-md h-[42px]">
+              <Link
+                to="/exports/stores"
+                className="flex items-center gap-2 hover:opacity-80 transition"
+              >
+                <StoreIcon className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
+                <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest">
+                  {t('exports.stores.headerLink')}
+                </span>
+              </Link>
+              <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-800" />
+              <Link
+                to="/exports/uploads"
+                className="flex items-center gap-2 hover:opacity-80 transition"
+              >
+                <HistoryIcon className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
+                <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest">
+                  {t('exports.uploads.headerLink')}
+                </span>
+              </Link>
+            </div>
 
             {/* Google Drive control */}
             {user?.googleDriveConnected ? (
@@ -607,6 +620,18 @@ export function Exports() {
         message={t('exports.deleteDialog.message')}
         confirmText={t('exports.deleteDialog.confirm')}
         type="danger"
+      />
+
+      <ConfirmModal
+        isOpen={!!taskToUploadDrive}
+        onClose={() => setTaskToUploadDrive(null)}
+        onConfirm={confirmUploadToDrive}
+        title={t('exports.drive.confirmDialog.title')}
+        message={t('exports.drive.confirmDialog.message', {
+          name: taskToUploadDrive?.packageName || `Archive #${taskToUploadDrive?.id.slice(0, 8) ?? ''}`,
+        })}
+        confirmText={t('exports.drive.confirmDialog.confirm')}
+        type="info"
       />
     </div>
   );

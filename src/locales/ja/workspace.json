@@ -37,7 +37,12 @@
       "uploadFailed": "Drive アップロードに失敗しました",
       "openFile": "ファイルを開く",
       "uploading": "Drive にアップロード中...",
-      "uploadToDrive": "Google Drive にアップロード"
+      "uploadToDrive": "Google Drive にアップロード",
+      "confirmDialog": {
+        "title": "Google Drive にアップロードしますか？",
+        "message": "「{{name}}」を接続済みの Google Drive にアップロードしますか？大きいアーカイブは時間がかかる場合があります。",
+        "confirm": "アップロード"
+      }
     },
     "stores": {
       "headerLink": "ストア",

@@ -37,7 +37,12 @@
       "uploadFailed": "上传到 Google Drive 失败",
       "openFile": "打开文件",
       "uploading": "正在上传到 Drive...",
-      "uploadToDrive": "上传到 Google Drive"
+      "uploadToDrive": "上传到 Google Drive",
+      "confirmDialog": {
+        "title": "上传到 Google Drive？",
+        "message": "将 “{{name}}” 上传到已连接的 Google Drive？大文件可能需要一些时间。",
+        "confirm": "上传"
+      }
     },
     "stores": {
       "headerLink": "店铺",

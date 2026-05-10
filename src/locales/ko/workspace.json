@@ -37,7 +37,12 @@
       "uploadFailed": "Drive 업로드 실패",
       "openFile": "파일 열기",
       "uploading": "Drive로 업로드 중...",
-      "uploadToDrive": "Google Drive에 업로드"
+      "uploadToDrive": "Google Drive에 업로드",
+      "confirmDialog": {
+        "title": "Google Drive에 업로드할까요?",
+        "message": "“{{name}}”을(를) 연결된 Google Drive에 업로드하시겠습니까? 큰 아카이브는 시간이 걸릴 수 있습니다.",
+        "confirm": "업로드"
+      }
     },
     "stores": {
       "headerLink": "스토어",

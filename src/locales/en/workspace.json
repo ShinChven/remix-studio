@@ -37,7 +37,12 @@
       "uploadFailed": "Drive upload failed",
       "openFile": "Open file",
       "uploading": "Uploading to Drive…",
-      "uploadToDrive": "Upload to Google Drive"
+      "uploadToDrive": "Upload to Google Drive",
+      "confirmDialog": {
+        "title": "Upload to Google Drive?",
+        "message": "Upload \"{{name}}\" to your connected Google Drive? This may take a while for large archives.",
+        "confirm": "Upload"
+      }
     },
     "stores": {
       "headerLink": "Stores",

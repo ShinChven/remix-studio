@@ -37,7 +37,12 @@
       "uploadFailed": "Échec du téléchargement sur Drive",
       "openFile": "Ouvrir le fichier",
       "uploading": "Téléchargement sur Drive…",
-      "uploadToDrive": "Télécharger sur Google Drive"
+      "uploadToDrive": "Télécharger sur Google Drive",
+      "confirmDialog": {
+        "title": "Télécharger sur Google Drive ?",
+        "message": "Télécharger « {{name}} » vers votre Google Drive connecté ? Cela peut prendre du temps pour les grandes archives.",
+        "confirm": "Télécharger"
+      }
     },
     "stores": {
       "headerLink": "Boutiques",
