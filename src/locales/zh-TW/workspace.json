@@ -376,5 +376,49 @@
     "micRecordFailed": "錄製失敗",
     "micTranscribeFailed": "音訊轉錄失敗",
     "micNoSpeechDetected": "錄音中未檢測到語音"
+  },
+  "sell": {
+    "title": "上架到店鋪",
+    "description": "設定如何將此匯出作為產品發佈。",
+    "exportNotFound": "找不到該匯出。",
+    "exportNotReady": "該匯出尚未完成。",
+    "noStoresHint": "請先連接一個店鋪。",
+    "queued": "上架任務已加入佇列 — 關注 Gumroad 圖示查看進度",
+    "failed": "提交上架任務失敗",
+    "cancel": "取消",
+    "confirm": "確認並上架",
+    "coversLimit": "封面最多 {{count}} 張",
+    "publishing": "上架中…",
+    "publishSuccess": "已發佈到 Gumroad",
+    "publishFailed": "上架失敗",
+    "openProduct": "開啟產品",
+    "sell": "上架",
+    "section": {
+      "store": "店鋪",
+      "product": "產品資訊",
+      "covers": "封面圖片"
+    },
+    "field": {
+      "store": "店鋪",
+      "storePlaceholder": "選擇已連接的店鋪",
+      "title": "標題",
+      "price": "價格",
+      "description": "描述",
+      "tags": "標籤",
+      "tagsPlaceholder": "用逗號分隔，如：design, icons, ui",
+      "taxonomy": "分類 (taxonomy_id)",
+      "taxonomyPlaceholder": "可選 — 貼上 Gumroad 的 taxonomy_id"
+    },
+    "covers": {
+      "pick": "從相簿中選擇",
+      "hint": "可選。最多 8 張封面。勾選「原圖」傳送未壓縮的原始素材。",
+      "empty": "尚未選擇封面。",
+      "noAlbum": "此匯出沒有可用的相簿圖片。",
+      "useRaw": "原圖",
+      "remove": "移除",
+      "done": "完成",
+      "pickerTitle": "選擇封面圖片",
+      "pickerHint": "最多選擇 {{count}} 張。順序按選擇順序。"
+    }
   }
 }

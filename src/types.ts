@@ -1549,7 +1549,9 @@ export interface ExportTask {
 export interface DeliveryStatus {
   id: string;
   exportTaskId: string;
-  destination: 'drive';
+  destination: 'drive' | 'gumroad';
+  productId?: string;
+  phase?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   bytesTransferred: number;
   totalBytes?: number;

@@ -376,5 +376,49 @@
     "micRecordFailed": "녹음 실패",
     "micTranscribeFailed": "오디오 변환 실패",
     "micNoSpeechDetected": "녹음에서 발견된 음성이 없습니다"
+  },
+  "sell": {
+    "title": "스토어에 게시",
+    "description": "이 내보내기를 상품으로 어떻게 게시할지 설정합니다.",
+    "exportNotFound": "내보내기를 찾을 수 없습니다.",
+    "exportNotReady": "내보내기가 아직 완료되지 않았습니다.",
+    "noStoresHint": "먼저 스토어를 연결해주세요.",
+    "queued": "게시 작업이 큐에 추가되었습니다 — Gumroad 아이콘에서 진행 상황 확인",
+    "failed": "게시 작업 추가 실패",
+    "cancel": "취소",
+    "confirm": "확인 후 게시",
+    "coversLimit": "커버는 최대 {{count}}장",
+    "publishing": "게시 중…",
+    "publishSuccess": "Gumroad에 게시되었습니다",
+    "publishFailed": "게시 실패",
+    "openProduct": "상품 열기",
+    "sell": "판매",
+    "section": {
+      "store": "스토어",
+      "product": "상품 정보",
+      "covers": "커버 이미지"
+    },
+    "field": {
+      "store": "스토어",
+      "storePlaceholder": "연결된 스토어 선택",
+      "title": "제목",
+      "price": "가격",
+      "description": "설명",
+      "tags": "태그",
+      "tagsPlaceholder": "쉼표로 구분, 예: design, icons, ui",
+      "taxonomy": "카테고리 (taxonomy_id)",
+      "taxonomyPlaceholder": "선택 사항 — Gumroad의 taxonomy_id 붙여넣기"
+    },
+    "covers": {
+      "pick": "앨범에서 선택",
+      "hint": "선택 사항. 최대 8장의 커버. \"원본\" 체크 시 최적화되지 않은 원본 에셋을 전송합니다.",
+      "empty": "선택된 커버가 없습니다.",
+      "noAlbum": "이 내보내기에 사용 가능한 앨범 이미지가 없습니다.",
+      "useRaw": "원본",
+      "remove": "제거",
+      "done": "완료",
+      "pickerTitle": "커버 이미지 선택",
+      "pickerHint": "최대 {{count}}장. 선택 순서대로 정렬됩니다."
+    }
   }
 }

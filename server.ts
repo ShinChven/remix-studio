@@ -31,6 +31,7 @@ import { createStorageRouter } from './server/routes/storage-router';
 import { createOAuthRouter } from './server/routes/oauth';
 import { createSocialRouter } from './server/routes/social';
 import { createStoreRouter } from './server/routes/stores';
+import { createProductsRouter } from './server/routes/products';
 import { createMcpRouter } from './server/mcp/mcp-server';
 import { createAssistantRouter } from './server/routes/assistant';
 import { AssistantRepository } from './server/db/assistant-repository';
@@ -126,7 +127,7 @@ async function startServer() {
   await queueManager.recoverTasks();
 
   const exportManager = new ExportManager(repository, storage, exportStorage, userRepository);
-  const deliveryManager = new DeliveryManager(repository, exportStorage, userRepository);
+  const deliveryManager = new DeliveryManager(repository, exportStorage, userRepository, prisma);
   const postManager = new PostManager(prisma, storage);
   const mediaProcessingPoller = new MediaProcessingPoller(prisma, storage);
 
@@ -222,6 +223,7 @@ async function startServer() {
   app.route('/', createOAuthRouter(prisma));
   app.route('/', createSocialRouter(prisma));
   app.route('/', createStoreRouter(prisma));
+  app.route('/', createProductsRouter(prisma, deliveryManager));
   app.route('/', createMcpRouter(prisma, repository, userRepository, providerRepository));
 
   // === Assistant chat runtime ===

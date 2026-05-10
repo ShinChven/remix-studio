@@ -31,6 +31,7 @@ import { TrashView } from './components/TrashView.tsx';
 import { ProjectOrphans } from './pages/ProjectOrphans.tsx';
 import { Exports } from './pages/Exports.tsx';
 import { StoreSettings } from './pages/StoreSettings.tsx';
+import { SellExport } from './pages/SellExport.tsx';
 import { Account } from './pages/Account.tsx';
 import { AccountTwoFactorSetup } from './pages/AccountTwoFactorSetup.tsx';
 import { AssistantPage } from './pages/AssistantPage.tsx';
@@ -106,6 +107,7 @@ export default function App() {
               <Route path="provider/:id/custom-models" element={<ProviderCustomModels />} />
               <Route path="exports" element={<Exports />} />
               <Route path="exports/stores" element={<StoreSettings />} />
+              <Route path="exports/:exportId/sell" element={<SellExport />} />
               <Route path="trash" element={<TrashView />} />
               <Route path="storage" element={<Navigate to="/account?tab=storage" replace />} />
               <Route path="account" element={<Account />} />

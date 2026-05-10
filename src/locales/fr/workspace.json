@@ -376,5 +376,49 @@
     "micRecordFailed": "L'enregistrement a échoué",
     "micTranscribeFailed": "Échec de la transcription audio",
     "micNoSpeechDetected": "Aucune parole détectée dans l'enregistrement"
+  },
+  "sell": {
+    "title": "Publier sur une boutique",
+    "description": "Configurez comment cet export sera publié comme produit.",
+    "exportNotFound": "Export introuvable.",
+    "exportNotReady": "Cet export n’est pas encore terminé.",
+    "noStoresHint": "Connectez une boutique avant de publier.",
+    "queued": "Publication mise en file d’attente — surveillez l’icône Gumroad pour la progression",
+    "failed": "Échec de la mise en file d’attente",
+    "cancel": "Annuler",
+    "confirm": "Confirmer et publier",
+    "coversLimit": "Jusqu’à {{count}} couvertures autorisées",
+    "publishing": "Publication…",
+    "publishSuccess": "Produit publié sur Gumroad",
+    "publishFailed": "Échec de la publication",
+    "openProduct": "Ouvrir le produit",
+    "sell": "Vendre",
+    "section": {
+      "store": "Boutique",
+      "product": "Détails du produit",
+      "covers": "Images de couverture"
+    },
+    "field": {
+      "store": "Boutique",
+      "storePlaceholder": "Choisir une boutique connectée",
+      "title": "Titre",
+      "price": "Prix",
+      "description": "Description",
+      "tags": "Tags",
+      "tagsPlaceholder": "Séparés par des virgules, ex : design, icons, ui",
+      "taxonomy": "Catégorie (taxonomy_id)",
+      "taxonomyPlaceholder": "Optionnel — coller un taxonomy_id Gumroad"
+    },
+    "covers": {
+      "pick": "Choisir depuis l’album",
+      "hint": "Optionnel. Jusqu’à 8 couvertures. Cochez « Brut » pour envoyer la version originale non optimisée.",
+      "empty": "Aucune couverture sélectionnée.",
+      "noAlbum": "Aucune image d’album disponible pour cet export.",
+      "useRaw": "Brut",
+      "remove": "Retirer",
+      "done": "Terminé",
+      "pickerTitle": "Choisir les couvertures",
+      "pickerHint": "Sélectionnez jusqu’à {{count}}. L’ordre suit votre sélection."
+    }
   }
 }

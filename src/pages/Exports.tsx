@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive, Link2Off, Upload, Store as StoreIcon } from 'lucide-react';
+import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive, Link2Off, Upload, Store as StoreIcon, Tag } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ExportTask, DeliveryStatus } from '../types';
-import { fetchAllExports, deleteExport, uploadExportToDrive, fetchDeliveryStatus, fetchActiveDeliveries, disconnectGoogleDrive, fetchCurrentUser } from '../api';
+import { fetchAllExports, deleteExport, uploadExportToDrive, fetchDeliveryStatus, fetchActiveDeliveries, disconnectGoogleDrive, fetchCurrentUser, fetchStores } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -22,10 +22,17 @@ export function Exports() {
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
 
-  // deliveryId → DeliveryStatus for in-progress Drive uploads
+  // deliveryId → DeliveryStatus for in-progress uploads (drive + gumroad)
   const [deliveries, setDeliveries] = useState<Record<string, DeliveryStatus>>({});
-  // exportTaskId → deliveryTaskId (to know which export has an in-flight delivery)
+  const deliveriesRef = useRef(deliveries);
+  useEffect(() => { deliveriesRef.current = deliveries; }, [deliveries]);
+  // Track which delivery IDs we've already surfaced as toast (success or failure) so
+  // overlapping poll cycles don't re-fire the same toast.
+  const toastedRef = useRef<Set<string>>(new Set());
+  // exportTaskId → deliveryTaskId per destination
   const [pendingDeliveries, setPendingDeliveries] = useState<Record<string, string>>({});
+  const [pendingGumroadDeliveries, setPendingGumroadDeliveries] = useState<Record<string, string>>({});
+  const [hasStores, setHasStores] = useState(false);
   const deliveryPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const formatSize = (bytes?: number) => {
@@ -57,43 +64,75 @@ export function Exports() {
     }
   }, [searchParams, setSearchParams]);
 
-  // Poll delivery statuses
+  // Poll delivery statuses (drive + gumroad).
+  // Note: deliveries is intentionally NOT in the dep array — we read it via ref to
+  // avoid the effect re-firing on every status update (which would cause overlapping
+  // poll cycles and duplicate toasts).
   useEffect(() => {
-    const activeIds = Object.entries(pendingDeliveries)
-      .map(([, dId]) => dId)
-      .filter(dId => {
-        const d = deliveries[dId];
-        return !d || d.status === 'pending' || d.status === 'processing';
-      });
-
-    if (activeIds.length === 0) {
+    const trackedIds = [
+      ...Object.values(pendingDeliveries),
+      ...Object.values(pendingGumroadDeliveries),
+    ];
+    if (trackedIds.length === 0) {
       if (deliveryPollRef.current) clearInterval(deliveryPollRef.current);
       return;
     }
 
+    let cancelled = false;
+
+    const removeFromPending = (dId: string, destination: 'drive' | 'gumroad') => {
+      const setter = destination === 'gumroad' ? setPendingGumroadDeliveries : setPendingDeliveries;
+      setter(prev => {
+        const exportId = Object.entries(prev).find(([, v]) => v === dId)?.[0];
+        if (!exportId) return prev;
+        const next = { ...prev };
+        delete next[exportId];
+        return next;
+      });
+    };
+
     const poll = async () => {
-      for (const dId of activeIds) {
+      if (cancelled) return;
+      const idsToCheck = trackedIds.filter(dId => {
+        const d = deliveriesRef.current[dId];
+        return !d || d.status === 'pending' || d.status === 'processing';
+      });
+      for (const dId of idsToCheck) {
+        if (cancelled) return;
         try {
           const status = await fetchDeliveryStatus(dId);
+          if (cancelled) return;
           setDeliveries(prev => ({ ...prev, [dId]: status }));
-          if (status.status === 'completed') {
-            toast.success(
-              <span>
-                {t('exports.drive.uploadSuccess')}{' '}
-                <a href={status.externalUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                  {t('exports.drive.openFile')}
-                </a>
-              </span>
-            );
-          } else if (status.status === 'failed') {
-            toast.error(status.error || t('exports.drive.uploadFailed'));
-            // Remove from pending so the button resets
-            setPendingDeliveries(prev => {
-              const next = { ...prev };
-              const exportId = Object.entries(prev).find(([, v]) => v === dId)?.[0];
-              if (exportId) delete next[exportId];
-              return next;
-            });
+
+          if (status.status === 'completed' && !toastedRef.current.has(dId)) {
+            toastedRef.current.add(dId);
+            if (status.destination === 'gumroad') {
+              toast.success(
+                <span>
+                  {t('sell.publishSuccess')}{' '}
+                  {status.externalUrl ? (
+                    <a href={status.externalUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                      {t('sell.openProduct')}
+                    </a>
+                  ) : null}
+                </span>
+              );
+            } else {
+              toast.success(
+                <span>
+                  {t('exports.drive.uploadSuccess')}{' '}
+                  <a href={status.externalUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                    {t('exports.drive.openFile')}
+                  </a>
+                </span>
+              );
+            }
+            removeFromPending(dId, status.destination);
+          } else if (status.status === 'failed' && !toastedRef.current.has(dId)) {
+            toastedRef.current.add(dId);
+            const fallback = status.destination === 'gumroad' ? t('sell.publishFailed') : t('exports.drive.uploadFailed');
+            toast.error(status.error || fallback);
+            removeFromPending(dId, status.destination);
           }
         } catch {
           // ignore transient errors
@@ -101,10 +140,23 @@ export function Exports() {
       }
     };
 
-    poll();
+    void poll();
     deliveryPollRef.current = setInterval(poll, 3000);
-    return () => { if (deliveryPollRef.current) clearInterval(deliveryPollRef.current); };
-  }, [pendingDeliveries, deliveries, t]);
+    return () => {
+      cancelled = true;
+      if (deliveryPollRef.current) clearInterval(deliveryPollRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingDeliveries, pendingGumroadDeliveries, t]);
+
+  // Probe whether the user has any stores connected (drives the Sell icon visibility).
+  useEffect(() => {
+    let cancelled = false;
+    fetchStores()
+      .then((stores) => { if (!cancelled) setHasStores(stores.length > 0); })
+      .catch(() => { if (!cancelled) setHasStores(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleDisconnectDrive = async () => {
     setDisconnecting(true);
@@ -141,7 +193,18 @@ export function Exports() {
         return next;
       });
       setPendingDeliveries(
-        Object.fromEntries(activeDeliveries.map((delivery) => [delivery.exportTaskId, delivery.id]))
+        Object.fromEntries(
+          activeDeliveries
+            .filter((d) => d.destination !== 'gumroad')
+            .map((delivery) => [delivery.exportTaskId, delivery.id])
+        )
+      );
+      setPendingGumroadDeliveries(
+        Object.fromEntries(
+          activeDeliveries
+            .filter((d) => d.destination === 'gumroad')
+            .map((delivery) => [delivery.exportTaskId, delivery.id])
+        )
       );
     } catch (err) {
       console.error('Failed to load exports:', err);
@@ -211,6 +274,11 @@ export function Exports() {
 
   const getDriveDelivery = (exportId: string): DeliveryStatus | null => {
     const dId = pendingDeliveries[exportId];
+    return dId ? (deliveries[dId] ?? null) : null;
+  };
+
+  const getGumroadDelivery = (exportId: string): DeliveryStatus | null => {
+    const dId = pendingGumroadDeliveries[exportId];
     return dId ? (deliveries[dId] ?? null) : null;
   };
 
@@ -305,6 +373,11 @@ export function Exports() {
             const driveProgress = driveDelivery && driveDelivery.totalBytes
               ? Math.round((driveDelivery.bytesTransferred / driveDelivery.totalBytes) * 100)
               : 0;
+            const gumroadDelivery = getGumroadDelivery(task.id);
+            const isGumroadPublishing = gumroadDelivery && (gumroadDelivery.status === 'pending' || gumroadDelivery.status === 'processing');
+            const gumroadProgress = gumroadDelivery && gumroadDelivery.totalBytes
+              ? Math.round((gumroadDelivery.bytesTransferred / gumroadDelivery.totalBytes) * 100)
+              : 0;
 
             return (
               <div
@@ -379,6 +452,21 @@ export function Exports() {
                           </span>
                         </div>
                       )}
+
+                      {/* Gumroad publish progress */}
+                      {isGumroadPublishing && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 sm:w-20 h-1.5 bg-white dark:bg-neutral-900 rounded-full overflow-hidden border border-pink-200 dark:border-pink-900/40 shadow-inner">
+                            <div
+                              className="h-full bg-pink-500 transition-all duration-500"
+                              style={{ width: gumroadDelivery?.status === 'pending' ? '5%' : `${gumroadProgress}%` }}
+                            />
+                          </div>
+                          <span className="text-[8px] font-black text-pink-500 uppercase tracking-tighter">
+                            Gumroad: {gumroadDelivery?.phase ? `${gumroadDelivery.phase}` : `${gumroadProgress}%`}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -432,6 +520,15 @@ export function Exports() {
                       >
                         {isDriveUploading ? <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 animate-spin" /> : <Upload className="w-5 h-5 sm:w-4 sm:h-4" />}
                       </button>
+                    )}
+                    {task.status === 'completed' && hasStores && (
+                      <Link
+                        to={`/exports/${task.id}/sell`}
+                        className={`p-2 sm:p-1.5 text-pink-500 hover:bg-pink-500/10 rounded-lg transition-all active:scale-90 bg-pink-500/5 sm:bg-transparent ${isGumroadPublishing ? 'pointer-events-none opacity-50' : ''}`}
+                        title={isGumroadPublishing ? t('sell.publishing') : t('sell.sell')}
+                      >
+                        {isGumroadPublishing ? <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 animate-spin" /> : <Tag className="w-5 h-5 sm:w-4 sm:h-4" />}
+                      </Link>
                     )}
                     <button
                       onClick={() => handleDelete(task.id)}

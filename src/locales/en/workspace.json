@@ -94,6 +94,50 @@
       "confirm": "Delete Record"
     }
   },
+  "sell": {
+    "title": "Sell to a store",
+    "description": "Configure how this export will be published as a product.",
+    "exportNotFound": "Export not found.",
+    "exportNotReady": "This export isn't completed yet.",
+    "noStoresHint": "Connect a store before you can publish exports.",
+    "queued": "Publish queued — watch the Gumroad icon for progress",
+    "failed": "Failed to queue publish",
+    "cancel": "Cancel",
+    "confirm": "Confirm & publish",
+    "coversLimit": "Up to {{count}} covers allowed",
+    "publishing": "Publishing…",
+    "publishSuccess": "Product published to Gumroad",
+    "publishFailed": "Failed to publish product",
+    "openProduct": "Open product",
+    "sell": "Sell",
+    "section": {
+      "store": "Store",
+      "product": "Product details",
+      "covers": "Cover images"
+    },
+    "field": {
+      "store": "Store",
+      "storePlaceholder": "Pick a connected store",
+      "title": "Title",
+      "price": "Price",
+      "description": "Description",
+      "tags": "Tags",
+      "tagsPlaceholder": "Comma-separated, e.g. design, icons, ui",
+      "taxonomy": "Category (taxonomy_id)",
+      "taxonomyPlaceholder": "Optional — paste a Gumroad taxonomy_id"
+    },
+    "covers": {
+      "pick": "Pick from album",
+      "hint": "Optional. Up to 8 cover images. Use the raw checkbox to send the original (unoptimised) asset.",
+      "empty": "No covers selected.",
+      "noAlbum": "No album images available for this export.",
+      "useRaw": "Raw",
+      "remove": "Remove",
+      "done": "Done",
+      "pickerTitle": "Pick cover images",
+      "pickerHint": "Select up to {{count}}. Order is selection order."
+    }
+  },
   "trash": {
     "title": "Recycle Bin",
     "description": "Review deleted items, restore what you need, or remove them permanently.",

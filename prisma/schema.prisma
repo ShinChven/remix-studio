@@ -45,6 +45,7 @@ model User {
   posts                 Post[]
   postWatermarkSetting  PostWatermarkSetting?
   stores                Store[]
+  products              Product[]
   createdByUser User? @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdUsers  User[] @relation("UserCreation")
   createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
@@ -361,8 +362,10 @@ model DeliveryTask {
   id               String    @id @default(uuid())
   userId           String
   exportTaskId     String
-  destination      String    @default("drive")
+  destination      String    @default("drive") // "drive" | "gumroad"
+  productId        String?
   status           String    @default("pending")
+  phase            String?   // For multi-step deliveries (e.g. "uploading", "creating", "covers", "publishing")
   bytesTransferred BigInt    @default(0)
   totalBytes       BigInt?
   externalId       String?
@@ -378,9 +381,39 @@ model DeliveryTask {
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   exportTask ExportTask @relation(fields: [exportTaskId], references: [id], onDelete: Cascade)
+  product    Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([status, createdAt])
+}
+
+model Product {
+  id                String    @id @default(uuid())
+  userId            String
+  storeId           String
+  exportTaskId      String?
+  title             String
+  description       String?   @db.Text
+  priceCents        Int       @default(0)
+  currency          String    @default("usd")
+  taxonomyId        String?
+  tags              Json?     // Array of tag strings
+  coverItems        Json?     // Array of { albumItemId, useRaw }
+  gumroadProductId  String?
+  gumroadFileUrl    String?   @db.Text
+  gumroadShortUrl   String?
+  status            String    @default("draft") // "draft" | "publishing" | "published" | "failed"
+  errorMsg          String?   @db.Text
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store         Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  deliveryTasks DeliveryTask[]
+
+  @@index([userId])
+  @@index([storeId])
+  @@index([exportTaskId])
 }
 
 // === MCP OAuth 2.0 ===
@@ -580,6 +613,7 @@ model Store {
   updatedAt    DateTime  @updatedAt
 
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products     Product[]
 
   @@unique([userId, platform, accountId])
   @@index([userId, status])

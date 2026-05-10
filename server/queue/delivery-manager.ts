@@ -1,9 +1,11 @@
 import crypto from 'node:crypto';
 import type { Readable } from 'node:stream';
+import type { PrismaClient } from '@prisma/client';
 import { S3Storage } from '../storage/s3-storage';
 import { IRepository } from '../db/repository';
 import { UserRepository } from '../auth/user-repository';
 import { decrypt } from '../utils/crypto';
+import { GumroadStore } from '../services/store/gumroad-store';
 
 /** Max concurrent Drive upload jobs. */
 const MAX_CONCURRENT_DELIVERIES = 1;
@@ -77,7 +79,9 @@ export interface DeliveryTask {
   id: string;
   userId: string;
   exportTaskId: string;
-  destination: 'drive';
+  destination: 'drive' | 'gumroad';
+  productId?: string;
+  phase?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   bytesTransferred: number;
   totalBytes?: number;
@@ -97,21 +101,27 @@ export class DeliveryManager {
     private repository: IRepository,
     private exportStorage: S3Storage,
     private userRepository: UserRepository,
+    private prisma?: PrismaClient,
   ) {}
 
   // ─── Public API ────────────────────────────────────────────────────────────
 
   /**
-   * Submit a Drive upload job for a completed export.
+   * Submit an upload job for a completed export.
    * Returns the deliveryTaskId immediately — caller should poll GET /api/deliveries/:id.
    */
-  async startDelivery(userId: string, exportTaskId: string, destination: 'drive' = 'drive'): Promise<string> {
+  async startDelivery(
+    userId: string,
+    exportTaskId: string,
+    options: { destination?: 'drive' | 'gumroad'; productId?: string } = {},
+  ): Promise<string> {
     const taskId = crypto.randomUUID();
     const data: DeliveryTask = {
       id: taskId,
       userId,
       exportTaskId,
-      destination,
+      destination: options.destination ?? 'drive',
+      productId: options.productId,
       status: 'pending',
       bytesTransferred: 0,
       createdAt: Date.now(),
@@ -171,22 +181,55 @@ export class DeliveryManager {
   // ─── Delivery Pipeline ─────────────────────────────────────────────────────
 
   private async runDeliveryTask(task: any): Promise<void> {
-    const { id: taskId, userId, exportTaskId } = task;
-    console.log(`[DeliveryManager] Starting delivery ${taskId} for export ${exportTaskId}`);
+    const { id: taskId, userId, exportTaskId, destination } = task;
+    console.log(`[DeliveryManager] Starting delivery ${taskId} (${destination}) for export ${exportTaskId}`);
 
     const heartbeatInterval = setInterval(async () => {
       await this.repository.heartbeatDeliveryTask(taskId).catch(() => {});
     }, HEARTBEAT_INTERVAL_MS);
 
     try {
-      // Load the completed export task
-      const exportTask = await this.repository.getExportTask(userId, exportTaskId);
-      if (!exportTask || exportTask.status !== 'completed' || !exportTask.s3Key) {
-        throw new Error('Source export is not completed or has no S3 key');
+      if (destination === 'gumroad') {
+        await this.runGumroadPublish(task);
+        return;
       }
+      await this.runDrivePublish(task);
+    } catch (err: any) {
+      console.error(`[DeliveryManager] ${taskId} error:`, err);
+      await this.repository.saveDeliveryTask(userId, taskId, {
+        ...task,
+        status: 'failed',
+        error: err.message,
+        expiresAt: TTL_48H(),
+      });
+      if (destination === 'gumroad' && task.productId && this.prisma) {
+        await this.prisma.product.update({
+          where: { id: task.productId },
+          data: { status: 'failed', errorMsg: err.message },
+        }).catch(() => {});
+      }
+    } finally {
+      clearInterval(heartbeatInterval);
+    }
+  }
 
-      // Check Google Drive is connected
-      const encryptedToken = await this.userRepository.getGoogleDriveRefreshToken(userId);
+  private async runDrivePublish(task: any): Promise<void> {
+    const { id: taskId, userId, exportTaskId } = task;
+
+    // Load the completed export task
+    const exportTask = await this.repository.getExportTask(userId, exportTaskId);
+    if (!exportTask || exportTask.status !== 'completed' || !exportTask.s3Key) {
+      throw new Error('Source export is not completed or has no S3 key');
+    }
+
+    await this.runDriveUpload(task, exportTask);
+  }
+
+  private async runDriveUpload(task: any, exportTask: any): Promise<void> {
+    const { id: taskId, userId, exportTaskId } = task;
+
+    // Check Google Drive is connected
+    const encryptedToken = await this.userRepository.getGoogleDriveRefreshToken(userId);
       if (!encryptedToken) throw new Error('Google Drive is not connected');
 
       const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -253,7 +296,15 @@ export class DeliveryManager {
       if (!resumableUri) throw new Error('No resumable URI returned from Drive');
 
       // 2. Stream the ZIP from S3 and upload it to Drive in bounded resumable chunks
-      const zipStream = await this.exportStorage.readStream(exportTask.s3Key);
+      let zipStream: Readable;
+      try {
+        zipStream = await this.exportStorage.readStream(exportTask.s3Key);
+      } catch (err: any) {
+        if (err.name === 'NoSuchKey' || err.code === 'NoSuchKey') {
+          throw new Error('Source export file no longer exists in storage. Please generate a new export.');
+        }
+        throw err;
+      }
       let bytesTransferred = 0;
       let finalResponse: Response | null = null;
 
@@ -324,18 +375,229 @@ export class DeliveryManager {
         bytesTransferred,
         expiresAt: TTL_48H(),
       });
-      console.log(`[DeliveryManager] ${taskId} completed — Drive file ${driveFile.id}`);
+    console.log(`[DeliveryManager] ${taskId} completed — Drive file ${driveFile.id}`);
+  }
+
+  // ─── Gumroad Publish ───────────────────────────────────────────────────────
+
+  private async runGumroadPublish(task: any): Promise<void> {
+    const { id: taskId, userId, exportTaskId, productId } = task;
+
+    if (!this.prisma) {
+      throw new Error('DeliveryManager: Prisma client not configured for Gumroad delivery');
+    }
+    if (!productId) {
+      throw new Error('Gumroad delivery is missing productId');
+    }
+
+    const exportTask = await this.repository.getExportTask(userId, exportTaskId);
+    if (!exportTask || exportTask.status !== 'completed' || !exportTask.s3Key) {
+      throw new Error('Source export is not completed or has no S3 key');
+    }
+
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, userId },
+      include: { store: true },
+    });
+    if (!product) throw new Error('Product not found');
+    if (!product.store) throw new Error('Product store missing');
+
+    const accessToken = decrypt(product.store.accessToken);
+    const gumroad = new GumroadStore();
+
+    const totalBytes = Number(exportTask.size || 0);
+    if (!Number.isFinite(totalBytes) || totalBytes <= 0) {
+      throw new Error('Source export is missing a valid size');
+    }
+
+    const filename = exportTask.s3Key.split('/').pop() || `export_${exportTaskId}.zip`;
+
+    await this.repository.saveDeliveryTask(userId, taskId, {
+      ...task,
+      status: 'processing',
+      phase: 'uploading',
+      totalBytes,
+    });
+    await this.prisma.product.update({
+      where: { id: product.id },
+      data: { status: 'publishing', errorMsg: null },
+    });
+
+    // ── 1. Presign + multipart upload to Gumroad's S3 ──────────────────────
+    console.log(`[Gumroad] presign filename=${filename} totalBytes=${totalBytes}`);
+    const presign = await gumroad.presignUpload(accessToken, filename, totalBytes);
+    console.log(`[Gumroad] presign ok: uploadId=${presign.uploadId} parts=${presign.parts.length} key=${presign.key}`);
+
+    let uploaded = 0;
+    const partSize = GumroadStore.partSize;
+    const ackedParts: { partNumber: number; etag: string }[] = [];
+
+    let zipStream: Readable;
+    try {
+      zipStream = await this.exportStorage.readStream(exportTask.s3Key);
     } catch (err: any) {
-      console.error(`[DeliveryManager] ${taskId} error:`, err);
+      if (err.name === 'NoSuchKey' || err.code === 'NoSuchKey') {
+        throw new Error('Source export file no longer exists in storage. Please generate a new export.');
+      }
+      throw err;
+    }
+    let aborted = false;
+    try {
+      let partIndex = 0;
+      for await (const chunk of chunkReadable(zipStream, partSize)) {
+        const part = presign.parts[partIndex];
+        if (!part) {
+          throw new Error(`Missing presigned URL for part ${partIndex + 1}`);
+        }
+        console.log(`[Gumroad] uploading part ${part.partNumber} (${chunk.length} bytes)`);
+        const etag = await gumroad.uploadPart(part.presignedUrl, chunk);
+        console.log(`[Gumroad] part ${part.partNumber} ack etag=${etag}`);
+        ackedParts.push({ partNumber: part.partNumber, etag });
+        uploaded += chunk.length;
+        partIndex++;
+        await this.repository.saveDeliveryTask(userId, taskId, {
+          ...task,
+          status: 'processing',
+          phase: 'uploading',
+          totalBytes,
+          bytesTransferred: uploaded,
+        });
+      }
+      if (uploaded !== totalBytes) {
+        throw new Error(`Upload finished early: ${uploaded}/${totalBytes} bytes`);
+      }
+      if (ackedParts.length !== presign.parts.length) {
+        throw new Error(`Expected ${presign.parts.length} parts, only uploaded ${ackedParts.length}`);
+      }
+    } catch (err) {
+      aborted = true;
+      try {
+        await gumroad.abortUpload(accessToken, presign.uploadId, presign.key);
+      } catch (abortErr) {
+        console.warn('[DeliveryManager] Gumroad abort failed:', abortErr);
+      }
+      throw err;
+    } finally {
+      zipStream.destroy();
+    }
+
+    if (aborted) return; // unreachable; throw above unwinds
+
+    // ── 2. Complete multipart upload ──────────────────────────────────────
+    await this.repository.saveDeliveryTask(userId, taskId, {
+      ...task,
+      status: 'processing',
+      phase: 'finalizing',
+      totalBytes,
+      bytesTransferred: uploaded,
+    });
+    const fileUrl = await gumroad.completeUpload(accessToken, presign.uploadId, presign.key, ackedParts);
+    console.log(`[Gumroad] completeUpload fileUrl=${fileUrl}`);
+
+    // ── 3. Create the product (draft) with the file_url attached ──────────
+    await this.repository.saveDeliveryTask(userId, taskId, {
+      ...task,
+      status: 'processing',
+      phase: 'creating',
+      totalBytes,
+      bytesTransferred: uploaded,
+    });
+    const tags = Array.isArray(product.tags) ? (product.tags as any[]).map(String) : [];
+    const created = await gumroad.createProduct(accessToken, {
+      name: product.title,
+      priceCents: product.priceCents,
+      currency: product.currency,
+      description: product.description ?? undefined,
+      tags,
+      taxonomyId: product.taxonomyId ?? undefined,
+      fileUrl,
+    });
+    console.log(`[Gumroad] createProduct id=${created.id} files=${(created.files ?? []).length}`);
+
+    // Verify the file actually attached. The create response only returns a populated
+    // `files` array when exactly one file is attached; for safety we re-fetch the
+    // product to confirm at least one file is present.
+    let attachedFiles: any[] = Array.isArray((created as any).files) ? (created as any).files : [];
+    if (attachedFiles.length === 0) {
+      try {
+        const refreshed = await gumroad.getProduct(accessToken, created.id);
+        attachedFiles = Array.isArray(refreshed?.files) ? refreshed.files : [];
+        console.log(`[Gumroad] re-fetched product files=${attachedFiles.length}`);
+      } catch (refreshErr) {
+        console.warn('[Gumroad] failed to re-fetch product for verification:', refreshErr);
+      }
+    }
+    if (attachedFiles.length === 0) {
+      throw new Error(
+        `Gumroad accepted the product (${created.id}) but the zip file did not attach. ` +
+        `This usually means the multipart upload uploaded zero bytes. Aborting before publish.`
+      );
+    }
+
+    await this.prisma.product.update({
+      where: { id: product.id },
+      data: { gumroadProductId: created.id, gumroadFileUrl: fileUrl },
+    });
+
+    // ── 4. Add covers (best-effort; requires public URLs reachable by Gumroad)
+    const coverItems = Array.isArray(product.coverItems) ? (product.coverItems as any[]) : [];
+    if (coverItems.length > 0) {
       await this.repository.saveDeliveryTask(userId, taskId, {
         ...task,
-        status: 'failed',
-        error: err.message,
-        expiresAt: TTL_48H(),
+        status: 'processing',
+        phase: 'covers',
+        totalBytes,
+        bytesTransferred: uploaded,
       });
-    } finally {
-      clearInterval(heartbeatInterval);
+      for (const item of coverItems) {
+        try {
+          const album = await this.prisma.albumItem.findFirst({
+            where: { id: String(item.albumItemId), userId },
+          });
+          if (!album) continue;
+          const key = item.useRaw ? album.imageUrl : (album.optimizedUrl || album.imageUrl);
+          if (!key) continue;
+          // Use the public storage instance for covers (assumes album S3 bucket)
+          const coverUrl = await this.exportStorage.getPresignedUrl(key, 60 * 60);
+          await gumroad.addCover(accessToken, created.id, coverUrl);
+        } catch (coverErr: any) {
+          console.warn('[DeliveryManager] Add cover failed (continuing):', coverErr?.message || coverErr);
+        }
+      }
     }
+
+    // ── 5. Publish ───────────────────────────────────────────────────────
+    await this.repository.saveDeliveryTask(userId, taskId, {
+      ...task,
+      status: 'processing',
+      phase: 'publishing',
+      totalBytes,
+      bytesTransferred: uploaded,
+    });
+    const enabled = await gumroad.enableProduct(accessToken, created.id);
+    const externalUrl = enabled.short_url ?? null;
+    console.log(`[Gumroad] enabled product ${created.id} short_url=${externalUrl}`);
+
+    await this.prisma.product.update({
+      where: { id: product.id },
+      data: {
+        status: 'published',
+        gumroadShortUrl: externalUrl,
+      },
+    });
+
+    await this.repository.saveDeliveryTask(userId, taskId, {
+      ...task,
+      status: 'completed',
+      phase: null,
+      totalBytes,
+      bytesTransferred: totalBytes,
+      externalId: created.id,
+      externalUrl,
+      expiresAt: TTL_48H(),
+    });
+
+    console.log(`[DeliveryManager] ${taskId} published Gumroad product ${created.id}`);
   }
 
   private async reap(): Promise<void> {

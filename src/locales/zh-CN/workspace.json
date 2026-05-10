@@ -94,6 +94,50 @@
       "confirm": "删除记录"
     }
   },
+  "sell": {
+    "title": "上架到店铺",
+    "description": "配置如何将该导出作为产品发布。",
+    "exportNotFound": "未找到该导出。",
+    "exportNotReady": "该导出尚未完成。",
+    "noStoresHint": "请先连接一个店铺。",
+    "queued": "上架任务已加入队列 — 关注 Gumroad 图标查看进度",
+    "failed": "提交上架任务失败",
+    "cancel": "取消",
+    "confirm": "确认并上架",
+    "coversLimit": "封面最多 {{count}} 张",
+    "publishing": "上架中…",
+    "publishSuccess": "已发布到 Gumroad",
+    "publishFailed": "上架失败",
+    "openProduct": "打开产品",
+    "sell": "上架",
+    "section": {
+      "store": "店铺",
+      "product": "产品信息",
+      "covers": "封面图片"
+    },
+    "field": {
+      "store": "店铺",
+      "storePlaceholder": "选择已连接的店铺",
+      "title": "标题",
+      "price": "价格",
+      "description": "描述",
+      "tags": "标签",
+      "tagsPlaceholder": "用逗号分隔，如：design, icons, ui",
+      "taxonomy": "分类 (taxonomy_id)",
+      "taxonomyPlaceholder": "可选 — 粘贴 Gumroad 的 taxonomy_id"
+    },
+    "covers": {
+      "pick": "从画册中选择",
+      "hint": "可选。最多 8 张封面。勾选「原图」可发送未优化的原始素材。",
+      "empty": "尚未选择封面。",
+      "noAlbum": "该导出没有可用的画册图片。",
+      "useRaw": "原图",
+      "remove": "移除",
+      "done": "完成",
+      "pickerTitle": "选择封面图片",
+      "pickerHint": "最多选择 {{count}} 张。顺序按选择顺序。"
+    }
+  },
   "trash": {
     "title": "回收站",
     "description": "查看已删除的项目，还原您需要的项，或永久删除它们。",

@@ -376,5 +376,49 @@
     "micRecordFailed": "録音に失敗しました",
     "micTranscribeFailed": "音声の文字起こしに失敗しました",
     "micNoSpeechDetected": "録音中に音声が検出されませんでした"
+  },
+  "sell": {
+    "title": "ストアに公開",
+    "description": "このエクスポートを商品としてどのように公開するかを設定します。",
+    "exportNotFound": "エクスポートが見つかりません。",
+    "exportNotReady": "このエクスポートはまだ完了していません。",
+    "noStoresHint": "先にストアを接続してください。",
+    "queued": "公開ジョブを予約しました — Gumroad アイコンで進捗を確認",
+    "failed": "公開ジョブの予約に失敗しました",
+    "cancel": "キャンセル",
+    "confirm": "確認して公開",
+    "coversLimit": "カバーは最大 {{count}} 枚",
+    "publishing": "公開中…",
+    "publishSuccess": "Gumroad に公開しました",
+    "publishFailed": "公開に失敗しました",
+    "openProduct": "商品を開く",
+    "sell": "公開",
+    "section": {
+      "store": "ストア",
+      "product": "商品情報",
+      "covers": "カバー画像"
+    },
+    "field": {
+      "store": "ストア",
+      "storePlaceholder": "接続済みのストアを選択",
+      "title": "タイトル",
+      "price": "価格",
+      "description": "説明",
+      "tags": "タグ",
+      "tagsPlaceholder": "カンマ区切り、例：design, icons, ui",
+      "taxonomy": "カテゴリ (taxonomy_id)",
+      "taxonomyPlaceholder": "任意 — Gumroad の taxonomy_id を貼り付け"
+    },
+    "covers": {
+      "pick": "アルバムから選択",
+      "hint": "任意。最大 8 枚。「原本」を有効にすると未最適化の素材を送信します。",
+      "empty": "カバーは選択されていません。",
+      "noAlbum": "このエクスポートに利用可能なアルバム画像はありません。",
+      "useRaw": "原本",
+      "remove": "削除",
+      "done": "完了",
+      "pickerTitle": "カバー画像を選択",
+      "pickerHint": "最大 {{count}} 枚。順序は選択順です。"
+    }
   }
 }

@@ -537,7 +537,7 @@ export class ProjectRepository {
   // === DeliveryTask CRUD + Queue ===
 
   async saveDeliveryTask(userId: string, taskId: string, data: any): Promise<void> {
-    const { exportTaskId, destination, status, bytesTransferred, totalBytes, externalId, externalUrl, error, createdAt, expiresAt } = data;
+    const { exportTaskId, destination, productId, phase, status, bytesTransferred, totalBytes, externalId, externalUrl, error, createdAt, expiresAt } = data;
     await this.prisma.deliveryTask.upsert({
       where: { id: taskId },
       create: {
@@ -545,6 +545,8 @@ export class ProjectRepository {
         userId,
         exportTaskId,
         destination: destination ?? 'drive',
+        productId: productId ?? null,
+        phase: phase ?? null,
         status: status ?? 'pending',
         bytesTransferred: bytesTransferred != null ? BigInt(bytesTransferred) : BigInt(0),
         totalBytes: totalBytes != null ? BigInt(totalBytes) : null,
@@ -556,6 +558,7 @@ export class ProjectRepository {
       },
       update: {
         status: status ?? undefined,
+        phase: phase ?? null,
         bytesTransferred: bytesTransferred != null ? BigInt(bytesTransferred) : undefined,
         totalBytes: totalBytes != null ? BigInt(totalBytes) : undefined,
         externalId: externalId ?? null,
@@ -634,6 +637,8 @@ export class ProjectRepository {
       userId: t.userId,
       exportTaskId: t.exportTaskId,
       destination: t.destination,
+      productId: t.productId ?? undefined,
+      phase: t.phase ?? undefined,
       status: t.status,
       bytesTransferred: t.bytesTransferred != null ? Number(t.bytesTransferred) : 0,
       totalBytes: t.totalBytes != null ? Number(t.totalBytes) : undefined,

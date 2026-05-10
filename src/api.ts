@@ -1004,6 +1004,11 @@ export async function fetchProjectExports(projectId: string): Promise<ExportTask
   return handleResponse<ExportTask[]>(res, 'Failed to list exports');
 }
 
+export async function fetchProductExports(taskId: string): Promise<ExportTask> {
+  const res = await apiFetch(`/api/exports/${taskId}`, { headers: getHeaders(false) });
+  return handleResponse<ExportTask>(res, 'Failed to fetch export');
+}
+
 export async function fetchAllExports(limit?: number, cursor?: string): Promise<{ items: ExportTask[]; nextCursor?: string }> {
   const url = new URL('/api/exports', window.location.origin);
   if (limit) url.searchParams.set('limit', limit.toString());
@@ -1059,7 +1064,9 @@ export async function uploadExportToDrive(taskId: string): Promise<{ deliveryTas
 export interface DeliveryStatus {
   id: string;
   exportTaskId: string;
-  destination: 'drive';
+  destination: 'drive' | 'gumroad';
+  productId?: string;
+  phase?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   bytesTransferred: number;
   totalBytes?: number;
@@ -1755,4 +1762,61 @@ export async function disconnectStore(platform: string, id: string): Promise<voi
     headers: getHeaders(),
   });
   return handleResponse<void>(res, 'Failed to disconnect store');
+}
+
+// ========== Products (publish to store) ==========
+
+export interface ProductCoverItem {
+  albumItemId: string;
+  useRaw?: boolean;
+}
+
+export interface ProductSummary {
+  id: string;
+  storeId: string;
+  exportTaskId?: string | null;
+  title: string;
+  priceCents: number;
+  currency: string;
+  status: 'draft' | 'publishing' | 'published' | 'failed';
+  gumroadProductId?: string | null;
+  gumroadShortUrl?: string | null;
+  errorMsg?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProductInput {
+  storeId: string;
+  exportTaskId: string;
+  title: string;
+  priceCents: number;
+  currency?: string;
+  description?: string | null;
+  taxonomyId?: string | null;
+  tags?: string[];
+  coverItems?: ProductCoverItem[];
+  publishImmediately?: boolean;
+}
+
+export async function fetchProducts(): Promise<ProductSummary[]> {
+  const res = await apiFetch('/api/products', { headers: getHeaders() });
+  return handleResponse<ProductSummary[]>(res, 'Failed to load products');
+}
+
+export async function createProduct(input: CreateProductInput): Promise<{ product: ProductSummary; deliveryTaskId?: string }> {
+  const res = await apiFetch('/api/products', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(input),
+  });
+  return handleResponse<{ product: ProductSummary; deliveryTaskId?: string }>(res, 'Failed to create product');
+}
+
+export async function publishProduct(productId: string): Promise<{ deliveryTaskId: string }> {
+  const res = await apiFetch(`/api/products/${productId}/publish`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  return handleResponse<{ deliveryTaskId: string }>(res, 'Failed to publish product');
 }

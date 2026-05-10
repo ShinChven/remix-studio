@@ -4,7 +4,7 @@
   "version": "1.8.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch server.ts",
+    "dev": "tsx watch --exclude \"agent/**\" --exclude \"data/**\" --exclude \"dist/**\" --exclude \"dist-server/**\" --exclude \"docs/**\" server.ts",
     "build": "vite build && tsup server.ts --format esm --out-dir dist-server --clean --external @prisma/client",
     "start": "NODE_ENV=production node dist-server/server.js",
     "preview": "vite preview",

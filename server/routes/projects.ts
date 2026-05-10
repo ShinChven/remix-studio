@@ -1021,7 +1021,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         return c.json({ error: 'Google OAuth is not configured' }, 500);
       }
 
-      const deliveryTaskId = await deliveryManager.startDelivery(user.userId, taskId, 'drive');
+      const deliveryTaskId = await deliveryManager.startDelivery(user.userId, taskId, { destination: 'drive' });
       return c.json({ deliveryTaskId }, 202);
     } catch (e) {
       console.error('[POST /api/exports/:taskId/upload-to-drive]', e);
@@ -1058,6 +1058,19 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+
+  router.get('/api/exports/:taskId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const taskId = c.req.param('taskId');
+      const task = await repository.getExportTask(user.userId, taskId);
+      if (!task) return c.json({ error: 'Export not found' }, 404);
+      return c.json(task);
+    } catch (e) {
+      console.error('[GET /api/exports/:taskId]', e);
+      return c.json({ error: 'Failed to fetch export' }, 500);
+    }
+  });
 
   router.delete('/api/exports/:taskId', authMiddleware, async (c) => {
     try {
