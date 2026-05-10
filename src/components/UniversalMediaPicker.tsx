@@ -16,7 +16,7 @@ import {
   Video,
   X,
 } from 'lucide-react';
-import { fetchLibraries, fetchLibraryItems, fetchProject, fetchProjects, imageDisplayUrl } from '../api';
+import { fetchLibraries, fetchLibrary, fetchLibraryItems, fetchProject, fetchProjects, imageDisplayUrl } from '../api';
 import { AlbumItem, Library, LibraryItem, LibraryType, Project } from '../types';
 import { cn } from '../lib/utils';
 
@@ -62,6 +62,7 @@ interface UniversalMediaPickerProps {
   title?: string;
   allowedTypes?: LibraryType[];
   defaultSourceKind?: PickerSourceKind;
+  fixedSourceId?: string;
   sourceKinds?: PickerSourceKind[];
   multiple?: boolean;
   onClose: () => void;
@@ -170,6 +171,7 @@ export function UniversalMediaPicker({
   title = 'Media Picker',
   allowedTypes = ALL_TYPES,
   defaultSourceKind = 'library',
+  fixedSourceId,
   sourceKinds = DEFAULT_SOURCE_KINDS,
   multiple = true,
   onClose,
@@ -204,11 +206,11 @@ export function UniversalMediaPicker({
     setSelectedTypes(new Set(allowedTypes));
     setSourceQuery('');
     setItemQuery('');
-    setActiveSourceId(null);
+    setActiveSourceId(fixedSourceId || null);
     setSelectedKeys(new Set());
     setSelectedItemMap({});
     setItems([]);
-  }, [allowedTypeKey, initialKind, isOpen]);
+  }, [allowedTypeKey, initialKind, isOpen, fixedSourceId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -217,18 +219,28 @@ export function UniversalMediaPicker({
     async function loadSources() {
       setLoadingSources(true);
       try {
-        const tasks: Promise<void>[] = [];
-        if (enabledKinds.includes('library')) {
-          tasks.push(fetchLibraries(1, 500, undefined, false).then((result) => {
-            if (!cancelled) setLibraries(result.items || []);
-          }));
+        if (fixedSourceId) {
+          if (initialKind === 'library') {
+            const lib = await fetchLibrary(fixedSourceId).catch(() => null);
+            if (!cancelled && lib) setLibraries([lib]);
+          } else {
+            const proj = await fetchProject(fixedSourceId).catch(() => null);
+            if (!cancelled && proj) setProjects([proj]);
+          }
+        } else {
+          const tasks: Promise<void>[] = [];
+          if (enabledKinds.includes('library')) {
+            tasks.push(fetchLibraries(1, 500, undefined, false).then((result) => {
+              if (!cancelled) setLibraries(result.items || []);
+            }));
+          }
+          if (enabledKinds.includes('album')) {
+            tasks.push(fetchProjects(1, 500, undefined, 'all').then((result) => {
+              if (!cancelled) setProjects(result.items || []);
+            }));
+          }
+          await Promise.all(tasks);
         }
-        if (enabledKinds.includes('album')) {
-          tasks.push(fetchProjects(1, 500, undefined, 'all').then((result) => {
-            if (!cancelled) setProjects(result.items || []);
-          }));
-        }
-        await Promise.all(tasks);
       } finally {
         if (!cancelled) setLoadingSources(false);
       }
@@ -238,11 +250,11 @@ export function UniversalMediaPicker({
     return () => {
       cancelled = true;
     };
-  }, [enabledKindKey, isOpen]);
+  }, [enabledKindKey, isOpen, fixedSourceId, initialKind]);
 
   const librarySources = useMemo<PickerSource[]>(() => (
     libraries
-      .filter((library) => enabledTypeSet.has(library.type))
+      .filter((library) => fixedSourceId === library.id || enabledTypeSet.has(library.type))
       .map((library) => ({
         id: library.id,
         kind: 'library' as const,
@@ -256,7 +268,7 @@ export function UniversalMediaPicker({
 
   const albumSources = useMemo<PickerSource[]>(() => (
     projects
-      .filter((project) => enabledTypeSet.has((project.type || 'image') as LibraryType) && ((project as any).albumCount ?? project.album?.length ?? 0) > 0)
+      .filter((project) => fixedSourceId === project.id || (enabledTypeSet.has((project.type || 'image') as LibraryType) && ((project as any).albumCount ?? project.album?.length ?? 0) > 0))
       .map((project) => ({
         id: project.id,
         kind: 'album' as const,
@@ -272,11 +284,12 @@ export function UniversalMediaPicker({
   const filteredSources = useMemo(() => {
     const q = sourceQuery.trim().toLowerCase();
     const visibleSources = sources.filter((source) => {
+      if (fixedSourceId === source.id) return true;
       if (!selectedTypes.has(source.type)) return false;
       return !q || source.name.toLowerCase().includes(q) || source.description?.toLowerCase().includes(q);
     });
     return sortByChoice(visibleSources, sourceSort);
-  }, [sourceQuery, sourceSort, selectedTypes, sources]);
+  }, [sourceQuery, sourceSort, selectedTypes, sources, fixedSourceId]);
 
   const activeSource = useMemo(
     () => filteredSources.find((source) => source.id === activeSourceId) || filteredSources[0] || null,
@@ -285,10 +298,11 @@ export function UniversalMediaPicker({
 
   useEffect(() => {
     setActiveSourceId((current) => {
+      if (loadingSources && current) return current;
       if (current && filteredSources.some((source) => source.id === current)) return current;
       return filteredSources[0]?.id || null;
     });
-  }, [filteredSources]);
+  }, [filteredSources, loadingSources]);
 
   useEffect(() => {
     if (!isOpen || !activeSource) {
@@ -435,110 +449,112 @@ export function UniversalMediaPicker({
     <div className="fixed inset-0 z-[650] flex items-center justify-center p-3 md:p-8">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose} />
       <div className="relative flex h-[88vh] w-full max-w-7xl overflow-hidden rounded-card border border-neutral-200 bg-white shadow-2xl dark:border-white/10 dark:bg-neutral-950">
-        <aside className="hidden w-80 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 p-5 dark:border-white/10 dark:bg-neutral-900/80 md:flex">
-          <div className="mb-4 flex shrink-0 items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
-              <Images className="h-5 w-5" />
+        {!fixedSourceId && (
+          <aside className="hidden w-80 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 p-5 dark:border-white/10 dark:bg-neutral-900/80 md:flex">
+            <div className="mb-4 flex shrink-0 items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
+                <Images className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-neutral-950 dark:text-white">{title}</h3>
+                <p className="text-xs text-neutral-500">Pick from libraries or albums</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-neutral-950 dark:text-white">{title}</h3>
-              <p className="text-xs text-neutral-500">Pick from libraries or albums</p>
-            </div>
-          </div>
 
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            {enabledKinds.map((kind) => (
-              <button
-                key={kind}
-                onClick={() => {
-                  setActiveKind(kind);
-                  setActiveSourceId(null);
-                  setItems([]);
-                  setSelectedKeys(new Set());
-                  setSelectedItemMap({});
-                }}
-                className={cn(
-                  'h-9 rounded-lg border text-xs font-bold transition',
-                  activeKind === kind
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300'
-                    : 'border-neutral-200 bg-white text-neutral-500 hover:text-neutral-950 dark:border-white/10 dark:bg-neutral-950 dark:hover:text-white',
-                )}
-              >
-                {sourceKindLabel(kind)}
-              </button>
-            ))}
-          </div>
-
-          <div className="mb-4 flex flex-wrap gap-2">
-            {ALL_TYPES.filter((type) => enabledTypeSet.has(type)).map((type) => {
-              const Icon = typeIcon(type);
-              const selected = selectedTypes.has(type);
-              return (
+            <div className="mb-4 grid grid-cols-2 gap-2">
+              {enabledKinds.map((kind) => (
                 <button
-                  key={type}
-                  onClick={() => toggleType(type)}
+                  key={kind}
+                  onClick={() => {
+                    setActiveKind(kind);
+                    setActiveSourceId(null);
+                    setItems([]);
+                    setSelectedKeys(new Set());
+                    setSelectedItemMap({});
+                  }}
                   className={cn(
-                    'inline-flex h-8 items-center gap-1.5 rounded-lg border px-2 text-[10px] font-black uppercase tracking-widest transition',
-                    selected
-                      ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300'
-                      : 'border-neutral-200 bg-white text-neutral-500 dark:border-white/10 dark:bg-neutral-950',
+                    'h-9 rounded-lg border text-xs font-bold transition',
+                    activeKind === kind
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300'
+                      : 'border-neutral-200 bg-white text-neutral-500 hover:text-neutral-950 dark:border-white/10 dark:bg-neutral-950 dark:hover:text-white',
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5" /> {typeLabel(type)}
+                  {sourceKindLabel(kind)}
                 </button>
-              );
-            })}
-          </div>
-
-          <div className="mb-4 shrink-0">
-            <div className="relative mb-2">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
-              <input
-                className="h-9 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-3 text-xs outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-950 dark:text-white"
-                placeholder={`Search ${activeKind === 'library' ? 'libraries' : 'projects'}...`}
-                value={sourceQuery}
-                onChange={(event) => setSourceQuery(event.target.value)}
-              />
+              ))}
             </div>
-            <SortSelect value={sourceSort} onChange={setSourceSort} compact ariaLabel={`Sort ${activeKind}`} />
-          </div>
 
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-            {loadingSources ? (
-              <div className="flex h-full items-center justify-center">
-                <Loader2 className="h-7 w-7 animate-spin text-indigo-600" />
+            <div className="mb-4 flex flex-wrap gap-2">
+              {ALL_TYPES.filter((type) => enabledTypeSet.has(type)).map((type) => {
+                const Icon = typeIcon(type);
+                const selected = selectedTypes.has(type);
+                return (
+                  <button
+                    key={type}
+                    onClick={() => toggleType(type)}
+                    className={cn(
+                      'inline-flex h-8 items-center gap-1.5 rounded-lg border px-2 text-[10px] font-black uppercase tracking-widest transition',
+                      selected
+                        ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300'
+                        : 'border-neutral-200 bg-white text-neutral-500 dark:border-white/10 dark:bg-neutral-950',
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" /> {typeLabel(type)}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mb-4 shrink-0">
+              <div className="relative mb-2">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+                <input
+                  className="h-9 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-3 text-xs outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-950 dark:text-white"
+                  placeholder={`Search ${activeKind === 'library' ? 'libraries' : 'projects'}...`}
+                  value={sourceQuery}
+                  onChange={(event) => setSourceQuery(event.target.value)}
+                />
               </div>
-            ) : filteredSources.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 py-10 text-center dark:border-white/10">
-                <Search className="mb-3 h-8 w-8 text-neutral-300" />
-                <p className="px-4 text-xs font-bold text-neutral-950 dark:text-white">No matches found</p>
-              </div>
-            ) : filteredSources.map((source) => {
-              const Icon = typeIcon(source.type);
-              const active = source.id === activeSource?.id;
-              return (
-                <button
-                  key={`${source.kind}:${source.id}`}
-                  className={cn(
-                    'w-full rounded-card border p-4 text-left transition',
-                    active
-                      ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
-                      : 'border-neutral-200 bg-white hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-950 dark:hover:border-white/20',
-                  )}
-                  onClick={() => setActiveSourceId(source.id)}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="truncate text-sm font-bold text-neutral-950 dark:text-white">{source.name}</span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase text-neutral-500 dark:bg-white/10">
-                      <Icon className="h-3 w-3" /> {typeLabel(source.type)}
-                    </span>
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{source.description || `${source.itemCount} items`}</p>
-                </button>
-              );
-            })}
-          </div>
-        </aside>
+              <SortSelect value={sourceSort} onChange={setSourceSort} compact ariaLabel={`Sort ${activeKind}`} />
+            </div>
+
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+              {loadingSources ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="h-7 w-7 animate-spin text-indigo-600" />
+                </div>
+              ) : filteredSources.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 py-10 text-center dark:border-white/10">
+                  <Search className="mb-3 h-8 w-8 text-neutral-300" />
+                  <p className="px-4 text-xs font-bold text-neutral-950 dark:text-white">No matches found</p>
+                </div>
+              ) : filteredSources.map((source) => {
+                const Icon = typeIcon(source.type);
+                const active = source.id === activeSource?.id;
+                return (
+                  <button
+                    key={`${source.kind}:${source.id}`}
+                    className={cn(
+                      'w-full rounded-card border p-4 text-left transition',
+                      active
+                        ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                        : 'border-neutral-200 bg-white hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-950 dark:hover:border-white/20',
+                    )}
+                    onClick={() => setActiveSourceId(source.id)}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="truncate text-sm font-bold text-neutral-950 dark:text-white">{source.name}</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase text-neutral-500 dark:bg-white/10">
+                        <Icon className="h-3 w-3" /> {typeLabel(source.type)}
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{source.description || `${source.itemCount} items`}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+        )}
 
         <main className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-4 border-b border-neutral-200 p-4 dark:border-white/10 md:p-5">

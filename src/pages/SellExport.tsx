@@ -14,6 +14,7 @@ import {
 } from '../api';
 import { AlbumItem, ExportTask, Project } from '../types';
 import { PageHeader } from '../components/PageHeader';
+import { UniversalMediaPicker, UniversalPickedItem } from '../components/UniversalMediaPicker';
 
 const MAX_COVERS = 8;
 
@@ -47,6 +48,7 @@ export function SellExport() {
   const [tagsInput, setTagsInput] = useState('');
   const [taxonomyId, setTaxonomyId] = useState('');
   const [coverItems, setCoverItems] = useState<ProductCoverItem[]>([]);
+  const [pickedItemsMap, setPickedItemsMap] = useState<Record<string, UniversalPickedItem>>({});
 
   useEffect(() => {
     if (!exportId) return;
@@ -109,18 +111,6 @@ export function SellExport() {
     !!exportTask &&
     exportTask.status === 'completed' &&
     !submitting;
-
-  const toggleCover = (item: AlbumItem) => {
-    setCoverItems((prev) => {
-      const idx = prev.findIndex((c) => c.albumItemId === item.id);
-      if (idx >= 0) return prev.filter((_, i) => i !== idx);
-      if (prev.length >= MAX_COVERS) {
-        toast.error(t('sell.coversLimit', { count: MAX_COVERS }));
-        return prev;
-      }
-      return [...prev, { albumItemId: item.id, useRaw: false }];
-    });
-  };
 
   const setCoverUseRaw = (albumItemId: string, useRaw: boolean) => {
     setCoverItems((prev) => prev.map((c) => (c.albumItemId === albumItemId ? { ...c, useRaw } : c)));
@@ -317,16 +307,14 @@ export function SellExport() {
             <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
               {t('sell.section.covers')} <span className="ml-1 text-neutral-400">({coverItems.length}/{MAX_COVERS})</span>
             </h3>
-            {albumImages.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => setAlbumPickerOpen(true)}
-                className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-800 dark:text-white"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                {t('sell.covers.pick')}
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => setAlbumPickerOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-800 dark:text-white"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t('sell.covers.pick')}
+            </button>
           </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
             {t('sell.covers.hint')}
@@ -334,16 +322,24 @@ export function SellExport() {
 
           {coverItems.length === 0 ? (
             <div className="rounded-card border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center text-xs text-neutral-500 dark:border-white/10 dark:bg-neutral-900/40">
-              {albumImages.length === 0 ? t('sell.covers.noAlbum') : t('sell.covers.empty')}
+              {t('sell.covers.empty')}
             </div>
           ) : (
-            <div className="columns-2 gap-3 sm:columns-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 items-start">
               {coverItems.map((c) => {
-                const item = albumImages.find((a) => a.id === c.albumItemId);
-                if (!item) return null;
-                const src = c.useRaw ? item.imageUrl : (item.thumbnailUrl || item.optimizedUrl || item.imageUrl);
+                const localItem = albumImages.find((a) => a.id === c.albumItemId);
+                const pickedItem = pickedItemsMap[c.albumItemId];
+                
+                let src = '';
+                if (c.useRaw) {
+                  src = localItem?.imageUrl || pickedItem?.rawUrl || '';
+                } else {
+                  src = localItem?.thumbnailUrl || localItem?.optimizedUrl || localItem?.imageUrl || pickedItem?.thumbnailUrl || pickedItem?.optimizedUrl || pickedItem?.previewUrl || pickedItem?.rawUrl || '';
+                }
+                
+                if (!src) return null;
                 return (
-                  <div key={c.albumItemId} className="relative break-inside-avoid overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800/50">
+                  <div key={c.albumItemId} className="relative overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800/50">
                     <img src={src} alt="" className="w-full h-auto block" />
                     <button
                       type="button"
@@ -390,81 +386,35 @@ export function SellExport() {
       </div>
 
       {albumPickerOpen ? (
-        <AlbumPicker
-          items={albumImages}
-          selected={coverItems.map((c) => c.albumItemId)}
-          maxSelection={MAX_COVERS}
+        <UniversalMediaPicker
+          isOpen={true}
+          title={t('sell.covers.pickerTitle')}
+          allowedTypes={['image']}
+          sourceKinds={['album']}
+          fixedSourceId={project?.id}
+          multiple={true}
           onClose={() => setAlbumPickerOpen(false)}
-          onToggle={(item) => toggleCover(item)}
+          onConfirm={(items) => {
+            const nextMap = { ...pickedItemsMap };
+            const nextCovers = [...coverItems];
+            
+            items.forEach((it) => {
+              if (nextCovers.length >= MAX_COVERS) return;
+              if (!nextCovers.find((c) => c.albumItemId === it.itemId)) {
+                nextCovers.push({ albumItemId: it.itemId, useRaw: false });
+                nextMap[it.itemId] = it;
+              }
+            });
+            
+            if (items.length > 0 && nextCovers.length >= MAX_COVERS && items.length > MAX_COVERS - coverItems.length) {
+              toast.error(t('sell.coversLimit', { count: MAX_COVERS }));
+            }
+            
+            setPickedItemsMap(nextMap);
+            setCoverItems(nextCovers);
+          }}
         />
       ) : null}
-    </div>
-  );
-}
-
-function AlbumPicker({
-  items,
-  selected,
-  maxSelection,
-  onClose,
-  onToggle,
-}: {
-  items: AlbumItem[];
-  selected: string[];
-  maxSelection: number;
-  onClose: () => void;
-  onToggle: (item: AlbumItem) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative max-h-[85vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl dark:border-white/10 dark:bg-neutral-900">
-        <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4 dark:border-white/10">
-          <div>
-            <h3 className="text-base font-bold text-neutral-950 dark:text-white">{t('sell.covers.pickerTitle')}</h3>
-            <p className="text-xs text-neutral-500">{t('sell.covers.pickerHint', { count: maxSelection })}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-800 dark:text-white"
-          >
-            {t('sell.covers.done')}
-          </button>
-        </div>
-        <div className="max-h-[70vh] overflow-y-auto p-4">
-          {items.length === 0 ? (
-            <div className="py-12 text-center text-sm text-neutral-500">{t('sell.covers.noAlbum')}</div>
-          ) : (
-            <div className="columns-2 gap-3 sm:columns-3 md:columns-4 lg:columns-5 space-y-3">
-              {items.map((item) => {
-                const isSelected = selected.includes(item.id);
-                const src = item.thumbnailUrl || item.optimizedUrl || item.imageUrl;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => onToggle(item)}
-                    className={`group relative w-full block break-inside-avoid overflow-hidden rounded-lg border transition bg-neutral-100 dark:bg-neutral-800/50 ${
-                      isSelected
-                        ? 'border-pink-500 ring-2 ring-pink-500'
-                        : 'border-neutral-200 hover:border-neutral-400 dark:border-white/10'
-                    }`}
-                  >
-                    <img src={src} alt="" className="w-full h-auto block" />
-                    {isSelected ? (
-                      <span className="absolute right-1 top-1 rounded-full bg-pink-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                        {selected.indexOf(item.id) + 1}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
