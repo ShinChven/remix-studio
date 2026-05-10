@@ -337,14 +337,14 @@ export function SellExport() {
               {albumImages.length === 0 ? t('sell.covers.noAlbum') : t('sell.covers.empty')}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="columns-2 gap-3 sm:columns-4 space-y-3">
               {coverItems.map((c) => {
                 const item = albumImages.find((a) => a.id === c.albumItemId);
                 if (!item) return null;
                 const src = c.useRaw ? item.imageUrl : (item.thumbnailUrl || item.optimizedUrl || item.imageUrl);
                 return (
-                  <div key={c.albumItemId} className="relative overflow-hidden rounded-lg border border-neutral-200 dark:border-white/10">
-                    <img src={src} alt="" className="aspect-square w-full object-cover" />
+                  <div key={c.albumItemId} className="relative break-inside-avoid overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800/50">
+                    <img src={src} alt="" className="w-full h-auto block" />
                     <button
                       type="button"
                       onClick={() => removeCover(c.albumItemId)}
@@ -437,7 +437,7 @@ function AlbumPicker({
           {items.length === 0 ? (
             <div className="py-12 text-center text-sm text-neutral-500">{t('sell.covers.noAlbum')}</div>
           ) : (
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+            <div className="columns-2 gap-3 sm:columns-3 md:columns-4 lg:columns-5 space-y-3">
               {items.map((item) => {
                 const isSelected = selected.includes(item.id);
                 const src = item.thumbnailUrl || item.optimizedUrl || item.imageUrl;
@@ -446,13 +446,13 @@ function AlbumPicker({
                     key={item.id}
                     type="button"
                     onClick={() => onToggle(item)}
-                    className={`group relative overflow-hidden rounded-lg border transition ${
+                    className={`group relative w-full block break-inside-avoid overflow-hidden rounded-lg border transition bg-neutral-100 dark:bg-neutral-800/50 ${
                       isSelected
                         ? 'border-pink-500 ring-2 ring-pink-500'
                         : 'border-neutral-200 hover:border-neutral-400 dark:border-white/10'
                     }`}
                   >
-                    <img src={src} alt="" className="aspect-square w-full object-cover" />
+                    <img src={src} alt="" className="w-full h-auto block" />
                     {isSelected ? (
                       <span className="absolute right-1 top-1 rounded-full bg-pink-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                         {selected.indexOf(item.id) + 1}
