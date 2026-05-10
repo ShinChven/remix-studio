@@ -1728,3 +1728,31 @@ export async function disconnectSocialAccount(platform: string, accountId: strin
   });
   return handleResponse<void>(res, 'Failed to disconnect social account');
 }
+
+// ========== Store Integrations ==========
+
+export interface ConnectedStore {
+  id: string;
+  platform: string;
+  accountId: string;
+  profileName?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  status: string;
+  expiresAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchStores(): Promise<ConnectedStore[]> {
+  const res = await apiFetch('/api/stores', { headers: getHeaders() });
+  return handleResponse<ConnectedStore[]>(res, 'Failed to load stores');
+}
+
+export async function disconnectStore(platform: string, id: string): Promise<void> {
+  const res = await apiFetch(`/api/stores/${platform}/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  return handleResponse<void>(res, 'Failed to disconnect store');
+}

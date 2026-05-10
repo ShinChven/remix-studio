@@ -39,6 +39,32 @@
       "uploading": "正在上傳到 Drive...",
       "uploadToDrive": "上傳到 Google Drive"
     },
+    "stores": {
+      "headerLink": "店鋪",
+      "title": "店鋪設定",
+      "description": "連接數位店鋪以便將匯出內容發佈到這些平台。",
+      "backToExports": "返回匯出",
+      "connectedTitle": "已連接的店鋪",
+      "connectedDescription": "匯出內容時可使用這些已連接的店鋪。",
+      "availableTitle": "可用平台",
+      "availableDescription": "連接新店鋪。每個平台支援連接多個帳號。",
+      "connect": "連接",
+      "connectGumroad": "連接 Gumroad",
+      "addAnother": "再連一個",
+      "reconnect": "重新連接",
+      "disconnect": "斷開連接",
+      "cancel": "取消",
+      "empty": {
+        "title": "尚未連接任何店鋪",
+        "description": "連接一個店鋪，將匯出內容作為數位產品發佈。"
+      },
+      "connectSuccess": "店鋪已連接",
+      "disconnectSuccess": "店鋪已斷開連接",
+      "disconnectError": "斷開店鋪連接失敗",
+      "loadError": "載入店鋪列表失敗",
+      "confirmDisconnectTitle": "斷開店鋪連接",
+      "confirmDisconnectMessage": "確定要斷開 {{name}} 的連接嗎？後續匯出將無法再發佈到此店鋪。"
+    },
     "stats": {
       "database": "資料庫",
       "total": "總計",

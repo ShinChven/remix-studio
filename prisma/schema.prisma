@@ -44,6 +44,7 @@ model User {
   campaigns             Campaign[]
   posts                 Post[]
   postWatermarkSetting  PostWatermarkSetting?
+  stores                Store[]
   createdByUser User? @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdUsers  User[] @relation("UserCreation")
   createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
@@ -557,9 +558,31 @@ model SocialAccount {
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaigns        Campaign[] // Implicit many-to-many relation
   postExecutions   PostExecution[]
-  
+
   @@unique([userId, platform, accountId])
   @@index([status])
+}
+
+model Store {
+  id           String    @id @default(uuid())
+  userId       String
+  platform     String    // "gumroad"
+  accountId    String    // Remote provider user ID
+  profileName  String?
+  email        String?
+  avatarUrl    String?
+  accessToken  String    @db.Text // Encrypted at rest
+  refreshToken String?   @db.Text // Encrypted at rest
+  scopes       Json?
+  expiresAt    DateTime?
+  status       String    @default("active") // "active", "disconnected", "expired"
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform, accountId])
+  @@index([userId, status])
 }
 
 model Campaign {

@@ -39,6 +39,32 @@
       "uploading": "Téléchargement sur Drive…",
       "uploadToDrive": "Télécharger sur Google Drive"
     },
+    "stores": {
+      "headerLink": "Boutiques",
+      "title": "Paramètres des boutiques",
+      "description": "Connectez des boutiques numériques pour y publier vos exports.",
+      "backToExports": "Retour aux exports",
+      "connectedTitle": "Boutiques connectées",
+      "connectedDescription": "Ces boutiques sont disponibles lors de l'export du contenu.",
+      "availableTitle": "Boutiques disponibles",
+      "availableDescription": "Connectez une nouvelle boutique. Plusieurs comptes par plateforme sont supportés.",
+      "connect": "Connecter",
+      "connectGumroad": "Connecter Gumroad",
+      "addAnother": "Connecter un autre",
+      "reconnect": "Reconnecter",
+      "disconnect": "Déconnecter",
+      "cancel": "Annuler",
+      "empty": {
+        "title": "Aucune boutique connectée",
+        "description": "Connectez une boutique pour publier vos exports en tant que produits numériques."
+      },
+      "connectSuccess": "Boutique connectée",
+      "disconnectSuccess": "Boutique déconnectée",
+      "disconnectError": "Échec de la déconnexion de la boutique",
+      "loadError": "Échec du chargement des boutiques",
+      "confirmDisconnectTitle": "Déconnecter la boutique",
+      "confirmDisconnectMessage": "Voulez-vous vraiment déconnecter {{name}} ? Les exports futurs ne pourront plus être publiés vers cette boutique."
+    },
     "stats": {
       "database": "Base de données",
       "total": "Total",

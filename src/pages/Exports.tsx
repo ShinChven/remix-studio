@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive, Link2Off, Upload } from 'lucide-react';
+import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive, Link2Off, Upload, Store as StoreIcon } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ExportTask, DeliveryStatus } from '../types';
@@ -221,6 +221,17 @@ export function Exports() {
         description={t('exports.description')}
         actions={
           <div className="flex items-center flex-wrap gap-3">
+            {/* Stores entry */}
+            <Link
+              to="/exports/stores"
+              className="flex-shrink-0 flex items-center justify-center gap-2 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition shadow-sm backdrop-blur-md h-[42px]"
+            >
+              <StoreIcon className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
+              <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest text-center">
+                {t('exports.stores.headerLink')}
+              </span>
+            </Link>
+
             {/* Google Drive control */}
             {user?.googleDriveConnected ? (
               <div className="flex-shrink-0 flex items-center gap-3 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card shadow-sm backdrop-blur-md h-[42px]">

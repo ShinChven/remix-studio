@@ -39,6 +39,32 @@
       "uploading": "Drive로 업로드 중...",
       "uploadToDrive": "Google Drive에 업로드"
     },
+    "stores": {
+      "headerLink": "스토어",
+      "title": "스토어 설정",
+      "description": "디지털 스토어를 연결하여 내보낸 콘텐츠를 게시할 수 있습니다.",
+      "backToExports": "내보내기로 돌아가기",
+      "connectedTitle": "연결된 스토어",
+      "connectedDescription": "콘텐츠를 내보낼 때 이 스토어들을 사용할 수 있습니다.",
+      "availableTitle": "사용 가능한 스토어",
+      "availableDescription": "새 스토어를 연결합니다. 플랫폼당 여러 계정을 연결할 수 있습니다.",
+      "connect": "연결",
+      "connectGumroad": "Gumroad 연결",
+      "addAnother": "다른 계정 연결",
+      "reconnect": "다시 연결",
+      "disconnect": "연결 해제",
+      "cancel": "취소",
+      "empty": {
+        "title": "연결된 스토어가 없습니다",
+        "description": "스토어를 연결하여 내보낸 콘텐츠를 디지털 상품으로 게시하세요."
+      },
+      "connectSuccess": "스토어가 연결되었습니다",
+      "disconnectSuccess": "스토어 연결이 해제되었습니다",
+      "disconnectError": "스토어 연결 해제 실패",
+      "loadError": "스토어 목록을 불러오지 못했습니다",
+      "confirmDisconnectTitle": "스토어 연결 해제",
+      "confirmDisconnectMessage": "{{name}}의 연결을 해제하시겠습니까? 이후 내보내기는 이 스토어에 게시할 수 없게 됩니다."
+    },
     "stats": {
       "database": "데이터베이스",
       "total": "총계",

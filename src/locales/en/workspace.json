@@ -39,6 +39,32 @@
       "uploading": "Uploading to Drive…",
       "uploadToDrive": "Upload to Google Drive"
     },
+    "stores": {
+      "headerLink": "Stores",
+      "title": "Store Settings",
+      "description": "Connect digital stores so you can publish exports to them.",
+      "backToExports": "Back to Exports",
+      "connectedTitle": "Connected Stores",
+      "connectedDescription": "These stores are available when exporting content.",
+      "availableTitle": "Available Stores",
+      "availableDescription": "Connect a new store. You can connect multiple accounts per platform.",
+      "connect": "Connect",
+      "connectGumroad": "Connect Gumroad",
+      "addAnother": "Connect another",
+      "reconnect": "Reconnect",
+      "disconnect": "Disconnect",
+      "cancel": "Cancel",
+      "empty": {
+        "title": "No stores connected",
+        "description": "Connect a store to publish exports as digital products."
+      },
+      "connectSuccess": "Store connected",
+      "disconnectSuccess": "Store disconnected",
+      "disconnectError": "Failed to disconnect store",
+      "loadError": "Failed to load stores",
+      "confirmDisconnectTitle": "Disconnect Store",
+      "confirmDisconnectMessage": "Are you sure you want to disconnect {{name}}? Future exports will no longer be able to publish to this store."
+    },
     "stats": {
       "database": "Database",
       "total": "Total",

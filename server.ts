@@ -30,6 +30,7 @@ import { ProjectRepository } from './server/db/project-repository';
 import { createStorageRouter } from './server/routes/storage-router';
 import { createOAuthRouter } from './server/routes/oauth';
 import { createSocialRouter } from './server/routes/social';
+import { createStoreRouter } from './server/routes/stores';
 import { createMcpRouter } from './server/mcp/mcp-server';
 import { createAssistantRouter } from './server/routes/assistant';
 import { AssistantRepository } from './server/db/assistant-repository';
@@ -220,6 +221,7 @@ async function startServer() {
   app.route('/', createPostsRouter(prisma, postManager, providerRepository, storage, exportStorage, repository, userRepository));
   app.route('/', createOAuthRouter(prisma));
   app.route('/', createSocialRouter(prisma));
+  app.route('/', createStoreRouter(prisma));
   app.route('/', createMcpRouter(prisma, repository, userRepository, providerRepository));
 
   // === Assistant chat runtime ===

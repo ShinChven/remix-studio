@@ -39,6 +39,32 @@
       "uploading": "正在上传到 Drive...",
       "uploadToDrive": "上传到 Google Drive"
     },
+    "stores": {
+      "headerLink": "店铺",
+      "title": "店铺设置",
+      "description": "连接数字店铺以便将导出内容发布到这些平台。",
+      "backToExports": "返回导出",
+      "connectedTitle": "已连接的店铺",
+      "connectedDescription": "导出内容时可使用这些已连接的店铺。",
+      "availableTitle": "可用平台",
+      "availableDescription": "连接新店铺。每个平台支持连接多个账号。",
+      "connect": "连接",
+      "connectGumroad": "连接 Gumroad",
+      "addAnother": "再连一个",
+      "reconnect": "重新连接",
+      "disconnect": "断开连接",
+      "cancel": "取消",
+      "empty": {
+        "title": "尚未连接任何店铺",
+        "description": "连接一个店铺，将导出内容作为数字产品发布。"
+      },
+      "connectSuccess": "店铺已连接",
+      "disconnectSuccess": "店铺已断开连接",
+      "disconnectError": "断开店铺连接失败",
+      "loadError": "加载店铺列表失败",
+      "confirmDisconnectTitle": "断开店铺连接",
+      "confirmDisconnectMessage": "确定要断开 {{name}} 的连接吗？后续导出将无法再发布到此店铺。"
+    },
     "stats": {
       "database": "数据库",
       "total": "总计",

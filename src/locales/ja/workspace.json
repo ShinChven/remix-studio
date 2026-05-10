@@ -39,6 +39,32 @@
       "uploading": "Drive にアップロード中...",
       "uploadToDrive": "Google Drive にアップロード"
     },
+    "stores": {
+      "headerLink": "ストア",
+      "title": "ストア設定",
+      "description": "デジタルストアを接続して、エクスポートを公開できるようにします。",
+      "backToExports": "エクスポートに戻る",
+      "connectedTitle": "接続済みストア",
+      "connectedDescription": "コンテンツのエクスポート時にこれらのストアを利用できます。",
+      "availableTitle": "利用可能なストア",
+      "availableDescription": "新しいストアを接続します。1 プラットフォームにつき複数のアカウントを接続できます。",
+      "connect": "接続",
+      "connectGumroad": "Gumroad を接続",
+      "addAnother": "別のアカウントを接続",
+      "reconnect": "再接続",
+      "disconnect": "切断",
+      "cancel": "キャンセル",
+      "empty": {
+        "title": "接続されたストアはありません",
+        "description": "ストアを接続して、エクスポートをデジタル商品として公開しましょう。"
+      },
+      "connectSuccess": "ストアを接続しました",
+      "disconnectSuccess": "ストアの接続を解除しました",
+      "disconnectError": "ストアの接続解除に失敗しました",
+      "loadError": "ストア一覧の取得に失敗しました",
+      "confirmDisconnectTitle": "ストアの接続を解除",
+      "confirmDisconnectMessage": "{{name}} の接続を解除しますか？以降のエクスポートはこのストアに公開できなくなります。"
+    },
     "stats": {
       "database": "データベース",
       "total": "合計",
