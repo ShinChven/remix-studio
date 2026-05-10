@@ -62,7 +62,7 @@ export class PrismaRepository implements IRepository {
 
   // === Export CRUD ===
   getExportTasks(userId: string, projectId: string) { return this.projects.getExportTasks(userId, projectId); }
-  getAllExportTasks(userId: string, limit?: number, cursor?: any) { return this.projects.getAllExportTasks(userId, limit, cursor); }
+  getAllExportTasks(userId: string, page?: number, limit?: number) { return this.projects.getAllExportTasks(userId, page, limit); }
   getExportTask(userId: string, taskId: string) { return this.projects.getExportTask(userId, taskId); }
   saveExportTask(userId: string, taskId: string, data: any) { return this.projects.saveExportTask(userId, taskId, data); }
   deleteExportTask(userId: string, taskId: string) { return this.projects.deleteExportTask(userId, taskId); }

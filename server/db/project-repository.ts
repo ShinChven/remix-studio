@@ -430,21 +430,24 @@ export class ProjectRepository {
     return tasks.map((t) => this.mapExportTask(t));
   }
 
-  async getAllExportTasks(userId: string, limit: number = 20, cursor?: string): Promise<{ items: any[]; nextCursor?: string }> {
-    const tasks = await this.prisma.exportTask.findMany({
-      where: { userId },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: limit + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-    });
+  async getAllExportTasks(userId: string, page: number = 1, limit: number = 20): Promise<{ items: any[]; total: number; page: number; pages: number }> {
+    const skip = (page - 1) * limit;
+    const [total, tasks] = await Promise.all([
+      this.prisma.exportTask.count({ where: { userId } }),
+      this.prisma.exportTask.findMany({
+        where: { userId },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    let nextCursor: string | undefined;
-    if (tasks.length > limit) {
-      tasks.splice(limit);
-      nextCursor = tasks[tasks.length - 1]?.id;
-    }
-
-    return { items: tasks.map((t) => this.mapExportTask(t)), nextCursor };
+    return {
+      items: tasks.map((t) => this.mapExportTask(t)),
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    };
   }
 
   async getExportTask(userId: string, taskId: string): Promise<any | undefined> {

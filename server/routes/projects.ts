@@ -965,17 +965,17 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   router.get('/api/exports', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      const limit = parseInt(c.req.query('limit') || '20');
-      const cursor = c.req.query('cursor');
+      const pageValue = Number(c.req.query('page') || '1');
+      const pageSizeValue = Number(c.req.query('pageSize') || c.req.query('limit') || '20');
+      const page = Math.max(1, Math.floor(Number.isFinite(pageValue) ? pageValue : 1));
+      const pageSize = Math.max(1, Math.min(100, Math.floor(Number.isFinite(pageSizeValue) ? pageSizeValue : 20)));
 
-      const result = await repository.getAllExportTasks(user.userId, limit, cursor);
+      const result = await repository.getAllExportTasks(user.userId, page, pageSize);
 
       // Presign completed tasks on read
       const items = await Promise.all(result.items.map(t => exportManager.presignTask(t)));
 
-      const nextCursor = result.nextCursor;
-
-      return c.json({ items, nextCursor });
+      return c.json({ ...result, items });
     } catch (e) {
       console.error('[GET /api/exports]', e);
       return c.json({ error: 'Failed to list all exports' }, 500);

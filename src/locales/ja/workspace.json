@@ -87,6 +87,7 @@
       "download": "ZIP をダウンロード",
       "delete": "レコードを削除"
     },
+    "pagination": "{{total}} ページ中 {{current}} ページ",
     "loadMore": "さらにエクスポートを読み込む",
     "deleteDialog": {
       "title": "エクスポートレコードの削除",

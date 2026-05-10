@@ -87,6 +87,7 @@
       "download": "下載 ZIP",
       "delete": "刪除紀錄"
     },
+    "pagination": "第 {{current}} / {{total}} 頁",
     "loadMore": "載入更多匯出",
     "deleteDialog": {
       "title": "刪除匯出紀錄",

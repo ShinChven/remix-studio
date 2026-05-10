@@ -1009,13 +1009,13 @@ export async function fetchProductExports(taskId: string): Promise<ExportTask> {
   return handleResponse<ExportTask>(res, 'Failed to fetch export');
 }
 
-export async function fetchAllExports(limit?: number, cursor?: string): Promise<{ items: ExportTask[]; nextCursor?: string }> {
+export async function fetchAllExports(page: number = 1, pageSize: number = 20): Promise<{ items: ExportTask[]; total: number; page: number; pages: number }> {
   const url = new URL('/api/exports', window.location.origin);
-  if (limit) url.searchParams.set('limit', limit.toString());
-  if (cursor) url.searchParams.set('cursor', cursor);
+  url.searchParams.set('page', page.toString());
+  url.searchParams.set('pageSize', pageSize.toString());
 
   const res = await apiFetch(url.toString(), { headers: getHeaders(false) });
-  return handleResponse<{ items: ExportTask[]; nextCursor?: string }>(res, 'Failed to list all exports');
+  return handleResponse<{ items: ExportTask[]; total: number; page: number; pages: number }>(res, 'Failed to list all exports');
 }
 
 export async function deleteExport(taskId: string): Promise<void> {

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronDown, HardDrive, Link2Off, Upload, Store as StoreIcon, Tag } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronLeft, ChevronRight, HardDrive, Link2Off, Upload, Store as StoreIcon, Tag } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ExportTask, DeliveryStatus } from '../types';
@@ -9,15 +9,18 @@ import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
 
+const EXPORTS_PAGE_SIZE = 15;
+
 export function Exports() {
   const { t } = useTranslation();
   const { user: authUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
   const [user, setUser] = useState(authUser);
   const [exports, setExports] = useState<ExportTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -34,6 +37,9 @@ export function Exports() {
   const [pendingGumroadDeliveries, setPendingGumroadDeliveries] = useState<Record<string, string>>({});
   const [hasStores, setHasStores] = useState(false);
   const deliveryPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const exportsLoadSeqRef = useRef(0);
+  const activeExportCount = exports.filter(t => t.status === 'pending' || t.status === 'processing').length;
+  const hasActiveExportTasks = activeExportCount > 0;
 
   const formatSize = (bytes?: number) => {
     if (!bytes || bytes <= 0) return null;
@@ -172,19 +178,19 @@ export function Exports() {
     }
   };
 
-  const loadExports = async (cursor?: string, append = false) => {
+  const loadExports = useCallback(async (pageToLoad: number, options: { showLoading?: boolean } = {}) => {
+    const requestId = ++exportsLoadSeqRef.current;
+    const showLoading = options.showLoading ?? true;
     try {
-      if (append) setLoadingMore(true);
-      const [{ items, nextCursor: newCursor }, activeDeliveries] = await Promise.all([
-        fetchAllExports(15, cursor),
+      if (showLoading) setLoading(true);
+      const [{ items, total: nextTotal, pages: nextPages }, activeDeliveries] = await Promise.all([
+        fetchAllExports(pageToLoad, EXPORTS_PAGE_SIZE),
         fetchActiveDeliveries(),
       ]);
-      if (append) {
-        setExports(prev => [...prev, ...items]);
-      } else {
-        setExports(items);
-      }
-      setNextCursor(newCursor || null);
+      if (requestId !== exportsLoadSeqRef.current) return;
+      setExports(items);
+      setTotal(nextTotal);
+      setPages(nextPages);
       setDeliveries(prev => {
         const next = { ...prev };
         for (const delivery of activeDeliveries) {
@@ -209,23 +215,28 @@ export function Exports() {
     } catch (err) {
       console.error('Failed to load exports:', err);
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (requestId === exportsLoadSeqRef.current) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadExports();
-    const hasActiveTasks = exports.some(t => t.status === 'pending' || t.status === 'processing');
-    let interval: any;
-    if (hasActiveTasks) {
-      interval = setInterval(() => loadExports(undefined, false), 3000);
-    }
-    return () => clearInterval(interval);
-  }, [exports.some(t => t.status === 'pending' || t.status === 'processing')]);
+    void loadExports(page);
+  }, [loadExports, page]);
 
-  const handleLoadMore = () => {
-    if (nextCursor) loadExports(nextCursor, true);
+  useEffect(() => {
+    if (!hasActiveExportTasks) return undefined;
+    const interval = setInterval(() => {
+      void loadExports(page, { showLoading: false });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [hasActiveExportTasks, loadExports, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('page', newPage.toString());
+      return next;
+    });
   };
 
   const getTaskTarget = (task: ExportTask): { to: string; labelPrefix: string } => {
@@ -251,7 +262,11 @@ export function Exports() {
     if (!taskToDelete) return;
     try {
       await deleteExport(taskToDelete);
-      setExports(prev => prev.filter(t => t.id !== taskToDelete));
+      if (exports.length <= 1 && page > 1) {
+        handlePageChange(page - 1);
+      } else {
+        await loadExports(page, { showLoading: false });
+      }
     } catch (err: any) {
       toast.error(`Failed to delete export record: ${err.message}`);
     } finally {
@@ -333,7 +348,7 @@ export function Exports() {
               <div className="flex items-center gap-2">
                 <List className="h-4 w-4 text-neutral-500 dark:text-neutral-500 flex-shrink-0" />
                 <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-300 uppercase tracking-widest">
-                  {exports.length} <span className="opacity-50 ml-0.5">{t('exports.stats.total')}</span>
+                  {total} <span className="opacity-50 ml-0.5">{t('exports.stats.total')}</span>
                 </span>
               </div>
               
@@ -341,13 +356,13 @@ export function Exports() {
               
               {/* In Progress */}
               <div className="flex items-center gap-2">
-                {exports.filter(t => t.status === 'pending' || t.status === 'processing').length > 0 ? (
+                {activeExportCount > 0 ? (
                   <Loader2 className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" />
                 ) : (
                   <CheckCircle2 className="h-4 w-4 text-neutral-400 flex-shrink-0" />
                 )}
                 <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-                  {exports.filter(t => t.status === 'pending' || t.status === 'processing').length} <span className="opacity-50 ml-0.5">{t('exports.stats.active')}</span>
+                  {activeExportCount} <span className="opacity-50 ml-0.5">{t('exports.stats.active')}</span>
                 </span>
               </div>
             </div>
@@ -547,19 +562,22 @@ export function Exports() {
                <Loader2 className="w-6 h-6 text-neutral-800 animate-spin" />
              </div>
           )}
-          {nextCursor && (
-            <div className="flex justify-center pt-8">
+          {pages > 1 && (
+            <div className="flex items-center justify-center gap-4 pt-8 pb-4">
               <button
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-                className="group w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-md text-neutral-600 dark:text-neutral-400 hover:text-white text-xs font-black uppercase tracking-widest rounded-card transition-all border border-neutral-200/50 dark:border-white/5 hover:border-neutral-700 active:scale-95 disabled:opacity-50"
+                onClick={() => handlePageChange(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="p-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
               >
-                {loadingMore ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
-                )}
-                {loadingMore ? t('libraries.duplicateDialog.confirm') + '...' : t('exports.loadMore')}
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('exports.pagination', { current: page, total: pages })}</span>
+              <button
+                onClick={() => handlePageChange(Math.min(pages, page + 1))}
+                disabled={page === pages}
+                className="p-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
+              >
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
           )}

@@ -87,6 +87,7 @@
       "download": "Télécharger le ZIP",
       "delete": "Supprimer l'enregistrement"
     },
+    "pagination": "Page {{current}} sur {{total}}",
     "loadMore": "Charger plus d'exports",
     "deleteDialog": {
       "title": "Supprimer l'enregistrement d'exportation",

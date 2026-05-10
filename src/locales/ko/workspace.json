@@ -87,6 +87,7 @@
       "download": "ZIP 다운로드",
       "delete": "기록 삭제"
     },
+    "pagination": "{{total}}페이지 중 {{current}}페이지",
     "loadMore": "내보내기 더 불러오기",
     "deleteDialog": {
       "title": "내보내기 기록 삭제",

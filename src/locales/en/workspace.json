@@ -87,6 +87,7 @@
       "download": "Download ZIP",
       "delete": "Delete record"
     },
+    "pagination": "Page {{current}} of {{total}}",
     "loadMore": "Load More Exports",
     "deleteDialog": {
       "title": "Delete Export Record",
