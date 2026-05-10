@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronLeft, ChevronRight, HardDrive, Link2Off, Upload, Store as StoreIcon, Tag } from 'lucide-react';
+import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronLeft, ChevronRight, HardDrive, Link2Off, Upload, Store as StoreIcon, Tag, History as HistoryIcon } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ExportTask, DeliveryStatus } from '../types';
@@ -312,6 +312,17 @@ export function Exports() {
               <StoreIcon className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
               <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest text-center">
                 {t('exports.stores.headerLink')}
+              </span>
+            </Link>
+
+            {/* Store upload history entry */}
+            <Link
+              to="/exports/uploads"
+              className="flex-shrink-0 flex items-center justify-center gap-2 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition shadow-sm backdrop-blur-md h-[42px]"
+            >
+              <HistoryIcon className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
+              <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest text-center">
+                {t('exports.uploads.headerLink')}
               </span>
             </Link>
 

@@ -208,10 +208,45 @@ export class DeliveryManager {
           where: { id: task.productId },
           data: { status: 'failed', errorMsg: err.message },
         }).catch(() => {});
+        await this.recordStoreUploadHistory({
+          userId,
+          productId: task.productId,
+          status: 'failed',
+          error: err.message,
+        }).catch((e) => console.warn('[DeliveryManager] Failed to record upload history:', e));
       }
     } finally {
       clearInterval(heartbeatInterval);
     }
+  }
+
+  private async recordStoreUploadHistory(args: {
+    userId: string;
+    productId: string;
+    status: 'success' | 'failed';
+    externalId?: string | null;
+    targetUrl?: string | null;
+    error?: string | null;
+  }): Promise<void> {
+    if (!this.prisma) return;
+    const product = await this.prisma.product.findFirst({
+      where: { id: args.productId, userId: args.userId },
+      select: { id: true, storeId: true, title: true, exportTaskId: true, store: { select: { platform: true } } },
+    });
+    await this.prisma.storeUploadHistory.create({
+      data: {
+        userId: args.userId,
+        productId: product?.id ?? args.productId,
+        storeId: product?.storeId ?? null,
+        exportTaskId: product?.exportTaskId ?? null,
+        platform: product?.store?.platform ?? 'gumroad',
+        title: product?.title ?? null,
+        status: args.status,
+        externalId: args.externalId ?? null,
+        targetUrl: args.targetUrl ?? null,
+        error: args.error ?? null,
+      },
+    });
   }
 
   private async runDrivePublish(task: any): Promise<void> {
@@ -598,6 +633,14 @@ export class DeliveryManager {
       externalUrl,
       expiresAt: TTL_48H(),
     });
+
+    await this.recordStoreUploadHistory({
+      userId,
+      productId: product.id,
+      status: 'success',
+      externalId: created.id,
+      targetUrl: externalUrl,
+    }).catch((e) => console.warn('[DeliveryManager] Failed to record upload history:', e));
 
     console.log(`[DeliveryManager] ${taskId} published Gumroad product ${created.id}`);
   }

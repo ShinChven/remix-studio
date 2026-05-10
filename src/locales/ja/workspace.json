@@ -65,6 +65,26 @@
       "confirmDisconnectTitle": "ストアの接続を解除",
       "confirmDisconnectMessage": "{{name}} の接続を解除しますか？以降のエクスポートはこのストアに公開できなくなります。"
     },
+    "uploads": {
+      "headerLink": "履歴",
+      "title": "アップロード履歴",
+      "description": "接続済みストアにエクスポートを公開した試行の記録です。",
+      "backToExports": "エクスポートに戻る",
+      "loadError": "アップロード履歴の読み込みに失敗しました",
+      "empty": {
+        "title": "アップロード履歴はまだありません",
+        "description": "ストアにエクスポートを公開すると、結果がここに表示されます。"
+      },
+      "status": {
+        "success": "成功",
+        "failed": "失敗"
+      },
+      "openProduct": "商品ページを開く",
+      "untitled": "無題の商品",
+      "stats": {
+        "total": "合計"
+      }
+    },
     "stats": {
       "database": "データベース",
       "total": "合計",

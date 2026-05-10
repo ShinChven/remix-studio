@@ -65,6 +65,26 @@
       "confirmDisconnectTitle": "Disconnect Store",
       "confirmDisconnectMessage": "Are you sure you want to disconnect {{name}}? Future exports will no longer be able to publish to this store."
     },
+    "uploads": {
+      "headerLink": "History",
+      "title": "Upload History",
+      "description": "Past attempts to publish exports as products on connected stores.",
+      "backToExports": "Back to Exports",
+      "loadError": "Failed to load upload history",
+      "empty": {
+        "title": "No upload history yet",
+        "description": "Once you publish an export to a store, the result will appear here."
+      },
+      "status": {
+        "success": "Success",
+        "failed": "Failed"
+      },
+      "openProduct": "Open product page",
+      "untitled": "Untitled product",
+      "stats": {
+        "total": "Total"
+      }
+    },
     "stats": {
       "database": "Database",
       "total": "Total",

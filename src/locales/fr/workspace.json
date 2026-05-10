@@ -65,6 +65,26 @@
       "confirmDisconnectTitle": "Déconnecter la boutique",
       "confirmDisconnectMessage": "Voulez-vous vraiment déconnecter {{name}} ? Les exports futurs ne pourront plus être publiés vers cette boutique."
     },
+    "uploads": {
+      "headerLink": "Historique",
+      "title": "Historique des publications",
+      "description": "Tentatives passées de publication d'exports comme produits sur les boutiques connectées.",
+      "backToExports": "Retour aux exports",
+      "loadError": "Échec du chargement de l'historique",
+      "empty": {
+        "title": "Aucun historique pour l'instant",
+        "description": "Une fois un export publié vers une boutique, le résultat apparaîtra ici."
+      },
+      "status": {
+        "success": "Réussi",
+        "failed": "Échec"
+      },
+      "openProduct": "Ouvrir la page du produit",
+      "untitled": "Produit sans titre",
+      "stats": {
+        "total": "Total"
+      }
+    },
     "stats": {
       "database": "Base de données",
       "total": "Total",

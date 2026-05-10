@@ -65,6 +65,26 @@
       "confirmDisconnectTitle": "스토어 연결 해제",
       "confirmDisconnectMessage": "{{name}}의 연결을 해제하시겠습니까? 이후 내보내기는 이 스토어에 게시할 수 없게 됩니다."
     },
+    "uploads": {
+      "headerLink": "기록",
+      "title": "업로드 기록",
+      "description": "연결된 스토어에 내보내기를 게시한 시도 기록입니다.",
+      "backToExports": "내보내기로 돌아가기",
+      "loadError": "업로드 기록을 불러오지 못했습니다",
+      "empty": {
+        "title": "업로드 기록이 없습니다",
+        "description": "스토어에 내보내기를 게시하면 결과가 여기에 표시됩니다."
+      },
+      "status": {
+        "success": "성공",
+        "failed": "실패"
+      },
+      "openProduct": "상품 페이지 열기",
+      "untitled": "제목 없는 상품",
+      "stats": {
+        "total": "총계"
+      }
+    },
     "stats": {
       "database": "데이터베이스",
       "total": "총계",

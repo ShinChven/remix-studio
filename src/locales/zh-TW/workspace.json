@@ -65,6 +65,26 @@
       "confirmDisconnectTitle": "斷開店鋪連接",
       "confirmDisconnectMessage": "確定要斷開 {{name}} 的連接嗎？後續匯出將無法再發佈到此店鋪。"
     },
+    "uploads": {
+      "headerLink": "歷史",
+      "title": "上傳歷史",
+      "description": "匯出發佈到已連接店鋪的嘗試紀錄。",
+      "backToExports": "返回匯出",
+      "loadError": "載入上傳歷史失敗",
+      "empty": {
+        "title": "尚無上傳紀錄",
+        "description": "將匯出發佈到店鋪後，結果會顯示在此處。"
+      },
+      "status": {
+        "success": "成功",
+        "failed": "失敗"
+      },
+      "openProduct": "開啟商品頁",
+      "untitled": "未命名商品",
+      "stats": {
+        "total": "總計"
+      }
+    },
     "stats": {
       "database": "資料庫",
       "total": "總計",

@@ -136,6 +136,46 @@ export function createStoreRouter(prisma: PrismaClient) {
     }
   });
 
+  // Paginated upload history for the user's stores
+  router.get('/api/store-uploads', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+
+    const pageRaw = Number(c.req.query('page') ?? '1');
+    const pageSizeRaw = Number(c.req.query('pageSize') ?? '20');
+    const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? Math.floor(pageRaw) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw) ? Math.min(Math.max(Math.floor(pageSizeRaw), 1), 100) : 20;
+
+    try {
+      const [items, total] = await Promise.all([
+        prisma.storeUploadHistory.findMany({
+          where: { userId: user.userId },
+          orderBy: { createdAt: 'desc' },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          include: {
+            store: {
+              select: { id: true, platform: true, profileName: true, accountId: true },
+            },
+            product: {
+              select: { id: true, title: true, gumroadShortUrl: true },
+            },
+          },
+        }),
+        prisma.storeUploadHistory.count({ where: { userId: user.userId } }),
+      ]);
+
+      return c.json({
+        items,
+        total,
+        page,
+        pages: Math.max(1, Math.ceil(total / pageSize)),
+      });
+    } catch (error: any) {
+      console.error('[Store Uploads]', error);
+      return c.json({ error: error.message }, 500);
+    }
+  });
+
   // Disconnect (delete) store
   router.delete('/api/stores/:platform/:id', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;

@@ -46,6 +46,7 @@ model User {
   postWatermarkSetting  PostWatermarkSetting?
   stores                Store[]
   products              Product[]
+  storeUploadHistory    StoreUploadHistory[]
   createdByUser User? @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdUsers  User[] @relation("UserCreation")
   createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
@@ -410,10 +411,34 @@ model Product {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   store         Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
   deliveryTasks DeliveryTask[]
+  uploadHistory StoreUploadHistory[]
 
   @@index([userId])
   @@index([storeId])
   @@index([exportTaskId])
+}
+
+model StoreUploadHistory {
+  id               String    @id @default(uuid())
+  userId           String
+  storeId          String?
+  productId        String?
+  exportTaskId     String?
+  platform         String    // "gumroad"
+  title            String?   // Product title at time of upload
+  status           String    // "success" | "failed"
+  externalId       String?   // Provider product id (e.g. gumroad product id)
+  targetUrl        String?   @db.Text // The provider product page URL
+  error            String?   @db.Text
+  createdAt        DateTime  @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store   Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([storeId])
+  @@index([productId])
 }
 
 // === MCP OAuth 2.0 ===
@@ -614,6 +639,7 @@ model Store {
 
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   products     Product[]
+  uploadHistory StoreUploadHistory[]
 
   @@unique([userId, platform, accountId])
   @@index([userId, status])

@@ -1764,6 +1764,37 @@ export async function disconnectStore(platform: string, id: string): Promise<voi
   return handleResponse<void>(res, 'Failed to disconnect store');
 }
 
+export interface StoreUploadHistoryItem {
+  id: string;
+  userId: string;
+  storeId: string | null;
+  productId: string | null;
+  exportTaskId: string | null;
+  platform: string;
+  title: string | null;
+  status: 'success' | 'failed';
+  externalId: string | null;
+  targetUrl: string | null;
+  error: string | null;
+  createdAt: string;
+  store?: { id: string; platform: string; profileName: string | null; accountId: string } | null;
+  product?: { id: string; title: string; gumroadShortUrl: string | null } | null;
+}
+
+export async function fetchStoreUploads(
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<{ items: StoreUploadHistoryItem[]; total: number; page: number; pages: number }> {
+  const url = new URL('/api/store-uploads', window.location.origin);
+  url.searchParams.set('page', page.toString());
+  url.searchParams.set('pageSize', pageSize.toString());
+  const res = await apiFetch(url.toString(), { headers: getHeaders(false) });
+  return handleResponse<{ items: StoreUploadHistoryItem[]; total: number; page: number; pages: number }>(
+    res,
+    'Failed to load upload history',
+  );
+}
+
 // ========== Products (publish to store) ==========
 
 export interface ProductCoverItem {
