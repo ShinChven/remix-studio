@@ -102,6 +102,7 @@ export class DeliveryManager {
     private exportStorage: S3Storage,
     private userRepository: UserRepository,
     private prisma?: PrismaClient,
+    private storage?: S3Storage,
   ) {}
 
   // ─── Public API ────────────────────────────────────────────────────────────
@@ -557,8 +558,9 @@ export class DeliveryManager {
           if (!album) continue;
           const key = item.useRaw ? album.imageUrl : (album.optimizedUrl || album.imageUrl);
           if (!key) continue;
-          // Use the public storage instance for covers (assumes album S3 bucket)
-          const coverUrl = await this.exportStorage.getPresignedUrl(key, 60 * 60);
+          // Use the main storage instance for covers (album S3 bucket)
+          if (!this.storage) throw new Error('Main storage not available for signing cover URLs');
+          const coverUrl = await this.storage.getPresignedUrl(key, 60 * 60);
           await gumroad.addCover(accessToken, created.id, coverUrl);
         } catch (coverErr: any) {
           console.warn('[DeliveryManager] Add cover failed (continuing):', coverErr?.message || coverErr);

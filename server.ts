@@ -127,7 +127,7 @@ async function startServer() {
   await queueManager.recoverTasks();
 
   const exportManager = new ExportManager(repository, storage, exportStorage, userRepository);
-  const deliveryManager = new DeliveryManager(repository, exportStorage, userRepository, prisma);
+  const deliveryManager = new DeliveryManager(repository, exportStorage, userRepository, prisma, storage);
   const postManager = new PostManager(prisma, storage);
   const mediaProcessingPoller = new MediaProcessingPoller(prisma, storage);
 
