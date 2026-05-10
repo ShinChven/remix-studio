@@ -407,7 +407,8 @@
       "tags": "標籤",
       "tagsPlaceholder": "用逗號分隔，如：design, icons, ui",
       "taxonomy": "分類 (taxonomy_id)",
-      "taxonomyPlaceholder": "可選 — 貼上 Gumroad 的 taxonomy_id"
+      "taxonomyPlaceholder": "可選 — 貼上 Gumroad 的 taxonomy_id",
+      "publishImmediately": "發佈"
     },
     "covers": {
       "pick": "從相簿中選擇",

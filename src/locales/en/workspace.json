@@ -124,7 +124,8 @@
       "tags": "Tags",
       "tagsPlaceholder": "Comma-separated, e.g. design, icons, ui",
       "taxonomy": "Category (taxonomy_id)",
-      "taxonomyPlaceholder": "Optional — paste a Gumroad taxonomy_id"
+      "taxonomyPlaceholder": "Optional — paste a Gumroad taxonomy_id",
+      "publishImmediately": "Published"
     },
     "covers": {
       "pick": "Pick from album",

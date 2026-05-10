@@ -407,7 +407,8 @@
       "tags": "タグ",
       "tagsPlaceholder": "カンマ区切り、例：design, icons, ui",
       "taxonomy": "カテゴリ (taxonomy_id)",
-      "taxonomyPlaceholder": "任意 — Gumroad の taxonomy_id を貼り付け"
+      "taxonomyPlaceholder": "任意 — Gumroad の taxonomy_id を貼り付け",
+      "publishImmediately": "公開"
     },
     "covers": {
       "pick": "アルバムから選択",

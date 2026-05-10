@@ -124,7 +124,8 @@
       "tags": "标签",
       "tagsPlaceholder": "用逗号分隔，如：design, icons, ui",
       "taxonomy": "分类 (taxonomy_id)",
-      "taxonomyPlaceholder": "可选 — 粘贴 Gumroad 的 taxonomy_id"
+      "taxonomyPlaceholder": "可选 — 粘贴 Gumroad 的 taxonomy_id",
+      "publishImmediately": "发布"
     },
     "covers": {
       "pick": "从画册中选择",

@@ -407,7 +407,8 @@
       "tags": "태그",
       "tagsPlaceholder": "쉼표로 구분, 예: design, icons, ui",
       "taxonomy": "카테고리 (taxonomy_id)",
-      "taxonomyPlaceholder": "선택 사항 — Gumroad의 taxonomy_id 붙여넣기"
+      "taxonomyPlaceholder": "선택 사항 — Gumroad의 taxonomy_id 붙여넣기",
+      "publishImmediately": "게시"
     },
     "covers": {
       "pick": "앨범에서 선택",

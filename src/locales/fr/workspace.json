@@ -407,7 +407,8 @@
       "tags": "Tags",
       "tagsPlaceholder": "Séparés par des virgules, ex : design, icons, ui",
       "taxonomy": "Catégorie (taxonomy_id)",
-      "taxonomyPlaceholder": "Optionnel — coller un taxonomy_id Gumroad"
+      "taxonomyPlaceholder": "Optionnel — coller un taxonomy_id Gumroad",
+      "publishImmediately": "Publier"
     },
     "covers": {
       "pick": "Choisir depuis l’album",

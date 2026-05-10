@@ -49,6 +49,7 @@ export function SellExport() {
   const [taxonomyId, setTaxonomyId] = useState('');
   const [coverItems, setCoverItems] = useState<ProductCoverItem[]>([]);
   const [pickedItemsMap, setPickedItemsMap] = useState<Record<string, UniversalPickedItem>>({});
+  const [publishImmediately, setPublishImmediately] = useState(true);
 
   useEffect(() => {
     if (!exportId) return;
@@ -134,7 +135,7 @@ export function SellExport() {
         taxonomyId: taxonomyId.trim() || null,
         tags: tagList,
         coverItems,
-        publishImmediately: true,
+        publishImmediately,
       };
       await createProduct(input);
       toast.success(t('sell.queued'));
@@ -299,6 +300,19 @@ export function SellExport() {
               placeholder={t('sell.field.taxonomyPlaceholder')}
               className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-neutral-800 dark:text-white"
             />
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              id="publishImmediately"
+              type="checkbox"
+              checked={publishImmediately}
+              onChange={(e) => setPublishImmediately(e.target.checked)}
+              className="h-4 w-4 rounded border-neutral-300 text-pink-600 focus:ring-pink-500 dark:border-white/10 dark:bg-neutral-800"
+            />
+            <label htmlFor="publishImmediately" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              {t('sell.field.publishImmediately')}
+            </label>
           </div>
         </section>
 
