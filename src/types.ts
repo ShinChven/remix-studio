@@ -526,6 +526,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'runninghub-gpt-image-2',
+      name: 'GPT Image 2',
+      generatorId: 'RunningHub',
+      modelId: 'rhart-image-g-2',
+      category: 'image',
+      promptLimit: { value: 20000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '3:2', '2:3', '4:3', '3:4', '5:4', '4:5', '16:9', '9:16', '21:9', '9:21'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
       id: 'runninghub-qwen-image-2-pro',
       name: 'Qwen Image 2 Pro',
       generatorId: 'RunningHub',
@@ -801,7 +813,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'image',
       options: {
         aspectRatios: ['1:1', '3:4', '4:3', '9:16', '16:9', '2:3', '3:2', '9:19.5', '19.5:9', '9:20', '20:9', '1:2', '2:1', 'auto'],
-        qualities: ['medium/2k', 'high/2k', 'medium/1k', 'high/1k', 'low/2k', 'low/1k'],
+        qualities: ['low/1k', 'low/2k', 'medium/1k', 'medium/2k', 'high/1k', 'high/2k'],
       },
     },
     {
@@ -812,7 +824,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'image',
       options: {
         aspectRatios: ['1:1', '3:4', '4:3', '9:16', '16:9', '2:3', '3:2', '9:19.5', '19.5:9', '9:20', '20:9', '1:2', '2:1', 'auto'],
-        qualities: ['medium/2k', 'high/2k', 'medium/1k', 'high/1k', 'low/2k', 'low/1k'],
+        qualities: ['low/1k', 'low/2k', 'medium/1k', 'medium/2k', 'high/1k', 'high/2k'],
       },
     },
     {
