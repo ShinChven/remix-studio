@@ -1397,6 +1397,27 @@ export async function fetchAssistantTools(): Promise<{ tools: AssistantToolMetad
   return handleResponse<{ tools: AssistantToolMetadata[] }>(res, 'Failed to list assistant tools');
 }
 
+export async function fetchAssistantConversationApprovedTools(
+  conversationId: string,
+): Promise<{ tools: string[] }> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/approved-tools`, {
+    headers: getHeaders(false),
+  });
+  return handleResponse<{ tools: string[] }>(res, 'Failed to load approved tools');
+}
+
+export async function updateAssistantConversationApprovedTools(
+  conversationId: string,
+  tools: string[],
+): Promise<{ tools: string[] }> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/approved-tools`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ tools }),
+  });
+  return handleResponse<{ tools: string[] }>(res, 'Failed to update approved tools');
+}
+
 export async function transcribeAssistantAudio(input: {
   providerId: string;
   audioBase64: string;

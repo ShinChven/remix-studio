@@ -138,6 +138,8 @@ export class AssistantRunner {
         return { kind: 'error', error: 'Conversation is missing a provider or model selection', partialMessage: partial };
       }
 
+      this.hydrateApprovedToolsCache(conversation.id, conversation.approvedTools);
+
       await this.repo.appendMessage({
         conversationId: conversation.id,
         role: 'user',
@@ -167,6 +169,8 @@ export class AssistantRunner {
         );
         return { kind: 'error', error: 'Conversation is missing a provider or model selection', partialMessage: partial };
       }
+
+      this.hydrateApprovedToolsCache(conversation.id, conversation.approvedTools);
 
       const confirmation = await this.repo.getPendingConfirmation(input.confirmationId);
       if (!confirmation || confirmation.conversationId !== conversation.id) {
@@ -223,6 +227,9 @@ export class AssistantRunner {
       const tool = this.toolsByName.get(confirmation.toolName);
       if ((input.decision === 'confirm_tool' || input.decision === 'confirm_session') && tool?.category === 'mutate') {
         this.rememberSessionApprovedTool(conversation.id, tool.name);
+        await this.repo.addApprovedTool(conversation.id, tool.name).catch((err) => {
+          console.error('[AssistantRunner] Failed to persist approved tool', err);
+        });
       }
 
       // Confirmed — execute the tool now, then continue the loop.
@@ -641,6 +648,29 @@ export class AssistantRunner {
 
   clearConversationSessionApproval(conversationId: string): void {
     this.sessionApprovedToolsByConversation.delete(conversationId);
+  }
+
+  /** Replace the in-memory approval cache for a conversation with the values
+   *  loaded from persistent storage. Called on conversation entry. */
+  private hydrateApprovedToolsCache(conversationId: string, approvedTools: string[]): void {
+    this.sessionApprovedToolsByConversation.set(conversationId, new Set(approvedTools));
+  }
+
+  /** Returns the tool names this conversation has pre-approved for auto-execution. */
+  async getApprovedTools(userId: string, conversationId: string): Promise<string[]> {
+    return this.repo.getApprovedTools(userId, conversationId);
+  }
+
+  /** Replace the approved-tools list for a conversation. Only 'mutate' tools
+   *  are eligible; other names are filtered out. */
+  async setApprovedTools(userId: string, conversationId: string, toolNames: string[]): Promise<string[]> {
+    const eligible = Array.from(new Set(toolNames)).filter((name) => {
+      const tool = this.toolsByName.get(name);
+      return tool?.category === 'mutate';
+    });
+    const saved = await this.repo.setApprovedTools(userId, conversationId, eligible);
+    this.sessionApprovedToolsByConversation.set(conversationId, new Set(saved));
+    return saved;
   }
 
   private async rewriteAssistantToolCalls(messageId: string, toolCalls: ToolCall[]): Promise<void> {

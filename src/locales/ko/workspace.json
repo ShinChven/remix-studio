@@ -356,6 +356,15 @@
     "confirmTool": "이 세션에서 이 도구 승인",
     "cancel": "취소",
     "confirmAction": "이 작업을 확인하시겠습니까?",
+    "approvedTools": {
+      "title": "도구 승인",
+      "subtitle": "데이터를 쓰는 각 도구에 대해 매번 확인할지, 이 채팅에서 자동 승인할지 선택하세요.",
+      "empty": "쓰기 가능한 도구가 없습니다.",
+      "askEveryTime": "매번 확인",
+      "approveEveryTime": "매번 승인",
+      "loadFailed": "도구 승인 불러오기 실패",
+      "saveFailed": "도구 승인 업데이트 실패"
+    },
     "cancelAction": "이 작업 취소",
     "toolApprovalEnabled": "이 대화의 향후 {{tool}} 작업은 이 세션에 대해 자동으로 승인됩니다.",
     "toolRunning": "{{tool}} 실행 중...",

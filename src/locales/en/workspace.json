@@ -408,6 +408,15 @@
     "confirmTool": "Approve this tool in this session",
     "cancel": "Cancel",
     "confirmAction": "Confirm this action?",
+    "approvedTools": {
+      "title": "Tool approvals",
+      "subtitle": "For each tool that writes data, choose whether to ask every time or auto-approve in this chat.",
+      "empty": "No write-capable tools available.",
+      "askEveryTime": "Ask every time",
+      "approveEveryTime": "Approve every time",
+      "loadFailed": "Failed to load tool approvals",
+      "saveFailed": "Failed to update tool approval"
+    },
     "cancelAction": "Cancel this action",
     "toolApprovalEnabled": "Future {{tool}} actions in this conversation will auto-approve for this session.",
     "toolRunning": "Running {{tool}}...",

@@ -35,6 +35,7 @@ export interface AssistantConversationRecord {
   title: string;
   providerId: string | null;
   modelConfigId: string | null;
+  approvedTools: string[];
   createdAt: number;
   updatedAt: number;
   archivedAt: number | null;
@@ -145,6 +146,7 @@ function toConversation(record: any): AssistantConversationRecord {
     title: record.title,
     providerId: record.providerId ?? null,
     modelConfigId: record.modelConfigId ?? null,
+    approvedTools: Array.isArray(record.approvedTools) ? record.approvedTools : [],
     createdAt: toDateMs(record.createdAt),
     updatedAt: toDateMs(record.updatedAt),
     archivedAt: record.archivedAt ? toDateMs(record.archivedAt) : null,
@@ -315,6 +317,43 @@ export class AssistantRepository {
     if (result.count === 0) {
       throw new Error('Conversation not found');
     }
+  }
+
+  /** Returns the tool names this conversation has pre-approved for auto-execution. */
+  async getApprovedTools(userId: string, conversationId: string): Promise<string[]> {
+    const record = await this.prisma.assistantConversation.findFirst({
+      where: { id: conversationId, userId },
+      select: { approvedTools: true },
+    });
+    if (!record) throw new Error('Conversation not found');
+    return Array.isArray(record.approvedTools) ? record.approvedTools : [];
+  }
+
+  /** Replace the approved-tools list for a conversation. Caller must dedupe. */
+  async setApprovedTools(userId: string, conversationId: string, tools: string[]): Promise<string[]> {
+    const result = await this.prisma.assistantConversation.updateMany({
+      where: { id: conversationId, userId },
+      data: { approvedTools: tools },
+    });
+    if (result.count === 0) {
+      throw new Error('Conversation not found');
+    }
+    return tools;
+  }
+
+  /** Append a tool name to the approved list if not already present. */
+  async addApprovedTool(conversationId: string, toolName: string): Promise<void> {
+    const record = await this.prisma.assistantConversation.findUnique({
+      where: { id: conversationId },
+      select: { approvedTools: true },
+    });
+    if (!record) return;
+    const current = Array.isArray(record.approvedTools) ? record.approvedTools : [];
+    if (current.includes(toolName)) return;
+    await this.prisma.assistantConversation.update({
+      where: { id: conversationId },
+      data: { approvedTools: [...current, toolName] },
+    });
   }
 
   // ─── Messages ───

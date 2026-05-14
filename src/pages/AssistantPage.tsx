@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, AlertTriangle, Bot, FolderOpen, Sparkles, ExternalLink, Settings2, Copy, Pencil, Search, Megaphone, FileText } from 'lucide-react';
+import { Plus, Trash2, MessageCircle, Check, X, ChevronRight, Loader2, PanelRightClose, PanelRightOpen, AlertTriangle, Bot, FolderOpen, Sparkles, ExternalLink, Settings2, ShieldCheck, Copy, Pencil, Search, Megaphone, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -37,6 +37,7 @@ import {
   normalizeAssistantProviderSelection,
 } from '../lib/assistant-provider-settings';
 import { AssistantHero } from '../components/Assistant/AssistantHero';
+import { ApprovedToolsModal } from '../components/Assistant/ApprovedToolsModal';
 
 // BoundContext moved to AssistantComposer.tsx
 type AssistantNavigationState = {
@@ -409,6 +410,7 @@ export function AssistantPage() {
   }, [rightPanelOpen]);
 
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [approvedToolsModalOpen, setApprovedToolsModalOpen] = useState(false);
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -1153,13 +1155,24 @@ export function AssistantPage() {
             <div className="flex items-center gap-3">
               <h1 className="text-lg font-semibold text-neutral-900 dark:text-white truncate">{assistantTitle}</h1>
             </div>
-            <button
-              onClick={() => navigate(settingsPath)}
-              className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors flex-shrink-0"
-              title={t('assistant.chatSettings', { defaultValue: 'Chat settings' })}
-            >
-              <Settings2 className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {activeConversationId && (
+                <button
+                  onClick={() => setApprovedToolsModalOpen(true)}
+                  className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
+                  title={t('assistant.approvedTools.title', 'Tool approvals')}
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                </button>
+              )}
+              <button
+                onClick={() => navigate(settingsPath)}
+                className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
+                title={t('assistant.chatSettings', { defaultValue: 'Chat settings' })}
+              >
+                <Settings2 className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1173,6 +1186,15 @@ export function AssistantPage() {
 
         {document.getElementById('mobile-header-actions') && createPortal(
           <div className="flex items-center gap-1">
+            {activeConversationId && (
+              <button
+                onClick={() => setApprovedToolsModalOpen(true)}
+                className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
+                title={t('assistant.approvedTools.title', 'Tool approvals')}
+              >
+                <ShieldCheck className="w-5 h-5" />
+              </button>
+            )}
             <button
               onClick={() => navigate(settingsPath)}
               className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
@@ -1629,6 +1651,12 @@ export function AssistantPage() {
         type="danger"
         onConfirm={() => deleteTarget && handleDeleteConversation(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
+      />
+
+      <ApprovedToolsModal
+        isOpen={approvedToolsModalOpen}
+        conversationId={activeConversationId}
+        onClose={() => setApprovedToolsModalOpen(false)}
       />
 
       {/* Image Lightbox */}

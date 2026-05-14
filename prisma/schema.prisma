@@ -533,6 +533,9 @@ model AssistantConversation {
   title         String    @default("New chat")
   providerId    String?
   modelConfigId String?
+  // Tool names this conversation has pre-approved for auto-execution
+  // without per-call confirmation. Only 'mutate' tools are eligible.
+  approvedTools String[]  @default([])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
   archivedAt    DateTime?

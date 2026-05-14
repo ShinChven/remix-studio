@@ -325,5 +325,39 @@ export function createAssistantRouter(
     }
   });
 
+  // ─── Per-conversation tool approval preferences ───
+  router.get('/api/assistant/conversations/:id/approved-tools', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const conversationId = c.req.param('id');
+      const tools = await runner.getApprovedTools(user.userId, conversationId);
+      return c.json({ tools });
+    } catch (e: any) {
+      if (e?.message === 'Conversation not found') return c.json({ error: 'Conversation not found' }, 404);
+      console.error('[GET /api/assistant/conversations/:id/approved-tools]', e);
+      return c.json({ error: 'Failed to load approved tools' }, 500);
+    }
+  });
+
+  router.put('/api/assistant/conversations/:id/approved-tools', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const conversationId = c.req.param('id');
+      const body = await c.req.json().catch(() => null);
+      const toolsInput = Array.isArray(body?.tools)
+        ? body.tools.filter((name: unknown): name is string => typeof name === 'string')
+        : null;
+      if (!toolsInput) {
+        return c.json({ error: 'tools must be an array of strings' }, 400);
+      }
+      const tools = await runner.setApprovedTools(user.userId, conversationId, toolsInput);
+      return c.json({ tools });
+    } catch (e: any) {
+      if (e?.message === 'Conversation not found') return c.json({ error: 'Conversation not found' }, 404);
+      console.error('[PUT /api/assistant/conversations/:id/approved-tools]', e);
+      return c.json({ error: 'Failed to update approved tools' }, 500);
+    }
+  });
+
   return router;
 }

@@ -401,6 +401,15 @@
     "confirmTool": "在此会话中批准此工具",
     "cancel": "取消",
     "confirmAction": "确认此操作？",
+    "approvedTools": {
+      "title": "工具授权",
+      "subtitle": "为每个写入数据的工具选择：每次询问，或在此对话中自动批准。",
+      "empty": "暂无可写入数据的工具。",
+      "askEveryTime": "每次询问",
+      "approveEveryTime": "每次批准",
+      "loadFailed": "加载工具授权失败",
+      "saveFailed": "更新工具授权失败"
+    },
     "cancelAction": "取消此操作",
     "toolApprovalEnabled": "此对话中未来的 {{tool}} 操作将在此会话中自动批准。",
     "toolRunning": "正在执行 {{tool}}...",

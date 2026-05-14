@@ -356,6 +356,15 @@
     "confirmTool": "Approuver cet outil dans cette session",
     "cancel": "Annuler",
     "confirmAction": "Confirmer cette action ?",
+    "approvedTools": {
+      "title": "Autorisations des outils",
+      "subtitle": "Pour chaque outil qui écrit des données, choisissez de demander à chaque fois ou d'approuver automatiquement dans ce chat.",
+      "empty": "Aucun outil capable d'écrire disponible.",
+      "askEveryTime": "Demander à chaque fois",
+      "approveEveryTime": "Approuver à chaque fois",
+      "loadFailed": "Échec du chargement des autorisations",
+      "saveFailed": "Échec de la mise à jour de l'autorisation"
+    },
     "cancelAction": "Annuler cette action",
     "toolApprovalEnabled": "Les futures actions {{tool}} dans cette conversation seront automatiquement approuvées pour cette session.",
     "toolRunning": "Exécution de {{tool}}...",

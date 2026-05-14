@@ -356,6 +356,15 @@
     "confirmTool": "このセッションでこのツールを承認する",
     "cancel": "キャンセル",
     "confirmAction": "このアクションを確定しますか？",
+    "approvedTools": {
+      "title": "ツール承認",
+      "subtitle": "データを書き込む各ツールについて、毎回確認するか、このチャットで自動承認するかを選択します。",
+      "empty": "書き込み可能なツールはありません。",
+      "askEveryTime": "毎回確認",
+      "approveEveryTime": "毎回承認",
+      "loadFailed": "ツール承認の読み込みに失敗しました",
+      "saveFailed": "ツール承認の更新に失敗しました"
+    },
     "cancelAction": "このアクションをキャンセル",
     "toolApprovalEnabled": "この会話での将来の {{tool}} アクションは、このセッションで自動的に承認されます。",
     "toolRunning": "{{tool}} を実行中...",
