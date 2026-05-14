@@ -48,6 +48,9 @@ export class PrismaRepository implements IRepository {
   createProject(userId: string, project: Project) { return this.projects.createProject(userId, project); }
   updateProject(userId: string, projectId: string, updates: Partial<Project>) { return this.projects.updateProject(userId, projectId, updates); }
   deleteProject(userId: string, projectId: string) { return this.projects.deleteProject(userId, projectId); }
+  rewriteJobStorageKeys(userId: string, projectId: string, oldPrefix: string, newPrefix: string) {
+    return this.projects.rewriteJobStorageKeys(userId, projectId, oldPrefix, newPrefix);
+  }
 
   // === Album CRUD ===
   addAlbumItem(userId: string, projectId: string, item: AlbumItem) { return this.projects.addAlbumItem(userId, projectId, item); }

@@ -122,7 +122,12 @@ async function startServer() {
   detachedPoller.setOnJobFinalize((providerId, jobId) => queueManager.releaseSlot(providerId, jobId));
   // Reconcile in-memory slot tracking against the DB after each poll cycle so
   // out-of-band job deletions (workflow replace, project cascade) don't leak slots.
-  detachedPoller.setOnPollCycleComplete(() => queueManager.reconcileSlots());
+  detachedPoller.setOnPollCycleComplete(async () => {
+    await queueManager.reconcileSlots();
+    // Also heal any 'processing' rows that lost their taskId (typically via a
+    // stale client overwrite) so they don't hold a slot until the next restart.
+    await queueManager.healStuckProcessingJobs();
+  });
   // Important: Recover tasks before starting the server to resume background work
   await queueManager.recoverTasks();
 

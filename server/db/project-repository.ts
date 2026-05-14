@@ -810,63 +810,9 @@ export class ProjectRepository {
     await this.assertOwnedProject(userId, projectId);
 
     for (const job of jobs) {
-      const createData = {
-        id: job.id,
-        projectId,
-        userId,
-        prompt: job.prompt,
-        status: job.status ?? 'pending',
-        imageContexts: job.imageContexts ?? [],
-        videoContexts: job.videoContexts ?? [],
-        audioContexts: job.audioContexts ?? [],
-        imageUrl: job.imageUrl ?? null,
-        thumbnailUrl: job.thumbnailUrl ?? null,
-        optimizedUrl: job.optimizedUrl ?? null,
-        resultText: job.resultText ?? null,
-        error: job.error ?? null,
-        modelConfigId: job.modelConfigId ?? null,
-        aspectRatio: job.aspectRatio ?? null,
-        quality: job.quality ?? null,
-        format: job.format ?? null,
-        duration: job.duration ?? null,
-        resolution: job.resolution ?? null,
-        sound: job.sound ?? null,
-        background: (job as any).background ?? null,
-        taskId: job.taskId ?? null,
-        filename: job.filename ?? null,
-        size: job.size != null ? BigInt(job.size) : null,
-        createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
-        providerId: job.providerId ?? null,
-      };
-
-      const updateData = {
-        prompt: job.prompt,
-        status: job.status ?? 'pending',
-        imageContexts: job.imageContexts ?? [],
-        videoContexts: job.videoContexts ?? [],
-        audioContexts: job.audioContexts ?? [],
-        imageUrl: job.imageUrl ?? null,
-        thumbnailUrl: job.thumbnailUrl ?? null,
-        optimizedUrl: job.optimizedUrl ?? null,
-        resultText: job.resultText ?? null,
-        error: job.error ?? null,
-        modelConfigId: job.modelConfigId ?? null,
-        aspectRatio: job.aspectRatio ?? null,
-        quality: job.quality ?? null,
-        format: job.format ?? null,
-        duration: job.duration ?? null,
-        resolution: job.resolution ?? null,
-        sound: job.sound ?? null,
-        background: (job as any).background ?? null,
-        taskId: job.taskId ?? null,
-        filename: job.filename ?? null,
-        size: job.size != null ? BigInt(job.size) : null,
-        providerId: job.providerId ?? null,
-      };
-
       const existing = await this.prisma.job.findUnique({
         where: { id: job.id },
-        select: { id: true, userId: true, projectId: true },
+        select: { id: true, userId: true, projectId: true, status: true },
       });
 
       if (existing && (existing.userId !== userId || existing.projectId !== projectId)) {
@@ -874,21 +820,163 @@ export class ProjectRepository {
       }
 
       if (existing) {
-        await this.prisma.job.update({
-          where: { id: job.id },
-          data: updateData as any,
+        const dbStatus = existing.status;
+
+        // Jobs already in-flight or finished are server-managed: never let a
+        // bulk client snapshot overwrite them. A stale client carrying a
+        // 'pending' status (or missing taskId) for a job that is currently
+        // 'processing' would otherwise wipe taskId/imageUrl and strand the
+        // job — DetachedPoller filters on `taskId NOT NULL` and would never
+        // see it again, holding its concurrency slot until the next restart.
+        if (dbStatus === 'processing' || dbStatus === 'completed') {
+          continue;
+        }
+
+        // Whitelist client-driven status transitions. Anything else (e.g.
+        // stale client sending status='pending' for a job that the server
+        // already moved on from) silently keeps the DB status.
+        const clientStatus = job.status;
+        let nextStatus = dbStatus;
+        if (clientStatus === dbStatus) {
+          nextStatus = dbStatus;
+        } else if (dbStatus === 'draft' && clientStatus === 'pending') {
+          nextStatus = 'pending';
+        } else if (dbStatus === 'pending' && clientStatus === 'draft') {
+          nextStatus = 'draft';
+        } else if (dbStatus === 'failed' && clientStatus === 'pending') {
+          nextStatus = 'pending';
+        }
+
+        const updateData: any = {
+          prompt: job.prompt,
+          status: nextStatus,
+          imageContexts: job.imageContexts ?? [],
+          videoContexts: job.videoContexts ?? [],
+          audioContexts: job.audioContexts ?? [],
+          modelConfigId: job.modelConfigId ?? null,
+          aspectRatio: job.aspectRatio ?? null,
+          quality: job.quality ?? null,
+          format: job.format ?? null,
+          duration: job.duration ?? null,
+          resolution: job.resolution ?? null,
+          sound: job.sound ?? null,
+          background: (job as any).background ?? null,
+          filename: job.filename ?? null,
+          providerId: job.providerId ?? null,
+        };
+
+        // On retry, clear the prior error so the UI doesn't keep showing it.
+        if (dbStatus === 'failed' && nextStatus === 'pending') {
+          updateData.error = null;
+        }
+
+        // Deliberately not touching: taskId, imageUrl, thumbnailUrl,
+        // optimizedUrl, resultText, size, optimizedSize, thumbnailSize, error
+        // (except retry above). These are server-controlled and a stale
+        // client snapshot must not be allowed to mutate them.
+
+        // Optimistic concurrency: only update if status hasn't moved since
+        // we fetched. Without this, QueueManager flipping the row to
+        // 'processing' between findUnique and update would let us clobber
+        // the snapshot back to whatever the client said.
+        await this.prisma.job.updateMany({
+          where: { id: job.id, status: dbStatus },
+          data: updateData,
         });
       } else {
+        const createData = {
+          id: job.id,
+          projectId,
+          userId,
+          prompt: job.prompt,
+          status: job.status ?? 'pending',
+          imageContexts: job.imageContexts ?? [],
+          videoContexts: job.videoContexts ?? [],
+          audioContexts: job.audioContexts ?? [],
+          imageUrl: job.imageUrl ?? null,
+          thumbnailUrl: job.thumbnailUrl ?? null,
+          optimizedUrl: job.optimizedUrl ?? null,
+          resultText: job.resultText ?? null,
+          error: job.error ?? null,
+          modelConfigId: job.modelConfigId ?? null,
+          aspectRatio: job.aspectRatio ?? null,
+          quality: job.quality ?? null,
+          format: job.format ?? null,
+          duration: job.duration ?? null,
+          resolution: job.resolution ?? null,
+          sound: job.sound ?? null,
+          background: (job as any).background ?? null,
+          taskId: job.taskId ?? null,
+          filename: job.filename ?? null,
+          size: job.size != null ? BigInt(job.size) : null,
+          createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
+          providerId: job.providerId ?? null,
+        };
         await this.prisma.job.create({ data: createData as any });
       }
     }
 
-    // Delete jobs no longer in list
+    // Delete jobs no longer in the list, but never delete rows currently in
+    // 'processing' — they may be detached and tracked in QueueManager's
+    // in-memory state. A stale client snapshot must not be able to cancel an
+    // in-flight job.
     const newIds = new Set(jobs.map((j) => j.id));
-    const dbJobs = await this.prisma.job.findMany({ where: { projectId, userId }, select: { id: true } });
-    const toDelete = dbJobs.filter((j) => !newIds.has(j.id)).map((j) => j.id);
+    const dbJobs = await this.prisma.job.findMany({
+      where: { projectId, userId },
+      select: { id: true, status: true },
+    });
+    const toDelete = dbJobs
+      .filter((j) => !newIds.has(j.id) && j.status !== 'processing')
+      .map((j) => j.id);
     if (toDelete.length) {
-      await this.prisma.job.deleteMany({ where: { id: { in: toDelete }, projectId, userId } });
+      // Double-check status at delete time too: a 'pending' row can transition
+      // to 'processing' between our findMany above and this deleteMany.
+      await this.prisma.job.deleteMany({
+        where: { id: { in: toDelete }, projectId, userId, status: { not: 'processing' } },
+      });
+    }
+  }
+
+  /**
+   * Targeted rewrite of S3 storage keys on job rows after a project rename.
+   * Bypasses `saveJobs` (which protects server-controlled fields like
+   * imageUrl/taskId from client-driven overwrites) because this operation is
+   * a trusted server-side migration of storage keys, not a user edit.
+   */
+  async rewriteJobStorageKeys(
+    userId: string,
+    projectId: string,
+    oldPrefix: string,
+    newPrefix: string,
+  ): Promise<void> {
+    await this.assertOwnedProject(userId, projectId);
+
+    const jobs = await this.prisma.job.findMany({
+      where: { projectId, userId },
+      select: { id: true, imageContexts: true, imageUrl: true },
+    });
+
+    for (const job of jobs) {
+      const currentContexts = (job.imageContexts as unknown as string[] | null) ?? [];
+      const newContexts = currentContexts.map((ctx) =>
+        typeof ctx === 'string' && ctx.startsWith(oldPrefix) ? ctx.replace(oldPrefix, newPrefix) : ctx,
+      );
+      const contextsChanged =
+        newContexts.length !== currentContexts.length ||
+        newContexts.some((ctx, i) => ctx !== currentContexts[i]);
+
+      const newImageUrl =
+        job.imageUrl && job.imageUrl.startsWith(oldPrefix)
+          ? job.imageUrl.replace(oldPrefix, newPrefix)
+          : null;
+
+      const data: any = {};
+      if (contextsChanged) data.imageContexts = newContexts;
+      if (newImageUrl !== null) data.imageUrl = newImageUrl;
+
+      if (Object.keys(data).length > 0) {
+        await this.prisma.job.update({ where: { id: job.id }, data });
+      }
     }
   }
 

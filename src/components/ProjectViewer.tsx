@@ -20,7 +20,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -853,12 +853,18 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   };
 
   const clearAllFailed = async () => {
-    const updatedJobs = localJobs.filter(j => j.status !== 'failed');
-    setLocalJobs(updatedJobs);
+    // Route through the dedicated server endpoint instead of the bulk
+    // PUT /api/projects/:id path. The bulk path forces saveJobs to consider
+    // every other job in localJobs, which is dangerous when localJobs is
+    // stale relative to in-flight jobs (it used to wipe taskId on
+    // 'processing' rows and strand them forever). The server endpoint deletes
+    // only failed rows and re-enqueues remaining pending jobs atomically.
     setSelectedQueueIds(new Set());
-    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
-    if (updatedJobs.some(j => j.status === 'pending')) {
-      try { await apiRunWorkflow(localProject.id); } catch (e) { console.error("Failed to resume queue after clearing failed:", e); }
+    setLocalJobs(prev => prev.filter(j => j.status !== 'failed'));
+    try {
+      await clearFailedQueueJobs({ projectId: localProject.id });
+    } catch (e) {
+      console.error("Failed to clear failed jobs:", e);
     }
   };
 

@@ -359,6 +359,10 @@ export class QueueManager {
       where: {
         userId,
         id: { in: failedJobIds },
+        // Re-check status atomically: a row that we observed as 'failed' a
+        // moment ago could have been retried to 'pending' by a concurrent
+        // saveJobs call. Without this guard we'd delete the retried job.
+        status: 'failed',
       },
     });
 
@@ -542,6 +546,63 @@ export class QueueManager {
     }
     if (releasedExecuting > 0 || droppedPending > 0) {
       console.log(`[QueueManager] Reconciliation: released ${releasedExecuting} executing slot(s), dropped ${droppedPending} queued entry(s).`);
+    }
+  }
+
+  /**
+   * Heal jobs stuck in `status='processing' && taskId IS NULL`. This state
+   * should never occur during normal execution — it means the row was
+   * overwritten out-of-band (historically: a stale client PUT /api/projects/:id
+   * sending back the whole jobs array via the now-restricted saveJobs path).
+   * DetachedPoller filters on `taskId NOT NULL` so it can't observe these
+   * orphans; without intervention they hold their concurrency slot until the
+   * next server restart triggers `recoverTasks`. We reset them to 'pending',
+   * release any phantom slot tracking, and re-enqueue the owning project.
+   */
+  public async healStuckProcessingJobs(): Promise<void> {
+    const orphans = await this.prisma.job.findMany({
+      where: { status: 'processing', taskId: null },
+      select: { id: true, userId: true, projectId: true },
+    });
+    if (orphans.length === 0) return;
+
+    const affectedProjects = new Set<string>();
+    let healed = 0;
+    for (const row of orphans) {
+      // CRITICAL: a sync job (OpenAI image, Gemini text, etc.) runs with
+      // status='processing' && taskId=null for the entire duration of
+      // generator.generate(). If it shows up here while still in
+      // activeJobIds, the queue is genuinely executing it — skip, do not
+      // reset, or we'll cause a duplicate dispatch.
+      if (this.activeJobIds.has(row.id)) continue;
+
+      // Atomic compare-and-set: only flip the row back to 'pending' if it
+      // is still the orphan we observed. Guards against the row legitimately
+      // transitioning to completed/failed between the findMany above and now.
+      const result = await this.prisma.job.updateMany({
+        where: { id: row.id, status: 'processing', taskId: null },
+        data: { status: 'pending' },
+      });
+      if (result.count === 0) continue;
+
+      affectedProjects.add(`${row.userId}|${row.projectId}`);
+      healed++;
+    }
+
+    if (healed === 0) return;
+
+    console.warn(`[QueueManager] Healed ${healed} stuck processing+no-taskId job(s). Re-enqueuing ${affectedProjects.size} project(s).`);
+
+    for (const entry of affectedProjects) {
+      const [uId, pId] = entry.split('|');
+      try {
+        await this.enqueueProject(uId, pId);
+      } catch (e) {
+        // Don't let one project's failure abort the rest of the heal — the
+        // jobs are already reset to 'pending' in DB and would otherwise be
+        // stranded until the next user action or restart.
+        console.error(`[QueueManager] healStuckProcessingJobs: enqueueProject failed for ${uId}/${pId}:`, e);
+      }
     }
   }
 

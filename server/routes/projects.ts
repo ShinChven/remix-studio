@@ -186,14 +186,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       // Update S3 keys in DB job and album records
       const project = await repository.getProject(user.userId, newId);
       if (project) {
-        const updatedJobs = project.jobs.map((job) => {
-          const imageContexts = job.imageContexts?.map((ctx) => ctx.startsWith(oldPrefix) ? ctx.replace(oldPrefix, newPrefix) : ctx);
-          if (job.imageUrl && job.imageUrl.startsWith(oldPrefix)) {
-            return { ...job, imageUrl: job.imageUrl.replace(oldPrefix, newPrefix), imageContexts };
-          }
-          return imageContexts ? { ...job, imageContexts } : job;
-        });
-        await repository.updateProject(user.userId, newId, { jobs: updatedJobs });
+        // Targeted rewrite — must NOT go through saveJobs, which now refuses
+        // to overwrite server-controlled fields like imageUrl.
+        await repository.rewriteJobStorageKeys(user.userId, newId, oldPrefix, newPrefix);
 
         // Update album item S3 keys
         for (const item of (project.album || [])) {
