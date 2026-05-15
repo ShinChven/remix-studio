@@ -149,7 +149,7 @@ export function Campaigns() {
   const loadRecentPosts = async () => {
     setRecentPostsLoading(true);
     try {
-      const data = await fetchRecentPosts(20);
+      const data = await fetchRecentPosts(10);
       setRecentPosts(data);
     } catch (error) {
       console.error('Failed to load recent posts', error);
