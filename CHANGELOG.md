@@ -2,6 +2,30 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.9.0] - 2026-05-15
+
+### Added
+
+- **Digital Store Integration**: Introduced a digital store integration framework with Gumroad authentication and a product management system for selling exports, including database schema, API routes, and UI.
+- **Store Upload History**: Added a store upload history page with tracking for product publishing activity.
+- **Publish Immediately**: Added a publish-immediately toggle to product export configuration.
+- **Assistant Tool Approvals**: Added persistent per-conversation tool approval management with backend support and a dedicated UI.
+- **New Models**: Added GPT Image 2, GPT-5.5, and Grok 4.3 to the supported model configurations; reordered image generator quality options.
+- **Google Drive Upload Confirmation**: Added a confirmation modal for Google Drive uploads and redesigned the exports header navigation.
+- **Media Picker Source Locking**: Added `fixedSourceId` support to `UniversalMediaPicker` to restrict and pre-select a specific media source.
+- **Name-Only Search**: Added a `nameOnly` filter to library and project search endpoints and repositories.
+
+### Fixed
+
+- **Command Palette**: Allow closing the command palette with the Escape key.
+
+### Changed
+
+- **Job State Integrity**: Protected server-controlled job states from client-driven overwrites and added S3 key migration support.
+- **Export Pagination**: Replaced cursor-based pagination with page-based navigation for export tasks across server and UI layers.
+- **Album Cover Presigning**: Injected main storage into `DeliveryManager` to handle album cover presigned URLs.
+- **Album Grid Layout**: Migrated album cover and selection grids to a masonry layout using CSS columns.
+
 ## [1.8.0] - 2026-05-05
 
 ### Added
