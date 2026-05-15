@@ -189,44 +189,45 @@ function escapeSvgText(value: string): string {
     .replace(/'/g, '&apos;');
 }
 
-function getWatermarkPoint(
-  position: PostWatermarkPosition,
-  width: number,
-  height: number,
-  padding: number,
-  fontSize: number,
-) {
-  const topY = padding + (fontSize / 2);
-  const bottomY = height - padding - (fontSize / 2);
-  switch (position) {
-    case 'top':
-      return { x: width / 2, y: topY, anchor: 'middle' };
-    case 'bottom':
-      return { x: width / 2, y: bottomY, anchor: 'middle' };
-    case 'left':
-      return { x: padding, y: height / 2, anchor: 'start' };
-    case 'right':
-      return { x: width - padding, y: height / 2, anchor: 'end' };
-    case 'top_left':
-      return { x: padding, y: topY, anchor: 'start' };
-    case 'top_right':
-      return { x: width - padding, y: topY, anchor: 'end' };
-    case 'bottom_left':
-      return { x: padding, y: bottomY, anchor: 'start' };
-    case 'bottom_right':
-      return { x: width - padding, y: bottomY, anchor: 'end' };
-    case 'center':
-    default:
-      return { x: width / 2, y: height / 2, anchor: 'middle' };
-  }
-}
-
 function getScaledWatermarkMetrics(width: number, height: number, setting: PostWatermarkConfig) {
   const shortEdge = Math.min(width, height);
   const scale = shortEdge / POST_WATERMARK_BASE_SHORT_EDGE;
   const fontSize = Math.max(1, Math.min(setting.fontSize * scale, shortEdge * 0.5));
   const padding = Math.max(0, Math.min(setting.padding * scale, shortEdge / 2));
   return { fontSize, padding };
+}
+
+function getWatermarkCompositePosition(
+  position: PostWatermarkPosition,
+  imageWidth: number,
+  imageHeight: number,
+  textWidth: number,
+  textHeight: number,
+  padding: number,
+): { left: number; top: number } {
+  let left: number;
+  let top: number;
+
+  if (position === 'top' || position === 'bottom' || position === 'center') {
+    left = Math.round((imageWidth - textWidth) / 2);
+  } else if (position === 'left' || position === 'top_left' || position === 'bottom_left') {
+    left = Math.round(padding);
+  } else {
+    left = Math.round(imageWidth - textWidth - padding);
+  }
+
+  if (position === 'left' || position === 'right' || position === 'center') {
+    top = Math.round((imageHeight - textHeight) / 2);
+  } else if (position === 'top' || position === 'top_left' || position === 'top_right') {
+    top = Math.round(padding);
+  } else {
+    top = Math.round(imageHeight - textHeight - padding);
+  }
+
+  left = Math.max(0, Math.min(Math.max(0, imageWidth - textWidth), left));
+  top = Math.max(0, Math.min(Math.max(0, imageHeight - textHeight), top));
+
+  return { left, top };
 }
 
 async function applyPostWatermark(buffer: Buffer, setting?: PostWatermarkConfig | null): Promise<Buffer> {
@@ -240,24 +241,35 @@ async function applyPostWatermark(buffer: Buffer, setting?: PostWatermarkConfig 
   if (!width || !height) return buffer;
 
   const { padding, fontSize } = getScaledWatermarkMetrics(width, height, setting);
-  const point = getWatermarkPoint(setting.position, width, height, padding, fontSize);
-  const svg = `
-    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-      <text
-        x="${point.x}"
-        y="${point.y}"
-        text-anchor="${point.anchor}"
-        dominant-baseline="middle"
-        font-family="Arial, Helvetica, sans-serif"
-        font-size="${fontSize}"
-        font-weight="700"
-        fill="${setting.color}"
-        fill-opacity="${setting.opacity}"
-      >${escapeSvgText(text)}</text>
-    </svg>`;
+  const fontPx = Math.max(1, Math.round(fontSize));
+  const alphaPercent = Math.max(1, Math.min(100, Math.round(setting.opacity * 100)));
+  const markup = `<span foreground="${setting.color}" alpha="${alphaPercent}%">${escapeSvgText(text)}</span>`;
+
+  const textImage = await sharp({
+    text: {
+      text: markup,
+      font: `sans-serif Bold ${fontPx}`,
+      rgba: true,
+      dpi: 72,
+    },
+  }).png().toBuffer();
+
+  const textMeta = await sharp(textImage).metadata();
+  const textWidth = textMeta.width || 0;
+  const textHeight = textMeta.height || 0;
+  if (!textWidth || !textHeight) return buffer;
+
+  const { left, top } = getWatermarkCompositePosition(
+    setting.position,
+    width,
+    height,
+    textWidth,
+    textHeight,
+    padding,
+  );
 
   return sharp(buffer)
-    .composite([{ input: Buffer.from(svg), blend: 'over' }])
+    .composite([{ input: textImage, left, top, blend: 'over' }])
     .jpeg({ quality: POST_IMAGE_RAW_QUALITY })
     .toBuffer();
 }
