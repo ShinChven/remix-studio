@@ -13,6 +13,7 @@ type ImportData = {
 };
 
 import { PageHeader } from '../components/PageHeader';
+import { consumePwaShareHandoff } from '../lib/pwa-share';
 
 function Modal({ isOpen, onClose, title, children }: any) {
   if (!isOpen) return null;
@@ -175,28 +176,38 @@ export default function ExtensionImport() {
   useEffect(() => {
     const timer = setTimeout(() => setHasTimeout(true), 1500);
 
+    const applyPayload = (payload: ImportData) => {
+      setImportData(payload);
+
+      if (payload?.type) {
+        const saved = localStorage.getItem(`remix_studio_import_destination_${payload.type}`);
+        if (saved === 'project' || saved === 'library') {
+          setDestinationType(saved);
+        }
+      }
+
+      if (payload.name) {
+        setItemName(payload.name);
+      }
+      clearTimeout(timer);
+    };
+
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'REMIX_STUDIO_EXTENSION_IMPORT') {
         const payload = event.data.payload;
-        setImportData(payload);
-        
-        if (payload?.type) {
-          const saved = localStorage.getItem(`remix_studio_import_destination_${payload.type}`);
-          if (saved === 'project' || saved === 'library') {
-            setDestinationType(saved);
-          }
-        }
-
-        if (payload.name) {
-          setItemName(payload.name);
-        }
-        clearTimeout(timer);
+        applyPayload(payload);
         // Acknowledge receipt so the extension stops sending and clears storage
         window.postMessage({ type: 'REMIX_STUDIO_EXTENSION_ACK' }, '*');
       }
     };
 
     window.addEventListener('message', handleMessage);
+
+    const shared = consumePwaShareHandoff();
+    if (shared) {
+      applyPayload({ type: shared.type, data: shared.data, name: shared.name });
+    }
+
     return () => {
       window.removeEventListener('message', handleMessage);
       clearTimeout(timer);

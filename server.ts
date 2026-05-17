@@ -283,6 +283,19 @@ async function startServer() {
     // Production: Hono serves everything
     const distPath = path.join(process.cwd(), 'dist');
 
+    // Service worker must not be HTTP-cached so updates roll out immediately
+    app.get('/sw.js', async (c) => {
+      const swPath = path.join(distPath, 'sw.js');
+      const body = fs.readFileSync(swPath);
+      return new Response(body, {
+        headers: {
+          'Content-Type': 'application/javascript; charset=utf-8',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Service-Worker-Allowed': '/',
+        },
+      });
+    });
+
     // Serve static assets with correct MIME types
     app.use('*', serveStatic({ root: './dist' }));
 

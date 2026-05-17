@@ -38,6 +38,7 @@ import {
 } from '../lib/assistant-provider-settings';
 import { AssistantHero } from '../components/Assistant/AssistantHero';
 import { ApprovedToolsModal } from '../components/Assistant/ApprovedToolsModal';
+import { consumePwaShareHandoff } from '../lib/pwa-share';
 
 // BoundContext moved to AssistantComposer.tsx
 type AssistantNavigationState = {
@@ -607,56 +608,73 @@ export function AssistantPage() {
     }
   }, [location, navigate]);
 
-  // Handle data from Chrome extension via window.postMessage
+  // Handle data from Chrome extension via window.postMessage or from PWA share via sessionStorage
   const handledExtensionRef = useRef(false);
+  const applyToComposer = useCallback(async (payload: { type: string; data: string; name?: string }) => {
+    if (handledExtensionRef.current) return;
+    if (payload.type !== 'text' && payload.type !== 'image') return;
+
+    if (payload.type === 'text') {
+      handledExtensionRef.current = true;
+      initializedRef.current = true;
+      const text = String(payload.data || '');
+      setComposerDraft((current) => ({
+        inputText: current.inputText ? `${current.inputText}\n\n${text}` : text,
+        boundContexts: current.boundContexts,
+        attachedImages: current.attachedImages,
+        key: current.key + 1,
+      }));
+      return;
+    }
+
+    // payload.type === 'image' — compress first so a failure doesn't trap the ref
+    try {
+      const compressed = await compressDataUrlImage(payload.data);
+      if (handledExtensionRef.current) return;
+      handledExtensionRef.current = true;
+      initializedRef.current = true;
+      const image: AttachedImage = {
+        id: `img-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        preview: compressed,
+        base64: compressed,
+      };
+      setComposerDraft((current) => ({
+        inputText: current.inputText || (payload.name ? String(payload.name) : ''),
+        boundContexts: current.boundContexts,
+        attachedImages: [...current.attachedImages, image],
+        key: current.key + 1,
+      }));
+    } catch {
+      toast.error('Failed to load shared image');
+    }
+  }, []);
+
   useEffect(() => {
     const handleExtensionMessage = async (event: MessageEvent) => {
       if (event.data?.type !== 'REMIX_STUDIO_EXTENSION_IMPORT') return;
       const payload = event.data.payload;
       if (!payload || payload.target !== 'chat') return;
-      if (handledExtensionRef.current) return;
-      handledExtensionRef.current = true;
-      initializedRef.current = true;
       window.postMessage({ type: 'REMIX_STUDIO_EXTENSION_ACK' }, '*');
+      await applyToComposer(payload);
 
-      if (payload.type === 'text') {
-        const text = String(payload.data || '');
-        setComposerDraft((current) => ({
-          inputText: current.inputText ? `${current.inputText}\n\n${text}` : text,
-          boundContexts: current.boundContexts,
-          attachedImages: current.attachedImages,
-          key: current.key + 1,
-        }));
-      } else if (payload.type === 'image') {
-        try {
-          const compressed = await compressDataUrlImage(payload.data);
-          const image: AttachedImage = {
-            id: `img-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            preview: compressed,
-            base64: compressed,
-          };
-          setComposerDraft((current) => ({
-            inputText: current.inputText || (payload.name ? String(payload.name) : ''),
-            boundContexts: current.boundContexts,
-            attachedImages: [...current.attachedImages, image],
-            key: current.key + 1,
-          }));
-        } catch {
-          toast.error('Failed to load image from extension');
-        }
-      }
-
-      const params = new URLSearchParams(location.search);
-      if (params.has('from')) {
-        params.delete('from');
-        const search = params.toString();
-        navigate(`${location.pathname}${search ? `?${search}` : ''}`, { replace: true });
+      const currentParams = new URLSearchParams(window.location.search);
+      if (currentParams.has('from')) {
+        currentParams.delete('from');
+        const search = currentParams.toString();
+        navigate(`${window.location.pathname}${search ? `?${search}` : ''}`, { replace: true });
       }
     };
 
     window.addEventListener('message', handleExtensionMessage);
     return () => window.removeEventListener('message', handleExtensionMessage);
-  }, [navigate, location.pathname, location.search]);
+  }, [navigate, applyToComposer]);
+
+  useEffect(() => {
+    const shared = consumePwaShareHandoff();
+    if (shared) {
+      applyToComposer(shared);
+    }
+  }, [applyToComposer]);
 
   useEffect(() => {
     // If we're coming from dashboard with an initial message, definitely don't auto-jump
