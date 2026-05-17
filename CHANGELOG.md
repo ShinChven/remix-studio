@@ -8,6 +8,7 @@ All notable changes to Remix Studio are documented here by version number.
 
 - **Reuse Job Configuration**: Added the ability to restore a historical job's exact workflow snapshot and generation settings (model, provider, aspect ratio, etc.) back to the active project.
 - **Workflow Snapshots**: Implemented database support for capturing and storing the raw JSON workflow structure at the moment of job creation.
+- **Send to Chat (Chrome Extension)**: Added new context menu items "Send image to Remix Studio Chat" and "Send text to Remix Studio Chat" that open the Assistant page and pre-fill the composer to start a new conversation.
 
 ## [1.10.1] - 2026-05-17
 

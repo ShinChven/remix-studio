@@ -125,6 +125,36 @@ function parseAssistantContent(content: string | null | undefined) {
  * Extract embedded [IMAGE_ATTACHMENTS] base64 data URIs from user message content.
  * Returns clean text (block removed) and an array of data URIs for rendering.
  */
+async function compressDataUrlImage(dataUrl: string): Promise<string> {
+  const MAX_DIM = 1024;
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const { width, height } = img;
+      let targetW = width;
+      let targetH = height;
+      if (Math.max(width, height) > MAX_DIM) {
+        if (width >= height) {
+          targetW = MAX_DIM;
+          targetH = Math.round((height / width) * MAX_DIM);
+        } else {
+          targetH = MAX_DIM;
+          targetW = Math.round((width / height) * MAX_DIM);
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas not available')); return; }
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = () => reject(new Error('Image load failed'));
+    img.src = dataUrl;
+  });
+}
+
 function parseUserMessageImages(content: string): { textContent: string; images: string[] } {
   const blockMatch = content.match(/\[IMAGE_ATTACHMENTS\]([\s\S]*?)\[\/IMAGE_ATTACHMENTS\]\n?/);
   if (!blockMatch) return { textContent: content, images: [] };
@@ -478,7 +508,9 @@ export function AssistantPage() {
     loadConversations();
   }, [loadConversations]);
 
-  const initializedRef = useRef(false);
+  const initializedRef = useRef(
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('from') === 'extension'
+  );
 
   // ─── Load conversation messages ───
   const loadConversation = useCallback(async (id: string) => {
@@ -574,6 +606,57 @@ export function AssistantPage() {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
+
+  // Handle data from Chrome extension via window.postMessage
+  const handledExtensionRef = useRef(false);
+  useEffect(() => {
+    const handleExtensionMessage = async (event: MessageEvent) => {
+      if (event.data?.type !== 'REMIX_STUDIO_EXTENSION_IMPORT') return;
+      const payload = event.data.payload;
+      if (!payload || payload.target !== 'chat') return;
+      if (handledExtensionRef.current) return;
+      handledExtensionRef.current = true;
+      initializedRef.current = true;
+      window.postMessage({ type: 'REMIX_STUDIO_EXTENSION_ACK' }, '*');
+
+      if (payload.type === 'text') {
+        const text = String(payload.data || '');
+        setComposerDraft((current) => ({
+          inputText: current.inputText ? `${current.inputText}\n\n${text}` : text,
+          boundContexts: current.boundContexts,
+          attachedImages: current.attachedImages,
+          key: current.key + 1,
+        }));
+      } else if (payload.type === 'image') {
+        try {
+          const compressed = await compressDataUrlImage(payload.data);
+          const image: AttachedImage = {
+            id: `img-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            preview: compressed,
+            base64: compressed,
+          };
+          setComposerDraft((current) => ({
+            inputText: current.inputText || (payload.name ? String(payload.name) : ''),
+            boundContexts: current.boundContexts,
+            attachedImages: [...current.attachedImages, image],
+            key: current.key + 1,
+          }));
+        } catch {
+          toast.error('Failed to load image from extension');
+        }
+      }
+
+      const params = new URLSearchParams(location.search);
+      if (params.has('from')) {
+        params.delete('from');
+        const search = params.toString();
+        navigate(`${location.pathname}${search ? `?${search}` : ''}`, { replace: true });
+      }
+    };
+
+    window.addEventListener('message', handleExtensionMessage);
+    return () => window.removeEventListener('message', handleExtensionMessage);
+  }, [navigate, location.pathname, location.search]);
 
   useEffect(() => {
     // If we're coming from dashboard with an initial message, definitely don't auto-jump
