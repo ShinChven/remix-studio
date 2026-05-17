@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { AudioLines, FileText, Folder, Image as ImageIcon, Info, Music, Save, Type, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createLibrary, updateLibrary, fetchLibrary } from '../api';
@@ -36,10 +36,11 @@ export function LibraryForm() {
   const navigate = useNavigate();
 
   const isNew = !id;
+  const [searchParams] = useSearchParams();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState<LibraryType>('text');
+  const [type, setType] = useState<LibraryType>((searchParams.get('type') as LibraryType) || 'text');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {

@@ -49,6 +49,7 @@ import { PostForm } from './pages/PostForm.tsx';
 import { CampaignPostDetail } from './pages/CampaignPostDetail.tsx';
 import { CampaignHistory } from './pages/CampaignHistory.tsx';
 import { ScheduledPosts } from './pages/ScheduledPosts.tsx';
+import ExtensionImport from './pages/ExtensionImport.tsx';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -85,6 +86,7 @@ export default function App() {
               <Route path="library/:id/import-export" element={<LibraryImportExport />} />
               <Route path="library/:id/cleanup" element={<LibraryCleanup />} />
               <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
+              <Route path="import" element={<ExtensionImport />} />
                 <Route path="campaigns">
                   <Route index element={<Campaigns />} />
                   <Route path="history" element={<CampaignHistory />} />

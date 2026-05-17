@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AudioLines, FileText, Hash, ImageIcon, Layers, Play, Save, Terminal, Type, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createProject, updateProject, fetchProject } from '../api';
@@ -32,12 +32,13 @@ export function ProjectForm() {
 
   const isNew = !id;
   const copyFrom = location.state?.copyFrom;
+  const [searchParams] = useSearchParams();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState('');
   const [prefix, setPrefix] = useState('');
-  const [projectType, setProjectType] = useState<ProjectType>('image');
+  const [projectType, setProjectType] = useState<ProjectType>((searchParams.get('type') as ProjectType) || 'image');
   const [workflowToCopy, setWorkflowToCopy] = useState<WorkflowItem[]>([]);
   const [sourceProject, setSourceProject] = useState<Partial<Project> | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
