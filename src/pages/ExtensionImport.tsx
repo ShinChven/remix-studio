@@ -143,14 +143,13 @@ export default function ExtensionImport() {
   const navigate = useNavigate();
   const [importData, setImportData] = useState<ImportData | null>(null);
   
-  const [destinationType, setDestinationType] = useState<'library' | 'project'>(() => {
-    const saved = localStorage.getItem('remix_studio_import_destination');
-    return (saved === 'project' || saved === 'library') ? saved : 'library';
-  });
+  const [destinationType, setDestinationType] = useState<'library' | 'project'>('library');
 
   const handleDestinationChange = (type: 'library' | 'project') => {
     setDestinationType(type);
-    localStorage.setItem('remix_studio_import_destination', type);
+    if (importData?.type) {
+      localStorage.setItem(`remix_studio_import_destination_${importData.type}`, type);
+    }
   };
 
   const [itemName, setItemName] = useState('');
@@ -173,6 +172,14 @@ export default function ExtensionImport() {
       if (event.data?.type === 'REMIX_STUDIO_EXTENSION_IMPORT') {
         const payload = event.data.payload;
         setImportData(payload);
+        
+        if (payload?.type) {
+          const saved = localStorage.getItem(`remix_studio_import_destination_${payload.type}`);
+          if (saved === 'project' || saved === 'library') {
+            setDestinationType(saved);
+          }
+        }
+
         if (payload.name) {
           setItemName(payload.name);
         }
@@ -331,22 +338,20 @@ export default function ExtensionImport() {
       <div className="grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
         {/* Preview Section */}
         <div className="space-y-6 rounded-lg border border-neutral-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/55 md:p-6">
-          {importData.type === 'image' && (
-            <section className="space-y-2">
-              <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
-                <Type className="h-3.5 w-3.5" />
-                Name
-              </label>
-              <input
-                type="text"
-                autoFocus
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                placeholder="Name this imported image"
-                className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-base font-semibold text-neutral-950 shadow-sm transition-all placeholder:text-neutral-400 focus:border-blue-500/60 focus:outline-none focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-neutral-950 dark:text-white dark:placeholder:text-neutral-600"
-              />
-            </section>
-          )}
+          <section className="space-y-2">
+            <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
+              <Type className="h-3.5 w-3.5" />
+              Name
+            </label>
+            <input
+              type="text"
+              autoFocus
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+              placeholder={`Name this imported ${importData.type}`}
+              className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-base font-semibold text-neutral-950 shadow-sm transition-all placeholder:text-neutral-400 focus:border-blue-500/60 focus:outline-none focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-neutral-950 dark:text-white dark:placeholder:text-neutral-600"
+            />
+          </section>
 
           <section className="space-y-2">
             <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">

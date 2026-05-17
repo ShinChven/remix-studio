@@ -2,13 +2,32 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
-## [1.9.0] - 2026-05-15
+## [1.10.1] - 2026-05-17
+
+### Changed
+
+- **Extension Import**: Separate persistent destination preference by import type (text vs image).
+
+## [1.10.0] - 2026-05-17
 
 ### Added
 
 - **Extension Import Name Extraction**: Added Chrome Extension support for extracting imported image name from the `alt` tag or URL.
 - **Extension Import Persistence**: Added automatic persistent configuration for the Chrome Extension import's destination selection via local storage.
 - **Extension Release Asset**: Configured GitHub Actions to automatically zip and include the Chrome Extension as a release asset in the Docker workflow.
+
+### Fixed
+
+- **Extension Import Infinite Loading**: Fixed an issue where refreshing the Extension Import page without Chrome Extension data would result in an infinite loading state.
+
+### Changed
+
+- **Extension Import UI**: Updated the Chrome Extension Import page UI design language to match the workspace library creation layout.
+
+## [1.9.0] - 2026-05-15
+
+### Added
+
 - **Digital Store Integration**: Introduced a digital store integration framework with Gumroad authentication and a product management system for selling exports, including database schema, API routes, and UI.
 - **Store Upload History**: Added a store upload history page with tracking for product publishing activity.
 - **Publish Immediately**: Added a publish-immediately toggle to product export configuration.
@@ -20,12 +39,10 @@ All notable changes to Remix Studio are documented here by version number.
 
 ### Fixed
 
-- **Extension Import Infinite Loading**: Fixed an issue where refreshing the Extension Import page without Chrome Extension data would result in an infinite loading state.
 - **Command Palette**: Allow closing the command palette with the Escape key.
 
 ### Changed
 
-- **Extension Import UI**: Updated the Chrome Extension Import page UI design language to match the workspace library creation layout.
 - **Job State Integrity**: Protected server-controlled job states from client-driven overwrites and added S3 key migration support.
 - **Export Pagination**: Replaced cursor-based pagination with page-based navigation for export tasks across server and UI layers.
 - **Album Cover Presigning**: Injected main storage into `DeliveryManager` to handle album cover presigned URLs.
