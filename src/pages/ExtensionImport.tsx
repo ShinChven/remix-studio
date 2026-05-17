@@ -161,6 +161,13 @@ export default function ExtensionImport() {
   const [selectedId, setSelectedId] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
 
+  const handleIdChange = (id: string) => {
+    setSelectedId(id);
+    if (importData?.type) {
+      localStorage.setItem(`remix_studio_import_selected_id_${importData.type}_${destinationType}`, id);
+    }
+  };
+
   const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [hasTimeout, setHasTimeout] = useState(false);
@@ -207,14 +214,20 @@ export default function ExtensionImport() {
           // Filter out libraries that don't match the import type
           const filtered = res.items.filter(lib => lib.type === importData.type);
           setLibraries(filtered);
-          if (filtered.length > 0 && !filtered.find(l => l.id === selectedId)) {
+          const savedId = localStorage.getItem(`remix_studio_import_selected_id_${importData.type}_${destinationType}`);
+          if (savedId && filtered.find(l => l.id === savedId)) {
+            setSelectedId(savedId);
+          } else if (filtered.length > 0 && !filtered.find(l => l.id === selectedId)) {
             setSelectedId(filtered[0].id);
           }
         } else {
           const res = await fetchProjects(1, 100, undefined, 'active', true);
           const filtered = res.items.filter(proj => proj.type === importData.type);
           setProjects(filtered);
-          if (filtered.length > 0 && !filtered.find(p => p.id === selectedId)) {
+          const savedId = localStorage.getItem(`remix_studio_import_selected_id_${importData.type}_${destinationType}`);
+          if (savedId && filtered.find(p => p.id === savedId)) {
+            setSelectedId(savedId);
+          } else if (filtered.length > 0 && !filtered.find(p => p.id === selectedId)) {
             setSelectedId(filtered[0].id);
           }
         }
@@ -479,7 +492,7 @@ export default function ExtensionImport() {
         type={importData.type}
         onSuccess={(id, name) => {
           setLibraries(prev => [{ id, name, description: '', type: importData.type, items: [], createdAt: Date.now() }, ...prev]);
-          setSelectedId(id);
+          handleIdChange(id);
         }}
       />
       <CreateProjectModal 
@@ -488,7 +501,7 @@ export default function ExtensionImport() {
         type={importData.type}
         onSuccess={(id, name) => {
           setProjects(prev => [{ id, name, description: '', type: importData.type, workflow: [], jobs: [], album: [], createdAt: Date.now(), prefix: '', shuffle: false }, ...prev]);
-          setSelectedId(id);
+          handleIdChange(id);
         }}
       />
     </div>
