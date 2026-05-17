@@ -28,7 +28,9 @@
       "video": "비디오",
       "audio": "오디오",
       "generatedText": "생성된 텍스트",
-      "fullPrompt": "전체 프롬프트"
+      "fullPrompt": "전체 프롬프트",
+      "reuseConfiguration": "구성 재사용",
+      "reuseConfigurationUnavailable": "이 작업에 사용할 수 있는 구성이 없습니다."
     },
     "tabs": {
       "draft": "초안",
@@ -368,6 +370,11 @@
         "title": "실패한 작업 모두 지우기",
         "message": "대기열에서 실패한 작업을 모두 지우시겠습니까?",
         "confirm": "모두 지우기"
+      },
+      "reuseConfiguration": {
+        "title": "구성 재사용",
+        "message": "현재 워크플로를 이 작업의 구성으로 바꾸시겠습니까?",
+        "confirm": "재사용"
       }
     }
   }

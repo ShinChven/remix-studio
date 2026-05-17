@@ -28,7 +28,9 @@
       "video": "视频",
       "audio": "音频",
       "generatedText": "生成文本",
-      "fullPrompt": "完整提示词"
+      "fullPrompt": "完整提示词",
+      "reuseConfiguration": "重用配置",
+      "reuseConfigurationUnavailable": "此任务的配置不可用。"
     },
     "tabs": {
       "draft": "草稿",
@@ -368,6 +370,11 @@
         "title": "清除所有失败任务",
         "message": "确定要从队列中清除所有失败任务吗？",
         "confirm": "清除所有失败项"
+      },
+      "reuseConfiguration": {
+        "title": "重用配置",
+        "message": "这将用此任务的配置替换您当前的工作流。确定吗？",
+        "confirm": "重用"
       }
     }
   }

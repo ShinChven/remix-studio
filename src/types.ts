@@ -1286,6 +1286,7 @@ export interface Job {
   sound?: 'on' | 'off';
   steps?: number;
   guidance?: number;
+  workflowSnapshot?: WorkflowItem[];
 }
 
 export interface AlbumItem {

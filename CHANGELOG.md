@@ -2,6 +2,13 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.10.2] - 2026-05-17
+
+### Added
+
+- **Reuse Job Configuration**: Added the ability to restore a historical job's exact workflow snapshot and generation settings (model, provider, aspect ratio, etc.) back to the active project.
+- **Workflow Snapshots**: Implemented database support for capturing and storing the raw JSON workflow structure at the moment of job creation.
+
 ## [1.10.1] - 2026-05-17
 
 ### Changed

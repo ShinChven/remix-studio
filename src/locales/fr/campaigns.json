@@ -1,32 +1,33 @@
 {
-  "title": "Campaigns",
-  "description": "Plan, schedule, and manage multi-channel social media marketing campaigns with AI content assistance and real-time publishing tracking.",
-  "allCampaigns": "All Campaigns",
-  "searchPlaceholder": "Search campaigns...",
-  "noCampaigns": "No campaigns found",
-  "createOne": "Create one now",
-  "recentlyPosted": "Recently Posted",
-  "scheduledPosts": "Scheduled Posts",
-  "upcomingQueue": "Upcoming Queue",
-  "viewAllHistory": "View All History",
-  "viewAllScheduled": "View All Scheduled",
-  "openCalendar": "Open Calendar",
+  "title": "Campagnes",
+  "description": "Planifiez, programmez et gérez des campagnes de marketing sur les réseaux sociaux multicanaux avec l'assistance de contenu IA et un suivi de publication en temps réel.",
+  "channels": "Canaux",
+  "allCampaigns": "Toutes les campagnes",
+  "searchPlaceholder": "Rechercher des campagnes...",
+  "noCampaigns": "Aucune campagne trouvée",
+  "createOne": "En créer une maintenant",
+  "recentlyPosted": "Récemment publié",
+  "scheduledPosts": "Messages programmés",
+  "upcomingQueue": "File d'attente à venir",
+  "viewAllHistory": "Voir tout l'historique",
+  "viewAllScheduled": "Voir tout ce qui est programmé",
+  "openCalendar": "Ouvrir le calendrier",
   "status": {
-    "active": "Active Campaign",
-    "paused": "Paused",
-    "setup": "Setup"
+    "active": "Campagne active",
+    "paused": "En pause",
+    "setup": "Installation"
   },
   "menu": {
-    "edit": "Edit Details",
-    "pause": "Pause Campaign",
-    "resume": "Resume Campaign",
-    "delete": "Delete"
+    "edit": "Modifier les détails",
+    "pause": "Suspendre la campagne",
+    "resume": "Reprendre la campagne",
+    "delete": "Supprimer"
   },
   "deleteDialog": {
-    "title": "Delete Campaign",
-    "description": "Delete \"{{name}}\"? This cannot be undone and will delete all associated posts.",
-    "confirm": "Delete Campaign",
-    "cancel": "Cancel",
-    "deleting": "Deleting..."
+    "title": "Supprimer la campagne",
+    "description": "Supprimer « {{name}} » ? Cela ne peut pas être annulé et supprimera tous les messages associés.",
+    "confirm": "Supprimer la campagne",
+    "cancel": "Annuler",
+    "deleting": "Suppression en cours..."
   }
 }

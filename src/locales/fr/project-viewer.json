@@ -28,7 +28,9 @@
       "video": "Vidéo",
       "audio": "Audio",
       "generatedText": "Texte généré",
-      "fullPrompt": "Prompt complet"
+      "fullPrompt": "Prompt complet",
+      "reuseConfiguration": "Réutiliser la configuration",
+      "reuseConfigurationUnavailable": "La configuration n'est pas disponible pour cette tâche."
     },
     "tabs": {
       "draft": "Brouillon",
@@ -368,6 +370,11 @@
         "title": "Effacer toutes les tâches en échec",
         "message": "Voulez-vous vraiment effacer toutes les tâches en échec de la file ?",
         "confirm": "Tout effacer"
+      },
+      "reuseConfiguration": {
+        "title": "Réutiliser la configuration",
+        "message": "Cela remplacera votre workflow actuel par la configuration de cette tâche. Êtes-vous sûr ?",
+        "confirm": "Réutiliser"
       }
     }
   }

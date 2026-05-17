@@ -27,6 +27,7 @@ interface DraftsTabProps {
   onSwitchToAlbum?: () => void;
   projectType?: ProjectType;
   projectName?: string;
+  onReuse?: (job: Job) => void;
 }
 
 export function DraftsTab({
@@ -49,6 +50,7 @@ export function DraftsTab({
   onSwitchToAlbum,
   projectType = 'image',
   projectName = 'Untitled Project',
+  onReuse,
 }: DraftsTabProps) {
   const { t } = useTranslation();
   const displayAlbumItems = albumItems.slice(0, 5);
@@ -171,6 +173,7 @@ export function DraftsTab({
                   modelName={getModelName(task.providerId, task.modelConfigId)}
                   onToggleExpand={toggleJobExpand}
                   onToggleSelect={(id, isShiftPressed) => toggleDraftSelection(id, isShiftPressed, scopeIds)}
+                  onReuse={onReuse}
                   metaChips={
                     <>
                       {task.aspectRatio && (

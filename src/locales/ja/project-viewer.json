@@ -28,7 +28,9 @@
       "video": "動画",
       "audio": "音声",
       "generatedText": "生成テキスト",
-      "fullPrompt": "完全なプロンプト"
+      "fullPrompt": "完全なプロンプト",
+      "reuseConfiguration": "構成を再利用",
+      "reuseConfigurationUnavailable": "このジョブの構成は利用できません。"
     },
     "tabs": {
       "draft": "下書き",
@@ -368,6 +370,11 @@
         "title": "失敗したジョブをすべてクリア",
         "message": "キューから失敗したジョブをすべてクリアしてもよろしいですか？",
         "confirm": "すべてクリア"
+      },
+      "reuseConfiguration": {
+        "title": "構成を再利用",
+        "message": "現在のワークフローをこのジョブの構成で置き換えます。よろしいですか？",
+        "confirm": "再利用"
       }
     }
   }

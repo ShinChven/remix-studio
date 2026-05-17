@@ -863,6 +863,7 @@ export class ProjectRepository {
           background: (job as any).background ?? null,
           filename: job.filename ?? null,
           providerId: job.providerId ?? null,
+          workflowSnapshot: job.workflowSnapshot ?? null,
         };
 
         // On retry, clear the prior error so the UI doesn't keep showing it.
@@ -911,6 +912,7 @@ export class ProjectRepository {
           size: job.size != null ? BigInt(job.size) : null,
           createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
           providerId: job.providerId ?? null,
+          workflowSnapshot: job.workflowSnapshot ?? null,
         };
         await this.prisma.job.create({ data: createData as any });
       }

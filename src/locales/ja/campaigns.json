@@ -1,32 +1,33 @@
 {
-  "title": "Campaigns",
-  "description": "Plan, schedule, and manage multi-channel social media marketing campaigns with AI content assistance and real-time publishing tracking.",
-  "allCampaigns": "All Campaigns",
-  "searchPlaceholder": "Search campaigns...",
-  "noCampaigns": "No campaigns found",
-  "createOne": "Create one now",
-  "recentlyPosted": "Recently Posted",
-  "scheduledPosts": "Scheduled Posts",
-  "upcomingQueue": "Upcoming Queue",
-  "viewAllHistory": "View All History",
-  "viewAllScheduled": "View All Scheduled",
-  "openCalendar": "Open Calendar",
+  "title": "キャンペーン",
+  "description": "マルチチャネルのソーシャルメディアマーケティングキャンペーンを企画、予約、管理します。AIコンテンツアシスタンスとリアルタイムの公開追跡機能を備えています。",
+  "channels": "チャネル",
+  "allCampaigns": "すべてのキャンペーン",
+  "searchPlaceholder": "キャンペーンを検索...",
+  "noCampaigns": "キャンペーンが見つかりません",
+  "createOne": "今すぐ作成",
+  "recentlyPosted": "最近の投稿",
+  "scheduledPosts": "予約済みの投稿",
+  "upcomingQueue": "今後のキュー",
+  "viewAllHistory": "すべての履歴を表示",
+  "viewAllScheduled": "すべての予約を表示",
+  "openCalendar": "カレンダーを開く",
   "status": {
-    "active": "Active Campaign",
-    "paused": "Paused",
-    "setup": "Setup"
+    "active": "実行中",
+    "paused": "一時停止中",
+    "setup": "セットアップ中"
   },
   "menu": {
-    "edit": "Edit Details",
-    "pause": "Pause Campaign",
-    "resume": "Resume Campaign",
-    "delete": "Delete"
+    "edit": "詳細を編集",
+    "pause": "キャンペーンを一時停止",
+    "resume": "キャンペーンを再開",
+    "delete": "削除"
   },
   "deleteDialog": {
-    "title": "Delete Campaign",
-    "description": "Delete \"{{name}}\"? This cannot be undone and will delete all associated posts.",
-    "confirm": "Delete Campaign",
-    "cancel": "Cancel",
-    "deleting": "Deleting..."
+    "title": "キャンペーンを削除",
+    "description": "「{{name}}」を削除しますか？この操作は取り消せず、関連するすべての投稿も削除されます。",
+    "confirm": "キャンペーンを削除",
+    "cancel": "キャンセル",
+    "deleting": "削除中..."
   }
 }

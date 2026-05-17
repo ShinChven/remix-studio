@@ -10,60 +10,60 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String?
-  role         String   @default("user")
-  status       String   @default("disabled")
-  createdByUserId String?
-  sessionVersion Int    @default(0)
-  storageLimit BigInt   @default(5368709120) // 5GB in bytes
-  twoFactorEnabled       Boolean  @default(false)
-  twoFactorSecret        String?
-  twoFactorTempSecret    String?
-  twoFactorTempExpiresAt DateTime?
+  id                      String    @id @default(uuid())
+  email                   String    @unique
+  passwordHash            String?
+  role                    String    @default("user")
+  status                  String    @default("disabled")
+  createdByUserId         String?
+  sessionVersion          Int       @default(0)
+  storageLimit            BigInt    @default(5368709120) // 5GB in bytes
+  twoFactorEnabled        Boolean   @default(false)
+  twoFactorSecret         String?
+  twoFactorTempSecret     String?
+  twoFactorTempExpiresAt  DateTime?
   googleDriveRefreshToken String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  lastLoginAt  DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  lastLoginAt             DateTime?
 
-  providers     Provider[]
-  libraries     Library[]
-  projects      Project[]
-  trashItems    TrashItem[]
-  exportTasks   ExportTask[]
-  deliveryTasks DeliveryTask[]
-  passkeys      PasskeyCredential[]
+  providers               Provider[]
+  libraries               Library[]
+  projects                Project[]
+  trashItems              TrashItem[]
+  exportTasks             ExportTask[]
+  deliveryTasks           DeliveryTask[]
+  passkeys                PasskeyCredential[]
   oauthAuthorizationCodes OAuthAuthorizationCode[]
   oauthAccessTokens       OAuthAccessToken[]
   oauthClients            OAuthClient[]
   personalAccessTokens    PersonalAccessToken[]
-  sessions              UserSession[]
-  assistantConversations AssistantConversation[]
-  socialAccounts        SocialAccount[]
-  campaigns             Campaign[]
-  posts                 Post[]
-  postWatermarkSetting  PostWatermarkSetting?
-  stores                Store[]
-  products              Product[]
-  storeUploadHistory    StoreUploadHistory[]
-  createdByUser User? @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  createdUsers  User[] @relation("UserCreation")
-  createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
-  usedInviteCodes    InviteCode[] @relation("InviteCodeUser")
-  inviteRedemptions  InviteRedemption[]
+  sessions                UserSession[]
+  assistantConversations  AssistantConversation[]
+  socialAccounts          SocialAccount[]
+  campaigns               Campaign[]
+  posts                   Post[]
+  postWatermarkSetting    PostWatermarkSetting?
+  stores                  Store[]
+  products                Product[]
+  storeUploadHistory      StoreUploadHistory[]
+  createdByUser           User?                    @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdUsers            User[]                   @relation("UserCreation")
+  createdInviteCodes      InviteCode[]             @relation("InviteCodeCreator")
+  usedInviteCodes         InviteCode[]             @relation("InviteCodeUser")
+  inviteRedemptions       InviteRedemption[]
 
   @@index([createdByUserId])
 }
 
 model UserSession {
-  id           String   @id @default(uuid())
-  userId       String
-  tokenHash    String   @unique
-  userAgent    String?
-  ipAddress    String?
-  expiresAt    DateTime
-  createdAt    DateTime @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -72,21 +72,21 @@ model UserSession {
 }
 
 model InviteCode {
-  id              String   @id @default(uuid())
-  codeHash        String   @unique
+  id              String    @id @default(uuid())
+  codeHash        String    @unique
   codeEncrypted   String
   note            String?
-  membershipTier  String   @default("free")
-  maxUses         Int      @default(1)
+  membershipTier  String    @default("free")
+  maxUses         Int       @default(1)
   createdByUserId String
   usedByUserId    String?
   usedByEmail     String?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
   usedAt          DateTime?
   expiresAt       DateTime?
 
-  createdByUser User  @relation("InviteCodeCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
-  usedByUser    User? @relation("InviteCodeUser", fields: [usedByUserId], references: [id], onDelete: SetNull)
+  createdByUser User               @relation("InviteCodeCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  usedByUser    User?              @relation("InviteCodeUser", fields: [usedByUserId], references: [id], onDelete: SetNull)
   redemptions   InviteRedemption[]
 
   @@index([createdByUserId])
@@ -108,15 +108,15 @@ model InviteRedemption {
 }
 
 model PasskeyCredential {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   userId       String
   name         String
-  credentialId String   @unique
-  publicKey    String   @db.Text
+  credentialId String    @unique
+  publicKey    String    @db.Text
   algorithm    String
-  counter      BigInt   @default(0)
+  counter      BigInt    @default(0)
   transports   Json?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
   lastUsedAt   DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -125,16 +125,16 @@ model PasskeyCredential {
 }
 
 model Provider {
-  id              String   @id @default(uuid())
-  userId          String
-  name            String
-  type            String
-  apiKeyEncrypted String?
+  id                 String   @id @default(uuid())
+  userId             String
+  name               String
+  type               String
+  apiKeyEncrypted    String?
   apiSecretEncrypted String?
-  apiUrl          String?
-  concurrency     Int      @default(1)
-  models          Json?
-  createdAt       DateTime @default(now())
+  apiUrl             String?
+  concurrency        Int      @default(1)
+  models             Json?
+  createdAt          DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -144,14 +144,14 @@ model Provider {
 }
 
 model Library {
-  id        String   @id @default(uuid())
-  userId    String
-  name      String
-  description String? @db.Text
-  type      String
-  pinnedAt  DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id          String    @id @default(uuid())
+  userId      String
+  name        String
+  description String?   @db.Text
+  type        String
+  pinnedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
 
   user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   items LibraryItem[]
@@ -166,7 +166,7 @@ model LibraryItem {
   libraryId    String
   content      String   @db.Text
   title        String?
-  tags         Json?    // String[]
+  tags         Json? // String[]
   thumbnailUrl String?
   optimizedUrl String?
   size         BigInt?
@@ -180,29 +180,29 @@ model LibraryItem {
 }
 
 model Project {
-  id           String   @id @default(uuid())
-  userId       String
-  name         String
-  description  String?  @db.Text
-  type         String   @default("image") // "image", "text", or "video"
-  status       String   @default("active") // "active" or "archived"
-  providerId   String?
-  aspectRatio  String?
-  quality      String?
-  format       String?
-  shuffle      Boolean?
-  modelConfigId String?
-  prefix       String?
-  background   String?
-  systemPrompt String?  @db.Text
-  temperature  Float?
-  maxTokens    Int?
+  id             String   @id @default(uuid())
+  userId         String
+  name           String
+  description    String?  @db.Text
+  type           String   @default("image") // "image", "text", or "video"
+  status         String   @default("active") // "active" or "archived"
+  providerId     String?
+  aspectRatio    String?
+  quality        String?
+  format         String?
+  shuffle        Boolean?
+  modelConfigId  String?
+  prefix         String?
+  background     String?
+  systemPrompt   String?  @db.Text
+  temperature    Float?
+  maxTokens      Int?
   // Video generation defaults
-  duration     Int?     // seconds
-  resolution   String?  // '720p' | '1080p' | '4k'
-  sound        String?  // 'on' | 'off'
+  duration       Int? // seconds
+  resolution     String? // '720p' | '1080p' | '4k'
+  sound          String? // 'on' | 'off'
   lastQueueCount Int?
-  createdAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   jobs          Job[]
@@ -215,35 +215,36 @@ model Project {
 }
 
 model Job {
-  id            String   @id @default(uuid())
-  projectId     String
-  userId        String
-  prompt        String   @db.Text
-  status        String   @default("pending")
-  imageContexts Json?    // String[]
-  videoContexts Json?    // String[]
-  audioContexts Json?    // String[]
-  imageUrl      String?
-  thumbnailUrl  String?
-  optimizedUrl  String?
-  error         String?  @db.Text
-  providerId    String?
-  modelConfigId String?
-  aspectRatio   String?
-  quality       String?
-  format        String?
-  background    String?
-  resultText    String?  @db.Text
-  taskId        String?
-  filename      String?
-  size          BigInt?
-  optimizedSize BigInt?
-  thumbnailSize BigInt?
+  id               String   @id @default(uuid())
+  projectId        String
+  userId           String
+  prompt           String   @db.Text
+  status           String   @default("pending")
+  imageContexts    Json? // String[]
+  videoContexts    Json? // String[]
+  audioContexts    Json? // String[]
+  imageUrl         String?
+  thumbnailUrl     String?
+  optimizedUrl     String?
+  error            String?  @db.Text
+  providerId       String?
+  modelConfigId    String?
+  aspectRatio      String?
+  quality          String?
+  format           String?
+  background       String?
+  resultText       String?  @db.Text
+  taskId           String?
+  filename         String?
+  size             BigInt?
+  optimizedSize    BigInt?
+  thumbnailSize    BigInt?
   // Video generation
-  duration      Int?     // seconds
-  resolution    String?  // '720p' | '1080p' | '4k'
-  sound         String?  // 'on' | 'off'
-  createdAt     DateTime @default(now())
+  duration         Int? // seconds
+  resolution       String? // '720p' | '1080p' | '4k'
+  sound            String? // 'on' | 'off'
+  workflowSnapshot Json? // WorkflowItem[]
+  createdAt        DateTime @default(now())
 
   project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   provider Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
@@ -261,7 +262,7 @@ model WorkflowItem {
   order        Int     @default(0)
   thumbnailUrl String?
   optimizedUrl String?
-  selectedTags Json?   // String[]
+  selectedTags Json? // String[]
   disabled     Boolean @default(false)
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -276,9 +277,9 @@ model AlbumItem {
   jobId         String?
   prompt        String?  @db.Text
   textContent   String?  @db.Text
-  imageContexts Json?    // String[]
-  videoContexts Json?    // String[]
-  audioContexts Json?    // String[]
+  imageContexts Json? // String[]
+  videoContexts Json? // String[]
+  audioContexts Json? // String[]
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?
@@ -291,8 +292,8 @@ model AlbumItem {
   optimizedSize BigInt?
   thumbnailSize BigInt?
   // Video-specific
-  duration      Int?     // seconds
-  resolution    String?  // '720p' | '1080p' | '4k'
+  duration      Int? // seconds
+  resolution    String? // '720p' | '1080p' | '4k'
   createdAt     DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -309,9 +310,9 @@ model TrashItem {
   jobId         String?
   prompt        String?  @db.Text
   textContent   String?  @db.Text
-  imageContexts Json?    // String[]
-  videoContexts Json?    // String[]
-  audioContexts Json?    // String[]
+  imageContexts Json? // String[]
+  videoContexts Json? // String[]
+  audioContexts Json? // String[]
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?
@@ -341,7 +342,7 @@ model ExportTask {
   downloadUrl String?
   error       String?   @db.Text
   size        BigInt?
-  data        Json?     // Flexible blob for any extra fields
+  data        Json? // Flexible blob for any extra fields
   createdAt   DateTime  @default(now())
   expiresAt   DateTime?
   // Queue fields
@@ -366,7 +367,7 @@ model DeliveryTask {
   destination      String    @default("drive") // "drive" | "gumroad"
   productId        String?
   status           String    @default("pending")
-  phase            String?   // For multi-step deliveries (e.g. "uploading", "creating", "covers", "publishing")
+  phase            String? // For multi-step deliveries (e.g. "uploading", "creating", "covers", "publishing")
   bytesTransferred BigInt    @default(0)
   totalBytes       BigInt?
   externalId       String?
@@ -389,27 +390,27 @@ model DeliveryTask {
 }
 
 model Product {
-  id                String    @id @default(uuid())
-  userId            String
-  storeId           String
-  exportTaskId      String?
-  title             String
-  description       String?   @db.Text
-  priceCents        Int       @default(0)
-  currency          String    @default("usd")
-  taxonomyId        String?
-  tags              Json?     // Array of tag strings
-  coverItems        Json?     // Array of { albumItemId, useRaw }
-  gumroadProductId  String?
-  gumroadFileUrl    String?   @db.Text
-  gumroadShortUrl   String?
-  status            String    @default("draft") // "draft" | "publishing" | "published" | "failed"
-  errorMsg          String?   @db.Text
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id               String   @id @default(uuid())
+  userId           String
+  storeId          String
+  exportTaskId     String?
+  title            String
+  description      String?  @db.Text
+  priceCents       Int      @default(0)
+  currency         String   @default("usd")
+  taxonomyId       String?
+  tags             Json? // Array of tag strings
+  coverItems       Json? // Array of { albumItemId, useRaw }
+  gumroadProductId String?
+  gumroadFileUrl   String?  @db.Text
+  gumroadShortUrl  String?
+  status           String   @default("draft") // "draft" | "publishing" | "published" | "failed"
+  errorMsg         String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  store         Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store         Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
   deliveryTasks DeliveryTask[]
   uploadHistory StoreUploadHistory[]
 
@@ -419,18 +420,18 @@ model Product {
 }
 
 model StoreUploadHistory {
-  id               String    @id @default(uuid())
-  userId           String
-  storeId          String?
-  productId        String?
-  exportTaskId     String?
-  platform         String    // "gumroad"
-  title            String?   // Product title at time of upload
-  status           String    // "success" | "failed"
-  externalId       String?   // Provider product id (e.g. gumroad product id)
-  targetUrl        String?   @db.Text // The provider product page URL
-  error            String?   @db.Text
-  createdAt        DateTime  @default(now())
+  id           String   @id @default(uuid())
+  userId       String
+  storeId      String?
+  productId    String?
+  exportTaskId String?
+  platform     String // "gumroad"
+  title        String? // Product title at time of upload
+  status       String // "success" | "failed"
+  externalId   String? // Provider product id (e.g. gumroad product id)
+  targetUrl    String?  @db.Text // The provider product page URL
+  error        String?  @db.Text
+  createdAt    DateTime @default(now())
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   store   Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
@@ -444,21 +445,21 @@ model StoreUploadHistory {
 // === MCP OAuth 2.0 ===
 
 model OAuthClient {
-  id                      String   @id @default(uuid())
-  clientId                String   @unique
+  id                      String    @id @default(uuid())
+  clientId                String    @unique
   createdByUserId         String?
   clientSecretHash        String?
   clientName              String?
-  redirectUris            Json     // String[]
-  grantTypes              Json     // String[] e.g. ["authorization_code"]
-  responseTypes           Json     // String[] e.g. ["code"]
-  tokenEndpointAuthMethod String   @default("client_secret_basic")
+  redirectUris            Json // String[]
+  grantTypes              Json // String[] e.g. ["authorization_code"]
+  responseTypes           Json // String[] e.g. ["code"]
+  tokenEndpointAuthMethod String    @default("client_secret_basic")
   scope                   String?
-  clientIdIssuedAt        DateTime @default(now())
+  clientIdIssuedAt        DateTime  @default(now())
   clientSecretExpiresAt   DateTime?
-  createdAt               DateTime @default(now())
+  createdAt               DateTime  @default(now())
 
-  createdBy          User? @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdBy          User?                    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   authorizationCodes OAuthAuthorizationCode[]
   accessTokens       OAuthAccessToken[]
 
@@ -486,16 +487,16 @@ model OAuthAuthorizationCode {
 }
 
 model OAuthAccessToken {
-  id           String    @id @default(uuid())
-  token        String    @unique
-  clientId     String
-  userId       String
-  scope        String?
-  expiresAt    DateTime
-  refreshToken String?   @unique
+  id               String    @id @default(uuid())
+  token            String    @unique
+  clientId         String
+  userId           String
+  scope            String?
+  expiresAt        DateTime
+  refreshToken     String?   @unique
   refreshExpiresAt DateTime?
-  revoked      Boolean   @default(false)
-  createdAt    DateTime  @default(now())
+  revoked          Boolean   @default(false)
+  createdAt        DateTime  @default(now())
 
   client OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
   user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -510,7 +511,7 @@ model PersonalAccessToken {
   userId      String
   name        String
   tokenHash   String    @unique
-  tokenPrefix String    // first 8 chars for display (e.g. "pat_xxxx...")
+  tokenPrefix String // first 8 chars for display (e.g. "pat_xxxx...")
   scope       String    @default("mcp:tools")
   lastUsedAt  DateTime?
   expiresAt   DateTime?
@@ -540,9 +541,9 @@ model AssistantConversation {
   updatedAt     DateTime  @default(now()) @updatedAt
   archivedAt    DateTime?
 
-  user                   User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages               AssistantMessage[]
-  pendingConfirmations   AssistantPendingConfirmation[]
+  user                 User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages             AssistantMessage[]
+  pendingConfirmations AssistantPendingConfirmation[]
 
   @@index([userId])
   @@index([userId, updatedAt])
@@ -603,22 +604,22 @@ model AssistantPendingConfirmation {
 model SocialAccount {
   id               String    @id @default(uuid())
   userId           String
-  platform         String    // "twitter", "linkedin", "facebook"
-  accountId        String    // Remote provider ID (e.g., Twitter user ID)
-  profileName      String?   // Display name
+  platform         String // "twitter", "linkedin", "facebook"
+  accountId        String // Remote provider ID (e.g., Twitter user ID)
+  profileName      String? // Display name
   avatarUrl        String?
   accessToken      String    @db.Text // Encrypted at rest
   refreshToken     String?   @db.Text // Encrypted at rest
-  scopes           Json?     // Array of granted OAuth scopes
+  scopes           Json? // Array of granted OAuth scopes
   expiresAt        DateTime?
   status           String    @default("active") // "active", "disconnected", "expired"
   rateLimitResetAt DateTime? // Optional: Track when the next API call is allowed globally
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  campaigns        Campaign[] // Implicit many-to-many relation
-  postExecutions   PostExecution[]
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaigns      Campaign[] // Implicit many-to-many relation
+  postExecutions PostExecution[]
 
   @@unique([userId, platform, accountId])
   @@index([status])
@@ -627,8 +628,8 @@ model SocialAccount {
 model Store {
   id           String    @id @default(uuid())
   userId       String
-  platform     String    // "gumroad"
-  accountId    String    // Remote provider user ID
+  platform     String // "gumroad"
+  accountId    String // Remote provider user ID
   profileName  String?
   email        String?
   avatarUrl    String?
@@ -640,8 +641,8 @@ model Store {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products     Product[]
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products      Product[]
   uploadHistory StoreUploadHistory[]
 
   @@unique([userId, platform, accountId])
@@ -649,18 +650,18 @@ model Store {
 }
 
 model Campaign {
-  id             String          @id @default(uuid())
-  userId         String
-  name           String
-  description    String?         @db.Text
-  status         String          @default("active") // "active", "completed", "archived"
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  description String?  @db.Text
+  status      String   @default("active") // "active", "completed", "archived"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   posts          Post[]
   socialAccounts SocialAccount[] // Implicit many-to-many: target channels
-  
+
   @@index([userId, status])
 }
 
@@ -677,39 +678,39 @@ model PostWatermarkSetting {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model Post {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   campaignId  String
   userId      String
-  textContent String?  @db.Text
-  status      String   @default("draft") // "draft", "scheduled", "completed", "failed"
+  textContent String?   @db.Text
+  status      String    @default("draft") // "draft", "scheduled", "completed", "failed"
   scheduledAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  campaign    Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  media       PostMedia[]
-  executions  PostExecution[] 
-  
+  campaign   Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media      PostMedia[]
+  executions PostExecution[]
+
   // High-frequency index for the polling engine looking for due posts
-  @@index([status, scheduledAt]) 
+  @@index([status, scheduledAt])
 }
 
 model PostMedia {
   id           String   @id @default(uuid())
   postId       String
-  sourceUrl    String   // Reference to internal Library/Album S3 key
-  processedUrl String?  // Target S3 key after format/compression
+  sourceUrl    String // Reference to internal Library/Album S3 key
+  processedUrl String? // Target S3 key after format/compression
   thumbnailUrl String?
-  type         String   // "image", "video", "gif"
+  type         String // "image", "video", "gif"
   status       String   @default("pending") // "pending", "processing", "ready", "failed"
-  quality      String   @default("high")    // "raw", "high", "medium", "low"
+  quality      String   @default("high") // "raw", "high", "medium", "low"
   mimeType     String?
   width        Int?
   height       Int?
@@ -718,32 +719,32 @@ model PostMedia {
   errorMsg     String?  @db.Text
   createdAt    DateTime @default(now())
 
-  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([postId, position])
 }
 
 model PostExecution {
-  id               String   @id @default(uuid())
-  postId           String
-  socialAccountId  String
-  status           String   @default("pending") // "pending", "publishing", "posted", "failed"
-  externalId       String?  // The Tweet ID or LinkedIn URN
-  externalUrl      String?  // Direct link to the public post
-  errorMsg         String?  @db.Text
-  
-  // Resilience & Backoff fields
-  attempts         Int      @default(0)
-  lastAttemptAt    DateTime?
-  nextAttemptAt    DateTime? // For rate limit and exponential backoff
-  
-  publishedAt      DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String  @id @default(uuid())
+  postId          String
+  socialAccountId String
+  status          String  @default("pending") // "pending", "publishing", "posted", "failed"
+  externalId      String? // The Tweet ID or LinkedIn URN
+  externalUrl     String? // Direct link to the public post
+  errorMsg        String? @db.Text
 
-  post             Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
-  socialAccount    SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  // Resilience & Backoff fields
+  attempts      Int       @default(0)
+  lastAttemptAt DateTime?
+  nextAttemptAt DateTime? // For rate limit and exponential backoff
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  post          Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  socialAccount SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
 
   // Critical index for the execution worker loop
   @@index([status, nextAttemptAt])

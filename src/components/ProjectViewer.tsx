@@ -101,6 +101,39 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
   const [itemToRemoveId, setItemToRemoveId] = useState<string | null>(null);
   const [jobToDeleteId, setJobToDeleteId] = useState<string | null>(null);
+  const [jobToReuse, setJobToReuse] = useState<Job | null>(null);
+
+  const handleReuseWorkflow = (job: Job) => {
+    if (!job.workflowSnapshot || job.workflowSnapshot.length === 0) {
+      toast.error(t('projectViewer.common.reuseConfigurationUnavailable'));
+      return;
+    }
+    setJobToReuse(job);
+  };
+
+  const confirmReuseWorkflow = () => {
+    if (!jobToReuse || !jobToReuse.workflowSnapshot) return;
+
+    const updated = {
+      ...localProject,
+      workflow: jobToReuse.workflowSnapshot,
+      providerId: jobToReuse.providerId || localProject.providerId,
+      modelConfigId: jobToReuse.modelConfigId || localProject.modelConfigId,
+      aspectRatio: jobToReuse.aspectRatio || localProject.aspectRatio,
+      quality: jobToReuse.quality || localProject.quality,
+      format: jobToReuse.format || localProject.format,
+      background: jobToReuse.background || localProject.background,
+      duration: jobToReuse.duration || localProject.duration,
+      resolution: jobToReuse.resolution || localProject.resolution,
+      sound: jobToReuse.sound || localProject.sound,
+    };
+
+    setLocalProject(updated);
+    onUpdate(updated);
+    setJobToReuse(null);
+    toast.success(t('projectViewer.common.reuseConfiguration'));
+  };
+
   const [showDeleteSelectedModal, setShowDeleteSelectedModal] = useState(false);
   const [showDeleteAllDraftsModal, setShowDeleteAllDraftsModal] = useState(false);
   const [editingItem, setEditingItem] = useState<WorkflowItemType | null>(null);
@@ -653,7 +686,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               sound: localProject.sound || 'on',
               format: 'mp4' as const,
             } : {}),
-            filename
+            filename,
+            workflowSnapshot: localProject.workflow || []
           });
         }
 
@@ -1167,6 +1201,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               onSwitchToAlbum={() => setActiveTab('album')}
               projectType={localProject.type || 'image'}
               projectName={localProject.name}
+              onReuse={handleReuseWorkflow}
             />
           )}
           {activeTab === 'queue' && (
@@ -1176,6 +1211,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               clearAllFailed={() => setShowClearAllFailedModal(true)} expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand}
               getProviderName={getProviderName} getModelName={getModelName} runJob={runJob}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
+              onReuse={handleReuseWorkflow}
             />
           )}
           {activeTab === 'completed' && (
@@ -1186,6 +1222,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               getProviderName={getProviderName} getModelName={getModelName}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
               projectType={localProject.type || 'image'}
+              onReuse={handleReuseWorkflow}
             />
           )}
           {activeTab === 'album' && (
@@ -1204,6 +1241,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         </div>
       </div>
 
+      <ConfirmModal isOpen={jobToReuse !== null} onClose={() => setJobToReuse(null)} onConfirm={confirmReuseWorkflow} title={t('projectViewer.confirm.reuseConfiguration.title')} message={t('projectViewer.confirm.reuseConfiguration.message')} confirmText={t('projectViewer.confirm.reuseConfiguration.confirm')} type="info" />
       <ConfirmModal isOpen={itemToRemoveId !== null} onClose={() => setItemToRemoveId(null)} onConfirm={confirmRemoveWorkflowItem} title={t('projectViewer.confirm.removeWorkflowItem.title')} message={t('projectViewer.confirm.removeWorkflowItem.message')} confirmText={t('projectViewer.confirm.removeWorkflowItem.confirm')} type="danger" />
       <PromptModal item={editingItem} onClose={() => setEditingItem(null)} onSave={(value) => { if (editingItem) updateWorkflowItem(editingItem.id, value); setEditingItem(null); }} />
       <PromptLimitModal

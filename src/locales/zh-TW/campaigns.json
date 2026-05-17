@@ -1,32 +1,33 @@
 {
-  "title": "Campaigns",
-  "description": "Plan, schedule, and manage multi-channel social media marketing campaigns with AI content assistance and real-time publishing tracking.",
-  "allCampaigns": "All Campaigns",
-  "searchPlaceholder": "Search campaigns...",
-  "noCampaigns": "No campaigns found",
-  "createOne": "Create one now",
-  "recentlyPosted": "Recently Posted",
-  "scheduledPosts": "Scheduled Posts",
-  "upcomingQueue": "Upcoming Queue",
-  "viewAllHistory": "View All History",
-  "viewAllScheduled": "View All Scheduled",
-  "openCalendar": "Open Calendar",
+  "title": "行銷活動",
+  "description": "規劃、定時並管理多通路社交媒體行銷活動，支持 AI 內容創作助手和實時發布進度追蹤。",
+  "channels": "通路管理",
+  "allCampaigns": "所有活動",
+  "searchPlaceholder": "搜尋活動...",
+  "noCampaigns": "未找到活動",
+  "createOne": "現在建立一個",
+  "recentlyPosted": "最近發布",
+  "scheduledPosts": "定時發布",
+  "upcomingQueue": "待發布佇列",
+  "viewAllHistory": "查看所有歷史",
+  "viewAllScheduled": "查看所有定時",
+  "openCalendar": "打開日曆",
   "status": {
-    "active": "Active Campaign",
-    "paused": "Paused",
-    "setup": "Setup"
+    "active": "正在進行",
+    "paused": "已暫停",
+    "setup": "待設定"
   },
   "menu": {
-    "edit": "Edit Details",
-    "pause": "Pause Campaign",
-    "resume": "Resume Campaign",
-    "delete": "Delete"
+    "edit": "編輯詳情",
+    "pause": "暫停活動",
+    "resume": "恢復活動",
+    "delete": "刪除"
   },
   "deleteDialog": {
-    "title": "Delete Campaign",
-    "description": "Delete \"{{name}}\"? This cannot be undone and will delete all associated posts.",
-    "confirm": "Delete Campaign",
-    "cancel": "Cancel",
-    "deleting": "Deleting..."
+    "title": "刪除活動",
+    "description": "刪除「{{name}}」？此操作無法撤銷，且將刪除所有相關帖子。",
+    "confirm": "刪除活動",
+    "cancel": "取消",
+    "deleting": "正在刪除..."
   }
 }

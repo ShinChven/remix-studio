@@ -28,7 +28,9 @@
       "video": "Video",
       "audio": "Audio",
       "generatedText": "Generated Text",
-      "fullPrompt": "Full Prompt"
+      "fullPrompt": "Full Prompt",
+      "reuseConfiguration": "Reuse Configuration",
+      "reuseConfigurationUnavailable": "Configuration is not available for this job."
     },
     "tabs": {
       "draft": "Draft",
@@ -368,6 +370,11 @@
         "title": "Clear All Failed Jobs",
         "message": "Are you sure you want to clear all failed jobs from the queue?",
         "confirm": "Clear All Failed"
+      },
+      "reuseConfiguration": {
+        "title": "Reuse Configuration",
+        "message": "This will replace your current workflow with the configuration from this job. Are you sure?",
+        "confirm": "Reuse"
       }
     }
   }

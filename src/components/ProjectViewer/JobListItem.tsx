@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckSquare, ChevronDown, Square } from 'lucide-react';
+import { CheckSquare, ChevronDown, Square, RefreshCw } from 'lucide-react';
 import { Job } from '../../types';
 import { InfoChip } from './InfoChip';
 
@@ -19,6 +19,7 @@ interface JobListItemProps {
   expandedContent?: React.ReactNode;
   onToggleExpand: (id: string) => void;
   onToggleSelect: (id: string, isShiftPressed: boolean) => void;
+  onReuse?: (job: Job) => void;
 }
 
 const accentClasses: Record<AccentColor, string> = {
@@ -60,6 +61,7 @@ export function JobListItem({
   expandedContent,
   onToggleExpand,
   onToggleSelect,
+  onReuse,
 }: JobListItemProps) {
   const headerClassName = isSelected
     ? accentClasses[accentColor]
@@ -135,7 +137,18 @@ export function JobListItem({
               {statusBadge}
             </div>
 
-            {actionButtons && <div className="ml-auto flex items-center gap-1 self-center flex-shrink-0">{actionButtons}</div>}
+            <div className="ml-auto flex items-center gap-1 self-center flex-shrink-0">
+              {onReuse && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onReuse(job); }}
+                  className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+                  title="Reuse Configuration"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {actionButtons}
+            </div>
           </div>
         </div>
       </div>

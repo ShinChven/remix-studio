@@ -23,6 +23,7 @@ interface QueueTabProps {
   runJob: (id: string) => void;
   setJobToDeleteId: (id: string) => void;
   setLightboxData: (data: { images: string[], index: number, onDelete?: (index: number) => void, onIndexChange?: (index: number) => void } | null) => void;
+  onReuse?: (job: Job) => void;
 }
 
 export function QueueTab({
@@ -40,6 +41,7 @@ export function QueueTab({
   runJob,
   setJobToDeleteId,
   setLightboxData,
+  onReuse,
 }: QueueTabProps) {
   const { t } = useTranslation();
   return (
@@ -112,7 +114,8 @@ export function QueueTab({
                   modelName={getModelName(task.providerId, task.modelConfigId)}
                   onToggleExpand={toggleJobExpand}
                   onToggleSelect={(id, isShiftPressed) => toggleQueueSelection(id, isShiftPressed, scopeIds)}
-                  metaChips={
+                  onReuse={onReuse}
+                  statusBadge={
                     <>
                       {task.aspectRatio && (
                         <InfoChip className="text-neutral-500 dark:text-neutral-500">
@@ -139,10 +142,6 @@ export function QueueTab({
                           {task.audioContexts?.length} aud
                         </InfoChip>
                       )}
-                    </>
-                  }
-                  statusBadge={
-                    <>
                       {task.status === 'processing' && (
                         <InfoChip className="gap-1 text-blue-400 bg-blue-500/5 border-blue-500/10">
                           <Loader2 className="w-2.5 h-2.5 animate-spin" />

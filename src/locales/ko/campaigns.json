@@ -1,32 +1,33 @@
 {
-  "title": "Campaigns",
-  "description": "Plan, schedule, and manage multi-channel social media marketing campaigns with AI content assistance and real-time publishing tracking.",
-  "allCampaigns": "All Campaigns",
-  "searchPlaceholder": "Search campaigns...",
-  "noCampaigns": "No campaigns found",
-  "createOne": "Create one now",
-  "recentlyPosted": "Recently Posted",
-  "scheduledPosts": "Scheduled Posts",
-  "upcomingQueue": "Upcoming Queue",
-  "viewAllHistory": "View All History",
-  "viewAllScheduled": "View All Scheduled",
-  "openCalendar": "Open Calendar",
+  "title": "캠페인",
+  "description": "AI 콘텐츠 지원 및 실시간 게시 추적 기능을 통해 다중 채널 소셜 미디어 마케팅 캠페인을 계획, 예약 및 관리하세요.",
+  "channels": "채널",
+  "allCampaigns": "모든 캠페인",
+  "searchPlaceholder": "캠페인 검색...",
+  "noCampaigns": "캠페인을 찾을 수 없음",
+  "createOne": "지금 만들기",
+  "recentlyPosted": "최근 게시됨",
+  "scheduledPosts": "예약된 게시물",
+  "upcomingQueue": "예정된 대기열",
+  "viewAllHistory": "모든 기록 보기",
+  "viewAllScheduled": "모든 예약 보기",
+  "openCalendar": "캘린더 열기",
   "status": {
-    "active": "Active Campaign",
-    "paused": "Paused",
-    "setup": "Setup"
+    "active": "활성 캠페인",
+    "paused": "일시 정지됨",
+    "setup": "설정"
   },
   "menu": {
-    "edit": "Edit Details",
-    "pause": "Pause Campaign",
-    "resume": "Resume Campaign",
-    "delete": "Delete"
+    "edit": "세부 정보 편집",
+    "pause": "캠페인 일시 중지",
+    "resume": "캠페인 재개",
+    "delete": "삭제"
   },
   "deleteDialog": {
-    "title": "Delete Campaign",
-    "description": "Delete \"{{name}}\"? This cannot be undone and will delete all associated posts.",
-    "confirm": "Delete Campaign",
-    "cancel": "Cancel",
-    "deleting": "Deleting..."
+    "title": "캠페인 삭제",
+    "description": "\"{{name}}\"을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없으며 관련된 모든 게시물이 삭제됩니다.",
+    "confirm": "캠페인 삭제",
+    "cancel": "취소",
+    "deleting": "삭제 중..."
   }
 }

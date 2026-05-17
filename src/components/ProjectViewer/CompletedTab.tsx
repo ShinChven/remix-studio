@@ -20,6 +20,7 @@ interface CompletedTabProps {
   toggleSelectAllCompleted: () => void;
   setShowDeleteSelectedModal: (show: boolean) => void;
   projectType?: ProjectType;
+  onReuse?: (job: Job) => void;
 }
 
 export function CompletedTab({
@@ -35,6 +36,7 @@ export function CompletedTab({
   toggleSelectAllCompleted,
   setShowDeleteSelectedModal,
   projectType = 'image',
+  onReuse,
 }: CompletedTabProps) {
   const { t } = useTranslation();
   return (
@@ -84,6 +86,7 @@ export function CompletedTab({
                 modelName={getModelName(job.providerId, job.modelConfigId)}
                 onToggleExpand={toggleJobExpand}
                 onToggleSelect={(id, isShiftPressed) => toggleCompletedSelection(id, isShiftPressed, scopeIds)}
+                onReuse={onReuse}
                 statusBadge={
                   <InfoChip className="text-emerald-500 bg-emerald-500/5 border-emerald-500/20">
                     {t('projectViewer.completed.completed')}
