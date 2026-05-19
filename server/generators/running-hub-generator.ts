@@ -43,6 +43,11 @@ function isQwenImage2Pro(modelId?: string, apiUrl?: string): boolean {
   return target.includes('qwen-image-2.0-pro');
 }
 
+function isGrokImaginePro(modelId?: string, apiUrl?: string): boolean {
+  const target = `${modelId || ''} ${apiUrl || ''}`;
+  return target.includes('rhart-imagine-image-quality');
+}
+
 export class RunningHubGenerator extends ImageGenerator {
   private apiKey: string;
   private submitUrl: string;
@@ -95,7 +100,7 @@ export class RunningHubGenerator extends ImageGenerator {
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
-    const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
+    const { prompt, aspectRatio = '2:3', imageSize = '1K', format, refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
 
     // --- Step 1: optional image upload ---
     const imageUrls: string[] = [];
@@ -111,8 +116,9 @@ export class RunningHubGenerator extends ImageGenerator {
 
     const isTextToImage = imageUrls.length === 0;
     const isQwen = isQwenImage2Pro(modelId, reqApiUrl);
-    // Qwen uses `/image-edit` while the rhart model uses `/image-to-image`.
-    const refEndpointType = isQwen ? 'image-edit' : 'image-to-image';
+    const isGrok = isGrokImaginePro(modelId, reqApiUrl);
+    // Qwen uses `/image-edit`, Grok Imagine Pro uses `/edit`, the rhart model uses `/image-to-image`.
+    const refEndpointType = isQwen ? 'image-edit' : isGrok ? 'edit' : 'image-to-image';
     const endpointType = isTextToImage ? 'text-to-image' : refEndpointType;
 
     let actualSubmitUrl = reqApiUrl;
@@ -140,6 +146,20 @@ export class RunningHubGenerator extends ImageGenerator {
       };
       if (!isTextToImage) {
         payload.imageUrls = imageUrls;
+      }
+    } else if (isGrok) {
+      payload = {
+        prompt,
+        aspectRatio: isTextToImage ? aspectRatio : (aspectRatio || 'auto'),
+        resolution: imageSize.toLowerCase(), // API expects "1k", not "1K"
+        numImages: '1',
+      };
+      if (format) {
+        payload.outputFormat = format.toLowerCase() === 'jpg' ? 'jpeg' : format.toLowerCase();
+      }
+      if (!isTextToImage) {
+        // Grok Imagine Pro /edit accepts a single imageUrl (max 1 image).
+        payload.imageUrl = imageUrls[0];
       }
     } else {
       payload = {

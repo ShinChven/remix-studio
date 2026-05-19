@@ -550,6 +550,17 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'runninghub-grok-imagine-pro',
+      name: 'Grok Imagine Pro',
+      generatorId: 'RunningHub',
+      modelId: 'rhart-imagine-image-quality',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
       id: 'runninghub-seedance-2-0-global-video',
       name: 'Seedance 2.0 Global',
       generatorId: 'RunningHub',
