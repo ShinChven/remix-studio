@@ -257,10 +257,10 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
-      id: 'google-gemini-3-flash-text',
-      name: 'Gemini 3 Flash',
+      id: 'google-gemini-3.5-flash-text',
+      name: 'Gemini 3.5 Flash',
       generatorId: 'GoogleAI',
-      modelId: 'gemini-3-flash-preview',
+      modelId: 'gemini-3.5-flash',
       category: 'text',
       promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
@@ -411,10 +411,10 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
-      id: 'vertex-gemini-3-flash-text',
-      name: 'Gemini 3 Flash',
+      id: 'vertex-gemini-3.5-flash-text',
+      name: 'Gemini 3.5 Flash',
       generatorId: 'VertexAI',
-      modelId: 'gemini-3-flash-preview',
+      modelId: 'gemini-3.5-flash',
       category: 'text',
       promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
