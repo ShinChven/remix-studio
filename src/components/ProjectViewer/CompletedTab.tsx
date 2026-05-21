@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Trash2, List } from 'lucide-react';
 import { Job, ProjectType } from '../../types';
+import { imageDisplayUrl } from '../../api';
 import { SelectionToolbar } from './SelectionToolbar';
 import { JobListItem } from './JobListItem';
 import { InfoChip } from './InfoChip';
@@ -115,6 +116,51 @@ export function CompletedTab({
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.common.generatedText')}</label>
                           <div className="text-xs text-neutral-200 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border border-emerald-500/20 select-all whitespace-pre-wrap">
                             {job.resultText}
+                          </div>
+                        </div>
+                      )}
+
+                      {job.imageContexts && job.imageContexts.length > 0 && (
+                        <div className="space-y-3">
+                            <label className="text-[9px] font-black uppercase tracking-[0.1em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>
+                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                              {job.imageContexts.map((ctx, idx) => (
+                                <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-emerald-500/50">
+                                  <img 
+                                    src={imageDisplayUrl(ctx)}
+                                    alt={`Context ${idx + 1}`} 
+                                    className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
+                                    loading="lazy"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setLightboxData({ images: (job.imageContexts || []).map(imageDisplayUrl), index: idx });
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/ctx:opacity-100 transition-opacity flex items-end p-1.5 pointer-events-none">
+                                    <span className="text-[8px] font-black text-white/70 uppercase tracking-widest truncate">{t('projectViewer.queue.contextShort', { index: idx + 1 })}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                        </div>
+                      )}
+                      {job.videoContexts && job.videoContexts.length > 0 && (
+                        <div className="space-y-3">
+                          <label className="text-[9px] font-black uppercase tracking-[0.1em] text-violet-300/70 px-1">Reference Videos</label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {job.videoContexts.map((ctx, idx) => (
+                              <video key={idx} src={imageDisplayUrl(ctx)} controls className="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-black" />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {job.audioContexts && job.audioContexts.length > 0 && (
+                        <div className="space-y-3">
+                          <label className="text-[9px] font-black uppercase tracking-[0.1em] text-cyan-300/70 px-1">Reference Audio</label>
+                          <div className="space-y-2">
+                            {job.audioContexts.map((ctx, idx) => (
+                              <audio key={idx} src={imageDisplayUrl(ctx)} controls className="w-full" />
+                            ))}
                           </div>
                         </div>
                       )}
