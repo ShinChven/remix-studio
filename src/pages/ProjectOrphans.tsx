@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -39,6 +39,19 @@ export function ProjectOrphans() {
   const [lastSelectedKey, setLastSelectedKey] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
+  const [visibleCount, setVisibleCount] = useState(100);
+
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useCallback((node: HTMLDivElement | null) => {
+    if (loading) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && visibleCount < orphans.length) {
+        setVisibleCount(prev => prev + 100);
+      }
+    });
+    if (node) observerRef.current.observe(node);
+  }, [loading, visibleCount, orphans.length]);
 
   const loadData = async () => {
     if (!id) return;
@@ -254,7 +267,7 @@ export function ProjectOrphans() {
               className="w-full grid gap-2 md:gap-3" 
               style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))' }}
             >
-               {orphans.map((file, idx) => {
+               {orphans.slice(0, visibleCount).map((file, idx) => {
                  const isSelected = selectedKeys.has(file.key);
                  const fileName = file.key.split('/').pop() || 'file';
                  
@@ -300,6 +313,8 @@ export function ProjectOrphans() {
                       alt="" 
                       className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${isSelected ? 'opacity-40' : ''}`}
                       referrerPolicy="no-referrer"
+                      loading="lazy"
+                      decoding="async"
                      />
 
                      {/* Info Bar */}
@@ -310,6 +325,11 @@ export function ProjectOrphans() {
                    </div>
                  );
                })}
+               {visibleCount < orphans.length && (
+                 <div ref={loadMoreRef} className="col-span-full h-10 flex items-center justify-center">
+                   <Loader2 className="w-5 h-5 text-neutral-400 animate-spin" />
+                 </div>
+               )}
             </div>
           )}
         </div>
