@@ -228,8 +228,10 @@ export default function ExtensionImport() {
           const savedId = localStorage.getItem(`remix_studio_import_selected_id_${importData.type}_${destinationType}`);
           if (savedId && filtered.find(l => l.id === savedId)) {
             setSelectedId(savedId);
-          } else if (filtered.length > 0 && !filtered.find(l => l.id === selectedId)) {
+          } else if (filtered.length > 0) {
             setSelectedId(filtered[0].id);
+          } else {
+            setSelectedId('');
           }
         } else {
           const res = await fetchProjects(1, 100, undefined, 'active', true);
@@ -238,8 +240,10 @@ export default function ExtensionImport() {
           const savedId = localStorage.getItem(`remix_studio_import_selected_id_${importData.type}_${destinationType}`);
           if (savedId && filtered.find(p => p.id === savedId)) {
             setSelectedId(savedId);
-          } else if (filtered.length > 0 && !filtered.find(p => p.id === selectedId)) {
+          } else if (filtered.length > 0) {
             setSelectedId(filtered[0].id);
+          } else {
+            setSelectedId('');
           }
         }
       } catch (e) {
@@ -461,7 +465,7 @@ export default function ExtensionImport() {
                   ) : (
                     <select
                       value={selectedId}
-                      onChange={(e) => setSelectedId(e.target.value)}
+                      onChange={(e) => handleIdChange(e.target.value)}
                       className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition-all focus:border-blue-500/60 focus:outline-none focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-neutral-950 dark:text-white"
                     >
                       <option value="" disabled>Choose a destination...</option>
