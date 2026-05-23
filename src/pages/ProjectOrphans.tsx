@@ -39,19 +39,8 @@ export function ProjectOrphans() {
   const [lastSelectedKey, setLastSelectedKey] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
-  const [visibleCount, setVisibleCount] = useState(100);
 
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = useCallback((node: HTMLDivElement | null) => {
-    if (loading) return;
-    if (observerRef.current) observerRef.current.disconnect();
-    observerRef.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && visibleCount < orphans.length) {
-        setVisibleCount(prev => prev + 100);
-      }
-    });
-    if (node) observerRef.current.observe(node);
-  }, [loading, visibleCount, orphans.length]);
+
 
   const loadData = async () => {
     if (!id) return;
@@ -264,10 +253,9 @@ export function ProjectOrphans() {
             </div>
           ) : (
             <div 
-              className="w-full grid gap-2 md:gap-3" 
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))' }}
+              className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2 md:gap-3" 
             >
-               {orphans.slice(0, visibleCount).map((file, idx) => {
+               {orphans.map((file, idx) => {
                  const isSelected = selectedKeys.has(file.key);
                  const fileName = file.key.split('/').pop() || 'file';
                  
@@ -325,11 +313,7 @@ export function ProjectOrphans() {
                    </div>
                  );
                })}
-               {visibleCount < orphans.length && (
-                 <div ref={loadMoreRef} className="col-span-full h-10 flex items-center justify-center">
-                   <Loader2 className="w-5 h-5 text-neutral-400 animate-spin" />
-                 </div>
-               )}
+
             </div>
           )}
         </div>
