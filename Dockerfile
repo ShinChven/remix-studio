@@ -29,7 +29,11 @@ RUN npm run build
 # Production stage
 FROM node:22-bookworm-slim AS runner
 
-RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates postgresql-client && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      openssl ca-certificates postgresql-client \
+      fonts-dejavu-core fonts-noto-core fonts-noto-cjk fontconfig \
+    && fc-cache -f \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
