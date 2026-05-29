@@ -98,6 +98,7 @@ async function startServer() {
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     bucket: process.env.S3_BUCKET || 'remix-studio',
     publicEndpoint: process.env.S3_PUBLIC_ENDPOINT,
+    publicCustomDomain: parseBooleanEnv(process.env.S3_PUBLIC_CUSTOM_DOMAIN, false),
   });
   await storage.ensureBucket(autoCreateBuckets);
 
@@ -107,7 +108,10 @@ async function startServer() {
     accessKeyId: process.env.S3_ACCESS_KEY_ID,
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     bucket: process.env.S3_EXPORT_BUCKET || `${process.env.S3_BUCKET || 'remix-studio'}-exports`,
-    publicEndpoint: process.env.S3_PUBLIC_ENDPOINT,
+    publicEndpoint: process.env.S3_EXPORT_PUBLIC_ENDPOINT || process.env.S3_PUBLIC_ENDPOINT,
+    publicCustomDomain: process.env.S3_EXPORT_PUBLIC_CUSTOM_DOMAIN !== undefined
+      ? parseBooleanEnv(process.env.S3_EXPORT_PUBLIC_CUSTOM_DOMAIN, false)
+      : parseBooleanEnv(process.env.S3_PUBLIC_CUSTOM_DOMAIN, false),
   });
   await exportStorage.ensureBucket(autoCreateBuckets);
 

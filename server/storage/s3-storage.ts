@@ -16,6 +16,8 @@ export class S3Storage implements IStorage {
   private client: S3Client;
   private publicClient: S3Client;
   private bucket: string;
+  private publicCustomDomain?: boolean;
+  private publicEndpoint?: string;
 
   constructor(opts: {
     endpoint?: string;
@@ -24,6 +26,7 @@ export class S3Storage implements IStorage {
     secretAccessKey?: string;
     bucket: string;
     publicEndpoint?: string;
+    publicCustomDomain?: boolean;
   }) {
     this.bucket = opts.bucket;
     const credentials = opts.accessKeyId && opts.secretAccessKey
@@ -35,6 +38,9 @@ export class S3Storage implements IStorage {
     const endpoint = opts.endpoint?.trim() || undefined;
     const publicEndpoint = opts.publicEndpoint?.trim() || endpoint;
     const usePathStyle = Boolean(endpoint);
+
+    this.publicCustomDomain = opts.publicCustomDomain;
+    this.publicEndpoint = publicEndpoint;
 
     this.client = new S3Client({
       endpoint,
@@ -188,6 +194,13 @@ export class S3Storage implements IStorage {
       responseContentType?: string;
     },
   ): Promise<string> {
+    if (this.publicCustomDomain && this.publicEndpoint) {
+      // For Cloudflare R2 custom domains (or similar), the domain acts as the root of the bucket
+      // and doesn't support SigV4 authentication. We just return the direct URL.
+      const baseUrl = this.publicEndpoint.endsWith('/') ? this.publicEndpoint.slice(0, -1) : this.publicEndpoint;
+      return `${baseUrl}/${key}`;
+    }
+
     const command = new GetObjectCommand({
       Bucket: this.bucket,
       Key: key,
