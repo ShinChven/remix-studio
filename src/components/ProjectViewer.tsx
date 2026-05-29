@@ -103,36 +103,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [jobToDeleteId, setJobToDeleteId] = useState<string | null>(null);
   const [jobToReuse, setJobToReuse] = useState<Job | null>(null);
 
-  const handleReuseWorkflow = (job: Job) => {
-    if (!job.workflowSnapshot || job.workflowSnapshot.length === 0) {
-      toast.error(t('projectViewer.common.reuseConfigurationUnavailable'));
-      return;
-    }
-    setJobToReuse(job);
-  };
 
-  const confirmReuseWorkflow = () => {
-    if (!jobToReuse || !jobToReuse.workflowSnapshot) return;
-
-    const updated = {
-      ...localProject,
-      workflow: jobToReuse.workflowSnapshot,
-      providerId: jobToReuse.providerId || localProject.providerId,
-      modelConfigId: jobToReuse.modelConfigId || localProject.modelConfigId,
-      aspectRatio: jobToReuse.aspectRatio || localProject.aspectRatio,
-      quality: jobToReuse.quality || localProject.quality,
-      format: jobToReuse.format || localProject.format,
-      background: jobToReuse.background || localProject.background,
-      duration: jobToReuse.duration || localProject.duration,
-      resolution: jobToReuse.resolution || localProject.resolution,
-      sound: jobToReuse.sound || localProject.sound,
-    };
-
-    setLocalProject(updated);
-    onUpdate(updated);
-    setJobToReuse(null);
-    toast.success(t('projectViewer.common.reuseConfiguration'));
-  };
 
   const [showDeleteSelectedModal, setShowDeleteSelectedModal] = useState(false);
   const [showDeleteAllDraftsModal, setShowDeleteAllDraftsModal] = useState(false);
@@ -171,6 +142,43 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [liveLibraries, setLiveLibraries] = useState<Library[]>(libraries);
   const [isRefreshingLibraries, setIsRefreshingLibraries] = useState(false);
   const [libraryRefreshError, setLibraryRefreshError] = useState<string | null>(null);
+
+  const handleReuseWorkflow = (job: Job) => {
+    if (!job.workflowSnapshot || job.workflowSnapshot.length === 0) {
+      toast.error(t('projectViewer.common.reuseConfigurationUnavailable'));
+      return;
+    }
+    setJobToReuse(job);
+  };
+
+  const confirmReuseWorkflow = () => {
+    if (!jobToReuse || !jobToReuse.workflowSnapshot) return;
+
+    const newProviderId = jobToReuse.providerId || localProject.providerId;
+    const newModelConfigId = jobToReuse.modelConfigId || localProject.modelConfigId;
+
+    const updated = {
+      ...localProject,
+      workflow: jobToReuse.workflowSnapshot,
+      providerId: newProviderId,
+      modelConfigId: newModelConfigId,
+      aspectRatio: jobToReuse.aspectRatio || localProject.aspectRatio,
+      quality: jobToReuse.quality || localProject.quality,
+      format: jobToReuse.format || localProject.format,
+      background: jobToReuse.background || localProject.background,
+      duration: jobToReuse.duration || localProject.duration,
+      resolution: jobToReuse.resolution || localProject.resolution,
+      sound: jobToReuse.sound || localProject.sound,
+    };
+
+    setLocalProject(updated);
+    if (newProviderId) setSelectedProviderId(newProviderId);
+    if (newModelConfigId) setSelectedModelId(newModelConfigId);
+    onUpdate(updated);
+    setJobToReuse(null);
+    toast.success(t('projectViewer.common.reuseConfiguration'));
+    setMobileView('workflow');
+  };
 
   const projectRef = useRef(localProject);
   const localJobsRef = useRef<Job[]>(localJobs);
