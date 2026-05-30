@@ -2,6 +2,33 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.11.0] - 2026-05-30
+
+### Added
+
+- **S3 Custom Domains**: Added configuration variables and support for S3 export public endpoints and custom domains via environment variables.
+
+### Changed
+
+- **Workflow Reuse**: Updated workflow reuse logic to sync provider, model state, and navigation.
+
+## [1.10.3] - 2026-05-26
+
+### Added
+
+- **Model Updates**: Added support for Grok Imagine Pro model and updated Google and Vertex Gemini model configurations to version 3.5 flash.
+- **Completed Jobs Media**: Display job context media in the CompletedTab.
+
+### Fixed
+
+- **Extension Import**: Improved selection logic in ExtensionImport.
+
+### Changed
+
+- **Orphan Projects Layout**: Render all orphan projects in a responsive grid.
+- **Watermarks**: Replaced sharp text rendering with SVG overlay to improve watermark positioning and rendering consistency.
+- **Docker Fonts**: Installed additional system fonts and refreshed font cache in Dockerfile.
+
 ## [1.10.2] - 2026-05-17
 
 ### Added
