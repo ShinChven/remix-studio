@@ -75,12 +75,20 @@ function mapCampaign(raw: any): CampaignCardModel {
   const scheduledTimes = posts
     .map((post: any) => (post.scheduledAt ? new Date(post.scheduledAt).getTime() : Number.NaN))
     .filter(Number.isFinite);
-  const startDate = scheduledTimes.length > 0
-    ? formatCampaignDateTime(new Date(Math.min(...scheduledTimes)))
-    : 'Not scheduled';
-  const endDate = scheduledTimes.length > 0
-    ? formatCampaignDateTime(new Date(Math.max(...scheduledTimes)))
-    : 'Not scheduled';
+  let startDate = 'Not scheduled';
+  let endDate = 'Not scheduled';
+
+  if (raw.scheduledStart) {
+    startDate = formatCampaignDateTime(new Date(raw.scheduledStart));
+  } else if (scheduledTimes.length > 0) {
+    startDate = formatCampaignDateTime(new Date(Math.min(...scheduledTimes)));
+  }
+
+  if (raw.scheduledEnd) {
+    endDate = formatCampaignDateTime(new Date(raw.scheduledEnd));
+  } else if (scheduledTimes.length > 0) {
+    endDate = formatCampaignDateTime(new Date(Math.max(...scheduledTimes)));
+  }
 
   let latestPostThumbnail = '';
   const postWithMedia = posts.find((p: any) => p.media && p.media.length > 0);

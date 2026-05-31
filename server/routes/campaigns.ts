@@ -170,52 +170,68 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
   campaignsRouter.get('/api/campaigns', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;
     try {
-      const campaigns = await prisma.campaign.findMany({
-        where: { userId: user.userId },
-        include: {
-          socialAccounts: true,
-          posts: { 
-            include: { media: true },
-            orderBy: { createdAt: 'desc' },
-            take: 20
+      const [campaigns, completedCounts, postDates] = await Promise.all([
+        prisma.campaign.findMany({
+          where: { userId: user.userId },
+          include: {
+            socialAccounts: true,
+            posts: { 
+              include: { media: true },
+              orderBy: { createdAt: 'desc' },
+              take: 20
+            },
+            _count: { select: { posts: true } },
           },
-          _count: { select: { posts: true } },
-        },
-        orderBy: { createdAt: 'desc' }
-      });
-
-      // Get completed posts count per campaign for accurate status display
-      const completedCounts = await prisma.post.groupBy({
-        by: ['campaignId'],
-        where: {
-          userId: user.userId,
-          status: { in: ['completed', 'posted'] }
-        },
-        _count: { id: true }
-      });
+          orderBy: { createdAt: 'desc' }
+        }),
+        // Get completed posts count per campaign for accurate status display
+        prisma.post.groupBy({
+          by: ['campaignId'],
+          where: {
+            userId: user.userId,
+            status: { in: ['completed', 'posted'] }
+          },
+          _count: { id: true }
+        }),
+        prisma.post.groupBy({
+          by: ['campaignId'],
+          where: {
+            userId: user.userId,
+            scheduledAt: { not: null }
+          },
+          _min: { scheduledAt: true },
+          _max: { scheduledAt: true }
+        })
+      ]);
 
       const countMap = new Map(completedCounts.map(item => [item.campaignId, item._count.id]));
+      const dateMap = new Map(postDates.map(item => [item.campaignId, { min: item._min.scheduledAt, max: item._max.scheduledAt }]));
 
       // Presign URLs and fix BigInt serialization
       const signedCampaigns = await Promise.all(
-        campaigns.map(async (campaign) => ({
-          ...campaign,
-          completedPostsCount: countMap.get(campaign.id) || 0,
-          posts: await Promise.all(
-            campaign.posts.map(async (post) => ({
-              ...post,
-              media: await Promise.all(
-                post.media.map(async (m) => ({
-                  ...m,
-                  size: m.size != null ? Number(m.size) : null,
-                  thumbnailUrl: await presignStorageValue(storage, m.thumbnailUrl),
-                  processedUrl: await presignStorageValue(storage, m.processedUrl),
-                  sourceUrl: await presignStorageValue(storage, m.sourceUrl),
-                })),
-              ),
-            })),
-          ),
-        })),
+        campaigns.map(async (campaign) => {
+          const dates = dateMap.get(campaign.id);
+          return {
+            ...campaign,
+            completedPostsCount: countMap.get(campaign.id) || 0,
+            scheduledStart: dates?.min || null,
+            scheduledEnd: dates?.max || null,
+            posts: await Promise.all(
+              campaign.posts.map(async (post) => ({
+                ...post,
+                media: await Promise.all(
+                  post.media.map(async (m) => ({
+                    ...m,
+                    size: m.size != null ? Number(m.size) : null,
+                    thumbnailUrl: await presignStorageValue(storage, m.thumbnailUrl),
+                    processedUrl: await presignStorageValue(storage, m.processedUrl),
+                    sourceUrl: await presignStorageValue(storage, m.sourceUrl),
+                  })),
+                ),
+              })),
+            ),
+          };
+        })
       );
 
       return c.json(signedCampaigns);
