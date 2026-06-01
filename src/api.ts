@@ -475,6 +475,22 @@ export async function fetchProject(id: string): Promise<Project> {
   return handleResponse<Project>(res, 'Failed to get project');
 }
 
+export async function fetchProjectWorkflow(id: string): Promise<import('./types').WorkflowItem[]> {
+  const res = await apiFetch(`/api/projects/${id}/workflow`, { headers: getHeaders(false) });
+  return handleResponse<import('./types').WorkflowItem[]>(res, 'Failed to get project workflow');
+}
+
+export async function fetchProjectJobs(id: string): Promise<import('./types').Job[]> {
+  const res = await apiFetch(`/api/projects/${id}/jobs`, { headers: getHeaders(false) });
+  return handleResponse<import('./types').Job[]>(res, 'Failed to get project jobs');
+}
+
+export async function fetchProjectAlbum(id: string, page: number = 1, limit: number = 10000): Promise<import('./types').PaginatedResult<import('./types').AlbumItem>> {
+  const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+  const res = await apiFetch(`/api/projects/${id}/album?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<import('./types').PaginatedResult<import('./types').AlbumItem>>(res, 'Failed to get project album');
+}
+
 export async function fetchQueueStatus(view: QueueMonitorView): Promise<QueueMonitorStatus> {
   const params = new URLSearchParams({ view });
   const res = await apiFetch(`/api/queue-status?${params.toString()}`, { headers: getHeaders(false) });

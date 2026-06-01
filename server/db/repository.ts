@@ -25,6 +25,9 @@ export interface IRepository {
   // === Project CRUD ===
   getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all', nameOnly?: boolean): Promise<{ items: Project[], total: number, page: number, pages: number }>;
   getProject(userId: string, projectId: string): Promise<Project | null>;
+  getProjectWorkflow(userId: string, projectId: string): Promise<import('../../src/types').WorkflowItem[]>;
+  getProjectJobs(userId: string, projectId: string): Promise<import('../../src/types').Job[]>;
+  getProjectAlbum(userId: string, projectId: string, page?: number, limit?: number): Promise<{ items: AlbumItem[], total: number, page: number, pages: number }>;
   createProject(userId: string, project: Project): Promise<void>;
   updateProject(userId: string, projectId: string, updates: Partial<Project>): Promise<void>;
   deleteProject(userId: string, projectId: string): Promise<void>;

@@ -16,7 +16,7 @@ import {
   Video,
   X,
 } from 'lucide-react';
-import { fetchLibraries, fetchLibrary, fetchLibraryItems, fetchProject, fetchProjects, imageDisplayUrl } from '../api';
+import { fetchLibraries, fetchLibrary, fetchLibraryItems, fetchProject, fetchProjectAlbum, fetchProjects, imageDisplayUrl } from '../api';
 import { AlbumItem, Library, LibraryItem, LibraryType, Project } from '../types';
 import { cn } from '../lib/utils';
 
@@ -318,9 +318,9 @@ export function UniversalMediaPicker({
           const result = await fetchLibraryItems(activeSource.id, 1, 500);
           if (!cancelled) setItems((result.items || []).map((item) => libraryItemToPickerItem(item, activeSource)));
         } else {
-          const project = await fetchProject(activeSource.id);
+          const albumResult = await fetchProjectAlbum(activeSource.id);
           if (!cancelled) {
-            setItems((project.album || [])
+            setItems((albumResult.items || [])
               .filter((item) => activeSource.type === 'text' ? (item.textContent || item.prompt) : item.imageUrl)
               .map((item) => albumItemToPickerItem(item, activeSource)));
           }

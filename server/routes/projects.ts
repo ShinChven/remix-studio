@@ -8,7 +8,7 @@ import { ExportManager } from '../queue/export-manager';
 import { DeliveryManager } from '../queue/delivery-manager';
 import { checkStorageLimit } from '../utils/storage-check';
 import { UserRepository } from '../auth/user-repository';
-import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView } from '../../src/types';
+import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem } from '../../src/types';
 
 type Variables = { user: JwtPayload };
 
@@ -59,10 +59,9 @@ function splitFilename(filename: string, fallbackExt?: string): { base: string; 
   return { base: trimmed, ext: fallbackExt || '' };
 }
 
-/** Sign all S3 keys in a project's jobs, album items, and workflow images with pre-signed URLs */
-async function signProjectImages(project: Project, storage: S3Storage): Promise<Project> {
-  const jobs = await Promise.all(
-    project.jobs.map(async (job) => {
+export async function signJobs(jobs: Job[], storage: S3Storage): Promise<Job[]> {
+  return Promise.all(
+    jobs.map(async (job) => {
       let size = job.size;
       let optimizedSize = job.optimizedSize;
       let thumbnailSize = job.thumbnailSize;
@@ -101,8 +100,11 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
       return { ...job, imageUrl, thumbnailUrl, optimizedUrl, imageContexts, videoContexts, audioContexts, size, optimizedSize, thumbnailSize };
     })
   );
-  const album = await Promise.all(
-    (project.album || []).map(async (item) => {
+}
+
+export async function signAlbumItems(album: AlbumItem[], storage: S3Storage): Promise<AlbumItem[]> {
+  return Promise.all(
+    album.map(async (item) => {
       let size = item.size;
       let optimizedSize = item.optimizedSize;
       let thumbnailSize = item.thumbnailSize;
@@ -139,8 +141,11 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
       return { ...item, imageUrl, thumbnailUrl, optimizedUrl, imageContexts, size, optimizedSize, thumbnailSize };
     })
   );
-  const workflow = await Promise.all(
-    (project.workflow || []).map(async (item) => {
+}
+
+export async function signWorkflowItems(workflow: WorkflowItem[], storage: S3Storage): Promise<WorkflowItem[]> {
+  return Promise.all(
+    workflow.map(async (item) => {
       let size = item.size;
       if (!size && (item.type === 'image' || item.type === 'video' || item.type === 'audio') && item.value && !item.value.startsWith('data:')) {
         try {
@@ -159,7 +164,6 @@ async function signProjectImages(project: Project, storage: S3Storage): Promise<
       return item;
     })
   );
-  return { ...project, jobs, album, workflow };
 }
 
 export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager) {
@@ -222,11 +226,15 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const nameOnly = c.req.query('nameOnly') === 'true';
 
       const result = await repository.getUserProjects(user.userId, page, limit, q, status, nameOnly);
-      const signedItems = await Promise.all(result.items.map((p) => signProjectImages(p, storage)));
-      
+      const signedItems = await Promise.all(
+        result.items.map(async (p) => ({
+          ...p,
+          album: await signAlbumItems(p.album || [], storage),
+        }))
+      );
       return c.json({
         ...result,
-        items: signedItems
+        items: signedItems,
       });
     } catch (e) {
       console.error('[GET /api/projects]', e);
@@ -268,10 +276,54 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (!projectId) return c.json({ error: 'Project id is required' }, 400);
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Not found' }, 404);
-      return c.json(await signProjectImages(project, storage));
+      return c.json(project);
     } catch (e) {
       console.error('[GET /api/projects/:id]', e);
       return c.json({ error: 'Failed to get project' }, 500);
+    }
+  });
+
+  router.get('/api/projects/:id/workflow', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+      const items = await repository.getProjectWorkflow(user.userId, projectId);
+      return c.json(await signWorkflowItems(items, storage));
+    } catch (e) {
+      console.error('[GET /api/projects/:id/workflow]', e);
+      return c.json({ error: 'Failed to get workflow' }, 500);
+    }
+  });
+
+  router.get('/api/projects/:id/jobs', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+      const jobs = await repository.getProjectJobs(user.userId, projectId);
+      return c.json(await signJobs(jobs, storage));
+    } catch (e) {
+      console.error('[GET /api/projects/:id/jobs]', e);
+      return c.json({ error: 'Failed to get jobs' }, 500);
+    }
+  });
+
+  router.get('/api/projects/:id/album', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const page = parseInt(c.req.query('page') || '1', 10);
+      const limit = parseInt(c.req.query('limit') || '500', 10);
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+      const result = await repository.getProjectAlbum(user.userId, projectId, page, limit);
+      return c.json({
+        ...result,
+        items: await signAlbumItems(result.items, storage)
+      });
+    } catch (e) {
+      console.error('[GET /api/projects/:id/album]', e);
+      return c.json({ error: 'Failed to get album' }, 500);
     }
   });
 

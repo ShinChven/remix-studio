@@ -20,8 +20,8 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs } from '../api';
-import { CheckCircle2, List, Grid, ChevronLeft, Plus } from 'lucide-react';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectAlbum, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs } from '../api';
+import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { ConfirmModal } from './ConfirmModal';
@@ -143,6 +143,38 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [isRefreshingLibraries, setIsRefreshingLibraries] = useState(false);
   const [libraryRefreshError, setLibraryRefreshError] = useState<string | null>(null);
 
+  const [isLoadingWorkflow, setIsLoadingWorkflow] = useState(true);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+  const [isLoadingAlbum, setIsLoadingAlbum] = useState(true);
+  const [albumLoaded, setAlbumLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoadingWorkflow(true);
+    setIsLoadingJobs(true);
+    setAlbumLoaded(false);
+    setIsLoadingAlbum(true);
+    setLocalAlbum([]);
+    Promise.all([
+      fetchProjectWorkflow(project.id).then(w => setLocalProject(prev => ({ ...prev, workflow: w }))).catch(console.error),
+      fetchProjectJobs(project.id).then(j => setLocalJobs(j)).catch(console.error)
+    ]).finally(() => {
+      setIsLoadingWorkflow(false);
+      setIsLoadingJobs(false);
+    });
+  }, [project.id]);
+
+  useEffect(() => {
+    if (activeTab !== 'album' || albumLoaded) return;
+    setIsLoadingAlbum(true);
+    fetchProjectAlbum(project.id)
+      .then(res => {
+        setLocalAlbum(res.items);
+        setAlbumLoaded(true);
+      })
+      .catch(console.error)
+      .finally(() => setIsLoadingAlbum(false));
+  }, [activeTab, project.id, albumLoaded]);
+
   const handleReuseWorkflow = (job: Job) => {
     if (!job.workflowSnapshot || job.workflowSnapshot.length === 0) {
       toast.error(t('projectViewer.common.reuseConfigurationUnavailable'));
@@ -183,10 +215,15 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const projectRef = useRef(localProject);
   const localJobsRef = useRef<Job[]>(localJobs);
   const localAlbumRef = useRef<AlbumItem[]>(localAlbum);
+  const activeTabRef = useRef(activeTab);
   const libraryRefreshPromiseRef = useRef<Promise<Library[]> | null>(null);
   const skipProjectSyncRef = useRef(false);
   const workflowListRef = useRef<HTMLDivElement | null>(null);
   const isProcessing = localJobs.some(j => j.status === 'pending' || j.status === 'processing');
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   const onUpdate = useCallback((updated: Project) => {
     onUpdateProp(updated);
@@ -278,12 +315,15 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     if (isProcessing) {
       interval = setInterval(async () => {
         try {
-          const updated = await apiFetchProject(localProject.id);
-          if (JSON.stringify(updated.jobs) !== JSON.stringify(localJobsRef.current)) {
-            setLocalJobs(updated.jobs || []);
+          const [updatedJobs, updatedAlbum] = await Promise.all([
+            fetchProjectJobs(localProject.id).catch(() => null),
+            activeTabRef.current === 'album' ? fetchProjectAlbum(localProject.id).then(res => res.items).catch(() => null) : null
+          ]);
+          if (updatedJobs && JSON.stringify(updatedJobs) !== JSON.stringify(localJobsRef.current)) {
+            setLocalJobs(updatedJobs);
           }
-          if (JSON.stringify(updated.album) !== JSON.stringify(localAlbumRef.current)) {
-            setLocalAlbum(updated.album || []);
+          if (updatedAlbum && JSON.stringify(updatedAlbum) !== JSON.stringify(localAlbumRef.current)) {
+            setLocalAlbum(updatedAlbum);
           }
         } catch (e) {
           console.error('Polling for project updates failed:', e);
@@ -1110,6 +1150,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       )}
 
       <WorkflowPanel
+        isLoading={isLoadingWorkflow}
         project={project}
         localProject={localProject}
         libraries={liveLibraries}
@@ -1196,8 +1237,13 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-0 space-y-0">
-          {activeTab === 'draft' && (
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-0 space-y-0 relative">
+          {activeTab === 'draft' && isLoadingJobs && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20">
+              <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
+            </div>
+          )}
+          {activeTab === 'draft' && !isLoadingJobs && (
             <DraftsTab
               draftJobs={draftJobs} selectedDraftIds={selectedDraftIds} toggleSelectAllDrafts={toggleSelectAllDrafts}
               setShowDeleteSelectedModal={setShowDeleteSelectedModal} runSelectedDrafts={runSelectedDrafts}
@@ -1212,7 +1258,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               onReuse={handleReuseWorkflow}
             />
           )}
-          {activeTab === 'queue' && (
+          {activeTab === 'queue' && isLoadingJobs && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20">
+              <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
+            </div>
+          )}
+          {activeTab === 'queue' && !isLoadingJobs && (
             <QueueTab
               queueJobs={queueJobs} selectedQueueIds={selectedQueueIds} toggleSelectAllQueue={toggleSelectAllQueue}
               toggleQueueSelection={toggleQueueSelection} retrySelectedQueue={retrySelectedQueue} deleteSelectedQueue={() => setShowDeleteQueueSelectedModal(true)}
@@ -1222,7 +1273,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               onReuse={handleReuseWorkflow}
             />
           )}
-          {activeTab === 'completed' && (
+          {activeTab === 'completed' && isLoadingJobs && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20">
+              <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
+            </div>
+          )}
+          {activeTab === 'completed' && !isLoadingJobs && (
             <CompletedTab
               completedJobs={completedJobs} expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand}
               selectedCompletedIds={selectedCompletedIds} toggleCompletedSelection={toggleCompletedSelection}
@@ -1233,7 +1289,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               onReuse={handleReuseWorkflow}
             />
           )}
-          {activeTab === 'album' && (
+          {activeTab === 'album' && isLoadingAlbum && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20">
+              <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
+            </div>
+          )}
+          {activeTab === 'album' && !isLoadingAlbum && (
             <AlbumTab
               projectId={localProject.id}
               projectName={localProject.name}

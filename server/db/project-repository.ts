@@ -124,11 +124,6 @@ export class ProjectRepository {
   async getProject(userId: string, projectId: string): Promise<Project | null> {
     const p = await this.prisma.project.findFirst({
       where: { id: projectId, userId },
-      include: {
-        jobs: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
-        workflowItems: { orderBy: [{ order: 'asc' }, { id: 'asc' }] },
-        albumItems: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] },
-      },
     });
     if (!p) return null;
 
@@ -154,9 +149,44 @@ export class ProjectRepository {
       resolution: (p as any).resolution ?? undefined,
       sound: (p as any).sound ?? undefined,
       lastQueueCount: (p as any).lastQueueCount ?? undefined,
-      jobs: p.jobs.map((j) => this.mapJob(j)),
-      workflow: p.workflowItems.map((w) => this.mapWorkflow(w)),
-      album: p.albumItems.map((a) => this.mapAlbumItem(a)),
+      jobs: [],
+      workflow: [],
+      album: [],
+    };
+  }
+
+  async getProjectWorkflow(userId: string, projectId: string): Promise<WorkflowItem[]> {
+    const items = await this.prisma.workflowItem.findMany({
+      where: { projectId, project: { userId } },
+      orderBy: [{ order: 'asc' }, { id: 'asc' }],
+    });
+    return items.map((w) => this.mapWorkflow(w));
+  }
+
+  async getProjectJobs(userId: string, projectId: string): Promise<Job[]> {
+    const jobs = await this.prisma.job.findMany({
+      where: { projectId, userId },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return jobs.map((j) => this.mapJob(j));
+  }
+
+  async getProjectAlbum(userId: string, projectId: string, page: number = 1, limit: number = 10000): Promise<{ items: AlbumItem[], total: number, page: number, pages: number }> {
+    const skip = (page - 1) * limit;
+    const [total, items] = await Promise.all([
+      this.prisma.albumItem.count({ where: { projectId, userId } }),
+      this.prisma.albumItem.findMany({
+        where: { projectId, userId },
+        skip,
+        take: limit,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      })
+    ]);
+    return {
+      items: items.map((a) => this.mapAlbumItem(a)),
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
     };
   }
 
