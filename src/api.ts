@@ -506,6 +506,14 @@ export async function fetchProjectCompletedJobs(
   return handleResponse<import('./types').PaginatedResult<import('./types').Job>>(res, 'Failed to get completed jobs');
 }
 
+export async function deleteProjectJob(id: string, jobId: string): Promise<void> {
+  const res = await apiFetch(`/api/projects/${id}/jobs/${jobId}`, {
+    method: 'DELETE',
+    headers: getHeaders(false),
+  });
+  await handleResponse<{ success: boolean }>(res, 'Failed to delete job');
+}
+
 export async function fetchProjectAlbum(
   id: string,
   options: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; aspectRatios?: string[] } = {},

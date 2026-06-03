@@ -396,6 +396,12 @@ export class ProjectRepository {
     }
   }
 
+  async deleteProjectJob(userId: string, projectId: string, jobId: string): Promise<void> {
+    await this.prisma.job.deleteMany({
+      where: { id: jobId, projectId, userId, status: { not: 'processing' } },
+    });
+  }
+
   async addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void> {
     await this.assertOwnedProject(userId, projectId);
 
@@ -1055,23 +1061,20 @@ export class ProjectRepository {
       }
     }
 
-    // Delete jobs no longer in the list, but never delete rows currently in
-    // 'processing' — they may be detached and tracked in QueueManager's
-    // in-memory state. A stale client snapshot must not be able to cancel an
-    // in-flight job.
+    // Delete client-managed jobs no longer in the list. Completed rows are
+    // intentionally preserved because the project viewer now pages them
+    // separately and most bulk saves do not include them.
     const newIds = new Set(jobs.map((j) => j.id));
     const dbJobs = await this.prisma.job.findMany({
       where: { projectId, userId },
       select: { id: true, status: true },
     });
     const toDelete = dbJobs
-      .filter((j) => !newIds.has(j.id) && j.status !== 'processing')
+      .filter((j) => !newIds.has(j.id) && ['draft', 'pending', 'failed'].includes(j.status))
       .map((j) => j.id);
     if (toDelete.length) {
-      // Double-check status at delete time too: a 'pending' row can transition
-      // to 'processing' between our findMany above and this deleteMany.
       await this.prisma.job.deleteMany({
-        where: { id: { in: toDelete }, projectId, userId, status: { not: 'processing' } },
+        where: { id: { in: toDelete }, projectId, userId, status: { in: ['draft', 'pending', 'failed'] } },
       });
     }
   }

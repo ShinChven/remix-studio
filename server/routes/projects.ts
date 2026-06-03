@@ -333,6 +333,20 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+  router.delete('/api/projects/:id/jobs/:jobId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const jobId = c.req.param('jobId');
+      if (!projectId || !jobId) return c.json({ error: 'Project id and job id are required' }, 400);
+      await repository.deleteProjectJob(user.userId, projectId, jobId);
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/projects/:id/jobs/:jobId]', e);
+      return c.json({ error: 'Failed to delete job' }, 500);
+    }
+  });
+
   router.get('/api/projects/:id/album', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

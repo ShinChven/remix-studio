@@ -21,7 +21,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJob as apiDeleteProjectJob } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -993,13 +993,16 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   };
 
   const deleteJob = async (jobId: string) => {
+    const isCompletedJob = completedJobs.some(j => j.id === jobId);
     const updatedJobs = localJobs.filter(j => j.id !== jobId);
     setLocalJobs(updatedJobs);
-    if (completedJobs.some(j => j.id === jobId)) {
+    if (isCompletedJob) {
       setCompletedJobs(prev => prev.filter(j => j.id !== jobId));
       setCompletedTotal(prev => Math.max(0, prev - 1));
+      await apiDeleteProjectJob(localProject.id, jobId);
+    } else {
+      await apiUpdateProject(localProject.id, { jobs: updatedJobs });
     }
-    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
 
   const deleteSelectedDrafts = async () => {
@@ -1138,8 +1141,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setCompletedJobs(remainingCompleted);
     setCompletedTotal((prev) => Math.max(0, prev - idsToDelete.length));
     setSelectedCompletedIds(new Set());
-    const remainingAllJobs = localJobs.filter(j => !selectedCompletedIds.has(j.id));
-    await apiUpdateProject(localProject.id, { jobs: remainingAllJobs });
+    await Promise.all(idsToDelete.map((jobId) => apiDeleteProjectJob(localProject.id, jobId)));
   };
 
   const toggleAlbumSelection = (id: string, isShiftPressed: boolean, scopeIds?: string[]) => {
