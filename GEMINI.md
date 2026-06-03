@@ -15,6 +15,7 @@
 
 ## Database Migrations
 - **ALWAYS PREPARE FOR MIGRATION**: When modifying `schema.prisma` or adding database fields, you must always provide or generate the corresponding Prisma migration files to ensure online instances and production environments can migrate successfully smoothly.
+- **NEVER USE `npx prisma db push`**: ABSOLUTELY PROHIBITED. Using `db push` will mess up the local migration history and cause `migrate deploy` to fail in development. Always generate standard migrations and execute them via `migrate dev` (or manually resolve). IF YOU USE `db push` AGAIN, THE USER WILL BLOW UP THE DATA CENTER. DO NOT FORGET THIS.
 
 ## UX
 

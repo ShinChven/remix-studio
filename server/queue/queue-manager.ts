@@ -393,12 +393,13 @@ export class QueueManager {
     const project = await this.projectRepo.getProject(userId, projectId);
     if (!project) return;
 
-    console.log(`[QueueManager] Enqueuing project ${projectId}. Total jobs: ${project.jobs.length}`);
+    const allJobs = await this.projectRepo.getProjectJobs(userId, projectId);
+    console.log(`[QueueManager] Enqueuing project ${projectId}. Total jobs: ${allJobs.length}`);
 
     // ONLY pick up 'pending' jobs.
-    const jobsToRun = project.jobs.filter(j => j.status === 'pending');
+    const jobsToRun = allJobs.filter(j => j.status === 'pending');
 
-    const skipped = project.jobs.length - jobsToRun.length;
+    const skipped = allJobs.length - jobsToRun.length;
     if (skipped > 0) {
       console.log(`[QueueManager] Project ${projectId}: Picking up ${jobsToRun.length} pending jobs. Skipping ${skipped} jobs (not pending).`);
     }

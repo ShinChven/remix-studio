@@ -932,7 +932,8 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (!project) return c.json({ error: 'Project not found' }, 404);
 
       // Storage check for pending jobs before enqueuing
-      const pendingJobsCount = project.jobs.filter(j => j.status === 'pending').length;
+      const allJobs = await repository.getProjectJobs(user.userId, projectId);
+      const pendingJobsCount = allJobs.filter(j => j.status === 'pending').length;
       if (pendingJobsCount > 0) {
         // Simple estimate: 25MB per pending image
         const estimatedNewSize = pendingJobsCount * 25 * 1024 * 1024;

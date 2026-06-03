@@ -21,7 +21,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -188,7 +188,18 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setCompletedPage(1);
     Promise.all([
       fetchProjectWorkflow(project.id).then(w => setLocalProject(prev => ({ ...prev, workflow: w }))).catch(console.error),
-      fetchProjectJobs(project.id, { excludeStatus: ['completed'] }).then(j => setLocalJobs(j)).catch(console.error)
+      fetchProjectJobs(project.id, { excludeStatus: ['completed'] }).then(j => setLocalJobs(j)).catch(console.error),
+      fetchProjectAlbum(project.id, { page: 1, limit: 5 }).then(res => {
+        setLocalAlbum(res.items);
+        setAlbumTotal(res.total);
+        setAlbumPages(res.pages);
+        setAlbumTotalSize(res.totalSize);
+        setAlbumAspectRatioCounts(res.aspectRatioCounts);
+      }).catch(console.error),
+      fetchProjectCompletedJobs(project.id, { page: 1, limit: 1 }).then(res => {
+        setCompletedTotal(res.total);
+        setCompletedPages(res.pages);
+      }).catch(console.error),
     ]).finally(() => {
       setIsLoadingWorkflow(false);
       setIsLoadingJobs(false);
@@ -352,7 +363,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       skipProjectSyncRef.current = false;
       return;
     }
-    setLocalProject(project);
+    setLocalProject(prev => ({
+      ...project,
+      workflow: project.workflow?.length ? project.workflow : prev.workflow,
+    }));
   }, [project]);
 
   useEffect(() => {
@@ -432,14 +446,14 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
                   sort: albumSort,
                   aspectRatios: albumSelectedRatios.length > 0 ? albumSelectedRatios : undefined,
                 }).catch(() => null)
-              : null,
+              : fetchProjectAlbum(localProject.id, { page: 1, limit: 5 }).catch(() => null),
             tab === 'completed'
               ? fetchProjectCompletedJobs(localProject.id, {
                   page: completedPage,
                   limit: completedPageSize === 'all' ? 999999 : completedPageSize,
                   sort: completedSort,
                 }).catch(() => null)
-              : null,
+              : fetchProjectCompletedJobs(localProject.id, { page: 1, limit: 1 }).catch(() => null),
           ]);
           if (updatedJobs && JSON.stringify(updatedJobs) !== JSON.stringify(localJobsRef.current)) {
             setLocalJobs(updatedJobs);
@@ -454,7 +468,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
             setAlbumAspectRatioCounts(updatedAlbumRes.aspectRatioCounts);
           }
           if (updatedCompletedRes) {
-            setCompletedJobs(updatedCompletedRes.items);
+            if (tab === 'completed') {
+              setCompletedJobs(updatedCompletedRes.items);
+            }
             setCompletedTotal(updatedCompletedRes.total);
             setCompletedPages(updatedCompletedRes.pages);
           }
@@ -1365,7 +1381,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               <button onClick={() => setActiveTab('completed')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'completed' ? 'bg-white dark:bg-neutral-800 text-blue-600 dark:text-white shadow-sm border border-neutral-200 dark:border-neutral-700' : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300 hover:bg-white/50 dark:hover:bg-neutral-900/50 border border-transparent'}`}>
                 <CheckCircle2 className="w-3 h-3" />
                 <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('projectViewer.tabs.done')}</span>
-                <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({completedJobs.length})</span>
+                <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({completedTotal})</span>
               </button>
               <button onClick={() => setActiveTab('album')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all ${activeTab === 'album' ? 'bg-white dark:bg-neutral-800 text-blue-600 dark:text-white shadow-sm border border-neutral-200 dark:border-neutral-700' : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300 hover:bg-white/50 dark:hover:bg-neutral-900/50 border border-transparent'}`}>
                 <Grid className="w-3 h-3" />
@@ -1376,7 +1392,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
                       ? t('projectViewer.tabs.audios')
                       : t('projectViewer.tabs.album')}
                 </span>
-                <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({albumItems.length})</span>
+                <span className="text-[9px] font-bold opacity-40 font-mono tracking-tighter">({albumTotal})</span>
               </button>
             </div>
           </div>

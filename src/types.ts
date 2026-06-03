@@ -1283,6 +1283,7 @@ export interface Job {
   thumbnailSize?: number;
   error?: string;
   createdAt?: number;
+  updatedAt?: number;
   providerId?: string;
   modelConfigId?: string;
   aspectRatio?: string;
