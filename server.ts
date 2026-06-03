@@ -132,9 +132,6 @@ async function startServer() {
     // stale client overwrite) so they don't hold a slot until the next restart.
     await queueManager.healStuckProcessingJobs();
   });
-  // Important: Recover tasks before starting the server to resume background work
-  await queueManager.recoverTasks();
-
   const exportManager = new ExportManager(repository, storage, exportStorage, userRepository);
   const deliveryManager = new DeliveryManager(repository, exportStorage, userRepository, prisma, storage);
   const postManager = new PostManager(prisma, storage);
@@ -145,6 +142,15 @@ async function startServer() {
   deliveryManager.startWorkerLoop();
   postManager.start();
   mediaProcessingPoller.start();
+
+  let queueRecoveryStarted = false;
+  const startQueueRecovery = () => {
+    if (queueRecoveryStarted) return;
+    queueRecoveryStarted = true;
+    queueManager.recoverTasks().catch((error) => {
+      console.error('[QueueManager] Task recovery failed:', error);
+    });
+  };
 
   // Purge expired refresh token sessions every hour
   const SESSION_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
@@ -282,6 +288,7 @@ async function startServer() {
 
     server.listen(port, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${port}`);
+      startQueueRecovery();
     });
   } else {
     // Production: Hono serves everything
@@ -311,6 +318,7 @@ async function startServer() {
 
     serve({ fetch: app.fetch, port }, () => {
       console.log(`Server running on http://localhost:${port}`);
+      startQueueRecovery();
     });
   }
 }
