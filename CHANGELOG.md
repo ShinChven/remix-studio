@@ -2,6 +2,26 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.12.0] - 2026-06-04
+
+### Added
+
+- **Project Data Pagination**: Added server-side pagination and sorting for project albums and completed jobs, including reusable pagination controls in the Project Viewer.
+- **Job Update Timestamps**: Added `updatedAt` tracking for jobs with a database migration to support more accurate job metadata and ordering.
+- **Async Confirm Actions**: Added loading state and async action support to `ConfirmModal`.
+- **Campaign Schedule Metadata**: Included campaign schedule date ranges in API responses and updated campaign UI display logic.
+
+### Fixed
+
+- **Done Job Preservation**: Prevented partial project job saves from removing completed job records that are now loaded through a separate paginated endpoint.
+- **Completed Job Deletion**: Added a dedicated API and repository path for deleting individual project job records without using full project job synchronization.
+- **Startup Healthchecks**: Deferred queue task recovery until after the server starts listening, preventing detached task recovery from blocking `/healthz` and marking containers unhealthy.
+
+### Changed
+
+- **Project Viewer Loading**: Refactored project workflow, queue jobs, completed jobs, and album data to load through focused API endpoints instead of a single large project payload.
+- **Queue Recovery**: Kept task recovery as a background startup process while preserving detached polling and queue resumption behavior.
+
 ## [1.11.0] - 2026-05-30
 
 ### Added
