@@ -1,4 +1,14 @@
 {
+  "pagination": {
+    "pageSize": "페이지당",
+    "all": "전체",
+    "first": "첫 페이지",
+    "prev": "이전 페이지",
+    "next": "다음 페이지",
+    "last": "마지막 페이지",
+    "pageOf": "{{page}} / {{pages}} 페이지",
+    "range": "{{total}}개 중 {{start}}–{{end}}"
+  },
   "sidebar": {
     "home": "홈",
     "projects": "프로젝트",

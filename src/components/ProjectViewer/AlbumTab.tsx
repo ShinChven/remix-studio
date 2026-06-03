@@ -2,7 +2,7 @@ import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from '
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter } from 'lucide-react';
-import { AlbumItem, ProjectType } from '../../types';
+import { AlbumItem, AspectRatioCount, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import type { AlbumExportVersion } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
@@ -12,6 +12,7 @@ import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
 import { CopyToLibraryDialog } from './CopyToLibraryDialog';
 import { SelectionToolbar } from './SelectionToolbar';
 import { EmptyState } from './EmptyState';
+import { PaginationBar } from './PaginationBar';
 
 import { toast } from 'sonner';
 
@@ -30,22 +31,18 @@ interface AlbumTabProps {
   onRenameAlbumItem: (itemId: string, filename: string) => Promise<AlbumItem>;
   onExportStarted: () => void;
   projectType?: ProjectType;
-}
-
-function normalizeAspectRatio(value?: string) {
-  const ratio = value?.trim();
-  if (!ratio) return '';
-
-  const exactSizeMatch = ratio.match(/^(\d+)\s*x\s*(\d+)$/i);
-  if (!exactSizeMatch) return ratio.replace(/\s+/g, '');
-
-  const width = Number(exactSizeMatch[1]);
-  const height = Number(exactSizeMatch[2]);
-  if (!width || !height) return ratio;
-
-  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
-  const divisor = gcd(width, height);
-  return `${width / divisor}:${height / divisor}`;
+  page: number;
+  pageSize: number | 'all';
+  total: number;
+  pages: number;
+  totalSize: number;
+  aspectRatioCounts: AspectRatioCount[];
+  sort: 'newest' | 'oldest';
+  selectedAspectRatios: string[];
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number | 'all') => void;
+  onSortChange: (sort: 'newest' | 'oldest') => void;
+  onSelectedAspectRatiosChange: (ratios: string[]) => void;
 }
 
 function getCssAspectRatio(value?: string) {
@@ -164,6 +161,18 @@ export function AlbumTab({
   onRenameAlbumItem,
   onExportStarted,
   projectType = 'image',
+  page,
+  pageSize,
+  total,
+  pages,
+  totalSize,
+  aspectRatioCounts,
+  sort,
+  selectedAspectRatios,
+  onPageChange,
+  onPageSizeChange,
+  onSortChange,
+  onSelectedAspectRatiosChange,
 }: AlbumTabProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -184,8 +193,6 @@ export function AlbumTab({
   const [videoPlayerItem, setVideoPlayerItem] = useState<AlbumItem | null>(null);
   const [expandedAudioIds, setExpandedAudioIds] = useState<Set<string>>(new Set());
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
-  const [albumSort, setAlbumSort] = useState<'newest' | 'oldest'>('newest');
-  const [selectedAspectRatios, setSelectedAspectRatios] = useState<string[]>([]);
   const [renameItem, setRenameItem] = useState<AlbumItem | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
@@ -226,56 +233,22 @@ export function AlbumTab({
     }
   };
 
-  const aspectRatioOptions = useMemo(() => {
-    const ratioCounts = new Map<string, number>();
-    albumItems.forEach((item) => {
-      const ratio = normalizeAspectRatio(item.aspectRatio);
-      if (ratio) ratioCounts.set(ratio, (ratioCounts.get(ratio) || 0) + 1);
-    });
-    return Array.from(ratioCounts.entries()).map(([ratio, count]) => ({ ratio, count })).sort((a, b) => {
-      const toNumber = (value: string) => {
-        const [width, height] = value.split(':').map(Number);
-        if (!width || !height) return Number.POSITIVE_INFINITY;
-        return width / height;
-      };
-      const numericDiff = toNumber(a.ratio) - toNumber(b.ratio);
-      return Number.isFinite(numericDiff) && numericDiff !== 0 ? numericDiff : a.ratio.localeCompare(b.ratio);
-    });
-  }, [albumItems]);
-
-  useEffect(() => {
-    const availableRatios = new Set(aspectRatioOptions.map((option) => option.ratio));
-    setSelectedAspectRatios((current) => current.filter((ratio) => availableRatios.has(ratio)));
-  }, [aspectRatioOptions]);
-
+  const aspectRatioOptions = aspectRatioCounts;
   const hasAspectRatioFilter = selectedAspectRatios.length > 0;
   const showAspectRatioFilterControl = !isTextProject && !isAudioProject && aspectRatioOptions.length > 0;
 
   const toggleAspectRatioFilter = useCallback((ratio: string) => {
-    setSelectedAspectRatios((current) => (
-      current.includes(ratio)
-        ? current.filter((item) => item !== ratio)
-        : [...current, ratio]
-    ));
-  }, []);
+    const next = selectedAspectRatios.includes(ratio)
+      ? selectedAspectRatios.filter((item) => item !== ratio)
+      : [...selectedAspectRatios, ratio];
+    onSelectedAspectRatiosChange(next);
+  }, [selectedAspectRatios, onSelectedAspectRatiosChange]);
 
   const clearAspectRatioFilter = useCallback(() => {
-    setSelectedAspectRatios([]);
-  }, []);
+    onSelectedAspectRatiosChange([]);
+  }, [onSelectedAspectRatiosChange]);
 
-  const displayItems = useMemo(() => {
-    const filteredItems = hasAspectRatioFilter
-      ? albumItems.filter((item) => {
-          const ratio = normalizeAspectRatio(item.aspectRatio);
-          return !!ratio && selectedAspectRatios.includes(ratio);
-        })
-      : albumItems;
-    return [...filteredItems].sort((a, b) => {
-      const aTs = a.createdAt ?? 0;
-      const bTs = b.createdAt ?? 0;
-      return albumSort === 'newest' ? bTs - aTs : aTs - bTs;
-    });
-  }, [albumItems, albumSort, hasAspectRatioFilter, selectedAspectRatios]);
+  const displayItems = albumItems;
 
   const displayItemIds = useMemo(() => displayItems.map((item) => item.id), [displayItems]);
   const selectedDisplayItemIds = useMemo(
@@ -283,11 +256,8 @@ export function AlbumTab({
     [displayItemIds, selectedAlbumIds]
   );
   const hasVisibleSelection = selectedDisplayItemIds.length > 0;
-  const bulkItemIds = hasVisibleSelection
-    ? selectedDisplayItemIds
-    : hasAspectRatioFilter
-      ? displayItemIds
-      : albumItems.map((item) => item.id);
+  const bulkItemIds = hasVisibleSelection ? selectedDisplayItemIds : displayItemIds;
+  const useAllAlbumScope = !hasVisibleSelection && !hasAspectRatioFilter;
 
   const toggleAudioExpand = (id: string) => {
     setExpandedAudioIds((prev) => {
@@ -324,9 +294,10 @@ export function AlbumTab({
   };
   const selectedTextItems = displayItems.filter((item) => selectedAlbumIds.has(item.id));
   const copyItemIds = bulkItemIds;
+  const copyUseAllScope = useAllAlbumScope;
 
   const openExportDialog = (isAll: boolean) => {
-    setPendingExportItemIds(isAll && !hasAspectRatioFilter ? undefined : bulkItemIds);
+    setPendingExportItemIds(isAll && useAllAlbumScope ? undefined : bulkItemIds);
     setIsExportDialogOpen(true);
   };
 
@@ -345,7 +316,7 @@ export function AlbumTab({
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-0">
-        {albumItems.length > 0 && (
+        {total > 0 && (
           <SelectionToolbar
             totalCount={displayItems.length}
             selectedCount={selectedDisplayItemIds.length}
@@ -356,7 +327,7 @@ export function AlbumTab({
               <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest">
                 <Layers className="w-4 h-4 text-blue-500" />
                 <span className="text-blue-500/80">
-                  {((albumItems || []).reduce((acc, item) => acc + (item.size || 0), 0) / (1024 * 1024)).toFixed(2)} MB
+                  {(totalSize / (1024 * 1024)).toFixed(2)} MB
                 </span>
               </div>
             )}
@@ -420,18 +391,18 @@ export function AlbumTab({
                   />
                 )}
                 <button
-                  onClick={() => setAlbumSort((s) => (s === 'newest' ? 'oldest' : 'newest'))}
-                  title={albumSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
-                  aria-label={albumSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                  onClick={() => onSortChange(sort === 'newest' ? 'oldest' : 'newest')}
+                  title={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                  aria-label={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
                   className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
                 >
-                  {albumSort === 'newest' ? (
+                  {sort === 'newest' ? (
                     <ArrowDownWideNarrow className="w-3 h-3" />
                   ) : (
                     <ArrowUpWideNarrow className="w-3 h-3" />
                   )}
                   <span className="hidden sm:inline">
-                    {albumSort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                    {sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
                   </span>
                 </button>
               </>
@@ -439,7 +410,7 @@ export function AlbumTab({
           />
         )}
 
-        {albumItems.length === 0 ? (
+        {total === 0 && !hasAspectRatioFilter ? (
           <EmptyState
             Icon={isTextProject ? FileText : isVideoProject ? VideoIcon : isAudioProject ? Music : ImageIcon}
             title={isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : isAudioProject ? t('projectViewer.album.noAudios') : t('projectViewer.album.galleryEmpty')}
@@ -829,6 +800,17 @@ export function AlbumTab({
             })}
           </div>
         )}
+
+        {total > 0 && (
+          <PaginationBar
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            pages={pages}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        )}
       </div>
       {videoPlayerItem && (
         <div
@@ -911,7 +893,7 @@ export function AlbumTab({
       <ExportPackageDialog
         isOpen={isExportDialogOpen}
         defaultValue={getDefaultExportPackageName(projectName)}
-        itemCount={pendingExportItemIds?.length ?? albumItems.length}
+        itemCount={pendingExportItemIds?.length ?? total}
         onClose={() => setIsExportDialogOpen(false)}
         onSubmit={handleExport}
       />
@@ -921,6 +903,8 @@ export function AlbumTab({
         projectName={projectName}
         projectType={projectType}
         itemIds={copyItemIds}
+        useAllAlbumScope={copyUseAllScope}
+        allAlbumItemCount={total}
         onClose={() => setShowCopyDialog(false)}
         onSuccess={() => {}}
       />

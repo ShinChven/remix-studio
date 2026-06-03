@@ -1,4 +1,14 @@
 {
+  "pagination": {
+    "pageSize": "Par page",
+    "all": "Tout",
+    "first": "Première page",
+    "prev": "Page précédente",
+    "next": "Page suivante",
+    "last": "Dernière page",
+    "pageOf": "Page {{page}} / {{pages}}",
+    "range": "{{start}}–{{end}} sur {{total}}"
+  },
   "sidebar": {
     "home": "Accueil",
     "projects": "Projets",

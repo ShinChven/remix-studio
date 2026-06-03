@@ -1627,6 +1627,16 @@ export interface PaginatedResult<T> {
   pages: number;
 }
 
+export interface AspectRatioCount {
+  ratio: string;
+  count: number;
+}
+
+export interface AlbumPageResult extends PaginatedResult<AlbumItem> {
+  totalSize: number;
+  aspectRatioCounts: AspectRatioCount[];
+}
+
 declare global {
   interface Window {
     aistudio?: {

@@ -2,6 +2,19 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/types';
 
+function normalizeAspectRatio(value: string | null | undefined): string {
+  const ratio = value?.trim();
+  if (!ratio) return '';
+  const exactSizeMatch = ratio.match(/^(\d+)\s*x\s*(\d+)$/i);
+  if (!exactSizeMatch) return ratio.replace(/\s+/g, '');
+  const width = Number(exactSizeMatch[1]);
+  const height = Number(exactSizeMatch[2]);
+  if (!width || !height) return ratio;
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+  const divisor = gcd(width, height);
+  return `${width / divisor}:${height / divisor}`;
+}
+
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -163,27 +176,121 @@ export class ProjectRepository {
     return items.map((w) => this.mapWorkflow(w));
   }
 
-  async getProjectJobs(userId: string, projectId: string): Promise<Job[]> {
+  async getProjectJobs(userId: string, projectId: string, options: { excludeStatus?: string[] } = {}): Promise<Job[]> {
+    const where: any = { projectId, userId };
+    if (options.excludeStatus && options.excludeStatus.length > 0) {
+      where.status = { notIn: options.excludeStatus };
+    }
     const jobs = await this.prisma.job.findMany({
-      where: { projectId, userId },
+      where,
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
     return jobs.map((j) => this.mapJob(j));
   }
 
-  async getProjectAlbum(userId: string, projectId: string, page: number = 1, limit: number = 10000): Promise<{ items: AlbumItem[], total: number, page: number, pages: number }> {
-    const skip = (page - 1) * limit;
-    const [total, items] = await Promise.all([
-      this.prisma.albumItem.count({ where: { projectId, userId } }),
-      this.prisma.albumItem.findMany({
+  async getProjectAlbum(
+    userId: string,
+    projectId: string,
+    options: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; aspectRatios?: string[] } = {},
+  ): Promise<{
+    items: AlbumItem[];
+    total: number;
+    page: number;
+    pages: number;
+    totalSize: number;
+    aspectRatioCounts: { ratio: string; count: number }[];
+  }> {
+    const page = options.page ?? 1;
+    const limit = options.limit ?? 500;
+    const sort = options.sort ?? 'newest';
+
+    const [ratioRows, sizeAgg] = await Promise.all([
+      this.prisma.albumItem.groupBy({
+        by: ['aspectRatio'],
         where: { projectId, userId },
-        skip,
-        take: limit,
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      })
+        _count: { _all: true },
+      }),
+      this.prisma.albumItem.aggregate({
+        where: { projectId, userId },
+        _sum: { size: true },
+      }),
     ]);
+
+    const normalizedCounts = new Map<string, number>();
+    const rawByNormalized = new Map<string, string[]>();
+    for (const row of ratioRows) {
+      const raw = row.aspectRatio ?? '';
+      const normalized = normalizeAspectRatio(raw);
+      if (!normalized) continue;
+      const count = (row._count as any)._all ?? 0;
+      normalizedCounts.set(normalized, (normalizedCounts.get(normalized) || 0) + count);
+      const list = rawByNormalized.get(normalized) || [];
+      list.push(raw);
+      rawByNormalized.set(normalized, list);
+    }
+    const aspectRatioCounts = Array.from(normalizedCounts.entries())
+      .map(([ratio, count]) => ({ ratio, count }))
+      .sort((a, b) => {
+        const toNumber = (value: string) => {
+          const [w, h] = value.split(':').map(Number);
+          if (!w || !h) return Number.POSITIVE_INFINITY;
+          return w / h;
+        };
+        const numericDiff = toNumber(a.ratio) - toNumber(b.ratio);
+        return Number.isFinite(numericDiff) && numericDiff !== 0 ? numericDiff : a.ratio.localeCompare(b.ratio);
+      });
+
+    const where: any = { projectId, userId };
+    if (options.aspectRatios && options.aspectRatios.length > 0) {
+      const rawValues = new Set<string>();
+      for (const r of options.aspectRatios) {
+        (rawByNormalized.get(r) || []).forEach((raw) => rawValues.add(raw));
+      }
+      where.aspectRatio = { in: Array.from(rawValues) };
+    }
+
+    const skip = (page - 1) * limit;
+    const orderBy = sort === 'oldest'
+      ? [{ createdAt: 'asc' as const }, { id: 'asc' as const }]
+      : [{ createdAt: 'desc' as const }, { id: 'desc' as const }];
+
+    const [total, items] = await Promise.all([
+      this.prisma.albumItem.count({ where }),
+      this.prisma.albumItem.findMany({ where, skip, take: limit, orderBy }),
+    ]);
+
     return {
       items: items.map((a) => this.mapAlbumItem(a)),
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+      totalSize: Number(sizeAgg._sum.size || 0),
+      aspectRatioCounts,
+    };
+  }
+
+  async getProjectCompletedJobs(
+    userId: string,
+    projectId: string,
+    options: { page?: number; limit?: number; sort?: 'newest' | 'oldest' } = {},
+  ): Promise<{ items: Job[]; total: number; page: number; pages: number }> {
+    const page = options.page ?? 1;
+    const limit = options.limit ?? 500;
+    const sort = options.sort ?? 'newest';
+
+    const where = { projectId, userId, status: 'completed' as const };
+    const skip = (page - 1) * limit;
+    const orderBy = sort === 'oldest'
+      ? [{ createdAt: 'asc' as const }, { id: 'asc' as const }]
+      : [{ createdAt: 'desc' as const }, { id: 'desc' as const }];
+
+    const [total, jobs] = await Promise.all([
+      this.prisma.job.count({ where }),
+      this.prisma.job.findMany({ where, skip, take: limit, orderBy }),
+    ]);
+
+    return {
+      items: jobs.map((j) => this.mapJob(j)),
       total,
       page,
       pages: Math.max(1, Math.ceil(total / limit)),

@@ -12,6 +12,7 @@ import {
   WorkflowItemType as WorkflowItemTypeKind,
   Provider,
   AlbumItem,
+  AspectRatioCount,
   estimatePromptLength,
   formatPromptLimit,
   isPromptOverLimit,
@@ -20,7 +21,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectAlbum, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject as apiFetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -93,8 +94,23 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   };
 
   const [localProject, setLocalProject] = useState<Project>(project);
-  const [localJobs, setLocalJobs] = useState<Job[]>(project.jobs || []);
+  const [localJobs, setLocalJobs] = useState<Job[]>((project.jobs || []).filter(j => j.status !== 'completed'));
   const [localAlbum, setLocalAlbum] = useState<AlbumItem[]>(project.album || []);
+  const [albumTotal, setAlbumTotal] = useState<number>(0);
+  const [albumPages, setAlbumPages] = useState<number>(1);
+  const [albumTotalSize, setAlbumTotalSize] = useState<number>(0);
+  const [albumAspectRatioCounts, setAlbumAspectRatioCounts] = useState<AspectRatioCount[]>([]);
+  const [albumPage, setAlbumPage] = useState<number>(1);
+  const [albumPageSize, setAlbumPageSize] = useState<number | 'all'>(500);
+  const [albumSort, setAlbumSort] = useState<'newest' | 'oldest'>('newest');
+  const [albumSelectedRatios, setAlbumSelectedRatios] = useState<string[]>([]);
+
+  const [completedJobs, setCompletedJobs] = useState<Job[]>([]);
+  const [completedTotal, setCompletedTotal] = useState<number>(0);
+  const [completedPages, setCompletedPages] = useState<number>(1);
+  const [completedPage, setCompletedPage] = useState<number>(1);
+  const [completedPageSize, setCompletedPageSize] = useState<number | 'all'>(500);
+  const [completedSort, setCompletedSort] = useState<'newest' | 'oldest'>('newest');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -146,34 +162,125 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [isLoadingWorkflow, setIsLoadingWorkflow] = useState(true);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const [isLoadingAlbum, setIsLoadingAlbum] = useState(true);
-  const [albumLoaded, setAlbumLoaded] = useState(false);
+  const [isLoadingCompleted, setIsLoadingCompleted] = useState(true);
+
+  const tabContentRef = useRef<HTMLDivElement | null>(null);
+  const scrollTabContentTop = useCallback(() => {
+    const el = tabContentRef.current;
+    if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   useEffect(() => {
     setIsLoadingWorkflow(true);
     setIsLoadingJobs(true);
-    setAlbumLoaded(false);
     setIsLoadingAlbum(true);
+    setIsLoadingCompleted(true);
     setLocalAlbum([]);
+    setAlbumTotal(0);
+    setAlbumPages(1);
+    setAlbumTotalSize(0);
+    setAlbumAspectRatioCounts([]);
+    setAlbumPage(1);
+    setAlbumSelectedRatios([]);
+    setCompletedJobs([]);
+    setCompletedTotal(0);
+    setCompletedPages(1);
+    setCompletedPage(1);
     Promise.all([
       fetchProjectWorkflow(project.id).then(w => setLocalProject(prev => ({ ...prev, workflow: w }))).catch(console.error),
-      fetchProjectJobs(project.id).then(j => setLocalJobs(j)).catch(console.error)
+      fetchProjectJobs(project.id, { excludeStatus: ['completed'] }).then(j => setLocalJobs(j)).catch(console.error)
     ]).finally(() => {
       setIsLoadingWorkflow(false);
       setIsLoadingJobs(false);
     });
   }, [project.id]);
 
-  useEffect(() => {
-    if (activeTab !== 'album' || albumLoaded) return;
+  const albumFetchTokenRef = useRef(0);
+  const loadAlbumPage = useCallback(async (signalToken: number) => {
     setIsLoadingAlbum(true);
-    fetchProjectAlbum(project.id)
-      .then(res => {
-        setLocalAlbum(res.items);
-        setAlbumLoaded(true);
-      })
-      .catch(console.error)
-      .finally(() => setIsLoadingAlbum(false));
-  }, [activeTab, project.id, albumLoaded]);
+    try {
+      const res = await fetchProjectAlbum(project.id, {
+        page: albumPage,
+        limit: albumPageSize === 'all' ? 999999 : albumPageSize,
+        sort: albumSort,
+        aspectRatios: albumSelectedRatios.length > 0 ? albumSelectedRatios : undefined,
+      });
+      if (albumFetchTokenRef.current !== signalToken) return;
+      setLocalAlbum(res.items);
+      setAlbumTotal(res.total);
+      setAlbumPages(res.pages);
+      setAlbumTotalSize(res.totalSize);
+      setAlbumAspectRatioCounts(res.aspectRatioCounts);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      if (albumFetchTokenRef.current === signalToken) setIsLoadingAlbum(false);
+    }
+  }, [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios]);
+
+  useEffect(() => {
+    if (activeTab !== 'album') return;
+    const token = ++albumFetchTokenRef.current;
+    void loadAlbumPage(token);
+  }, [activeTab, loadAlbumPage]);
+
+  const completedFetchTokenRef = useRef(0);
+  const loadCompletedPage = useCallback(async (signalToken: number) => {
+    setIsLoadingCompleted(true);
+    try {
+      const res = await fetchProjectCompletedJobs(project.id, {
+        page: completedPage,
+        limit: completedPageSize === 'all' ? 999999 : completedPageSize,
+        sort: completedSort,
+      });
+      if (completedFetchTokenRef.current !== signalToken) return;
+      setCompletedJobs(res.items);
+      setCompletedTotal(res.total);
+      setCompletedPages(res.pages);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      if (completedFetchTokenRef.current === signalToken) setIsLoadingCompleted(false);
+    }
+  }, [project.id, completedPage, completedPageSize, completedSort]);
+
+  useEffect(() => {
+    if (activeTab !== 'completed') return;
+    const token = ++completedFetchTokenRef.current;
+    void loadCompletedPage(token);
+  }, [activeTab, loadCompletedPage]);
+
+  const handleAlbumPageChange = useCallback((p: number) => {
+    setAlbumPage(p);
+    scrollTabContentTop();
+  }, [scrollTabContentTop]);
+  const handleAlbumPageSizeChange = useCallback((size: number | 'all') => {
+    setAlbumPageSize(size);
+    setAlbumPage(1);
+    scrollTabContentTop();
+  }, [scrollTabContentTop]);
+  const handleAlbumSortChange = useCallback((sort: 'newest' | 'oldest') => {
+    setAlbumSort(sort);
+    setAlbumPage(1);
+  }, []);
+  const handleAlbumSelectedRatiosChange = useCallback((ratios: string[]) => {
+    setAlbumSelectedRatios(ratios);
+    setAlbumPage(1);
+  }, []);
+
+  const handleCompletedPageChange = useCallback((p: number) => {
+    setCompletedPage(p);
+    scrollTabContentTop();
+  }, [scrollTabContentTop]);
+  const handleCompletedPageSizeChange = useCallback((size: number | 'all') => {
+    setCompletedPageSize(size);
+    setCompletedPage(1);
+    scrollTabContentTop();
+  }, [scrollTabContentTop]);
+  const handleCompletedSortChange = useCallback((sort: 'newest' | 'oldest') => {
+    setCompletedSort(sort);
+    setCompletedPage(1);
+  }, []);
 
   const handleReuseWorkflow = (job: Job) => {
     if (!job.workflowSnapshot || job.workflowSnapshot.length === 0) {
@@ -315,15 +422,41 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     if (isProcessing) {
       interval = setInterval(async () => {
         try {
-          const [updatedJobs, updatedAlbum] = await Promise.all([
-            fetchProjectJobs(localProject.id).catch(() => null),
-            activeTabRef.current === 'album' ? fetchProjectAlbum(localProject.id).then(res => res.items).catch(() => null) : null
+          const tab = activeTabRef.current;
+          const [updatedJobs, updatedAlbumRes, updatedCompletedRes] = await Promise.all([
+            fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] }).catch(() => null),
+            tab === 'album'
+              ? fetchProjectAlbum(localProject.id, {
+                  page: albumPage,
+                  limit: albumPageSize === 'all' ? 999999 : albumPageSize,
+                  sort: albumSort,
+                  aspectRatios: albumSelectedRatios.length > 0 ? albumSelectedRatios : undefined,
+                }).catch(() => null)
+              : null,
+            tab === 'completed'
+              ? fetchProjectCompletedJobs(localProject.id, {
+                  page: completedPage,
+                  limit: completedPageSize === 'all' ? 999999 : completedPageSize,
+                  sort: completedSort,
+                }).catch(() => null)
+              : null,
           ]);
           if (updatedJobs && JSON.stringify(updatedJobs) !== JSON.stringify(localJobsRef.current)) {
             setLocalJobs(updatedJobs);
           }
-          if (updatedAlbum && JSON.stringify(updatedAlbum) !== JSON.stringify(localAlbumRef.current)) {
-            setLocalAlbum(updatedAlbum);
+          if (updatedAlbumRes) {
+            if (JSON.stringify(updatedAlbumRes.items) !== JSON.stringify(localAlbumRef.current)) {
+              setLocalAlbum(updatedAlbumRes.items);
+            }
+            setAlbumTotal(updatedAlbumRes.total);
+            setAlbumPages(updatedAlbumRes.pages);
+            setAlbumTotalSize(updatedAlbumRes.totalSize);
+            setAlbumAspectRatioCounts(updatedAlbumRes.aspectRatioCounts);
+          }
+          if (updatedCompletedRes) {
+            setCompletedJobs(updatedCompletedRes.items);
+            setCompletedTotal(updatedCompletedRes.total);
+            setCompletedPages(updatedCompletedRes.pages);
           }
         } catch (e) {
           console.error('Polling for project updates failed:', e);
@@ -331,7 +464,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       }, 10000);
     }
     return () => clearInterval(interval);
-  }, [isProcessing, localProject.id]);
+  }, [isProcessing, localProject.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, completedPage, completedPageSize, completedSort]);
 
   useEffect(() => {
     (async () => {
@@ -846,6 +979,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const deleteJob = async (jobId: string) => {
     const updatedJobs = localJobs.filter(j => j.id !== jobId);
     setLocalJobs(updatedJobs);
+    if (completedJobs.some(j => j.id === jobId)) {
+      setCompletedJobs(prev => prev.filter(j => j.id !== jobId));
+      setCompletedTotal(prev => Math.max(0, prev - 1));
+    }
     await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
 
@@ -974,15 +1111,19 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   };
 
   const toggleSelectAllCompleted = () => {
-    const completedIds = localJobs.filter(j => j.status === 'completed').map(j => j.id);
+    const completedIds = completedJobs.map(j => j.id);
     setSelectedCompletedIds(selectedCompletedIds.size === completedIds.length ? new Set() : new Set(completedIds));
   };
 
   const deleteSelectedCompleted = async () => {
-    const updatedJobs = localJobs.filter(j => !selectedCompletedIds.has(j.id));
-    setLocalJobs(updatedJobs);
+    const idsToDelete = Array.from(selectedCompletedIds);
+    if (idsToDelete.length === 0) return;
+    const remainingCompleted = completedJobs.filter(j => !selectedCompletedIds.has(j.id));
+    setCompletedJobs(remainingCompleted);
+    setCompletedTotal((prev) => Math.max(0, prev - idsToDelete.length));
     setSelectedCompletedIds(new Set());
-    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+    const remainingAllJobs = localJobs.filter(j => !selectedCompletedIds.has(j.id));
+    await apiUpdateProject(localProject.id, { jobs: remainingAllJobs });
   };
 
   const toggleAlbumSelection = (id: string, isShiftPressed: boolean, scopeIds?: string[]) => {
@@ -1026,11 +1167,16 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       const itemIdsSet = new Set(itemIds);
       const updatedAlbum = localAlbum.filter(item => !itemIdsSet.has(item.id));
       setLocalAlbum(updatedAlbum);
+      setAlbumTotal((prev) => Math.max(0, prev - itemIds.length));
+      const removedSize = items.reduce((acc, item) => acc + (item.size || 0), 0);
+      setAlbumTotalSize((prev) => Math.max(0, prev - removedSize));
       setSelectedAlbumIds(prev => {
         const next = new Set(prev);
         itemIdsSet.forEach(id => next.delete(id));
         return next;
       });
+      const token = ++albumFetchTokenRef.current;
+      void loadAlbumPage(token);
       return true;
     } catch (e: any) {
       console.error('Failed to move items to trash:', e);
@@ -1074,7 +1220,6 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   const draftJobs = localJobs.filter(j => j.status === 'draft');
   const queueJobs = localJobs.filter(j => ['pending', 'processing', 'failed'].includes(j.status));
-  const completedJobs = localJobs.filter(j => j.status === 'completed');
   const albumItems = localAlbum;
   const isArchived = localProject.status === 'archived';
 
@@ -1237,7 +1382,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-0 space-y-0 relative">
+        <div ref={tabContentRef} className="flex-1 overflow-y-auto custom-scrollbar p-0 space-y-0 relative">
           {activeTab === 'draft' && isLoadingJobs && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20">
               <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
@@ -1273,12 +1418,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               onReuse={handleReuseWorkflow}
             />
           )}
-          {activeTab === 'completed' && isLoadingJobs && (
+          {activeTab === 'completed' && isLoadingCompleted && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20">
               <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
             </div>
           )}
-          {activeTab === 'completed' && !isLoadingJobs && (
+          {activeTab === 'completed' && !isLoadingCompleted && (
             <CompletedTab
               completedJobs={completedJobs} expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand}
               selectedCompletedIds={selectedCompletedIds} toggleCompletedSelection={toggleCompletedSelection}
@@ -1287,6 +1432,14 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
               projectType={localProject.type || 'image'}
               onReuse={handleReuseWorkflow}
+              page={completedPage}
+              pageSize={completedPageSize}
+              total={completedTotal}
+              pages={completedPages}
+              sort={completedSort}
+              onPageChange={handleCompletedPageChange}
+              onPageSizeChange={handleCompletedPageSizeChange}
+              onSortChange={handleCompletedSortChange}
             />
           )}
           {activeTab === 'album' && isLoadingAlbum && (
@@ -1305,6 +1458,18 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               onRenameAlbumItem={renameAlbumItem}
               onExportStarted={() => navigate('/exports')}
               projectType={localProject.type || 'image'}
+              page={albumPage}
+              pageSize={albumPageSize}
+              total={albumTotal}
+              pages={albumPages}
+              totalSize={albumTotalSize}
+              aspectRatioCounts={albumAspectRatioCounts}
+              sort={albumSort}
+              selectedAspectRatios={albumSelectedRatios}
+              onPageChange={handleAlbumPageChange}
+              onPageSizeChange={handleAlbumPageSizeChange}
+              onSortChange={handleAlbumSortChange}
+              onSelectedAspectRatiosChange={handleAlbumSelectedRatiosChange}
             />
           )}
         </div>

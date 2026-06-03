@@ -480,15 +480,46 @@ export async function fetchProjectWorkflow(id: string): Promise<import('./types'
   return handleResponse<import('./types').WorkflowItem[]>(res, 'Failed to get project workflow');
 }
 
-export async function fetchProjectJobs(id: string): Promise<import('./types').Job[]> {
-  const res = await apiFetch(`/api/projects/${id}/jobs`, { headers: getHeaders(false) });
+export async function fetchProjectJobs(
+  id: string,
+  options: { excludeStatus?: string[] } = {},
+): Promise<import('./types').Job[]> {
+  const params = new URLSearchParams();
+  if (options.excludeStatus && options.excludeStatus.length > 0) {
+    params.set('excludeStatus', options.excludeStatus.join(','));
+  }
+  const query = params.toString();
+  const res = await apiFetch(`/api/projects/${id}/jobs${query ? `?${query}` : ''}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').Job[]>(res, 'Failed to get project jobs');
 }
 
-export async function fetchProjectAlbum(id: string, page: number = 1, limit: number = 10000): Promise<import('./types').PaginatedResult<import('./types').AlbumItem>> {
-  const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+export async function fetchProjectCompletedJobs(
+  id: string,
+  options: { page?: number; limit?: number; sort?: 'newest' | 'oldest' } = {},
+): Promise<import('./types').PaginatedResult<import('./types').Job>> {
+  const params = new URLSearchParams({
+    page: (options.page ?? 1).toString(),
+    limit: (options.limit ?? 500).toString(),
+    sort: options.sort ?? 'newest',
+  });
+  const res = await apiFetch(`/api/projects/${id}/jobs/completed?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<import('./types').PaginatedResult<import('./types').Job>>(res, 'Failed to get completed jobs');
+}
+
+export async function fetchProjectAlbum(
+  id: string,
+  options: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; aspectRatios?: string[] } = {},
+): Promise<import('./types').AlbumPageResult> {
+  const params = new URLSearchParams({
+    page: (options.page ?? 1).toString(),
+    limit: (options.limit ?? 500).toString(),
+    sort: options.sort ?? 'newest',
+  });
+  if (options.aspectRatios && options.aspectRatios.length > 0) {
+    params.set('aspectRatios', options.aspectRatios.join(','));
+  }
   const res = await apiFetch(`/api/projects/${id}/album?${params.toString()}`, { headers: getHeaders(false) });
-  return handleResponse<import('./types').PaginatedResult<import('./types').AlbumItem>>(res, 'Failed to get project album');
+  return handleResponse<import('./types').AlbumPageResult>(res, 'Failed to get project album');
 }
 
 export async function fetchQueueStatus(view: QueueMonitorView): Promise<QueueMonitorStatus> {
@@ -996,7 +1027,8 @@ export async function startAlbumExport(
 export async function copyAlbumToLibrary(
   projectId: string,
   params: {
-    itemIds: string[];
+    itemIds?: string[];
+    allAlbumItems?: boolean;
     version?: 'raw' | 'optimized';
     destinationLibraryId?: string;
     newLibraryName?: string;

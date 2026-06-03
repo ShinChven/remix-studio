@@ -301,11 +301,35 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const user = c.get('user') as JwtPayload;
       const projectId = c.req.param('id');
       if (!projectId) return c.json({ error: 'Project id is required' }, 400);
-      const jobs = await repository.getProjectJobs(user.userId, projectId);
+      const excludeStatusRaw = c.req.query('excludeStatus');
+      const excludeStatus = excludeStatusRaw
+        ? excludeStatusRaw.split(',').map((s) => s.trim()).filter(Boolean)
+        : undefined;
+      const jobs = await repository.getProjectJobs(user.userId, projectId, { excludeStatus });
       return c.json(await signJobs(jobs, storage));
     } catch (e) {
       console.error('[GET /api/projects/:id/jobs]', e);
       return c.json({ error: 'Failed to get jobs' }, 500);
+    }
+  });
+
+  router.get('/api/projects/:id/jobs/completed', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+      const page = parseInt(c.req.query('page') || '1', 10);
+      const limit = parseInt(c.req.query('limit') || '500', 10);
+      const sortRaw = c.req.query('sort');
+      const sort: 'newest' | 'oldest' = sortRaw === 'oldest' ? 'oldest' : 'newest';
+      const result = await repository.getProjectCompletedJobs(user.userId, projectId, { page, limit, sort });
+      return c.json({
+        ...result,
+        items: await signJobs(result.items, storage),
+      });
+    } catch (e) {
+      console.error('[GET /api/projects/:id/jobs/completed]', e);
+      return c.json({ error: 'Failed to get completed jobs' }, 500);
     }
   });
 
@@ -315,8 +339,14 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const projectId = c.req.param('id');
       const page = parseInt(c.req.query('page') || '1', 10);
       const limit = parseInt(c.req.query('limit') || '500', 10);
+      const sortRaw = c.req.query('sort');
+      const sort: 'newest' | 'oldest' = sortRaw === 'oldest' ? 'oldest' : 'newest';
+      const aspectRatiosRaw = c.req.query('aspectRatios');
+      const aspectRatios = aspectRatiosRaw
+        ? aspectRatiosRaw.split(',').map((s) => s.trim()).filter(Boolean)
+        : undefined;
       if (!projectId) return c.json({ error: 'Project id is required' }, 400);
-      const result = await repository.getProjectAlbum(user.userId, projectId, page, limit);
+      const result = await repository.getProjectAlbum(user.userId, projectId, { page, limit, sort, aspectRatios });
       return c.json({
         ...result,
         items: await signAlbumItems(result.items, storage)
@@ -615,11 +645,12 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const body = await c.req.json();
       
       const itemIds: string[] = body.itemIds || [];
+      const allAlbumItems: boolean = body.allAlbumItems === true;
       const version: 'raw' | 'optimized' = body.version || 'optimized';
       const destinationLibraryId: string | undefined = body.destinationLibraryId;
       const newLibraryName: string | undefined = body.newLibraryName;
 
-      if (!itemIds.length) {
+      if (!allAlbumItems && !itemIds.length) {
         return c.json({ error: 'No items selected' }, 400);
       }
       if (!destinationLibraryId && !newLibraryName) {
@@ -637,7 +668,11 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
               ? 'audio'
               : 'image';
 
-      const itemsToCopy = (project.album || []).filter(item => itemIds.includes(item.id));
+      const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
+      const albumItems = albumPage.items;
+      const itemsToCopy = allAlbumItems
+        ? albumItems
+        : albumItems.filter((item) => itemIds.includes(item.id));
       if (itemsToCopy.length === 0) return c.json({ error: 'No matching items found' }, 400);
 
       const bucket = storage.getBucketName();
@@ -697,7 +732,8 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const newItems: LibraryItem[] = [];
       
       const jobFilenameMap = new Map<string, string>();
-      for (const job of project.jobs) {
+      const projectJobs = await repository.getProjectJobs(user.userId, projectId);
+      for (const job of projectJobs) {
         if (job.filename) jobFilenameMap.set(job.id, job.filename);
       }
 
@@ -951,9 +987,11 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
 
-      const itemsToExport = itemIds 
-        ? (project.album || []).filter(item => itemIds.includes(item.id))
-        : (project.album || []);
+      const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
+      const albumItems = albumPage.items;
+      const itemsToExport = itemIds
+        ? albumItems.filter((item) => itemIds.includes(item.id))
+        : albumItems;
 
       if (itemsToExport.length === 0) return c.json({ error: 'No items to export' }, 400);
 

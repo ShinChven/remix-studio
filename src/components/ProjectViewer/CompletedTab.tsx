@@ -1,12 +1,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, Trash2, List } from 'lucide-react';
+import { CheckCircle2, Trash2, List, ArrowDownWideNarrow, ArrowUpWideNarrow } from 'lucide-react';
 import { Job, ProjectType } from '../../types';
 import { imageDisplayUrl } from '../../api';
 import { SelectionToolbar } from './SelectionToolbar';
 import { JobListItem } from './JobListItem';
 import { InfoChip } from './InfoChip';
 import { EmptyState } from './EmptyState';
+import { PaginationBar } from './PaginationBar';
 
 interface CompletedTabProps {
   completedJobs: Job[];
@@ -22,6 +23,14 @@ interface CompletedTabProps {
   setShowDeleteSelectedModal: (show: boolean) => void;
   projectType?: ProjectType;
   onReuse?: (job: Job) => void;
+  page: number;
+  pageSize: number | 'all';
+  total: number;
+  pages: number;
+  sort: 'newest' | 'oldest';
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number | 'all') => void;
+  onSortChange: (sort: 'newest' | 'oldest') => void;
 }
 
 export function CompletedTab({
@@ -38,13 +47,21 @@ export function CompletedTab({
   setShowDeleteSelectedModal,
   projectType = 'image',
   onReuse,
+  page,
+  pageSize,
+  total,
+  pages,
+  sort,
+  onPageChange,
+  onPageSizeChange,
+  onSortChange,
 }: CompletedTabProps) {
   const { t } = useTranslation();
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-0">
         {/* Completed Jobs Header/Toolbar */}
-        {completedJobs.length > 0 && (
+        {total > 0 && (
           <SelectionToolbar
             totalCount={completedJobs.length}
             selectedCount={selectedCompletedIds.size}
@@ -53,17 +70,30 @@ export function CompletedTab({
             mobileSingleLine
             mobileActionsRight
             rightActions={
-              selectedCompletedIds.size > 0 ? (
+              <>
+                {selectedCompletedIds.size > 0 && (
+                  <button
+                    onClick={() => setShowDeleteSelectedModal(true)}
+                    title={t('projectViewer.common.deleteSelected')}
+                    aria-label={t('projectViewer.common.deleteSelected')}
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
+                  </button>
+                )}
                 <button
-                  onClick={() => setShowDeleteSelectedModal(true)}
-                  title={t('projectViewer.common.deleteSelected')}
-                  aria-label={t('projectViewer.common.deleteSelected')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                  onClick={() => onSortChange(sort === 'newest' ? 'oldest' : 'newest')}
+                  title={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                  aria-label={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
                 >
-                  <Trash2 className="w-3 h-3" />
-                  <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
+                  {sort === 'newest' ? <ArrowDownWideNarrow className="w-3 h-3" /> : <ArrowUpWideNarrow className="w-3 h-3" />}
+                  <span className="hidden sm:inline">
+                    {sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
+                  </span>
                 </button>
-              ) : undefined
+              </>
             }
           />
         )}
@@ -191,7 +221,7 @@ export function CompletedTab({
           });
           })()}
 
-          {completedJobs.length === 0 && (
+          {total === 0 && (
             <EmptyState
               Icon={CheckCircle2}
               title={t('projectViewer.completed.emptyTitle')}
@@ -200,6 +230,17 @@ export function CompletedTab({
             />
           )}
         </div>
+
+        {total > 0 && (
+          <PaginationBar
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            pages={pages}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        )}
       </div>
     </section>
   );

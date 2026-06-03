@@ -26,8 +26,24 @@ export interface IRepository {
   getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all', nameOnly?: boolean): Promise<{ items: Project[], total: number, page: number, pages: number }>;
   getProject(userId: string, projectId: string): Promise<Project | null>;
   getProjectWorkflow(userId: string, projectId: string): Promise<import('../../src/types').WorkflowItem[]>;
-  getProjectJobs(userId: string, projectId: string): Promise<import('../../src/types').Job[]>;
-  getProjectAlbum(userId: string, projectId: string, page?: number, limit?: number): Promise<{ items: AlbumItem[], total: number, page: number, pages: number }>;
+  getProjectJobs(userId: string, projectId: string, options?: { excludeStatus?: string[] }): Promise<import('../../src/types').Job[]>;
+  getProjectCompletedJobs(
+    userId: string,
+    projectId: string,
+    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest' },
+  ): Promise<{ items: import('../../src/types').Job[]; total: number; page: number; pages: number }>;
+  getProjectAlbum(
+    userId: string,
+    projectId: string,
+    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; aspectRatios?: string[] },
+  ): Promise<{
+    items: AlbumItem[];
+    total: number;
+    page: number;
+    pages: number;
+    totalSize: number;
+    aspectRatioCounts: { ratio: string; count: number }[];
+  }>;
   createProject(userId: string, project: Project): Promise<void>;
   updateProject(userId: string, projectId: string, updates: Partial<Project>): Promise<void>;
   deleteProject(userId: string, projectId: string): Promise<void>;

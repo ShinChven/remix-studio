@@ -11,6 +11,8 @@ interface CopyToLibraryDialogProps {
   projectName: string;
   projectType?: ProjectType;
   itemIds: string[];
+  useAllAlbumScope?: boolean;
+  allAlbumItemCount?: number;
   onClose: () => void;
   onSuccess: (libraryId: string) => void;
 }
@@ -21,6 +23,8 @@ export function CopyToLibraryDialog({
   projectName,
   projectType = 'image',
   itemIds,
+  useAllAlbumScope = false,
+  allAlbumItemCount,
   onClose,
   onSuccess,
 }: CopyToLibraryDialogProps) {
@@ -38,6 +42,7 @@ export function CopyToLibraryDialog({
           ? t('projectViewer.copyToLibrary.audios')
           : t('projectViewer.tabs.album')
   }`;
+  const effectiveCount = useAllAlbumScope ? (allAlbumItemCount ?? itemIds.length) : itemIds.length;
   const itemSummary = t(
     isTextProject
       ? 'projectViewer.copyToLibrary.textItemCount'
@@ -46,7 +51,7 @@ export function CopyToLibraryDialog({
         : projectType === 'audio'
           ? 'projectViewer.copyToLibrary.audioItemCount'
         : 'projectViewer.copyToLibrary.imageItemCount',
-    { count: itemIds.length }
+    { count: effectiveCount }
   );
   const AccentIcon = isTextProject ? FileText : isVideoProject ? VideoIcon : isAudioProject ? Music : LibraryIcon;
 
@@ -105,7 +110,8 @@ export function CopyToLibraryDialog({
     setIsSubmitting(true);
     try {
       const result = await copyAlbumToLibrary(projectId, {
-        itemIds,
+        itemIds: useAllAlbumScope ? undefined : itemIds,
+        allAlbumItems: useAllAlbumScope || undefined,
         version: isTextProject || isAudioProject ? undefined : version,
         destinationLibraryId: mode === 'existing' ? selectedLibraryId : undefined,
         newLibraryName: mode === 'new' ? newLibraryName.trim() : undefined,
