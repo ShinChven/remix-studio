@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AudioLines, FileText, Hash, ImageIcon, Layers, Play, Save, Terminal, Type, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { createProject, updateProject, fetchProject } from '../api';
+import { createProject, updateProject, fetchProject, fetchProjectWorkflow } from '../api';
 import type { Project, ProjectType, WorkflowItem } from '../types';
 import { PageHeader } from '../components/PageHeader';
 
@@ -53,12 +53,12 @@ export function ProjectForm() {
         setProjectType(proj.type || 'image');
       }).catch(() => navigate('/projects'));
     } else if (copyFrom) {
-      fetchProject(copyFrom).then(proj => {
+      Promise.all([fetchProject(copyFrom), fetchProjectWorkflow(copyFrom)]).then(([proj, workflow]) => {
         setName(proj.name);
         setDescription(proj.description || '');
         setPrefix(proj.prefix || '');
         setProjectType(proj.type || 'image');
-        const copiedWorkflow = (proj.workflow || []).map(item => ({
+        const copiedWorkflow = workflow.map(item => ({
           ...item,
           id: crypto.randomUUID()
         }));

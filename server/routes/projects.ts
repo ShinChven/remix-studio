@@ -46,6 +46,20 @@ function stripToKey(value: string | undefined, bucket: string): string | undefin
   }
 }
 
+function normalizeWorkflowForStorage(workflow: WorkflowItem[], bucket: string): WorkflowItem[] {
+  return workflow.map((item) => {
+    if (item.type === 'image' || item.type === 'video' || item.type === 'audio') {
+      return {
+        ...item,
+        value: stripToKey(item.value, bucket) || item.value,
+        thumbnailUrl: stripToKey(item.thumbnailUrl, bucket),
+        optimizedUrl: stripToKey(item.optimizedUrl, bucket),
+      };
+    }
+    return item;
+  });
+}
+
 function basenameFromKey(value: string | undefined): string {
   if (!value) return '';
   const clean = value.split('?')[0];
@@ -399,7 +413,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         type: projectType,
         status: projectStatus,
         createdAt: typeof body.createdAt === 'number' ? body.createdAt : Date.now(),
-        workflow: Array.isArray(body.workflow) ? body.workflow : [],
+        workflow: Array.isArray(body.workflow) ? normalizeWorkflowForStorage(body.workflow, storage.getBucketName()) : [],
         jobs: Array.isArray(body.jobs) ? body.jobs : [],
         album: [],
         providerId: typeof body.providerId === 'string' ? body.providerId : undefined,
@@ -446,17 +460,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (Array.isArray(body?.workflow)) {
         // Strip presigned URLs back to bare S3 keys before storing
         const bucket = storage.getBucketName();
-        updates.workflow = body.workflow.map((item: WorkflowItem) => {
-          if (item.type === 'image' || item.type === 'video' || item.type === 'audio') {
-            return {
-              ...item,
-              value: stripToKey(item.value, bucket) || item.value,
-              thumbnailUrl: stripToKey(item.thumbnailUrl, bucket),
-              optimizedUrl: stripToKey(item.optimizedUrl, bucket),
-            };
-          }
-          return item;
-        });
+        updates.workflow = normalizeWorkflowForStorage(body.workflow, bucket);
       }
       if (Array.isArray(body?.jobs)) {
         const bucket = storage.getBucketName();
