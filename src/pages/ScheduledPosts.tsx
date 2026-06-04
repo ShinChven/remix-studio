@@ -48,6 +48,13 @@ interface PostCount {
   sendCount: number;
 }
 
+function formatLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function ScheduledPosts() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -92,8 +99,10 @@ export function ScheduledPosts() {
       // Expand to cover full weeks
       const from = new Date(startOfMonth);
       from.setDate(from.getDate() - from.getDay());
+      from.setHours(0, 0, 0, 0);
       const to = new Date(endOfMonth);
       to.setDate(to.getDate() + (6 - to.getDay()));
+      to.setHours(23, 59, 59, 999);
 
       const data = await fetchScheduledPostCounts(
         from.toISOString(),
@@ -185,9 +194,10 @@ export function ScheduledPosts() {
     return days;
   }, [currentMonth]);
 
+  const countsByDate = useMemo(() => new Map(counts.map((count) => [count.date, count])), [counts]);
+
   function getPostCountForDate(date: Date) {
-    const dateString = date.toISOString().split('T')[0];
-    return counts.find(c => c.date === dateString);
+    return countsByDate.get(formatLocalDateKey(date));
   }
 
   return (
