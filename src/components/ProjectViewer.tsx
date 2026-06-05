@@ -69,6 +69,7 @@ interface LightboxData {
 
 const WORKFLOW_LIBRARY_PAGE_SIZE = 500;
 const MAX_JOB_FILENAME_LENGTH = 200;
+const TAB_DATA_STALE_MS = 30_000;
 
 function buildJobFilename(filenameParts: string[], suffixId: string): string {
   const safeSuffixId = suffixId.replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -188,8 +189,20 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     const el = tabContentRef.current;
     if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+  const albumFetchTokenRef = useRef(0);
+  const albumLoadedKeyRef = useRef<string | null>(null);
+  const albumFetchedAtRef = useRef<number>(0);
+  const completedFetchTokenRef = useRef(0);
+  const completedLoadedKeyRef = useRef<string | null>(null);
+  const completedFetchedAtRef = useRef<number>(0);
 
   useEffect(() => {
+    albumFetchTokenRef.current += 1;
+    albumLoadedKeyRef.current = null;
+    albumFetchedAtRef.current = 0;
+    completedFetchTokenRef.current += 1;
+    completedLoadedKeyRef.current = null;
+    completedFetchedAtRef.current = 0;
     setIsLoadingWorkflow(true);
     setIsLoadingJobs(true);
     setIsLoadingAlbum(true);
@@ -209,6 +222,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       fetchProjectWorkflow(project.id).then(w => setLocalProject(prev => ({ ...prev, workflow: w }))).catch(console.error),
       fetchProjectJobs(project.id, { excludeStatus: ['completed'] }).then(j => setLocalJobs(j)).catch(console.error),
       fetchProjectAlbum(project.id, { page: 1, limit: 5 }).then(res => {
+        if (albumLoadedKeyRef.current) return;
         setLocalAlbum(res.items);
         setAlbumTotal(res.total);
         setAlbumPages(res.pages);
@@ -225,9 +239,15 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     });
   }, [project.id]);
 
-  const albumFetchTokenRef = useRef(0);
-  const loadAlbumPage = useCallback(async (signalToken: number) => {
-    setIsLoadingAlbum(true);
+  const albumQueryKey = React.useMemo(() => JSON.stringify({
+    projectId: project.id,
+    page: albumPage,
+    pageSize: albumPageSize,
+    sort: albumSort,
+    aspectRatios: albumSelectedRatios,
+  }), [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios]);
+  const loadAlbumPage = useCallback(async (signalToken: number, showLoading = true) => {
+    if (showLoading) setIsLoadingAlbum(true);
     try {
       const res = await fetchProjectAlbum(project.id, {
         page: albumPage,
@@ -241,22 +261,35 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       setAlbumPages(res.pages);
       setAlbumTotalSize(res.totalSize);
       setAlbumAspectRatioCounts(res.aspectRatioCounts);
+      albumLoadedKeyRef.current = albumQueryKey;
+      albumFetchedAtRef.current = Date.now();
     } catch (e) {
       console.error(e);
     } finally {
       if (albumFetchTokenRef.current === signalToken) setIsLoadingAlbum(false);
     }
-  }, [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios]);
+  }, [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, albumQueryKey]);
 
   useEffect(() => {
     if (activeTab !== 'album') return;
+    const hasLoadedCurrentQuery = albumLoadedKeyRef.current === albumQueryKey;
+    const isFresh = Date.now() - albumFetchedAtRef.current < TAB_DATA_STALE_MS;
+    if (hasLoadedCurrentQuery && isFresh) {
+      setIsLoadingAlbum(false);
+      return;
+    }
     const token = ++albumFetchTokenRef.current;
-    void loadAlbumPage(token);
-  }, [activeTab, loadAlbumPage]);
+    void loadAlbumPage(token, !hasLoadedCurrentQuery);
+  }, [activeTab, albumQueryKey, loadAlbumPage]);
 
-  const completedFetchTokenRef = useRef(0);
-  const loadCompletedPage = useCallback(async (signalToken: number) => {
-    setIsLoadingCompleted(true);
+  const completedQueryKey = React.useMemo(() => JSON.stringify({
+    projectId: project.id,
+    page: completedPage,
+    pageSize: completedPageSize,
+    sort: completedSort,
+  }), [project.id, completedPage, completedPageSize, completedSort]);
+  const loadCompletedPage = useCallback(async (signalToken: number, showLoading = true) => {
+    if (showLoading) setIsLoadingCompleted(true);
     try {
       const res = await fetchProjectCompletedJobs(project.id, {
         page: completedPage,
@@ -267,18 +300,26 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       setCompletedJobs(res.items);
       setCompletedTotal(res.total);
       setCompletedPages(res.pages);
+      completedLoadedKeyRef.current = completedQueryKey;
+      completedFetchedAtRef.current = Date.now();
     } catch (e) {
       console.error(e);
     } finally {
       if (completedFetchTokenRef.current === signalToken) setIsLoadingCompleted(false);
     }
-  }, [project.id, completedPage, completedPageSize, completedSort]);
+  }, [project.id, completedPage, completedPageSize, completedSort, completedQueryKey]);
 
   useEffect(() => {
     if (activeTab !== 'completed') return;
+    const hasLoadedCurrentQuery = completedLoadedKeyRef.current === completedQueryKey;
+    const isFresh = Date.now() - completedFetchedAtRef.current < TAB_DATA_STALE_MS;
+    if (hasLoadedCurrentQuery && isFresh) {
+      setIsLoadingCompleted(false);
+      return;
+    }
     const token = ++completedFetchTokenRef.current;
-    void loadCompletedPage(token);
-  }, [activeTab, loadCompletedPage]);
+    void loadCompletedPage(token, !hasLoadedCurrentQuery);
+  }, [activeTab, completedQueryKey, loadCompletedPage]);
 
   const handleAlbumPageChange = useCallback((p: number) => {
     setAlbumPage(p);
