@@ -379,6 +379,36 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+  router.get('/api/projects/:id/jobs/:jobId/configuration', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const jobId = c.req.param('jobId');
+      if (!projectId || !jobId) return c.json({ error: 'Project id and job id are required' }, 400);
+
+      const job = await repository.getJob(user.userId, projectId, jobId);
+      if (!job) return c.json({ error: 'Job not found' }, 404);
+
+      return c.json({
+        workflowSnapshot: job.workflowSnapshot
+          ? await signWorkflowItems(job.workflowSnapshot, storage)
+          : [],
+        providerId: job.providerId,
+        modelConfigId: job.modelConfigId,
+        aspectRatio: job.aspectRatio,
+        quality: job.quality,
+        background: job.background,
+        format: job.format,
+        duration: job.duration,
+        resolution: job.resolution,
+        sound: job.sound,
+      });
+    } catch (e) {
+      console.error('[GET /api/projects/:id/jobs/:jobId/configuration]', e);
+      return c.json({ error: 'Failed to get job configuration' }, 500);
+    }
+  });
+
   router.delete('/api/projects/:id/jobs/:jobId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

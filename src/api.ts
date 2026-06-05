@@ -506,6 +506,14 @@ export async function fetchProjectCompletedJobs(
   return handleResponse<import('./types').PaginatedResult<import('./types').Job>>(res, 'Failed to get completed jobs');
 }
 
+export async function fetchProjectJobConfiguration(
+  id: string,
+  jobId: string,
+): Promise<Pick<import('./types').Job, 'workflowSnapshot' | 'providerId' | 'modelConfigId' | 'aspectRatio' | 'quality' | 'background' | 'format' | 'duration' | 'resolution' | 'sound'>> {
+  const res = await apiFetch(`/api/projects/${id}/jobs/${jobId}/configuration`, { headers: getHeaders(false) });
+  return handleResponse<Pick<import('./types').Job, 'workflowSnapshot' | 'providerId' | 'modelConfigId' | 'aspectRatio' | 'quality' | 'background' | 'format' | 'duration' | 'resolution' | 'sound'>>(res, 'Failed to get job configuration');
+}
+
 export async function deleteProjectJob(id: string, jobId: string): Promise<void> {
   const res = await apiFetch(`/api/projects/${id}/jobs/${jobId}`, {
     method: 'DELETE',

@@ -377,7 +377,7 @@ export class ProjectRepository {
       where: { id: jobId, projectId, userId },
     });
     if (!j) return null;
-    return this.mapJob(j);
+    return this.mapJob(j, { includeWorkflowSnapshot: true });
   }
 
   async updateJob(userId: string, projectId: string, jobId: string, updates: Partial<Job>): Promise<void> {
@@ -1169,8 +1169,8 @@ export class ProjectRepository {
     });
   }
 
-  private mapJob(j: any): Job {
-    return {
+  private mapJob(j: any, options: { includeWorkflowSnapshot?: boolean } = {}): Job {
+    const job: Job = {
       id: j.id,
       prompt: j.prompt,
       status: j.status,
@@ -1198,6 +1198,10 @@ export class ProjectRepository {
       optimizedSize: j.optimizedSize != null ? Number(j.optimizedSize) : undefined,
       thumbnailSize: j.thumbnailSize != null ? Number(j.thumbnailSize) : undefined,
     };
+    if (options.includeWorkflowSnapshot && Array.isArray(j.workflowSnapshot)) {
+      job.workflowSnapshot = j.workflowSnapshot as WorkflowItem[];
+    }
+    return job;
   }
 
   private mapWorkflow(w: any): WorkflowItem {

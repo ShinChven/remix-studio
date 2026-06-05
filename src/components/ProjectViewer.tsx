@@ -21,7 +21,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJob as apiDeleteProjectJob } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJob as apiDeleteProjectJob } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -83,6 +83,10 @@ function buildJobFilename(filenameParts: string[], suffixId: string): string {
   return `${truncatedReadableName}${separator}${safeSuffixId}`;
 }
 
+function stripJobWorkflowSnapshots(jobs: Job[]): Job[] {
+  return jobs.map(({ workflowSnapshot, ...job }) => job);
+}
+
 async function fetchWorkflowLibraries(): Promise<Library[]> {
   const firstPage = await fetchLibraries(1, WORKFLOW_LIBRARY_PAGE_SIZE, undefined, true);
   if (firstPage.pages <= 1) return firstPage.items;
@@ -141,6 +145,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [showLibrarySelector, setShowLibrarySelector] = useState(false);
   const [previewingLibrary, setPreviewingLibrary] = useState<Library | null>(null);
   const [previewingWorkflowItemId, setPreviewingWorkflowItemId] = useState<string | null>(null);
+  const [reuseConfigJobId, setReuseConfigJobId] = useState<string | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(project.providerId || '');
   const [selectedModelId, setSelectedModelId] = useState<string>('');
@@ -307,12 +312,22 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setCompletedPage(1);
   }, []);
 
-  const handleReuseWorkflow = (job: Job) => {
-    if (!job.workflowSnapshot || job.workflowSnapshot.length === 0) {
-      toast.error(t('projectViewer.common.reuseConfigurationUnavailable'));
-      return;
+  const handleReuseWorkflow = async (job: Job) => {
+    if (reuseConfigJobId) return;
+
+    setReuseConfigJobId(job.id);
+    try {
+      const config = await fetchProjectJobConfiguration(localProject.id, job.id);
+      if (!config.workflowSnapshot || config.workflowSnapshot.length === 0) {
+        toast.error(t('projectViewer.common.reuseConfigurationUnavailable'));
+        return;
+      }
+      setJobToReuse({ ...job, ...config });
+    } catch (e: any) {
+      toast.error(e?.message || t('projectViewer.common.reuseConfigurationUnavailable'));
+    } finally {
+      setReuseConfigJobId(null);
     }
-    setJobToReuse(job);
   };
 
   const confirmReuseWorkflow = () => {
@@ -951,7 +966,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       });
 
       setLocalProject(updatedProject);
-      setLocalJobs(nextJobs);
+      setLocalJobs(stripJobWorkflowSnapshots(nextJobs));
       setActiveTab('draft');
       if (typeof window !== 'undefined' && window.innerWidth < 1024) {
         setMobileView('jobs');

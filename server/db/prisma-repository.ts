@@ -49,6 +49,7 @@ export class PrismaRepository implements IRepository {
   getProjectJobs(userId: string, projectId: string, options?: { excludeStatus?: string[] }) {
     return this.projects.getProjectJobs(userId, projectId, options);
   }
+  getJob(userId: string, projectId: string, jobId: string) { return this.projects.getJob(userId, projectId, jobId); }
   getProjectCompletedJobs(
     userId: string,
     projectId: string,

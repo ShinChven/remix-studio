@@ -27,6 +27,7 @@ export interface IRepository {
   getProject(userId: string, projectId: string): Promise<Project | null>;
   getProjectWorkflow(userId: string, projectId: string): Promise<import('../../src/types').WorkflowItem[]>;
   getProjectJobs(userId: string, projectId: string, options?: { excludeStatus?: string[] }): Promise<import('../../src/types').Job[]>;
+  getJob(userId: string, projectId: string, jobId: string): Promise<import('../../src/types').Job | null>;
   getProjectCompletedJobs(
     userId: string,
     projectId: string,
