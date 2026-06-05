@@ -68,6 +68,20 @@ interface LightboxData {
 }
 
 const WORKFLOW_LIBRARY_PAGE_SIZE = 500;
+const MAX_JOB_FILENAME_LENGTH = 200;
+
+function buildJobFilename(filenameParts: string[], suffixId: string): string {
+  const safeSuffixId = suffixId.replace(/[^a-zA-Z0-9-_]/g, '_');
+  const readableName = filenameParts
+    .filter(Boolean)
+    .join('_')
+    .replace(/[^a-zA-Z0-9-_]/g, '_');
+  const separator = readableName ? '_' : '';
+  const maxReadableLength = Math.max(0, MAX_JOB_FILENAME_LENGTH - separator.length - safeSuffixId.length);
+  const truncatedReadableName = readableName.substring(0, maxReadableLength);
+
+  return `${truncatedReadableName}${separator}${safeSuffixId}`;
+}
 
 async function fetchWorkflowLibraries(): Promise<Library[]> {
   const firstPage = await fetchLibraries(1, WORKFLOW_LIBRARY_PAGE_SIZE, undefined, true);
@@ -842,12 +856,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
         for (const combo of chunk) {
           const shortuuid = crypto.randomUUID().slice(0, 8);
-          const parts = [
+          const filename = buildJobFilename([
             localProject.prefix,
             ...combo.filenameParts,
-            shortuuid
-          ].filter(Boolean);
-          const filename = parts.join('_').replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 200);
+          ], shortuuid);
 
           const isTextProject = localProject.type === 'text';
           const isAudioProject = localProject.type === 'audio';
