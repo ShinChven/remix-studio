@@ -11,20 +11,35 @@ interface ImageLightboxProps {
   onIndexChange?: (index: number) => void;
 }
 
+function clampIndex(index: number, length: number) {
+  if (length <= 0) return 0;
+  return Math.min(Math.max(index, 0), length - 1);
+}
+
 export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexChange }: ImageLightboxProps) {
   const { t } = useTranslation();
-  const [currentIndex, setCurrentIndex] = useState(startIndex);
+  const [currentIndex, setCurrentIndex] = useState(() => clampIndex(startIndex, images.length));
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onIndexChangeRef = useRef(onIndexChange);
   
   useEffect(() => {
-    if (onIndexChange) {
-      onIndexChange(currentIndex);
-    }
-  }, [currentIndex, onIndexChange]);
+    onIndexChangeRef.current = onIndexChange;
+  }, [onIndexChange]);
 
   useEffect(() => {
-    setCurrentIndex(startIndex);
-  }, [startIndex]);
+    const nextIndex = clampIndex(startIndex, images.length);
+    setCurrentIndex((prev) => (prev === nextIndex ? prev : nextIndex));
+  }, [images.length, startIndex]);
+
+  useEffect(() => {
+    if (images.length === 0) return;
+    const nextIndex = clampIndex(currentIndex, images.length);
+    if (nextIndex !== currentIndex) {
+      setCurrentIndex(nextIndex);
+      return;
+    }
+    onIndexChangeRef.current?.(nextIndex);
+  }, [currentIndex, images.length]);
 
   useEffect(() => {
     dialogRef.current?.focus();
@@ -37,6 +52,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
         onClose();
         return;
       }
+      if (images.length === 0) return;
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         setCurrentIndex(prev => prev > 0 ? prev - 1 : images.length - 1);
@@ -51,13 +67,8 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [images.length, onClose]);
 
-  useEffect(() => {
-    if (currentIndex >= images.length && images.length > 0) {
-      setCurrentIndex(images.length - 1);
-    }
-  }, [images.length, currentIndex]);
-
   if (!images || images.length === 0) return null;
+  const boundedIndex = clampIndex(currentIndex, images.length);
 
   const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -81,7 +92,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
       <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
         {onDelete && (
           <button 
-            onClick={(e) => { e.stopPropagation(); onDelete(currentIndex); }} 
+            onClick={(e) => { e.stopPropagation(); onDelete(boundedIndex); }} 
             className="p-2 text-white/50 hover:text-red-500 transition-colors bg-black/50 hover:bg-black/80 rounded-full"
             title={t('projectViewer.imageLightbox.deleteImage')}
           >
@@ -100,8 +111,8 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
       )}
       
       <img 
-        src={images[currentIndex]} 
-        alt={t('projectViewer.imageLightbox.previewAlt', { index: currentIndex + 1 })} 
+        src={images[boundedIndex]} 
+        alt={t('projectViewer.imageLightbox.previewAlt', { index: boundedIndex + 1 })} 
         className="max-w-[90vw] max-h-[90vh] object-contain select-none shadow-2xl"
         onClick={(e) => e.stopPropagation()} 
       />
@@ -114,7 +125,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
       
       {images.length > 1 && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-black/50 rounded-full text-white/80 text-xs font-bold tracking-widest backdrop-blur-sm">
-          {currentIndex + 1} / {images.length}
+          {boundedIndex + 1} / {images.length}
         </div>
       )}
     </div>,
