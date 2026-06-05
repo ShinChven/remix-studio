@@ -1196,17 +1196,29 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       if (itemIds.length === 1) await moveToTrash(localProject.id, itemIds[0]); else await moveToTrashBatch(localProject.id, itemIds);
       const itemIdsSet = new Set(itemIds);
       const updatedAlbum = localAlbum.filter(item => !itemIdsSet.has(item.id));
+      const nextAlbumTotal = Math.max(0, albumTotal - itemIds.length);
       setLocalAlbum(updatedAlbum);
-      setAlbumTotal((prev) => Math.max(0, prev - itemIds.length));
+      setAlbumTotal(nextAlbumTotal);
+      setAlbumPages(Math.max(1, Math.ceil(nextAlbumTotal / (albumPageSize === 'all' ? Math.max(nextAlbumTotal, 1) : albumPageSize))));
       const removedSize = items.reduce((acc, item) => acc + (item.size || 0), 0);
       setAlbumTotalSize((prev) => Math.max(0, prev - removedSize));
+      const removedAspectRatios = items.reduce<Record<string, number>>((acc, item) => {
+        const ratio = item.aspectRatio?.trim();
+        if (ratio) acc[ratio] = (acc[ratio] || 0) + 1;
+        return acc;
+      }, {});
+      if (Object.keys(removedAspectRatios).length > 0) {
+        setAlbumAspectRatioCounts((prev) => (
+          prev
+            .map(({ ratio, count }) => ({ ratio, count: count - (removedAspectRatios[ratio] || 0) }))
+            .filter(({ count }) => count > 0)
+        ));
+      }
       setSelectedAlbumIds(prev => {
         const next = new Set(prev);
         itemIdsSet.forEach(id => next.delete(id));
         return next;
       });
-      const token = ++albumFetchTokenRef.current;
-      void loadAlbumPage(token);
       return true;
     } catch (e: any) {
       console.error('Failed to move items to trash:', e);
