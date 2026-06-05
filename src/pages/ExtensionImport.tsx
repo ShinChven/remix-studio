@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { fetchLibraries, fetchProjects, fetchProject, updateProject, createLibraryItem, saveImage, createLibrary, createProject } from '../api';
+import { fetchLibraries, fetchProjects, fetchProjectWorkflow, updateProject, createLibraryItem, saveImage, createLibrary, createProject } from '../api';
 import { Library, Project } from '../types';
 import { useTranslation } from 'react-i18next';
 import { Save, Folder, Layers, Image as ImageIcon, Type, ArrowRight, Check, X, Loader2 } from 'lucide-react';
@@ -288,7 +288,7 @@ export default function ExtensionImport() {
         toast.success(`Saved to library successfully!`);
         navigate(`/library/${selectedId}`);
       } else {
-        const project = await fetchProject(selectedId);
+        const workflow = await fetchProjectWorkflow(selectedId);
         
         let value = importData.data;
         let thumbnailUrl = undefined;
@@ -310,11 +310,11 @@ export default function ExtensionImport() {
           thumbnailUrl,
           optimizedUrl,
           size,
-          order: project.workflow.length,
+          order: workflow.length,
         };
 
         await updateProject(selectedId, {
-          workflow: [...project.workflow, newItem],
+          workflow: [...workflow, newItem],
         });
         
         toast.success(`Saved to project successfully!`);

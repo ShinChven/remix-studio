@@ -983,7 +983,12 @@ Use this tool to find an item by name/title before composing a workflow. Combine
         };
       }
 
-      const workflowItems = (project.workflow || []).map(toToolWorkflowItem);
+      const [workflow, jobs, albumPage] = await Promise.all([
+        repository.getProjectWorkflow(userId, projectId),
+        repository.getProjectJobs(userId, projectId),
+        repository.getProjectAlbum(userId, projectId, { limit: 1 }),
+      ]);
+      const workflowItems = workflow.map(toToolWorkflowItem);
       const response = {
         projectId: project.id,
         name: project.name,
@@ -1008,8 +1013,8 @@ Use this tool to find an item by name/title before composing a workflow. Combine
         workflowUpdateWarning:
           'update_project replaces the whole workflow when workflowItems is provided. Include every existing workflow item you want to keep, in order; omit only items the user explicitly asked to remove.',
         counts: {
-          jobs: project.jobs?.length ?? 0,
-          album: project.album?.length ?? 0,
+          jobs: jobs.length,
+          album: albumPage.total,
         },
       };
 

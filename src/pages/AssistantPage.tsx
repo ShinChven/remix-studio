@@ -20,6 +20,7 @@ import {
   fetchProjects,
   fetchLibraries,
   fetchProject,
+  fetchProjectWorkflow,
   fetchLibrary,
   AssistantConversation,
   AssistantMessage,
@@ -492,8 +493,11 @@ export function AssistantPage() {
     setIsFetchingPreview(true);
     try {
       if (type === 'project') {
-        const proj = await fetchProject(id);
-        setPreviewProject(proj);
+        const [proj, workflow] = await Promise.all([
+          fetchProject(id),
+          fetchProjectWorkflow(id),
+        ]);
+        setPreviewProject({ ...proj, workflow });
       } else {
         const lib = await fetchLibrary(id);
         setPreviewLibrary(lib);

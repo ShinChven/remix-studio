@@ -10,6 +10,7 @@ import {
   createProduct,
   fetchProductExports,
   fetchProject,
+  fetchProjectAlbum,
   fetchStores,
 } from '../api';
 import { AlbumItem, ExportTask, Project } from '../types';
@@ -71,8 +72,11 @@ export function SellExport() {
 
         if (task?.projectId) {
           try {
-            const proj = await fetchProject(task.projectId);
-            if (!cancelled) setProject(proj);
+            const [proj, albumPage] = await Promise.all([
+              fetchProject(task.projectId),
+              fetchProjectAlbum(task.projectId),
+            ]);
+            if (!cancelled) setProject({ ...proj, album: albumPage.items });
           } catch {
             // No album available — covers stay empty
           }

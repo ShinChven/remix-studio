@@ -224,8 +224,17 @@ export function UniversalMediaPicker({
             const lib = await fetchLibrary(fixedSourceId).catch(() => null);
             if (!cancelled && lib) setLibraries([lib]);
           } else {
-            const proj = await fetchProject(fixedSourceId).catch(() => null);
-            if (!cancelled && proj) setProjects([proj]);
+            const [proj, albumPage] = await Promise.all([
+              fetchProject(fixedSourceId).catch(() => null),
+              fetchProjectAlbum(fixedSourceId, { limit: 1 }).catch(() => null),
+            ]);
+            if (!cancelled && proj) {
+              setProjects([{
+                ...proj,
+                album: albumPage?.items || [],
+                albumCount: albumPage?.total ?? proj.albumCount,
+              }]);
+            }
           }
         } else {
           const tasks: Promise<void>[] = [];

@@ -231,9 +231,15 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       const user = c.get('user') as JwtPayload;
       const libraryId = c.req.param('id');
       const projectsResult = await repository.getUserProjects(user.userId, 1, 10000);
-      const referencingProjects = projectsResult.items.filter((p) =>
-        p.workflow.some((item) => item.type === 'library' && item.value === libraryId)
+      const workflowByProject = await Promise.all(
+        projectsResult.items.map(async (project) => ({
+          project,
+          workflow: await repository.getProjectWorkflow(user.userId, project.id),
+        }))
       );
+      const referencingProjects = workflowByProject
+        .filter(({ workflow }) => workflow.some((item) => item.type === 'library' && item.value === libraryId))
+        .map(({ project }) => project);
       return c.json(referencingProjects.map((p) => ({ id: p.id, name: p.name })));
     } catch (e) {
       console.error('[GET /api/libraries/:id/references]', e);
@@ -255,10 +261,11 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
         : projectsResult.items;
 
       for (const project of targets) {
-        const filtered = project.workflow.filter(
+        const workflow = await repository.getProjectWorkflow(user.userId, project.id);
+        const filtered = workflow.filter(
           (item) => !(item.type === 'library' && item.value === libraryId)
         );
-        if (filtered.length !== project.workflow.length) {
+        if (filtered.length !== workflow.length) {
           await repository.updateProject(user.userId, project.id, { workflow: filtered });
         }
       }

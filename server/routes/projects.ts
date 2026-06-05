@@ -494,7 +494,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       
       // Storage check for new jobs (Drafts)
       if (updates.jobs) {
-        const newJobs = updates.jobs.filter(job => !currentProject.jobs.find(cj => cj.id === job.id));
+        const existingJobs = await repository.getProjectJobs(user.userId, projectId);
+        const existingJobIds = new Set(existingJobs.map((job) => job.id));
+        const newJobs = updates.jobs.filter(job => !existingJobIds.has(job.id));
         if (newJobs.length > 0) {
           // Simple estimate: 25MB per image (orig + thumb + opt)
           const estimatedNewSize = newJobs.length * 25 * 1024 * 1024;
@@ -603,14 +605,16 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
-      const item = (project.album || []).find((albumItem) => albumItem.id === itemId);
+      const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
+      const albumItems = albumPage.items;
+      const item = albumItems.find((albumItem) => albumItem.id === itemId);
       if (!item) return c.json({ error: 'Album item not found' }, 404);
 
       const currentName = basenameFromKey(stripToKey(item.imageUrl, storage.getBucketName()));
       const currentParts = splitFilename(currentName, item.format);
       const requestedParts = splitFilename(requested, currentParts.ext);
       const normalizedFilename = currentParts.ext ? `${requestedParts.base}.${currentParts.ext}` : requestedParts.base;
-      const duplicate = (project.album || []).some((albumItem) => {
+      const duplicate = albumItems.some((albumItem) => {
         if (albumItem.id === itemId) return false;
         const name = basenameFromKey(stripToKey(albumItem.imageUrl, storage.getBucketName()));
         return name.trim().toLowerCase() === normalizedFilename.toLowerCase();
@@ -838,52 +842,67 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (!projectId) return c.json({ error: 'Project id is required' }, 400);
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
+      const [workflow, jobs, albumPage] = await Promise.all([
+        repository.getProjectWorkflow(user.userId, projectId),
+        repository.getProjectJobs(user.userId, projectId),
+        repository.getProjectAlbum(user.userId, projectId, { limit: 999999 }),
+      ]);
 
       const safeProjectId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const projectPrefix = `${user.userId}/${safeProjectId}/`;
+      const bucket = storage.getBucketName();
 
       // 1. List all files in S3 for this project
       const allS3Keys = await storage.listObjects(projectPrefix);
 
       // 2. Collect all referenced keys from database
       const referencedKeys = new Set<string>();
+      const addReferencedKey = (value?: string) => {
+        const key = stripToKey(value, bucket);
+        if (key && !key.startsWith('http') && !key.startsWith('data:')) {
+          referencedKeys.add(key);
+        }
+      };
+      const addReferencedKeys = (values?: string[]) => {
+        (values || []).forEach(addReferencedKey);
+      };
 
       // From Workflow
-      project.workflow.forEach(item => {
-        if ((item.type === 'image' || item.type === 'video' || item.type === 'audio') && item.value && !item.value.startsWith('http') && !item.value.startsWith('data:')) {
-          referencedKeys.add(item.value);
-          if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.add(item.thumbnailUrl);
-          if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.add(item.optimizedUrl);
+      workflow.forEach(item => {
+        if (item.type === 'image' || item.type === 'video' || item.type === 'audio') {
+          addReferencedKey(item.value);
+          addReferencedKey(item.thumbnailUrl);
+          addReferencedKey(item.optimizedUrl);
         }
       });
 
       // From Jobs
-      project.jobs.forEach(job => {
-        if (job.imageUrl && !job.imageUrl.startsWith('http')) referencedKeys.add(job.imageUrl);
-        if (job.thumbnailUrl && !job.thumbnailUrl.startsWith('http')) referencedKeys.add(job.thumbnailUrl);
-        if (job.optimizedUrl && !job.optimizedUrl.startsWith('http')) referencedKeys.add(job.optimizedUrl);
-        (job.videoContexts || []).forEach((ctx) => {
-          if (!ctx.startsWith('http') && !ctx.startsWith('data:')) referencedKeys.add(ctx);
-        });
-        (job.audioContexts || []).forEach((ctx) => {
-          if (!ctx.startsWith('http') && !ctx.startsWith('data:')) referencedKeys.add(ctx);
-        });
+      jobs.forEach(job => {
+        addReferencedKey(job.imageUrl);
+        addReferencedKey(job.thumbnailUrl);
+        addReferencedKey(job.optimizedUrl);
+        addReferencedKeys(job.imageContexts);
+        addReferencedKeys(job.videoContexts);
+        addReferencedKeys(job.audioContexts);
       });
 
       // From Album
-      project.album.forEach(item => {
-        if (item.imageUrl && !item.imageUrl.startsWith('http')) referencedKeys.add(item.imageUrl);
-        if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.add(item.thumbnailUrl);
-        if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.add(item.optimizedUrl);
+      albumPage.items.forEach(item => {
+        addReferencedKey(item.imageUrl);
+        addReferencedKey(item.thumbnailUrl);
+        addReferencedKey(item.optimizedUrl);
+        addReferencedKeys(item.imageContexts);
+        addReferencedKeys(item.videoContexts);
+        addReferencedKeys(item.audioContexts);
       });
 
       // From Trash items belonging to this project
       const trashItems = await repository.getTrashItems(user.userId);
       trashItems.forEach(item => {
         if (item.projectId === projectId) {
-          if (item.imageUrl && !item.imageUrl.startsWith('http')) referencedKeys.add(item.imageUrl);
-          if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('http')) referencedKeys.add(item.thumbnailUrl);
-          if (item.optimizedUrl && !item.optimizedUrl.startsWith('http')) referencedKeys.add(item.optimizedUrl);
+          addReferencedKey(item.imageUrl);
+          addReferencedKey(item.thumbnailUrl);
+          addReferencedKey(item.optimizedUrl);
         }
       });
 
