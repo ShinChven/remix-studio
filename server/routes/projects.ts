@@ -208,14 +208,46 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         // to overwrite server-controlled fields like imageUrl.
         await repository.rewriteJobStorageKeys(user.userId, newId, oldPrefix, newPrefix);
 
+        const rewritePrefixedKey = (value?: string) => (
+          value?.startsWith(oldPrefix) ? value.replace(oldPrefix, newPrefix) : value
+        );
+        const rewritePrefixedKeys = (values?: string[]) => {
+          if (!values) return values;
+          let changed = false;
+          const rewritten = values.map((value) => {
+            const next = rewritePrefixedKey(value);
+            if (next !== value) changed = true;
+            return next || value;
+          });
+          return changed ? rewritten : values;
+        };
+
         // Update album item S3 keys
-        for (const item of (project.album || [])) {
-          const imageContexts = item.imageContexts?.map((ctx) => ctx.startsWith(oldPrefix) ? ctx.replace(oldPrefix, newPrefix) : ctx);
-          if ((item.imageUrl && item.imageUrl.startsWith(oldPrefix)) || imageContexts) {
+        const albumItems = await repository.getAllProjectAlbumItems(user.userId, newId);
+        for (const item of albumItems) {
+          const imageContexts = rewritePrefixedKeys(item.imageContexts);
+          const videoContexts = rewritePrefixedKeys(item.videoContexts);
+          const audioContexts = rewritePrefixedKeys(item.audioContexts);
+          const imageUrl = rewritePrefixedKey(item.imageUrl);
+          const thumbnailUrl = rewritePrefixedKey(item.thumbnailUrl);
+          const optimizedUrl = rewritePrefixedKey(item.optimizedUrl);
+
+          if (
+            imageUrl !== item.imageUrl ||
+            thumbnailUrl !== item.thumbnailUrl ||
+            optimizedUrl !== item.optimizedUrl ||
+            imageContexts !== item.imageContexts ||
+            videoContexts !== item.videoContexts ||
+            audioContexts !== item.audioContexts
+          ) {
             await repository.addAlbumItem(user.userId, newId, {
               ...item,
               imageContexts,
-              imageUrl: item.imageUrl?.startsWith(oldPrefix) ? item.imageUrl.replace(oldPrefix, newPrefix) : item.imageUrl,
+              videoContexts,
+              audioContexts,
+              imageUrl,
+              thumbnailUrl,
+              optimizedUrl,
             });
           }
         }

@@ -72,6 +72,7 @@ export class PrismaRepository implements IRepository {
   }
 
   // === Album CRUD ===
+  getAllProjectAlbumItems(userId: string, projectId: string) { return this.projects.getAllProjectAlbumItems(userId, projectId); }
   addAlbumItem(userId: string, projectId: string, item: AlbumItem) { return this.projects.addAlbumItem(userId, projectId, item); }
   deleteAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.deleteAlbumItem(userId, projectId, itemId); }
 

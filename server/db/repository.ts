@@ -51,6 +51,7 @@ export interface IRepository {
   rewriteJobStorageKeys(userId: string, projectId: string, oldPrefix: string, newPrefix: string): Promise<void>;
 
   // === Album CRUD ===
+  getAllProjectAlbumItems(userId: string, projectId: string): Promise<AlbumItem[]>;
   addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void>;
   deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
 

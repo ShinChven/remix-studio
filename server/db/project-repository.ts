@@ -297,6 +297,14 @@ export class ProjectRepository {
     };
   }
 
+  async getAllProjectAlbumItems(userId: string, projectId: string): Promise<AlbumItem[]> {
+    const items = await this.prisma.albumItem.findMany({
+      where: { projectId, userId },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return items.map((a) => this.mapAlbumItem(a));
+  }
+
   async createProject(userId: string, project: Project): Promise<void> {
     await this.prisma.project.create({
       data: {
