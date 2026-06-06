@@ -2,6 +2,20 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.13.0] - 2026-06-07
+
+### Added
+
+- **Project Live Updates**: Added real-time project status updates over WebSockets through a new project live hub publisher.
+- **Social Profile Refresh**: Added social account profile refresh and automatic profile image synchronization when image loading fails.
+
+### Changed
+
+- **Project Job Start Flow**: Replaced global project updates with a targeted job start API to improve queue management reliability.
+- **Project Live Refresh**: Added debounced and rate-limited project live refresh handling to reduce unnecessary data fetching.
+- **Avatar Fallbacks**: Replaced remote DiceBear avatar fallback usage with a local SVG avatar generator utility.
+- **X Platform Icons**: Replaced Lucide Twitter icon usage with a custom `XIcon` component across platform views.
+
 ## [1.12.1] - 2026-06-06
 
 ### Added
