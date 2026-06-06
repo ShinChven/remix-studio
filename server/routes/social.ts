@@ -171,11 +171,18 @@ export function createSocialRouter(prisma: PrismaClient) {
   router.post('/api/social/:platform/:accountId/refresh-profile', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;
     const platform = c.req.param('platform');
-    const accountId = c.req.param('accountId');
+    const accountRef = c.req.param('accountId');
 
     try {
       const account = await prisma.socialAccount.findFirst({
-        where: { accountId, platform, userId: user.userId }
+        where: {
+          platform,
+          userId: user.userId,
+          OR: [
+            { id: accountRef },
+            { accountId: accountRef },
+          ],
+        }
       });
 
       if (!account) return c.json({ error: 'Account not found' }, 404);

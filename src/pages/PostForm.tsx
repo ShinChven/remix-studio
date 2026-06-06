@@ -20,10 +20,12 @@ import {
   reorderPostMedia,
   saveImage,
   saveVideo,
+  refreshSocialAccountProfile,
   updatePost,
 } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
+import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 
 interface SocialAccount {
   id: string;
@@ -68,10 +70,6 @@ function prettyMediaName(url: string | null | undefined) {
 
 function accountName(account: SocialAccount) {
   return account.profileName || account.accountId || account.platform;
-}
-
-function fallbackAvatar(id: string) {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(id)}`;
 }
 
 function getFileMediaType(file: File): 'image' | 'video' | 'gif' {
@@ -505,7 +503,19 @@ export function PostForm() {
                     <div className="flex -space-x-2">
                       {targetAccounts.map((account) => (
                         <div key={account.id} className="h-10 w-10 overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 ring-4 ring-white dark:border-white/10 dark:bg-neutral-800 dark:ring-neutral-900" title={`${accountName(account)} (${account.platform})`}>
-                          <img src={account.avatarUrl || fallbackAvatar(account.id)} alt={accountName(account)} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                          <img
+                            src={account.avatarUrl || defaultAvatar(account.id, accountName(account))}
+                            alt={accountName(account)}
+                            className="h-full w-full object-cover"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              if (applyAvatarFallback(e.currentTarget, account.id, accountName(account))) {
+                                if (account.platform === 'twitter' || account.platform === 'x') {
+                                  refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
+                                }
+                              }
+                            }}
+                          />
                         </div>
                       ))}
                     </div>

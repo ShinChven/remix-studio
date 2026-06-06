@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { createCampaign, fetchCampaign, fetchSocialAccounts, updateCampaign, refreshSocialAccountProfile } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
+import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 
 interface SocialAccount {
   id: string;
@@ -39,10 +40,6 @@ function getPlatformIcon(platform: string) {
     default:
       return <Globe className="h-4 w-4" />;
   }
-}
-
-function fallbackAvatar(id: string) {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(id)}`;
 }
 
 function displayName(account: SocialAccount) {
@@ -301,14 +298,12 @@ export function CampaignForm() {
                       <div className="flex min-w-0 items-center gap-3">
                         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800">
                           <img
-                            src={account.avatarUrl || fallbackAvatar(account.id)}
+                            src={account.avatarUrl || defaultAvatar(account.id, displayName(account))}
                             alt=""
                             className="h-full w-full object-cover"
                             referrerPolicy="no-referrer"
                             onError={(e) => {
-                              const target = e.currentTarget;
-                              if (target.src !== fallbackAvatar(account.id)) {
-                                target.src = fallbackAvatar(account.id);
+                              if (applyAvatarFallback(e.currentTarget, account.id, displayName(account))) {
                                 if (account.platform === 'twitter' || account.platform === 'x') {
                                   refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
                                 }

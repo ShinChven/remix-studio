@@ -1813,8 +1813,8 @@ export async function fetchScheduledPostCounts(from: string, to: string, timezon
   return handleResponse<any[]>(res, 'Failed to fetch scheduled counts');
 }
 
-export async function disconnectSocialAccount(platform: string, accountId: string): Promise<void> {
-  const res = await apiFetch(`/api/social/${platform}/${accountId}`, {
+export async function disconnectSocialAccount(platform: string, id: string): Promise<void> {
+  const res = await apiFetch(`/api/social/${platform}/${id}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -1823,15 +1823,15 @@ export async function disconnectSocialAccount(platform: string, accountId: strin
 
 const pendingRefreshes = new Map<string, Promise<{ success: boolean, avatarUrl?: string, profileName?: string }>>();
 
-export function refreshSocialAccountProfile(platform: string, accountId: string): Promise<{ success: boolean, avatarUrl?: string, profileName?: string }> {
-  const key = `${platform}:${accountId}`;
+export function refreshSocialAccountProfile(platform: string, id: string): Promise<{ success: boolean, avatarUrl?: string, profileName?: string }> {
+  const key = `${platform}:${id}`;
   if (pendingRefreshes.has(key)) {
     return pendingRefreshes.get(key)!;
   }
 
   const promise = (async () => {
     try {
-      const res = await apiFetch(`/api/social/${platform}/${accountId}/refresh-profile`, {
+      const res = await apiFetch(`/api/social/${platform}/${id}/refresh-profile`, {
         method: 'POST',
         headers: getHeaders(),
       });

@@ -35,6 +35,7 @@ import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
+import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 
 interface SocialAccount {
   id: string;
@@ -81,10 +82,6 @@ function toDatetimeLocal(date: Date): string {
   const hh = String(date.getHours()).padStart(2, '0');
   const min = String(date.getMinutes()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-}
-
-function fallbackAvatar(id: string) {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(id)}`;
 }
 
 function displayAccountName(account: SocialAccount) {
@@ -325,14 +322,12 @@ export function CampaignPostDetail() {
                   {connectedAccounts.map((account) => (
                     <img
                       key={account.id}
-                      src={account.avatarUrl || fallbackAvatar(account.id)}
+                      src={account.avatarUrl || defaultAvatar(account.id, displayAccountName(account))}
                       alt={displayAccountName(account)}
                       referrerPolicy="no-referrer"
                       className="h-10 w-10 rounded-full border border-neutral-200 bg-neutral-100 object-cover ring-4 ring-white dark:border-white/10 dark:bg-neutral-800 dark:ring-neutral-900"
                       onError={(e) => {
-                        const target = e.currentTarget;
-                        if (target.src !== fallbackAvatar(account.id)) {
-                          target.src = fallbackAvatar(account.id);
+                        if (applyAvatarFallback(e.currentTarget, account.id, displayAccountName(account))) {
                           if (account.platform === 'twitter' || account.platform === 'x') {
                             refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
                           }

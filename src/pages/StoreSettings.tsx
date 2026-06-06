@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { ConnectedStore, disconnectStore, fetchStores } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 
 const SUPPORTED_PLATFORMS = [
   {
@@ -17,10 +18,6 @@ const SUPPORTED_PLATFORMS = [
 
 function platformLabel(id: string) {
   return SUPPORTED_PLATFORMS.find((p) => p.id === id)?.label ?? id;
-}
-
-function fallbackAvatar(seed: string) {
-  return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(seed)}`;
 }
 
 function displayName(store: ConnectedStore) {
@@ -148,10 +145,13 @@ export function StoreSettings() {
                 <div key={store.id} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-4">
                     <img
-                      src={store.avatarUrl || fallbackAvatar(store.id)}
+                      src={store.avatarUrl || defaultAvatar(store.id, displayName(store))}
                       alt={displayName(store)}
                       referrerPolicy="no-referrer"
                       className="h-12 w-12 shrink-0 rounded-full border border-neutral-200 bg-neutral-100 object-cover dark:border-white/10 dark:bg-neutral-800"
+                      onError={(event) => {
+                        applyAvatarFallback(event.currentTarget, store.id, displayName(store));
+                      }}
                     />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">

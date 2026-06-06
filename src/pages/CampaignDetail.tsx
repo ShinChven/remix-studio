@@ -46,6 +46,7 @@ import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
+import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 
 type StatusFilter = 'all' | 'draft' | 'scheduled' | 'queued' | 'completed' | 'failed';
 type SortKey = 'scheduled_asc' | 'scheduled_desc' | 'created_desc' | 'created_asc';
@@ -116,10 +117,6 @@ function toDatetimeLocal(date: Date): string {
   const hh = String(date.getHours()).padStart(2, '0');
   const min = String(date.getMinutes()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-}
-
-function fallbackAvatar(id: string) {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(id)}`;
 }
 
 function displayAccountName(account: SocialAccount) {
@@ -760,14 +757,12 @@ export function CampaignDetail() {
                       <div key={account.id} className={cn('flex items-center justify-between rounded-lg border p-2 transition-all', account.status === 'active' || !account.status ? 'border-neutral-200 bg-neutral-50 dark:border-white/10 dark:bg-white/5' : 'border-neutral-200 bg-neutral-50 opacity-60 grayscale dark:border-white/10 dark:bg-white/5')}>
                         <div className="flex min-w-0 items-center gap-2">
                           <img
-                            src={account.avatarUrl || fallbackAvatar(account.id)}
+                            src={account.avatarUrl || defaultAvatar(account.id, displayAccountName(account))}
                             alt=""
                             referrerPolicy="no-referrer"
                             className="h-6 w-6 shrink-0 rounded-full border object-cover dark:border-white/10"
                             onError={(e) => {
-                              const target = e.currentTarget;
-                              if (target.src !== fallbackAvatar(account.id)) {
-                                target.src = fallbackAvatar(account.id);
+                              if (applyAvatarFallback(e.currentTarget, account.id, displayAccountName(account))) {
                                 if (account.platform === 'twitter' || account.platform === 'x') {
                                   refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
                                 }
@@ -810,14 +805,12 @@ export function CampaignDetail() {
                             {connectedAccounts.map((account) => (
                               <img
                                 key={account.id}
-                                src={account.avatarUrl || fallbackAvatar(account.id)}
+                                src={account.avatarUrl || defaultAvatar(account.id, displayAccountName(account))}
                                 alt={displayAccountName(account)}
                                 referrerPolicy="no-referrer"
                                 className="h-10 w-10 rounded-full border border-neutral-200 bg-neutral-100 object-cover ring-4 ring-white dark:border-white/10 dark:bg-neutral-800 dark:ring-neutral-900"
                                 onError={(e) => {
-                                  const target = e.currentTarget;
-                                  if (target.src !== fallbackAvatar(account.id)) {
-                                    target.src = fallbackAvatar(account.id);
+                                  if (applyAvatarFallback(e.currentTarget, account.id, displayAccountName(account))) {
                                     if (account.platform === 'twitter' || account.platform === 'x') {
                                       refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
                                     }

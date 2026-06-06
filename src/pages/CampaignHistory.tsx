@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { fetchCampaignHistory, refreshSocialAccountProfile } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
+import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 
 export function CampaignHistory() {
   const navigate = useNavigate();
@@ -110,10 +111,6 @@ export function CampaignHistory() {
       default:
         return <Globe className={className} />;
     }
-  }
-
-  function fallbackAvatar(id: string) {
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(id)}`;
   }
 
   return (
@@ -217,7 +214,8 @@ export function CampaignHistory() {
                 const account = execution?.socialAccount;
                 const platform = account?.platform || 'Unknown';
                 const name = account?.profileName || 'Unknown Account';
-                const avatar = account?.avatarUrl || fallbackAvatar(account?.id || post.id);
+                const avatarSeed = account?.id || post.id;
+                const avatar = account?.avatarUrl || defaultAvatar(avatarSeed, name);
                 
                 let externalUrl = execution?.externalUrl;
                 if (!externalUrl && execution?.externalId) {
@@ -240,10 +238,7 @@ export function CampaignHistory() {
                           className="h-8 w-8 rounded-full border border-neutral-200 object-cover dark:border-white/10"
                           referrerPolicy="no-referrer"
                           onError={(e) => {
-                            const target = e.currentTarget;
-                            const fallback = fallbackAvatar(account?.id || post.id);
-                            if (target.src !== fallback) {
-                              target.src = fallback;
+                            if (applyAvatarFallback(e.currentTarget, avatarSeed, name)) {
                               if (account && (platform === 'twitter' || platform === 'x')) {
                                 refreshSocialAccountProfile(platform, account.id).catch(console.error);
                               }

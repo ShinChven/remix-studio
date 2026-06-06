@@ -23,6 +23,7 @@ import { deleteCampaign, fetchCampaigns, fetchRecentPosts, fetchScheduledPosts, 
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
+import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 
 type CampaignStatus = 'Active' | 'Inactive';
 
@@ -49,10 +50,6 @@ interface CampaignCardModel {
 
 function toCampaignStatus(status?: string): CampaignStatus {
   return status === 'active' ? 'Active' : 'Inactive';
-}
-
-function fallbackAvatar(id: string) {
-  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(id)}&backgroundColor=6366f1,4f46e5,4338ca`;
 }
 
 function campaignThumbnail(id: string) {
@@ -441,7 +438,8 @@ export function Campaigns() {
                       const account = primaryExecution?.socialAccount;
                       const platform = account?.platform || 'Unknown';
                       const name = account?.profileName || 'Unknown Account';
-                      const avatar = account?.avatarUrl || fallbackAvatar(account?.id || post.id);
+                      const avatarSeed = account?.id || post.id;
+                      const avatar = account?.avatarUrl || defaultAvatar(avatarSeed, name);
 
                       let externalUrl = primaryExecution?.externalUrl;
                       if (!externalUrl && primaryExecution?.externalId) {
@@ -463,10 +461,7 @@ export function Campaigns() {
                                 className="h-10 w-10 rounded-full border border-neutral-200 object-cover shadow-sm dark:border-white/10"
                                 referrerPolicy="no-referrer"
                                 onError={(e) => {
-                                  const target = e.currentTarget;
-                                  const fallback = fallbackAvatar(account?.id || post.id);
-                                  if (target.src !== fallback) {
-                                    target.src = fallback;
+                                  if (applyAvatarFallback(e.currentTarget, avatarSeed, name)) {
                                     if (account && (platform === 'twitter' || platform === 'x')) {
                                       refreshSocialAccountProfile(platform, account.id).catch(console.error);
                                     }
