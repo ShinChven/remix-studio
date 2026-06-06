@@ -6,6 +6,7 @@ import { generateThumbnail, generateOptimized } from '../utils/image-utils';
 import { extractFirstFramePng, probeVideo } from '../utils/video-utils';
 import { getUserStorageUsage } from '../utils/storage-check';
 import { formatError } from '../utils/error-handler';
+import type { ProjectEventPublisher } from '../live/project-live-hub';
 
 export interface ProcessCompletedVideoParams {
   userId: string;
@@ -34,7 +35,8 @@ export class VideoProcessor {
     private projectRepo: ProjectRepository,
     private storage: S3Storage,
     private userRepository: UserRepository,
-    private exportStorage: S3Storage
+    private exportStorage: S3Storage,
+    private projectEvents?: ProjectEventPublisher
   ) {}
 
   async processCompletedVideo(params: ProcessCompletedVideoParams) {
@@ -133,6 +135,13 @@ export class VideoProcessor {
         error: undefined,
         taskId: null as any,
       });
+      this.projectEvents?.notifyProjectChanged({
+        userId,
+        projectId,
+        jobId: job.id,
+        itemId: albumItem.id,
+        reason: 'job.completed',
+      });
     } catch (e: any) {
       console.error(`[VideoProcessor] Job ${job.id} failed during video processing:`, e.message);
       await this.handleLocalFailure(userId, projectId, job, e);
@@ -145,6 +154,12 @@ export class VideoProcessor {
       error: formatError(error, 'Video processing error'),
       // CRITICAL: DO NOT clear taskId here — matches ImageProcessor policy so
       // a user can retry a detached task that finished remotely but failed locally.
+    });
+    this.projectEvents?.notifyProjectChanged({
+      userId,
+      projectId,
+      jobId: job.id,
+      reason: 'job.failed',
     });
   }
 }

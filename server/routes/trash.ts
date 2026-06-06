@@ -2,10 +2,11 @@ import { Hono } from 'hono';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
+import type { ProjectEventPublisher } from '../live/project-live-hub';
 
 type Variables = { user: JwtPayload };
 
-export function createTrashRouter(repository: IRepository, storage: S3Storage) {
+export function createTrashRouter(repository: IRepository, storage: S3Storage, projectEvents?: ProjectEventPublisher) {
   const router = new Hono<{ Variables: Variables }>();
 
   router.get('/api/trash', authMiddleware, async (c) => {
@@ -42,7 +43,17 @@ export function createTrashRouter(repository: IRepository, storage: S3Storage) {
   router.post('/api/trash/:id/restore', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      await repository.restoreTrashItem(user.userId, c.req.param('id'));
+      const itemId = c.req.param('id');
+      const item = (await repository.getTrashItems(user.userId)).find((trashItem) => trashItem.id === itemId);
+      await repository.restoreTrashItem(user.userId, itemId);
+      if (item?.projectId) {
+        projectEvents?.notifyProjectChanged({
+          userId: user.userId,
+          projectId: item.projectId,
+          itemId,
+          reason: 'album.restored',
+        });
+      }
       return c.json({ success: true });
     } catch (e) {
       console.error('[POST /api/trash/:id/restore]', e);
@@ -56,8 +67,19 @@ export function createTrashRouter(repository: IRepository, storage: S3Storage) {
       const { ids } = await c.req.json();
       if (!Array.isArray(ids)) return c.json({ error: 'Invalid IDs' }, 400);
 
+      const trashItems = await repository.getTrashItems(user.userId);
+      const projectIds = new Set<string>();
       for (const id of ids) {
+        const item = trashItems.find((trashItem) => trashItem.id === id);
+        if (item?.projectId) projectIds.add(item.projectId);
         await repository.restoreTrashItem(user.userId, id);
+      }
+      for (const projectId of projectIds) {
+        projectEvents?.notifyProjectChanged({
+          userId: user.userId,
+          projectId,
+          reason: 'album.restored',
+        });
       }
       return c.json({ success: true });
     } catch (e) {
@@ -132,7 +154,15 @@ export function createTrashRouter(repository: IRepository, storage: S3Storage) {
   router.post('/api/projects/:id/album/:itemId/trash', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      await repository.moveToTrash(user.userId, c.req.param('id'), c.req.param('itemId'));
+      const projectId = c.req.param('id');
+      const itemId = c.req.param('itemId');
+      await repository.moveToTrash(user.userId, projectId, itemId);
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        itemId,
+        reason: 'album.deleted',
+      });
       return c.json({ success: true });
     } catch (e) {
       console.error('[POST /api/projects/:id/album/:itemId/trash]', e);
@@ -150,6 +180,11 @@ export function createTrashRouter(repository: IRepository, storage: S3Storage) {
       for (const id of ids) {
         await repository.moveToTrash(user.userId, projectId, id);
       }
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        reason: 'album.deleted',
+      });
       return c.json({ success: true });
     } catch (e) {
       console.error('[POST /api/projects/:id/album/trash-batch]', e);

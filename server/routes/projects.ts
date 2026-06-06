@@ -9,6 +9,7 @@ import { DeliveryManager } from '../queue/delivery-manager';
 import { checkStorageLimit } from '../utils/storage-check';
 import { UserRepository } from '../auth/user-repository';
 import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem } from '../../src/types';
+import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
 
 type Variables = { user: JwtPayload };
 
@@ -180,7 +181,7 @@ export async function signWorkflowItems(workflow: WorkflowItem[], storage: S3Sto
   );
 }
 
-export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager) {
+export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectEvents?: ProjectEventPublisher) {
   const router = new Hono<{ Variables: Variables }>();
 
   // NOTE: /rename must be registered before /:id to avoid route shadowing
@@ -416,6 +417,12 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const jobId = c.req.param('jobId');
       if (!projectId || !jobId) return c.json({ error: 'Project id and job id are required' }, 400);
       await repository.deleteProjectJob(user.userId, projectId, jobId);
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        jobId,
+        reason: 'job.deleted',
+      });
       return c.json({ success: true });
     } catch (e) {
       console.error('[DELETE /api/projects/:id/jobs/:jobId]', e);
@@ -495,6 +502,11 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       };
 
       await repository.createProject(user.userId, project);
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId: project.id,
+        reason: 'project.created',
+      });
       return c.json({ success: true }, 201);
     } catch (e) {
       console.error('[POST /api/projects]', e);
@@ -580,6 +592,14 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       }
 
       await repository.updateProject(user.userId, projectId, updates);
+      let reason: ProjectLiveEventReason = 'project.updated';
+      if (updates.jobs) reason = 'jobs.changed';
+      else if (updates.workflow) reason = 'workflow.updated';
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        reason,
+      });
       return c.json({ success: true });
     } catch (e: any) {
       if (e?.message === 'Project not found' || e?.message === 'Job not found') {
@@ -629,6 +649,11 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       // 3. Delete the project and any cascading relations in DB
       await repository.deleteProject(user.userId, projectId);
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        reason: 'project.deleted',
+      });
 
       return c.json({ success: true });
     } catch (e) {
@@ -646,6 +671,12 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (!itemId) return c.json({ error: 'Item id is required' }, 400);
       const deleted = await repository.deleteAlbumItem(user.userId, projectId, itemId);
       if (!deleted) return c.json({ error: 'Not found' }, 404);
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        itemId,
+        reason: 'album.deleted',
+      });
       return c.json({ success: true });
     } catch (e) {
       console.error('[DELETE /api/projects/:id/album/:itemId]', e);
@@ -704,6 +735,12 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const updated = { ...item, ...updates };
       await repository.addAlbumItem(user.userId, projectId, updated);
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        itemId,
+        reason: 'album.renamed',
+      });
       return c.json({
         ...updated,
         imageUrl: updated.imageUrl ? await presignIfKey(updated.imageUrl, storage) : updated.imageUrl,

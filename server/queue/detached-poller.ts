@@ -6,6 +6,7 @@ import { buildVideoGenerator } from '../generators/build-video-generator';
 import { Job, ProviderType } from '../../src/types';
 import { ImageProcessor } from './image-processor';
 import { VideoProcessor } from './video-processor';
+import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
 
 // A processing+taskId job that never reaches a terminal state would hold its
 // concurrency slot forever. After this timeout we declare the remote task
@@ -29,7 +30,8 @@ export class DetachedPoller {
     private providerRepo: ProviderRepository,
     private projectRepo: ProjectRepository,
     private imageProcessor: ImageProcessor,
-    private videoProcessor: VideoProcessor
+    private videoProcessor: VideoProcessor,
+    private projectEvents?: ProjectEventPublisher
   ) {
     const raw = process.env.JOB_PROCESSING_TIMEOUT_MS;
     const parsed = raw ? parseInt(raw, 10) : NaN;
@@ -262,6 +264,18 @@ export class DetachedPoller {
 
   private async updateJobStatus(userId: string, projectId: string, jobId: string, updates: Partial<Job>) {
     await this.projectRepo.updateJob(userId, projectId, jobId, updates);
+    this.projectEvents?.notifyProjectChanged({
+      userId,
+      projectId,
+      jobId,
+      reason: this.reasonForJobUpdate(updates),
+    });
+  }
+
+  private reasonForJobUpdate(updates: Partial<Job>): ProjectLiveEventReason {
+    if (updates.status === 'completed') return 'job.completed';
+    if (updates.status === 'failed') return 'job.failed';
+    return 'job.updated';
   }
 
   private prisma_jobToJob(item: any): Job {

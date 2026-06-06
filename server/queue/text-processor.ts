@@ -1,5 +1,6 @@
 import { ProjectRepository } from '../db/project-repository';
 import { Job, AlbumItem } from '../../src/types';
+import type { ProjectEventPublisher } from '../live/project-live-hub';
 
 export interface ProcessCompletedTextParams {
   userId: string;
@@ -13,6 +14,7 @@ export interface ProcessCompletedTextParams {
 export class TextProcessor {
   constructor(
     private projectRepo: ProjectRepository,
+    private projectEvents?: ProjectEventPublisher
   ) {}
 
   async processCompletedText(params: ProcessCompletedTextParams) {
@@ -40,12 +42,25 @@ export class TextProcessor {
         error: undefined,
         taskId: null as any,
       });
+      this.projectEvents?.notifyProjectChanged({
+        userId,
+        projectId,
+        jobId: job.id,
+        itemId: albumItem.id,
+        reason: 'job.completed',
+      });
 
     } catch (e: any) {
       console.error(`[TextProcessor] Job ${job.id} failed:`, e.message);
       await this.projectRepo.updateJob(userId, projectId, job.id, {
         status: 'failed',
         error: e.message || 'Text processing error',
+      });
+      this.projectEvents?.notifyProjectChanged({
+        userId,
+        projectId,
+        jobId: job.id,
+        reason: 'job.failed',
       });
     }
   }

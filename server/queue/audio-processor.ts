@@ -5,6 +5,7 @@ import { AlbumItem, Job } from '../../src/types';
 import { getUserStorageUsage } from '../utils/storage-check';
 import { formatError } from '../utils/error-handler';
 import { resolveAudioOutput, transcodeAudioBuffer } from '../utils/audio-utils';
+import type { ProjectEventPublisher } from '../live/project-live-hub';
 
 export interface ProcessCompletedAudioParams {
   userId: string;
@@ -22,7 +23,8 @@ export class AudioProcessor {
     private projectRepo: ProjectRepository,
     private storage: S3Storage,
     private userRepository: UserRepository,
-    private exportStorage: S3Storage
+    private exportStorage: S3Storage,
+    private projectEvents?: ProjectEventPublisher
   ) {}
 
   async processCompletedAudio(params: ProcessCompletedAudioParams) {
@@ -74,11 +76,24 @@ export class AudioProcessor {
         error: undefined,
         taskId: null as any,
       });
+      this.projectEvents?.notifyProjectChanged({
+        userId,
+        projectId,
+        jobId: job.id,
+        itemId: albumItem.id,
+        reason: 'job.completed',
+      });
     } catch (e: any) {
       console.error(`[AudioProcessor] Job ${job.id} failed during audio processing:`, e.message);
       await this.projectRepo.updateJob(userId, projectId, job.id, {
         status: 'failed',
         error: formatError(e, 'Audio processing error'),
+      });
+      this.projectEvents?.notifyProjectChanged({
+        userId,
+        projectId,
+        jobId: job.id,
+        reason: 'job.failed',
       });
     }
   }

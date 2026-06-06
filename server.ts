@@ -46,6 +46,7 @@ import { TextProcessor } from './server/queue/text-processor';
 import { VideoProcessor } from './server/queue/video-processor';
 import { AudioProcessor } from './server/queue/audio-processor';
 import { DetachedPoller } from './server/queue/detached-poller';
+import { ProjectLiveHub } from './server/live/project-live-hub';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
@@ -90,6 +91,7 @@ async function startServer() {
   configureAuth(userRepository);
   const providerRepository = new ProviderRepository(prisma);
   const projectRepository = new ProjectRepository(prisma);
+  const projectLiveHub = new ProjectLiveHub(repository, userRepository);
 
   const storage = new S3Storage({
     endpoint: process.env.S3_ENDPOINT,
@@ -115,12 +117,12 @@ async function startServer() {
   });
   await exportStorage.ensureBucket(autoCreateBuckets);
 
-  const imageProcessor = new ImageProcessor(projectRepository, storage, userRepository, exportStorage);
-  const textProcessor = new TextProcessor(projectRepository);
-  const videoProcessor = new VideoProcessor(projectRepository, storage, userRepository, exportStorage);
-  const audioProcessor = new AudioProcessor(projectRepository, storage, userRepository, exportStorage);
-  const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor, videoProcessor);
-  const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, textProcessor, videoProcessor, audioProcessor, detachedPoller);
+  const imageProcessor = new ImageProcessor(projectRepository, storage, userRepository, exportStorage, projectLiveHub);
+  const textProcessor = new TextProcessor(projectRepository, projectLiveHub);
+  const videoProcessor = new VideoProcessor(projectRepository, storage, userRepository, exportStorage, projectLiveHub);
+  const audioProcessor = new AudioProcessor(projectRepository, storage, userRepository, exportStorage, projectLiveHub);
+  const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor, videoProcessor, projectLiveHub);
+  const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, textProcessor, videoProcessor, audioProcessor, detachedPoller, projectLiveHub);
   // Release the QueueManager concurrency slot when DetachedPoller finalizes a job.
   // Without this, async providers (e.g. KlingAI) would hold their slots forever.
   detachedPoller.setOnJobFinalize((providerId, jobId) => queueManager.releaseSlot(providerId, jobId));
@@ -225,13 +227,13 @@ async function startServer() {
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
   app.route('/', createLibraryRouter(repository, storage, userRepository, exportStorage, exportManager));
-  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager));
+  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager, projectLiveHub));
   app.route('/', createImageRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createVideoRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createAudioRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createProviderRouter(providerRepository));
   app.route('/', createGenerateRouter(providerRepository));
-  app.route('/', createTrashRouter(repository, storage));
+  app.route('/', createTrashRouter(repository, storage, projectLiveHub));
   app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));
   app.route('/', createCampaignsRouter(prisma, storage));
   app.route('/', createPostsRouter(prisma, postManager, providerRepository, storage, exportStorage, repository, userRepository));
@@ -285,6 +287,7 @@ async function startServer() {
     // Increase the max body size to handle large image uploads (default is ~1MB)
     server.maxRequestsPerSocket = 0;
     (server as any).timeout = 120000; // 2 minute timeout for uploads
+    projectLiveHub.attach(server);
 
     server.listen(port, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${port}`);
@@ -316,10 +319,11 @@ async function startServer() {
       return c.html(html);
     });
 
-    serve({ fetch: app.fetch, port }, () => {
+    const server = serve({ fetch: app.fetch, port }, () => {
       console.log(`Server running on http://localhost:${port}`);
       startQueueRecovery();
     });
+    projectLiveHub.attach(server as http.Server);
   }
 }
 

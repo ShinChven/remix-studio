@@ -5,6 +5,7 @@ import { Job, AlbumItem } from '../../src/types';
 import { generateThumbnail, generateOptimized } from '../utils/image-utils';
 import { getUserStorageUsage } from '../utils/storage-check';
 import { formatError } from '../utils/error-handler';
+import type { ProjectEventPublisher } from '../live/project-live-hub';
 import sharp from 'sharp';
 
 export interface ProcessCompletedImageParams {
@@ -24,7 +25,8 @@ export class ImageProcessor {
     private projectRepo: ProjectRepository,
     private storage: S3Storage,
     private userRepository: UserRepository,
-    private exportStorage: S3Storage
+    private exportStorage: S3Storage,
+    private projectEvents?: ProjectEventPublisher
   ) {}
 
   async processCompletedImage(params: ProcessCompletedImageParams) {
@@ -119,6 +121,13 @@ export class ImageProcessor {
         error: undefined,
         taskId: null as any
       });
+      this.projectEvents?.notifyProjectChanged({
+        userId,
+        projectId,
+        jobId: job.id,
+        itemId: albumItem.id,
+        reason: 'job.completed',
+      });
 
     } catch (e: any) {
       console.error(`[ImageProcessor] Job ${job.id} failed during image processing:`, e.message);
@@ -133,6 +142,12 @@ export class ImageProcessor {
       // CRITICAL: We deliberately DO NOT clear taskId here.
       // If it was a detached task that succeeded remotely but failed locally (e.g. disk full),
       // keeping the taskId allows the user to 'Retry' and skip remote generation.
+    });
+    this.projectEvents?.notifyProjectChanged({
+      userId,
+      projectId,
+      jobId: job.id,
+      reason: 'job.failed',
     });
   }
 }

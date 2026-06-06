@@ -28,6 +28,7 @@ import { DetachedPoller } from './detached-poller';
 import { ImageGenerator } from '../generators/image-generator';
 import { VideoGenerator } from '../generators/video-generator';
 import { assertSafeReferenceImageUrl } from '../utils/url-safety';
+import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
 
 export interface QueuedJob {
   userId: string;
@@ -115,7 +116,8 @@ export class QueueManager {
     private textProcessor: TextProcessor,
     private videoProcessor: VideoProcessor,
     private audioProcessor: AudioProcessor,
-    private detachedPoller: DetachedPoller
+    private detachedPoller: DetachedPoller,
+    private projectEvents?: ProjectEventPublisher
   ) {
     this.detachedPoller.start();
   }
@@ -383,6 +385,14 @@ export class QueueManager {
       await this.enqueueProject(userId, projectId);
     }
 
+    for (const projectId of affectedProjectIds) {
+      this.projectEvents?.notifyProjectChanged({
+        userId,
+        projectId,
+        reason: 'queue.cleared',
+      });
+    }
+
     return {
       cleared: result.count,
       resumedProjects: pendingProjects.length,
@@ -405,6 +415,14 @@ export class QueueManager {
     const skipped = allJobs.length - jobsToRun.length;
     if (skipped > 0) {
       console.log(`[QueueManager] Project ${projectId}: Picking up ${jobsToRun.length} pending jobs. Skipping ${skipped} jobs (not pending).`);
+    }
+
+    if (jobsToRun.length > 0) {
+      this.projectEvents?.notifyProjectChanged({
+        userId,
+        projectId,
+        reason: 'queue.started',
+      });
     }
 
     for (const job of jobsToRun) {
@@ -595,6 +613,12 @@ export class QueueManager {
       if (result.count === 0) continue;
 
       affectedProjects.add(`${row.userId}|${row.projectId}`);
+      this.projectEvents?.notifyProjectChanged({
+        userId: row.userId,
+        projectId: row.projectId,
+        jobId: row.id,
+        reason: 'job.updated',
+      });
       healed++;
     }
 
@@ -1124,6 +1148,18 @@ export class QueueManager {
 
   private async updateJobStatus(userId: string, projectId: string, jobId: string, updates: Partial<Job>) {
     await this.projectRepo.updateJob(userId, projectId, jobId, updates);
+    this.projectEvents?.notifyProjectChanged({
+      userId,
+      projectId,
+      jobId,
+      reason: this.reasonForJobUpdate(updates),
+    });
+  }
+
+  private reasonForJobUpdate(updates: Partial<Job>): ProjectLiveEventReason {
+    if (updates.status === 'completed') return 'job.completed';
+    if (updates.status === 'failed') return 'job.failed';
+    return 'job.updated';
   }
 
   /**

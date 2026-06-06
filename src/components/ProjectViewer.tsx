@@ -404,14 +404,51 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const localJobsRef = useRef<Job[]>(localJobs);
   const localAlbumRef = useRef<AlbumItem[]>(localAlbum);
   const activeTabRef = useRef(activeTab);
+  const liveQueryRef = useRef({
+    albumPage,
+    albumPageSize,
+    albumSort,
+    albumSelectedRatios,
+    albumQueryKey,
+    completedPage,
+    completedPageSize,
+    completedSort,
+    completedQueryKey,
+  });
+  const liveRefreshTimerRef = useRef<number | null>(null);
   const libraryRefreshPromiseRef = useRef<Promise<Library[]> | null>(null);
   const skipProjectSyncRef = useRef(false);
   const workflowListRef = useRef<HTMLDivElement | null>(null);
+  const [isProjectLiveConnected, setIsProjectLiveConnected] = useState(false);
   const isProcessing = localJobs.some(j => j.status === 'pending' || j.status === 'processing');
 
   useEffect(() => {
     activeTabRef.current = activeTab;
   }, [activeTab]);
+
+  useEffect(() => {
+    liveQueryRef.current = {
+      albumPage,
+      albumPageSize,
+      albumSort,
+      albumSelectedRatios,
+      albumQueryKey,
+      completedPage,
+      completedPageSize,
+      completedSort,
+      completedQueryKey,
+    };
+  }, [
+    albumPage,
+    albumPageSize,
+    albumSort,
+    albumSelectedRatios,
+    albumQueryKey,
+    completedPage,
+    completedPageSize,
+    completedSort,
+    completedQueryKey,
+  ]);
 
   const onUpdate = useCallback((updated: Project) => {
     onUpdateProp(updated);
@@ -501,56 +538,151 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   }, [rawTab]);
 
-  useEffect(() => {
-    let interval: any;
-    if (isProcessing) {
-      interval = setInterval(async () => {
-        try {
-          const tab = activeTabRef.current;
-          const [updatedJobs, updatedAlbumRes, updatedCompletedRes] = await Promise.all([
-            fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] }).catch(() => null),
-            tab === 'album'
-              ? fetchProjectAlbum(localProject.id, {
-                  page: albumPage,
-                  limit: albumPageSize === 'all' ? 999999 : albumPageSize,
-                  sort: albumSort,
-                  aspectRatios: albumSelectedRatios.length > 0 ? albumSelectedRatios : undefined,
-                }).catch(() => null)
-              : fetchProjectAlbum(localProject.id, { page: 1, limit: 5 }).catch(() => null),
-            tab === 'completed'
-              ? fetchProjectCompletedJobs(localProject.id, {
-                  page: completedPage,
-                  limit: completedPageSize === 'all' ? 999999 : completedPageSize,
-                  sort: completedSort,
-                }).catch(() => null)
-              : fetchProjectCompletedJobs(localProject.id, { page: 1, limit: 1 }).catch(() => null),
-          ]);
-          if (updatedJobs && JSON.stringify(updatedJobs) !== JSON.stringify(localJobsRef.current)) {
-            setLocalJobs(updatedJobs);
-          }
-          if (updatedAlbumRes) {
-            if (JSON.stringify(updatedAlbumRes.items) !== JSON.stringify(localAlbumRef.current)) {
-              setLocalAlbum(updatedAlbumRes.items);
-            }
-            setAlbumTotal(updatedAlbumRes.total);
-            setAlbumPages(updatedAlbumRes.pages);
-            setAlbumTotalSize(updatedAlbumRes.totalSize);
-            setAlbumAspectRatioCounts(updatedAlbumRes.aspectRatioCounts);
-          }
-          if (updatedCompletedRes) {
-            if (tab === 'completed') {
-              setCompletedJobs(updatedCompletedRes.items);
-            }
-            setCompletedTotal(updatedCompletedRes.total);
-            setCompletedPages(updatedCompletedRes.pages);
-          }
-        } catch (e) {
-          console.error('Polling for project updates failed:', e);
+  const refreshProjectLiveData = useCallback(async () => {
+    try {
+      const tab = activeTabRef.current;
+      const query = liveQueryRef.current;
+      const [updatedJobs, updatedAlbumRes, updatedCompletedRes] = await Promise.all([
+        fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] }).catch(() => null),
+        tab === 'album'
+          ? fetchProjectAlbum(localProject.id, {
+              page: query.albumPage,
+              limit: query.albumPageSize === 'all' ? 999999 : query.albumPageSize,
+              sort: query.albumSort,
+              aspectRatios: query.albumSelectedRatios.length > 0 ? query.albumSelectedRatios : undefined,
+            }).catch(() => null)
+          : fetchProjectAlbum(localProject.id, { page: 1, limit: 5 }).catch(() => null),
+        tab === 'completed'
+          ? fetchProjectCompletedJobs(localProject.id, {
+              page: query.completedPage,
+              limit: query.completedPageSize === 'all' ? 999999 : query.completedPageSize,
+              sort: query.completedSort,
+            }).catch(() => null)
+          : fetchProjectCompletedJobs(localProject.id, { page: 1, limit: 1 }).catch(() => null),
+      ]);
+
+      if (updatedJobs && JSON.stringify(updatedJobs) !== JSON.stringify(localJobsRef.current)) {
+        setLocalJobs(updatedJobs);
+      }
+
+      if (updatedAlbumRes) {
+        if (JSON.stringify(updatedAlbumRes.items) !== JSON.stringify(localAlbumRef.current)) {
+          setLocalAlbum(updatedAlbumRes.items);
         }
-      }, 10000);
+        setAlbumTotal(updatedAlbumRes.total);
+        setAlbumPages(updatedAlbumRes.pages);
+        setAlbumTotalSize(updatedAlbumRes.totalSize);
+        setAlbumAspectRatioCounts(updatedAlbumRes.aspectRatioCounts);
+        if (tab === 'album') {
+          albumLoadedKeyRef.current = query.albumQueryKey;
+          albumFetchedAtRef.current = Date.now();
+        }
+      }
+
+      if (updatedCompletedRes) {
+        if (tab === 'completed') {
+          setCompletedJobs(updatedCompletedRes.items);
+          completedLoadedKeyRef.current = query.completedQueryKey;
+          completedFetchedAtRef.current = Date.now();
+        }
+        setCompletedTotal(updatedCompletedRes.total);
+        setCompletedPages(updatedCompletedRes.pages);
+      }
+    } catch (e) {
+      console.error('Refreshing project updates failed:', e);
     }
-    return () => clearInterval(interval);
-  }, [isProcessing, localProject.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, completedPage, completedPageSize, completedSort]);
+  }, [localProject.id]);
+
+  const scheduleProjectLiveRefresh = useCallback((delayMs = 250) => {
+    if (liveRefreshTimerRef.current !== null) {
+      window.clearTimeout(liveRefreshTimerRef.current);
+    }
+    liveRefreshTimerRef.current = window.setTimeout(() => {
+      liveRefreshTimerRef.current = null;
+      void refreshProjectLiveData();
+    }, delayMs);
+  }, [refreshProjectLiveData]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return;
+
+    let disposed = false;
+    let reconnectTimer: number | null = null;
+    let reconnectAttempt = 0;
+    let socket: WebSocket | null = null;
+    setIsProjectLiveConnected(false);
+
+    const clearReconnectTimer = () => {
+      if (reconnectTimer !== null) {
+        window.clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    };
+
+    const connect = () => {
+      if (disposed) return;
+      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const ws = new WebSocket(`${protocol}://${window.location.host}/api/projects/${encodeURIComponent(localProject.id)}/live`);
+      socket = ws;
+
+      ws.onopen = () => {
+        if (disposed || socket !== ws) return;
+        reconnectAttempt = 0;
+        setIsProjectLiveConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        if (disposed || socket !== ws) return;
+        try {
+          const data = JSON.parse(event.data);
+          if (data?.type !== 'project.changed' || data.projectId !== localProject.id || data.reason === 'connected') return;
+          scheduleProjectLiveRefresh();
+        } catch (error) {
+          console.error('Failed to parse project live update:', error);
+        }
+      };
+
+      ws.onclose = () => {
+        if (socket !== ws) return;
+        setIsProjectLiveConnected(false);
+        socket = null;
+        if (disposed) return;
+        const delay = Math.min(1000 * 2 ** reconnectAttempt, 15_000);
+        reconnectAttempt += 1;
+        reconnectTimer = window.setTimeout(connect, delay);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+    };
+
+    connect();
+
+    return () => {
+      disposed = true;
+      clearReconnectTimer();
+      if (liveRefreshTimerRef.current !== null) {
+        window.clearTimeout(liveRefreshTimerRef.current);
+        liveRefreshTimerRef.current = null;
+      }
+      if (socket) {
+        socket.onopen = null;
+        socket.onmessage = null;
+        socket.onclose = null;
+        socket.onerror = null;
+        socket.close();
+      }
+    };
+  }, [localProject.id, scheduleProjectLiveRefresh]);
+
+  useEffect(() => {
+    if (!isProcessing || isProjectLiveConnected) return;
+    const interval = window.setInterval(() => {
+      void refreshProjectLiveData();
+    }, 10000);
+    return () => window.clearInterval(interval);
+  }, [isProcessing, isProjectLiveConnected, refreshProjectLiveData]);
 
   useEffect(() => {
     (async () => {
