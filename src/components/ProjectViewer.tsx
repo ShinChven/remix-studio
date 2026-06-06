@@ -70,6 +70,8 @@ interface LightboxData {
 const WORKFLOW_LIBRARY_PAGE_SIZE = 500;
 const MAX_JOB_FILENAME_LENGTH = 200;
 const TAB_DATA_STALE_MS = 30_000;
+const LIVE_REFRESH_DEBOUNCE_MS = 250;
+const LIVE_REFRESH_MIN_INTERVAL_MS = 1_000;
 
 function buildJobFilename(filenameParts: string[], suffixId: string): string {
   const safeSuffixId = suffixId.replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -195,6 +197,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const completedFetchTokenRef = useRef(0);
   const completedLoadedKeyRef = useRef<string | null>(null);
   const completedFetchedAtRef = useRef<number>(0);
+  const runProjectLiveRefreshRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     albumFetchTokenRef.current += 1;
@@ -416,6 +419,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     completedQueryKey,
   });
   const liveRefreshTimerRef = useRef<number | null>(null);
+  const liveRefreshDueAtRef = useRef<number>(0);
+  const liveRefreshInFlightRef = useRef(false);
+  const liveRefreshQueuedRef = useRef(false);
+  const lastLiveRefreshAtRef = useRef(0);
   const libraryRefreshPromiseRef = useRef<Promise<Library[]> | null>(null);
   const skipProjectSyncRef = useRef(false);
   const workflowListRef = useRef<HTMLDivElement | null>(null);
@@ -593,15 +600,53 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   }, [localProject.id]);
 
-  const scheduleProjectLiveRefresh = useCallback((delayMs = 250) => {
+  const scheduleProjectLiveRefresh = useCallback((delayMs = LIVE_REFRESH_DEBOUNCE_MS) => {
+    const now = Date.now();
+    const dueAt = Math.max(
+      now + delayMs,
+      lastLiveRefreshAtRef.current + LIVE_REFRESH_MIN_INTERVAL_MS
+    );
+
+    if (liveRefreshTimerRef.current !== null && liveRefreshDueAtRef.current <= dueAt) {
+      return;
+    }
+
     if (liveRefreshTimerRef.current !== null) {
       window.clearTimeout(liveRefreshTimerRef.current);
     }
+
+    liveRefreshDueAtRef.current = dueAt;
     liveRefreshTimerRef.current = window.setTimeout(() => {
       liveRefreshTimerRef.current = null;
-      void refreshProjectLiveData();
-    }, delayMs);
-  }, [refreshProjectLiveData]);
+      liveRefreshDueAtRef.current = 0;
+      runProjectLiveRefreshRef.current();
+    }, Math.max(0, dueAt - now));
+  }, []);
+
+  const runProjectLiveRefresh = useCallback(async () => {
+    if (liveRefreshInFlightRef.current) {
+      liveRefreshQueuedRef.current = true;
+      return;
+    }
+
+    liveRefreshInFlightRef.current = true;
+    try {
+      await refreshProjectLiveData();
+      lastLiveRefreshAtRef.current = Date.now();
+    } finally {
+      liveRefreshInFlightRef.current = false;
+      if (liveRefreshQueuedRef.current) {
+        liveRefreshQueuedRef.current = false;
+        scheduleProjectLiveRefresh();
+      }
+    }
+  }, [refreshProjectLiveData, scheduleProjectLiveRefresh]);
+
+  useEffect(() => {
+    runProjectLiveRefreshRef.current = () => {
+      void runProjectLiveRefresh();
+    };
+  }, [runProjectLiveRefresh]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return;
@@ -666,6 +711,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         window.clearTimeout(liveRefreshTimerRef.current);
         liveRefreshTimerRef.current = null;
       }
+      liveRefreshDueAtRef.current = 0;
+      liveRefreshQueuedRef.current = false;
       if (socket) {
         socket.onopen = null;
         socket.onmessage = null;
@@ -679,10 +726,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   useEffect(() => {
     if (!isProcessing || isProjectLiveConnected) return;
     const interval = window.setInterval(() => {
-      void refreshProjectLiveData();
+      void runProjectLiveRefresh();
     }, 10000);
     return () => window.clearInterval(interval);
-  }, [isProcessing, isProjectLiveConnected, refreshProjectLiveData]);
+  }, [isProcessing, isProjectLiveConnected, runProjectLiveRefresh]);
 
   useEffect(() => {
     (async () => {
