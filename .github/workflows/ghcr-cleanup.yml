@@ -2,6 +2,17 @@ name: ghcr-cleanup
 
 on:
   workflow_dispatch:
+    inputs:
+      cleanup_sha_tags:
+        description: "Delete legacy sha-* tagged GHCR images"
+        type: boolean
+        required: false
+        default: false
+      dry_run:
+        description: "Preview sha-* cleanup without deleting"
+        type: boolean
+        required: false
+        default: true
   schedule:
     - cron: "0 3 * * 0"
 
@@ -18,9 +29,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Delete old untagged GHCR images
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.cleanup_sha_tags }}
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
           packages: remix-studio
           older-than: 30 days
           keep-n-untagged: 20
+          validate: true
+
+      - name: Delete legacy sha-* tagged GHCR images
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.cleanup_sha_tags }}
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          packages: remix-studio
+          delete-tags: sha-*
+          dry-run: ${{ inputs.dry_run }}
           validate: true
