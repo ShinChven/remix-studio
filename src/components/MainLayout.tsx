@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor, Send, Compass, Search } from 'lucide-react';
+import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor, Send, Compass, Search, ArrowUpCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
@@ -84,6 +84,8 @@ export function MainLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [storageSize, setStorageSize] = useState<number | null>(null);
   const [storageLimit, setStorageLimit] = useState<number | null>(null);
+  const [hasUpdate, setHasUpdate] = useState(false);
+  const [latestVersionUrl, setLatestVersionUrl] = useState('https://github.com/shinchven/remix-studio/releases/latest');
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar-collapsed');
     return saved === 'true';
@@ -102,6 +104,38 @@ export function MainLayout() {
   useEffect(() => {
     localStorage.setItem('sidebar-collapsed', String(isCollapsed));
   }, [isCollapsed]);
+
+  useEffect(() => {
+    const checkUpdate = async () => {
+      try {
+        const res = await fetch('https://api.github.com/repos/shinchven/remix-studio/releases/latest');
+        if (res.ok) {
+          const data = await res.json();
+          const latestVersion = data.tag_name.replace(/^v/, '');
+          const currentVersion = import.meta.env.VITE_APP_VERSION || '1.12.1';
+          
+          if (latestVersion && latestVersion !== currentVersion) {
+            const v1 = latestVersion.split('.').map(Number);
+            const v2 = currentVersion.split('.').map(Number);
+            for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
+              const num1 = v1[i] || 0;
+              const num2 = v2[i] || 0;
+              if (num1 > num2) {
+                setHasUpdate(true);
+                setLatestVersionUrl(data.html_url);
+                break;
+              } else if (num1 < num2) {
+                break;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to check for updates:', e);
+      }
+    };
+    checkUpdate();
+  }, []);
 
   const location = useLocation();
   const { user } = useAuth();
@@ -343,8 +377,28 @@ export function MainLayout() {
                 }`}
               title={t('sidebar.userManagement')}
             >
-              <Shield className={`w-5 h-5 flex-shrink-0 ${location.pathname === '/admin/users' ? 'text-white' : 'text-blue-700 dark:text-blue-400'}`} />
-              <span className={`overflow-hidden whitespace-nowrap font-medium transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline'}`}>{t('sidebar.userManagement')}</span>
+              <div className="relative flex items-center justify-center">
+                <Shield className={`w-5 h-5 flex-shrink-0 ${location.pathname === '/admin/users' ? 'text-white' : 'text-blue-700 dark:text-blue-400'}`} />
+                {hasUpdate && isCollapsed && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-neutral-900" />
+                )}
+              </div>
+              <span className={`flex-1 overflow-hidden whitespace-nowrap font-medium transition-all duration-300 ${isCollapsed ? 'lg:max-w-0 lg:hidden' : 'max-w-[200px] inline text-left'}`}>{t('sidebar.userManagement')}</span>
+              {hasUpdate && !isCollapsed && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(latestVersionUrl, '_blank', 'noopener,noreferrer');
+                  }}
+                  className="flex-shrink-0 relative group flex items-center justify-center cursor-pointer text-amber-500 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300 transition-colors"
+                  title={t('sidebar.updateAvailable', 'Update Available')}
+                >
+                  <ArrowUpCircle className="w-5 h-5" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-neutral-900" />
+                </button>
+              )}
             </Link>
           )}
         </div>
