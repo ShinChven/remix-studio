@@ -27,6 +27,7 @@ import {
   deletePost,
   fetchBatchGeneratePostTextStatus,
   fetchPost,
+  refreshSocialAccountProfile,
   sendPostNow,
   updatePost,
 } from '../api';
@@ -322,7 +323,22 @@ export function CampaignPostDetail() {
               {connectedAccounts.length > 0 && (
                 <div className="flex -space-x-3">
                   {connectedAccounts.map((account) => (
-                    <img key={account.id} src={account.avatarUrl || fallbackAvatar(account.id)} alt={displayAccountName(account)} referrerPolicy="no-referrer" className="h-10 w-10 rounded-full border border-neutral-200 bg-neutral-100 object-cover ring-4 ring-white dark:border-white/10 dark:bg-neutral-800 dark:ring-neutral-900" />
+                    <img
+                      key={account.id}
+                      src={account.avatarUrl || fallbackAvatar(account.id)}
+                      alt={displayAccountName(account)}
+                      referrerPolicy="no-referrer"
+                      className="h-10 w-10 rounded-full border border-neutral-200 bg-neutral-100 object-cover ring-4 ring-white dark:border-white/10 dark:bg-neutral-800 dark:ring-neutral-900"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (target.src !== fallbackAvatar(account.id)) {
+                          target.src = fallbackAvatar(account.id);
+                          if (account.platform === 'twitter' || account.platform === 'x') {
+                            refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
+                          }
+                        }
+                      }}
+                    />
                   ))}
                 </div>
               )}

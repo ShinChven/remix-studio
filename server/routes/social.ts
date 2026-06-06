@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { SocialChannelFactory } from '../services/social';
-import { encrypt } from '../utils/crypto';
+import { encrypt, decrypt } from '../utils/crypto';
 
 export function createSocialRouter(prisma: PrismaClient) {
   const router = new Hono<{ Variables: { user: JwtPayload } }>();
@@ -165,6 +165,65 @@ export function createSocialRouter(prisma: PrismaClient) {
     });
 
     return c.json({ success: true });
+  });
+
+  // Refresh social account profile
+  router.post('/api/social/:platform/:accountId/refresh-profile', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const platform = c.req.param('platform');
+    const accountId = c.req.param('accountId');
+
+    try {
+      const account = await prisma.socialAccount.findFirst({
+        where: { accountId, platform, userId: user.userId }
+      });
+
+      if (!account) return c.json({ error: 'Account not found' }, 404);
+
+      let accessToken = decrypt(account.accessToken);
+
+      // We might need to refresh token if it's expired
+      if (account.expiresAt && new Date(account.expiresAt).getTime() < Date.now()) {
+        if (!account.refreshToken) return c.json({ error: 'Token expired and no refresh token available' }, 400);
+        const channel = SocialChannelFactory.getChannel(platform);
+        const tokens = await channel.refreshTokens(decrypt(account.refreshToken));
+        accessToken = tokens.accessToken;
+
+        await prisma.socialAccount.update({
+          where: { id: account.id },
+          data: {
+            accessToken: encrypt(tokens.accessToken),
+            refreshToken: tokens.refreshToken ? encrypt(tokens.refreshToken) : undefined,
+            expiresAt: tokens.expiresAt,
+          }
+        });
+      }
+
+      // Fetch profile
+      if (platform === 'twitter' || platform === 'x') {
+        const profileRes = await fetch('https://api.x.com/2/users/me?user.fields=name,username,profile_image_url', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          const avatarUrl = profileData.data?.profile_image_url ?? null;
+          const profileName = profileData.data?.name ?? profileData.data?.username ?? account.profileName;
+
+          await prisma.socialAccount.update({
+            where: { id: account.id },
+            data: { avatarUrl, profileName }
+          });
+          return c.json({ success: true, avatarUrl, profileName });
+        } else {
+          return c.json({ error: 'Failed to fetch profile from X' }, 400);
+        }
+      }
+
+      return c.json({ success: true });
+    } catch (error: any) {
+      console.error('[Social Refresh]', error);
+      return c.json({ error: error.message }, 500);
+    }
   });
 
   return router;

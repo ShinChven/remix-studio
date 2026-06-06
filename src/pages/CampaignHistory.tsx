@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
-import { fetchCampaignHistory } from '../api';
+import { fetchCampaignHistory, refreshSocialAccountProfile } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 
@@ -239,6 +239,16 @@ export function CampaignHistory() {
                           alt={name}
                           className="h-8 w-8 rounded-full border border-neutral-200 object-cover dark:border-white/10"
                           referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            const fallback = fallbackAvatar(account?.id || post.id);
+                            if (target.src !== fallback) {
+                              target.src = fallback;
+                              if (account && (platform === 'twitter' || platform === 'x')) {
+                                refreshSocialAccountProfile(platform, account.id).catch(console.error);
+                              }
+                            }
+                          }}
                         />
                         <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white bg-white text-neutral-900 shadow-xs dark:border-neutral-900 dark:bg-neutral-800 dark:text-white">
                           {getPlatformIcon(platform, "h-2 w-2")}

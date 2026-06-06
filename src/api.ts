@@ -1821,6 +1821,31 @@ export async function disconnectSocialAccount(platform: string, accountId: strin
   return handleResponse<void>(res, 'Failed to disconnect social account');
 }
 
+const pendingRefreshes = new Map<string, Promise<{ success: boolean, avatarUrl?: string, profileName?: string }>>();
+
+export function refreshSocialAccountProfile(platform: string, accountId: string): Promise<{ success: boolean, avatarUrl?: string, profileName?: string }> {
+  const key = `${platform}:${accountId}`;
+  if (pendingRefreshes.has(key)) {
+    return pendingRefreshes.get(key)!;
+  }
+
+  const promise = (async () => {
+    try {
+      const res = await apiFetch(`/api/social/${platform}/${accountId}/refresh-profile`, {
+        method: 'POST',
+        headers: getHeaders(),
+      });
+      return await handleResponse<{ success: boolean, avatarUrl?: string, profileName?: string }>(res, 'Failed to refresh social profile');
+    } finally {
+      // Keep the promise in cache for a short duration (e.g. 10 seconds) to prevent immediate retries if it fails
+      setTimeout(() => pendingRefreshes.delete(key), 10000);
+    }
+  })();
+
+  pendingRefreshes.set(key, promise);
+  return promise;
+}
+
 // ========== Store Integrations ==========
 
 export interface ConnectedStore {

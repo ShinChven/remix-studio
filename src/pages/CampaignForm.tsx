@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
-import { createCampaign, fetchCampaign, fetchSocialAccounts, updateCampaign } from '../api';
+import { createCampaign, fetchCampaign, fetchSocialAccounts, updateCampaign, refreshSocialAccountProfile } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 
@@ -300,7 +300,21 @@ export function CampaignForm() {
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800">
-                          <img src={account.avatarUrl || fallbackAvatar(account.id)} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                          <img
+                            src={account.avatarUrl || fallbackAvatar(account.id)}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              if (target.src !== fallbackAvatar(account.id)) {
+                                target.src = fallbackAvatar(account.id);
+                                if (account.platform === 'twitter' || account.platform === 'x') {
+                                  refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
+                                }
+                              }
+                            }}
+                          />
                         </div>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-bold text-neutral-950 dark:text-white">{displayName(account)}</p>

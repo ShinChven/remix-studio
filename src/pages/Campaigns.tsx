@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
-import { deleteCampaign, fetchCampaigns, fetchRecentPosts, fetchScheduledPosts, updateCampaign } from '../api';
+import { deleteCampaign, fetchCampaigns, fetchRecentPosts, fetchScheduledPosts, updateCampaign, refreshSocialAccountProfile } from '../api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
@@ -462,6 +462,16 @@ export function Campaigns() {
                                 alt={name}
                                 className="h-10 w-10 rounded-full border border-neutral-200 object-cover shadow-sm dark:border-white/10"
                                 referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  const fallback = fallbackAvatar(account?.id || post.id);
+                                  if (target.src !== fallback) {
+                                    target.src = fallback;
+                                    if (account && (platform === 'twitter' || platform === 'x')) {
+                                      refreshSocialAccountProfile(platform, account.id).catch(console.error);
+                                    }
+                                  }
+                                }}
                               />
                               <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-white text-neutral-900 shadow-sm dark:border-neutral-900 dark:bg-neutral-800 dark:text-white">
                                 {getPlatformIcon(platform, "h-2 w-2")}

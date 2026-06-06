@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
-import { disconnectSocialAccount, fetchSocialAccounts } from '../api';
+import { disconnectSocialAccount, fetchSocialAccounts, refreshSocialAccountProfile } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
@@ -130,6 +130,15 @@ export function CampaignChannels() {
                       alt={displayName(account)}
                       referrerPolicy="no-referrer"
                       className="h-12 w-12 shrink-0 rounded-full border border-neutral-200 bg-neutral-100 object-cover dark:border-white/10 dark:bg-neutral-800"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (target.src !== fallbackAvatar(account.id)) {
+                          target.src = fallbackAvatar(account.id);
+                          if (account.platform === 'twitter' || account.platform === 'x') {
+                            refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
+                          }
+                        }
+                      }}
                     />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">

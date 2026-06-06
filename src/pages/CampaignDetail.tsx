@@ -36,6 +36,7 @@ import {
   fetchBatchGeneratePostTextStatus,
   fetchCampaign,
   fetchCampaignPosts,
+  refreshSocialAccountProfile,
   removePostMedia,
   sendPostNow,
   updateCampaign,
@@ -758,7 +759,21 @@ export function CampaignDetail() {
                     {connectedAccounts.map((account) => (
                       <div key={account.id} className={cn('flex items-center justify-between rounded-lg border p-2 transition-all', account.status === 'active' || !account.status ? 'border-neutral-200 bg-neutral-50 dark:border-white/10 dark:bg-white/5' : 'border-neutral-200 bg-neutral-50 opacity-60 grayscale dark:border-white/10 dark:bg-white/5')}>
                         <div className="flex min-w-0 items-center gap-2">
-                          <img src={account.avatarUrl || fallbackAvatar(account.id)} alt="" referrerPolicy="no-referrer" className="h-6 w-6 shrink-0 rounded-full border object-cover dark:border-white/10" />
+                          <img
+                            src={account.avatarUrl || fallbackAvatar(account.id)}
+                            alt=""
+                            referrerPolicy="no-referrer"
+                            className="h-6 w-6 shrink-0 rounded-full border object-cover dark:border-white/10"
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              if (target.src !== fallbackAvatar(account.id)) {
+                                target.src = fallbackAvatar(account.id);
+                                if (account.platform === 'twitter' || account.platform === 'x') {
+                                  refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
+                                }
+                              }
+                            }}
+                          />
                           <span className="max-w-[120px] truncate text-xs font-medium text-neutral-950 dark:text-white">{displayAccountName(account)}</span>
                         </div>
                         <div className="shrink-0 text-neutral-500 dark:text-neutral-400">{getPlatformIcon(account.platform)}</div>
@@ -793,7 +808,22 @@ export function CampaignDetail() {
                         {connectedAccounts.length > 0 && (
                           <div className="flex -space-x-3">
                             {connectedAccounts.map((account) => (
-                              <img key={account.id} src={account.avatarUrl || fallbackAvatar(account.id)} alt={displayAccountName(account)} referrerPolicy="no-referrer" className="h-10 w-10 rounded-full border border-neutral-200 bg-neutral-100 object-cover ring-4 ring-white dark:border-white/10 dark:bg-neutral-800 dark:ring-neutral-900" />
+                              <img
+                                key={account.id}
+                                src={account.avatarUrl || fallbackAvatar(account.id)}
+                                alt={displayAccountName(account)}
+                                referrerPolicy="no-referrer"
+                                className="h-10 w-10 rounded-full border border-neutral-200 bg-neutral-100 object-cover ring-4 ring-white dark:border-white/10 dark:bg-neutral-800 dark:ring-neutral-900"
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  if (target.src !== fallbackAvatar(account.id)) {
+                                    target.src = fallbackAvatar(account.id);
+                                    if (account.platform === 'twitter' || account.platform === 'x') {
+                                      refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
+                                    }
+                                  }
+                                }}
+                              />
                             ))}
                           </div>
                         )}
