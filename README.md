@@ -94,6 +94,24 @@ flowchart TD
         CPOST --> SCH[Scheduling Timeline]
         SCH --> SOC[Social Channels]
     end
+
+    classDef userNode fill:#bfdbfe,stroke:#3b82f6,stroke-width:2px,color:#1e3a8a
+    classDef assistantNode fill:#a7f3d0,stroke:#10b981,stroke-width:2px,color:#064e3b
+    classDef externalNode fill:#e9d5ff,stroke:#a855f7,stroke-width:2px,color:#581c87
+    classDef toolNode fill:#fde68a,stroke:#f59e0b,stroke-width:2px,color:#78350f
+    classDef storageNode fill:#fecaca,stroke:#ef4444,stroke-width:2px,color:#7f1d1d
+    classDef executionNode fill:#c7d2fe,stroke:#6366f1,stroke-width:2px,color:#312e81
+    classDef outputNode fill:#fed7aa,stroke:#f97316,stroke-width:2px,color:#7c2d12
+    classDef campaignNode fill:#fbcfe8,stroke:#ec4899,stroke-width:2px,color:#831843
+
+    class U userNode
+    class A assistantNode
+    class X,M externalNode
+    class T,P,D toolNode
+    class L,R storageNode
+    class W,C,B,E executionNode
+    class TXT,IMG,MED outputNode
+    class CPOST,SCH,SOC campaignNode
 ```
 
 1. Save prompt fragments, tags, and media inputs into reusable libraries.
