@@ -2,6 +2,27 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.12.1] - 2026-06-06
+
+### Added
+
+- **Lazy Job Configuration Loading**: Added a focused API endpoint and repository method for fetching a specific job configuration so workflow snapshots can load only when a job is reused.
+- **Complete Album Media Migration**: Added repository support for fetching all project album items and expanded S3 key migration to cover all album media fields.
+
+### Fixed
+
+- **Project Viewer Split Regressions**: Restored affected project viewer, library, assistant, extension import, export, and media picker flows after the project data loading split.
+- **Album Pagination Counts**: Updated album pagination and aspect ratio totals immediately after batch item deletion.
+- **Image Lightbox Synchronization**: Improved index safety and state synchronization when navigating project images.
+
+### Changed
+
+- **Project Viewer Caching**: Added cache-based fetching with stale-time validation for album and completed job tabs.
+- **Project Workflow Loading**: Decoupled project workflow fetching and standardized storage normalization logic for project form and project route payloads.
+- **Post Count Lookup**: Optimized scheduled post count lookups with map-based aggregation and consistent local date formatting.
+- **Job Filename Sanitization**: Centralized sanitized filename truncation logic for project job exports.
+- **Architecture Diagram Docs**: Added Mermaid class definitions and styling to the architecture diagram in the README.
+
 ## [1.12.0] - 2026-06-04
 
 ### Added
