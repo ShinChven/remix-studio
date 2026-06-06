@@ -188,6 +188,71 @@ export class ProjectRepository {
     return jobs.map((j) => this.mapJob(j));
   }
 
+  async getProjectJobsByIds(userId: string, projectId: string, jobIds: string[]): Promise<Job[]> {
+    const ids = Array.from(new Set(jobIds.map((id) => id.trim()).filter(Boolean)));
+    if (ids.length === 0) return [];
+
+    const jobs = await this.prisma.job.findMany({
+      where: { projectId, userId, id: { in: ids } },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return jobs.map((j) => this.mapJob(j));
+  }
+
+  async findProjectJobsForStart(
+    userId: string,
+    projectId: string,
+    options: { mode: 'allDrafts' | 'selected'; jobIds?: string[] },
+  ): Promise<Array<Pick<Job, 'id' | 'status'>>> {
+    const where: any = { projectId, userId };
+
+    if (options.mode === 'allDrafts') {
+      where.status = 'draft';
+    } else {
+      const ids = Array.from(new Set((options.jobIds || []).map((id) => id.trim()).filter(Boolean)));
+      if (ids.length === 0) return [];
+      where.id = { in: ids };
+      where.status = { in: ['draft', 'failed', 'pending'] };
+    }
+
+    const jobs = await this.prisma.job.findMany({
+      where,
+      select: { id: true, status: true },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+
+    return jobs.map((job) => ({
+      id: job.id,
+      status: job.status as Job['status'],
+    }));
+  }
+
+  async countPendingProjectJobs(userId: string, projectId: string): Promise<number> {
+    return this.prisma.job.count({
+      where: { projectId, userId, status: 'pending' },
+    });
+  }
+
+  async startProjectJobs(userId: string, projectId: string, jobIds: string[]): Promise<number> {
+    const ids = Array.from(new Set(jobIds.map((id) => id.trim()).filter(Boolean)));
+    if (ids.length === 0) return 0;
+
+    const result = await this.prisma.job.updateMany({
+      where: {
+        projectId,
+        userId,
+        id: { in: ids },
+        status: { in: ['draft', 'failed', 'pending'] },
+      },
+      data: {
+        status: 'pending',
+        error: null,
+      },
+    });
+
+    return result.count;
+  }
+
   async getProjectAlbum(
     userId: string,
     projectId: string,
@@ -599,6 +664,21 @@ export class ProjectRepository {
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
     };
+  }
+
+  async getCompletedExportTasksMissingSize(userId: string): Promise<Array<{ id: string; s3Key?: string }>> {
+    const tasks = await this.prisma.exportTask.findMany({
+      where: { userId, status: 'completed', size: null },
+      select: { id: true, data: true },
+    });
+
+    return tasks.map((task) => {
+      const data = (task.data as any) ?? {};
+      return {
+        id: task.id,
+        s3Key: typeof data.s3Key === 'string' ? data.s3Key : undefined,
+      };
+    });
   }
 
   async getExportTask(userId: string, taskId: string): Promise<any | undefined> {

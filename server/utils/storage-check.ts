@@ -5,62 +5,33 @@ import { UserRepository } from '../auth/user-repository';
 /**
  * Calculates the current storage usage for a user.
  *
- * Uses the same DB-first strategy as GET /api/storage/analysis to ensure
- * quota enforcement and the dashboard display always agree.
+ * Uses the DB size fields maintained by generation/export workflows for cheap
+ * quota enforcement during hot paths such as starting jobs.
  *
- * Size breakdown:
- *  - Projects (album + workflow): DB size fields on each item
- *  - Campaigns: DB size fields on post media
- *  - Libraries: DB size fields on each library item
- *  - Trash: DB size fields on each trash item
- *  - Archives (exports): S3 HeadObject on each completed export task's s3Key
- *
- * S3 is NOT scanned for the main bucket — DB fields are authoritative.
+ * Uses SQL aggregates instead of materializing every user-owned row, with a
+ * narrow S3 size fallback for legacy completed export tasks missing `size`.
  */
 export async function getUserStorageUsage(
   userId: string,
-  storage: S3Storage,
+  _storage: S3Storage,
   exportStorage: S3Storage,
   repository: IRepository
 ): Promise<number> {
-  const [allItems, trashItems] = await Promise.all([
-    repository.getAllUserItems(userId),
-    repository.getTrashItems(userId),
-  ]);
+  const usage = await repository.getStorageUsageAggregate(userId);
+  let total = usage.projects + usage.campaigns + usage.libraries + usage.archives + usage.trash;
 
-  let totalSize = 0;
-  const exportTasks: any[] = [];
-
-  // Sum sizes from known DB records
-  for (const item of allItems) {
-    const type = item._type;
-    const itemSize = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
-
-    if (type === 'ALBUM' || type === 'LIBRARY_ITEM' || type === 'WORKFLOW_ITEM' || type === 'POST_MEDIA') {
-      totalSize += itemSize;
-    } else if (type === 'EXPORT') {
-      exportTasks.push(item);
+  const exportsMissingSize = await repository.getCompletedExportTasksMissingSize(userId);
+  for (const task of exportsMissingSize) {
+    if (!task.s3Key) continue;
+    try {
+      const size = await exportStorage.getSize(task.s3Key);
+      if (size) total += size;
+    } catch {
+      // Ignore individual archive lookups, matching the legacy quota path.
     }
   }
 
-  // Trash items (already fetched separately)
-  for (const item of trashItems) {
-    totalSize += Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
-  }
-
-  // Archives: S3 getSize lookup per completed export task
-  for (const task of exportTasks) {
-    if (task.status === 'completed' && task.s3Key) {
-      try {
-        const size = await exportStorage.getSize(task.s3Key);
-        if (size) totalSize += size;
-      } catch (e) {
-        // Ignore individual lookup failures
-      }
-    }
-  }
-
-  return totalSize;
+  return total;
 }
 
 export async function checkStorageLimit(

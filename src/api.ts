@@ -580,6 +580,19 @@ export async function updateProject(id: string, updates: Partial<Project>): Prom
   }
 }
 
+export type StartProjectJobsRequest =
+  | { mode: 'allDrafts' }
+  | { mode: 'selected'; jobIds: string[] };
+
+export async function startProjectJobs(projectId: string, request: StartProjectJobsRequest): Promise<{ started: number }> {
+  const res = await apiFetch(`/api/projects/${projectId}/jobs/start`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(request),
+  });
+  return handleResponse<{ success: boolean; started: number }>(res, 'Failed to start project jobs');
+}
+
 export async function deleteProject(id: string): Promise<void> {
   const res = await apiFetch(`/api/projects/${id}`, {
     method: 'DELETE',

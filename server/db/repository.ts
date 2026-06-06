@@ -1,4 +1,4 @@
-import { AppData, Library, LibraryItem, LibraryType, Project, ProjectStatus, AlbumItem, TrashItem } from '../../src/types';
+import { AppData, Library, LibraryItem, LibraryType, Project, ProjectStatus, AlbumItem, TrashItem, Job } from '../../src/types';
 
 export interface IRepository {
   // === Library CRUD ===
@@ -26,8 +26,16 @@ export interface IRepository {
   getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all', nameOnly?: boolean): Promise<{ items: Project[], total: number, page: number, pages: number }>;
   getProject(userId: string, projectId: string): Promise<Project | null>;
   getProjectWorkflow(userId: string, projectId: string): Promise<import('../../src/types').WorkflowItem[]>;
-  getProjectJobs(userId: string, projectId: string, options?: { excludeStatus?: string[] }): Promise<import('../../src/types').Job[]>;
-  getJob(userId: string, projectId: string, jobId: string): Promise<import('../../src/types').Job | null>;
+  getProjectJobs(userId: string, projectId: string, options?: { excludeStatus?: string[] }): Promise<Job[]>;
+  getProjectJobsByIds(userId: string, projectId: string, jobIds: string[]): Promise<Job[]>;
+  findProjectJobsForStart(
+    userId: string,
+    projectId: string,
+    options: { mode: 'allDrafts' | 'selected'; jobIds?: string[] },
+  ): Promise<Array<Pick<Job, 'id' | 'status'>>>;
+  countPendingProjectJobs(userId: string, projectId: string): Promise<number>;
+  startProjectJobs(userId: string, projectId: string, jobIds: string[]): Promise<number>;
+  getJob(userId: string, projectId: string, jobId: string): Promise<Job | null>;
   getProjectCompletedJobs(
     userId: string,
     projectId: string,
@@ -59,6 +67,7 @@ export interface IRepository {
   // === Export CRUD ===
   getExportTasks(userId: string, projectId: string): Promise<any[]>;
   getAllExportTasks(userId: string, page?: number, limit?: number): Promise<{ items: any[]; total: number; page: number; pages: number }>;
+  getCompletedExportTasksMissingSize(userId: string): Promise<Array<{ id: string; s3Key?: string }>>;
   getExportTask(userId: string, taskId: string): Promise<any | undefined>;
   saveExportTask(userId: string, taskId: string, data: any): Promise<void>;
   deleteExportTask(userId: string, taskId: string): Promise<void>;

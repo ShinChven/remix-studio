@@ -21,7 +21,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, updateProject as apiUpdateProject, runProjectWorkflow as apiRunWorkflow, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJob as apiDeleteProjectJob } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJob as apiDeleteProjectJob } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -1202,40 +1202,66 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   const toggleJobExpand = (jobId: string) => setExpandedJobId(prev => prev === jobId ? null : jobId);
 
+  const restoreAfterStartFailure = (previousJobs: Job[], error: unknown, label: string) => {
+    console.error(label, error);
+    toast.error(error instanceof Error
+      ? error.message
+      : t('projectViewer.toasts.startJobsFailed', { defaultValue: 'Failed to start jobs' }));
+    setLocalJobs(previousJobs);
+    void runProjectLiveRefresh();
+  };
+
   const runJob = async (jobId: string) => {
-    const updatedJobs = localJobs.map(j => j.id === jobId ? { ...j, status: 'pending' as const } : j);
+    const previousJobs = localJobsRef.current;
+    const targetJob = previousJobs.find(j => j.id === jobId);
+    if (!targetJob || !['draft', 'failed', 'pending'].includes(targetJob.status)) return;
+
+    const updatedJobs = previousJobs.map(j => j.id === jobId ? { ...j, status: 'pending' as const, error: undefined } : j);
     setLocalJobs(updatedJobs);
-    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+    setActiveTab('queue');
     try {
-      await apiRunWorkflow(localProject.id);
-      setActiveTab('queue');
+      const result = await apiStartProjectJobs(localProject.id, { mode: 'selected', jobIds: [jobId] });
+      if (result.started < 1) void runProjectLiveRefresh();
     } catch (e) {
-      console.error("Failed to run job:", e);
+      restoreAfterStartFailure(previousJobs, e, 'Failed to run job:');
     }
   };
 
   const runAllDrafts = async () => {
-    const updatedJobs = localJobs.map(j => j.status === 'draft' ? { ...j, status: 'pending' as const } : j);
+    const previousJobs = localJobsRef.current;
+    const draftCount = previousJobs.filter(j => j.status === 'draft').length;
+    if (draftCount === 0) return;
+
+    const updatedJobs = previousJobs.map(j => j.status === 'draft' ? { ...j, status: 'pending' as const, error: undefined } : j);
     setLocalJobs(updatedJobs);
-    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+    setActiveTab('queue');
     try {
-      await apiRunWorkflow(localProject.id);
-      setActiveTab('queue');
+      const result = await apiStartProjectJobs(localProject.id, { mode: 'allDrafts' });
+      if (result.started < draftCount) void runProjectLiveRefresh();
     } catch (e) {
-      console.error("Failed to run all drafts:", e);
+      restoreAfterStartFailure(previousJobs, e, 'Failed to run all drafts:');
     }
   };
 
   const runSelectedDrafts = async () => {
-    const updatedJobs = localJobs.map(j => selectedDraftIds.has(j.id) ? { ...j, status: 'pending' as const } : j);
+    const previousJobs = localJobsRef.current;
+    const previousSelectedDraftIds = new Set(selectedDraftIds);
+    const jobIds = previousJobs
+      .filter(j => previousSelectedDraftIds.has(j.id) && j.status === 'draft')
+      .map(j => j.id);
+    if (jobIds.length === 0) return;
+
+    const startJobIds = new Set(jobIds);
+    const updatedJobs = previousJobs.map(j => startJobIds.has(j.id) ? { ...j, status: 'pending' as const, error: undefined } : j);
     setLocalJobs(updatedJobs);
     setSelectedDraftIds(new Set());
-    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
+    setActiveTab('queue');
     try {
-      await apiRunWorkflow(localProject.id);
-      setActiveTab('queue');
+      const result = await apiStartProjectJobs(localProject.id, { mode: 'selected', jobIds });
+      if (result.started < jobIds.length) void runProjectLiveRefresh();
     } catch (e) {
-      console.error("Failed to run selected drafts:", e);
+      setSelectedDraftIds(previousSelectedDraftIds);
+      restoreAfterStartFailure(previousJobs, e, 'Failed to run selected drafts:');
     }
   };
 
@@ -1323,11 +1349,24 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   };
 
   const retrySelectedQueue = async () => {
-    const updatedJobs = localJobs.map(j => (selectedQueueIds.has(j.id) && (j.status === 'failed' || j.status === 'pending')) ? { ...j, status: 'pending' as const, error: undefined } : j);
+    const previousJobs = localJobsRef.current;
+    const previousSelectedQueueIds = new Set(selectedQueueIds);
+    const jobIds = previousJobs
+      .filter(j => previousSelectedQueueIds.has(j.id) && (j.status === 'failed' || j.status === 'pending'))
+      .map(j => j.id);
+    if (jobIds.length === 0) return;
+
+    const updatedJobs = previousJobs.map(j => previousSelectedQueueIds.has(j.id) && (j.status === 'failed' || j.status === 'pending') ? { ...j, status: 'pending' as const, error: undefined } : j);
     setLocalJobs(updatedJobs);
     setSelectedQueueIds(new Set());
-    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
-    try { await apiRunWorkflow(localProject.id); } catch (e) { console.error("Failed to retry selected:", e); }
+    setActiveTab('queue');
+    try {
+      const result = await apiStartProjectJobs(localProject.id, { mode: 'selected', jobIds });
+      if (result.started < jobIds.length) void runProjectLiveRefresh();
+    } catch (e) {
+      setSelectedQueueIds(previousSelectedQueueIds);
+      restoreAfterStartFailure(previousJobs, e, 'Failed to retry selected:');
+    }
   };
 
   const deleteSelectedQueue = async () => {

@@ -49,6 +49,18 @@ export class PrismaRepository implements IRepository {
   getProjectJobs(userId: string, projectId: string, options?: { excludeStatus?: string[] }) {
     return this.projects.getProjectJobs(userId, projectId, options);
   }
+  getProjectJobsByIds(userId: string, projectId: string, jobIds: string[]) {
+    return this.projects.getProjectJobsByIds(userId, projectId, jobIds);
+  }
+  findProjectJobsForStart(userId: string, projectId: string, options: { mode: 'allDrafts' | 'selected'; jobIds?: string[] }) {
+    return this.projects.findProjectJobsForStart(userId, projectId, options);
+  }
+  countPendingProjectJobs(userId: string, projectId: string) {
+    return this.projects.countPendingProjectJobs(userId, projectId);
+  }
+  startProjectJobs(userId: string, projectId: string, jobIds: string[]) {
+    return this.projects.startProjectJobs(userId, projectId, jobIds);
+  }
   getJob(userId: string, projectId: string, jobId: string) { return this.projects.getJob(userId, projectId, jobId); }
   getProjectCompletedJobs(
     userId: string,
@@ -87,6 +99,7 @@ export class PrismaRepository implements IRepository {
   // === Export CRUD ===
   getExportTasks(userId: string, projectId: string) { return this.projects.getExportTasks(userId, projectId); }
   getAllExportTasks(userId: string, page?: number, limit?: number) { return this.projects.getAllExportTasks(userId, page, limit); }
+  getCompletedExportTasksMissingSize(userId: string) { return this.projects.getCompletedExportTasksMissingSize(userId); }
   getExportTask(userId: string, taskId: string) { return this.projects.getExportTask(userId, taskId); }
   saveExportTask(userId: string, taskId: string, data: any) { return this.projects.saveExportTask(userId, taskId, data); }
   deleteExportTask(userId: string, taskId: string) { return this.projects.deleteExportTask(userId, taskId); }

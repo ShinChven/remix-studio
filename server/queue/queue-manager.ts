@@ -450,6 +450,50 @@ export class QueueManager {
     }
   }
 
+  async enqueueProjectJobs(userId: string, projectId: string, jobIds: string[]) {
+    const ids = Array.from(new Set(jobIds.map((id) => id.trim()).filter(Boolean)));
+    if (ids.length === 0) return;
+
+    const project = await this.projectRepo.getProject(userId, projectId);
+    if (!project) return;
+
+    const jobs = await this.projectRepo.getProjectJobsByIds(userId, projectId, ids);
+    const jobsToRun = jobs.filter(j => j.status === 'pending');
+    console.log(`[QueueManager] Enqueuing ${jobsToRun.length}/${ids.length} targeted jobs for project ${projectId}.`);
+
+    if (jobsToRun.length > 0) {
+      this.projectEvents?.notifyProjectChanged({
+        userId,
+        projectId,
+        reason: 'queue.started',
+      });
+    }
+
+    for (const job of jobsToRun) {
+      const providerId = job.providerId || project.providerId;
+      if (!providerId) continue;
+
+      this.enqueue(
+        userId,
+        project.id,
+        job,
+        providerId,
+        job.aspectRatio || project.aspectRatio,
+        job.quality || project.quality,
+        (job as any).background || (project as any).background,
+        job.format || project.format,
+        job.modelConfigId,
+        (project as any).type || 'image',
+        (project as any).systemPrompt,
+        (project as any).temperature,
+        (project as any).maxTokens,
+        job.duration || project.duration,
+        job.resolution || project.resolution,
+        job.sound || project.sound,
+      );
+    }
+  }
+
   private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, background?: string, format?: string, modelConfigId?: string, projectType?: ProjectType, systemPrompt?: string, temperature?: number, maxTokens?: number, duration?: number, resolution?: string, sound?: 'on' | 'off') {
     if (this.queuedJobIds.has(job.id) || this.activeJobIds.has(job.id)) return;
 

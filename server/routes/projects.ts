@@ -1055,6 +1055,84 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   });
 
   /**
+   * POST /api/projects/:id/jobs/start
+   *
+   * Move targeted draft/failed jobs to pending and enqueue them without forcing
+   * the client to PUT the entire jobs array.
+   */
+  router.post('/api/projects/:id/jobs/start', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Project not found' }, 404);
+
+      const body = await c.req.json().catch(() => ({}));
+      const mode = body?.mode === 'allDrafts'
+        ? 'allDrafts'
+        : body?.mode === 'selected'
+          ? 'selected'
+          : null;
+      if (!mode) return c.json({ error: 'Invalid start mode' }, 400);
+
+      const rawJobIds: unknown[] = Array.isArray(body?.jobIds) ? body.jobIds : [];
+      const jobIds: string[] = Array.from(new Set(
+        rawJobIds
+          .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+          .map((id) => id.trim())
+      ));
+
+      if (mode === 'selected' && jobIds.length === 0) {
+        return c.json({ error: 'jobIds are required' }, 400);
+      }
+
+      const startableJobs = await repository.findProjectJobsForStart(user.userId, projectId, { mode, jobIds });
+      if (startableJobs.length === 0) {
+        return c.json({ success: true, started: 0 }, 202);
+      }
+
+      const pendingCount = await repository.countPendingProjectJobs(user.userId, projectId);
+      const movingToPendingCount = startableJobs.filter((job) => job.status !== 'pending').length;
+      const futurePendingCount = pendingCount + movingToPendingCount;
+
+      if (futurePendingCount > 0) {
+        const estimatedNewSize = futurePendingCount * 25 * 1024 * 1024;
+        const { allowed, currentUsage, limit } = await checkStorageLimit(
+          user.userId,
+          estimatedNewSize,
+          userRepository,
+          storage,
+          exportStorage,
+          repository
+        );
+
+        if (!allowed) {
+          return c.json({
+            error: `Storage limit exceeded. Cannot start generation. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedNewSize / (1024 * 1024)).toFixed(0)}MB.`
+          }, 403);
+        }
+      }
+
+      const startJobIds = startableJobs.map((job) => job.id);
+      const started = await repository.startProjectJobs(user.userId, projectId, startJobIds);
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        reason: 'jobs.changed',
+      });
+
+      await queueManager.enqueueProjectJobs(user.userId, projectId, startJobIds);
+
+      return c.json({ success: true, started }, 202);
+    } catch (e) {
+      console.error('[POST /api/projects/:id/jobs/start]', e);
+      return c.json({ error: 'Failed to start project jobs' }, 500);
+    }
+  });
+
+  /**
    * POST /api/projects/:id/run
    *
    * Kick off the server-side generation queue for all 'pending' jobs in the project.
