@@ -14,7 +14,6 @@ import {
   Megaphone,
   ArrowRight,
   ExternalLink,
-  Twitter,
   Instagram,
   Linkedin,
   Facebook,

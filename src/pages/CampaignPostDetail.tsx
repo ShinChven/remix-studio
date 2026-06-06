@@ -17,9 +17,9 @@ import {
   Send,
   Sparkles,
   Trash2,
-  Twitter,
   X,
 } from 'lucide-react';
+import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
 import {
   BatchGenerateTextResult,
@@ -94,7 +94,7 @@ function getPlatformIcon(platform = '') {
   switch (platform.toLowerCase()) {
     case 'twitter':
     case 'x':
-      return <Twitter className="h-4 w-4" />;
+      return <XIcon className="h-4 w-4" />;
     case 'instagram':
       return <Instagram className="h-4 w-4" />;
     case 'linkedin':

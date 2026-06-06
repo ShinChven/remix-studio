@@ -15,9 +15,9 @@ import {
   Loader2,
   Megaphone,
   Search,
-  Twitter,
   XCircle,
 } from 'lucide-react';
+import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
 import { fetchCampaignHistory } from '../api';
 import { PageHeader } from '../components/PageHeader';
@@ -100,7 +100,7 @@ export function CampaignHistory() {
     switch (platform.toLowerCase()) {
       case 'twitter':
       case 'x':
-        return <Twitter className={className} />;
+        return <XIcon className={className} />;
       case 'instagram':
         return <Instagram className={className} />;
       case 'linkedin':

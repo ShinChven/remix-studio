@@ -6,8 +6,8 @@ import {
   Plus,
   Share2,
   Trash2,
-  Twitter,
 } from 'lucide-react';
+import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
 import { disconnectSocialAccount, fetchSocialAccounts } from '../api';
 import { PageHeader } from '../components/PageHeader';
@@ -106,7 +106,7 @@ export function CampaignChannels() {
           ) : accounts.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-card bg-neutral-100 text-neutral-700 dark:bg-white/10 dark:text-white">
-                <Twitter className="h-8 w-8" />
+                <XIcon className="h-8 w-8" />
               </div>
               <h3 className="text-xl font-bold text-neutral-950 dark:text-white">No channels connected</h3>
               <p className="mt-2 max-w-sm text-sm text-neutral-500 dark:text-neutral-400">
@@ -141,7 +141,7 @@ export function CampaignChannels() {
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
                         <span className="inline-flex items-center gap-1">
-                          <Twitter className="h-3.5 w-3.5" />
+                          <XIcon className="h-3.5 w-3.5" />
                           {account.platform === 'twitter' ? 'X' : account.platform}
                         </span>
                         <span>Account ID: {account.accountId}</span>

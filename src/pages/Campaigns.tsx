@@ -16,8 +16,8 @@ import {
   Plus,
   Search,
   Share2,
-  Twitter,
 } from 'lucide-react';
+import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
 import { deleteCampaign, fetchCampaigns, fetchRecentPosts, fetchScheduledPosts, updateCampaign } from '../api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -114,7 +114,7 @@ function getPlatformIcon(platform = '', className = "h-3.5 w-3.5") {
   switch (platform.toLowerCase()) {
     case 'twitter':
     case 'x':
-      return <Twitter className={className} />;
+      return <XIcon className={className} />;
     case 'instagram':
       return <Instagram className={className} />;
     case 'linkedin':
