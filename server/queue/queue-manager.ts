@@ -98,8 +98,11 @@ function inferImageMimeType(value: string): string {
 export class QueueManager {
   private activeJobs: Map<string, number> = new Map(); // providerId -> active count
   private queues: Map<string, QueuedJob[]> = new Map(); // providerId -> pending jobs
-  // Tracks every jobId that currently consumes a slot (queued, executing, or detached).
-  // Maps to the providerId so we can release the right slot during reconciliation.
+  // Jobs that are waiting in an in-memory provider queue but have not consumed
+  // a provider concurrency slot yet.
+  private queuedJobIds: Map<string, string> = new Map();
+  // Jobs that currently consume a provider slot (executing or detached).
+  // Maps to the providerId so callers can release the right slot.
   private activeJobIds: Map<string, string> = new Map();
   private processingLoops: Map<string, boolean> = new Map();
 
@@ -430,10 +433,10 @@ export class QueueManager {
   }
 
   private enqueue(userId: string, projectId: string, job: Job, providerId: string, aspectRatio?: string, quality?: string, background?: string, format?: string, modelConfigId?: string, projectType?: ProjectType, systemPrompt?: string, temperature?: number, maxTokens?: number, duration?: number, resolution?: string, sound?: 'on' | 'off') {
-    if (this.activeJobIds.has(job.id)) return;
+    if (this.queuedJobIds.has(job.id) || this.activeJobIds.has(job.id)) return;
 
     if (!this.queues.has(providerId)) this.queues.set(providerId, []);
-    this.activeJobIds.set(job.id, providerId);
+    this.queuedJobIds.set(job.id, providerId);
     this.queues.get(providerId)!.push({ userId, projectId, job, projectType, aspectRatio, quality, background, format, modelConfigId, systemPrompt, temperature, maxTokens, duration, resolution, sound });
     this.processNext(providerId);
   }
@@ -452,7 +455,7 @@ export class QueueManager {
         if (!provider) {
           const dropped = queue.shift();
           if (dropped) {
-            this.activeJobIds.delete(dropped.job.id);
+            this.queuedJobIds.delete(dropped.job.id);
             console.warn(`[QueueManager] Provider not found: ${providerId} for user ${dropped.userId}. Marking job ${dropped.job.id} as failed.`);
             await this.updateJobStatus(dropped.userId, dropped.projectId, dropped.job.id, {
               status: 'failed',
@@ -471,6 +474,8 @@ export class QueueManager {
 
         // Shift IMMEDIATELY (synchronous) to lock the item
         queue.shift();
+        this.queuedJobIds.delete(nextJob.job.id);
+        this.activeJobIds.set(nextJob.job.id, providerId);
         this.activeJobs.set(providerId, (this.activeJobs.get(providerId) || 0) + 1);
 
         // Run in background. For async (detached) jobs, the slot stays held
@@ -495,7 +500,7 @@ export class QueueManager {
    *
    * Pass `null` for providerId when the caller doesn't know it (e.g. a job whose
    * provider was deleted via cascade SetNull); we'll resolve it from the in-memory
-   * tracking map populated at enqueue time.
+   * active-slot map populated when the job starts or is recovered.
    */
   public releaseSlot(providerId: string | null, jobId: string) {
     if (!this.activeJobIds.has(jobId)) return;
@@ -517,8 +522,11 @@ export class QueueManager {
    * Executing/detached jobs trigger a full releaseSlot.
    */
   public async reconcileSlots() {
-    if (this.activeJobIds.size === 0) return;
-    const trackedIds = Array.from(this.activeJobIds.keys());
+    if (this.queuedJobIds.size === 0 && this.activeJobIds.size === 0) return;
+    const trackedIds = Array.from(new Set([
+      ...this.queuedJobIds.keys(),
+      ...this.activeJobIds.keys(),
+    ]));
     const dbJobs = await this.prisma.job.findMany({
       where: { id: { in: trackedIds } },
       select: { id: true },
@@ -526,21 +534,21 @@ export class QueueManager {
     const dbJobIds = new Set(dbJobs.map((j) => j.id));
     let releasedExecuting = 0;
     let droppedPending = 0;
-    for (const [jobId, providerId] of this.activeJobIds) {
+    for (const [jobId, providerId] of this.queuedJobIds) {
       if (dbJobIds.has(jobId)) continue;
 
-      // If the job is still queued (never started executing), remove it surgically.
-      // The activeJobs counter was never bumped for it, so do NOT call releaseSlot.
       const queue = this.queues.get(providerId);
       const idx = queue ? queue.findIndex((q) => q.job.id === jobId) : -1;
       if (idx >= 0) {
         queue!.splice(idx, 1);
-        this.activeJobIds.delete(jobId);
-        droppedPending++;
-        continue;
       }
+      this.queuedJobIds.delete(jobId);
+      droppedPending++;
+    }
 
-      // Otherwise it was executing or handed off to detached polling — release the slot.
+    for (const [jobId, providerId] of this.activeJobIds) {
+      if (dbJobIds.has(jobId)) continue;
+
       console.warn(`[QueueManager] Reconciling orphaned slot: job ${jobId} no longer exists in DB. Releasing on provider ${providerId}.`);
       this.releaseSlot(providerId, jobId);
       releasedExecuting++;
@@ -556,9 +564,9 @@ export class QueueManager {
    * overwritten out-of-band (historically: a stale client PUT /api/projects/:id
    * sending back the whole jobs array via the now-restricted saveJobs path).
    * DetachedPoller filters on `taskId NOT NULL` so it can't observe these
-   * orphans; without intervention they hold their concurrency slot until the
-   * next server restart triggers `recoverTasks`. We reset them to 'pending',
-   * release any phantom slot tracking, and re-enqueue the owning project.
+   * orphans; without intervention they can remain stranded until the next
+   * server restart triggers `recoverTasks`. We reset them to 'pending' and
+   * re-enqueue the owning project.
    */
   public async healStuckProcessingJobs(): Promise<void> {
     const orphans = await this.prisma.job.findMany({
@@ -573,7 +581,7 @@ export class QueueManager {
       // CRITICAL: a sync job (OpenAI image, Gemini text, etc.) runs with
       // status='processing' && taskId=null for the entire duration of
       // generator.generate(). If it shows up here while still in
-      // activeJobIds, the queue is genuinely executing it — skip, do not
+      // activeJobIds, it is genuinely consuming a provider slot — skip, do not
       // reset, or we'll cause a duplicate dispatch.
       if (this.activeJobIds.has(row.id)) continue;
 
@@ -1145,7 +1153,7 @@ export class QueueManager {
         // Reserve a concurrency slot for in-flight detached jobs so the limit is
         // enforced even after a restart. DetachedPoller will release on terminal state.
         const recoverProviderId = job.providerId;
-        if (recoverProviderId && !this.activeJobIds.has(job.id)) {
+        if (recoverProviderId && !this.activeJobIds.has(job.id) && !this.queuedJobIds.has(job.id)) {
           this.activeJobIds.set(job.id, recoverProviderId);
           this.activeJobs.set(recoverProviderId, (this.activeJobs.get(recoverProviderId) || 0) + 1);
         }

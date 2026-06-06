@@ -252,6 +252,9 @@ export class DetachedPoller {
       }
     } catch (e: any) {
       console.error(`[DetachedPoller] checkStatus for ${job.id} failed:`, e);
+      if (this.isStuck(job.id)) {
+        await this.markStuck(userId, projectId, job);
+      }
     } finally {
       this.activePolls.delete(job.id);
     }
