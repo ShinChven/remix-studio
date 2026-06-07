@@ -22,6 +22,23 @@ export class ThreadsChannel implements ISocialChannel {
   private static readonly GRAPH = 'https://graph.threads.net';
   private static readonly MVP_SCOPES = ['threads_basic', 'threads_content_publish'];
 
+  /**
+   * Extract a human-readable message from a Graph/Threads API error response.
+   * The Graph API wraps failures as `{ error: { message } }`; surface that
+   * message directly so users see e.g. the "threads_basic permission" hint
+   * instead of a raw `400 {json}` blob. Falls back to status + body otherwise.
+   */
+  private static async describeError(response: Response, fallback: string): Promise<string> {
+    const body = await response.text();
+    try {
+      const message = JSON.parse(body)?.error?.message;
+      if (message) return `${fallback}: ${message}`;
+    } catch {
+      // Body wasn't JSON; fall through to the raw representation.
+    }
+    return `${fallback}: ${response.status} ${body}`;
+  }
+
   constructor() {
     this.appId = process.env.THREADS_APP_ID!;
     this.appSecret = process.env.THREADS_APP_SECRET!;
@@ -58,7 +75,7 @@ export class ThreadsChannel implements ISocialChannel {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to exchange code: ${response.status} ${await response.text()}`);
+      throw new Error(await ThreadsChannel.describeError(response, 'Failed to exchange code'));
     }
 
     const data = await response.json();
@@ -80,7 +97,7 @@ export class ThreadsChannel implements ISocialChannel {
 
     const response = await fetch(`${ThreadsChannel.GRAPH}/access_token?${params.toString()}`);
     if (!response.ok) {
-      throw new Error(`Failed to exchange for long-lived token: ${response.status} ${await response.text()}`);
+      throw new Error(await ThreadsChannel.describeError(response, 'Failed to exchange for long-lived token'));
     }
 
     const data = await response.json();
@@ -98,7 +115,7 @@ export class ThreadsChannel implements ISocialChannel {
 
     const response = await fetch(`${ThreadsChannel.GRAPH}/refresh_access_token?${params.toString()}`);
     if (!response.ok) {
-      throw new Error(`Failed to refresh token: ${response.status} ${await response.text()}`);
+      throw new Error(await ThreadsChannel.describeError(response, 'Failed to refresh token'));
     }
 
     const data = await response.json();
@@ -131,7 +148,7 @@ export class ThreadsChannel implements ISocialChannel {
     });
     const response = await fetch(`${ThreadsChannel.GRAPH}/me?${params.toString()}`);
     if (!response.ok) {
-      throw new Error(`Failed to fetch Threads profile: ${response.status} ${await response.text()}`);
+      throw new Error(await ThreadsChannel.describeError(response, 'Failed to fetch Threads profile'));
     }
     const data = await response.json();
     return {

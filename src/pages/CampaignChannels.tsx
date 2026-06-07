@@ -7,6 +7,7 @@ import {
   Share2,
   Trash2,
 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { disconnectSocialAccount, fetchSocialAccounts, refreshSocialAccountProfile } from '../api';
 import { PageHeader } from '../components/PageHeader';
@@ -29,11 +30,28 @@ function displayName(account: SocialAccount) {
   return account.profileName || account.accountId || account.platform;
 }
 
+// The OAuth callback redirects back with ?error=<message>. Map the known
+// machine codes to friendly copy; otherwise show the provider's own message
+// (the backend already unwraps Graph API errors to their readable text).
+function humanizeConnectError(error: string): string {
+  switch (error) {
+    case 'missing_code_or_state':
+      return 'Connection was cancelled or incomplete. Please try again.';
+    case 'invalid_state_or_verifier':
+      return 'Connection expired or was tampered with. Please try connecting again.';
+    case 'access_denied':
+      return 'You declined the permission request, so the account was not connected.';
+    default:
+      return `Could not connect the account: ${error}`;
+  }
+}
+
 export function CampaignChannels() {
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SocialAccount | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const loadAccounts = async () => {
     setLoading(true);
@@ -49,6 +67,26 @@ export function CampaignChannels() {
 
   useEffect(() => {
     void loadAccounts();
+  }, []);
+
+  // Surface the result of the OAuth callback redirect (?success=connected or
+  // ?error=<message>), then strip the params so a refresh doesn't re-toast.
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const error = searchParams.get('error');
+    if (!success && !error) return;
+
+    if (success === 'connected') {
+      toast.success('Channel connected');
+    } else if (error) {
+      toast.error(humanizeConnectError(error));
+    }
+
+    const next = new URLSearchParams(searchParams);
+    next.delete('success');
+    next.delete('error');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDisconnect = async (account: SocialAccount) => {
