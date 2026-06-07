@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="index, follow" />
+  <title>Privacy Policy — Remix Studio</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #fafafa;
+      --fg: #18181b;
+      --muted: #52525b;
+      --border: #e4e4e7;
+      --card: #ffffff;
+      --accent: #2563eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #09090b;
+        --fg: #e4e4e7;
+        --muted: #a1a1aa;
+        --border: #27272a;
+        --card: #18181b;
+        --accent: #60a5fa;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 24px 96px;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+    h1 { font-size: 2rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    h2 { font-size: 1.25rem; margin: 40px 0 12px; letter-spacing: -0.01em; }
+    h3 { font-size: 1.05rem; margin: 24px 0 8px; }
+    p, li { color: var(--fg); }
+    .muted { color: var(--muted); font-size: 0.9rem; }
+    a { color: var(--accent); }
+    ul { padding-left: 1.25rem; }
+    li { margin: 6px 0; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+    code {
+      background: var(--border);
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-size: 0.85em;
+    }
+    footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Privacy Policy</h1>
+      <p class="muted">Remix Studio · Last updated: June 7, 2026</p>
+    </header>
+
+    <p>
+      This Privacy Policy explains how <strong>Remix Studio</strong> ("we", "us", "the Service")
+      collects, uses, stores, and protects your information when you use the application,
+      including when you connect third-party social media accounts such as
+      <strong>Threads</strong>, <strong>X (Twitter)</strong>, and Google.
+    </p>
+
+    <h2>1. Information We Collect</h2>
+
+    <h3>Account information</h3>
+    <ul>
+      <li>Your email address and authentication credentials (passwords are stored only as salted hashes; passkeys/WebAuthn credentials where used).</li>
+      <li>Profile and usage data you create within the Service (libraries, projects, prompts, generated media, campaigns, and posts).</li>
+    </ul>
+
+    <h3>Connected social accounts</h3>
+    <p>
+      When you connect a social platform, we receive and store only what is needed to publish
+      on your behalf:
+    </p>
+    <ul>
+      <li><strong>Threads / Meta:</strong> your Threads account ID, profile name, and avatar, plus OAuth access and refresh tokens scoped to <code>threads_basic</code> and <code>threads_content_publish</code>.</li>
+      <li><strong>X (Twitter):</strong> your account ID, profile details, and OAuth tokens needed to publish posts.</li>
+      <li><strong>Google:</strong> basic profile and email used for sign-in and invite-based registration.</li>
+    </ul>
+    <p class="muted">
+      Access and refresh tokens are encrypted at rest. We do not read your private messages,
+      and we only access the permissions (scopes) you explicitly grant during authorization.
+    </p>
+
+    <h3>Technical data</h3>
+    <ul>
+      <li>Standard server logs (such as timestamps and request metadata) used to operate and secure the Service.</li>
+    </ul>
+
+    <h2>2. How We Use Your Information</h2>
+    <ul>
+      <li>To provide core functionality: creating, managing, and scheduling content.</li>
+      <li>To publish posts to the social accounts you connect, at your direction.</li>
+      <li>To authenticate you and keep your account secure.</li>
+      <li>To maintain, debug, and improve the Service.</li>
+    </ul>
+    <p>We do <strong>not</strong> sell your personal data or your social account data to third parties.</p>
+
+    <h2>3. Data Sharing</h2>
+    <p>We share data only with:</p>
+    <ul>
+      <li><strong>The social platforms you connect</strong> (e.g., Meta/Threads, X), strictly to publish the content you ask us to publish.</li>
+      <li><strong>Infrastructure providers</strong> used to host the Service and store media (databases and S3-compatible object storage).</li>
+      <li><strong>Authorities</strong>, where required by law.</li>
+    </ul>
+
+    <h2>4. Data Retention &amp; Deletion</h2>
+    <p>
+      Your data is retained for as long as your account is active. You can remove data at any time:
+    </p>
+    <ul>
+      <li><strong>Disconnect a social account</strong> in <em>Campaigns → Channels</em>. This immediately deletes the stored account record and its OAuth tokens from the Service.</li>
+      <li><strong>Uninstall / data-deletion via Meta:</strong> when you remove the app from your Threads/Meta settings, Meta notifies the Service and we automatically delete the associated Threads account record and tokens.</li>
+      <li><strong>Full account deletion:</strong> contact us using the details below to request deletion of your account and associated data.</li>
+    </ul>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Requesting deletion of your Threads data</h3>
+      <p style="margin-bottom:0;">
+        To delete the data associated with your Threads connection, disconnect the channel in
+        <em>Campaigns → Channels</em>, or remove Remix Studio from your Threads app settings.
+        Either action permanently deletes your stored Threads account ID and access tokens from
+        our systems. For any other data-deletion request, email us at the address below.
+      </p>
+    </div>
+
+    <h2>5. Security</h2>
+    <p>
+      We protect your data with industry-standard measures, including encryption of sensitive
+      credentials and access tokens at rest, hashed passwords, and access controls. No method of
+      transmission or storage is completely secure, but we work to protect your information and
+      promptly address any issues.
+    </p>
+
+    <h2>6. Your Rights</h2>
+    <p>
+      Depending on your jurisdiction, you may have the right to access, correct, export, or delete
+      your personal data, and to withdraw consent. To exercise these rights, contact us below.
+    </p>
+
+    <h2>7. Children's Privacy</h2>
+    <p>
+      The Service is not directed to children under 13 (or the minimum age required in your
+      jurisdiction), and we do not knowingly collect their personal data.
+    </p>
+
+    <h2>8. Changes to This Policy</h2>
+    <p>
+      We may update this Privacy Policy from time to time. Material changes will be reflected by
+      updating the "Last updated" date above.
+    </p>
+
+    <h2>9. Contact Us</h2>
+    <p>
+      If you have any questions about this Privacy Policy or your data, contact us at:
+      <a href="mailto:shinchven@gmail.com">shinchven@gmail.com</a>.
+    </p>
+
+    <footer>
+      © 2026 Remix Studio. All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>
