@@ -7,12 +7,12 @@ import {
   Share2,
   Trash2,
 } from 'lucide-react';
-import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
 import { disconnectSocialAccount, fetchSocialAccounts, refreshSocialAccountProfile } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
+import { getPlatformIcon, platformLabel, platformConnectUrl } from '../lib/platform';
 
 interface SocialAccount {
   id: string;
@@ -73,13 +73,22 @@ export function CampaignChannels() {
           description="Connect and manage the accounts campaigns publish to."
           backLink={{ to: '/campaigns', label: 'Back to Campaigns' }}
           actions={(
-            <a
-              href="/api/social/twitter/connect"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-95"
-            >
-              <Plus className="h-4 w-4" />
-              Connect X
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href="/api/social/twitter/connect"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-95"
+              >
+                <Plus className="h-4 w-4" />
+                Connect X
+              </a>
+              <a
+                href="/api/social/threads/connect"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900 px-4 text-sm font-bold text-white shadow-lg shadow-neutral-900/10 transition hover:bg-neutral-800 active:scale-95 dark:border-white/20 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+              >
+                <Plus className="h-4 w-4" />
+                Connect Threads
+              </a>
+            </div>
           )}
         />
 
@@ -103,19 +112,28 @@ export function CampaignChannels() {
           ) : accounts.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-card bg-neutral-100 text-neutral-700 dark:bg-white/10 dark:text-white">
-                <XIcon className="h-8 w-8" />
+                <Share2 className="h-8 w-8" />
               </div>
               <h3 className="text-xl font-bold text-neutral-950 dark:text-white">No channels connected</h3>
               <p className="mt-2 max-w-sm text-sm text-neutral-500 dark:text-neutral-400">
-                Connect an X account before assigning channels to campaigns.
+                Connect a channel before assigning it to campaigns.
               </p>
-              <a
-                href="/api/social/twitter/connect"
-                className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-4 text-sm font-bold text-white transition hover:bg-indigo-700"
-              >
-                <Plus className="h-4 w-4" />
-                Connect X
-              </a>
+              <div className="mt-6 flex items-center gap-2">
+                <a
+                  href="/api/social/twitter/connect"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-indigo-700 bg-indigo-600 px-4 text-sm font-bold text-white transition hover:bg-indigo-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  Connect X
+                </a>
+                <a
+                  href="/api/social/threads/connect"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900 px-4 text-sm font-bold text-white transition hover:bg-neutral-800 dark:border-white/20 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                >
+                  <Plus className="h-4 w-4" />
+                  Connect Threads
+                </a>
+              </div>
             </div>
           ) : (
             <div className="divide-y divide-neutral-200 dark:divide-white/10">
@@ -129,7 +147,7 @@ export function CampaignChannels() {
                       className="h-12 w-12 shrink-0 rounded-full border border-neutral-200 bg-neutral-100 object-cover dark:border-white/10 dark:bg-neutral-800"
                       onError={(e) => {
                         if (applyAvatarFallback(e.currentTarget, account.id, displayName(account))) {
-                          if (account.platform === 'twitter' || account.platform === 'x') {
+                          if (['twitter', 'x', 'threads'].includes(account.platform)) {
                             refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
                           }
                         }
@@ -145,8 +163,8 @@ export function CampaignChannels() {
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
                         <span className="inline-flex items-center gap-1">
-                          <XIcon className="h-3.5 w-3.5" />
-                          {account.platform === 'twitter' ? 'X' : account.platform}
+                          {getPlatformIcon(account.platform, 'h-3.5 w-3.5')}
+                          {platformLabel(account.platform)}
                         </span>
                         <span>Account ID: {account.accountId}</span>
                       </div>
@@ -154,7 +172,7 @@ export function CampaignChannels() {
                   </div>
                   <div className="flex items-center gap-2 sm:shrink-0">
                     <a
-                      href="/api/social/twitter/connect"
+                      href={platformConnectUrl(account.platform)}
                       className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold text-neutral-700 transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-950/30 dark:text-neutral-200 dark:hover:bg-white/10"
                     >
                       <ExternalLink className="h-4 w-4" />

@@ -510,7 +510,7 @@ export function PostForm() {
                             referrerPolicy="no-referrer"
                             onError={(e) => {
                               if (applyAvatarFallback(e.currentTarget, account.id, accountName(account))) {
-                                if (account.platform === 'twitter' || account.platform === 'x') {
+                                if (['twitter', 'x', 'threads'].includes(account.platform)) {
                                   refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
                                 }
                               }

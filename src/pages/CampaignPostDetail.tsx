@@ -7,11 +7,7 @@ import {
   ChevronRight,
   Clock,
   ExternalLink,
-  Facebook,
-  Globe,
   Image as ImageIcon,
-  Instagram,
-  Linkedin,
   Loader2,
   Pencil,
   Send,
@@ -19,7 +15,6 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
 import {
   BatchGenerateTextResult,
@@ -36,6 +31,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
+import { getPlatformIcon } from '../lib/platform';
 
 interface SocialAccount {
   id: string;
@@ -86,22 +82,6 @@ function toDatetimeLocal(date: Date): string {
 
 function displayAccountName(account: SocialAccount) {
   return account.profileName || account.accountId || account.platform;
-}
-
-function getPlatformIcon(platform = '') {
-  switch (platform.toLowerCase()) {
-    case 'twitter':
-    case 'x':
-      return <XIcon className="h-4 w-4" />;
-    case 'instagram':
-      return <Instagram className="h-4 w-4" />;
-    case 'linkedin':
-      return <Linkedin className="h-4 w-4" />;
-    case 'facebook':
-      return <Facebook className="h-4 w-4" />;
-    default:
-      return <Globe className="h-4 w-4" />;
-  }
 }
 
 function mediaUrl(media: PostMedia) {
@@ -328,7 +308,7 @@ export function CampaignPostDetail() {
                       className="h-10 w-10 rounded-full border border-neutral-200 bg-neutral-100 object-cover ring-4 ring-white dark:border-white/10 dark:bg-neutral-800 dark:ring-neutral-900"
                       onError={(e) => {
                         if (applyAvatarFallback(e.currentTarget, account.id, displayAccountName(account))) {
-                          if (account.platform === 'twitter' || account.platform === 'x') {
+                          if (['twitter', 'x', 'threads'].includes(account.platform)) {
                             refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
                           }
                         }

@@ -6,6 +6,25 @@ import { authMiddleware, JwtPayload } from '../auth/auth';
 import { SocialChannelFactory } from '../services/social';
 import { encrypt, decrypt } from '../utils/crypto';
 
+/**
+ * Parse and verify a Meta `signed_request` (used by the Threads/Meta deauthorize
+ * and data-deletion callbacks). Format is `<base64url sig>.<base64url payload>`;
+ * the signature is HMAC-SHA256 of the raw payload string keyed by the app secret.
+ * Returns the decoded payload, or null if missing/invalid.
+ */
+function parseSignedRequest(signedRequest: string | undefined, appSecret: string): any | null {
+  if (!signedRequest || !appSecret || !signedRequest.includes('.')) return null;
+  const [encodedSig, payload] = signedRequest.split('.', 2);
+  try {
+    const sig = Buffer.from(encodedSig, 'base64url');
+    const expected = crypto.createHmac('sha256', appSecret).update(payload).digest();
+    if (sig.length !== expected.length || !crypto.timingSafeEqual(sig, expected)) return null;
+    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
 export function createSocialRouter(prisma: PrismaClient) {
   const router = new Hono<{ Variables: { user: JwtPayload } }>();
 
@@ -63,23 +82,17 @@ export function createSocialRouter(prisma: PrismaClient) {
       const channel = SocialChannelFactory.getChannel(platform);
       const tokens = await channel.exchangeCode(code, codeVerifier);
 
-      // Fetch real profile from X API so we have a stable accountId for upsert
+      // Fetch the real profile via the channel abstraction so we have a stable
+      // accountId for upsert, regardless of platform.
       let accountId = `unknown_${Date.now()}`;
       let profileName = 'Connected Account';
       let avatarUrl: string | null = null;
 
       try {
-        const profileRes = await fetch('https://api.x.com/2/users/me?user.fields=name,username,profile_image_url', {
-          headers: { Authorization: `Bearer ${tokens.accessToken}` },
-        });
-        if (profileRes.ok) {
-          const profileData = await profileRes.json();
-          accountId = profileData.data?.id ?? accountId;
-          profileName = profileData.data?.name ?? profileData.data?.username ?? profileName;
-          avatarUrl = profileData.data?.profile_image_url ?? null;
-        } else {
-          console.warn('[Social Callback] Could not fetch profile, using fallback accountId');
-        }
+        const profile = await channel.getProfile(tokens.accessToken);
+        accountId = profile.accountId ?? accountId;
+        profileName = profile.profileName ?? profileName;
+        avatarUrl = profile.avatarUrl ?? null;
       } catch (profileErr) {
         console.warn('[Social Callback] Profile fetch failed:', profileErr);
       }
@@ -87,6 +100,7 @@ export function createSocialRouter(prisma: PrismaClient) {
       // We encrypt tokens at rest (Security Audit check 6.1)
       const encryptedAccessToken = encrypt(tokens.accessToken);
       const encryptedRefreshToken = tokens.refreshToken ? encrypt(tokens.refreshToken) : null;
+      const scopes = tokens.scopes && tokens.scopes.length > 0 ? tokens.scopes : undefined;
 
       await prisma.socialAccount.upsert({
         where: {
@@ -103,6 +117,7 @@ export function createSocialRouter(prisma: PrismaClient) {
           status: 'active',
           profileName,
           avatarUrl,
+          ...(scopes ? { scopes } : {}),
         },
         create: {
           userId: user.userId,
@@ -114,6 +129,7 @@ export function createSocialRouter(prisma: PrismaClient) {
           status: 'active',
           profileName,
           avatarUrl,
+          ...(scopes ? { scopes } : {}),
         }
       });
 
@@ -167,6 +183,42 @@ export function createSocialRouter(prisma: PrismaClient) {
     return c.json({ success: true });
   });
 
+  // ---- Meta Threads lifecycle callbacks (server-to-server, NO authMiddleware) ----
+  // Meta calls these with a signed_request; they satisfy the required "Uninstall
+  // Callback URL" and "Delete Callback URL" fields in the Threads app dashboard.
+
+  // Uninstall / deauthorize: user removed the app -> delete their Threads account + tokens.
+  router.post('/api/social/threads/deauthorize', async (c) => {
+    const body = await c.req.parseBody();
+    const data = parseSignedRequest(body['signed_request'] as string | undefined, process.env.THREADS_APP_SECRET || '');
+    if (!data?.user_id) return c.json({ error: 'Invalid signed_request' }, 400);
+
+    await prisma.socialAccount.deleteMany({
+      where: { platform: 'threads', accountId: String(data.user_id) },
+    });
+    return c.json({ success: true });
+  });
+
+  // Data deletion request: delete the user's data and return the JSON Meta requires.
+  router.post('/api/social/threads/data-deletion', async (c) => {
+    const body = await c.req.parseBody();
+    const data = parseSignedRequest(body['signed_request'] as string | undefined, process.env.THREADS_APP_SECRET || '');
+    if (!data?.user_id) return c.json({ error: 'Invalid signed_request' }, 400);
+
+    const userId = String(data.user_id);
+    await prisma.socialAccount.deleteMany({
+      where: { platform: 'threads', accountId: userId },
+    });
+
+    // Deletion is synchronous, so the status URL just confirms completion.
+    const confirmationCode = `threads_${userId}_${Date.now()}`;
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    return c.json({
+      url: `${appUrl}/campaigns/channels?threads_deletion=${confirmationCode}`,
+      confirmation_code: confirmationCode,
+    });
+  });
+
   // Refresh social account profile
   router.post('/api/social/:platform/:accountId/refresh-profile', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;
@@ -188,11 +240,11 @@ export function createSocialRouter(prisma: PrismaClient) {
       if (!account) return c.json({ error: 'Account not found' }, 404);
 
       let accessToken = decrypt(account.accessToken);
+      const channel = SocialChannelFactory.getChannel(platform);
 
       // We might need to refresh token if it's expired
       if (account.expiresAt && new Date(account.expiresAt).getTime() < Date.now()) {
         if (!account.refreshToken) return c.json({ error: 'Token expired and no refresh token available' }, 400);
-        const channel = SocialChannelFactory.getChannel(platform);
         const tokens = await channel.refreshTokens(decrypt(account.refreshToken));
         accessToken = tokens.accessToken;
 
@@ -206,27 +258,20 @@ export function createSocialRouter(prisma: PrismaClient) {
         });
       }
 
-      // Fetch profile
-      if (platform === 'twitter' || platform === 'x') {
-        const profileRes = await fetch('https://api.x.com/2/users/me?user.fields=name,username,profile_image_url', {
-          headers: { Authorization: `Bearer ${accessToken}` },
+      // Fetch profile via the channel abstraction (works for all platforms).
+      try {
+        const profile = await channel.getProfile(accessToken);
+        const avatarUrl = profile.avatarUrl ?? null;
+        const profileName = profile.profileName ?? account.profileName;
+
+        await prisma.socialAccount.update({
+          where: { id: account.id },
+          data: { avatarUrl, profileName }
         });
-        if (profileRes.ok) {
-          const profileData = await profileRes.json();
-          const avatarUrl = profileData.data?.profile_image_url ?? null;
-          const profileName = profileData.data?.name ?? profileData.data?.username ?? account.profileName;
-
-          await prisma.socialAccount.update({
-            where: { id: account.id },
-            data: { avatarUrl, profileName }
-          });
-          return c.json({ success: true, avatarUrl, profileName });
-        } else {
-          return c.json({ error: 'Failed to fetch profile from X' }, 400);
-        }
+        return c.json({ success: true, avatarUrl, profileName });
+      } catch (profileErr: any) {
+        return c.json({ error: `Failed to fetch profile: ${profileErr.message}` }, 400);
       }
-
-      return c.json({ success: true });
     } catch (error: any) {
       console.error('[Social Refresh]', error);
       return c.json({ error: error.message }, 500);

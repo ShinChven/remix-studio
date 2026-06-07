@@ -2,19 +2,15 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Check,
-  Facebook,
-  Globe,
-  Instagram,
-  Linkedin,
   Loader2,
   Search,
 } from 'lucide-react';
-import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
 import { createCampaign, fetchCampaign, fetchSocialAccounts, updateCampaign, refreshSocialAccountProfile } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
+import { getPlatformIcon, platformLabel } from '../lib/platform';
 
 interface SocialAccount {
   id: string;
@@ -24,22 +20,6 @@ interface SocialAccount {
   accountId?: string;
   status?: string;
   createdAt?: string;
-}
-
-function getPlatformIcon(platform: string) {
-  switch (platform.toLowerCase()) {
-    case 'twitter':
-    case 'x':
-      return <XIcon className="h-4 w-4" />;
-    case 'instagram':
-      return <Instagram className="h-4 w-4" />;
-    case 'linkedin':
-      return <Linkedin className="h-4 w-4" />;
-    case 'facebook':
-      return <Facebook className="h-4 w-4" />;
-    default:
-      return <Globe className="h-4 w-4" />;
-  }
 }
 
 function displayName(account: SocialAccount) {
@@ -272,7 +252,7 @@ export function CampaignForm() {
                       onClick={() => setPlatformFilter(platformFilter === platform ? null : platform)}
                     >
                       {getPlatformIcon(platform)}
-                      <span>{platform === 'twitter' ? 'X' : platform}</span>
+                      <span>{platformLabel(platform)}</span>
                     </button>
                   ))}
                 </div>
@@ -304,7 +284,7 @@ export function CampaignForm() {
                             referrerPolicy="no-referrer"
                             onError={(e) => {
                               if (applyAvatarFallback(e.currentTarget, account.id, displayName(account))) {
-                                if (account.platform === 'twitter' || account.platform === 'x') {
+                                if (['twitter', 'x', 'threads'].includes(account.platform)) {
                                   refreshSocialAccountProfile(account.platform, account.id).catch(console.error);
                                 }
                               }
@@ -315,7 +295,7 @@ export function CampaignForm() {
                           <p className="truncate text-sm font-bold text-neutral-950 dark:text-white">{displayName(account)}</p>
                           <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
                             {getPlatformIcon(account.platform)}
-                            <span>{account.platform}</span>
+                            <span>{platformLabel(account.platform)}</span>
                           </div>
                         </div>
                       </div>

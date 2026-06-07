@@ -6,23 +6,19 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
-  Facebook,
   Filter,
-  Globe,
   History,
-  Instagram,
-  Linkedin,
   Loader2,
   Megaphone,
   Search,
   XCircle,
 } from 'lucide-react';
-import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
 import { fetchCampaignHistory, refreshSocialAccountProfile } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
+import { getPlatformIcon, fallbackExternalUrl } from '../lib/platform';
 
 export function CampaignHistory() {
   const navigate = useNavigate();
@@ -97,21 +93,6 @@ export function CampaignHistory() {
     setSearchParams(params);
   };
 
-  function getPlatformIcon(platform = '', className = "h-4 w-4") {
-    switch (platform.toLowerCase()) {
-      case 'twitter':
-      case 'x':
-        return <XIcon className={className} />;
-      case 'instagram':
-        return <Instagram className={className} />;
-      case 'linkedin':
-        return <Linkedin className={className} />;
-      case 'facebook':
-        return <Facebook className={className} />;
-      default:
-        return <Globe className={className} />;
-    }
-  }
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
@@ -217,15 +198,7 @@ export function CampaignHistory() {
                 const avatarSeed = account?.id || post.id;
                 const avatar = account?.avatarUrl || defaultAvatar(avatarSeed, name);
                 
-                let externalUrl = execution?.externalUrl;
-                if (!externalUrl && execution?.externalId) {
-                  const p = platform.toLowerCase();
-                  if (p === 'twitter' || p === 'x') {
-                    externalUrl = `https://x.com/i/web/status/${execution.externalId}`;
-                  } else if (p === 'linkedin') {
-                    externalUrl = `https://www.linkedin.com/feed/update/${execution.externalId}`;
-                  }
-                }
+                const externalUrl = execution?.externalUrl || fallbackExternalUrl(platform, execution?.externalId);
 
                 return (
                   <div key={post.id} className="group hover:bg-neutral-50/30 dark:hover:bg-white/5 transition-colors px-6 py-4 flex flex-col gap-4 lg:grid lg:grid-cols-[240px_1fr_1fr_160px_100px] lg:items-center lg:gap-4">
@@ -239,7 +212,7 @@ export function CampaignHistory() {
                           referrerPolicy="no-referrer"
                           onError={(e) => {
                             if (applyAvatarFallback(e.currentTarget, avatarSeed, name)) {
-                              if (account && (platform === 'twitter' || platform === 'x')) {
+                              if (account && ['twitter', 'x', 'threads'].includes(platform)) {
                                 refreshSocialAccountProfile(platform, account.id).catch(console.error);
                               }
                             }

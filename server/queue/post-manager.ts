@@ -1,6 +1,14 @@
 import { PrismaClient } from '@prisma/client';
-import { SocialChannelFactory } from '../services/social';
+import { SocialChannelFactory, PreparedSocialMedia, PublishResult } from '../services/social';
 import { decrypt, encrypt } from '../utils/crypto';
+
+// Platforms that publish media by handing the provider a public URL it fetches
+// server-side (vs. uploading raw bytes). These get presigned URLs instead of
+// in-memory buffers.
+const URL_BASED_PLATFORMS = new Set(['threads']);
+// Presigned-URL lifetime. Generated fresh on each execution attempt so retries
+// after expiry still get a valid URL; long enough to cover container processing.
+const MEDIA_URL_TTL_SECONDS = 24 * 60 * 60;
 
 export class PostManager {
   private fanoutTimer: NodeJS.Timeout | null = null;
@@ -261,15 +269,11 @@ export class PostManager {
         if (refreshed) accessToken = refreshed;
       }
 
-      const mediaItems = await Promise.all(post.media.map(async (m) => {
-        const key = m.processedUrl || m.sourceUrl;
-        const buffer = await this.storage.read(key);
-        return { buffer, mimeType: m.mimeType || 'image/jpeg' };
-      }));
+      const mediaItems = await this.prepareMedia(post.media, account.platform);
 
-      let externalId: string;
+      let result: PublishResult;
       try {
-        externalId = await channel.publish(post.textContent || '', mediaItems, { accessToken });
+        result = await channel.publish(post.textContent || '', mediaItems, { accessToken });
       } catch (publishErr: any) {
         // Reactive refresh: if auth failed, refresh token and retry once
         const isAuthError = publishErr.message && (
@@ -283,7 +287,7 @@ export class PostManager {
           const refreshed = await this.refreshAccountToken(account, channel, true);
           if (refreshed) {
             accessToken = refreshed;
-            externalId = await channel.publish(post.textContent || '', mediaItems, { accessToken });
+            result = await channel.publish(post.textContent || '', mediaItems, { accessToken });
           } else {
             throw publishErr;
           }
@@ -292,14 +296,15 @@ export class PostManager {
         }
       }
 
-      let externalUrl: string | undefined;
-      if (externalId) {
+      const externalId = result.externalId;
+      // Prefer the canonical URL returned by the channel. Fall back to a
+      // platform-specific guess only for providers without a reliable permalink.
+      let externalUrl: string | undefined = result.externalUrl;
+      if (!externalUrl && externalId) {
         const platform = account.platform.toLowerCase();
         if (platform === 'twitter' || platform === 'x') {
-          // Fallback generic X status URL if username is unknown.
           externalUrl = `https://x.com/i/web/status/${externalId}`;
         } else if (platform === 'linkedin') {
-          // LinkedIn URNs can be tricky, but typically:
           externalUrl = `https://www.linkedin.com/feed/update/${externalId}`;
         }
       }
@@ -338,6 +343,38 @@ export class PostManager {
         });
       }
     }
+  }
+
+  /**
+   * Build provider-neutral media payloads. URL-based platforms (e.g. Threads)
+   * get presigned public URLs and skip the cost of reading bytes into memory;
+   * buffer-based platforms (e.g. X) get the raw buffer. Presigned URLs are
+   * minted per attempt so retries after expiry remain valid.
+   */
+  private async prepareMedia(media: any[], platform: string): Promise<PreparedSocialMedia[]> {
+    const useUrls = URL_BASED_PLATFORMS.has(platform.toLowerCase());
+    return Promise.all(
+      media.map(async (m) => {
+        const key = m.processedUrl || m.sourceUrl;
+        const mimeType = m.mimeType || 'image/jpeg';
+        const type: PreparedSocialMedia['type'] =
+          m.type === 'video' || m.type === 'gif' || m.type === 'image'
+            ? m.type
+            : mimeType.startsWith('video/')
+              ? 'video'
+              : mimeType === 'image/gif'
+                ? 'gif'
+                : 'image';
+
+        const prepared: PreparedSocialMedia = { type, mimeType, storageKey: key };
+        if (useUrls) {
+          prepared.publicUrl = await this.storage.getPresignedUrl(key, MEDIA_URL_TTL_SECONDS);
+        } else {
+          prepared.buffer = await this.storage.read(key);
+        }
+        return prepared;
+      })
+    );
   }
 
   private async failPostForInactiveCampaign(postId: string) {

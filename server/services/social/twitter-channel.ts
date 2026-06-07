@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { ISocialChannel, TokenSet } from './index';
+import { ISocialChannel, TokenSet, SocialProfile, PreparedSocialMedia, PublishResult } from './index';
 
 export class TwitterChannel implements ISocialChannel {
   platformName = 'twitter';
@@ -88,16 +88,34 @@ export class TwitterChannel implements ISocialChannel {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
       expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : undefined,
+      scopes: typeof data.scope === 'string' ? data.scope.split(/\s+/).filter(Boolean) : undefined,
     };
   }
 
-  async publish(text: string, media: { buffer: Buffer; mimeType: string }[], tokens: TokenSet): Promise<string> {
+  async getProfile(accessToken: string): Promise<SocialProfile> {
+    const response = await fetch('https://api.x.com/2/users/me?user.fields=name,username,profile_image_url', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch X profile: ${response.status} ${await response.text()}`);
+    }
+    const { data } = await response.json();
+    return {
+      accountId: data.id,
+      profileName: data.name ?? data.username,
+      avatarUrl: data.profile_image_url ?? undefined,
+      username: data.username ?? undefined,
+    };
+  }
+
+  async publish(text: string, media: PreparedSocialMedia[], tokens: TokenSet): Promise<PublishResult> {
     // 1. Upload media first (Best effort: max 4 media items per tweet)
     const mediaIds: string[] = [];
     const bestEffortMedia = media.slice(0, 4);
-    
+
     for (const item of bestEffortMedia) {
-      const mediaId = await this.uploadMedia(item, tokens.accessToken);
+      if (!item.buffer) continue; // X requires the raw buffer
+      const mediaId = await this.uploadMedia({ buffer: item.buffer, mimeType: item.mimeType }, tokens.accessToken);
       mediaIds.push(mediaId);
     }
 
@@ -123,7 +141,8 @@ export class TwitterChannel implements ISocialChannel {
     }
 
     const data = await response.json();
-    return data.data.id;
+    const externalId = data.data.id;
+    return { externalId, externalUrl: `https://x.com/i/web/status/${externalId}` };
   }
 
   private async uploadMedia(item: { buffer: Buffer; mimeType: string }, accessToken: string): Promise<string> {
