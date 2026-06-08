@@ -1567,6 +1567,8 @@ export interface ExportTask {
   total: number;
   size?: number;
   downloadUrl?: string;
+  exportVersion?: 'raw' | 'optimized';
+  watermarked?: boolean;
   error?: string;
   createdAt: number;
 }

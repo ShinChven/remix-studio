@@ -1043,12 +1043,13 @@ export async function startAlbumExport(
   projectId: string,
   itemIds?: string[],
   packageName?: string,
-  exportVersion: AlbumExportVersion = 'raw'
+  exportVersion: AlbumExportVersion = 'raw',
+  options: { watermarkSettings?: PostWatermarkSettings } = {},
 ): Promise<{ taskId: string }> {
   const res = await apiFetch(`/api/projects/${projectId}/export`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ itemIds, packageName, exportVersion }),
+    body: JSON.stringify({ itemIds, packageName, exportVersion, ...options }),
   });
   return handleResponse<{ taskId: string }>(res, 'Failed to start export');
 }

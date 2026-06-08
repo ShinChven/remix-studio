@@ -313,6 +313,27 @@ export function AlbumTab({
     }
   };
 
+  const handleWatermarkExport = (packageName: string, exportVersion: AlbumExportVersion) => {
+    const params = new URLSearchParams();
+    const state: { itemIds?: string[]; packageName: string; exportVersion: AlbumExportVersion } = {
+      itemIds: pendingExportItemIds,
+      packageName,
+      exportVersion,
+    };
+
+    if (pendingExportItemIds && pendingExportItemIds.length > 0) {
+      const scopeKey = `watermark-export:${projectId}:${Date.now()}`;
+      sessionStorage.setItem(scopeKey, JSON.stringify(pendingExportItemIds));
+      params.set('scopeKey', scopeKey);
+      params.set('count', String(pendingExportItemIds.length));
+    }
+    params.set('version', exportVersion);
+    params.set('name', packageName);
+
+    setIsExportDialogOpen(false);
+    navigate(`/project/${projectId}/export-watermark?${params.toString()}`, { state });
+  };
+
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-0">
@@ -896,6 +917,7 @@ export function AlbumTab({
         itemCount={pendingExportItemIds?.length ?? total}
         onClose={() => setIsExportDialogOpen(false)}
         onSubmit={handleExport}
+        onWatermark={!isTextProject && !isVideoProject && !isAudioProject ? handleWatermarkExport : undefined}
       />
       <CopyToLibraryDialog
         isOpen={showCopyDialog}

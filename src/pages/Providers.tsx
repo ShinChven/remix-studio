@@ -21,6 +21,10 @@ const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
   BlackForestLabs: { icon: 'bg-stone-500/10 text-stone-800 dark:text-stone-200', badge: 'bg-stone-600/10 text-stone-800 dark:text-stone-200 border-stone-600/20 dark:border-stone-600/30' },
   Alibabacloud: { icon: 'bg-violet-500/10 text-violet-600 dark:text-violet-400', badge: 'bg-violet-600/10 text-violet-700 dark:text-violet-400 border-violet-600/20 dark:border-violet-600/30' },
 };
+const DEFAULT_TYPE_COLORS = {
+  icon: 'bg-neutral-500/10 text-neutral-600 dark:text-neutral-300',
+  badge: 'bg-neutral-600/10 text-neutral-700 dark:text-neutral-300 border-neutral-600/20 dark:border-neutral-600/30',
+};
 
 export function Providers() {
   const { t } = useTranslation();
@@ -119,7 +123,7 @@ export function Providers() {
               </div>
             ) : (
               providers.map(provider => {
-                const colors = TYPE_COLORS[provider.type];
+                const colors = TYPE_COLORS[provider.type] || DEFAULT_TYPE_COLORS;
                 const hasCredentials = provider.type === 'KlingAI'
                   ? provider.hasKey && provider.hasSecret
                   : provider.hasKey;

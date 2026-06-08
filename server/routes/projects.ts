@@ -10,6 +10,7 @@ import { checkStorageLimit } from '../utils/storage-check';
 import { UserRepository } from '../auth/user-repository';
 import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem } from '../../src/types';
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
+import { normalizePostWatermarkPayload, postWatermarkSettingSchema } from '../utils/watermark';
 
 type Variables = { user: JwtPayload };
 
@@ -1195,12 +1196,20 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const projectId = c.req.param('id');
       if (!projectId) return c.json({ error: 'Project id is required' }, 400);
       const body = await c.req.json();
-      const itemIds = body.itemIds as string[];
+      const itemIds = Array.isArray(body.itemIds)
+        ? body.itemIds.filter((item: unknown): item is string => typeof item === 'string' && item.length > 0)
+        : undefined;
       const packageName = typeof body.packageName === 'string' ? body.packageName : undefined;
       const exportVersion: 'raw' | 'optimized' = body.exportVersion === 'optimized' ? 'optimized' : 'raw';
+      const watermarkSettings = body.watermarkSettings
+        ? normalizePostWatermarkPayload(postWatermarkSettingSchema.parse(body.watermarkSettings))
+        : undefined;
 
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
+      if (watermarkSettings?.enabled && project.type !== 'image') {
+        return c.json({ error: 'Watermark export is only available for image projects' }, 400);
+      }
 
       const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
       const albumItems = albumPage.items;
@@ -1240,6 +1249,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const taskId = await exportManager.startExport(user.userId, projectId, project.name, itemsToExport, packageName, {
         exportVersion,
+        ...(watermarkSettings ? { watermarkSettings } : {}),
       });
       return c.json({ taskId });
     } catch (e) {

@@ -7,6 +7,7 @@ import { AlbumItem } from '../../src/types';
 import { IRepository } from '../db/repository';
 import { UserRepository } from '../auth/user-repository';
 import { getUserStorageUsage } from '../utils/storage-check';
+import { applyPostWatermark, type PostWatermarkConfig } from '../utils/watermark';
 
 // TTL helpers (Unix seconds)
 const TTL_24H = () => Math.floor(Date.now() / 1000) + 86400;
@@ -40,6 +41,8 @@ export interface ExportTask {
   /** Presigned download URL — only populated when returned to the client */
   downloadUrl?: string;
   exportVersion?: ExportAssetVersion;
+  watermarkSettings?: PostWatermarkConfig | null;
+  watermarked?: boolean;
   error?: string;
   createdAt: number;
   ttl?: number;
@@ -57,6 +60,13 @@ function resolveExportSource(item: AlbumItem, version: ExportAssetVersion) {
     key: item.imageUrl,
     size: item.size,
   };
+}
+
+function forceJpegExtension(name: string): string {
+  const clean = name || 'image.jpg';
+  const dotIndex = clean.lastIndexOf('.');
+  if (dotIndex <= 0) return `${clean}.jpg`;
+  return `${clean.slice(0, dotIndex)}.jpg`;
 }
 
 export class ExportManager {
@@ -203,8 +213,10 @@ export class ExportManager {
     const { id: taskId, userId, projectName, packageName } = task;
     const items: AlbumItem[] = task.items ?? [];
     const exportVersion: ExportAssetVersion = task.exportVersion === 'optimized' ? 'optimized' : 'raw';
+    const watermarkSettings: PostWatermarkConfig | null = task.watermarkSettings ?? null;
+    const watermarkEnabled = Boolean(watermarkSettings?.enabled && watermarkSettings.text.trim());
 
-    console.log(`[ExportManager] Starting task ${taskId} (${items.length} items, version=${exportVersion}, user=${userId})`);
+    console.log(`[ExportManager] Starting task ${taskId} (${items.length} items, version=${exportVersion}, watermark=${watermarkEnabled}, user=${userId})`);
 
     const normalizedPackageName = this.normalizePackageName(packageName, projectName);
     const s3Key = `${userId}/exports/${taskId}/${normalizedPackageName}`;
@@ -274,8 +286,23 @@ export class ExportManager {
 
         // Build a unique filename
         let name = key.split('/').pop() || `file_${i + 1}.png`;
+        if (watermarkEnabled) name = forceJpegExtension(name);
         if (seenNames.has(name)) name = `${i + 1}_${name}`;
         seenNames.add(name);
+
+        if (watermarkEnabled) {
+          const sourceBuffer = await Promise.race([
+            this.imageStorage.read(key),
+            new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`Idle timeout reading ${key}`)), IDLE_TIMEOUT_MS)),
+          ]);
+          const watermarkedBuffer = await applyPostWatermark(sourceBuffer, watermarkSettings);
+          const entryPromise = once(archive, 'entry');
+          archive.append(watermarkedBuffer, { name });
+          await entryPromise;
+          done++;
+          await this.updateTask(userId, taskId, { status: 'processing', current: done });
+          continue;
+        }
 
         // Idle-timeout wrapper around the S3 read stream
         const sourceStream = await Promise.race([
@@ -295,8 +322,9 @@ export class ExportManager {
         resetIdle();
         sourceStream.once('close', () => { if (idleTimer) clearTimeout(idleTimer); });
 
+        const entryPromise = once(archive, 'entry');
         archive.append(sourceStream as any, { name });
-        await once(archive, 'entry');
+        await entryPromise;
         if (idleTimer) clearTimeout(idleTimer);
 
         done++;
@@ -313,6 +341,7 @@ export class ExportManager {
         current: items.length,
         size: bytesUploaded,
         s3Key,
+        watermarked: watermarkEnabled,
         ttl: TTL_30D(),
       });
     } catch (err: any) {

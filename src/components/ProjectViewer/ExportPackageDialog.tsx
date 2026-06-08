@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, Image, Package, Sparkles, X } from 'lucide-react';
+import { Download, Image, Package, Paintbrush, Sparkles, X } from 'lucide-react';
 import type { AlbumExportVersion } from '../../api';
 
 interface ExportPackageDialogProps {
@@ -9,6 +9,7 @@ interface ExportPackageDialogProps {
   itemCount: number;
   onClose: () => void;
   onSubmit: (packageName: string, exportVersion: AlbumExportVersion) => Promise<void> | void;
+  onWatermark?: (packageName: string, exportVersion: AlbumExportVersion) => void;
 }
 
 export function ExportPackageDialog({
@@ -17,6 +18,7 @@ export function ExportPackageDialog({
   itemCount,
   onClose,
   onSubmit,
+  onWatermark,
 }: ExportPackageDialogProps) {
   const { t } = useTranslation();
   const [packageName, setPackageName] = useState(defaultValue);
@@ -134,6 +136,17 @@ export function ExportPackageDialog({
           >
             {t('projectViewer.common.cancel')}
           </button>
+          {onWatermark && (
+            <button
+              type="button"
+              onClick={() => onWatermark(packageName.trim() || defaultValue, exportVersion)}
+              disabled={isSubmitting}
+              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-card border border-indigo-500/30 bg-indigo-500/10 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-indigo-600 transition-all hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:text-indigo-300"
+            >
+              <Paintbrush className="h-3.5 w-3.5" />
+              {t('projectViewer.exportDialog.watermark', { defaultValue: 'Watermark' })}
+            </button>
+          )}
           <button
             onClick={() => void handleSubmit()}
             disabled={!packageName.trim() || isSubmitting}
