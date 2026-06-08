@@ -149,6 +149,7 @@
       "characterCount": "{{count}} 字元",
       "noTextContent": "沒有文字內容...",
       "pickFromLibrary": "從資料庫挑選",
+      "changeLibrary": "更換資料庫",
       "unknownLibrary": "未知資料庫",
       "itemsCount": "{{count}} 項",
       "filteredTags": "已篩選：{{count}} 個標籤",

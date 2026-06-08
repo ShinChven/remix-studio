@@ -46,6 +46,7 @@ interface WorkflowPanelProps {
   onLightbox: (images: string[], index: number) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onSelectFromLibrary: (id: string) => void;
+  onChangeLibrary: (id: string) => void;
   setLocalProject: (project: Project) => void;
   onUpdate: (project: Project) => void;
   setIsSettingsCollapsed: (collapsed: boolean) => void;
@@ -95,6 +96,7 @@ export function WorkflowPanel({
   onLightbox,
   onUpdateTags,
   onSelectFromLibrary,
+  onChangeLibrary,
   setLocalProject,
   onUpdate,
   setIsSettingsCollapsed,
@@ -390,6 +392,7 @@ export function WorkflowPanel({
             onLightbox={onLightbox}
             onUpdateTags={onUpdateTags}
             onSelectFromLibrary={onSelectFromLibrary}
+            onChangeLibrary={onChangeLibrary}
             onToggleDisable={onToggleDisable}
           />
         ))}

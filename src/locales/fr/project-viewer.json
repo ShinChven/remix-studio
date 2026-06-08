@@ -149,6 +149,7 @@
       "characterCount": "{{count}} car.",
       "noTextContent": "Aucun contenu texte...",
       "pickFromLibrary": "Choisir dans la bibliothèque",
+      "changeLibrary": "Changer de bibliothèque",
       "unknownLibrary": "Bibliothèque inconnue",
       "itemsCount": "{{count}} éléments",
       "filteredTags": "Filtré : {{count}} tags",

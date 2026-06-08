@@ -149,6 +149,7 @@
       "characterCount": "{{count}}자",
       "noTextContent": "텍스트 내용 없음...",
       "pickFromLibrary": "라이브러리에서 선택",
+      "changeLibrary": "라이브러리 변경",
       "unknownLibrary": "알 수 없는 라이브러리",
       "itemsCount": "{{count}}개 항목",
       "filteredTags": "필터됨: {{count}}개 태그",

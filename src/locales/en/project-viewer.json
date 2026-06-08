@@ -149,6 +149,7 @@
       "characterCount": "{{count}} chars",
       "noTextContent": "No text content...",
       "pickFromLibrary": "Pick from Library",
+      "changeLibrary": "Change Library",
       "unknownLibrary": "Unknown Library",
       "itemsCount": "{{count}} items",
       "filteredTags": "Filtered: {{count}} tags",

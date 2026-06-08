@@ -149,6 +149,7 @@
       "characterCount": "{{count}} 文字",
       "noTextContent": "テキスト内容がありません...",
       "pickFromLibrary": "ライブラリから選択",
+      "changeLibrary": "ライブラリを変更",
       "unknownLibrary": "不明なライブラリ",
       "itemsCount": "{{count}} 件",
       "filteredTags": "フィルター済み: {{count}} タグ",

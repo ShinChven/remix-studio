@@ -149,6 +149,7 @@
       "characterCount": "{{count}} 字符",
       "noTextContent": "没有文本内容...",
       "pickFromLibrary": "从资料库中选择",
+      "changeLibrary": "更换资料库",
       "unknownLibrary": "未知资料库",
       "itemsCount": "{{count}} 项",
       "filteredTags": "已筛选：{{count}} 个标签",

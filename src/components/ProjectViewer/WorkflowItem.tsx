@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Type, Library as LibraryIcon, ImageIcon, Trash2, GripVertical, Maximize2, Loader2, Video as VideoIcon, Volume2, Eye, EyeOff } from 'lucide-react';
+import { Type, Library as LibraryIcon, ImageIcon, Trash2, GripVertical, Maximize2, Loader2, Video as VideoIcon, Volume2, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { WorkflowItem as WorkflowItemType, Library } from '../../types';
 import { imageDisplayUrl } from '../../api';
 
@@ -23,6 +23,7 @@ interface WorkflowItemProps {
   onLightbox: (images: string[], index: number) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onSelectFromLibrary: (id: string) => void;
+  onChangeLibrary: (id: string) => void;
   libraries: Library[];
   onToggleDisable?: (id: string) => void;
 }
@@ -46,6 +47,7 @@ export function WorkflowItem({
   onLightbox,
   onUpdateTags,
   onSelectFromLibrary,
+  onChangeLibrary,
   libraries,
   onToggleDisable
 }: WorkflowItemProps) {
@@ -129,6 +131,20 @@ export function WorkflowItem({
                 </span>
               </button>
             </>
+          )}
+          {item.type === 'library' && (
+            <button
+              type="button"
+              onClick={() => onChangeLibrary(item.id)}
+              className="relative p-1.5 rounded-lg border border-transparent text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:border-emerald-200 dark:hover:border-emerald-500/20 transition-all group/action"
+              title={t('projectViewer.workflow.changeLibrary')}
+              aria-label={t('projectViewer.workflow.changeLibrary')}
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span className="pointer-events-none absolute right-0 top-full z-20 mt-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 opacity-0 shadow-lg transition-opacity whitespace-nowrap group-hover/action:opacity-100">
+                {t('projectViewer.workflow.changeLibrary')}
+              </span>
+            </button>
           )}
           {onToggleDisable && (
             <button

@@ -72,6 +72,19 @@ const MAX_JOB_FILENAME_LENGTH = 200;
 const TAB_DATA_STALE_MS = 30_000;
 const LIVE_REFRESH_DEBOUNCE_MS = 250;
 const LIVE_REFRESH_MIN_INTERVAL_MS = 1_000;
+const RIGHT_PANEL_REFRESH_EVENT_REASONS = new Set([
+  'jobs.changed',
+  'job.updated',
+  'job.completed',
+  'job.failed',
+  'job.deleted',
+  'queue.started',
+  'queue.cleared',
+  'album.changed',
+  'album.deleted',
+  'album.renamed',
+  'album.restored',
+]);
 
 function buildJobFilename(filenameParts: string[], suffixId: string): string {
   const safeSuffixId = suffixId.replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -157,6 +170,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [workflowError, setWorkflowError] = useState<string | null>(null);
   const [uploadingItemIds, setUploadingItemIds] = useState<Set<string>>(new Set());
   const [selectingLibraryForItemId, setSelectingLibraryForItemId] = useState<string | null>(null);
+  const [changingLibraryItemId, setChangingLibraryItemId] = useState<string | null>(null);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
   const [lightboxData, setLightboxData] = useState<LightboxData | null>(null);
@@ -680,7 +694,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         if (disposed || socket !== ws) return;
         try {
           const data = JSON.parse(event.data);
-          if (data?.type !== 'project.changed' || data.projectId !== localProject.id || data.reason === 'connected') return;
+          if (data?.type !== 'project.changed' || data.projectId !== localProject.id) return;
+          if (!RIGHT_PANEL_REFRESH_EVENT_REASONS.has(data.reason)) return;
           scheduleProjectLiveRefresh();
         } catch (error) {
           console.error('Failed to parse project live update:', error);
@@ -892,6 +907,42 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     void refreshWorkflowLibraries().catch(() => {
       toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
     });
+  };
+
+  const openWorkflowLibraryChangeSelector = (workflowItemId: string) => {
+    setChangingLibraryItemId(workflowItemId);
+    void refreshWorkflowLibraries().catch(() => {
+      toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
+    });
+  };
+
+  const handleWorkflowLibraryChange = (workflowItemId: string, libraryId: string) => {
+    const library = liveLibraries.find((item) => item.id === libraryId);
+    const workflow = localProject.workflow || [];
+    const targetItem = workflow.find((item) => item.id === workflowItemId);
+
+    if (!library || !targetItem || targetItem.type !== 'library') {
+      setChangingLibraryItemId(null);
+      return;
+    }
+
+    if (isAudioProject && library.type !== 'text') {
+      setChangingLibraryItemId(null);
+      return;
+    }
+
+    if (targetItem.value === libraryId || workflow.some((item) => item.id !== workflowItemId && item.type === 'library' && item.value === libraryId)) {
+      setChangingLibraryItemId(null);
+      return;
+    }
+
+    const updated = {
+      ...localProject,
+      workflow: workflow.map((item) => item.id === workflowItemId ? { ...item, value: libraryId, selectedTags: [] } : item),
+    };
+    setLocalProject(updated);
+    onUpdate(updated);
+    setChangingLibraryItemId(null);
   };
 
   const openLibraryPreview = async (library: Library, workflowItemId: string) => {
@@ -1655,6 +1706,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         onLightbox={(images, index) => setLightboxData({ images, index })}
         onUpdateTags={updateWorkflowItemTags}
         onSelectFromLibrary={openWorkflowItemLibrarySelector}
+        onChangeLibrary={openWorkflowLibraryChangeSelector}
         setLocalProject={setLocalProject}
         onUpdate={onUpdate}
         setIsSettingsCollapsed={setIsSettingsCollapsed}
@@ -1818,12 +1870,17 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       <ConfirmModal isOpen={showDeleteProjectModal} onClose={() => setShowDeleteProjectModal(false)} onConfirm={onDelete} title={t('projectViewer.confirm.deleteProject.title')} message={t('projectViewer.confirm.deleteProject.message', { name: localProject.name })} confirmText={t('projectViewer.confirm.deleteProject.confirm')} type="danger" />
       <ConfirmModal isOpen={jobToDeleteId !== null} onClose={() => setJobToDeleteId(null)} onConfirm={() => { if (jobToDeleteId) { deleteJob(jobToDeleteId); setJobToDeleteId(null); } }} title={t('projectViewer.confirm.deleteJob.title')} message={t('projectViewer.confirm.deleteJob.message')} confirmText={t('projectViewer.confirm.deleteJob.confirm')} type="danger" />
       <LibrarySelectionModal
-        isOpen={showLibrarySelector}
+        isOpen={showLibrarySelector || changingLibraryItemId !== null}
         onClose={() => {
           setShowLibrarySelector(false);
+          setChangingLibraryItemId(null);
         }}
         onSelect={(libraryId) => {
-          handleLibrarySelect(libraryId);
+          if (changingLibraryItemId) {
+            handleWorkflowLibraryChange(changingLibraryItemId, libraryId);
+          } else {
+            handleLibrarySelect(libraryId);
+          }
         }}
         libraries={(() => {
           return isAudioProject ? liveLibraries.filter((library) => library.type === 'text') : liveLibraries;
