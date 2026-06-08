@@ -1924,6 +1924,7 @@ export async function fetchStoreUploads(
 export interface ProductCoverItem {
   albumItemId: string;
   useRaw?: boolean;
+  watermarkSettings?: PostWatermarkSettings;
 }
 
 export interface ProductSummary {
@@ -1951,6 +1952,7 @@ export interface CreateProductInput {
   taxonomyId?: string | null;
   tags?: string[];
   coverItems?: ProductCoverItem[];
+  coverWatermarkSettings?: PostWatermarkSettings | null;
   publishImmediately?: boolean;
 }
 

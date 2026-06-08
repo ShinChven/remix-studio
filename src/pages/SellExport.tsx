@@ -8,14 +8,18 @@ import {
   CreateProductInput,
   ProductCoverItem,
   createProduct,
+  fetchPostWatermarkSettings,
   fetchProductExports,
   fetchProject,
   fetchProjectAlbum,
   fetchStores,
+  PostWatermarkSettings,
+  updatePostWatermarkSettings,
 } from '../api';
 import { AlbumItem, ExportTask, Project } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { UniversalMediaPicker, UniversalPickedItem } from '../components/UniversalMediaPicker';
+import { DEFAULT_WATERMARK_SETTINGS, WatermarkSettingsPanel } from '../components/WatermarkSettingsPanel';
 
 const MAX_COVERS = 8;
 
@@ -50,6 +54,8 @@ export function SellExport() {
   const [taxonomyId, setTaxonomyId] = useState('');
   const [coverItems, setCoverItems] = useState<ProductCoverItem[]>([]);
   const [pickedItemsMap, setPickedItemsMap] = useState<Record<string, UniversalPickedItem>>({});
+  const [watermarkSettings, setWatermarkSettings] = useState<PostWatermarkSettings>(DEFAULT_WATERMARK_SETTINGS);
+  const [isWatermarkSaving, setIsWatermarkSaving] = useState(false);
   const [publishImmediately, setPublishImmediately] = useState(true);
 
   useEffect(() => {
@@ -58,12 +64,17 @@ export function SellExport() {
     (async () => {
       setLoading(true);
       try {
-        const [storesRes, exportsRes] = await Promise.all([
+        const [storesRes, exportsRes, watermarkRes] = await Promise.all([
           fetchStores(),
           fetchProductExports(exportId),
+          fetchPostWatermarkSettings().catch((error) => {
+            console.warn('Failed to load watermark settings', error);
+            return DEFAULT_WATERMARK_SETTINGS;
+          }),
         ]);
         if (cancelled) return;
         setStores(storesRes);
+        setWatermarkSettings({ ...DEFAULT_WATERMARK_SETTINGS, ...watermarkRes });
         if (storesRes.length === 1) setStoreId(storesRes[0].id);
 
         const task = exportsRes;
@@ -108,6 +119,16 @@ export function SellExport() {
     return Math.round(v * 100);
   }, [priceUsd]);
 
+  const coverWatermarkPreviewUrl = useMemo(() => {
+    const cover = coverItems[0];
+    if (!cover) return undefined;
+    const localItem = albumImages.find((a) => a.id === cover.albumItemId);
+    const pickedItem = pickedItemsMap[cover.albumItemId];
+    return cover.useRaw
+      ? localItem?.imageUrl || pickedItem?.rawUrl
+      : localItem?.thumbnailUrl || localItem?.optimizedUrl || localItem?.imageUrl || pickedItem?.thumbnailUrl || pickedItem?.optimizedUrl || pickedItem?.previewUrl || pickedItem?.rawUrl;
+  }, [albumImages, coverItems, pickedItemsMap]);
+
   const canSubmit =
     !!storeId &&
     title.trim().length > 0 &&
@@ -128,7 +149,10 @@ export function SellExport() {
   const onSubmit = async () => {
     if (!exportTask || !canSubmit) return;
     setSubmitting(true);
+    setIsWatermarkSaving(true);
     try {
+      await updatePostWatermarkSettings(watermarkSettings);
+      setIsWatermarkSaving(false);
       const input: CreateProductInput = {
         storeId,
         exportTaskId: exportTask.id,
@@ -139,6 +163,7 @@ export function SellExport() {
         taxonomyId: taxonomyId.trim() || null,
         tags: tagList,
         coverItems,
+        coverWatermarkSettings: watermarkSettings,
         publishImmediately,
       };
       await createProduct(input);
@@ -147,6 +172,7 @@ export function SellExport() {
     } catch (err: any) {
       toast.error(err?.message || t('sell.failed'));
     } finally {
+      setIsWatermarkSaving(false);
       setSubmitting(false);
     }
   };
@@ -177,7 +203,7 @@ export function SellExport() {
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
-      <div className="w-full max-w-3xl mx-auto space-y-6 pb-20">
+      <div className="w-full space-y-6 pb-20">
         <PageHeader
           title={t('sell.title')}
           description={t('sell.description')}
@@ -338,6 +364,16 @@ export function SellExport() {
             {t('sell.covers.hint')}
           </p>
 
+          <WatermarkSettingsPanel
+            settings={watermarkSettings}
+            sampleUrl={coverWatermarkPreviewUrl}
+            isSaving={isWatermarkSaving}
+            onChange={setWatermarkSettings}
+            title="Listing Cover Watermark"
+            description="Saved per user and applied to Gumroad cover images added from this page."
+            statusText="Settings save when the listing is created."
+          />
+
           {coverItems.length === 0 ? (
             <div className="rounded-card border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center text-xs text-neutral-500 dark:border-white/10 dark:bg-neutral-900/40">
               {t('sell.covers.empty')}
@@ -347,14 +383,14 @@ export function SellExport() {
               {coverItems.map((c) => {
                 const localItem = albumImages.find((a) => a.id === c.albumItemId);
                 const pickedItem = pickedItemsMap[c.albumItemId];
-                
+
                 let src = '';
                 if (c.useRaw) {
                   src = localItem?.imageUrl || pickedItem?.rawUrl || '';
                 } else {
                   src = localItem?.thumbnailUrl || localItem?.optimizedUrl || localItem?.imageUrl || pickedItem?.thumbnailUrl || pickedItem?.optimizedUrl || pickedItem?.previewUrl || pickedItem?.rawUrl || '';
                 }
-                
+
                 if (!src) return null;
                 return (
                   <div key={c.albumItemId} className="relative overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800/50">

@@ -401,7 +401,7 @@ model Product {
   currency         String   @default("usd")
   taxonomyId       String?
   tags             Json? // Array of tag strings
-  coverItems       Json? // Array of { albumItemId, useRaw }
+  coverItems       Json? // Array of { albumItemId, useRaw, watermarkSettings? }
   gumroadProductId String?
   gumroadFileUrl   String?  @db.Text
   gumroadShortUrl  String?

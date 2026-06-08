@@ -6,6 +6,12 @@ import { IRepository } from '../db/repository';
 import { UserRepository } from '../auth/user-repository';
 import { decrypt } from '../utils/crypto';
 import { GumroadStore } from '../services/store/gumroad-store';
+import {
+  applyPostWatermark,
+  normalizePostWatermarkPayload,
+  postWatermarkSettingSchema,
+  type PostWatermarkConfig,
+} from '../utils/watermark';
 
 /** Max concurrent Drive upload jobs. */
 const MAX_CONCURRENT_DELIVERIES = 1;
@@ -73,6 +79,15 @@ function getDriveAckBytes(rangeHeader: string | null): number | null {
 
 function toFetchBody(chunk: Buffer): Uint8Array {
   return new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+}
+
+function parseCoverWatermarkSetting(value: unknown): PostWatermarkConfig | null {
+  if (!value || typeof value !== 'object') return null;
+  try {
+    return normalizePostWatermarkPayload(postWatermarkSettingSchema.parse(value));
+  } catch {
+    return null;
+  }
 }
 
 export interface DeliveryTask {
@@ -595,7 +610,18 @@ export class DeliveryManager {
           if (!key) continue;
           // Use the main storage instance for covers (album S3 bucket)
           if (!this.storage) throw new Error('Main storage not available for signing cover URLs');
-          const coverUrl = await this.storage.getPresignedUrl(key, 60 * 60);
+          const watermarkSetting = parseCoverWatermarkSetting(item.watermarkSettings);
+          const watermarkEnabled = Boolean(watermarkSetting?.enabled && watermarkSetting.text.trim());
+          let coverUrl: string;
+          if (watermarkEnabled) {
+            const sourceBuffer = await this.storage.read(key);
+            const watermarkedBuffer = await applyPostWatermark(sourceBuffer, watermarkSetting);
+            const coverKey = `${userId}/gumroad-covers/${product.id}/${crypto.randomUUID()}.jpg`;
+            await this.exportStorage.save(coverKey, watermarkedBuffer, 'image/jpeg');
+            coverUrl = await this.exportStorage.getPresignedUrl(coverKey, 60 * 60);
+          } else {
+            coverUrl = await this.storage.getPresignedUrl(key, 60 * 60);
+          }
           await gumroad.addCover(accessToken, created.id, coverUrl);
         } catch (coverErr: any) {
           console.warn('[DeliveryManager] Add cover failed (continuing):', coverErr?.message || coverErr);

@@ -2,6 +2,11 @@ import { Hono } from 'hono';
 import { PrismaClient } from '@prisma/client';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { DeliveryManager } from '../queue/delivery-manager';
+import {
+  normalizePostWatermarkPayload,
+  postWatermarkSettingSchema,
+  type PostWatermarkConfig,
+} from '../utils/watermark';
 
 interface CreateProductBody {
   storeId: string;
@@ -13,6 +18,7 @@ interface CreateProductBody {
   taxonomyId?: string | null;
   tags?: string[];
   coverItems?: { albumItemId: string; useRaw?: boolean }[];
+  coverWatermarkSettings?: PostWatermarkConfig | null;
   publishImmediately?: boolean;
 }
 
@@ -36,6 +42,9 @@ function sanitizeBody(body: any): CreateProductBody {
         .filter((c: any) => !!c.albumItemId)
         .slice(0, 8)
     : [];
+  const coverWatermarkSettings = body.coverWatermarkSettings && typeof body.coverWatermarkSettings === 'object'
+    ? normalizePostWatermarkPayload(postWatermarkSettingSchema.parse(body.coverWatermarkSettings))
+    : null;
 
   return {
     storeId,
@@ -46,7 +55,10 @@ function sanitizeBody(body: any): CreateProductBody {
     description: body.description ? String(body.description) : null,
     taxonomyId: body.taxonomyId ? String(body.taxonomyId) : null,
     tags,
-    coverItems,
+    coverItems: coverItems.map((item) => (
+      coverWatermarkSettings ? { ...item, watermarkSettings: coverWatermarkSettings } : item
+    )),
+    coverWatermarkSettings,
     publishImmediately: !!body.publishImmediately,
   };
 }
