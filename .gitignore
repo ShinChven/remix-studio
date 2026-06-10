@@ -10,3 +10,4 @@ coverage/
 data/
 dist-server
 docker-test
+.antigravitycli
