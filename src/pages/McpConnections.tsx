@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Copy, Key, Loader2, Pencil, Plus, Shield, Trash2, Unplug } from 'lucide-react';
+import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Copy, Key, Loader2, Pencil, Plus, Shield, Terminal, Trash2, Unplug } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { fetchOAuthClients, fetchPersonalAccessTokens, revokeOAuthClient, revokePersonalAccessToken, createPersonalAccessToken, registerOAuthClient, updateOAuthClientRedirectUris, type OAuthClientRegistrationResult, type OAuthClientSummary, type PersonalAccessTokenSummary } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -55,6 +55,10 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
       },
     },
   }, null, 2);
+  const claudeCodeOAuthCommand = `claude mcp add --transport http remix-studio ${mcpUrl}`;
+  const claudeCodeTokenCommand = `claude mcp add --transport http remix-studio ${mcpUrl} --header "Authorization: Bearer YOUR_MCP_TOKEN"`;
+  const codexOAuthCommand = `codex mcp add remix-studio --url ${mcpUrl}\ncodex mcp login remix-studio`;
+  const codexTokenCommand = `codex mcp add remix-studio --url ${mcpUrl} --bearer-token-env-var REMIX_STUDIO_TOKEN`;
 
   const [clients, setClients] = useState<OAuthClientSummary[]>([]);
   const [tokens, setTokens] = useState<PersonalAccessTokenSummary[]>([]);
@@ -68,6 +72,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
   // Create PAT state
   const [showCreatePat, setShowCreatePat] = useState(false);
   const [showJsonSetup, setShowJsonSetup] = useState(false);
+  const [showCliSetup, setShowCliSetup] = useState(false);
   const [patName, setPatName] = useState('');
   const [patExpiry, setPatExpiry] = useState(0);
   const [isCreating, setIsCreating] = useState(false);
@@ -415,6 +420,109 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                         <p className="text-xs text-neutral-500 dark:text-neutral-500 leading-relaxed">
                           {t('mcpConnections.connectSection.jsonSetup.tokenInstruction')}
                         </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 overflow-hidden shadow-inner">
+                <button
+                  onClick={() => setShowCliSetup(!showCliSetup)}
+                  className="w-full flex items-center justify-between p-4 md:p-5 text-left transition-colors hover:bg-neutral-900/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${showCliSetup ? 'bg-sky-500/20 text-sky-400' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-500'} transition-colors`}>
+                      <Terminal className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">{t('mcpConnections.connectSection.cliSetup.title')}</h4>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-0.5">{t('mcpConnections.connectSection.cliSetup.subtitle')}</p>
+                    </div>
+                  </div>
+                  {showCliSetup ? <ChevronUp className="h-5 w-5 text-neutral-600" /> : <ChevronDown className="h-5 w-5 text-neutral-600" />}
+                </button>
+
+                {showCliSetup && (
+                  <div className="p-4 md:p-6 pt-0 space-y-6 animate-in slide-in-from-top-4 duration-300">
+                    <div className="h-px bg-neutral-200 dark:bg-neutral-800 mb-6" />
+                    <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 italic mb-4">
+                      {t('mcpConnections.connectSection.cliSetup.instruction')}
+                    </p>
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      <div className="space-y-5">
+                        <p className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">{t('mcpConnections.connectSection.cliSetup.claudeCode.title')}</p>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.cliSetup.oauthCommand')}</p>
+                            <button
+                              onClick={() => copyText(claudeCodeOAuthCommand, 'Claude Code command')}
+                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                            >
+                              {t('mcpConnections.connectSection.cliSetup.copyCommand')}
+                            </button>
+                          </div>
+                          <pre className="overflow-x-auto rounded-xl bg-white dark:bg-neutral-950 p-4 text-[11px] md:text-xs text-sky-800 dark:text-sky-300 border border-neutral-200 dark:border-neutral-800 font-mono leading-relaxed shadow-inner">
+                            <code>{claudeCodeOAuthCommand}</code>
+                          </pre>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-500 leading-relaxed">
+                            {t('mcpConnections.connectSection.cliSetup.claudeCode.oauthHint')}
+                          </p>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.cliSetup.tokenCommand')}</p>
+                            <button
+                              onClick={() => copyText(claudeCodeTokenCommand, 'Claude Code command')}
+                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                            >
+                              {t('mcpConnections.connectSection.cliSetup.copyCommand')}
+                            </button>
+                          </div>
+                          <pre className="overflow-x-auto rounded-xl bg-white dark:bg-neutral-950 p-4 text-[11px] md:text-xs text-amber-800 dark:text-amber-300 border border-neutral-200 dark:border-neutral-800 font-mono leading-relaxed shadow-inner">
+                            <code>{claudeCodeTokenCommand}</code>
+                          </pre>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-500 leading-relaxed">
+                            {t('mcpConnections.connectSection.cliSetup.claudeCode.tokenHint')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-5">
+                        <p className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">{t('mcpConnections.connectSection.cliSetup.codex.title')}</p>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.cliSetup.oauthCommand')}</p>
+                            <button
+                              onClick={() => copyText(codexOAuthCommand, 'Codex command')}
+                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                            >
+                              {t('mcpConnections.connectSection.cliSetup.copyCommand')}
+                            </button>
+                          </div>
+                          <pre className="overflow-x-auto rounded-xl bg-white dark:bg-neutral-950 p-4 text-[11px] md:text-xs text-sky-800 dark:text-sky-300 border border-neutral-200 dark:border-neutral-800 font-mono leading-relaxed shadow-inner">
+                            <code>{codexOAuthCommand}</code>
+                          </pre>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-500 leading-relaxed">
+                            {t('mcpConnections.connectSection.cliSetup.codex.oauthHint')}
+                          </p>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.cliSetup.tokenCommand')}</p>
+                            <button
+                              onClick={() => copyText(codexTokenCommand, 'Codex command')}
+                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                            >
+                              {t('mcpConnections.connectSection.cliSetup.copyCommand')}
+                            </button>
+                          </div>
+                          <pre className="overflow-x-auto rounded-xl bg-white dark:bg-neutral-950 p-4 text-[11px] md:text-xs text-amber-800 dark:text-amber-300 border border-neutral-200 dark:border-neutral-800 font-mono leading-relaxed shadow-inner">
+                            <code>{codexTokenCommand}</code>
+                          </pre>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-500 leading-relaxed">
+                            {t('mcpConnections.connectSection.cliSetup.codex.tokenHint')}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>

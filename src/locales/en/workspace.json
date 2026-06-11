@@ -304,6 +304,24 @@
         "tokenJson": "Access token JSON",
         "copyJson": "Copy JSON",
         "tokenInstruction": "Replace <code className=\"text-amber-400\">YOUR_MCP_TOKEN</code> with a token from this page, then paste the finished JSON into the app."
+      },
+      "cliSetup": {
+        "title": "Prefer the command line?",
+        "subtitle": "Click to show or hide CLI setup commands",
+        "instruction": "Some apps let you add this MCP server straight from a terminal. Use the OAuth command when the app can open a browser for sign-in. Use the access token command when the app needs a token instead.",
+        "oauthCommand": "OAuth 2.1 command",
+        "tokenCommand": "Access token command",
+        "copyCommand": "Copy command",
+        "claudeCode": {
+          "title": "Claude Code",
+          "oauthHint": "Run this command, then use /mcp inside Claude Code to finish signing in through your browser.",
+          "tokenHint": "Replace YOUR_MCP_TOKEN with a token from this page before running the command."
+        },
+        "codex": {
+          "title": "Codex CLI",
+          "oauthHint": "Run the add command, then the login command opens your browser to approve access.",
+          "tokenHint": "Set the REMIX_STUDIO_TOKEN environment variable to a token from this page before running the command."
+        }
       }
     },
     "tokens": {

@@ -259,6 +259,24 @@
         "tokenJson": "JSON du jeton d'accès",
         "copyJson": "Copier le JSON",
         "tokenInstruction": "Remplacez <code className=\"text-amber-400\">YOUR_MCP_TOKEN</code> par un jeton généré sur cette page, puis collez le JSON final dans l'application."
+      },
+      "cliSetup": {
+        "title": "Vous préférez la ligne de commande ?",
+        "subtitle": "Cliquez pour afficher ou masquer les commandes de configuration CLI",
+        "instruction": "Certaines applications permettent d'ajouter ce serveur MCP directement depuis un terminal. Utilisez la commande OAuth si l'application peut ouvrir un navigateur pour la connexion. Utilisez la commande jeton d'accès si l'application demande un jeton.",
+        "oauthCommand": "Commande OAuth 2.1",
+        "tokenCommand": "Commande jeton d'accès",
+        "copyCommand": "Copier la commande",
+        "claudeCode": {
+          "title": "Claude Code",
+          "oauthHint": "Exécutez cette commande, puis utilisez /mcp dans Claude Code pour terminer la connexion via votre navigateur.",
+          "tokenHint": "Remplacez YOUR_MCP_TOKEN par un jeton généré sur cette page avant d'exécuter la commande."
+        },
+        "codex": {
+          "title": "Codex CLI",
+          "oauthHint": "Exécutez la commande d'ajout, puis la commande de connexion ouvre votre navigateur pour approuver l'accès.",
+          "tokenHint": "Définissez la variable d'environnement REMIX_STUDIO_TOKEN sur un jeton de cette page avant d'exécuter la commande."
+        }
       }
     },
     "tokens": {

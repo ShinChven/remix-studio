@@ -304,6 +304,24 @@
         "tokenJson": "访问令牌 JSON",
         "copyJson": "复制 JSON",
         "tokenInstruction": "将 <code className=\"text-amber-400\">YOUR_MCP_TOKEN</code> 替换为此页面的令牌，然后将完整的 JSON 粘贴到应用中。"
+      },
+      "cliSetup": {
+        "title": "更喜欢命令行？",
+        "subtitle": "点击显示或隐藏 CLI 设置命令",
+        "instruction": "某些应用允许您直接从终端添加此 MCP 服务器。当应用可以打开浏览器登录时使用 OAuth 命令。当应用需要令牌时使用访问令牌命令。",
+        "oauthCommand": "OAuth 2.1 命令",
+        "tokenCommand": "访问令牌命令",
+        "copyCommand": "复制命令",
+        "claudeCode": {
+          "title": "Claude Code",
+          "oauthHint": "运行此命令，然后在 Claude Code 中使用 /mcp 通过浏览器完成登录。",
+          "tokenHint": "运行命令前，请将 YOUR_MCP_TOKEN 替换为此页面的令牌。"
+        },
+        "codex": {
+          "title": "Codex CLI",
+          "oauthHint": "运行添加命令，然后登录命令会打开浏览器以批准访问。",
+          "tokenHint": "运行命令前，请将 REMIX_STUDIO_TOKEN 环境变量设置为此页面的令牌。"
+        }
       }
     },
     "tokens": {

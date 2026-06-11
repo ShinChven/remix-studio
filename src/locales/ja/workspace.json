@@ -259,6 +259,24 @@
         "tokenJson": "アクセストークン JSON",
         "copyJson": "JSON をコピー",
         "tokenInstruction": "<code className=\"text-amber-400\">YOUR_MCP_TOKEN</code> をこのページで作成したトークンに置き換えて、完成した JSON をアプリに貼り付けてください。"
+      },
+      "cliSetup": {
+        "title": "コマンドラインがお好みですか？",
+        "subtitle": "クリックして CLI セットアップコマンドを表示または非表示にします",
+        "instruction": "一部のアプリでは、この MCP サーバーをターミナルから直接追加できます。アプリがブラウザでサインインできる場合は OAuth コマンドを使ってください。トークンが必要な場合はアクセストークンコマンドを使ってください。",
+        "oauthCommand": "OAuth 2.1 コマンド",
+        "tokenCommand": "アクセストークンコマンド",
+        "copyCommand": "コマンドをコピー",
+        "claudeCode": {
+          "title": "Claude Code",
+          "oauthHint": "このコマンドを実行し、Claude Code 内で /mcp を使ってブラウザでのサインインを完了してください。",
+          "tokenHint": "コマンドを実行する前に、YOUR_MCP_TOKEN をこのページで作成したトークンに置き換えてください。"
+        },
+        "codex": {
+          "title": "Codex CLI",
+          "oauthHint": "追加コマンドを実行すると、ログインコマンドがブラウザを開いてアクセスを承認します。",
+          "tokenHint": "コマンドを実行する前に、環境変数 REMIX_STUDIO_TOKEN にこのページのトークンを設定してください。"
+        }
       }
     },
     "tokens": {

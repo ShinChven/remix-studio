@@ -11,3 +11,4 @@ data/
 dist-server
 docker-test
 .antigravitycli
+.claude/settings.local.json

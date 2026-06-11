@@ -259,6 +259,24 @@
         "tokenJson": "存取權杖 JSON",
         "copyJson": "複製 JSON",
         "tokenInstruction": "將 <code className=\"text-amber-400\">YOUR_MCP_TOKEN</code> 替換成此頁面的權杖，然後將完成的 JSON 貼到應用中。"
+      },
+      "cliSetup": {
+        "title": "更喜歡命令列嗎？",
+        "subtitle": "點擊以顯示或隱藏 CLI 設定命令",
+        "instruction": "某些應用允許您直接從終端機新增此 MCP 伺服器。若應用可以開啟瀏覽器登入，請使用 OAuth 命令；若應用需要權杖，請使用存取權杖命令。",
+        "oauthCommand": "OAuth 2.1 命令",
+        "tokenCommand": "存取權杖命令",
+        "copyCommand": "複製命令",
+        "claudeCode": {
+          "title": "Claude Code",
+          "oauthHint": "執行此命令，然後在 Claude Code 中使用 /mcp 透過瀏覽器完成登入。",
+          "tokenHint": "執行命令前，請將 YOUR_MCP_TOKEN 替換成此頁面的權杖。"
+        },
+        "codex": {
+          "title": "Codex CLI",
+          "oauthHint": "執行新增命令，接著登入命令會開啟瀏覽器以核准存取。",
+          "tokenHint": "執行命令前，請將 REMIX_STUDIO_TOKEN 環境變數設定為此頁面的權杖。"
+        }
       }
     },
     "tokens": {
