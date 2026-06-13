@@ -967,7 +967,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
   tools.push({
     name: 'get_project',
     title: 'Get Project',
-    description: 'Read one project, including its current workflow. Always call this before update_project when changing workflowItems so unchanged workflow items can be carried forward.',
+    description: 'Read one project, including its current workflow. Always call this to fetch the latest workflow immediately before update_project when changing workflowItems — even if you read the project earlier in the conversation — so unchanged workflow items can be carried forward from the current state and not from a stale copy.',
     inputSchema: {
       projectId: z.string().describe('The project ID to inspect'),
     },
@@ -1011,7 +1011,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
         workflowItemCount: workflowItems.length,
         workflowItems,
         workflowUpdateWarning:
-          'update_project replaces the whole workflow when workflowItems is provided. Include every existing workflow item you want to keep, in order; omit only items the user explicitly asked to remove.',
+          'update_project replaces the whole workflow when workflowItems is provided. Build the replacement list from THESE freshly fetched workflowItems (not an earlier copy), include every existing item you want to keep, in order, and omit only items the user explicitly asked to remove.',
         counts: {
           jobs: jobs.length,
           album: albumPage.total,
@@ -1271,7 +1271,7 @@ Recommended workflow:
 Important workflow behavior:
 - If workflowItems is omitted, the existing workflow is unchanged.
 - If workflowItems is provided, it completely replaces the existing workflow.
-- Before changing workflowItems, call get_project and start from its returned workflowItems. Carry forward every existing item the user did not explicitly ask to remove.`,
+- ALWAYS call get_project to fetch the latest workflow immediately before this update, even if you already read the project earlier in the conversation — the project may have changed since, and a stale copy will silently drop or revert workflow items. Start from the freshly returned workflowItems and carry forward every existing item the user did not explicitly ask to remove.`,
     inputSchema: {
       projectId: z.string().describe('The ID of the project to update'),
       name: z.string().min(1).max(256).optional().describe('New project display name'),
@@ -1300,7 +1300,7 @@ Important workflow behavior:
         disabled: z.boolean().optional().describe('Whether this workflow item is disabled. Preserve this when carrying forward an item from get_project.'),
         thumbnailUrl: z.string().optional().describe('Existing media thumbnail key/URL. Preserve this when carrying forward an item from get_project.'),
         optimizedUrl: z.string().optional().describe('Existing optimized media key/URL. Preserve this when carrying forward an item from get_project.'),
-      })).optional().describe('Replacement ordered workflow list. If provided, include every existing workflow item to keep; omitted existing items are removed. Call get_project first.'),
+      })).optional().describe('Replacement ordered workflow list. If provided, include every existing workflow item to keep; omitted existing items are removed. Always call get_project first to fetch the latest workflow, even if you read the project earlier — never build this list from a stale copy.'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     category: 'mutate',
