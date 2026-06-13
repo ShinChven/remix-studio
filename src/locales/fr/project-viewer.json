@@ -182,7 +182,10 @@
       "clickToSelect": "Cliquer pour sélectionner",
       "closeViewer": "Fermer l'affichage",
       "searchPlaceholder": "Rechercher par titre, contenu ou tag...",
-      "openFullLibrary": "Ouvrir la bibliothèque complète"
+      "openFullLibrary": "Ouvrir la bibliothèque complète",
+      "matchMode": "Filtre",
+      "matchAny": "Au moins un",
+      "matchAll": "Tous"
     },
     "promptModal": {
       "title": "Modifier le élément de prompt",

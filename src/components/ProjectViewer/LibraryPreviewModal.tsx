@@ -61,15 +61,19 @@ interface LibraryPreviewModalProps {
   library: Library | null;
   selectedTags: string[];
   onUpdateTags: (tags: string[]) => void;
+  tagMatchMode?: 'and' | 'or';
+  onUpdateTagMatchMode?: (mode: 'and' | 'or') => void;
   onClose: () => void;
   isSelectionMode?: boolean;
   onSelectItem?: (itemContent: string) => void;
 }
 
-export function LibraryPreviewModal({ 
-  library, 
-  selectedTags, 
-  onUpdateTags, 
+export function LibraryPreviewModal({
+  library,
+  selectedTags,
+  onUpdateTags,
+  tagMatchMode = 'or',
+  onUpdateTagMatchMode,
   onClose,
   isSelectionMode = false,
   onSelectItem
@@ -104,7 +108,11 @@ export function LibraryPreviewModal({
     const q = query.trim().toLowerCase();
     return library.items.filter(item => {
       if (selectedTags.length > 0) {
-        if (!item.tags || !item.tags.some(tag => selectedTags.includes(tag))) return false;
+        if (!item.tags || item.tags.length === 0) return false;
+        const matches = tagMatchMode === 'and'
+          ? selectedTags.every(tag => item.tags!.includes(tag))
+          : selectedTags.some(tag => item.tags!.includes(tag));
+        if (!matches) return false;
       }
       if (q) {
         const inTitle = item.title?.toLowerCase().includes(q);
@@ -114,7 +122,7 @@ export function LibraryPreviewModal({
       }
       return true;
     });
-  }, [library, selectedTags, query]);
+  }, [library, selectedTags, query, tagMatchMode]);
 
   const toggleTag = (tag: string) => {
     const next = selectedTags.includes(tag) 
@@ -196,6 +204,28 @@ export function LibraryPreviewModal({
                     <span className="block truncate">{tag}</span>
                   </button>
                 ))}
+              </div>
+            )}
+            {onUpdateTagMatchMode && selectedTags.length >= 2 && (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
+                  {t('projectViewer.libraryPreview.matchMode')}
+                </span>
+                <div className="inline-flex p-0.5 rounded-full bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800">
+                  {(['or', 'and'] as const).map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => onUpdateTagMatchMode(mode)}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
+                        tagMatchMode === mode
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+                      }`}
+                    >
+                      {t(mode === 'and' ? 'projectViewer.libraryPreview.matchAll' : 'projectViewer.libraryPreview.matchAny')}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>

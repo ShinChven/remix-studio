@@ -182,7 +182,10 @@
       "clickToSelect": "클릭하여 선택",
       "closeViewer": "뷰어 닫기",
       "searchPlaceholder": "제목, 내용 또는 태그로 항목 검색...",
-      "openFullLibrary": "전체 라이브러리 열기"
+      "openFullLibrary": "전체 라이브러리 열기",
+      "matchMode": "일치",
+      "matchAny": "아무거나",
+      "matchAll": "모두"
     },
     "promptModal": {
       "title": "프롬프트 조각 편집",

@@ -10,6 +10,7 @@ export interface WorkflowItem {
   optimizedUrl?: string;
   size?: number;
   selectedTags?: string[];
+  tagMatchMode?: 'and' | 'or';
 }
 
 export interface LibraryItem {

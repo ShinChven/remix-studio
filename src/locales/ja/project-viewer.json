@@ -182,7 +182,10 @@
       "clickToSelect": "クリックして選択",
       "closeViewer": "ビューアーを閉じる",
       "searchPlaceholder": "タイトル、内容、またはタグでアイテムを検索...",
-      "openFullLibrary": "ライブラリ全体を開く"
+      "openFullLibrary": "ライブラリ全体を開く",
+      "matchMode": "一致",
+      "matchAny": "いずれか",
+      "matchAll": "すべて"
     },
     "promptModal": {
       "title": "プロンプト断片を編集",

@@ -10,6 +10,20 @@ export interface Combination {
 
 type Choice = { type: 'text' | 'image' | 'video' | 'audio', value: string, tags?: string[], title?: string };
 
+export function filterItemsByTags<T extends { tags?: string[] }>(
+  items: T[],
+  selectedTags: string[] | undefined,
+  matchMode: 'and' | 'or' = 'or'
+): T[] {
+  if (!selectedTags || selectedTags.length === 0) return items;
+  return items.filter(i => {
+    if (!i.tags || i.tags.length === 0) return false;
+    return matchMode === 'and'
+      ? selectedTags.every(tag => i.tags!.includes(tag))
+      : selectedTags.some(tag => i.tags!.includes(tag));
+  });
+}
+
 function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): Choice[][] {
   const allChoices: Choice[][] = [];
 
@@ -27,9 +41,7 @@ function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): C
     } else if (item.type === 'library') {
       const lib = libraries.find(l => l.id === item.value);
       if (lib && lib.items.length > 0) {
-        const validItems = item.selectedTags && item.selectedTags.length > 0
-          ? lib.items.filter(i => i.tags && i.tags.some(tag => item.selectedTags!.includes(tag)))
-          : lib.items;
+        const validItems = filterItemsByTags(lib.items, item.selectedTags, item.tagMatchMode);
 
         const contents = validItems.filter(i => i.content.trim() !== '');
         if (contents.length > 0) {
@@ -111,9 +123,7 @@ function generateRandomCombination(workflow: WorkflowItem[], libraries: Library[
     } else if (item.type === 'library') {
       const lib = libraries.find(l => l.id === item.value);
       if (lib && lib.items.length > 0) {
-        const validItems = item.selectedTags && item.selectedTags.length > 0
-          ? lib.items.filter(i => i.tags && i.tags.some(tag => item.selectedTags!.includes(tag)))
-          : lib.items;
+        const validItems = filterItemsByTags(lib.items, item.selectedTags, item.tagMatchMode);
 
         const contents = validItems.filter(i => i.content.trim() !== '');
         if (contents.length > 0) {

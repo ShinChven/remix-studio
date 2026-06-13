@@ -182,7 +182,10 @@
       "clickToSelect": "点击选择",
       "closeViewer": "关闭查看器",
       "searchPlaceholder": "按标题、内容或标签搜索项目...",
-      "openFullLibrary": "打开完整库"
+      "openFullLibrary": "打开完整库",
+      "matchMode": "匹配",
+      "matchAny": "任一",
+      "matchAll": "全部"
     },
     "promptModal": {
       "title": "编辑提示词提示词",

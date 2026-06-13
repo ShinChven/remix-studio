@@ -965,6 +965,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     onUpdate(updated);
   };
 
+  const updateWorkflowItemTagMatchMode = (id: string, tagMatchMode: 'and' | 'or') => {
+    const updated = { ...localProject, workflow: localProject.workflow.map(item => item.id === id ? { ...item, tagMatchMode } : item) };
+    setLocalProject(updated);
+    onUpdate(updated);
+  };
+
   const confirmRemoveWorkflowItem = () => {
     if (itemToRemoveId) {
       const updated = { ...localProject, workflow: localProject.workflow.filter(item => item.id !== itemToRemoveId) };
@@ -1917,6 +1923,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         selectedTags={localProject.workflow.find(i => i.id === previewingWorkflowItemId)?.selectedTags || []}
         onUpdateTags={(tags) => {
           if (previewingWorkflowItemId) updateWorkflowItemTags(previewingWorkflowItemId, tags);
+        }}
+        tagMatchMode={localProject.workflow.find(i => i.id === previewingWorkflowItemId)?.tagMatchMode || 'or'}
+        onUpdateTagMatchMode={(mode) => {
+          if (previewingWorkflowItemId) updateWorkflowItemTagMatchMode(previewingWorkflowItemId, mode);
         }}
         isSelectionMode={!!selectingLibraryForItemId}
         onSelectItem={(content) => {

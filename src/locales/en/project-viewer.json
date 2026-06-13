@@ -182,7 +182,10 @@
       "clickToSelect": "Click to Select",
       "closeViewer": "Close Viewer",
       "searchPlaceholder": "Search items by title, content or tag...",
-      "openFullLibrary": "Open Full Library"
+      "openFullLibrary": "Open Full Library",
+      "matchMode": "Match",
+      "matchAny": "Any",
+      "matchAll": "All"
     },
     "promptModal": {
       "title": "Edit Prompt",

@@ -182,7 +182,10 @@
       "clickToSelect": "點擊以選取",
       "closeViewer": "關閉檢視器",
       "searchPlaceholder": "依標題、內容或標籤搜尋項目...",
-      "openFullLibrary": "打開完整庫"
+      "openFullLibrary": "打開完整庫",
+      "matchMode": "匹配",
+      "matchAny": "任一",
+      "matchAll": "全部"
     },
     "promptModal": {
       "title": "編輯提示詞提示詞",

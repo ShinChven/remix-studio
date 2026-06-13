@@ -429,6 +429,7 @@ export function AssistantPage() {
   const [previewProject, setPreviewProject] = useState<Project | null>(null);
   const [previewLibrary, setPreviewLibrary] = useState<Library | null>(null);
   const [previewSelectedTags, setPreviewSelectedTags] = useState<string[]>([]);
+  const [previewTagMatchMode, setPreviewTagMatchMode] = useState<'and' | 'or'>('or');
   const [isFetchingPreview, setIsFetchingPreview] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(() => {
@@ -1740,9 +1741,12 @@ export function AssistantPage() {
           library={previewLibrary}
           selectedTags={previewSelectedTags}
           onUpdateTags={setPreviewSelectedTags}
+          tagMatchMode={previewTagMatchMode}
+          onUpdateTagMatchMode={setPreviewTagMatchMode}
           onClose={() => {
             setPreviewLibrary(null);
             setPreviewSelectedTags([]);
+            setPreviewTagMatchMode('or');
           }}
         />
       )}
