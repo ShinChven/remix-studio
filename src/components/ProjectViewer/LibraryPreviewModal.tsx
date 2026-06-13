@@ -28,7 +28,7 @@ function TextLibraryItem({
           setIsExpanded(!isExpanded);
         }
       }}
-      className={`bg-white/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-card p-5 cursor-pointer transition-all hover:border-emerald-500/30 hover:bg-neutral-800/50 group/text-item ${isExpanded ? 'shadow-xl border-emerald-500/20 ring-1 ring-emerald-500/10' : 'shadow-sm'} ${isSelectionMode ? 'hover:ring-2 hover:ring-blue-500/50' : ''}`}
+      className={`bg-white/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3.5 md:p-4 cursor-pointer transition-all hover:border-emerald-500/30 hover:bg-neutral-800/50 group/text-item ${isExpanded ? 'shadow-xl border-emerald-500/20 ring-1 ring-emerald-500/10' : 'shadow-sm'} ${isSelectionMode ? 'hover:ring-2 hover:ring-blue-500/50' : ''}`}
     >
       <div className="flex justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -126,87 +126,82 @@ export function LibraryPreviewModal({
   if (!library) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8">
+    <div className="fixed inset-0 z-[600] flex items-center justify-center md:p-8">
       <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={onClose} />
-      
-      <div className="relative w-full max-w-5xl h-[85vh] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/20 dark:bg-neutral-950/20">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-600/10 rounded-xl">
+
+      <div className="relative w-full max-w-5xl h-[100dvh] md:h-[85vh] bg-white dark:bg-neutral-900 md:border border-neutral-200 dark:border-neutral-800 md:rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="px-4 py-3 md:px-5 md:py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3 bg-neutral-50/20 dark:bg-neutral-950/20">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="hidden sm:block p-2 bg-emerald-600/10 rounded-lg shrink-0">
               <LibraryIcon className="w-5 h-5 text-emerald-500" />
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">{library.name}</h3>
+            <div className="min-w-0">
+              <h3 className="text-base md:text-lg font-bold text-neutral-900 dark:text-white tracking-tight truncate">{library.name}</h3>
               {library.description && (
-                <p className="mt-1 max-w-2xl text-xs leading-5 text-neutral-600 dark:text-neutral-400 line-clamp-2">
+                <p className="mt-0.5 max-w-2xl text-xs leading-5 text-neutral-600 dark:text-neutral-400 hidden md:line-clamp-1">
                   {library.description}
                 </p>
               )}
-              <p className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest mt-0.5">
+              <p className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest mt-0.5 truncate">
                 {t('projectViewer.libraryPreview.itemsSummary', { filtered: filteredItems.length, total: library.items.length })}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
+            className="p-2 shrink-0 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-lg transition-all"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {library.items.length > 0 && (
-          <div className="px-6 pt-4 pb-2 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500 pointer-events-none" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t('projectViewer.libraryPreview.searchPlaceholder')}
-                autoFocus={isSelectionMode}
-                className="w-full pl-11 pr-4 py-2.5 text-sm bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 focus:outline-none focus:border-emerald-500/40 transition-colors"
-              />
-            </div>
-          </div>
-        )}
-
-        {availableTags.length > 0 && (
-          <div className="px-6 py-4 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
-            <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-2 flex items-center gap-2">
-              <span className="w-4 h-px bg-neutral-200 dark:bg-neutral-800" />
-              {t('projectViewer.libraryPreview.filterByTags')}
-            </div>
-            <div className="max-h-28 md:max-h-32 overflow-y-auto custom-scrollbar pr-1 flex flex-wrap gap-2 content-start">
-              <button
-                onClick={() => onUpdateTags([])}
-                className={`max-w-full px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
-                  selectedTags.length === 0
-                    ? 'bg-blue-600 text-neutral-900 dark:text-white border-transparent'
-                    : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
-                }`}
-              >
-                {t('projectViewer.libraryPreview.allItems')}
-              </button>
-              {availableTags.map(tag => (
+        {(library.items.length > 0 || availableTags.length > 0) && (
+          <div className="px-4 md:px-5 py-2.5 space-y-2 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
+            {library.items.length > 0 && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-500 pointer-events-none" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t('projectViewer.libraryPreview.searchPlaceholder')}
+                  autoFocus={isSelectionMode}
+                  className="w-full pl-9 pr-4 py-2 text-sm bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 focus:outline-none focus:border-emerald-500/40 transition-colors"
+                />
+              </div>
+            )}
+            {availableTags.length > 0 && (
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-y-auto md:max-h-24">
                 <button
-                  key={tag}
-                  onClick={() => toggleTag(tag)}
-                  title={tag}
-                  className={`max-w-full sm:max-w-80 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
-                    selectedTags.includes(tag)
-                      ? 'bg-blue-600/20 text-blue-400 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                  onClick={() => onUpdateTags([])}
+                  className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all border ${
+                    selectedTags.length === 0
+                      ? 'bg-blue-600 text-white border-transparent'
                       : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
                   }`}
                 >
-                  <span className="block truncate">{tag}</span>
+                  {t('projectViewer.libraryPreview.allItems')}
                 </button>
-              ))}
-            </div>
+                {availableTags.map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => toggleTag(tag)}
+                    title={tag}
+                    className={`shrink-0 max-w-[60vw] md:max-w-80 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all border ${
+                      selectedTags.includes(tag)
+                        ? 'bg-blue-600/20 text-blue-500 dark:text-blue-400 border-blue-500/50'
+                        : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
+                    }`}
+                  >
+                    <span className="block truncate">{tag}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar bg-neutral-50/10 dark:bg-neutral-950/10">
+        <div className="flex-1 overflow-y-auto p-3 md:p-6 custom-scrollbar bg-neutral-50/10 dark:bg-neutral-950/10">
           {filteredItems.length === 0 ? (
              <div className="h-64 flex flex-col items-center justify-center text-neutral-600 gap-4 opacity-50">
                <LibraryIcon className="w-12 h-12 stroke-[1px]" />
@@ -216,7 +211,7 @@ export function LibraryPreviewModal({
                </div>
              </div>
           ) : (
-            <div className={library.type === 'text' ? "max-w-4xl mx-auto space-y-3" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
+            <div className={library.type === 'text' ? "max-w-4xl mx-auto space-y-2 md:space-y-3" : "grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"}>
               {filteredItems.map(item => (
                 library.type === 'text' ? (
                   <TextLibraryItem 
@@ -226,7 +221,7 @@ export function LibraryPreviewModal({
                     onSelect={onSelectItem} 
                   />
                 ) : (
-                  <div key={item.id} className="bg-white/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-card overflow-hidden flex flex-col shadow-sm group/card">
+                  <div key={item.id} className="bg-white/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden flex flex-col shadow-sm group/card">
                     {library.type === 'image' && (
                       <div 
                         className={`aspect-video bg-black relative border-b border-neutral-200 dark:border-neutral-800 group/img-container cursor-pointer overflow-hidden ${isSelectionMode ? 'ring-inset hover:ring-2 hover:ring-blue-500' : ''}`}
@@ -314,7 +309,7 @@ export function LibraryPreviewModal({
                         )}
                       </div>
                     )}
-                    <div className="p-4 flex-1">
+                    <div className="p-3 md:p-4 flex-1">
                       {item.title && (
                         <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-2">{item.title}</div>
                       )}
@@ -329,21 +324,21 @@ export function LibraryPreviewModal({
           )}
         </div>
 
-        <div className="p-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 flex justify-end">
-          <div className="flex gap-3">
+        <div className="px-4 py-3 md:px-5 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 flex justify-end pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="flex gap-2 md:gap-3 w-full sm:w-auto">
             {!isSelectionMode && (
               <Link
                 to={`/library/${library.id}`}
                 onClick={onClose}
-                className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-emerald-500 shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                className="flex-1 sm:flex-none justify-center px-4 md:px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-emerald-500 shadow-lg shadow-emerald-500/20 flex items-center gap-2"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 {t('projectViewer.libraryPreview.openFullLibrary')}
               </Link>
             )}
-            <button 
+            <button
               onClick={onClose}
-              className="px-8 py-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-neutral-300 dark:border-neutral-700"
+              className="flex-1 sm:flex-none px-4 md:px-6 py-2.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-lg font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-neutral-300 dark:border-neutral-700"
             >
               {t('projectViewer.libraryPreview.closeViewer')}
             </button>
