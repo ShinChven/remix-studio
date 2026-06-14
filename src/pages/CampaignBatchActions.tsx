@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Clock,
-  Image as ImageIcon,
   Loader2,
   MoreHorizontal,
   Plus,
@@ -479,8 +478,18 @@ export function CampaignBatchActions() {
                       </td>
                       <td className="px-5 py-4">
                         {mediaUrls.length > 0 ? (
-                          <button className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 px-3 text-xs font-bold transition hover:bg-neutral-100 dark:border-white/10 dark:hover:bg-white/10" onClick={() => setPreviewMedia(mediaUrls)}>
-                            <ImageIcon className="h-4 w-4" /> {mediaUrls.length}
+                          <button
+                            type="button"
+                            onClick={() => setPreviewMedia(mediaUrls)}
+                            title={`View ${mediaUrls.length} media item${mediaUrls.length === 1 ? '' : 's'}`}
+                            className="group/thumb relative h-14 w-14 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 shadow-sm transition hover:ring-2 hover:ring-indigo-500/50 dark:border-white/10 dark:bg-neutral-800"
+                          >
+                            <img src={mediaUrls[0]} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover transition group-hover/thumb:scale-105" />
+                            {mediaUrls.length > 1 && (
+                              <span className="absolute bottom-0 right-0 rounded-tl-lg bg-neutral-950/75 px-1.5 text-[10px] font-bold leading-5 text-white">
+                                +{mediaUrls.length - 1}
+                              </span>
+                            )}
                           </button>
                         ) : (
                           <span className="text-xs text-neutral-400">No media</span>
