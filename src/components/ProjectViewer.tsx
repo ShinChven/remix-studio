@@ -123,7 +123,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const rawTab = searchParams.get('tab');
   const activeTab = (rawTab as 'draft' | 'queue' | 'completed' | 'album') || 'draft';
   const setActiveTab = (tab: 'draft' | 'queue' | 'completed' | 'album') => {
-    setSearchParams({ tab }, { replace: true });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    }, { replace: true });
     setMobileView('jobs');
   };
 
@@ -134,10 +138,49 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [albumPages, setAlbumPages] = useState<number>(1);
   const [albumTotalSize, setAlbumTotalSize] = useState<number>(0);
   const [albumAspectRatioCounts, setAlbumAspectRatioCounts] = useState<AspectRatioCount[]>([]);
-  const [albumPage, setAlbumPage] = useState<number>(1);
-  const [albumPageSize, setAlbumPageSize] = useState<number | 'all'>(500);
-  const [albumSort, setAlbumSort] = useState<'newest' | 'oldest'>('newest');
-  const [albumSelectedRatios, setAlbumSelectedRatios] = useState<string[]>([]);
+  // Album view state is URL-driven (subscribes to the search params) so it is
+  // shareable and survives back/forward, matching the `tab` param pattern.
+  const albumPage = Math.max(1, Math.floor(Number(searchParams.get('albumPage')) || 1));
+  const albumSizeParam = searchParams.get('albumSize');
+  const albumPageSize: number | 'all' = albumSizeParam === 'all'
+    ? 'all'
+    : (Number(albumSizeParam) > 0 ? Math.floor(Number(albumSizeParam)) : 500);
+  const albumSort: 'newest' | 'oldest' = searchParams.get('albumSort') === 'oldest' ? 'oldest' : 'newest';
+  const albumRatiosParam = searchParams.get('albumRatios') || '';
+  const albumSelectedRatios = React.useMemo(
+    () => (albumRatiosParam ? albumRatiosParam.split(',').filter(Boolean) : []),
+    [albumRatiosParam],
+  );
+
+  const updateAlbumParams = useCallback(
+    (updates: { page?: number; pageSize?: number | 'all'; sort?: 'newest' | 'oldest'; ratios?: string[] }) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        // Any change other than the page number itself returns to page 1.
+        if (updates.pageSize !== undefined || updates.sort !== undefined || updates.ratios !== undefined) {
+          next.delete('albumPage');
+        }
+        if (updates.page !== undefined) {
+          if (updates.page > 1) next.set('albumPage', String(updates.page));
+          else next.delete('albumPage');
+        }
+        if (updates.pageSize !== undefined) {
+          if (updates.pageSize !== 500) next.set('albumSize', String(updates.pageSize));
+          else next.delete('albumSize');
+        }
+        if (updates.sort !== undefined) {
+          if (updates.sort !== 'newest') next.set('albumSort', updates.sort);
+          else next.delete('albumSort');
+        }
+        if (updates.ratios !== undefined) {
+          if (updates.ratios.length > 0) next.set('albumRatios', updates.ratios.join(','));
+          else next.delete('albumRatios');
+        }
+        return next;
+      });
+    },
+    [setSearchParams],
+  );
 
   const [completedJobs, setCompletedJobs] = useState<Job[]>([]);
   const [completedTotal, setCompletedTotal] = useState<number>(0);
@@ -208,6 +251,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const albumFetchTokenRef = useRef(0);
   const albumLoadedKeyRef = useRef<string | null>(null);
   const albumFetchedAtRef = useRef<number>(0);
+  const prevAlbumProjectIdRef = useRef<string | null>(null);
   const completedFetchTokenRef = useRef(0);
   const completedLoadedKeyRef = useRef<string | null>(null);
   const completedFetchedAtRef = useRef<number>(0);
@@ -229,8 +273,19 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setAlbumPages(1);
     setAlbumTotalSize(0);
     setAlbumAspectRatioCounts([]);
-    setAlbumPage(1);
-    setAlbumSelectedRatios([]);
+    // Reset the URL-driven album view when switching to a different project, but
+    // preserve any deep-linked params on the initial mount.
+    if (prevAlbumProjectIdRef.current !== null && prevAlbumProjectIdRef.current !== project.id) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('albumPage');
+        next.delete('albumSize');
+        next.delete('albumSort');
+        next.delete('albumRatios');
+        return next;
+      }, { replace: true });
+    }
+    prevAlbumProjectIdRef.current = project.id;
     setCompletedJobs([]);
     setCompletedTotal(0);
     setCompletedPages(1);
@@ -339,22 +394,19 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   }, [activeTab, completedQueryKey, loadCompletedPage]);
 
   const handleAlbumPageChange = useCallback((p: number) => {
-    setAlbumPage(p);
+    updateAlbumParams({ page: p });
     scrollTabContentTop();
-  }, [scrollTabContentTop]);
+  }, [updateAlbumParams, scrollTabContentTop]);
   const handleAlbumPageSizeChange = useCallback((size: number | 'all') => {
-    setAlbumPageSize(size);
-    setAlbumPage(1);
+    updateAlbumParams({ pageSize: size });
     scrollTabContentTop();
-  }, [scrollTabContentTop]);
+  }, [updateAlbumParams, scrollTabContentTop]);
   const handleAlbumSortChange = useCallback((sort: 'newest' | 'oldest') => {
-    setAlbumSort(sort);
-    setAlbumPage(1);
-  }, []);
+    updateAlbumParams({ sort });
+  }, [updateAlbumParams]);
   const handleAlbumSelectedRatiosChange = useCallback((ratios: string[]) => {
-    setAlbumSelectedRatios(ratios);
-    setAlbumPage(1);
-  }, []);
+    updateAlbumParams({ ratios });
+  }, [updateAlbumParams]);
 
   const handleCompletedPageChange = useCallback((p: number) => {
     setCompletedPage(p);
