@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List } from 'lucide-react';
 import { AlbumItem, AspectRatioCount, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import type { AlbumExportVersion } from '../../api';
@@ -12,7 +12,7 @@ import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
 import { CopyToLibraryDialog } from './CopyToLibraryDialog';
 import { SelectionToolbar } from './SelectionToolbar';
 import { EmptyState } from './EmptyState';
-import { PaginationBar } from './PaginationBar';
+import { PaginationBar, PAGE_SIZE_OPTIONS } from './PaginationBar';
 
 import { toast } from 'sonner';
 
@@ -411,6 +411,28 @@ export function AlbumTab({
                     onClear={clearAspectRatioFilter}
                   />
                 )}
+                <label
+                  title={t('pagination.pageSize')}
+                  className="flex items-center gap-1.5 min-h-8 px-2 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 rounded-lg border border-neutral-700 transition-all cursor-pointer"
+                >
+                  <List className="w-3 h-3" />
+                  <span className="sr-only">{t('pagination.pageSize')}</span>
+                  <select
+                    value={pageSize === 'all' ? 'all' : String(pageSize)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      onPageSizeChange(v === 'all' ? 'all' : Number(v));
+                    }}
+                    aria-label={t('pagination.pageSize')}
+                    className="bg-transparent text-[9px] font-black uppercase tracking-widest text-neutral-200 focus:outline-none cursor-pointer"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((opt) => (
+                      <option key={String(opt)} value={String(opt)} className="bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
+                        {opt === 'all' ? t('pagination.all') : opt}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <button
                   onClick={() => onSortChange(sort === 'newest' ? 'oldest' : 'newest')}
                   title={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
