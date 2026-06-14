@@ -1717,6 +1717,52 @@ export async function uploadCampaignMediaPosts(
   return handleResponse<{ created: Array<{ postId: string; mediaId: string }>; count: number }>(res, 'Failed to upload media posts');
 }
 
+export type BatchCreateMediaItemInput =
+  | { kind: 'upload'; itemId: string; label?: string; base64: string; content?: string }
+  | { kind: 'import'; itemId: string; label?: string; source: CampaignMediaImportSource; content?: string };
+
+export interface BatchCreateMediaResult {
+  batchId: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  total: number;
+  completed: number;
+  results: Array<{
+    itemId: string;
+    label: string;
+    status: 'queued' | 'running' | 'completed' | 'failed';
+    ok: boolean;
+    postId?: string;
+    mediaId?: string;
+    error?: string;
+  }>;
+  error?: string;
+  createdAt?: number;
+  updatedAt?: number;
+}
+
+export async function batchCreateCampaignMediaPosts(
+  campaignId: string,
+  items: BatchCreateMediaItemInput[],
+  watermarkSettings?: PostWatermarkSettings,
+): Promise<BatchCreateMediaResult> {
+  const res = await apiFetch(`/api/campaigns/${campaignId}/posts/batch-create`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ items, ...(watermarkSettings ? { watermarkSettings } : {}) }),
+  });
+  return handleResponse<BatchCreateMediaResult>(res, 'Failed to queue batch media creation');
+}
+
+export async function fetchBatchCreateCampaignMediaStatus(
+  campaignId: string,
+  batchId: string,
+): Promise<BatchCreateMediaResult> {
+  const res = await apiFetch(`/api/campaigns/${campaignId}/posts/batch-create/${batchId}`, {
+    headers: getHeaders(false),
+  });
+  return handleResponse<BatchCreateMediaResult>(res, 'Failed to fetch batch media creation status');
+}
+
 export async function removePostMedia(mediaId: string): Promise<void> {
   const res = await apiFetch(`/api/posts/media/${mediaId}`, {
     method: 'DELETE',

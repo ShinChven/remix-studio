@@ -13,15 +13,15 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  batchCreateCampaignMediaPosts,
+  BatchCreateMediaItemInput,
   CampaignMediaImportSource,
+  fetchBatchCreateCampaignMediaStatus,
   fetchCampaign,
   fetchPostWatermarkSettings,
   imageDisplayUrl,
-  importCampaignMediaPosts,
   PostWatermarkSettings,
-  updatePost,
   updatePostWatermarkSettings,
-  uploadCampaignMediaPosts,
 } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { UniversalMediaPicker, UniversalPickedItem } from '../components/UniversalMediaPicker';
@@ -251,66 +251,66 @@ export function CampaignBatchCreate() {
     setIsUploading(true);
     setUploadProgress(0);
 
-    let createdCount = 0;
-    const failures: string[] = [];
-
-    for (const item of queue) {
-      try {
-        let postId: string | undefined;
-        if (item.kind === 'local') {
-          const base64 = await readFileAsDataUrl(item.file);
-          const result = await uploadCampaignMediaPosts(id, [{ base64, name: item.file.name }], watermarkSettings);
-          postId = result.created[0]?.postId;
-          createdCount += result.count;
-        } else {
+    try {
+      // Build the batch payload, reading local files as base64 in parallel.
+      const items: BatchCreateMediaItemInput[] = await Promise.all(
+        queue.map(async (item): Promise<BatchCreateMediaItemInput> => {
+          const content = item.content?.trim() || undefined;
+          if (item.kind === 'local') {
+            const base64 = await readFileAsDataUrl(item.file);
+            return { kind: 'upload', itemId: item.id, label: item.file.name, base64, content };
+          }
           const source: CampaignMediaImportSource = item.kind === 'library'
             ? { kind: 'library', libraryId: item.libraryId, itemId: item.itemId }
             : { kind: 'album', projectId: item.projectId, itemId: item.itemId };
-          const result = await importCampaignMediaPosts(id, [source], watermarkSettings);
-          postId = result.created[0]?.postId;
-          createdCount += result.count;
+          return { kind: 'import', itemId: item.id, label: item.title || item.itemId, source, content };
+        }),
+      );
+
+      // Submit once; the server processes the batch asynchronously.
+      let task = await batchCreateCampaignMediaPosts(id, items, watermarkSettings);
+      setUploadProgress(task.completed);
+
+      if (watermarkLoaded) {
+        setIsWatermarkSaving(true);
+        try {
+          await updatePostWatermarkSettings(watermarkSettings);
+        } catch (error: any) {
+          toast.error(error?.message || 'Failed to save watermark settings');
+        } finally {
+          setIsWatermarkSaving(false);
         }
+      }
 
-        const content = item.content?.trim();
-        if (postId && content) {
-          try {
-            await updatePost(postId, { textContent: content, status: 'draft' });
-          } catch (captionError: any) {
-            console.warn('Failed to update caption', captionError);
-          }
+      // Poll for progress until the batch finishes.
+      while (task.status !== 'completed' && task.status !== 'failed') {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        task = await fetchBatchCreateCampaignMediaStatus(id, task.batchId);
+        setUploadProgress(task.completed);
+      }
+
+      const createdCount = task.results.filter((result) => result.ok).length;
+      const failedCount = task.results.length - createdCount;
+
+      if (task.status === 'failed' && createdCount === 0) {
+        toast.error(task.error || 'Failed to create batch');
+      } else {
+        if (createdCount > 0) {
+          toast.success(`Successfully created ${createdCount} post${createdCount === 1 ? '' : 's'} for ${campaign?.name}`);
         }
-      } catch (error: any) {
-        const label = item.kind === 'local' ? item.file.name : item.title || item.itemId;
-        failures.push(label);
-        console.error('Batch item failed', error);
-      } finally {
-        setUploadProgress((prev) => prev + 1);
+        if (failedCount > 0) {
+          toast.error(`Failed to process ${failedCount} item${failedCount === 1 ? '' : 's'}`);
+        }
       }
-    }
 
-    if (watermarkLoaded) {
-      setIsWatermarkSaving(true);
-      try {
-        await updatePostWatermarkSettings(watermarkSettings);
-      } catch (error: any) {
-        toast.error(error?.message || 'Failed to save watermark settings');
-      } finally {
-        setIsWatermarkSaving(false);
+      if (createdCount > 0) {
+        clearQueue();
+        navigate(`/campaigns/${id}/batch`);
       }
-    }
-
-    setIsUploading(false);
-
-    if (createdCount > 0) {
-      toast.success(`Successfully created ${createdCount} posts for ${campaign?.name}`);
-    }
-    if (failures.length > 0) {
-      toast.error(`Failed to process ${failures.length} item${failures.length === 1 ? '' : 's'}`);
-    }
-
-    if (createdCount > 0) {
-      clearQueue();
-      navigate(`/campaigns/${id}/batch`);
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to create batch');
+    } finally {
+      setIsUploading(false);
     }
   };
 

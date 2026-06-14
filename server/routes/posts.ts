@@ -71,6 +71,37 @@ type BatchGenerateTextTask = {
   updatedAt: number;
 };
 
+type BatchCreateMediaStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+type BatchCreateMediaJob =
+  | { kind: 'upload'; itemId: string; label: string; base64: string; content?: string }
+  | { kind: 'import'; itemId: string; label: string; source: ImportSource; content?: string };
+
+type BatchCreateMediaItem = {
+  itemId: string;
+  label: string;
+  status: BatchCreateMediaStatus;
+  ok: boolean;
+  postId?: string;
+  mediaId?: string;
+  error?: string;
+};
+
+type BatchCreateMediaTask = {
+  id: string;
+  userId: string;
+  campaignId: string;
+  jobs: BatchCreateMediaJob[];
+  watermarkSetting: PostWatermarkConfig | null;
+  status: BatchCreateMediaStatus;
+  total: number;
+  completed: number;
+  results: BatchCreateMediaItem[];
+  error?: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
 async function presignStorageValue(storage: S3Storage, value?: string | null): Promise<string | null | undefined> {
   if (!value) return value;
   if (/^https?:\/\//i.test(value) || value.startsWith('/') || value.startsWith('data:')) return value;
@@ -252,6 +283,13 @@ async function getStorageValueSize(storage: S3Storage, value: string | null | un
   return (await storage.getSize(key)) || 0;
 }
 
+class StorageLimitError extends Error {
+  constructor(remainingMB: number, requiredMB: number) {
+    super(`Storage limit exceeded. Remaining: ${remainingMB.toFixed(1)}MB. Required: ~${requiredMB.toFixed(1)}MB.`);
+    this.name = 'StorageLimitError';
+  }
+}
+
 export function createPostsRouter(
   prisma: PrismaClient,
   postManager: PostManager,
@@ -268,6 +306,13 @@ export function createPostsRouter(
   const maxActiveBatchGenerateTextTasks = 2;
   const maxBatchGenerateTextItemConcurrency = 3;
   const batchGenerateTextRetentionMs = 30 * 60 * 1000;
+
+  const batchCreateMediaTasks = new Map<string, BatchCreateMediaTask>();
+  const pendingBatchCreateMediaTaskIds: string[] = [];
+  let activeBatchCreateMediaTasks = 0;
+  const maxActiveBatchCreateMediaTasks = 2;
+  const maxBatchCreateMediaItemConcurrency = 4;
+  const batchCreateMediaRetentionMs = 30 * 60 * 1000;
 
   const ensurePostWatermarkSetting = async (userId: string) => {
     const setting = await prisma.postWatermarkSetting.upsert({
@@ -422,6 +467,128 @@ export function createPostsRouter(
       if (!task || task.status !== 'queued') continue;
       activeBatchGenerateTextTasks++;
       void processBatchGenerateTextTask(task);
+    }
+  };
+
+  const cleanupBatchCreateMediaTasks = () => {
+    const now = Date.now();
+    for (const [id, task] of batchCreateMediaTasks) {
+      if ((task.status === 'completed' || task.status === 'failed') && now - task.updatedAt > batchCreateMediaRetentionMs) {
+        batchCreateMediaTasks.delete(id);
+      }
+    }
+  };
+
+  const serializeBatchCreateMediaTask = (task: BatchCreateMediaTask) => ({
+    batchId: task.id,
+    status: task.status,
+    total: task.total,
+    completed: task.completed,
+    results: task.results,
+    error: task.error,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+  });
+
+  const processBatchCreateMediaTask = async (task: BatchCreateMediaTask) => {
+    task.status = 'running';
+    task.updatedAt = Date.now();
+
+    try {
+      const safeCampaignId = task.campaignId.replace(/[^a-zA-Z0-9-_]/g, '_');
+
+      // Resolve all library/album sources up front in a single batched query.
+      // If any source can't be resolved (e.g. deleted since it was picked), fall
+      // back to per-source resolution so only the missing items fail rather than
+      // the whole batch. Unresolved items are left absent and marked failed below.
+      const importJobs = task.jobs.filter((job): job is Extract<BatchCreateMediaJob, { kind: 'import' }> => job.kind === 'import');
+      const resolvedByItemId = new Map<string, ResolvedImportMedia>();
+      if (importJobs.length > 0) {
+        try {
+          const resolved = await resolveImportSources(task.userId, importJobs.map((job) => job.source));
+          importJobs.forEach((job, index) => resolvedByItemId.set(job.itemId, resolved[index]));
+        } catch {
+          await Promise.all(importJobs.map(async (job) => {
+            try {
+              const [one] = await resolveImportSources(task.userId, [job.source]);
+              resolvedByItemId.set(job.itemId, one);
+            } catch {
+              /* leave unresolved; runOne marks it failed individually */
+            }
+          }));
+        }
+      }
+
+      const pending = [...task.jobs];
+
+      const runOne = async (job: BatchCreateMediaJob) => {
+        const result = task.results.find((item) => item.itemId === job.itemId);
+        if (!result) return;
+
+        result.status = 'running';
+        task.updatedAt = Date.now();
+
+        try {
+          let created: { postId: string; mediaId: string };
+          if (job.kind === 'upload') {
+            created = await createUploadMediaPost(task.userId, task.campaignId, safeCampaignId, { base64: job.base64, name: job.label }, task.watermarkSetting, job.content);
+          } else {
+            const resolved = resolvedByItemId.get(job.itemId);
+            if (!resolved) throw new Error('Media item not found or unsupported');
+            created = await createImportMediaPost(task.userId, task.campaignId, safeCampaignId, resolved, task.watermarkSetting, job.content);
+          }
+          result.status = 'completed';
+          result.ok = true;
+          result.postId = created.postId;
+          result.mediaId = created.mediaId;
+        } catch (err: any) {
+          result.status = 'failed';
+          result.error = err?.message || 'Failed to create post';
+        } finally {
+          task.completed = task.results.filter((item) => item.status === 'completed' || item.status === 'failed').length;
+          task.updatedAt = Date.now();
+        }
+      };
+
+      const worker = async () => {
+        while (pending.length > 0) {
+          const next = pending.shift();
+          if (!next) break;
+          await runOne(next);
+        }
+      };
+
+      const workerCount = Math.min(maxBatchCreateMediaItemConcurrency, pending.length);
+      await Promise.all(Array.from({ length: workerCount }, () => worker()));
+
+      task.status = 'completed';
+      task.completed = task.total;
+      task.updatedAt = Date.now();
+    } catch (error: any) {
+      task.status = 'failed';
+      task.error = error?.message || 'Failed to create batch';
+      task.results = task.results.map((result) => (
+        result.status === 'queued' || result.status === 'running'
+          ? { ...result, status: 'failed', ok: false, error: task.error }
+          : result
+      ));
+      task.completed = task.total;
+      task.updatedAt = Date.now();
+    } finally {
+      activeBatchCreateMediaTasks = Math.max(0, activeBatchCreateMediaTasks - 1);
+      cleanupBatchCreateMediaTasks();
+      void startNextBatchCreateMediaTask();
+    }
+  };
+
+  const startNextBatchCreateMediaTask = async () => {
+    while (activeBatchCreateMediaTasks < maxActiveBatchCreateMediaTasks && pendingBatchCreateMediaTaskIds.length > 0) {
+      const nextId = pendingBatchCreateMediaTaskIds.shift();
+      if (!nextId) return;
+      const task = batchCreateMediaTasks.get(nextId);
+      if (!task || task.status !== 'queued') continue;
+      activeBatchCreateMediaTasks++;
+      void processBatchCreateMediaTask(task);
     }
   };
 
@@ -694,6 +861,232 @@ export function createPostsRouter(
     });
   }
 
+  const assertStorageAllowed = async (userId: string, storedSize: number) => {
+    const { allowed, currentUsage, limit } = await checkStorageLimit(
+      userId,
+      storedSize,
+      userRepository,
+      storage,
+      exportStorage,
+      repository,
+    );
+    if (!allowed) {
+      throw new StorageLimitError((limit - currentUsage) / (1024 * 1024), storedSize / (1024 * 1024));
+    }
+  };
+
+  // Creates a single draft post + media from a resolved library/album source.
+  // Shared by the synchronous import endpoint and the async batch worker.
+  const createImportMediaPost = async (
+    userId: string,
+    campaignId: string,
+    safeCampaignId: string,
+    item: ResolvedImportMedia,
+    watermarkSetting: PostWatermarkConfig | null,
+    content?: string,
+  ): Promise<{ postId: string; mediaId: string }> => {
+    const bucket = storage.getBucketName();
+    const postId = randomUUID();
+    const mediaId = randomUUID();
+    const baseKey = `campaigns/${safeCampaignId}/posts/${postId}/media/${mediaId}`;
+    let rawKey: string;
+    let optimizedKey: string;
+    let thumbKey: string;
+    let mimeType: string;
+    let storedSize = 0;
+
+    if (item.mediaType === 'image') {
+      const sourceBuffer = await readMediaBuffer(storage, item.rawValue || undefined, bucket, 'image');
+      const rawBuffer = await applyPostWatermark(await processPostRawImage(sourceBuffer), watermarkSetting);
+      const optBuffer = await generateOptimized(rawBuffer);
+      const thumbBuffer = await generateThumbnail(rawBuffer);
+
+      storedSize = rawBuffer.length + optBuffer.length + thumbBuffer.length;
+      await assertStorageAllowed(userId, storedSize);
+
+      rawKey = `${baseKey}.raw.jpg`;
+      optimizedKey = `${baseKey}.opt.jpg`;
+      thumbKey = `${baseKey}.thumb.jpg`;
+      mimeType = 'image/jpeg';
+
+      await Promise.all([
+        storage.save(rawKey, rawBuffer, 'image/jpeg'),
+        storage.save(optimizedKey, optBuffer, 'image/jpeg'),
+        storage.save(thumbKey, thumbBuffer, 'image/jpeg'),
+      ]);
+    } else {
+      const sourceRawKey = stripToStorageKey(item.rawValue, bucket);
+      if (!sourceRawKey || sourceRawKey.startsWith('data:') || /^https?:\/\//i.test(sourceRawKey)) {
+        throw new Error('Video import requires an internal storage object');
+      }
+
+      const ext = storageKeyExt(sourceRawKey, 'mp4');
+      mimeType = videoMimeFromExt(ext);
+      rawKey = `${baseKey}.raw.${ext}`;
+      optimizedKey = `${baseKey}.opt.jpg`;
+      thumbKey = `${baseKey}.thumb.jpg`;
+
+      const rawSize = item.rawSize || (await storage.getSize(sourceRawKey)) || 0;
+      let optSize = await getStorageValueSize(storage, item.optimizedValue, bucket);
+      let thumbSize = await getStorageValueSize(storage, item.thumbnailValue, bucket);
+
+      let generatedOpt: Buffer | null = null;
+      let generatedThumb: Buffer | null = null;
+      const hasCopiedOpt = optSize > 0;
+      const hasCopiedThumb = thumbSize > 0;
+
+      if (!hasCopiedOpt || !hasCopiedThumb) {
+        const rawBuffer = await storage.read(sourceRawKey);
+        const posterPng = await extractFirstFramePng(rawBuffer);
+        if (!hasCopiedOpt) {
+          generatedOpt = await generateOptimized(posterPng);
+          optSize = generatedOpt.length;
+        }
+        if (!hasCopiedThumb) {
+          generatedThumb = await generateThumbnail(posterPng);
+          thumbSize = generatedThumb.length;
+        }
+      }
+
+      storedSize = rawSize + optSize + thumbSize;
+      await assertStorageAllowed(userId, storedSize);
+
+      await storage.copy(sourceRawKey, rawKey);
+
+      if (!(await copyIfStorageKey(storage, item.optimizedValue, optimizedKey, bucket)) && generatedOpt) {
+        await storage.save(optimizedKey, generatedOpt, 'image/jpeg');
+      }
+
+      if (!(await copyIfStorageKey(storage, item.thumbnailValue, thumbKey, bucket)) && generatedThumb) {
+        await storage.save(thumbKey, generatedThumb, 'image/jpeg');
+      }
+    }
+
+    await prisma.$transaction([
+      prisma.post.create({
+        data: {
+          id: postId,
+          userId,
+          campaignId,
+          textContent: content?.trim() || '',
+          status: 'draft',
+        },
+      }),
+      prisma.postMedia.create({
+        data: {
+          id: mediaId,
+          postId,
+          sourceUrl: rawKey,
+          processedUrl: item.mediaType === 'video' ? rawKey : optimizedKey,
+          thumbnailUrl: thumbKey,
+          type: item.mediaType,
+          status: 'ready',
+          quality: 'high',
+          mimeType,
+          size: storedSize,
+          position: 0,
+        },
+      }),
+    ]);
+
+    return { postId, mediaId };
+  };
+
+  // Creates a single draft post + media from an uploaded base64 data URL.
+  // Shared by the synchronous upload endpoint and the async batch worker.
+  const createUploadMediaPost = async (
+    userId: string,
+    campaignId: string,
+    safeCampaignId: string,
+    file: { base64: string; name?: string },
+    watermarkSetting: PostWatermarkConfig | null,
+    content?: string,
+  ): Promise<{ postId: string; mediaId: string }> => {
+    const mimeType = dataUrlMimeType(file.base64);
+    const isImage = Boolean(mimeType?.startsWith('image/'));
+    const isVideo = Boolean(mimeType?.startsWith('video/'));
+    if (!mimeType || (!isImage && !isVideo)) {
+      throw new Error(`Unsupported media type${file.name ? ` for ${file.name}` : ''}`);
+    }
+
+    const postId = randomUUID();
+    const mediaId = randomUUID();
+    const baseKey = `campaigns/${safeCampaignId}/posts/${postId}/media/${mediaId}`;
+    let rawKey: string;
+    let processedKey: string;
+    let thumbKey: string;
+    let storedSize = 0;
+
+    if (isImage) {
+      const sourceBuffer = readMediaBufferFromDataUrl(file.base64, 'image');
+      const rawBuffer = await applyPostWatermark(await processPostRawImage(sourceBuffer), watermarkSetting);
+      const optBuffer = await generateOptimized(rawBuffer);
+      const thumbBuffer = await generateThumbnail(rawBuffer);
+
+      storedSize = rawBuffer.length + optBuffer.length + thumbBuffer.length;
+      await assertStorageAllowed(userId, storedSize);
+
+      rawKey = `${baseKey}.raw.jpg`;
+      processedKey = `${baseKey}.opt.jpg`;
+      thumbKey = `${baseKey}.thumb.jpg`;
+
+      await Promise.all([
+        storage.save(rawKey, rawBuffer, 'image/jpeg'),
+        storage.save(processedKey, optBuffer, 'image/jpeg'),
+        storage.save(thumbKey, thumbBuffer, 'image/jpeg'),
+      ]);
+    } else {
+      const sourceBuffer = readMediaBufferFromDataUrl(file.base64, 'video');
+      const ext = videoMimeExt(mimeType!);
+      const posterPng = await extractFirstFramePng(sourceBuffer);
+      const optBuffer = await generateOptimized(posterPng);
+      const thumbBuffer = await generateThumbnail(posterPng);
+
+      storedSize = sourceBuffer.length + optBuffer.length + thumbBuffer.length;
+      await assertStorageAllowed(userId, storedSize);
+
+      rawKey = `${baseKey}.raw.${ext}`;
+      processedKey = rawKey;
+      thumbKey = `${baseKey}.thumb.jpg`;
+      const optKey = `${baseKey}.opt.jpg`;
+
+      await Promise.all([
+        storage.save(rawKey, sourceBuffer, mimeType!),
+        storage.save(optKey, optBuffer, 'image/jpeg'),
+        storage.save(thumbKey, thumbBuffer, 'image/jpeg'),
+      ]);
+    }
+
+    await prisma.$transaction([
+      prisma.post.create({
+        data: {
+          id: postId,
+          userId,
+          campaignId,
+          textContent: content?.trim() || '',
+          status: 'draft',
+        },
+      }),
+      prisma.postMedia.create({
+        data: {
+          id: mediaId,
+          postId,
+          sourceUrl: rawKey,
+          processedUrl: processedKey,
+          thumbnailUrl: thumbKey,
+          type: isVideo ? 'video' : 'image',
+          status: 'ready',
+          quality: 'high',
+          mimeType: isVideo ? mimeType! : 'image/jpeg',
+          size: storedSize,
+          position: 0,
+        },
+      }),
+    ]);
+
+    return { postId, mediaId };
+  };
+
   postsRouter.post('/api/campaigns/:campaignId/posts/import-media', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;
     const campaignId = c.req.param('campaignId');
@@ -708,7 +1101,6 @@ export function createPostsRouter(
       });
       if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
 
-      const bucket = storage.getBucketName();
       const safeCampaignId = campaignId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const watermarkSetting = data.watermarkSettings
         ? normalizePostWatermarkPayload(data.watermarkSettings)
@@ -717,134 +1109,12 @@ export function createPostsRouter(
       const created: Array<{ postId: string; mediaId: string }> = [];
 
       for (const item of sources) {
-        const postId = randomUUID();
-        const mediaId = randomUUID();
-        const baseKey = `campaigns/${safeCampaignId}/posts/${postId}/media/${mediaId}`;
-        let rawKey: string;
-        let optimizedKey: string;
-        let thumbKey: string;
-        let mimeType: string;
-        let storedSize = 0;
-
-        if (item.mediaType === 'image') {
-          const sourceBuffer = await readMediaBuffer(storage, item.rawValue || undefined, bucket, 'image');
-          const rawBuffer = await applyPostWatermark(await processPostRawImage(sourceBuffer), watermarkSetting);
-          const optBuffer = await generateOptimized(rawBuffer);
-          const thumbBuffer = await generateThumbnail(rawBuffer);
-
-          storedSize = rawBuffer.length + optBuffer.length + thumbBuffer.length;
-          const { allowed, currentUsage, limit } = await checkStorageLimit(
-            user.userId,
-            storedSize,
-            userRepository,
-            storage,
-            exportStorage,
-            repository,
-          );
-          if (!allowed) {
-            return c.json({
-              error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(storedSize / (1024 * 1024)).toFixed(1)}MB.`,
-            }, 403);
-          }
-
-          rawKey = `${baseKey}.raw.jpg`;
-          optimizedKey = `${baseKey}.opt.jpg`;
-          thumbKey = `${baseKey}.thumb.jpg`;
-          mimeType = 'image/jpeg';
-
-          await Promise.all([
-            storage.save(rawKey, rawBuffer, 'image/jpeg'),
-            storage.save(optimizedKey, optBuffer, 'image/jpeg'),
-            storage.save(thumbKey, thumbBuffer, 'image/jpeg'),
-          ]);
-        } else {
-          const sourceRawKey = stripToStorageKey(item.rawValue, bucket);
-          if (!sourceRawKey || sourceRawKey.startsWith('data:') || /^https?:\/\//i.test(sourceRawKey)) {
-            throw new Error('Video import requires an internal storage object');
-          }
-
-          const ext = storageKeyExt(sourceRawKey, 'mp4');
-          mimeType = videoMimeFromExt(ext);
-          rawKey = `${baseKey}.raw.${ext}`;
-          optimizedKey = `${baseKey}.opt.jpg`;
-          thumbKey = `${baseKey}.thumb.jpg`;
-
-          const rawSize = item.rawSize || (await storage.getSize(sourceRawKey)) || 0;
-          let optSize = await getStorageValueSize(storage, item.optimizedValue, bucket);
-          let thumbSize = await getStorageValueSize(storage, item.thumbnailValue, bucket);
-
-          let generatedOpt: Buffer | null = null;
-          let generatedThumb: Buffer | null = null;
-          const hasCopiedOpt = optSize > 0;
-          const hasCopiedThumb = thumbSize > 0;
-
-          if (!hasCopiedOpt || !hasCopiedThumb) {
-            const rawBuffer = await storage.read(sourceRawKey);
-            const posterPng = await extractFirstFramePng(rawBuffer);
-            if (!hasCopiedOpt) {
-              generatedOpt = await generateOptimized(posterPng);
-              optSize = generatedOpt.length;
-            }
-            if (!hasCopiedThumb) {
-              generatedThumb = await generateThumbnail(posterPng);
-              thumbSize = generatedThumb.length;
-            }
-          }
-
-          storedSize = rawSize + optSize + thumbSize;
-          const { allowed, currentUsage, limit } = await checkStorageLimit(
-            user.userId,
-            storedSize,
-            userRepository,
-            storage,
-            exportStorage,
-            repository,
-          );
-          if (!allowed) {
-            return c.json({
-              error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(storedSize / (1024 * 1024)).toFixed(1)}MB.`,
-            }, 403);
-          }
-
-          await storage.copy(sourceRawKey, rawKey);
-
-          if (!(await copyIfStorageKey(storage, item.optimizedValue, optimizedKey, bucket)) && generatedOpt) {
-            await storage.save(optimizedKey, generatedOpt, 'image/jpeg');
-          }
-
-          if (!(await copyIfStorageKey(storage, item.thumbnailValue, thumbKey, bucket)) && generatedThumb) {
-            await storage.save(thumbKey, generatedThumb, 'image/jpeg');
-          }
+        try {
+          created.push(await createImportMediaPost(user.userId, campaignId, safeCampaignId, item, watermarkSetting));
+        } catch (error: any) {
+          if (error instanceof StorageLimitError) return c.json({ error: error.message }, 403);
+          throw error;
         }
-
-        await prisma.$transaction([
-          prisma.post.create({
-            data: {
-              id: postId,
-              userId: user.userId,
-              campaignId,
-              textContent: '',
-              status: 'draft',
-            },
-          }),
-          prisma.postMedia.create({
-            data: {
-              id: mediaId,
-              postId,
-              sourceUrl: rawKey,
-              processedUrl: item.mediaType === 'video' ? rawKey : optimizedKey,
-              thumbnailUrl: thumbKey,
-              type: item.mediaType,
-              status: 'ready',
-              quality: 'high',
-              mimeType,
-              size: storedSize,
-              position: 0,
-            },
-          }),
-        ]);
-
-        created.push({ postId, mediaId });
       }
 
       return c.json({ created, count: created.length });
@@ -890,113 +1160,12 @@ export function createPostsRouter(
         const created: Array<{ postId: string; mediaId: string }> = [];
 
         for (const file of data.files) {
-          const mimeType = dataUrlMimeType(file.base64);
-          const isImage = Boolean(mimeType?.startsWith('image/'));
-          const isVideo = Boolean(mimeType?.startsWith('video/'));
-          if (!mimeType || (!isImage && !isVideo)) {
-            throw new Error(`Unsupported media type${file.name ? ` for ${file.name}` : ''}`);
+          try {
+            created.push(await createUploadMediaPost(user.userId, campaignId, safeCampaignId, file, watermarkSetting));
+          } catch (error: any) {
+            if (error instanceof StorageLimitError) return c.json({ error: error.message }, 403);
+            throw error;
           }
-
-          const postId = randomUUID();
-          const mediaId = randomUUID();
-          const baseKey = `campaigns/${safeCampaignId}/posts/${postId}/media/${mediaId}`;
-          let rawKey: string;
-          let processedKey: string;
-          let thumbKey: string;
-          let storedSize = 0;
-
-          if (isImage) {
-            const sourceBuffer = readMediaBufferFromDataUrl(file.base64, 'image');
-            const rawBuffer = await applyPostWatermark(await processPostRawImage(sourceBuffer), watermarkSetting);
-            const optBuffer = await generateOptimized(rawBuffer);
-            const thumbBuffer = await generateThumbnail(rawBuffer);
-
-            storedSize = rawBuffer.length + optBuffer.length + thumbBuffer.length;
-            const { allowed, currentUsage, limit } = await checkStorageLimit(
-              user.userId,
-              storedSize,
-              userRepository,
-              storage,
-              exportStorage,
-              repository,
-            );
-            if (!allowed) {
-              return c.json({
-                error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(storedSize / (1024 * 1024)).toFixed(1)}MB.`,
-              }, 403);
-            }
-
-            rawKey = `${baseKey}.raw.jpg`;
-            processedKey = `${baseKey}.opt.jpg`;
-            thumbKey = `${baseKey}.thumb.jpg`;
-
-            await Promise.all([
-              storage.save(rawKey, rawBuffer, 'image/jpeg'),
-              storage.save(processedKey, optBuffer, 'image/jpeg'),
-              storage.save(thumbKey, thumbBuffer, 'image/jpeg'),
-            ]);
-          } else {
-            const sourceBuffer = readMediaBufferFromDataUrl(file.base64, 'video');
-            const ext = videoMimeExt(mimeType);
-            const posterPng = await extractFirstFramePng(sourceBuffer);
-            const optBuffer = await generateOptimized(posterPng);
-            const thumbBuffer = await generateThumbnail(posterPng);
-
-            storedSize = sourceBuffer.length + optBuffer.length + thumbBuffer.length;
-            const { allowed, currentUsage, limit } = await checkStorageLimit(
-              user.userId,
-              storedSize,
-              userRepository,
-              storage,
-              exportStorage,
-              repository,
-            );
-            if (!allowed) {
-              return c.json({
-                error: `Storage limit exceeded. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(storedSize / (1024 * 1024)).toFixed(1)}MB.`,
-              }, 403);
-            }
-
-            rawKey = `${baseKey}.raw.${ext}`;
-            processedKey = rawKey;
-            thumbKey = `${baseKey}.thumb.jpg`;
-            const optKey = `${baseKey}.opt.jpg`;
-
-            await Promise.all([
-              storage.save(rawKey, sourceBuffer, mimeType),
-              storage.save(optKey, optBuffer, 'image/jpeg'),
-              storage.save(thumbKey, thumbBuffer, 'image/jpeg'),
-            ]);
-          }
-
-          await prisma.$transaction([
-            prisma.post.create({
-              data: {
-                id: postId,
-                userId: user.userId,
-                campaignId,
-                textContent: '',
-                status: 'draft',
-              },
-            }),
-            prisma.postMedia.create({
-              data: {
-                id: mediaId,
-                postId,
-                sourceUrl: rawKey,
-                processedUrl: processedKey,
-                thumbnailUrl: thumbKey,
-                type: isVideo ? 'video' : 'image',
-                status: 'ready',
-                quality: 'high',
-                mimeType: isVideo ? mimeType : 'image/jpeg',
-                size: storedSize,
-                position: 0,
-              },
-            }),
-          ]);
-
-          created.push({ postId, mediaId });
         }
 
         return c.json({ created, count: created.length });
@@ -1006,6 +1175,97 @@ export function createPostsRouter(
       }
     },
   );
+
+  const batchCreateMediaSchema = z.object({
+    items: z.array(z.discriminatedUnion('kind', [
+      z.object({
+        kind: z.literal('upload'),
+        itemId: z.string().min(1),
+        label: z.string().optional(),
+        base64: z.string().min(1),
+        content: z.string().optional(),
+      }),
+      z.object({
+        kind: z.literal('import'),
+        itemId: z.string().min(1),
+        label: z.string().optional(),
+        source: importSourceSchema,
+        content: z.string().optional(),
+      }),
+    ])).min(1).max(500),
+    watermarkSettings: postWatermarkSettingSchema.optional(),
+  });
+
+  postsRouter.post(
+    '/api/campaigns/:campaignId/posts/batch-create',
+    authMiddleware,
+    bodyLimit({
+      maxSize: CAMPAIGN_MEDIA_UPLOAD_LIMIT_BYTES,
+      onError: (c) => c.json({ error: 'Upload too large (max 500MB per batch)' }, 413),
+    }),
+    async (c) => {
+      const user = c.get('user') as JwtPayload;
+      const campaignId = c.req.param('campaignId');
+
+      try {
+        const body = await c.req.json();
+        const data = batchCreateMediaSchema.parse(body);
+
+        const campaign = await prisma.campaign.findFirst({
+          where: { id: campaignId, userId: user.userId },
+          select: { id: true },
+        });
+        if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
+
+        const watermarkSetting = data.watermarkSettings
+          ? normalizePostWatermarkPayload(data.watermarkSettings)
+          : await findPostWatermarkSetting(user.userId);
+
+        const jobs: BatchCreateMediaJob[] = data.items.map((item) => (
+          item.kind === 'upload'
+            ? { kind: 'upload', itemId: item.itemId, label: item.label || item.itemId, base64: item.base64, content: item.content }
+            : { kind: 'import', itemId: item.itemId, label: item.label || item.itemId, source: item.source, content: item.content }
+        ));
+
+        const batchId = randomUUID();
+        const task: BatchCreateMediaTask = {
+          id: batchId,
+          userId: user.userId,
+          campaignId,
+          jobs,
+          watermarkSetting,
+          status: 'queued',
+          total: jobs.length,
+          completed: 0,
+          results: jobs.map((job) => ({ itemId: job.itemId, label: job.label, status: 'queued', ok: false })),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+
+        batchCreateMediaTasks.set(batchId, task);
+        pendingBatchCreateMediaTaskIds.push(batchId);
+        void startNextBatchCreateMediaTask();
+
+        return c.json(serializeBatchCreateMediaTask(task), 202);
+      } catch (error: any) {
+        console.error('Failed to queue batch media creation:', error);
+        return c.json({ error: error?.message || 'Failed to queue batch media creation' }, 400);
+      }
+    },
+  );
+
+  postsRouter.get('/api/campaigns/:campaignId/posts/batch-create/:batchId', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const campaignId = c.req.param('campaignId');
+    const batchId = c.req.param('batchId');
+    const task = batchCreateMediaTasks.get(batchId);
+
+    if (!task || task.userId !== user.userId || task.campaignId !== campaignId) {
+      return c.json({ error: 'Batch not found' }, 404);
+    }
+
+    return c.json(serializeBatchCreateMediaTask(task));
+  });
 
   // ========== Scheduled Posts ==========
 
