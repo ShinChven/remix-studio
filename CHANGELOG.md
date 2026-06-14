@@ -2,6 +2,32 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.14.0] - 2026-06-14
+
+### Added
+
+- **Threads Platform Support**: Integrated Threads as a campaign channel with a dedicated Threads channel implementation, unified platform icon and link logic, and OAuth connection status surfaced through UI toasts.
+- **Threads Error Handling**: Added granular parsing of Threads API errors so connection and publishing problems are reported clearly.
+- **Album Export Watermarking**: Added watermarking support for album exports with a new configuration panel and backend watermark utility.
+- **Product Cover Watermarking**: Added per-product watermark settings for listing covers with automated image processing in the delivery queue.
+- **Library Tag Match Mode**: Added an AND/OR tag match mode for library filtering and the workflow engine.
+- **Workflow Library Switching**: Added the ability to change the source library on workflow items.
+- **Album Page Size Selector**: Added a page size selector to the Album tab toolbar.
+- **CLI Setup Guide**: Added a Claude Code and Codex CLI setup guide to the MCP Connections page.
+- **Privacy Policy Page**: Added a privacy policy page to the public assets.
+- **GHCR Image Cleanup**: Added a manual workflow to delete legacy SHA-tagged GHCR images.
+
+### Changed
+
+- **Async Campaign Media**: Migrated campaign media creation to asynchronous batch processing with status polling.
+- **Campaign Batch Thumbnails**: Replaced the media button with a thumbnail preview for campaign batch actions.
+- **Shareable Album Views**: Migrated album view state to URL search parameters so views persist and can be shared.
+- **Library Preview Modal**: Refreshed the Library Preview modal with a responsive layout and updated design.
+
+### Fixed
+
+- **Stale Workflow Updates**: Fetch fresh project state before applying workflow updates to avoid overwriting concurrent changes.
+
 ## [1.13.0] - 2026-06-07
 
 ### Added
