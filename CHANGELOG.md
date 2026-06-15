@@ -2,6 +2,23 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.14.1] - 2026-06-15
+
+### Added
+
+- **Drag-and-Drop Workflow Items**: Added the ability to drag and drop media files directly into the workflow list.
+- **Workflow Paste Support**: Added support for pasting text and media files directly into the workflow using Cmd+V / Ctrl+V.
+- **Auto-Scroll Workflow**: The workflow list now automatically scrolls to the bottom when new items are added.
+
+### Changed
+
+- **Orphan Files Layout**: Adjusted the responsive grid column counts and spacing in the Project Orphans view for better readability.
+
+### Fixed
+
+- **Workflow State Synchronization**: Optimized workflow state synchronization using functional updaters and implemented blob URL revocation to fix a memory leak with media items.
+- **Database Concurrency Locks**: Fixed a race condition where rapid workflow updates could cause unique constraint violations by serializing updates with database locks.
+
 ## [1.14.0] - 2026-06-14
 
 ### Added
