@@ -527,7 +527,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     onUpdateProp(updated);
   }, [onUpdateProp]);
 
-  const scrollWorkflowToBottom = () => {
+  const scrollWorkflowToBottom = useCallback(() => {
     requestAnimationFrame(() => {
       const container = workflowListRef.current;
       if (!container) return;
@@ -536,7 +536,20 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         behavior: 'smooth',
       });
     });
-  };
+  }, []);
+
+  const previousWorkflowLengthRef = useRef(localProject.workflow?.length || 0);
+
+  useEffect(() => {
+    const currentLength = localProject.workflow?.length || 0;
+    if (currentLength > previousWorkflowLengthRef.current) {
+      // Small timeout ensures the DOM has updated and rendered the new item
+      setTimeout(() => {
+        scrollWorkflowToBottom();
+      }, 50);
+    }
+    previousWorkflowLengthRef.current = currentLength;
+  }, [localProject.workflow?.length, scrollWorkflowToBottom]);
 
   useEffect(() => {
     if (skipProjectSyncRef.current) {
@@ -1032,17 +1045,57 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   };
 
+  const handleFilesDrop = (files: File[]) => {
+    const newItems: import('../types').WorkflowItem[] = [];
+    const filesToUpload: { type: 'image' | 'video' | 'audio', file: File, id: string }[] = [];
+
+    files.forEach(file => {
+      let type: 'image' | 'video' | 'audio' | undefined;
+      if (file.type.startsWith('image/')) type = 'image';
+      else if (file.type.startsWith('video/')) type = 'video';
+      else if (file.type.startsWith('audio/')) type = 'audio';
+
+      if (isAudioProject && (type === 'video' || type === 'audio')) return;
+      if (isAudioProject && type === 'image' && selectedModel?.options.supportsReferenceImages !== true) return;
+
+      if (type) {
+        const id = crypto.randomUUID();
+        newItems.push({ id, type, value: '' });
+        filesToUpload.push({ type, file, id });
+      }
+    });
+
+    if (newItems.length > 0) {
+      setLocalProject(prev => {
+        const updated = { ...prev, workflow: [...(prev.workflow || []), ...newItems] };
+        onUpdate(updated);
+        return updated;
+      });
+      scrollWorkflowToBottom();
+
+      filesToUpload.forEach(({ type, file, id }) => {
+        const fakeEvent = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+        if (type === 'image') void handleImageUpload(fakeEvent, id);
+        else if (type === 'video') void handleVideoUpload(fakeEvent, id);
+        else if (type === 'audio') void handleAudioUpload(fakeEvent, id);
+      });
+    }
+  };
+
+
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
+    if (e.dataTransfer.types.includes('Files')) return;
     e.preventDefault();
     if (dragOverIndex !== index) setDragOverIndex(index);
   };
 
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    if (e.dataTransfer.types.includes('Files')) return;
     e.preventDefault();
     if (draggedIndex === null || draggedIndex === dropIndex) {
       setDraggedIndex(null);
@@ -1074,12 +1127,18 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       try {
         const base64 = await readFileAsDataUrl(file);
         const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveImage(base64, localProject.id);
-        // Persist bare keys to DB (server will presign on GET)
-        const dbProject = { ...localProject, workflow: localProject.workflow.map(item => item.id === id ? { ...item, value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size } : item) };
-        skipProjectSyncRef.current = true;
-        onUpdate(dbProject);
-        // Display presigned URLs in local state for immediate rendering
-        setLocalProject(prev => ({ ...prev, workflow: prev.workflow.map(item => item.id === id ? { ...item, value: url, thumbnailUrl, optimizedUrl, size } : item) }));
+        // Calculate DB state and local display state using the latest 'prev' to avoid stale closure issues
+        let dbProjectToSave: Project | undefined;
+        setLocalProject(prev => {
+          dbProjectToSave = { ...prev, workflow: prev.workflow.map(item => item.id === id ? { ...item, value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size } : item) };
+          return { ...prev, workflow: prev.workflow.map(item => item.id === id ? { ...item, value: url, thumbnailUrl, optimizedUrl, size } : item) };
+        });
+        if (dbProjectToSave) {
+          setTimeout(() => {
+            skipProjectSyncRef.current = true;
+            onUpdate(dbProjectToSave as Project);
+          }, 0);
+        }
       } catch (err: any) {
         console.error('Failed to upload image:', err);
         toast.error(err.message || t('projectViewer.toasts.uploadImageFailed'));
@@ -1101,28 +1160,35 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     try {
       const base64 = await readFileAsDataUrl(file);
       const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveVideo(base64, localProject.id);
-      const dbProject = {
-        ...localProject,
-        workflow: localProject.workflow.map((item) => item.id === id ? {
-          ...item,
-          value: key,
-          thumbnailUrl: thumbnailKey,
-          optimizedUrl: optimizedKey,
-          size,
-        } : item),
-      };
-      skipProjectSyncRef.current = true;
-      onUpdate(dbProject);
-      setLocalProject((prev) => ({
-        ...prev,
-        workflow: prev.workflow.map((item) => item.id === id ? {
-          ...item,
-          value: url,
-          thumbnailUrl,
-          optimizedUrl,
-          size,
-        } : item),
-      }));
+      let dbProjectToSave: Project | undefined;
+      setLocalProject((prev) => {
+        dbProjectToSave = {
+          ...prev,
+          workflow: prev.workflow.map((item) => item.id === id ? {
+            ...item,
+            value: key,
+            thumbnailUrl: thumbnailKey,
+            optimizedUrl: optimizedKey,
+            size,
+          } : item),
+        };
+        return {
+          ...prev,
+          workflow: prev.workflow.map((item) => item.id === id ? {
+            ...item,
+            value: url,
+            thumbnailUrl,
+            optimizedUrl,
+            size,
+          } : item),
+        };
+      });
+      if (dbProjectToSave) {
+        setTimeout(() => {
+          skipProjectSyncRef.current = true;
+          onUpdate(dbProjectToSave as Project);
+        }, 0);
+      }
     } catch (err: any) {
       console.error('Failed to upload video:', err);
       toast.error(err.message || 'Failed to upload video');
@@ -1143,16 +1209,23 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     try {
       const base64 = await readFileAsDataUrl(file);
       const { key, url, size } = await saveAudio(base64, localProject.id);
-      const dbProject = {
-        ...localProject,
-        workflow: localProject.workflow.map((item) => item.id === id ? { ...item, value: key, size } : item),
-      };
-      skipProjectSyncRef.current = true;
-      onUpdate(dbProject);
-      setLocalProject((prev) => ({
-        ...prev,
-        workflow: prev.workflow.map((item) => item.id === id ? { ...item, value: url, size } : item),
-      }));
+      let dbProjectToSave: Project | undefined;
+      setLocalProject((prev) => {
+        dbProjectToSave = {
+          ...prev,
+          workflow: prev.workflow.map((item) => item.id === id ? { ...item, value: key, size } : item),
+        };
+        return {
+          ...prev,
+          workflow: prev.workflow.map((item) => item.id === id ? { ...item, value: url, size } : item),
+        };
+      });
+      if (dbProjectToSave) {
+        setTimeout(() => {
+          skipProjectSyncRef.current = true;
+          onUpdate(dbProjectToSave as Project);
+        }, 0);
+      }
     } catch (err: any) {
       console.error('Failed to upload audio:', err);
       toast.error(err.message || 'Failed to upload audio');
@@ -1772,6 +1845,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         setIsModelSelectorOpen={setIsModelSelectorOpen}
         onAddDraftsToQueue={addDraftsToQueue}
         onToggleDisable={handleToggleItemDisable}
+        onFilesDrop={handleFilesDrop}
       />
 
       <div className={`flex-1 flex-col overflow-hidden min-h-0 ${mobileView === 'jobs' ? 'flex h-full' : 'hidden lg:flex'}`}>

@@ -54,6 +54,7 @@ interface WorkflowPanelProps {
   setIsModelSelectorOpen: (open: boolean) => void;
   onAddDraftsToQueue: () => void;
   onToggleDisable?: (id: string) => void;
+  onFilesDrop?: (files: File[]) => void;
 }
 
 export function WorkflowPanel({
@@ -104,10 +105,12 @@ export function WorkflowPanel({
   setIsModelSelectorOpen,
   onAddDraftsToQueue,
   onToggleDisable,
+  onFilesDrop,
 }: WorkflowPanelProps) {
   const { t } = useTranslation();
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isProjectInfoOpen, setIsProjectInfoOpen] = useState(false);
+  const [isDragOverFiles, setIsDragOverFiles] = useState(false);
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -165,8 +168,41 @@ export function WorkflowPanel({
     action();
   };
 
+  const handlePanelDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      setIsDragOverFiles(true);
+    }
+  };
+
+  const handlePanelDragLeave = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragOverFiles(false);
+    }
+  };
+
+  const handlePanelDrop = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      setIsDragOverFiles(false);
+      if (onFilesDrop && e.dataTransfer.files.length > 0) {
+        onFilesDrop(Array.from(e.dataTransfer.files));
+      }
+    }
+  };
+
   return (
-    <div className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/30 backdrop-blur-3xl flex-col flex-shrink-0 ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}>
+    <div 
+      className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/30 backdrop-blur-3xl flex-col flex-shrink-0 relative ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}
+      onDragOver={handlePanelDragOver}
+      onDragLeave={handlePanelDragLeave}
+      onDrop={handlePanelDrop}
+    >
+      {isDragOverFiles && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 dark:bg-black/50 backdrop-blur-sm border-2 border-blue-500 border-dashed pointer-events-none">
+          <div className="text-blue-600 dark:text-blue-400 font-bold text-lg">{t('projectViewer.workflow.dropFilesHere', { defaultValue: 'Drop files to add to workflow' })}</div>
+        </div>
+      )}
       <div className="p-3 border-b border-neutral-200/50 dark:border-white/5 bg-transparent shadow-sm relative z-10">
         <div className="min-h-[40px] flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -359,7 +395,10 @@ export function WorkflowPanel({
         )}
       </div>
 
-      <div ref={workflowListRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar lg:max-h-none relative">
+      <div 
+        ref={workflowListRef} 
+        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar lg:max-h-none relative"
+      >
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20">
             <div className="animate-spin text-neutral-500">

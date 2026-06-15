@@ -1225,16 +1225,21 @@ export class ProjectRepository {
       };
     });
 
-    // Replace all workflow items for the project
-    await this.prisma.workflowItem.deleteMany({
+    // Replace all workflow items for the project inside a transaction to prevent
+    // concurrent requests from violating unique constraints.
+    const deleteOp = this.prisma.workflowItem.deleteMany({
       where: {
         projectId,
         project: { userId },
       },
     });
-    if (!normalizedWorkflow.length) return;
 
-    await this.prisma.workflowItem.createMany({
+    if (!normalizedWorkflow.length) {
+      await deleteOp;
+      return;
+    }
+
+    const createOp = this.prisma.workflowItem.createMany({
       data: normalizedWorkflow.map((item) => ({
         id: item.id,
         projectId,
@@ -1247,6 +1252,8 @@ export class ProjectRepository {
         disabled: item.disabled ?? false,
       })),
     });
+
+    await this.prisma.$transaction([deleteOp, createOp]);
   }
 
   private mapJob(j: any, options: { includeWorkflowSnapshot?: boolean } = {}): Job {
