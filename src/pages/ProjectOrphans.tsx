@@ -253,7 +253,7 @@ export function ProjectOrphans() {
             </div>
           ) : (
             <div 
-              className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2 md:gap-3" 
+              className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4 lg:gap-6" 
             >
                {orphans.map((file, idx) => {
                  const isSelected = selectedKeys.has(file.key);
