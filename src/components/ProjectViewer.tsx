@@ -916,7 +916,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     [localProject.workflow, liveLibraries]
   );
 
-  const addWorkflowItem = (type: WorkflowItemTypeKind) => {
+  const addWorkflowItem = (type: WorkflowItemTypeKind, initialValue: string = '') => {
     if (isAudioProject && (type === 'video' || type === 'audio')) {
       return;
     }
@@ -932,7 +932,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       });
       return;
     }
-    const newItem: WorkflowItemType = { id: crypto.randomUUID(), type, value: '' };
+    const newItem: WorkflowItemType = { id: crypto.randomUUID(), type, value: initialValue };
     const updated = { ...localProject, workflow: [...(localProject.workflow || []), newItem] };
     setLocalProject(updated);
     onUpdate(updated);
@@ -1082,6 +1082,32 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   };
 
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      // Don't intercept paste if user is typing in an input/textarea
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement) {
+        const tagName = activeElement.tagName.toLowerCase();
+        if (tagName === 'input' || tagName === 'textarea' || activeElement.isContentEditable) {
+          return;
+        }
+      }
+
+      if (e.clipboardData?.files && e.clipboardData.files.length > 0) {
+        e.preventDefault();
+        handleFilesDrop(Array.from(e.clipboardData.files));
+      } else {
+        const text = e.clipboardData?.getData('text/plain');
+        if (text) {
+          e.preventDefault();
+          addWorkflowItem('text', text);
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [handleFilesDrop, addWorkflowItem]);
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);

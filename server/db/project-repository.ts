@@ -1225,35 +1225,35 @@ export class ProjectRepository {
       };
     });
 
-    // Replace all workflow items for the project inside a transaction to prevent
-    // concurrent requests from violating unique constraints.
-    const deleteOp = this.prisma.workflowItem.deleteMany({
-      where: {
-        projectId,
-        project: { userId },
-      },
+    // Lock the project row for this transaction to strictly serialize concurrent
+    // workflow updates. This prevents Postgres Read Committed race conditions where
+    // concurrent DELETE and INSERT statements step on each other causing unique constraint violations.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT id FROM "Project" WHERE id = ${projectId} FOR NO KEY UPDATE`;
+      
+      await tx.workflowItem.deleteMany({
+        where: {
+          projectId,
+          project: { userId },
+        },
+      });
+
+      if (!normalizedWorkflow.length) return;
+
+      await tx.workflowItem.createMany({
+        data: normalizedWorkflow.map((item) => ({
+          id: item.id,
+          projectId,
+          type: item.type,
+          value: item.value ?? null,
+          order: item.order,
+          thumbnailUrl: item.thumbnailUrl ?? null,
+          optimizedUrl: item.optimizedUrl ?? null,
+          selectedTags: this.toNullableJsonArray(item.selectedTags),
+          disabled: item.disabled ?? false,
+        })),
+      });
     });
-
-    if (!normalizedWorkflow.length) {
-      await deleteOp;
-      return;
-    }
-
-    const createOp = this.prisma.workflowItem.createMany({
-      data: normalizedWorkflow.map((item) => ({
-        id: item.id,
-        projectId,
-        type: item.type,
-        value: item.value ?? null,
-        order: item.order,
-        thumbnailUrl: item.thumbnailUrl ?? null,
-        optimizedUrl: item.optimizedUrl ?? null,
-        selectedTags: this.toNullableJsonArray(item.selectedTags),
-        disabled: item.disabled ?? false,
-      })),
-    });
-
-    await this.prisma.$transaction([deleteOp, createOp]);
   }
 
   private mapJob(j: any, options: { includeWorkflowSnapshot?: boolean } = {}): Job {
