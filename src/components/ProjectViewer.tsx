@@ -933,9 +933,17 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       return;
     }
     const newItem: WorkflowItemType = { id: crypto.randomUUID(), type, value: initialValue };
-    const updated = { ...localProject, workflow: [...(localProject.workflow || []), newItem] };
-    setLocalProject(updated);
-    onUpdate(updated);
+    let dbProjectToSave: Project | undefined;
+    setLocalProject(prev => {
+      dbProjectToSave = { ...prev, workflow: [...(prev.workflow || []), newItem] };
+      return dbProjectToSave;
+    });
+    if (dbProjectToSave) {
+      skipProjectSyncRef.current = true;
+      setTimeout(() => {
+        onUpdate(dbProjectToSave!);
+      }, 0);
+    }
     scrollWorkflowToBottom();
   };
 
@@ -1060,17 +1068,31 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
       if (type) {
         const id = crypto.randomUUID();
-        newItems.push({ id, type, value: '' });
+        let value = '';
+        try {
+          if (type === 'image' || type === 'video' || type === 'audio') {
+            value = URL.createObjectURL(file);
+          }
+        } catch (e) {
+          // ignore
+        }
+        newItems.push({ id, type, value });
         filesToUpload.push({ type, file, id });
       }
     });
 
     if (newItems.length > 0) {
+      let dbProjectToSave: Project | undefined;
       setLocalProject(prev => {
-        const updated = { ...prev, workflow: [...(prev.workflow || []), ...newItems] };
-        onUpdate(updated);
-        return updated;
+        dbProjectToSave = { ...prev, workflow: [...(prev.workflow || []), ...newItems] };
+        return dbProjectToSave;
       });
+      if (dbProjectToSave) {
+        skipProjectSyncRef.current = true;
+        setTimeout(() => {
+          onUpdate(dbProjectToSave!);
+        }, 0);
+      }
       scrollWorkflowToBottom();
 
       filesToUpload.forEach(({ type, file, id }) => {
@@ -1157,7 +1179,13 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         let dbProjectToSave: Project | undefined;
         setLocalProject(prev => {
           dbProjectToSave = { ...prev, workflow: prev.workflow.map(item => item.id === id ? { ...item, value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size } : item) };
-          return { ...prev, workflow: prev.workflow.map(item => item.id === id ? { ...item, value: url, thumbnailUrl, optimizedUrl, size } : item) };
+          return { ...prev, workflow: prev.workflow.map(item => {
+            if (item.id === id) {
+              if (item.value.startsWith('blob:')) URL.revokeObjectURL(item.value);
+              return { ...item, value: url, thumbnailUrl, optimizedUrl, size };
+            }
+            return item;
+          }) };
         });
         if (dbProjectToSave) {
           setTimeout(() => {
@@ -1200,13 +1228,19 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         };
         return {
           ...prev,
-          workflow: prev.workflow.map((item) => item.id === id ? {
-            ...item,
-            value: url,
-            thumbnailUrl,
-            optimizedUrl,
-            size,
-          } : item),
+          workflow: prev.workflow.map((item) => {
+            if (item.id === id) {
+              if (item.value.startsWith('blob:')) URL.revokeObjectURL(item.value);
+              return {
+                ...item,
+                value: url,
+                thumbnailUrl,
+                optimizedUrl,
+                size,
+              };
+            }
+            return item;
+          }),
         };
       });
       if (dbProjectToSave) {
@@ -1243,7 +1277,13 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         };
         return {
           ...prev,
-          workflow: prev.workflow.map((item) => item.id === id ? { ...item, value: url, size } : item),
+          workflow: prev.workflow.map((item) => {
+            if (item.id === id) {
+              if (item.value.startsWith('blob:')) URL.revokeObjectURL(item.value);
+              return { ...item, value: url, size };
+            }
+            return item;
+          }),
         };
       });
       if (dbProjectToSave) {
