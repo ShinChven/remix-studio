@@ -19,6 +19,9 @@ const INTERVAL_STORAGE_KEY = 'imageLightbox.slideshowInterval';
 const TRANSITIONS = ['none', 'fade', 'slide', 'zoom', 'blur', 'ripple'] as const;
 type Transition = typeof TRANSITIONS[number];
 const TRANSITION_STORAGE_KEY = 'imageLightbox.slideshowTransition';
+// Upper bound of the reveal animations above; keeps the previous image
+// underneath long enough for the incoming one to fully cover it.
+const TRANSITION_MS = 1100;
 const TRANSITION_CLASS: Record<Transition, string> = {
   none: '',
   fade: 'animate-slideshow-fade',
@@ -65,8 +68,10 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
   const [progress, setProgress] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [transition, setTransition] = useState<Transition>(loadStoredTransition);
+  const [prevSrc, setPrevSrc] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const onIndexChangeRef = useRef(onIndexChange);
+  const lastSrcRef = useRef<string | undefined>(images[clampIndex(startIndex, images.length)]);
 
   useEffect(() => {
     onIndexChangeRef.current = onIndexChange;
@@ -150,6 +155,22 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
   useEffect(() => {
     if (images.length <= 1 && slideshowOn) setSlideshowOn(false);
   }, [images.length, slideshowOn]);
+
+  // Keep the outgoing image mounted underneath while a transition plays, so the
+  // incoming one visibly covers it instead of revealing the black backdrop.
+  const currentSrc = images[clampIndex(currentIndex, images.length)];
+  useEffect(() => {
+    const animating = slideshowOn && transition !== 'none';
+    const prev = lastSrcRef.current;
+    lastSrcRef.current = currentSrc;
+    if (!animating || !prev || prev === currentSrc) {
+      setPrevSrc(null);
+      return;
+    }
+    setPrevSrc(prev);
+    const timer = setTimeout(() => setPrevSrc(null), TRANSITION_MS);
+    return () => clearTimeout(timer);
+  }, [currentSrc, slideshowOn, transition]);
 
   // Drive the slideshow: a smooth countdown ring that advances on each cycle.
   useEffect(() => {
@@ -372,11 +393,19 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
         </button>
       )}
       
+      {prevSrc && (
+        <img
+          src={prevSrc}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 m-auto max-w-[90vw] max-h-[90vh] object-contain select-none shadow-2xl pointer-events-none"
+        />
+      )}
       <img
         key={slideshowOn && transition !== 'none' ? `${boundedIndex}-${transition}` : undefined}
         src={images[boundedIndex]}
         alt={t('projectViewer.imageLightbox.previewAlt', { index: boundedIndex + 1 })}
-        className={`max-w-[90vw] max-h-[90vh] object-contain select-none shadow-2xl ${slideshowOn ? TRANSITION_CLASS[transition] : ''}`}
+        className={`relative max-w-[90vw] max-h-[90vh] object-contain select-none shadow-2xl ${slideshowOn ? TRANSITION_CLASS[transition] : ''}`}
         onClick={(e) => e.stopPropagation()}
       />
       
