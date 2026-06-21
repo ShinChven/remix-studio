@@ -1,7 +1,7 @@
 {
   "name": "remix-studio",
   "private": true,
-  "version": "1.14.1",
+  "version": "1.15.0",
   "type": "module",
   "scripts": {
     "dev": "tsx watch --exclude \"agent/**\" --exclude \"data/**\" --exclude \"dist/**\" --exclude \"dist-server/**\" --exclude \"docs/**\" server.ts",

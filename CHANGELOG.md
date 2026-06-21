@@ -2,6 +2,17 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.15.0] - 2026-06-21
+
+### Added
+
+- **Image Editor**: Added an Image Editor modal for cropping and drawing directly on workflow images, including a reset option to revert edits.
+
+### Changed
+
+- **Assistant Settings Navigation**: Consolidated the assistant settings routes to use a query parameter for return paths, so navigating back lands you where you started.
+- **Prompt Editor**: Removed the split view mode from the Prompt Editor and improved the styling of rendered markdown content.
+
 ## [1.14.1] - 2026-06-15
 
 ### Added
