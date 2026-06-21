@@ -16,6 +16,13 @@ const MAX_INTERVAL = 60;
 const DEFAULT_INTERVAL = 3;
 const INTERVAL_STORAGE_KEY = 'imageLightbox.slideshowInterval';
 
+// In fullscreen, after this long without mouse/keyboard/touch activity, hide the
+// chrome and let the image fill the whole screen. Any interaction brings it back.
+const IDLE_HIDE_MS = 3000;
+// Briefly swallow the click that wakes the chrome so the same gesture doesn't
+// also close the lightbox.
+const WAKE_GRACE_MS = 400;
+
 const TRANSITIONS = ['none', 'fade', 'slide', 'zoom', 'blur', 'ripple'] as const;
 type Transition = typeof TRANSITIONS[number];
 const TRANSITION_STORAGE_KEY = 'imageLightbox.slideshowTransition';
@@ -69,6 +76,10 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [transition, setTransition] = useState<Transition>(loadStoredTransition);
   const [prevSrc, setPrevSrc] = useState<string | null>(null);
+  const [idle, setIdle] = useState(false);
+  const idleRef = useRef(false);
+  const lastWakeRef = useRef(0);
+  const wakeRef = useRef<() => void>(() => {});
   const dialogRef = useRef<HTMLDivElement>(null);
   const onIndexChangeRef = useRef(onIndexChange);
   const lastSrcRef = useRef<string | undefined>(images[clampIndex(startIndex, images.length)]);
@@ -108,12 +119,54 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
     };
   }, []);
 
+  // In fullscreen, hide the chrome after a spell of inactivity and restore it on
+  // any mouse/keyboard/touch action. Outside fullscreen the chrome is always shown.
+  useEffect(() => {
+    if (!isFullscreen) {
+      idleRef.current = false;
+      setIdle(false);
+      wakeRef.current = () => {};
+      return;
+    }
+    let timer = 0;
+    const wake = () => {
+      if (idleRef.current) {
+        idleRef.current = false;
+        lastWakeRef.current = Date.now();
+        setIdle(false);
+      }
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        idleRef.current = true;
+        setIdle(true);
+      }, IDLE_HIDE_MS);
+    };
+    wakeRef.current = wake;
+    const events: (keyof WindowEventMap)[] = ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart', 'touchmove'];
+    events.forEach(ev => window.addEventListener(ev, wake, { passive: true }));
+    wake();
+    return () => {
+      window.clearTimeout(timer);
+      events.forEach(ev => window.removeEventListener(ev, wake));
+      wakeRef.current = () => {};
+    };
+  }, [isFullscreen]);
+
   const toggleFullscreen = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     } else {
       dialogRef.current?.requestFullscreen().catch(() => {});
     }
+  };
+
+  // The delete confirmation modal lives outside this element, so it can't paint
+  // over a fullscreen lightbox. Drop fullscreen first so the prompt is visible.
+  const requestDelete = (index: number) => {
+    if (!onDelete) return;
+    setSlideshowOn(false);
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    onDelete(index);
   };
 
   const applyInterval = (value: number) => {
@@ -215,9 +268,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
       if (e.key === 'd' || e.key === 'D') {
         if (inInput || !onDelete) return;
         e.preventDefault();
-        // Pause the slideshow before prompting deletion.
-        setSlideshowOn(false);
-        onDelete(clampIndex(currentIndex, images.length));
+        requestDelete(clampIndex(currentIndex, images.length));
         return;
       }
       if (e.key === 'ArrowUp') {
@@ -281,16 +332,28 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
     setCurrentIndex(prev => prev < images.length - 1 ? prev + 1 : 0);
   };
 
+  const handleBackdropClick = () => {
+    // If this click just woke the chrome from idle, treat it as a wake, not a close.
+    if (Date.now() - lastWakeRef.current < WAKE_GRACE_MS) return;
+    onClose();
+  };
+
+  // Chrome (controls, arrows, counter) fades out while idle in fullscreen.
+  const chromeClass = `transition-opacity duration-300 ${idle ? 'opacity-0 pointer-events-none' : 'opacity-100'}`;
+  // In fullscreen the image always fills the screen with the chrome hovering over
+  // it; windowed, it sits within a margin. Chrome still auto-hides while idle.
+  const imageSizeClass = isFullscreen ? 'w-screen h-screen' : 'max-w-[90vw] max-h-[90vh] shadow-2xl';
+
   return createPortal(
     <div
       ref={dialogRef}
       tabIndex={-1}
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[900] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer outline-none"
-      onClick={onClose}
+      className={`fixed inset-0 z-[900] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300 outline-none ${idle ? 'cursor-none' : 'cursor-pointer'}`}
+      onClick={handleBackdropClick}
     >
-      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+      <div className={`absolute top-4 right-4 flex items-center gap-2 z-10 ${chromeClass}`}>
         {images.length > 1 && (
           <>
             {slideshowOn && (
@@ -362,8 +425,8 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
           </>
         )}
         {onDelete && (
-          <button 
-            onClick={(e) => { e.stopPropagation(); onDelete(boundedIndex); }} 
+          <button
+            onClick={(e) => { e.stopPropagation(); requestDelete(boundedIndex); }}
             className="p-2 text-white/50 hover:text-red-500 transition-colors bg-black/50 hover:bg-black/80 rounded-full"
             title={`${t('projectViewer.imageLightbox.deleteImage')} (D)`}
           >
@@ -388,7 +451,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
       </div>
       
       {images.length > 1 && (
-        <button onClick={handlePrev} title={`${t('projectViewer.imageLightbox.previous')} (←)`} className="absolute left-2 md:left-8 p-3 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full">
+        <button onClick={handlePrev} title={`${t('projectViewer.imageLightbox.previous')} (←)`} className={`absolute left-2 md:left-8 p-3 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full ${chromeClass}`}>
           <ChevronLeft className="w-8 h-8" />
         </button>
       )}
@@ -398,25 +461,25 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
           src={prevSrc}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 m-auto max-w-[90vw] max-h-[90vh] object-contain select-none shadow-2xl pointer-events-none"
+          className={`absolute inset-0 m-auto ${imageSizeClass} object-contain select-none pointer-events-none`}
         />
       )}
       <img
         key={slideshowOn && transition !== 'none' ? `${boundedIndex}-${transition}` : undefined}
         src={images[boundedIndex]}
         alt={t('projectViewer.imageLightbox.previewAlt', { index: boundedIndex + 1 })}
-        className={`max-w-[90vw] max-h-[90vh] object-contain select-none shadow-2xl ${prevSrc ? 'relative' : ''} ${slideshowOn ? TRANSITION_CLASS[transition] : ''}`}
+        className={`${imageSizeClass} object-contain select-none ${prevSrc ? 'relative' : ''} ${slideshowOn ? TRANSITION_CLASS[transition] : ''}`}
         onClick={(e) => e.stopPropagation()}
       />
       
       {images.length > 1 && (
-        <button onClick={handleNext} title={`${t('projectViewer.imageLightbox.next')} (→)`} className="absolute right-2 md:right-8 p-3 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full">
+        <button onClick={handleNext} title={`${t('projectViewer.imageLightbox.next')} (→)`} className={`absolute right-2 md:right-8 p-3 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full ${chromeClass}`}>
           <ChevronRight className="w-8 h-8" />
         </button>
       )}
       
       {images.length > 1 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-black/50 rounded-full text-white/80 text-xs font-bold tracking-widest backdrop-blur-sm">
+        <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-black/50 rounded-full text-white/80 text-xs font-bold tracking-widest backdrop-blur-sm ${chromeClass}`}>
           {boundedIndex + 1} / {images.length}
         </div>
       )}

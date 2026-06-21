@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
@@ -25,6 +25,20 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Esc dismisses the modal. Capture-phase + stopPropagation so it doesn't also
+  // reach handlers underneath (e.g. a fullscreen lightbox closing on Escape).
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      if (!isLoading) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen, isLoading, onClose]);
+
   if (!isOpen) return null;
 
   const resolvedConfirmText = confirmText ?? t('confirmModal.confirm');
