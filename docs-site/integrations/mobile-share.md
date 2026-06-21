@@ -13,13 +13,9 @@ The share target accepts:
 
 ## 1. Install Remix Studio as an App
 
-Share targets only appear once the PWA is installed.
+Share targets only appear once the PWA is installed. On Android (Chrome), open the browser menu (⋮) and tap **Install app** / **Add to Home screen**.
 
-### Android (Chrome)
-
-1. Open your Remix Studio URL in Chrome and sign in.
-2. Open the browser menu (⋮) and tap **Install app** / **Add to Home screen**.
-3. Confirm. Remix Studio is added as a standalone app.
+For the full step-by-step on every platform, see [Install as an App (PWA)](/guide/install-pwa).
 
 ::: tip
 Installability requires the app to be served over **HTTPS** (or `localhost`). A self-hosted deployment behind TLS works; plain-HTTP origins on a LAN may not offer installation.

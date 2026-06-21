@@ -90,6 +90,7 @@ export default defineConfig({
               text: 'Accounts & Security',
               link: '/guide/account-and-security',
             },
+            { text: 'Install as an App (PWA)', link: '/guide/install-pwa' },
           ],
         },
       ],
