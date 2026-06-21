@@ -2,6 +2,15 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.16.0] - 2026-06-22
+
+### Added
+
+- **Image Slideshow**: Added a slideshow mode to the image lightbox with play/pause controls, a circular interval countdown, and an adjustable interval that is remembered for next time.
+- **Slideshow Transitions**: Added selectable transition effects between slides — fade, slide, zoom, blur, and an Android-style ripple — with the choice saved across sessions.
+- **Lightbox Fullscreen & Shortcuts**: Added a fullscreen toggle and keyboard shortcuts to the image lightbox for playback, fullscreen, deletion, and adjusting the slideshow interval, with hotkey hints shown on hover.
+- **Documentation Site**: Added a VitePress documentation site, published to GitHub Pages, covering guides, concepts, integrations, and operations.
+
 ## [1.15.0] - 2026-06-21
 
 ### Added
