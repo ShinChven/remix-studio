@@ -181,7 +181,15 @@
     "words": "字數：{{count}}",
     "chars": "字符數：{{count}}",
     "libraryLabel": "庫：{{id}}",
-    "errorSave": "保存庫提示詞失敗"
+    "errorSave": "保存庫提示詞失敗",
+    "write": "編寫",
+    "preview": "預覽",
+    "unsaved": "未儲存",
+    "saved": "已儲存",
+    "saving": "儲存中…",
+    "copy": "複製",
+    "copied": "已複製到剪貼簿",
+    "discardConfirm": "有未儲存的變更。確定要離開嗎？"
   },
   "mcpConnections": {
     "title": "MCP 連接",

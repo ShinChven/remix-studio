@@ -181,7 +181,15 @@
     "words": "단어 수: {{count}}",
     "chars": "글자 수: {{count}}",
     "libraryLabel": "라이브러리: {{id}}",
-    "errorSave": "라이브러리 프롬프트 저장 실패"
+    "errorSave": "라이브러리 프롬프트 저장 실패",
+    "write": "작성",
+    "preview": "미리보기",
+    "unsaved": "저장 안 됨",
+    "saved": "저장됨",
+    "saving": "저장 중…",
+    "copy": "복사",
+    "copied": "클립보드에 복사됨",
+    "discardConfirm": "저장되지 않은 변경 사항이 있습니다. 저장하지 않고 나가시겠습니까?"
   },
   "mcpConnections": {
     "title": "MCP 연결",

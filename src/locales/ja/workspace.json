@@ -181,7 +181,15 @@
     "words": "単語数: {{count}}",
     "chars": "文字数: {{count}}",
     "libraryLabel": "ライブラリ: {{id}}",
-    "errorSave": "ライブラリプロンプトの保存に失敗しました"
+    "errorSave": "ライブラリプロンプトの保存に失敗しました",
+    "write": "編集",
+    "preview": "プレビュー",
+    "unsaved": "未保存",
+    "saved": "保存済み",
+    "saving": "保存中…",
+    "copy": "コピー",
+    "copied": "クリップボードにコピーしました",
+    "discardConfirm": "保存されていない変更があります。保存せずに移動しますか？"
   },
   "mcpConnections": {
     "title": "MCP接続",

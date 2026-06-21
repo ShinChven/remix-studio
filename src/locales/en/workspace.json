@@ -226,7 +226,15 @@
     "words": "Words: {{count}}",
     "chars": "Chars: {{count}}",
     "libraryLabel": "Library: {{id}}",
-    "errorSave": "Failed to save library prompt"
+    "errorSave": "Failed to save library prompt",
+    "write": "Write",
+    "preview": "Preview",
+    "unsaved": "Unsaved",
+    "saved": "Saved",
+    "saving": "Saving…",
+    "copy": "Copy",
+    "copied": "Copied to clipboard",
+    "discardConfirm": "You have unsaved changes. Leave without saving?"
   },
   "mcpConnections": {
     "title": "MCP Connections",

@@ -181,7 +181,15 @@
     "words": "Mots : {{count}}",
     "chars": "Caractères : {{count}}",
     "libraryLabel": "Bibliothèque : {{id}}",
-    "errorSave": "Échec de l'enregistrement du prompt de bibliothèque"
+    "errorSave": "Échec de l'enregistrement du prompt de bibliothèque",
+    "write": "Rédiger",
+    "preview": "Aperçu",
+    "unsaved": "Non enregistré",
+    "saved": "Enregistré",
+    "saving": "Enregistrement…",
+    "copy": "Copier",
+    "copied": "Copié dans le presse-papiers",
+    "discardConfirm": "Vous avez des modifications non enregistrées. Quitter sans enregistrer ?"
   },
   "mcpConnections": {
     "title": "Connexions MCP",

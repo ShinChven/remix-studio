@@ -226,7 +226,15 @@
     "words": "字数：{{count}}",
     "chars": "字符数：{{count}}",
     "libraryLabel": "库：{{id}}",
-    "errorSave": "保存库提示词失败"
+    "errorSave": "保存库提示词失败",
+    "write": "编写",
+    "preview": "预览",
+    "unsaved": "未保存",
+    "saved": "已保存",
+    "saving": "保存中…",
+    "copy": "复制",
+    "copied": "已复制到剪贴板",
+    "discardConfirm": "有未保存的更改。确定要离开吗？"
   },
   "mcpConnections": {
     "title": "MCP 连接",

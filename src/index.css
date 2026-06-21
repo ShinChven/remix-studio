@@ -82,7 +82,16 @@ button:disabled,
 
 /* Markdown Content Styling */
 .markdown-content {
-  @apply text-sm leading-relaxed break-words;
+  @apply text-sm leading-relaxed break-words max-w-full min-w-0;
+  overflow-wrap: anywhere;
+}
+
+.markdown-content > *:first-child {
+  @apply mt-0;
+}
+
+.markdown-content img {
+  @apply max-w-full h-auto rounded-lg;
 }
 
 .markdown-content h1 {
@@ -130,11 +139,14 @@ button:disabled,
 }
 
 .markdown-content pre {
-  @apply my-4 p-4 rounded-xl bg-neutral-900/90 dark:bg-black/40 backdrop-blur-md border border-neutral-200/20 dark:border-white/10 overflow-x-auto text-neutral-100;
+  @apply my-4 p-4 rounded-xl bg-neutral-900/90 dark:bg-black/40 backdrop-blur-md border border-neutral-200/20 dark:border-white/10 max-w-full overflow-x-auto text-neutral-100;
 }
 
 .markdown-content pre code {
   @apply bg-transparent p-0 border-0 text-inherit text-sm;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: pre;
 }
 
 .markdown-content a {
@@ -146,7 +158,7 @@ button:disabled,
 }
 
 .markdown-content table {
-  @apply w-full border-collapse mb-4 text-left overflow-hidden rounded-xl border border-neutral-200 dark:border-white/10;
+  @apply block w-full max-w-full overflow-x-auto border-collapse mb-4 text-left rounded-xl border border-neutral-200 dark:border-white/10;
 }
 
 .markdown-content th {
