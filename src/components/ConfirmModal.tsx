@@ -11,6 +11,8 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   type?: 'danger' | 'info';
+  /** Extra keys (besides Escape) that cancel the dialog, e.g. the shortcut that opened it. */
+  dismissKeys?: string[];
 }
 
 export function ConfirmModal({
@@ -21,23 +23,27 @@ export function ConfirmModal({
   message,
   confirmText,
   cancelText,
-  type = 'info'
+  type = 'info',
+  dismissKeys
 }: ConfirmModalProps) {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Esc dismisses the modal. Capture-phase + stopPropagation so it doesn't also
-  // reach handlers underneath (e.g. a fullscreen lightbox closing on Escape).
+  // Esc (and any caller-supplied dismissKeys, e.g. the shortcut that opened this)
+  // dismisses the modal. Capture-phase + stopPropagation so the key doesn't also
+  // reach handlers underneath — e.g. the lightbox's own 'd' delete shortcut.
+  const dismissKeysSig = dismissKeys?.join(',') ?? '';
   useEffect(() => {
     if (!isOpen) return;
+    const extra = dismissKeysSig ? dismissKeysSig.split(',') : [];
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
+      if (e.key !== 'Escape' && !extra.includes(e.key)) return;
       e.stopPropagation();
       if (!isLoading) onClose();
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [isOpen, isLoading, onClose]);
+  }, [isOpen, isLoading, onClose, dismissKeysSig]);
 
   // While in native fullscreen the browser swallows Esc to exit fullscreen rather
   // than firing a keydown we can catch. If we opened over a fullscreen view, treat

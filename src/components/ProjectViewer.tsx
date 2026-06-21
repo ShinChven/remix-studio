@@ -2199,6 +2199,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         message={t('projectViewer.confirm.moveToRecycleBin.message', { count: albumItemsToDelete?.length || 0 })}
         confirmText={t('projectViewer.confirm.moveToRecycleBin.confirm')}
         type="danger"
+        dismissKeys={['d', 'D']}
       />
       <ConfirmModal isOpen={showDeleteCompletedSelectedModal} onClose={() => setShowDeleteCompletedSelectedModal(false)} onConfirm={deleteSelectedCompleted} title={t('projectViewer.confirm.removeFinishedRecords.title')} message={t('projectViewer.confirm.removeFinishedRecords.message', { count: selectedCompletedIds.size })} confirmText={t('projectViewer.confirm.removeFinishedRecords.confirm')} type="danger" />
       <ConfirmModal isOpen={showDeleteQueueSelectedModal} onClose={() => setShowDeleteQueueSelectedModal(false)} onConfirm={deleteSelectedQueue} title={t('projectViewer.confirm.deleteSelectedJobs.title')} message={t('projectViewer.confirm.deleteSelectedJobs.message', { count: selectedQueueIds.size })} confirmText={t('projectViewer.confirm.deleteSelectedJobs.confirm')} type="danger" />
