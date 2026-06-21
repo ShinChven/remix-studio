@@ -2,15 +2,21 @@
 
 A [VitePress](https://vitepress.dev) documentation site for Remix Studio.
 
+This site has its own `package.json` and dependencies (VitePress is **not**
+installed in the main app, so it never bloats the application's Docker image).
+
 ## Local Development
 
 From the repository root:
 
 ```bash
+npm run docs:install  # one-time: install docs dependencies (in docs-site/)
 npm run docs:dev      # start dev server (http://localhost:5173)
 npm run docs:build    # build static site to docs-site/.vitepress/dist
 npm run docs:preview  # preview the production build
 ```
+
+Or run the equivalent `npm install` / `npm run dev` directly inside `docs-site/`.
 
 ## Structure
 

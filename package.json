@@ -12,9 +12,10 @@
     "lint": "tsc --noEmit",
     "i18n:check": "tsx scripts/compare-i18n.ts",
     "mcp:inspect": "npx @modelcontextprotocol/inspector --transport http --url http://localhost:3000/mcp",
-    "docs:dev": "vitepress dev docs-site",
-    "docs:build": "vitepress build docs-site",
-    "docs:preview": "vitepress preview docs-site"
+    "docs:install": "npm --prefix docs-site install",
+    "docs:dev": "npm --prefix docs-site run dev",
+    "docs:build": "npm --prefix docs-site run build",
+    "docs:preview": "npm --prefix docs-site run preview"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.87.0",
@@ -76,7 +77,6 @@
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0",
-    "vitepress": "^1.6.4"
+    "vite": "^6.2.0"
   }
 }

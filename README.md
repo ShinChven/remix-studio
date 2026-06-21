@@ -1,6 +1,7 @@
 # Remix Studio
 
 [![Latest Release](https://img.shields.io/github/v/release/ShinChven/remix-studio?style=flat-square)](https://github.com/ShinChven/remix-studio/releases)
+[![Documentation](https://img.shields.io/badge/docs-online-0f766e?style=flat-square)](https://shinchven.github.io/remix-studio/)
 [![Docker Image](https://img.shields.io/badge/docker-ghcr.io-blue?logo=docker&style=flat-square)](https://github.com/ShinChven/remix-studio/pkgs/container/remix-studio)
 [![Self-Hosted](https://img.shields.io/badge/self--hosted-ready-111111?style=flat-square)](./README.md)
 [![Gemini Assistant](https://img.shields.io/badge/Gemini-powered%20assistant-0f766e?style=flat-square)](./README.md)
@@ -20,6 +21,8 @@ It combines four layers in one product: an in-app assistant for planning and ope
 This project is built with **Google AI Studio** and **Antigravity**.
 
 ![Remix Studio screenshot](assets/screenshot.jpg)
+
+📖 **Full documentation: [shinchven.github.io/remix-studio](https://shinchven.github.io/remix-studio/)** — guides, core concepts, integrations, and operations. The source lives in [`docs-site/`](docs-site/).
 
 ## What Remix Studio Is For
 
@@ -385,8 +388,9 @@ If you prefer AWS S3 or another external S3-compatible service, point `S3_ENDPOI
 
 ## At a Glance
 
-- See [docs/X_PLATFORM_SETUP.md](docs/X_PLATFORM_SETUP.md) for X (Twitter) platform API configuration
-- See [agent/system-overview.md](agent/system-overview.md) for the stack, auth model, queue behavior, providers, libraries, exports, storage model, and repository structure
+- Browse the [full documentation site](https://shinchven.github.io/remix-studio/) for guides, concepts, integrations, and operations
+- See the [X (Twitter)](https://shinchven.github.io/remix-studio/integrations/x-platform) and [Threads](https://shinchven.github.io/remix-studio/integrations/threads-platform) setup guides for social channel configuration
+- See the [Architecture overview](https://shinchven.github.io/remix-studio/guide/architecture) for the stack, auth model, queue behavior, providers, libraries, exports, storage model, and repository structure
 - See [docker/README.md](docker/README.md) for compose templates and deployment layouts
 - See [UPGRADING.md](UPGRADING.md) for migration and compatibility notes
 
