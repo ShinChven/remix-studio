@@ -48,6 +48,7 @@ export default defineConfig({
         link: '/operations/backup-and-restore',
         activeMatch: '/operations/',
       },
+      { text: "What's New", link: '/whats-new' },
       {
         text: 'Links',
         items: [

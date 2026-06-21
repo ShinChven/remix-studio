@@ -38,4 +38,6 @@ If you previously ran an older version with a longer key value, the app may have
 
 ## Changelog
 
-All notable changes are documented by version in the project's `CHANGELOG.md` and on the [GitHub Releases](https://github.com/ShinChven/remix-studio/releases) page.
+For a user-facing tour of what changed in each release, see [What's New](/whats-new).
+
+The full technical record is documented by version in the project's `CHANGELOG.md` and on the [GitHub Releases](https://github.com/ShinChven/remix-studio/releases) page.
