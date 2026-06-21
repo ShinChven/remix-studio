@@ -245,7 +245,8 @@
         "fade": "Fondu",
         "slide": "Glissement",
         "zoom": "Zoom",
-        "blur": "Flou"
+        "blur": "Flou",
+        "ripple": "Ondulation"
       },
       "close": "Fermer",
       "previous": "Précédent",

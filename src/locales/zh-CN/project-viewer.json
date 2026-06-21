@@ -245,7 +245,8 @@
         "fade": "淡入",
         "slide": "滑动",
         "zoom": "缩放",
-        "blur": "模糊"
+        "blur": "模糊",
+        "ripple": "涟漪"
       },
       "close": "关闭",
       "previous": "上一张",

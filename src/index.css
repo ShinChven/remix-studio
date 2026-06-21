@@ -17,6 +17,7 @@
   --animate-slideshow-slide: slideshow-slide 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-slideshow-zoom: slideshow-zoom 9s ease-out both;
   --animate-slideshow-blur: slideshow-blur 1.05s ease both;
+  --animate-slideshow-ripple: slideshow-ripple 1.05s cubic-bezier(0.4, 0, 0.2, 1) both;
 
   @keyframes slideshow-fade {
     from { opacity: 0; }
@@ -36,6 +37,12 @@
   @keyframes slideshow-blur {
     from { opacity: 0; filter: blur(16px); }
     to { opacity: 1; filter: blur(0); }
+  }
+
+  /* Android Material-style ripple: a circle expanding from the center */
+  @keyframes slideshow-ripple {
+    from { clip-path: circle(0% at 50% 50%); opacity: 0.55; }
+    to { clip-path: circle(80% at 50% 50%); opacity: 1; }
   }
 
   @keyframes text-gradient {
@@ -74,6 +81,7 @@
     }
   }
 }
+
 html, body {
   overflow-x: hidden;
   height: 100%;

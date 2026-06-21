@@ -245,7 +245,8 @@
         "fade": "페이드",
         "slide": "슬라이드",
         "zoom": "줌",
-        "blur": "블러"
+        "blur": "블러",
+        "ripple": "리플"
       },
       "close": "닫기",
       "previous": "이전",

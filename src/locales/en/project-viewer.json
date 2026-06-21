@@ -245,7 +245,8 @@
         "fade": "Fade",
         "slide": "Slide",
         "zoom": "Zoom",
-        "blur": "Blur"
+        "blur": "Blur",
+        "ripple": "Ripple"
       },
       "close": "Close",
       "previous": "Previous",

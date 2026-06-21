@@ -16,7 +16,7 @@ const MAX_INTERVAL = 60;
 const DEFAULT_INTERVAL = 3;
 const INTERVAL_STORAGE_KEY = 'imageLightbox.slideshowInterval';
 
-const TRANSITIONS = ['none', 'fade', 'slide', 'zoom', 'blur'] as const;
+const TRANSITIONS = ['none', 'fade', 'slide', 'zoom', 'blur', 'ripple'] as const;
 type Transition = typeof TRANSITIONS[number];
 const TRANSITION_STORAGE_KEY = 'imageLightbox.slideshowTransition';
 const TRANSITION_CLASS: Record<Transition, string> = {
@@ -25,6 +25,7 @@ const TRANSITION_CLASS: Record<Transition, string> = {
   slide: 'animate-slideshow-slide',
   zoom: 'animate-slideshow-zoom',
   blur: 'animate-slideshow-blur',
+  ripple: 'animate-slideshow-ripple',
 };
 
 function loadStoredTransition(): Transition {
