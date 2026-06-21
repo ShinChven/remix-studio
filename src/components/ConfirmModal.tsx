@@ -39,6 +39,18 @@ export function ConfirmModal({
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [isOpen, isLoading, onClose]);
 
+  // While in native fullscreen the browser swallows Esc to exit fullscreen rather
+  // than firing a keydown we can catch. If we opened over a fullscreen view, treat
+  // leaving fullscreen as cancelling the modal so a single Esc still dismisses it.
+  useEffect(() => {
+    if (!isOpen || document.fullscreenElement == null) return;
+    const handleFsChange = () => {
+      if (document.fullscreenElement == null && !isLoading) onClose();
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, [isOpen, isLoading, onClose]);
+
   if (!isOpen) return null;
 
   const resolvedConfirmText = confirmText ?? t('confirmModal.confirm');

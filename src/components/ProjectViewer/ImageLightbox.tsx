@@ -156,16 +156,16 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     } else {
-      dialogRef.current?.requestFullscreen().catch(() => {});
+      // Fullscreen the document root (not just this element) so dialogs rendered
+      // elsewhere — e.g. the delete confirmation — stay visible over the lightbox.
+      document.documentElement.requestFullscreen().catch(() => {});
     }
   };
 
-  // The delete confirmation modal lives outside this element, so it can't paint
-  // over a fullscreen lightbox. Drop fullscreen first so the prompt is visible.
   const requestDelete = (index: number) => {
     if (!onDelete) return;
+    // Pause the slideshow before prompting deletion; the modal shows over fullscreen.
     setSlideshowOn(false);
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     onDelete(index);
   };
 
