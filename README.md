@@ -18,8 +18,6 @@ Remix Studio is a self-hosted AI assistant workspace for orchestration, batch co
 
 It combines four layers in one product: an in-app assistant for planning and operating workflows, a project system for composing workflows from library-backed and direct inputs, a campaign workspace for scheduling and publishing social posts, and a background execution stack for queueing, storing, exporting, and delivering results. The same shared tool layer also powers MCP access, so clients like Claude and Codex can help create libraries, inspect albums and model availability, and assemble projects around the same workflow model used in the UI.
 
-This project is built with **Google AI Studio** and **Antigravity**.
-
 ![Remix Studio screenshot](assets/screenshot.jpg)
 
 📖 **Full documentation: [shinchven.github.io/remix-studio](https://shinchven.github.io/remix-studio/)** — guides, core concepts, integrations, and operations. The source lives in [`docs-site/`](docs-site/).
