@@ -405,7 +405,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
         key={slideshowOn && transition !== 'none' ? `${boundedIndex}-${transition}` : undefined}
         src={images[boundedIndex]}
         alt={t('projectViewer.imageLightbox.previewAlt', { index: boundedIndex + 1 })}
-        className={`relative max-w-[90vw] max-h-[90vh] object-contain select-none shadow-2xl ${slideshowOn ? TRANSITION_CLASS[transition] : ''}`}
+        className={`max-w-[90vw] max-h-[90vh] object-contain select-none shadow-2xl ${prevSrc ? 'relative' : ''} ${slideshowOn ? TRANSITION_CLASS[transition] : ''}`}
         onClick={(e) => e.stopPropagation()}
       />
       
