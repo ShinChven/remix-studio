@@ -4,14 +4,17 @@
   "version": "1.15.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --exclude \"agent/**\" --exclude \"data/**\" --exclude \"dist/**\" --exclude \"dist-server/**\" --exclude \"docs/**\" server.ts",
+    "dev": "tsx watch --exclude \"agent/**\" --exclude \"data/**\" --exclude \"dist/**\" --exclude \"dist-server/**\" --exclude \"docs/**\" --exclude \"docs-site/**\" server.ts",
     "build": "vite build && tsup server.ts --format esm --out-dir dist-server --clean --external @prisma/client",
     "start": "NODE_ENV=production node dist-server/server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "i18n:check": "tsx scripts/compare-i18n.ts",
-    "mcp:inspect": "npx @modelcontextprotocol/inspector --transport http --url http://localhost:3000/mcp"
+    "mcp:inspect": "npx @modelcontextprotocol/inspector --transport http --url http://localhost:3000/mcp",
+    "docs:dev": "vitepress dev docs-site",
+    "docs:build": "vitepress build docs-site",
+    "docs:preview": "vitepress preview docs-site"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.87.0",
@@ -73,6 +76,7 @@
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vitepress": "^1.6.4"
   }
 }
