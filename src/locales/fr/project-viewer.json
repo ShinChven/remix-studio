@@ -238,7 +238,18 @@
       "slideshowInterval": "Intervalle du diaporama (secondes)",
       "seconds": "s",
       "enterFullscreen": "Plein écran",
-      "exitFullscreen": "Quitter le plein écran"
+      "exitFullscreen": "Quitter le plein écran",
+      "transitionTitle": "Changer l'effet de transition",
+      "transition": {
+        "none": "Aucun",
+        "fade": "Fondu",
+        "slide": "Glissement",
+        "zoom": "Zoom",
+        "blur": "Flou"
+      },
+      "close": "Fermer",
+      "previous": "Précédent",
+      "next": "Suivant"
     },
     "copyToLibrary": {
       "texts": "Textes",

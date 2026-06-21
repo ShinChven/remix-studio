@@ -238,7 +238,18 @@
       "slideshowInterval": "幻燈片間隔（秒）",
       "seconds": "秒",
       "enterFullscreen": "進入全螢幕",
-      "exitFullscreen": "退出全螢幕"
+      "exitFullscreen": "退出全螢幕",
+      "transitionTitle": "切換過渡效果",
+      "transition": {
+        "none": "無",
+        "fade": "淡入",
+        "slide": "滑動",
+        "zoom": "縮放",
+        "blur": "模糊"
+      },
+      "close": "關閉",
+      "previous": "上一張",
+      "next": "下一張"
     },
     "copyToLibrary": {
       "texts": "文字",

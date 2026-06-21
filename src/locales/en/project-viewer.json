@@ -238,7 +238,18 @@
       "slideshowInterval": "Slideshow interval (seconds)",
       "seconds": "s",
       "enterFullscreen": "Enter fullscreen",
-      "exitFullscreen": "Exit fullscreen"
+      "exitFullscreen": "Exit fullscreen",
+      "transitionTitle": "Switch transition effect",
+      "transition": {
+        "none": "None",
+        "fade": "Fade",
+        "slide": "Slide",
+        "zoom": "Zoom",
+        "blur": "Blur"
+      },
+      "close": "Close",
+      "previous": "Previous",
+      "next": "Next"
     },
     "copyToLibrary": {
       "texts": "Texts",

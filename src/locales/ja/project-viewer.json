@@ -238,7 +238,18 @@
       "slideshowInterval": "スライドショーの間隔（秒）",
       "seconds": "秒",
       "enterFullscreen": "全画面表示",
-      "exitFullscreen": "全画面表示を終了"
+      "exitFullscreen": "全画面表示を終了",
+      "transitionTitle": "トランジション効果を切り替え",
+      "transition": {
+        "none": "なし",
+        "fade": "フェード",
+        "slide": "スライド",
+        "zoom": "ズーム",
+        "blur": "ぼかし"
+      },
+      "close": "閉じる",
+      "previous": "前へ",
+      "next": "次へ"
     },
     "copyToLibrary": {
       "texts": "テキスト",

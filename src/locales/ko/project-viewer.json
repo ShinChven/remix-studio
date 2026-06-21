@@ -238,7 +238,18 @@
       "slideshowInterval": "슬라이드쇼 간격(초)",
       "seconds": "초",
       "enterFullscreen": "전체 화면",
-      "exitFullscreen": "전체 화면 종료"
+      "exitFullscreen": "전체 화면 종료",
+      "transitionTitle": "전환 효과 전환",
+      "transition": {
+        "none": "없음",
+        "fade": "페이드",
+        "slide": "슬라이드",
+        "zoom": "줌",
+        "blur": "블러"
+      },
+      "close": "닫기",
+      "previous": "이전",
+      "next": "다음"
     },
     "copyToLibrary": {
       "texts": "텍스트",

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { X, ChevronLeft, ChevronRight, Trash2, Play, Pause, Maximize, Minimize } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Trash2, Play, Pause, Maximize, Minimize, Wand2 } from 'lucide-react';
 
 interface ImageLightboxProps {
   images: string[];
@@ -15,6 +15,26 @@ const MIN_INTERVAL = 1;
 const MAX_INTERVAL = 60;
 const DEFAULT_INTERVAL = 3;
 const INTERVAL_STORAGE_KEY = 'imageLightbox.slideshowInterval';
+
+const TRANSITIONS = ['none', 'fade', 'slide', 'zoom', 'blur'] as const;
+type Transition = typeof TRANSITIONS[number];
+const TRANSITION_STORAGE_KEY = 'imageLightbox.slideshowTransition';
+const TRANSITION_CLASS: Record<Transition, string> = {
+  none: '',
+  fade: 'animate-slideshow-fade',
+  slide: 'animate-slideshow-slide',
+  zoom: 'animate-slideshow-zoom',
+  blur: 'animate-slideshow-blur',
+};
+
+function loadStoredTransition(): Transition {
+  try {
+    const raw = localStorage.getItem(TRANSITION_STORAGE_KEY);
+    return (TRANSITIONS as readonly string[]).includes(raw ?? '') ? (raw as Transition) : 'none';
+  } catch {
+    return 'none';
+  }
+}
 
 function clampIndex(index: number, length: number) {
   if (length <= 0) return 0;
@@ -43,6 +63,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
   const [intervalSec, setIntervalSec] = useState(loadStoredInterval);
   const [progress, setProgress] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [transition, setTransition] = useState<Transition>(loadStoredTransition);
   const dialogRef = useRef<HTMLDivElement>(null);
   const onIndexChangeRef = useRef(onIndexChange);
 
@@ -105,6 +126,18 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
       const next = clampInterval(prev + delta);
       try {
         localStorage.setItem(INTERVAL_STORAGE_KEY, String(next));
+      } catch {
+        // Ignore storage failures (e.g. private mode).
+      }
+      return next;
+    });
+  };
+
+  const cycleTransition = () => {
+    setTransition(prev => {
+      const next = TRANSITIONS[(TRANSITIONS.indexOf(prev) + 1) % TRANSITIONS.length];
+      try {
+        localStorage.setItem(TRANSITION_STORAGE_KEY, next);
       } catch {
         // Ignore storage failures (e.g. private mode).
       }
@@ -242,7 +275,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
               <div
                 className="flex items-center gap-1 px-3 py-1.5 text-white/80 bg-black/50 rounded-full text-sm"
                 onClick={(e) => e.stopPropagation()}
-                title={t('projectViewer.imageLightbox.slideshowInterval')}
+                title={`${t('projectViewer.imageLightbox.slideshowInterval')} (↑ / ↓)`}
               >
                 <input
                   type="number"
@@ -256,11 +289,21 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
                 <span className="text-white/50">{t('projectViewer.imageLightbox.seconds')}</span>
               </div>
             )}
+            {slideshowOn && (
+              <button
+                onClick={(e) => { e.stopPropagation(); cycleTransition(); }}
+                className="flex items-center gap-1.5 pl-3 pr-3.5 py-2 text-white/70 hover:text-white transition-colors bg-black/50 hover:bg-black/80 rounded-full text-sm"
+                title={t('projectViewer.imageLightbox.transitionTitle')}
+              >
+                <Wand2 className="w-4 h-4" />
+                <span>{t(`projectViewer.imageLightbox.transition.${transition}`)}</span>
+              </button>
+            )}
             <div className="relative w-10 h-10">
               <button
                 onClick={toggleSlideshow}
                 className="relative z-10 p-2 text-white/50 hover:text-white transition-colors bg-black/50 hover:bg-black/80 rounded-full"
-                title={t(slideshowOn ? 'projectViewer.imageLightbox.stopSlideshow' : 'projectViewer.imageLightbox.startSlideshow')}
+                title={`${t(slideshowOn ? 'projectViewer.imageLightbox.stopSlideshow' : 'projectViewer.imageLightbox.startSlideshow')} (Space)`}
                 aria-pressed={slideshowOn}
               >
                 {slideshowOn ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
@@ -300,7 +343,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
           <button 
             onClick={(e) => { e.stopPropagation(); onDelete(boundedIndex); }} 
             className="p-2 text-white/50 hover:text-red-500 transition-colors bg-black/50 hover:bg-black/80 rounded-full"
-            title={t('projectViewer.imageLightbox.deleteImage')}
+            title={`${t('projectViewer.imageLightbox.deleteImage')} (D)`}
           >
             <Trash2 className="w-6 h-6" />
           </button>
@@ -308,31 +351,36 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
         <button
           onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
           className="p-2 text-white/50 hover:text-white transition-colors bg-black/50 hover:bg-black/80 rounded-full"
-          title={t(isFullscreen ? 'projectViewer.imageLightbox.exitFullscreen' : 'projectViewer.imageLightbox.enterFullscreen')}
+          title={`${t(isFullscreen ? 'projectViewer.imageLightbox.exitFullscreen' : 'projectViewer.imageLightbox.enterFullscreen')} (F)`}
           aria-pressed={isFullscreen}
         >
           {isFullscreen ? <Minimize className="w-6 h-6" /> : <Maximize className="w-6 h-6" />}
         </button>
-        <button onClick={onClose} className="p-2 text-white/50 hover:text-white transition-colors bg-black/50 hover:bg-black/80 rounded-full">
+        <button
+          onClick={onClose}
+          className="p-2 text-white/50 hover:text-white transition-colors bg-black/50 hover:bg-black/80 rounded-full"
+          title={`${t('projectViewer.imageLightbox.close')} (Esc)`}
+        >
           <X className="w-6 h-6" />
         </button>
       </div>
       
       {images.length > 1 && (
-        <button onClick={handlePrev} className="absolute left-2 md:left-8 p-3 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full">
+        <button onClick={handlePrev} title={`${t('projectViewer.imageLightbox.previous')} (←)`} className="absolute left-2 md:left-8 p-3 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full">
           <ChevronLeft className="w-8 h-8" />
         </button>
       )}
       
-      <img 
-        src={images[boundedIndex]} 
-        alt={t('projectViewer.imageLightbox.previewAlt', { index: boundedIndex + 1 })} 
-        className="max-w-[90vw] max-h-[90vh] object-contain select-none shadow-2xl"
-        onClick={(e) => e.stopPropagation()} 
+      <img
+        key={slideshowOn && transition !== 'none' ? `${boundedIndex}-${transition}` : undefined}
+        src={images[boundedIndex]}
+        alt={t('projectViewer.imageLightbox.previewAlt', { index: boundedIndex + 1 })}
+        className={`max-w-[90vw] max-h-[90vh] object-contain select-none shadow-2xl ${slideshowOn ? TRANSITION_CLASS[transition] : ''}`}
+        onClick={(e) => e.stopPropagation()}
       />
       
       {images.length > 1 && (
-        <button onClick={handleNext} className="absolute right-2 md:right-8 p-3 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full">
+        <button onClick={handleNext} title={`${t('projectViewer.imageLightbox.next')} (→)`} className="absolute right-2 md:right-8 p-3 text-white/50 hover:text-white transition-colors z-10 bg-black/50 hover:bg-black/80 rounded-full">
           <ChevronRight className="w-8 h-8" />
         </button>
       )}
