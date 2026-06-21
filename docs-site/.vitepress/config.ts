@@ -113,6 +113,7 @@ export default defineConfig({
             { text: 'Queue & Concurrency', link: '/concepts/queue' },
             { text: 'Exports & Delivery', link: '/concepts/exports' },
             { text: 'Storage', link: '/concepts/storage' },
+            { text: 'Recycle Bin (Trash)', link: '/concepts/trash' },
             { text: 'Selling Exports', link: '/concepts/selling-exports' },
           ],
         },

@@ -25,7 +25,34 @@ Running a project enqueues only the jobs marked `pending`. A storage-limit check
 
 ## Orphan Files
 
-Generation and editing can leave behind files that are no longer referenced by any album item. The **Project Orphans** view detects and lets you delete these orphan files to reclaim storage.
+An **orphan** is a file sitting in a project's storage folder that nothing in the project points to anymore. Generation, uploads, retries, and image editing can all leave behind objects that no longer belong to any live record — these silently consume your [storage](/concepts/storage) quota. The **Project Orphans** view finds them and lets you clean them up.
+
+### How orphans are detected
+
+Each project owns a folder in object storage (keyed by your user ID and the project ID). To find orphans, Remix Studio:
+
+1. Lists **every file** under the project's storage folder.
+2. Collects **every file key still referenced** by the project's database records:
+   - **Workflow** image/video/audio inputs (value, thumbnail, optimized variants).
+   - **Jobs** — output images plus any image, video, and audio context inputs.
+   - **Album items** — output media plus their context inputs.
+   - **Trash items** belonging to the project (so [recycle-bin](/concepts/trash) contents are protected).
+3. Treats any stored file **not** in that referenced set as an orphan.
+
+The view lists each orphan with a preview and its size, so you can see how much space they occupy.
+
+### Cleaning up
+
+You select which orphans to remove, and Remix Studio **permanently deletes** them from storage in a batch.
+
+::: warning
+Orphan deletion is permanent — these files are removed directly from object storage and do **not** go to the recycle bin. Because trashed items are excluded from orphan detection, emptying orphans will not touch anything you have in [Trash](/concepts/trash).
+:::
+
+### When to use it
+
+- After heavy generation or many retries, to reclaim space that isn't tied to any album item.
+- When [storage](/concepts/storage) usage looks higher than the media you can actually see in the project.
 
 ## Live Updates
 

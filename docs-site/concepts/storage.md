@@ -24,7 +24,7 @@ This usage is checked before [enqueuing generation jobs](/concepts/queue) and be
 
 ## Recycle Bin (Trash)
 
-Deleted items move to a recycle bin and continue to count toward usage until purged, so you can recover from accidental deletes before reclaiming the space.
+Deleted items move to a recycle bin and continue to count toward usage until purged, so you can recover from accidental deletes before reclaiming the space. See [Recycle Bin (Trash)](/concepts/trash) for restoring, batch deletion, and emptying the bin.
 
 ## Public Endpoints & Presigned URLs
 
