@@ -138,6 +138,10 @@ export default defineConfig({
               text: 'Browser Extension',
               link: '/integrations/chrome-extension',
             },
+            {
+              text: 'Mobile Share (PWA)',
+              link: '/integrations/mobile-share',
+            },
           ],
         },
         {
