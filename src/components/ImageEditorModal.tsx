@@ -316,6 +316,16 @@ export function ImageEditorModal({ isOpen, onClose, onSave, imageUrl }: ImageEdi
                   </span>
                 )}
               <button
+                onClick={() => {
+                  setCrop(undefined);
+                  setCompletedCrop(undefined);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-all bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 shadow-sm"
+              >
+                <X className="w-3.5 h-3.5" />
+                {t('common.cancel', { defaultValue: 'Cancel' })}
+              </button>
+              <button
                 onClick={handleApplyCrop}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-all bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"
               >
@@ -379,22 +389,49 @@ export function ImageEditorModal({ isOpen, onClose, onSave, imageUrl }: ImageEdi
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-neutral-200/50 dark:border-white/5 flex justify-end gap-3 bg-neutral-50 dark:bg-black/20">
+        <div className="p-4 border-t border-neutral-200/50 dark:border-white/5 bg-neutral-50 dark:bg-black/20 flex justify-between items-center gap-3">
           <button
-            onClick={onClose}
-            disabled={isLoading}
-            className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-all border border-transparent active:scale-95 disabled:opacity-50"
+            onClick={() => {
+              if (currentImageUrl !== imageUrl && currentImageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(currentImageUrl);
+              }
+              setCurrentImageUrl(imageUrl);
+              setPaths([]);
+              setCrop(undefined);
+              setCompletedCrop(undefined);
+            }}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+            title={t('imageEditor.resetOriginal', { defaultValue: 'Reset Original' })}
           >
-            {t('common.cancel', { defaultValue: 'Cancel' })}
+            <RotateCcw className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('imageEditor.resetOriginal', { defaultValue: 'Reset Original' })}</span>
           </button>
-          <button
-            onClick={handleSave}
-            disabled={isLoading}
-            className={`px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed`}
-          >
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-            {t('common.save', { defaultValue: 'Save' })}
-          </button>
+          
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+            >
+              {t('common.cancel', { defaultValue: 'Cancel' })}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-6 py-2 bg-neutral-900 dark:bg-white text-white dark:text-black font-bold rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors disabled:opacity-50 shadow-lg shadow-black/10 dark:shadow-white/10"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {t('common.saving', { defaultValue: 'Saving...' })}
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  {t('common.save', { defaultValue: 'Save' })}
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
       </div>
