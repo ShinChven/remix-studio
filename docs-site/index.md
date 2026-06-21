@@ -64,3 +64,7 @@ Remix Studio runs text, image, video, and audio generation projects from one wor
 Available in English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French.
 
 > Built with **Google AI Studio** and **Antigravity**.
+
+## Found a bug or have a request?
+
+Please report it on [GitHub Issues](https://github.com/ShinChven/remix-studio/issues). Bug reports, feature requests, and questions are all welcome — clear reports with steps to reproduce help the most.

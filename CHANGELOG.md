@@ -2,6 +2,17 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.16.1] - 2026-06-22
+
+### Added
+
+- **Immersive Fullscreen Slideshow**: In fullscreen the image now fills the entire screen and the on-screen controls fade away after a few seconds without mouse or keyboard activity, reappearing the instant you interact.
+- **Confirmation Keyboard Shortcuts**: The image deletion confirmation can now be dismissed with Escape, and pressing D again cancels it.
+
+### Fixed
+
+- **Delete Confirmation in Fullscreen**: Fixed the deletion confirmation dialog not appearing while viewing an image in fullscreen.
+
 ## [1.16.0] - 2026-06-22
 
 ### Added

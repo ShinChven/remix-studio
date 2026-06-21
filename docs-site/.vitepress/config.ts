@@ -61,6 +61,10 @@ export default defineConfig({
             link: 'https://github.com/ShinChven/remix-studio/releases',
           },
           {
+            text: 'Report an Issue',
+            link: 'https://github.com/ShinChven/remix-studio/issues',
+          },
+          {
             text: 'Docker Image',
             link: 'https://github.com/ShinChven/remix-studio/pkgs/container/remix-studio',
           },

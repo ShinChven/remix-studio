@@ -2,7 +2,24 @@
 
 What changed in each Remix Studio release. For the full technical record, see [`CHANGELOG.md`](https://github.com/ShinChven/remix-studio/blob/main/CHANGELOG.md) or the [GitHub Releases](https://github.com/ShinChven/remix-studio/releases) page.
 
+::: tip Spotted a bug or have an idea?
+Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studio/issues) — your reports and feature requests directly shape what ships next.
+:::
+
 ---
+
+## 1.16.1 — A more immersive lightbox
+
+*Fullscreen viewing gets out of the way, and the delete prompt plays nicely with it.*
+
+**Added**
+
+- **Immersive fullscreen** — In fullscreen, the image fills the whole screen and the controls fade away after a few seconds of inactivity. Move the mouse or press a key to bring them back.
+- **Confirmation shortcuts** — Dismiss the image delete prompt with Escape, or press D again to cancel it.
+
+**Fixed**
+
+- The delete confirmation dialog now shows correctly while viewing an image in fullscreen.
 
 ## 1.16.0 — Image slideshow & a documentation site
 
