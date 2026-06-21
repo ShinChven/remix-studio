@@ -232,7 +232,13 @@
     },
     "imageLightbox": {
       "deleteImage": "Delete Image",
-      "previewAlt": "Preview {{index}}"
+      "previewAlt": "Preview {{index}}",
+      "startSlideshow": "Start slideshow",
+      "stopSlideshow": "Stop slideshow",
+      "slideshowInterval": "Slideshow interval (seconds)",
+      "seconds": "s",
+      "enterFullscreen": "Enter fullscreen",
+      "exitFullscreen": "Exit fullscreen"
     },
     "copyToLibrary": {
       "texts": "Texts",

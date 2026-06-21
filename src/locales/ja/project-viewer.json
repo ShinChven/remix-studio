@@ -232,7 +232,13 @@
     },
     "imageLightbox": {
       "deleteImage": "画像を削除",
-      "previewAlt": "プレビュー {{index}}"
+      "previewAlt": "プレビュー {{index}}",
+      "startSlideshow": "スライドショーを開始",
+      "stopSlideshow": "スライドショーを停止",
+      "slideshowInterval": "スライドショーの間隔（秒）",
+      "seconds": "秒",
+      "enterFullscreen": "全画面表示",
+      "exitFullscreen": "全画面表示を終了"
     },
     "copyToLibrary": {
       "texts": "テキスト",

@@ -232,7 +232,13 @@
     },
     "imageLightbox": {
       "deleteImage": "이미지 삭제",
-      "previewAlt": "미리보기 {{index}}"
+      "previewAlt": "미리보기 {{index}}",
+      "startSlideshow": "슬라이드쇼 시작",
+      "stopSlideshow": "슬라이드쇼 중지",
+      "slideshowInterval": "슬라이드쇼 간격(초)",
+      "seconds": "초",
+      "enterFullscreen": "전체 화면",
+      "exitFullscreen": "전체 화면 종료"
     },
     "copyToLibrary": {
       "texts": "텍스트",

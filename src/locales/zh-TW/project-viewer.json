@@ -232,7 +232,13 @@
     },
     "imageLightbox": {
       "deleteImage": "刪除圖片",
-      "previewAlt": "預覽 {{index}}"
+      "previewAlt": "預覽 {{index}}",
+      "startSlideshow": "開始幻燈片",
+      "stopSlideshow": "停止幻燈片",
+      "slideshowInterval": "幻燈片間隔（秒）",
+      "seconds": "秒",
+      "enterFullscreen": "進入全螢幕",
+      "exitFullscreen": "退出全螢幕"
     },
     "copyToLibrary": {
       "texts": "文字",

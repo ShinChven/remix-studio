@@ -28,7 +28,6 @@
       "upload": "Téléverser",
       "prompt": "Invite",
       "video": "Vidéo",
-      "audio": "Audio",
       "generatedText": "Texte généré",
       "fullPrompt": "Prompt complet",
       "reuseConfiguration": "Réutiliser la configuration",
@@ -233,7 +232,13 @@
     },
     "imageLightbox": {
       "deleteImage": "Supprimer l'image",
-      "previewAlt": "Aperçu {{index}}"
+      "previewAlt": "Aperçu {{index}}",
+      "startSlideshow": "Démarrer le diaporama",
+      "stopSlideshow": "Arrêter le diaporama",
+      "slideshowInterval": "Intervalle du diaporama (secondes)",
+      "seconds": "s",
+      "enterFullscreen": "Plein écran",
+      "exitFullscreen": "Quitter le plein écran"
     },
     "copyToLibrary": {
       "texts": "Textes",
