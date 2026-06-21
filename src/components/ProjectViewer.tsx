@@ -35,6 +35,7 @@ import { LibraryPreviewModal } from './ProjectViewer/LibraryPreviewModal';
 import { PromptModal } from './ProjectViewer/PromptModal';
 import { PromptLimitModal } from './ProjectViewer/PromptLimitModal';
 import { ImageLightbox } from './ProjectViewer/ImageLightbox';
+import { ImageEditorModal } from './ImageEditorModal';
 import { DraftsTab } from './ProjectViewer/DraftsTab';
 import { QueueTab } from './ProjectViewer/QueueTab';
 import { CompletedTab } from './ProjectViewer/CompletedTab';
@@ -201,6 +202,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [showDeleteSelectedModal, setShowDeleteSelectedModal] = useState(false);
   const [showDeleteAllDraftsModal, setShowDeleteAllDraftsModal] = useState(false);
   const [editingItem, setEditingItem] = useState<WorkflowItemType | null>(null);
+  const [editingImageItem, setEditingImageItem] = useState<WorkflowItemType | null>(null);
   const [showLibrarySelector, setShowLibrarySelector] = useState(false);
   const [previewingLibrary, setPreviewingLibrary] = useState<Library | null>(null);
   const [previewingWorkflowItemId, setPreviewingWorkflowItemId] = useState<string | null>(null);
@@ -1892,8 +1894,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           setDraggedIndex(null);
           setDragOverIndex(null);
         }}
-        onRemoveItem={setItemToRemoveId}
+        onRemoveItem={(id) => setItemToRemoveId(id)}
         onEditItem={setEditingItem}
+        onEditImage={setEditingImageItem}
         onPreviewLibrary={(lib, workflowItemId) => {
           void openLibraryPreview(lib, workflowItemId);
         }}
@@ -2044,6 +2047,33 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       <ConfirmModal isOpen={jobToReuse !== null} onClose={() => setJobToReuse(null)} onConfirm={confirmReuseWorkflow} title={t('projectViewer.confirm.reuseConfiguration.title')} message={t('projectViewer.confirm.reuseConfiguration.message')} confirmText={t('projectViewer.confirm.reuseConfiguration.confirm')} type="info" />
       <ConfirmModal isOpen={itemToRemoveId !== null} onClose={() => setItemToRemoveId(null)} onConfirm={confirmRemoveWorkflowItem} title={t('projectViewer.confirm.removeWorkflowItem.title')} message={t('projectViewer.confirm.removeWorkflowItem.message')} confirmText={t('projectViewer.confirm.removeWorkflowItem.confirm')} type="danger" />
       <PromptModal item={editingItem} onClose={() => setEditingItem(null)} onSave={(value) => { if (editingItem) updateWorkflowItem(editingItem.id, value); setEditingItem(null); }} />
+      {editingImageItem && editingImageItem.value && (
+        <ImageEditorModal
+          isOpen={true}
+          onClose={() => setEditingImageItem(null)}
+          imageUrl={apiImageDisplayUrl(editingImageItem.value)}
+          onSave={async (base64) => {
+            const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveImage(base64, localProject.id);
+            let dbProjectToSave: Project | undefined;
+            setLocalProject(prev => {
+              dbProjectToSave = { ...prev, workflow: prev.workflow.map(item => item.id === editingImageItem.id ? { ...item, value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size } : item) };
+              return { ...prev, workflow: prev.workflow.map(item => {
+                if (item.id === editingImageItem.id) {
+                  return { ...item, value: url, thumbnailUrl, optimizedUrl, size };
+                }
+                return item;
+              }) };
+            });
+            if (dbProjectToSave) {
+              setTimeout(() => {
+                skipProjectSyncRef.current = true;
+                onUpdate(dbProjectToSave as Project);
+              }, 0);
+            }
+            setEditingImageItem(null);
+          }}
+        />
+      )}
       <PromptLimitModal
         isOpen={promptLimitDialog !== null}
         modelName={promptLimitDialog?.modelName || ''}

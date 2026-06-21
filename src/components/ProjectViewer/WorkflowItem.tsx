@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Type, Library as LibraryIcon, ImageIcon, Trash2, GripVertical, Maximize2, Loader2, Video as VideoIcon, Volume2, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Type, Library as LibraryIcon, ImageIcon, Trash2, GripVertical, Maximize2, Loader2, Video as VideoIcon, Volume2, Eye, EyeOff, RefreshCw, PenTool } from 'lucide-react';
 import { WorkflowItem as WorkflowItemType, Library } from '../../types';
 import { imageDisplayUrl } from '../../api';
 
@@ -23,6 +23,7 @@ interface WorkflowItemProps {
   onLightbox: (images: string[], index: number) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onSelectFromLibrary: (id: string) => void;
+  onEditImage?: (item: WorkflowItemType) => void;
   onChangeLibrary: (id: string) => void;
   libraries: Library[];
   onToggleDisable?: (id: string) => void;
@@ -47,6 +48,7 @@ export function WorkflowItem({
   onLightbox,
   onUpdateTags,
   onSelectFromLibrary,
+  onEditImage,
   onChangeLibrary,
   libraries,
   onToggleDisable
@@ -130,6 +132,18 @@ export function WorkflowItem({
                   {t('projectViewer.common.library')}
                 </span>
               </button>
+              {item.value && !uploadingItemIds.has(item.id) && onEditImage && (
+                <button
+                  onClick={() => onEditImage(item)}
+                  className="relative p-1.5 rounded-lg border border-transparent text-neutral-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:border-blue-200 dark:hover:border-blue-500/20 transition-all group/action"
+                  title={t('projectViewer.common.edit', { defaultValue: 'Edit' })}
+                >
+                  <PenTool className="w-4 h-4" />
+                  <span className="pointer-events-none absolute right-0 top-full z-20 mt-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 opacity-0 shadow-lg transition-opacity whitespace-nowrap group-hover/action:opacity-100">
+                    {t('projectViewer.common.edit', { defaultValue: 'Edit' })}
+                  </span>
+                </button>
+              )}
             </>
           )}
           {item.type === 'library' && (

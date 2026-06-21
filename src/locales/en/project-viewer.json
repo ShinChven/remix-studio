@@ -16,6 +16,7 @@
       "cancel": "Cancel",
       "close": "Close",
       "copy": "Copy",
+      "edit": "Edit",
       "copyToLibrary": "Copy to Library",
       "selectAll": "Select All",
       "selectedCount": "{{count}} Selected",
@@ -163,6 +164,12 @@
       "noProvidersHint": "Go to settings to add your first AI provider",
       "noModelsFound": "No models found matching \"{{query}}\"",
       "footer": "Click a model card to select and continue"
+    },
+    "imageEditor": {
+      "title": "Edit Image",
+      "crop": "Crop",
+      "draw": "Draw",
+      "clearDrawings": "Clear Drawings"
     },
     "librarySelection": {
       "title": "Select Library",

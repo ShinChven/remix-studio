@@ -16,7 +16,8 @@
       "cancel": "取消",
       "close": "關閉",
       "copy": "複製",
-      "copyToLibrary": "複製到資料庫",
+      "edit": "編輯",
+      "copyToLibrary": "複製到資源庫",
       "selectAll": "全選",
       "selectedCount": "已選 {{count}} 項",
       "delete": "刪除",
@@ -162,10 +163,16 @@
       "noProviders": "尚未設定提供者",
       "noProvidersHint": "前往設定新增你的第一個 AI 提供者",
       "noModelsFound": "找不到符合「{{query}}」的模型",
-      "footer": "點擊模型卡片以選擇並繼續"
+      "footer": "點擊模型卡片進行選擇並繼續"
+    },
+    "imageEditor": {
+      "title": "編輯圖片",
+      "crop": "裁剪",
+      "draw": "繪畫",
+      "clearDrawings": "清除繪畫"
     },
     "librarySelection": {
-      "title": "選擇資料庫",
+      "title": "選擇資源庫",
       "description": "可用於工作流程的集合",
       "noLibraries": "尚未建立資料庫",
       "noResults": "沒有符合 \"{{query}}\" 的資料庫",

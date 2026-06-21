@@ -16,8 +16,9 @@
       "cancel": "취소",
       "close": "닫기",
       "copy": "복사",
-      "copyToLibrary": "라이브러리로 복사",
-      "selectAll": "전체 선택",
+      "edit": "편집",
+      "copyToLibrary": "라이브러리에 복사",
+      "selectAll": "모두 선택",
       "selectedCount": "{{count}}개 선택됨",
       "delete": "삭제",
       "deleteAll": "전체 삭제",
@@ -161,8 +162,14 @@
       "searchPlaceholder": "모델명 또는 제공자명으로 검색...",
       "noProviders": "설정된 제공자가 없습니다",
       "noProvidersHint": "설정에서 첫 AI 제공자를 추가하세요",
-      "noModelsFound": "\"{{query}}\"와 일치하는 모델이 없습니다",
-      "footer": "모델 카드를 클릭해 선택하고 계속하세요"
+      "noModelsFound": "\"{{query}}\"와 일치하는 모델을 찾을 수 없습니다.",
+      "footer": "모델 카드를 클릭하여 선택하고 계속하세요"
+    },
+    "imageEditor": {
+      "title": "이미지 편집",
+      "crop": "자르기",
+      "draw": "그리기",
+      "clearDrawings": "그리기 지우기"
     },
     "librarySelection": {
       "title": "라이브러리 선택",

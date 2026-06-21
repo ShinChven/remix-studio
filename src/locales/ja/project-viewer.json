@@ -16,6 +16,7 @@
       "cancel": "キャンセル",
       "close": "閉じる",
       "copy": "コピー",
+      "edit": "編集",
       "copyToLibrary": "ライブラリにコピー",
       "selectAll": "すべて選択",
       "selectedCount": "{{count}} 件選択",
@@ -161,8 +162,14 @@
       "searchPlaceholder": "モデル名またはプロバイダー名で検索...",
       "noProviders": "プロバイダーが設定されていません",
       "noProvidersHint": "設定から最初の AI プロバイダーを追加してください",
-      "noModelsFound": "\"{{query}}\" に一致するモデルが見つかりません",
-      "footer": "モデルカードをクリックして選択し、続行します"
+      "noModelsFound": "「{{query}}」に一致するモデルは見つかりません",
+      "footer": "モデルカードをクリックして選択して続行"
+    },
+    "imageEditor": {
+      "title": "画像編集",
+      "crop": "トリミング",
+      "draw": "描画",
+      "clearDrawings": "描画をクリア"
     },
     "librarySelection": {
       "title": "ライブラリを選択",

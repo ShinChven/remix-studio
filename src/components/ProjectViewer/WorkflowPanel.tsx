@@ -39,6 +39,7 @@ interface WorkflowPanelProps {
   onDragEnd: () => void;
   onRemoveItem: (id: string) => void;
   onEditItem: (item: WorkflowItemType) => void;
+  onEditImage?: (item: WorkflowItemType) => void;
   onPreviewLibrary: (library: Library, workflowItemId: string) => void;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>, id: string) => void;
   onVideoUpload: (e: React.ChangeEvent<HTMLInputElement>, id: string) => void;
@@ -90,6 +91,7 @@ export function WorkflowPanel({
   onDragEnd,
   onRemoveItem,
   onEditItem,
+  onEditImage,
   onPreviewLibrary,
   onImageUpload,
   onVideoUpload,
@@ -422,6 +424,7 @@ export function WorkflowPanel({
             onDragEnd={onDragEnd}
             onRemove={onRemoveItem}
             onEdit={onEditItem}
+            onEditImage={onEditImage}
             onPreviewLibrary={(lib) => onPreviewLibrary(lib, item.id)}
             onImageUpload={onImageUpload}
             onVideoUpload={onVideoUpload}

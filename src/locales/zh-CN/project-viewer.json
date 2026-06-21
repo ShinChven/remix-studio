@@ -16,7 +16,8 @@
       "cancel": "取消",
       "close": "关闭",
       "copy": "复制",
-      "copyToLibrary": "复制到资料库",
+      "edit": "编辑",
+      "copyToLibrary": "复制到库",
       "selectAll": "全选",
       "selectedCount": "已选 {{count}} 项",
       "delete": "删除",
@@ -162,10 +163,16 @@
       "noProviders": "尚未配置提供商",
       "noProvidersHint": "前往设置添加你的第一个 AI 提供商",
       "noModelsFound": "未找到匹配“{{query}}”的模型",
-      "footer": "点击模型卡片以选择并继续"
+      "footer": "点击模型卡片进行选择并继续"
+    },
+    "imageEditor": {
+      "title": "编辑图片",
+      "crop": "裁剪",
+      "draw": "绘画",
+      "clearDrawings": "清除绘画"
     },
     "librarySelection": {
-      "title": "选择资料库",
+      "title": "选择库",
       "description": "可用于工作流的集合",
       "noLibraries": "尚未创建资料库",
       "noResults": "没有匹配 \"{{query}}\" 的资料库",
