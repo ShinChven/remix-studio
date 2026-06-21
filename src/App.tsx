@@ -124,7 +124,6 @@ export default function App() {
               <Route path="assistant" element={<AssistantPage />} />
               <Route path="assistant/history" element={<ChatHistoryPage />} />
               <Route path="assistant/settings" element={<AssistantSettingsPage />} />
-              <Route path="assistant/:id/settings" element={<AssistantSettingsPage />} />
               <Route path="assistant/:id" element={<AssistantPage />} />
             </Route>
           </Routes>

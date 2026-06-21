@@ -1248,7 +1248,7 @@ export function AssistantPage() {
     ? conversations.find((c) => c.id === activeConversationId)?.title || t('assistant.title')
     : t('assistant.title');
   const settingsPath = activeConversationId
-    ? `/assistant/${activeConversationId}/settings`
+    ? `/assistant/settings?returnTo=/assistant/${activeConversationId}`
     : '/assistant/settings';
 
   return (

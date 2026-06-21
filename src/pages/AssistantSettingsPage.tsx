@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Check,
@@ -121,8 +121,8 @@ function getToolCategoryLabel(category: AssistantToolMetadata['category']) {
 
 export function AssistantSettingsPage() {
   const { t } = useTranslation();
-  const { id: conversationId } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
   const activeTab = isAssistantSettingsTab(searchParams.get('tab'))
     ? (searchParams.get('tab') as AssistantSettingsTab)
     : 'providers';
@@ -150,7 +150,7 @@ export function AssistantSettingsPage() {
   const [toolSearch, setToolSearch] = useState('');
   const [toolCategory, setToolCategory] = useState<'all' | AssistantToolMetadata['category']>('all');
 
-  const returnPath = conversationId ? `/assistant/${conversationId}` : '/assistant';
+  const returnPath = returnTo || '/assistant';
 
   const providerEntries = useMemo(
     () => providers.map((provider) => ({
@@ -454,7 +454,7 @@ export function AssistantSettingsPage() {
             })}
             backLink={{
               to: returnPath,
-              label: conversationId
+              label: returnTo
                 ? t('assistant.backToConversation', { defaultValue: 'Back to chat' })
                 : t('assistant.backToAssistant', { defaultValue: 'Back to assistant' }),
             }}
