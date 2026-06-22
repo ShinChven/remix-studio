@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { X, ChevronLeft, ChevronRight, Trash2, Play, Pause, Maximize, Minimize, Wand2 } from 'lucide-react';
+import { useWakeLock } from '../../hooks/useWakeLock';
 
 interface ImageLightboxProps {
   images: string[];
@@ -10,6 +11,10 @@ interface ImageLightboxProps {
   onDelete?: (index: number) => void;
   onIndexChange?: (index: number) => void;
 }
+
+// Hold the screen-wake lock for at most this long; an unattended slideshow then
+// lets the display sleep again.
+const WAKE_LOCK_MAX_MS = 30 * 60 * 1000;
 
 const MIN_INTERVAL = 1;
 const MAX_INTERVAL = 60;
@@ -208,6 +213,12 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
   useEffect(() => {
     if (images.length <= 1 && slideshowOn) setSlideshowOn(false);
   }, [images.length, slideshowOn]);
+
+  // Keep the display awake while the slideshow auto-advances; it can run for a
+  // long stretch with no input, which would otherwise let the screen sleep.
+  // Cap the hold at 30 minutes so an unattended slideshow eventually lets the
+  // screen sleep again.
+  useWakeLock(slideshowOn, WAKE_LOCK_MAX_MS);
 
   // Keep the outgoing image mounted underneath while a transition plays, so the
   // incoming one visibly covers it instead of revealing the black backdrop.
