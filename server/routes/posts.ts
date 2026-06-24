@@ -1654,7 +1654,7 @@ export function createPostsRouter(
           skipped.push({ postId: item.postId, reason: 'Not found' });
           continue;
         }
-        if (post.status === 'completed' || post.status === 'failed') {
+        if (post.status === 'completed') {
           skipped.push({ postId: item.postId, reason: `Already ${post.status}` });
           continue;
         }
