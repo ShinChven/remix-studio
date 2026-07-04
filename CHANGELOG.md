@@ -2,16 +2,22 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
-## [1.16.1] - 2026-06-22
+## [1.16.1] - 2026-07-04
 
 ### Added
 
 - **Immersive Fullscreen Slideshow**: In fullscreen the image now fills the entire screen and the on-screen controls fade away after a few seconds without mouse or keyboard activity, reappearing the instant you interact.
 - **Confirmation Keyboard Shortcuts**: The image deletion confirmation can now be dismissed with Escape, and pressing D again cancels it.
+- **Slideshow Wake Lock**: Added the `useWakeLock` hook to prevent the screen from going to sleep during ImageLightbox slideshows.
+
+### Changed
+
+- **Model Availability Documentation**: Restructured model documentation into category-specific tables, added a provider summary matrix, and expanded the Chat Assistant capabilities section.
 
 ### Fixed
 
 - **Delete Confirmation in Fullscreen**: Fixed the deletion confirmation dialog not appearing while viewing an image in fullscreen.
+- **Posts Route**: Removed a failed status check that prevented correctly skipping posts in the posts route.
 
 ## [1.16.0] - 2026-06-22
 

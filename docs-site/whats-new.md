@@ -8,18 +8,24 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
-## 1.16.1 — A more immersive lightbox
+## 1.16.1 — A more immersive lightbox & clearer model docs
 
-*Fullscreen viewing gets out of the way, and the delete prompt plays nicely with it.*
+*Fullscreen viewing gets out of the way, slideshows keep your screen awake, and the supported models documentation has been overhauled.*
 
 **Added**
 
 - **Immersive fullscreen** — In fullscreen, the image fills the whole screen and the controls fade away after a few seconds of inactivity. Move the mouse or press a key to bring them back.
 - **Confirmation shortcuts** — Dismiss the image delete prompt with Escape, or press D again to cancel it.
+- **Wake lock for slideshows** — Your screen will no longer go to sleep while playing an image slideshow in the lightbox.
+
+**Improved**
+
+- **Model availability docs** — The documentation for supported models (LLMs, Image, Video, Audio) has been restructured into category-specific tables with a new provider summary matrix.
 
 **Fixed**
 
 - The delete confirmation dialog now shows correctly while viewing an image in fullscreen.
+- Fixed an issue in the posts route where a failed status check prevented skipping posts correctly.
 
 ## 1.16.0 — Image slideshow & a documentation site
 
