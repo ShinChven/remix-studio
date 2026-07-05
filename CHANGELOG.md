@@ -2,12 +2,11 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
-## [1.16.1] - 2026-07-04
+## [1.17.0] - 2026-07-05
 
 ### Added
 
-- **Immersive Fullscreen Slideshow**: In fullscreen the image now fills the entire screen and the on-screen controls fade away after a few seconds without mouse or keyboard activity, reappearing the instant you interact.
-- **Confirmation Keyboard Shortcuts**: The image deletion confirmation can now be dismissed with Escape, and pressing D again cancels it.
+- **Fullscreen Workflow View**: Added a fullscreen toggle button to the workflow panel header, next to the assistant button. It expands the workflow across the entire project view, hiding the Draft, Queue, Done, and Album area, and lays out all workflow items in a grid of equal-sized, individually scrollable cards. Toggling again restores the split view.
 - **Slideshow Wake Lock**: Added the `useWakeLock` hook to prevent the screen from going to sleep during ImageLightbox slideshows.
 
 ### Changed
@@ -16,8 +15,18 @@ All notable changes to Remix Studio are documented here by version number.
 
 ### Fixed
 
-- **Delete Confirmation in Fullscreen**: Fixed the deletion confirmation dialog not appearing while viewing an image in fullscreen.
 - **Posts Route**: Removed a failed status check that prevented correctly skipping posts in the posts route.
+
+## [1.16.1] - 2026-06-22
+
+### Added
+
+- **Immersive Fullscreen Slideshow**: In fullscreen the image now fills the entire screen and the on-screen controls fade away after a few seconds without mouse or keyboard activity, reappearing the instant you interact.
+- **Confirmation Keyboard Shortcuts**: The image deletion confirmation can now be dismissed with Escape, and pressing D again cancels it.
+
+### Fixed
+
+- **Delete Confirmation in Fullscreen**: Fixed the deletion confirmation dialog not appearing while viewing an image in fullscreen.
 
 ## [1.16.0] - 2026-06-22
 

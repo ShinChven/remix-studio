@@ -8,14 +8,13 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
-## 1.16.1 — A more immersive lightbox & clearer model docs
+## 1.17.0 — Fullscreen workflow view & wake lock
 
-*Fullscreen viewing gets out of the way, slideshows keep your screen awake, and the supported models documentation has been overhauled.*
+*Give your workflow the whole screen, and keep your screen awake during slideshows.*
 
 **Added**
 
-- **Immersive fullscreen** — In fullscreen, the image fills the whole screen and the controls fade away after a few seconds of inactivity. Move the mouse or press a key to bring them back.
-- **Confirmation shortcuts** — Dismiss the image delete prompt with Escape, or press D again to cancel it.
+- **Fullscreen workflow** — A new fullscreen button in the workflow panel header (next to the assistant button) expands the workflow across the entire project view, tucking away the Draft, Queue, Done, and Album tabs. Your workflow items spread out into a grid of equal-sized cards, each scrolling on its own when its content runs long. Click the button again to return to the split view.
 - **Wake lock for slideshows** — Your screen will no longer go to sleep while playing an image slideshow in the lightbox.
 
 **Improved**
@@ -24,8 +23,20 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Fixed**
 
-- The delete confirmation dialog now shows correctly while viewing an image in fullscreen.
 - Fixed an issue in the posts route where a failed status check prevented skipping posts correctly.
+
+## 1.16.1 — A more immersive lightbox
+
+*Fullscreen viewing gets out of the way, and the delete prompt plays nicely with it.*
+
+**Added**
+
+- **Immersive fullscreen** — In fullscreen, the image fills the whole screen and the controls fade away after a few seconds of inactivity. Move the mouse or press a key to bring them back.
+- **Confirmation shortcuts** — Dismiss the image delete prompt with Escape, or press D again to cancel it.
+
+**Fixed**
+
+- The delete confirmation dialog now shows correctly while viewing an image in fullscreen.
 
 ## 1.16.0 — Image slideshow & a documentation site
 
