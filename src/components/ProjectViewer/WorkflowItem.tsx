@@ -27,6 +27,7 @@ interface WorkflowItemProps {
   onChangeLibrary: (id: string) => void;
   libraries: Library[];
   onToggleDisable?: (id: string) => void;
+  gridView?: boolean;
 }
 
 export function WorkflowItem({
@@ -51,7 +52,8 @@ export function WorkflowItem({
   onEditImage,
   onChangeLibrary,
   libraries,
-  onToggleDisable
+  onToggleDisable,
+  gridView = false
 }: WorkflowItemProps) {
   const { t } = useTranslation();
   const isLibrary = item.type === 'library';
@@ -68,7 +70,7 @@ export function WorkflowItem({
       onDragOver={(e) => onDragOver(e, index)}
       onDrop={(e) => onDrop(e, index)}
       onDragEnd={onDragEnd}
-      className={`bg-white/70 dark:bg-neutral-950/70 border rounded-xl p-4 group transition-all backdrop-blur-xl ${item.disabled ? 'opacity-40 grayscale-[0.5]' : ''} ${
+      className={`bg-white/70 dark:bg-neutral-950/70 border rounded-xl p-4 group transition-all backdrop-blur-xl ${gridView ? 'lg:h-full lg:min-h-0 lg:overflow-y-auto custom-scrollbar' : ''} ${item.disabled ? 'opacity-40 grayscale-[0.5]' : ''} ${
         draggedIndex === index ? 'opacity-50 border-blue-500' : 
         dragOverIndex === index ? 'border-blue-400 border-dashed bg-white/40 dark:bg-neutral-800/40' : 
         'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/50 shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5'

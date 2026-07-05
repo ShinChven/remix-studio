@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Archive, ArchiveRestore, Copy, Eraser, HardDrive, Hash, ImageIcon, Library as LibraryIcon, MoreVertical, Settings, Stars, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
+import { Archive, ArchiveRestore, Copy, Eraser, HardDrive, Hash, ImageIcon, Library as LibraryIcon, Maximize2, Minimize2, MoreVertical, Settings, Stars, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
@@ -19,6 +19,8 @@ interface WorkflowPanelProps {
   selectedProviderId: string;
   selectedModelId: string;
   isSettingsCollapsed: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
   queueCount: number;
   workflowError: string | null;
   uploadingItemIds: Set<string>;
@@ -71,6 +73,8 @@ export function WorkflowPanel({
   selectedProviderId,
   selectedModelId,
   isSettingsCollapsed,
+  isExpanded,
+  onToggleExpand,
   queueCount,
   workflowError,
   uploadingItemIds,
@@ -194,8 +198,8 @@ export function WorkflowPanel({
   };
 
   return (
-    <div 
-      className={`w-full lg:w-96 lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/30 backdrop-blur-3xl flex-col flex-shrink-0 relative ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}
+    <div
+      className={`w-full ${isExpanded ? 'lg:flex-1 lg:w-auto lg:min-w-0' : 'lg:w-96'} lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/30 backdrop-blur-3xl flex-col flex-shrink-0 relative ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}
       onDragOver={handlePanelDragOver}
       onDragLeave={handlePanelDragLeave}
       onDrop={handlePanelDrop}
@@ -234,6 +238,20 @@ export function WorkflowPanel({
               aria-label={t('projectViewer.main.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })}
             >
               <Stars className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={onToggleExpand}
+              className="hidden lg:block p-1.5 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 transition-all hover:bg-white/10 rounded-lg border border-transparent hover:border-neutral-200/50 dark:hover:border-white/10"
+              title={isExpanded
+                ? t('projectViewer.workflow.collapseWorkflow', { defaultValue: 'Exit full screen' })
+                : t('projectViewer.workflow.expandWorkflow', { defaultValue: 'Expand workflow to full screen' })}
+              aria-label={isExpanded
+                ? t('projectViewer.workflow.collapseWorkflow', { defaultValue: 'Exit full screen' })
+                : t('projectViewer.workflow.expandWorkflow', { defaultValue: 'Expand workflow to full screen' })}
+              aria-expanded={isExpanded}
+            >
+              {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
 
             <div className="relative" ref={actionMenuRef}>
@@ -397,9 +415,9 @@ export function WorkflowPanel({
         )}
       </div>
 
-      <div 
-        ref={workflowListRef} 
-        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar lg:max-h-none relative"
+      <div
+        ref={workflowListRef}
+        className={`flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar lg:max-h-none relative ${isExpanded ? 'space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-4 lg:content-start lg:auto-rows-[20rem]' : 'space-y-4'}`}
       >
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20">
@@ -436,10 +454,11 @@ export function WorkflowPanel({
             onSelectFromLibrary={onSelectFromLibrary}
             onChangeLibrary={onChangeLibrary}
             onToggleDisable={onToggleDisable}
+            gridView={isExpanded}
           />
         ))}
         {!isLoading && (localProject.workflow || []).length === 0 && (
-          <div className="text-center text-neutral-500 dark:text-neutral-500 text-[10px] font-bold uppercase tracking-[0.2em] py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-white/20 dark:bg-neutral-900/20 shadow-inner backdrop-blur-sm">{t('projectViewer.main.buildWorkflow')}</div>
+          <div className="col-span-full text-center text-neutral-500 dark:text-neutral-500 text-[10px] font-bold uppercase tracking-[0.2em] py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-white/20 dark:bg-neutral-900/20 shadow-inner backdrop-blur-sm">{t('projectViewer.main.buildWorkflow')}</div>
         )}
       </div>
 
