@@ -16,11 +16,13 @@ export function filterItemsByTags<T extends { tags?: string[] }>(
   matchMode: 'and' | 'or' = 'or'
 ): T[] {
   if (!selectedTags || selectedTags.length === 0) return items;
+  const selected = selectedTags.map(t => t.toLowerCase());
   return items.filter(i => {
     if (!i.tags || i.tags.length === 0) return false;
+    const itemTags = new Set(i.tags.map(t => t.toLowerCase()));
     return matchMode === 'and'
-      ? selectedTags.every(tag => i.tags!.includes(tag))
-      : selectedTags.some(tag => i.tags!.includes(tag));
+      ? selected.every(tag => itemTags.has(tag))
+      : selected.some(tag => itemTags.has(tag));
   });
 }
 

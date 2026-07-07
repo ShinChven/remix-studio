@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { X, ChevronDown, Library as LibraryIcon, Video as VideoIcon, Volume2, Search, ExternalLink } from 'lucide-react';
 import { Library, LibraryItem } from '../../types';
 import { imageDisplayUrl } from '../../api';
+import { filterItemsByTags } from '../../lib/remixEngine';
 import { ImageLightbox } from './ImageLightbox';
 
 function TextLibraryItem({ 
@@ -96,24 +97,20 @@ export function LibraryPreviewModal({
 
   const availableTags = React.useMemo(() => {
     if (!library) return [];
-    const tagSet = new Set<string>();
+    const tagMap = new Map<string, string>();
     library.items.forEach(i => {
-      if (i.tags) i.tags.forEach(t => tagSet.add(t));
+      if (i.tags) i.tags.forEach(t => {
+        const key = t.toLowerCase();
+        if (!tagMap.has(key)) tagMap.set(key, t);
+      });
     });
-    return Array.from(tagSet).sort();
+    return Array.from(tagMap.values()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   }, [library]);
 
   const filteredItems = React.useMemo(() => {
     if (!library) return [];
     const q = query.trim().toLowerCase();
-    return library.items.filter(item => {
-      if (selectedTags.length > 0) {
-        if (!item.tags || item.tags.length === 0) return false;
-        const matches = tagMatchMode === 'and'
-          ? selectedTags.every(tag => item.tags!.includes(tag))
-          : selectedTags.some(tag => item.tags!.includes(tag));
-        if (!matches) return false;
-      }
+    return filterItemsByTags(library.items, selectedTags, tagMatchMode).filter(item => {
       if (q) {
         const inTitle = item.title?.toLowerCase().includes(q);
         const inContent = item.content?.toLowerCase().includes(q);
@@ -124,9 +121,11 @@ export function LibraryPreviewModal({
     });
   }, [library, selectedTags, query, tagMatchMode]);
 
+  const isTagSelected = (tag: string) => selectedTags.some(t => t.toLowerCase() === tag.toLowerCase());
+
   const toggleTag = (tag: string) => {
-    const next = selectedTags.includes(tag) 
-      ? selectedTags.filter(t => t !== tag) 
+    const next = isTagSelected(tag)
+      ? selectedTags.filter(t => t.toLowerCase() !== tag.toLowerCase())
       : [...selectedTags, tag];
     onUpdateTags(next);
   };
@@ -196,7 +195,7 @@ export function LibraryPreviewModal({
                     onClick={() => toggleTag(tag)}
                     title={tag}
                     className={`shrink-0 max-w-[60vw] md:max-w-80 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all border ${
-                      selectedTags.includes(tag)
+                      isTagSelected(tag)
                         ? 'bg-blue-600/20 text-blue-500 dark:text-blue-400 border-blue-500/50'
                         : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
                     }`}
