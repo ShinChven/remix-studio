@@ -135,7 +135,7 @@ export function TrashView() {
           description={t('trash.description')}
         />
 
-      <div className="sticky top-0 z-20 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 p-4 rounded-card shadow-lg shadow-black/20">
+      <div className="sticky top-0 z-20 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 p-4 rounded-card shadow-lg shadow-black/5 dark:shadow-black/20">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">
             {t('trash.stats.items', { count: items.length })}
