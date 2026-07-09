@@ -2,6 +2,21 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.17.1] - 2026-07-10
+
+### Changed
+
+- **Case-Insensitive Tag Matching**: Library tag filtering now matches tags case-insensitively, in both the filtering logic and tag selection UI.
+- **Pagination**: The pagination bar in the project Album and Done tabs is hidden when all items fit on a single page.
+
+### Fixed
+
+- **Light Mode Theming**: Fixed a wide range of light mode issues across pages and modals — colored action buttons now always use white labels, controls over dark image overlays stay visible, leftover dark-only text colors and hover states received light equivalents, and the login card is consistently styled over its dark backdrop.
+- **Light Mode Shadows**: Softened the heavy black shadows on selection toolbars and filter dropdowns in light mode to match the rest of the interface.
+- **Draft Canvas Centering**: The empty draft canvas is now vertically centered in the tab area instead of sitting at the top.
+- **Fullscreen Workflow Cards**: Workflow item cards now fill their grid cells properly in the fullscreen workflow view — text content expands with inner scrolling, and images and videos fill the remaining card height instead of overflowing.
+- **Library Hover Border**: Removed the harsh border that appeared when hovering library item cards in light mode.
+
 ## [1.17.0] - 2026-07-05
 
 ### Added

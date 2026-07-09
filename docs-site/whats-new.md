@@ -8,6 +8,23 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.17.1 — Light mode polish
+
+*A cleanup pass for light mode, plus tidier fullscreen workflow cards and smarter pagination.*
+
+**Improved**
+
+- **Case-insensitive tags** — Library tag filtering now matches tags regardless of case, so `Portrait` and `portrait` behave as one tag.
+- **Smarter pagination** — The pagination bar in the Album and Done tabs stays out of the way when everything already fits on one page.
+
+**Fixed**
+
+- **Light mode, everywhere** — A full audit fixed unreadable labels on colored buttons, invisible controls over image overlays, leftover dark-only text and hover states, and an inconsistent login card.
+- **Softer shadows** — Toolbars and filter dropdowns no longer cast heavy black shadows in light mode.
+- **Centered draft canvas** — The empty draft canvas now sits in the middle of the tab instead of hugging the top.
+- **Fullscreen workflow cards** — In the fullscreen workflow view, cards now fill their grid cells cleanly: text scrolls inside its card, and images and videos fill the available space.
+- **Library hover border** — Removed the harsh border that flashed when hovering library items in light mode.
+
 ## 1.17.0 — Fullscreen workflow view & wake lock
 
 *Give your workflow the whole screen, and keep your screen awake during slideshows.*
