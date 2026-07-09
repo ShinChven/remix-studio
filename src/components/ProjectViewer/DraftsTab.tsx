@@ -56,7 +56,7 @@ export function DraftsTab({
   const displayAlbumItems = albumItems.slice(0, 5);
 
   const StackedGallery = () => (
-    <div className="py-12 md:py-20 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-1000">
+    <div className="min-h-full py-12 md:py-20 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-1000">
       {projectType !== 'text' && projectType !== 'audio' && (
         <div className="relative w-64 h-64 md:w-80 md:h-80 mb-12 group cursor-pointer" onClick={onSwitchToAlbum}>
           {displayAlbumItems.map((item, idx) => {
@@ -118,9 +118,11 @@ export function DraftsTab({
     </div>
   );
 
+  const isEmpty = draftJobs.length === 0;
+
   return (
-    <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col gap-0">
+    <section className={`animate-in fade-in slide-in-from-bottom-4 duration-500 ${isEmpty ? 'h-full' : ''}`}>
+      <div className={`flex flex-col gap-0 ${isEmpty ? 'h-full' : ''}`}>
         {draftJobs.length > 0 && (
           <SelectionToolbar
             totalCount={draftJobs.length}
@@ -156,7 +158,7 @@ export function DraftsTab({
             }
           />
         )}
-        <div className="space-y-0">
+        <div className={`space-y-0 ${isEmpty ? 'h-full' : ''}`}>
             {(() => {
               const scopeIds = draftJobs.map(j => j.id);
               return draftJobs.map(task => {
