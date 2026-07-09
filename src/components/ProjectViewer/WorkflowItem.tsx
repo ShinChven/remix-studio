@@ -70,13 +70,13 @@ export function WorkflowItem({
       onDragOver={(e) => onDragOver(e, index)}
       onDrop={(e) => onDrop(e, index)}
       onDragEnd={onDragEnd}
-      className={`bg-white/70 dark:bg-neutral-950/70 border rounded-xl p-4 group transition-all backdrop-blur-xl ${gridView ? 'lg:h-full lg:min-h-0 lg:overflow-y-auto custom-scrollbar' : ''} ${item.disabled ? 'opacity-40 grayscale-[0.5]' : ''} ${
+      className={`bg-white/70 dark:bg-neutral-950/70 border rounded-xl p-4 group transition-all backdrop-blur-xl ${gridView ? 'lg:h-full lg:min-h-0 lg:flex lg:flex-col lg:overflow-hidden' : ''} ${item.disabled ? 'opacity-40 grayscale-[0.5]' : ''} ${
         draggedIndex === index ? 'opacity-50 border-blue-500' : 
         dragOverIndex === index ? 'border-blue-400 border-dashed bg-white/40 dark:bg-neutral-800/40' : 
         'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/50 shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5'
       }`}
     >
-      <div className="flex justify-between items-center mb-3">
+      <div className={`flex justify-between items-center mb-3 ${gridView ? 'lg:flex-shrink-0' : ''}`}>
         <div className="flex items-center gap-2">
           <div className="cursor-grab active:cursor-grabbing text-neutral-600 hover:text-neutral-400 transition-colors">
             <GripVertical className="w-4 h-4" />
@@ -188,12 +188,12 @@ export function WorkflowItem({
       </div>
 
       {item.type === 'text' && (
-        <div className="space-y-3">
-          <div 
+        <div className={`space-y-3 ${gridView ? 'lg:flex-1 lg:min-h-0 lg:flex lg:flex-col' : ''}`}>
+          <div
             onClick={() => onEdit(item)}
-            className="group/text relative cursor-pointer"
+            className={`group/text relative cursor-pointer ${gridView ? 'lg:flex-1 lg:min-h-0' : ''}`}
           >
-            <div className="w-full bg-white/40 dark:bg-black/40 border border-neutral-200/50 dark:border-white/5 rounded-xl p-4 text-xs text-neutral-900 dark:text-neutral-300 line-clamp-4 min-h-[110px] transition-all hover:border-blue-500/30 hover:bg-white/60 dark:hover:bg-neutral-900/60 shadow-inner backdrop-blur-md">
+            <div className={`w-full bg-white/40 dark:bg-black/40 border border-neutral-200/50 dark:border-white/5 rounded-xl p-4 text-xs text-neutral-900 dark:text-neutral-300 line-clamp-4 min-h-[110px] transition-all hover:border-blue-500/30 hover:bg-white/60 dark:hover:bg-neutral-900/60 shadow-inner backdrop-blur-md ${gridView ? 'lg:h-full lg:line-clamp-none lg:overflow-y-auto custom-scrollbar' : ''}`}>
               {item.value || <span className="opacity-30 italic font-medium">{t('projectViewer.workflow.noTextContent')}</span>}
               <div className="absolute top-3 right-3 p-1.5 bg-white dark:bg-neutral-900 rounded-md border border-neutral-200 dark:border-neutral-800 shadow-sm opacity-100 transition-all text-neutral-400 hover:text-blue-500 hover:border-blue-200">
                 <Maximize2 className="w-3.5 h-3.5" />
@@ -246,9 +246,9 @@ export function WorkflowItem({
       )}
 
       {item.type === 'image' && (
-        <div className="space-y-2">
+        <div className={`space-y-2 ${gridView ? 'lg:flex-1 lg:min-h-0 lg:flex lg:flex-col' : ''}`}>
           {item.value && !uploadingItemIds.has(item.id) && (
-            <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800">
+            <div className={`relative aspect-video rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 ${gridView ? 'lg:aspect-auto lg:flex-1 lg:min-h-0' : ''}`}>
                <img 
                  src={imageDisplayUrl(item.thumbnailUrl || item.value)} 
                  alt="Reference" 
@@ -261,8 +261,8 @@ export function WorkflowItem({
       )}
 
       {item.type === 'video' && (
-        <div className="space-y-2">
-          <div className="flex gap-2">
+        <div className={`space-y-2 ${gridView ? 'lg:flex-1 lg:min-h-0 lg:flex lg:flex-col' : ''}`}>
+          <div className={`flex gap-2 ${gridView ? 'lg:flex-shrink-0' : ''}`}>
             <label className="flex-1 block text-center py-2.5 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-lg cursor-pointer hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 hover:border-violet-500/50 transition-all group relative overflow-hidden">
               {uploadingItemIds.has(item.id) ? (
                 <div className="flex items-center justify-center gap-2">
@@ -288,12 +288,12 @@ export function WorkflowItem({
             </button>
           </div>
           {item.value && !uploadingItemIds.has(item.id) && (
-            <div className="relative aspect-video rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 mt-2 bg-black">
+            <div className={`relative aspect-video rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 mt-2 bg-black ${gridView ? 'lg:aspect-auto lg:flex-1 lg:min-h-0' : ''}`}>
               <video
                 src={imageDisplayUrl(item.value)}
                 poster={item.thumbnailUrl ? imageDisplayUrl(item.thumbnailUrl) : undefined}
                 controls
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover ${gridView ? 'lg:object-contain' : ''}`}
               />
             </div>
           )}

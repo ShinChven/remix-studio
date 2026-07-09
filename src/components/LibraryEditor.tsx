@@ -710,7 +710,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   group/item flex flex-col transition-all duration-300 border overflow-hidden
                   ${isSelected
                     ? 'border-blue-600 bg-blue-50 dark:bg-blue-900 shadow-[0_0_20px_rgba(59,130,246,0.15)] z-10'
-                    : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-400 dark:hover:border-neutral-700 shadow-sm'}
+                    : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900 dark:hover:border-neutral-700 shadow-sm'}
                   ${library.type === 'image'
                     ? 'rounded-card aspect-square p-3'
                     : 'rounded-card cursor-pointer'}
