@@ -155,7 +155,7 @@ export function CopyToLibraryDialog({
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl p-2 text-neutral-500 dark:text-neutral-500 transition-all hover:bg-neutral-800 hover:text-white"
+            className="rounded-xl p-2 text-neutral-500 dark:text-neutral-500 transition-all hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
@@ -171,7 +171,7 @@ export function CopyToLibraryDialog({
                 className={`flex flex-col items-center gap-3 p-4 rounded-card border transition-all ${
                   mode === 'new'
                     ? 'bg-blue-600/10 border-blue-500/50 text-blue-400 shadow-lg shadow-blue-500/10'
-                    : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-800/50'
+                    : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50'
                 }`}
               >
                 <FolderPlus className="w-8 h-8" />
@@ -183,7 +183,7 @@ export function CopyToLibraryDialog({
                 className={`flex flex-col items-center gap-3 p-4 rounded-card border transition-all ${
                   mode === 'existing'
                     ? 'bg-blue-600/10 border-blue-500/50 text-blue-400 shadow-lg shadow-blue-500/10'
-                    : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-800/50 disabled:opacity-30 disabled:cursor-not-allowed'
+                    : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 disabled:opacity-30 disabled:cursor-not-allowed'
                 }`}
               >
                 <LibraryIcon className="w-8 h-8" />
@@ -234,7 +234,7 @@ export function CopyToLibraryDialog({
                   className={`flex items-center gap-3 p-4 rounded-card border transition-all ${
                     version === 'optimized'
                       ? 'bg-neutral-200 dark:bg-neutral-800 border-neutral-600 text-neutral-900 dark:text-white'
-                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-800/50'
+                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50'
                   }`}
                 >
                   {version === 'optimized' ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4" />}
@@ -248,7 +248,7 @@ export function CopyToLibraryDialog({
                   className={`flex items-center gap-3 p-4 rounded-card border transition-all ${
                     version === 'raw'
                       ? 'bg-neutral-200 dark:bg-neutral-800 border-neutral-600 text-neutral-900 dark:text-white'
-                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-800/50'
+                      : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50'
                   }`}
                 >
                   {version === 'raw' ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4" />}
@@ -273,7 +273,7 @@ export function CopyToLibraryDialog({
           <button
             onClick={() => void handleSubmit()}
             disabled={isSubmitting || (mode === 'new' && !newLibraryName.trim()) || (mode === 'existing' && !selectedLibraryId)}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-card bg-blue-600 px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-neutral-900 dark:text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-card bg-blue-600 px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? (
               <>

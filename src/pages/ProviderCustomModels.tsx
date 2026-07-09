@@ -324,7 +324,7 @@ export function ProviderCustomModels() {
                         </button>
                         <button
                           onClick={() => setDeleteTarget(null)}
-                          className="px-2.5 py-1.5 text-xs font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors"
+                          className="px-2.5 py-1.5 text-xs font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 rounded-lg transition-colors"
                         >
                           {t('providerCustomModels.cancel')}
                         </button>
@@ -334,7 +334,7 @@ export function ProviderCustomModels() {
                         <button
                           onClick={() => openEdit(idx)}
                           disabled={!!editor}
-                          className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 rounded-lg transition-colors disabled:opacity-30"
+                          className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-300 dark:hover:bg-neutral-700 rounded-lg transition-colors disabled:opacity-30"
                           title={t('providerCustomModels.edit')}
                         >
                           <Pencil className="w-4 h-4" />

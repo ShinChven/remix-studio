@@ -438,7 +438,7 @@ export function AdminUsers() {
                 <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('adminUsers.createModal.title')}</h3>
                 <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-500">{t('adminUsers.createModal.description')}</p>
               </div>
-              <button type="button" onClick={() => setIsCreateOpen(false)} className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-2 text-neutral-600 dark:text-neutral-400 transition hover:bg-neutral-800 hover:text-white">
+              <button type="button" onClick={() => setIsCreateOpen(false)} className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-2 text-neutral-600 dark:text-neutral-400 transition hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -507,7 +507,7 @@ export function AdminUsers() {
               </div>
 
               <div className="flex items-center justify-end gap-3 border-t border-neutral-200 dark:border-neutral-800 pt-4">
-                <button type="button" onClick={() => setIsCreateOpen(false)} className="rounded-card px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 transition hover:bg-neutral-800 hover:text-white">
+                <button type="button" onClick={() => setIsCreateOpen(false)} className="rounded-card px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 transition hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white">
                   {t('adminUsers.createModal.cancel')}
                 </button>
                 <button
@@ -533,7 +533,7 @@ export function AdminUsers() {
                   <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('adminUsers.detail.title')}</h3>
                   <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.description')}</p>
                 </div>
-                <button type="button" onClick={() => setActiveUserId(null)} className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-2 text-neutral-600 dark:text-neutral-400 transition hover:bg-neutral-800 hover:text-white">
+                <button type="button" onClick={() => setActiveUserId(null)} className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-2 text-neutral-600 dark:text-neutral-400 transition hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white">
                   <X className="h-4 w-4" />
                 </button>
               </div>

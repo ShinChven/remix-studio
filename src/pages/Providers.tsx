@@ -91,7 +91,7 @@ export function Providers() {
             </h3>
             <button
               onClick={() => navigate('/provider/new')}
-              className="p-2.5 bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 rounded-card transition-all flex items-center justify-center border border-amber-600/30 shadow-lg shadow-amber-600/10 active:scale-95"
+              className="p-2.5 bg-amber-600 text-white hover:bg-amber-500 rounded-card transition-all flex items-center justify-center border border-amber-600/30 shadow-lg shadow-amber-600/10 active:scale-95"
               title={t('providers.newProvider')}
               aria-label={t('providers.newProvider')}
             >

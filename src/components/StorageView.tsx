@@ -340,7 +340,7 @@ export function StorageView() {
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-neutral-200 font-bold group-hover:text-white transition-colors truncate pr-2">{proj.name}</span>
+                  <span className="text-neutral-900 dark:text-neutral-200 font-bold dark:group-hover:text-white transition-colors truncate pr-2">{proj.name}</span>
                   <span className="text-sm font-black text-blue-400 whitespace-nowrap">{formatSize(proj.total)}</span>
                 </div>
                 <div className="space-y-2">

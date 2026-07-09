@@ -39,7 +39,7 @@ export function AlbumPromptModal({ item, onClose }: AlbumPromptModalProps) {
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
+            className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-xl transition-all"
             aria-label={t('projectViewer.albumPrompt.closeAria')}
           >
             <X className="w-5 h-5" />
@@ -48,7 +48,7 @@ export function AlbumPromptModal({ item, onClose }: AlbumPromptModalProps) {
 
         <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto custom-scrollbar">
           <div className="min-h-full rounded-[20px] sm:rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 p-4 sm:p-6 md:p-8">
-            <p className="whitespace-pre-wrap break-words text-neutral-200 text-base sm:text-lg md:text-xl font-medium leading-relaxed">
+            <p className="whitespace-pre-wrap break-words text-neutral-800 dark:text-neutral-200 text-base sm:text-lg md:text-xl font-medium leading-relaxed">
               {item.prompt}
             </p>
           </div>
@@ -61,14 +61,14 @@ export function AlbumPromptModal({ item, onClose }: AlbumPromptModalProps) {
           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
               onClick={handleCopy}
-              className="w-full sm:w-auto px-6 py-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               <Copy className="w-3.5 h-3.5" />
               {t('projectViewer.common.copy')}
             </button>
             <button
               onClick={onClose}
-              className="w-full sm:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-500 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-blue-500/20 active:scale-95"
+              className="w-full sm:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-blue-500/20 active:scale-95"
             >
               {t('projectViewer.common.close')}
             </button>

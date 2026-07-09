@@ -29,7 +29,7 @@ function TextLibraryItem({
           setIsExpanded(!isExpanded);
         }
       }}
-      className={`bg-white/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3.5 md:p-4 cursor-pointer transition-all hover:border-emerald-500/30 hover:bg-neutral-800/50 group/text-item ${isExpanded ? 'shadow-xl border-emerald-500/20 ring-1 ring-emerald-500/10' : 'shadow-sm'} ${isSelectionMode ? 'hover:ring-2 hover:ring-blue-500/50' : ''}`}
+      className={`bg-white/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3.5 md:p-4 cursor-pointer transition-all hover:border-emerald-500/30 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 group/text-item ${isExpanded ? 'shadow-xl border-emerald-500/20 ring-1 ring-emerald-500/10' : 'shadow-sm'} ${isSelectionMode ? 'hover:ring-2 hover:ring-blue-500/50' : ''}`}
     >
       <div className="flex justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -156,7 +156,7 @@ export function LibraryPreviewModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 shrink-0 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-lg transition-all"
+            className="p-2 shrink-0 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg transition-all"
           >
             <X className="w-5 h-5" />
           </button>
@@ -272,7 +272,7 @@ export function LibraryPreviewModal({
                         />
                         {isSelectionMode && (
                           <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover/img-container:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="px-3 py-1.5 bg-blue-600 text-neutral-900 dark:text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
+                            <div className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
                               {t('projectViewer.libraryPreview.clickToSelect')}
                             </div>
                           </div>
@@ -309,7 +309,7 @@ export function LibraryPreviewModal({
                         </div>
                         {isSelectionMode && (
                           <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover/vid-container:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="px-3 py-1.5 bg-blue-600 text-neutral-900 dark:text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
+                            <div className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
                               {t('projectViewer.libraryPreview.clickToSelect')}
                             </div>
                           </div>
@@ -331,7 +331,7 @@ export function LibraryPreviewModal({
                         <div className="absolute inset-y-0 left-0 w-1 bg-cyan-500/40" />
                         {isSelectionMode && (
                           <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover/aud-container:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="px-3 py-1.5 bg-blue-600 text-neutral-900 dark:text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
+                            <div className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl">
                               {t('projectViewer.libraryPreview.clickToSelect')}
                             </div>
                           </div>

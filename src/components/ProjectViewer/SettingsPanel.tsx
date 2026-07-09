@@ -833,7 +833,7 @@ export function SettingsPanel({
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${localProject.shuffle ? 'bg-blue-500 text-neutral-900 dark:text-white' : 'bg-white dark:bg-neutral-900 text-neutral-600'}`}>
+                <div className={`p-2 rounded-lg ${localProject.shuffle ? 'bg-blue-500 text-white' : 'bg-white dark:bg-neutral-900 text-neutral-600'}`}>
                   <Shuffle className="w-3.5 h-3.5" />
                 </div>
                 <div className="text-left">

@@ -835,7 +835,7 @@ export function Account() {
                         <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('account.security.passkeysDesc')}</p>
                       </div>
                     </div>
-                    <span className="rounded-full border border-neutral-700 bg-neutral-200 dark:bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                    <span className="rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-200 dark:bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-700 dark:text-neutral-300">
                       {t('account.security.registered', { count: securitySettings.passkeys.length })}
                     </span>
                   </div>
@@ -919,7 +919,7 @@ export function Account() {
                         <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('account.security.twoFactorDesc')}</p>
                       </div>
                     </div>
-                    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${securitySettings.twoFactorEnabled ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-neutral-700 bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'}`}>
+                    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${securitySettings.twoFactorEnabled ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300' : 'border-neutral-300 dark:border-neutral-700 bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'}`}>
                       {securitySettings.twoFactorEnabled ? t('account.security.enabled') : t('account.security.disabled')}
                     </span>
                   </div>

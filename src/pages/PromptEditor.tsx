@@ -94,7 +94,7 @@ export function PromptEditor() {
           <div className="flex items-center gap-3 md:gap-4 flex-1">
             <button
               onClick={() => navigate(`/library/${id}`)}
-              className="p-2 md:p-3 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-xl md:rounded-card transition-all border border-neutral-200/50 dark:border-neutral-800/50"
+              className="p-2 md:p-3 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/80 dark:hover:bg-neutral-800/80 rounded-xl md:rounded-card transition-all border border-neutral-200/50 dark:border-neutral-800/50"
               title={t('promptEditor.backToLibrary')}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -108,7 +108,7 @@ export function PromptEditor() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={isNew ? t('promptEditor.titlePlaceholder') : t('promptEditor.itemTitlePlaceholder')}
-                className="bg-transparent border-none text-lg md:text-xl font-bold text-neutral-900 dark:text-white tracking-tight focus:outline-none focus:ring-0 p-0 placeholder:text-neutral-700 w-full truncate"
+                className="bg-transparent border-none text-lg md:text-xl font-bold text-neutral-900 dark:text-white tracking-tight focus:outline-none focus:ring-0 p-0 placeholder:text-neutral-400 dark:placeholder:text-neutral-700 w-full truncate"
               />
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-neutral-600 truncate">
@@ -146,7 +146,7 @@ export function PromptEditor() {
 
              <button
                onClick={() => setIsFullScreen(!isFullScreen)}
-               className="p-2 md:p-3 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-xl md:rounded-card transition-all border border-neutral-200/50 dark:border-neutral-800/50"
+               className="p-2 md:p-3 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/80 dark:hover:bg-neutral-800/80 rounded-xl md:rounded-card transition-all border border-neutral-200/50 dark:border-neutral-800/50"
                title={t('promptEditor.toggleFullscreen')}
              >
                {isFullScreen ? <Minimize2 className="w-4 md:w-5 h-4 md:h-5" /> : <Maximize2 className="w-4 md:w-5 h-4 md:h-5" />}
@@ -155,7 +155,7 @@ export function PromptEditor() {
              <button
                onClick={() => handleSubmit()}
                disabled={isSubmitting || (content.trim() === '' && !isNew)}
-               className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-500 text-neutral-900 dark:text-white rounded-xl md:rounded-card font-bold uppercase tracking-widest text-[10px] md:text-xs transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-30 flex items-center justify-center gap-2 md:gap-3"
+               className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl md:rounded-card font-bold uppercase tracking-widest text-[10px] md:text-xs transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-30 flex items-center justify-center gap-2 md:gap-3"
              >
                <Save className="w-3.5 md:w-4 h-3.5 md:h-4" />
                <span className="hidden xs:inline">{t('promptEditor.save')}</span>
@@ -181,7 +181,7 @@ export function PromptEditor() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder={t('promptEditor.editorPlaceholder')}
-                  className="flex-1 w-full bg-transparent border-none p-4 md:p-8 text-neutral-200 text-sm md:text-base font-mono leading-relaxed focus:outline-none focus:ring-0 resize-none placeholder:text-neutral-800 custom-scrollbar"
+                  className="flex-1 w-full bg-transparent border-none p-4 md:p-8 text-neutral-900 dark:text-neutral-200 text-sm md:text-base font-mono leading-relaxed focus:outline-none focus:ring-0 resize-none placeholder:text-neutral-400 dark:placeholder:text-neutral-800 custom-scrollbar"
                 />
               </div>
             )}

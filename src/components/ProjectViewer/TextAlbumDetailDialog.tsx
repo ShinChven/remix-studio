@@ -136,7 +136,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
                 </div>
                 <button
                   onClick={() => handleCopy(item.prompt, t('projectViewer.common.prompt'))}
-                  className="px-3 py-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2 shrink-0"
+                  className="px-3 py-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2 shrink-0"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   {t('projectViewer.common.copy')}
@@ -173,7 +173,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
                     </div>
                   </div>
                 )}
-                <p className="whitespace-pre-wrap break-words text-sm md:text-base text-neutral-200 leading-relaxed">
+                <p className="whitespace-pre-wrap break-words text-sm md:text-base text-neutral-800 dark:text-neutral-200 leading-relaxed">
                   {item.prompt}
                 </p>
               </div>
@@ -190,7 +190,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
                 <button
                   onClick={() => handleCopy(item.textContent || '', t('projectViewer.common.generatedText'))}
                   disabled={!item.textContent}
-                  className="px-3 py-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-600 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2 shrink-0"
+                  className="px-3 py-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 disabled:bg-neutral-100 disabled:text-neutral-400 dark:disabled:bg-neutral-900 dark:disabled:text-neutral-600 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center gap-2 shrink-0"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   {t('projectViewer.common.copy')}

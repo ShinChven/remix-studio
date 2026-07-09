@@ -55,7 +55,7 @@ export function LibrarySelectionModal({
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
+            className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-xl transition-all"
           >
             <X className="w-5 h-5" />
           </button>
@@ -115,7 +115,7 @@ export function LibrarySelectionModal({
                     className={`group flex items-start gap-4 p-5 border rounded-card text-left transition-all ${
                       isSelected 
                         ? 'bg-white/20 dark:bg-neutral-900/20 border-neutral-200 dark:border-neutral-800 opacity-50 cursor-not-allowed' 
-                        : 'bg-neutral-50/40 dark:bg-neutral-950/40 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-800 hover:border-emerald-500/30 hover:scale-[1.02] active:scale-100'
+                        : 'bg-neutral-50/40 dark:bg-neutral-950/40 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:border-emerald-500/30 hover:scale-[1.02] active:scale-100'
                     }`}
                   >
                     <div className="flex-shrink-0">
@@ -130,14 +130,14 @@ export function LibrarySelectionModal({
                           />
                         </div>
                       ) : (
-                        <div className={`p-3 bg-white dark:bg-neutral-900 rounded-xl border transition-all ${isSelected ? 'border-neutral-200 dark:border-neutral-800' : 'border-neutral-200 dark:border-neutral-800 group-hover:bg-neutral-950 group-hover:border-emerald-500/20'}`}>
+                        <div className={`p-3 bg-white dark:bg-neutral-900 rounded-xl border transition-all ${isSelected ? 'border-neutral-200 dark:border-neutral-800' : 'border-neutral-200 dark:border-neutral-800 group-hover:bg-neutral-100 dark:group-hover:bg-neutral-950 group-hover:border-emerald-500/20'}`}>
                           <LibraryIcon className={`w-6 h-6 ${isSelected ? 'text-neutral-600' : 'text-emerald-500'}`} />
                         </div>
                       )}
                     </div>
                     <div className="flex-1 pt-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <div className={`text-sm font-bold truncate transition-colors ${isSelected ? 'text-neutral-500 dark:text-neutral-500' : 'text-neutral-100 group-hover:text-white'}`}>
+                        <div className={`text-sm font-bold truncate transition-colors ${isSelected ? 'text-neutral-500 dark:text-neutral-500' : 'text-neutral-900 dark:text-neutral-100 dark:group-hover:text-white'}`}>
                           {lib.name}
                         </div>
                         {isSelected && (
@@ -150,7 +150,7 @@ export function LibrarySelectionModal({
                         <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${
                           isSelected 
                             ? 'bg-white/50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800 text-neutral-600' 
-                            : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 group-hover:border-neutral-700'
+                            : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 group-hover:border-neutral-300 dark:group-hover:border-neutral-700'
                         }`}>
                           {lib.type === 'text' ? t('projectViewer.common.text') :
                            lib.type === 'image' ? t('projectViewer.common.imageShort') :

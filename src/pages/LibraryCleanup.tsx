@@ -147,7 +147,7 @@ export function LibraryCleanup() {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Play className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-neutral-200 font-medium truncate">{project.name}</span>
+                  <span className="text-sm text-neutral-900 dark:text-neutral-200 font-medium truncate">{project.name}</span>
                 </div>
                 <button
                   onClick={() => handleRemoveSingle(project.id)}
@@ -182,7 +182,7 @@ export function LibraryCleanup() {
             <button
               onClick={() => setShowDeleteModal(true)}
               disabled={cleaningAll}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-card text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-neutral-900 dark:text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-card text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {cleaningAll ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -195,7 +195,7 @@ export function LibraryCleanup() {
             <button
               onClick={handleDeleteAfterClean}
               disabled={cleaningAll}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-card text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-neutral-900 dark:text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-card text-xs font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-white shadow-2xl shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {cleaningAll ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

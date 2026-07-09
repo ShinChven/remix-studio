@@ -317,7 +317,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                     <code className="min-w-0 flex-1 break-all rounded-xl bg-white dark:bg-neutral-900 px-4 py-3 text-xs md:text-sm text-sky-700 dark:text-sky-300 font-mono border border-neutral-200 dark:border-neutral-800 shadow-sm">{mcpUrl}</code>
                     <button
                       onClick={() => copyText(mcpUrl, 'MCP URL')}
-                      className="flex-shrink-0 rounded-xl bg-neutral-200 dark:bg-neutral-800 p-3 text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 active:scale-95 border border-neutral-700 shadow-sm"
+                      className="flex-shrink-0 rounded-xl bg-neutral-200 dark:bg-neutral-800 p-3 text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-300 dark:hover:bg-neutral-700 active:scale-95 border border-neutral-300 dark:border-neutral-700 shadow-sm"
                       title={t('mcpConnections.connectSection.appAddress.copyTitle')}
                     >
                       <Copy className="h-5 w-5" />
@@ -333,7 +333,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                     <code className="min-w-0 flex-1 break-all rounded-xl bg-white dark:bg-neutral-900 px-4 py-3 text-xs md:text-sm text-blue-700 dark:text-blue-300 font-mono border border-neutral-200 dark:border-neutral-800 shadow-sm">{oauthMetadataUrl}</code>
                     <button
                       onClick={() => copyText(oauthMetadataUrl, 'OAuth metadata URL')}
-                      className="flex-shrink-0 rounded-xl bg-neutral-200 dark:bg-neutral-800 p-3 text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 active:scale-95 border border-neutral-700 shadow-sm"
+                      className="flex-shrink-0 rounded-xl bg-neutral-200 dark:bg-neutral-800 p-3 text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-300 dark:hover:bg-neutral-700 active:scale-95 border border-neutral-300 dark:border-neutral-700 shadow-sm"
                       title={t('mcpConnections.connectSection.advancedUrl.copyTitle')}
                     >
                       <Copy className="h-5 w-5" />
@@ -388,7 +388,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                           <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.jsonSetup.oauthJson')}</p>
                           <button
                             onClick={() => copyText(projectOAuthJson, 'OAuth JSON')}
-                            className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                            className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-300 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white active:scale-95 border border-neutral-300 dark:border-neutral-700"
                           >
                             {t('mcpConnections.connectSection.jsonSetup.copyJson')}
                           </button>
@@ -407,7 +407,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                           <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.jsonSetup.tokenJson')}</p>
                           <button
                             onClick={() => copyText(projectTokenJson, 'Bearer token JSON')}
-                            className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                            className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-300 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white active:scale-95 border border-neutral-300 dark:border-neutral-700"
                           >
                             {t('mcpConnections.connectSection.jsonSetup.copyJson')}
                           </button>
@@ -457,7 +457,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                             <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.cliSetup.oauthCommand')}</p>
                             <button
                               onClick={() => copyText(claudeCodeOAuthCommand, 'Claude Code command')}
-                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-300 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white active:scale-95 border border-neutral-300 dark:border-neutral-700"
                             >
                               {t('mcpConnections.connectSection.cliSetup.copyCommand')}
                             </button>
@@ -474,7 +474,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                             <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.cliSetup.tokenCommand')}</p>
                             <button
                               onClick={() => copyText(claudeCodeTokenCommand, 'Claude Code command')}
-                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-300 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white active:scale-95 border border-neutral-300 dark:border-neutral-700"
                             >
                               {t('mcpConnections.connectSection.cliSetup.copyCommand')}
                             </button>
@@ -494,7 +494,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                             <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.cliSetup.oauthCommand')}</p>
                             <button
                               onClick={() => copyText(codexOAuthCommand, 'Codex command')}
-                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-300 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white active:scale-95 border border-neutral-300 dark:border-neutral-700"
                             >
                               {t('mcpConnections.connectSection.cliSetup.copyCommand')}
                             </button>
@@ -511,7 +511,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                             <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{t('mcpConnections.connectSection.cliSetup.tokenCommand')}</p>
                             <button
                               onClick={() => copyText(codexTokenCommand, 'Codex command')}
-                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-700 hover:text-white active:scale-95 border border-neutral-700"
+                              className="rounded-lg bg-neutral-200 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 transition-all hover:bg-neutral-300 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white active:scale-95 border border-neutral-300 dark:border-neutral-700"
                             >
                               {t('mcpConnections.connectSection.cliSetup.copyCommand')}
                             </button>
@@ -550,7 +550,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
             </div>
             <button
               onClick={() => { setShowCreatePat(true); setNewToken(null); }}
-              className="p-2.5 bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 rounded-xl transition-all flex items-center justify-center shadow-lg shadow-amber-600/10 active:scale-95"
+              className="p-2.5 bg-amber-600 text-white hover:bg-amber-500 rounded-xl transition-all flex items-center justify-center shadow-lg shadow-amber-600/10 active:scale-95"
               title={t('mcpConnections.tokens.newToken')}
               aria-label={t('mcpConnections.tokens.newToken')}
             >
@@ -583,7 +583,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                     </code>
                     <button
                       onClick={handleCopy}
-                      className="flex-shrink-0 p-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-700 shadow-sm"
+                      className="flex-shrink-0 p-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-300 dark:border-neutral-700 shadow-sm"
                       title={t('mcpConnections.tokens.card.revokeTitle')}
                     >
                       {copied ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />}
@@ -629,7 +629,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                     <button
                       onClick={handleCreatePat}
                       disabled={!patName.trim() || isCreating}
-                      className="flex-1 sm:flex-none text-sm bg-amber-600 text-neutral-900 dark:text-white hover:bg-amber-500 px-6 py-2.5 rounded-xl transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-amber-600/10 active:scale-95"
+                      className="flex-1 sm:flex-none text-sm bg-amber-600 text-white hover:bg-amber-500 px-6 py-2.5 rounded-xl transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-amber-600/10 active:scale-95"
                     >
                       {isCreating && <Loader2 className="w-4 h-4 animate-spin" />}
                       {t('mcpConnections.tokens.form.create')}
@@ -800,7 +800,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                         </code>
                         <button
                           onClick={() => handleCopyClientField(newClientCredentials.client_id, 'id')}
-                          className="flex-shrink-0 p-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-700 shadow-sm"
+                          className="flex-shrink-0 p-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-300 dark:border-neutral-700 shadow-sm"
                           title={t('mcpConnections.oauth.form.copyClientId')}
                         >
                           {copiedClientField === 'id' ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />}
@@ -816,7 +816,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                           </code>
                           <button
                             onClick={() => handleCopyClientField(newClientCredentials.client_secret!, 'secret')}
-                            className="flex-shrink-0 p-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-700 shadow-sm"
+                            className="flex-shrink-0 p-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 rounded-xl transition-all active:scale-95 border border-neutral-300 dark:border-neutral-700 shadow-sm"
                             title={t('mcpConnections.oauth.form.copyClientSecret')}
                           >
                             {copiedClientField === 'secret' ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />}

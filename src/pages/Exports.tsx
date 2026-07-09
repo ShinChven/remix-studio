@@ -399,7 +399,7 @@ export function Exports() {
           <List className="w-12 h-12 mx-auto opacity-10 mb-4" />
           <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">{t('exports.empty.title')}</div>
           <div className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-8 max-w-[200px] mx-auto leading-relaxed">{t('exports.empty.description')}</div>
-          <Link to="/projects" className="px-6 py-2.5 bg-white dark:bg-neutral-900 hover:bg-neutral-800 text-neutral-900 dark:text-white text-[10px] font-black uppercase tracking-widest rounded-card transition-all border border-neutral-200 dark:border-neutral-800 active:scale-95">
+          <Link to="/projects" className="px-6 py-2.5 bg-white dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-900 dark:text-white text-[10px] font-black uppercase tracking-widest rounded-card transition-all border border-neutral-200 dark:border-neutral-800 active:scale-95">
             {t('exports.empty.viewProjects')}
           </Link>
         </div>

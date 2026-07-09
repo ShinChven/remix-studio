@@ -66,7 +66,7 @@ export function ProjectPreviewModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
+            className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-xl transition-all"
           >
             <X className="w-5 h-5" />
           </button>

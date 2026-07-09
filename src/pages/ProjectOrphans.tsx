@@ -159,7 +159,7 @@ export function ProjectOrphans() {
             <button
               onClick={loadData}
               disabled={loading}
-              className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-xl transition-all disabled:opacity-50"
+              className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-xl transition-all disabled:opacity-50"
               title={t('projectOrphans.refresh')}
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
@@ -174,7 +174,7 @@ export function ProjectOrphans() {
                   setShowDeleteModal(true);
                 }}
                 disabled={deleting}
-                className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-500 text-neutral-900 dark:text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-red-600/20 transition-all active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-red-600/20 transition-all active:scale-95 disabled:opacity-50"
               >
                 {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 {selectedKeys.size > 0 ? t('projectOrphans.deleteSelected', { count: selectedKeys.size }) : t('projectOrphans.clearAll')}
@@ -271,14 +271,14 @@ export function ProjectOrphans() {
                            <div 
                             className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20'}`}
                            >
-                             {isSelected ? <CheckSquare className="w-3 h-3 text-neutral-900 dark:text-white" /> : <Square className="w-3 h-3 text-white/40" />}
+                             {isSelected ? <CheckSquare className="w-3 h-3 text-white" /> : <Square className="w-3 h-3 text-white/40" />}
                            </div>
                            <a 
                             href={file.url} 
                             target="_blank" 
                             rel="noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="w-5 h-5 rounded bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/20"
+                            className="w-5 h-5 rounded bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20"
                            >
                              <ExternalLink className="w-3 h-3" />
                            </a>
@@ -289,7 +289,7 @@ export function ProjectOrphans() {
                               e.stopPropagation();
                               setLightboxData({ images: orphans.map(o => o.url), index: idx });
                             }}
-                            className="px-2 py-0.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded text-[7px] font-black uppercase tracking-widest text-neutral-900 dark:text-white transition-all whitespace-nowrap"
+                            className="px-2 py-0.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded text-[7px] font-black uppercase tracking-widest text-white transition-all whitespace-nowrap"
                            >
                              {t('projectOrphans.preview')}
                            </button>

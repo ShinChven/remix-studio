@@ -93,7 +93,7 @@ const AspectRatioFilterControl = memo(function AspectRatioFilterControl({
         className={`flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg border transition-all ${
           hasAspectRatioFilter
             ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border-blue-500/30'
-            : 'bg-white/5 hover:bg-white/10 text-neutral-200 border-neutral-700'
+            : 'bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 border-neutral-300 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 dark:border-neutral-700'
         }`}
       >
         <Filter className="w-3 h-3" />
@@ -111,7 +111,7 @@ const AspectRatioFilterControl = memo(function AspectRatioFilterControl({
             type="button"
             onClick={onClear}
             className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors mb-1 ${
-              !hasAspectRatioFilter ? 'bg-blue-600 text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
+              !hasAspectRatioFilter ? 'bg-blue-600 text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white'
             }`}
           >
             {t('projectViewer.album.allAspectRatios')}
@@ -123,7 +123,7 @@ const AspectRatioFilterControl = memo(function AspectRatioFilterControl({
                 <label
                   key={ratio}
                   className={`w-full px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-between gap-3 cursor-pointer ${
-                    isChecked ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                    isChecked ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white'
                   }`}
                 >
                   <span>{ratio}</span>
@@ -134,7 +134,7 @@ const AspectRatioFilterControl = memo(function AspectRatioFilterControl({
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => onToggle(ratio)}
-                    className="h-3.5 w-3.5 rounded border-neutral-600 bg-neutral-950 text-blue-500 focus:ring-blue-500"
+                    className="h-3.5 w-3.5 rounded border-neutral-400 bg-white dark:border-neutral-600 dark:bg-neutral-950 text-blue-500 focus:ring-blue-500"
                   />
                 </label>
               );
@@ -381,7 +381,7 @@ export function AlbumTab({
                     onClick={() => setShowCompareDialog(true)}
                     title={t('projectViewer.album.compareSelected')}
                     aria-label={t('projectViewer.album.compareSelected')}
-                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all"
                   >
                     <Layers className="w-3 h-3" />
                     <span className="hidden sm:inline">{t('projectViewer.album.compareSelected')}</span>
@@ -413,7 +413,7 @@ export function AlbumTab({
                 )}
                 <label
                   title={t('pagination.pageSize')}
-                  className="flex items-center gap-1.5 min-h-8 px-2 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 rounded-lg border border-neutral-700 transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 min-h-8 px-2 sm:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all cursor-pointer"
                 >
                   <List className="w-3 h-3" />
                   <span className="sr-only">{t('pagination.pageSize')}</span>
@@ -424,7 +424,7 @@ export function AlbumTab({
                       onPageSizeChange(v === 'all' ? 'all' : Number(v));
                     }}
                     aria-label={t('pagination.pageSize')}
-                    className="bg-transparent text-[9px] font-black uppercase tracking-widest text-neutral-200 focus:outline-none cursor-pointer"
+                    className="bg-transparent text-[9px] font-black uppercase tracking-widest text-neutral-700 dark:text-neutral-200 focus:outline-none cursor-pointer"
                   >
                     {PAGE_SIZE_OPTIONS.map((opt) => (
                       <option key={String(opt)} value={String(opt)} className="bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
@@ -437,7 +437,7 @@ export function AlbumTab({
                   onClick={() => onSortChange(sort === 'newest' ? 'oldest' : 'newest')}
                   title={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
                   aria-label={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all"
                 >
                   {sort === 'newest' ? (
                     <ArrowDownWideNarrow className="w-3 h-3" />
@@ -474,11 +474,11 @@ export function AlbumTab({
               return (
                 <div
                   key={item.id}
-                  className={`group flex items-center gap-3 border-b border-neutral-200/80 dark:border-neutral-800/80 px-4 py-2.5 transition-colors last:border-b-0 ${isSelected ? 'bg-blue-500/10' : 'hover:bg-neutral-800/40'}`}
+                  className={`group flex items-center gap-3 border-b border-neutral-200/80 dark:border-neutral-800/80 px-4 py-2.5 transition-colors last:border-b-0 ${isSelected ? 'bg-blue-500/10' : 'hover:bg-neutral-100 dark:hover:bg-neutral-800/40'}`}
                 >
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey, displayItemIds); }}
-                    className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-blue-500 text-blue-400' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700'}`}
+                    className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-blue-500 text-blue-400' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700'}`}
                   >
                     {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                   </button>
@@ -490,7 +490,7 @@ export function AlbumTab({
                     title={t('projectViewer.album.viewTextDetails')}
                   >
                     <span className="flex-shrink-0 text-[10px] font-mono text-neutral-600">#{(index + 1).toString().padStart(2, '0')}</span>
-                    <p className="min-w-0 flex-1 truncate text-[12px] leading-none text-neutral-200">
+                    <p className="min-w-0 flex-1 truncate text-[12px] leading-none text-neutral-800 dark:text-neutral-200">
                       {item.textContent || item.prompt}
                     </p>
                     {(item.imageContexts?.length || 0) > 0 && (
@@ -530,7 +530,7 @@ export function AlbumTab({
                   <div className="flex items-center gap-2 sm:gap-3">
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey, displayItemIds); }}
-                      className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700'}`}
+                      className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700'}`}
                     >
                       {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                     </button>
@@ -554,7 +554,7 @@ export function AlbumTab({
 
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleAudioPlayback(item.id); }}
-                      className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border transition-all ${isPlaying ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-white hover:border-neutral-700'}`}
+                      className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border transition-all ${isPlaying ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700'}`}
                       title={isPlaying ? t('projectViewer.album.pauseAudio') : t('projectViewer.album.playAudio')}
                       aria-label={isPlaying ? t('projectViewer.album.pauseAudio') : t('projectViewer.album.playAudio')}
                     >
@@ -664,7 +664,7 @@ export function AlbumTab({
                           setAlbumItemsToDelete([item]);
                           setShowDeleteAlbumModal(true);
                         }}
-                        className="w-7 h-7 rounded-xl bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-red-600 transition-all shadow-lg"
+                        className="w-7 h-7 rounded-xl bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-lg"
                         title={t('projectViewer.common.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -878,7 +878,7 @@ export function AlbumTab({
             <button
               type="button"
               onClick={() => setVideoPlayerItem(null)}
-              className="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-white dark:bg-neutral-900 border border-neutral-700 text-neutral-900 dark:text-white flex items-center justify-center hover:bg-neutral-800 transition-colors shadow-lg"
+              className="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors shadow-lg"
               title={t('projectViewer.common.close')}
             >
               ×

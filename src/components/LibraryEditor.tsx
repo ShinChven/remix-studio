@@ -484,7 +484,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
               <button
                 onClick={handleStartAssistantChat}
-                className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-neutral-700 active:scale-95"
+                className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/80 dark:hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-neutral-700 active:scale-95"
                 title={t('libraryEditor.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
                 aria-label={t('libraryEditor.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
               >
@@ -501,7 +501,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
               <button
                 onClick={() => navigate(`/library/${library.id}/edit`)}
-                className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-white hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-neutral-700 active:scale-95"
+                className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/80 dark:hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-neutral-700 active:scale-95"
                 title={t('libraryEditor.editLibrarySettings')}
               >
                 <Settings className="w-5 h-5" />
@@ -581,7 +581,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border ${
                      selectedFilterTags.length > 0
                        ? 'bg-blue-600/10 border-blue-500/40 text-blue-400'
-                       : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:border-neutral-700 hover:text-neutral-300'
+                       : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:border-neutral-400 dark:hover:border-neutral-700 hover:text-neutral-700 dark:hover:text-neutral-300'
                    }`}
                  >
                    <TagIcon className="w-3.5 h-3.5" />
@@ -601,7 +601,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                         setCurrentPage(1);
                       }}
                       className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors mb-1 ${
-                        selectedFilterTags.length === 0 ? 'bg-blue-600 text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                        selectedFilterTags.length === 0 ? 'bg-blue-600 text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white'
                       }`}
                     >
                       {t('libraryEditor.allItems')}
@@ -612,7 +612,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                           key={tag}
                           onClick={() => toggleFilterTag(tag)}
                           className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-between group ${
-                            selectedFilterTags.includes(tag) ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                            selectedFilterTags.includes(tag) ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white'
                           }`}
                         >
                           {tag}
@@ -841,7 +841,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                             </button>
                             <button
                                onClick={(e) => { e.stopPropagation(); navigate(`/library/${library.id}/prompt/${item.id}`); }}
-                               className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800/80 rounded-lg transition-all active:scale-95"
+                               className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/80 dark:hover:bg-neutral-800/80 rounded-lg transition-all active:scale-95"
                                title={library.type === 'text' ? t('libraryEditor.refineInFullEditor') : t('libraryEditor.editDetails', 'Edit Details')}
                              >
                                {library.type === 'text' ? <Edit3 className="w-3.5 h-3.5" /> : <Settings className="w-3.5 h-3.5" />}
@@ -935,7 +935,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-white hover:border-neutral-700 rounded-card transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+              className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700 rounded-card transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -946,8 +946,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   onClick={() => setCurrentPage(i + 1)}
                   className={`w-10 h-10 rounded-xl text-xs font-black transition-all active:scale-95 border ${
                     currentPage === i + 1
-                      ? 'bg-blue-600 text-neutral-900 dark:text-white shadow-lg shadow-blue-500/20 border-transparent'
-                      : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-white hover:border-neutral-700'
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 border-transparent'
+                      : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700'
                   }`}
                 >
                   {i + 1}
@@ -957,7 +957,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-white hover:border-neutral-700 rounded-card transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+              className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700 rounded-card transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
             >
               <ArrowRight className="w-5 h-5" />
             </button>
@@ -1009,7 +1009,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             <div className="px-8 py-6 bg-neutral-50/40 dark:bg-neutral-950/40 flex items-center justify-end gap-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
               <button
                 onClick={() => setShowReferencesModal(false)}
-                className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
+                className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
               >
                 {t('confirmModal.cancel')}
               </button>
@@ -1018,7 +1018,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                   setShowReferencesModal(false);
                   navigate(`/library/${library.id}/cleanup`);
                 }}
-                className="px-8 py-3 rounded-card text-xs font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-500 text-neutral-900 dark:text-white shadow-2xl shadow-amber-500/20 transition-all active:scale-[0.98]"
+                className="px-8 py-3 rounded-card text-xs font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-500 text-white shadow-2xl shadow-amber-500/20 transition-all active:scale-[0.98]"
               >
                 {t('libraryEditor.references.resolve')}
               </button>

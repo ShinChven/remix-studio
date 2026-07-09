@@ -56,19 +56,19 @@ export function PromptLimitModal({
         <div className="flex flex-col gap-3 border-t border-neutral-200/50 dark:border-neutral-800/50 bg-neutral-50/30 dark:bg-neutral-950/30 p-5 sm:flex-row sm:justify-end">
           <button
             onClick={onCancel}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600 dark:text-neutral-400 transition-all hover:bg-neutral-800/60 hover:text-white"
+            className="rounded-xl border border-neutral-200 dark:border-neutral-800 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600 dark:text-neutral-400 transition-all hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-white"
           >
             {t('projectViewer.promptLimitModal.cancel')}
           </button>
           <button
             onClick={onKeep}
-            className="rounded-xl border border-neutral-700 bg-neutral-200/60 dark:bg-neutral-800/60 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-900 dark:text-white transition-all hover:bg-neutral-700"
+            className="rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-200/60 dark:bg-neutral-800/60 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-900 dark:text-white transition-all hover:bg-neutral-300 dark:hover:bg-neutral-700"
           >
             {t('projectViewer.promptLimitModal.keep')}
           </button>
           <button
             onClick={onTruncate}
-            className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-900 dark:text-white transition-all hover:bg-blue-500"
+            className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-blue-500"
           >
             <Scissors className="h-3.5 w-3.5" />
             {t('projectViewer.promptLimitModal.truncate')}

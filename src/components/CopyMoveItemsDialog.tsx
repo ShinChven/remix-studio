@@ -102,7 +102,7 @@ export function CopyMoveItemsDialog({
             </div>
             <button
               onClick={() => !submitting && onClose()}
-              className="p-2 rounded-xl text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800/70 transition-colors"
+              className="p-2 rounded-xl text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/70 dark:hover:bg-neutral-800/70 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -140,7 +140,7 @@ export function CopyMoveItemsDialog({
         <div className="px-8 py-6 bg-neutral-50/40 dark:bg-neutral-950/40 flex items-center justify-end gap-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
           <button
             onClick={() => !submitting && onClose()}
-            className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
+            className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
             disabled={submitting}
           >
             {t('common.cancel', 'Cancel')}
@@ -149,7 +149,7 @@ export function CopyMoveItemsDialog({
           <button
             onClick={handleConfirm}
             disabled={submitting || !selectedLibraryId}
-            className="px-8 py-3 rounded-card text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-[0.98] bg-blue-600 hover:bg-blue-500 text-neutral-900 dark:text-white shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-8 py-3 rounded-card text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-[0.98] bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
             {action === 'copy' ? t('libraryEditor.confirmCopy', 'Copy') : t('libraryEditor.confirmMove', 'Move')}

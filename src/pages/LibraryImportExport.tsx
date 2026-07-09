@@ -288,7 +288,7 @@ export function LibraryImportExport() {
           <div className="flex items-start gap-4">
             <button
               onClick={() => navigate(`/library/${id}`)}
-              className="mt-1 rounded-card border border-neutral-200/80 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-950/70 p-3 text-neutral-500 dark:text-neutral-500 transition-all hover:border-neutral-700 hover:text-white hover:bg-neutral-900/80"
+              className="mt-1 rounded-card border border-neutral-200/80 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-950/70 p-3 text-neutral-500 dark:text-neutral-500 transition-all hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/80"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
@@ -382,7 +382,7 @@ export function LibraryImportExport() {
                     value={sharedTagsInput}
                     onChange={(event) => setSharedTagsInput(event.target.value)}
                     placeholder={t('libraryImportExport.importSource.sharedTagsPlaceholder')}
-                    className="mt-3 w-full border-none bg-transparent p-0 text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:ring-0"
+                    className="mt-3 w-full border-none bg-transparent p-0 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-0"
                   />
                 </label>
 
@@ -418,7 +418,7 @@ export function LibraryImportExport() {
                 value={importText}
                 onChange={(event) => setImportText(event.target.value)}
                 placeholder={t('libraryImportExport.importSource.textareaPlaceholder')}
-                className="min-h-[320px] flex-1 resize-none border-none bg-transparent p-2 font-mono text-sm leading-7 text-neutral-200 placeholder:text-neutral-700 focus:outline-none focus:ring-0 custom-scrollbar"
+                className="min-h-[320px] flex-1 resize-none border-none bg-transparent p-2 font-mono text-sm leading-7 text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-700 focus:outline-none focus:ring-0 custom-scrollbar"
               />
 
               {!importText && (
@@ -455,10 +455,10 @@ export function LibraryImportExport() {
                   <div className="mt-4 max-h-36 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
                     {parseIssues.slice(0, 6).map((issue) => (
                       <div key={`${issue.line}-${issue.reasonKey}`} className="rounded-card border border-amber-500/20 bg-amber-500/6 px-3 py-2">
-                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">
+                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-600 dark:text-amber-300">
                           {t('libraryImportExport.parseStatus.line', { line: issue.line })}
                         </div>
-                        <div className="mt-1 text-xs text-neutral-200">{t(`libraryImportExport.parseIssues.${issue.reasonKey}`)}</div>
+                        <div className="mt-1 text-xs text-neutral-700 dark:text-neutral-200">{t(`libraryImportExport.parseIssues.${issue.reasonKey}`)}</div>
                       </div>
                     ))}
                     {parseIssues.length > 6 && (
@@ -474,7 +474,7 @@ export function LibraryImportExport() {
             <button
               onClick={handleImport}
               disabled={isImporting || previewItems.length === 0}
-              className="mt-5 inline-flex w-full items-center justify-center gap-3 rounded-card bg-blue-600 px-5 py-4 text-xs font-black uppercase tracking-[0.22em] text-neutral-900 dark:text-white transition-all hover:bg-blue-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-35"
+              className="mt-5 inline-flex w-full items-center justify-center gap-3 rounded-card bg-blue-600 px-5 py-4 text-xs font-black uppercase tracking-[0.22em] text-white transition-all hover:bg-blue-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-35"
             >
               {isImporting ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -574,7 +574,7 @@ export function LibraryImportExport() {
                     onClick={() => setExportMode('tagged')}
                     className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
                       exportMode === 'tagged'
-                        ? 'bg-blue-600 text-neutral-900 dark:text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
                     }`}
                   >
@@ -584,7 +584,7 @@ export function LibraryImportExport() {
                     onClick={() => setExportMode('plain')}
                     className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
                       exportMode === 'plain'
-                        ? 'bg-blue-600 text-neutral-900 dark:text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
                     }`}
                   >
@@ -615,7 +615,7 @@ export function LibraryImportExport() {
               <textarea
                 readOnly
                 value={currentExportText}
-                className="mt-5 min-h-[320px] flex-1 resize-none rounded-card border border-neutral-200/80 dark:border-neutral-800/80 bg-neutral-50/85 dark:bg-neutral-950/85 p-4 font-mono text-sm leading-7 text-neutral-200 focus:outline-none focus:ring-0 custom-scrollbar"
+                className="mt-5 min-h-[320px] flex-1 resize-none rounded-card border border-neutral-200/80 dark:border-neutral-800/80 bg-neutral-50/85 dark:bg-neutral-950/85 p-4 font-mono text-sm leading-7 text-neutral-900 dark:text-neutral-200 focus:outline-none focus:ring-0 custom-scrollbar"
               />
             </div>
           </section>

@@ -36,7 +36,7 @@ export function PromptModal({ item, onClose, onSave }: PromptModalProps) {
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
+            className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-xl transition-all"
           >
             <X className="w-5 h-5" />
           </button>
@@ -48,7 +48,7 @@ export function PromptModal({ item, onClose, onSave }: PromptModalProps) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={t('projectViewer.promptModal.placeholder')}
-            className="flex-1 w-full bg-transparent border-none text-neutral-200 text-lg md:text-xl font-medium leading-relaxed focus:outline-none focus:ring-0 resize-none placeholder:text-neutral-800 custom-scrollbar"
+            className="flex-1 w-full bg-transparent border-none text-neutral-900 dark:text-neutral-200 text-lg md:text-xl font-medium leading-relaxed focus:outline-none focus:ring-0 resize-none placeholder:text-neutral-400 dark:placeholder:text-neutral-800 custom-scrollbar"
           />
         </div>
 
@@ -65,7 +65,7 @@ export function PromptModal({ item, onClose, onSave }: PromptModalProps) {
             </button>
             <button 
               onClick={() => onSave(value)}
-              className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center gap-2"
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center gap-2"
             >
               <Save className="w-3.5 h-3.5" />
               {t('projectViewer.promptModal.saveChanges')}

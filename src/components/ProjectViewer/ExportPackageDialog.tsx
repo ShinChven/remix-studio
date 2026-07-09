@@ -67,7 +67,7 @@ export function ExportPackageDialog({
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl p-2 text-neutral-500 dark:text-neutral-500 transition-all hover:bg-neutral-800 hover:text-white"
+            className="rounded-xl p-2 text-neutral-500 dark:text-neutral-500 transition-all hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
@@ -150,7 +150,7 @@ export function ExportPackageDialog({
           <button
             onClick={() => void handleSubmit()}
             disabled={!packageName.trim() || isSubmitting}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-card bg-blue-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-900 dark:text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-card bg-blue-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download className="h-3.5 w-3.5" />
             {isSubmitting ? t('projectViewer.exportDialog.queueing') : t('projectViewer.exportDialog.startExport')}

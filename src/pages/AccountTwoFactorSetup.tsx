@@ -179,7 +179,7 @@ export function AccountTwoFactorSetup() {
                       type="password"
                       value={setupPassword}
                       onChange={(event) => setSetupPassword(event.target.value)}
-                      className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50"
+                      className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-blue-500/50"
                       required
                     />
                   </div>
@@ -240,7 +240,7 @@ export function AccountTwoFactorSetup() {
                           maxLength={6}
                           value={verificationCode}
                           onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-100 outline-none transition focus:border-blue-500/50 font-mono tracking-[0.3em]"
+                          className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 px-4 py-3 text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-blue-500/50 font-mono tracking-[0.3em]"
                           required
                         />
                       </div>

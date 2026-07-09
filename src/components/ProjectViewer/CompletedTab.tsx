@@ -86,7 +86,7 @@ export function CompletedTab({
                   onClick={() => onSortChange(sort === 'newest' ? 'oldest' : 'newest')}
                   title={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
                   aria-label={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 transition-all"
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all"
                 >
                   {sort === 'newest' ? <ArrowDownWideNarrow className="w-3 h-3" /> : <ArrowUpWideNarrow className="w-3 h-3" />}
                   <span className="hidden sm:inline">
@@ -144,7 +144,7 @@ export function CompletedTab({
                       {(projectType === 'text' || projectType === 'audio') && job.resultText && (
                         <div className="space-y-2">
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.common.generatedText')}</label>
-                          <div className="text-xs text-neutral-200 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border border-emerald-500/20 select-all whitespace-pre-wrap">
+                          <div className="text-xs text-neutral-800 dark:text-neutral-200 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-4 rounded-xl border border-emerald-500/20 select-all whitespace-pre-wrap">
                             {job.resultText}
                           </div>
                         </div>

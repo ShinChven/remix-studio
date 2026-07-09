@@ -42,7 +42,7 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
               <Columns3 className="w-5 h-5 text-blue-500" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">{t('projectViewer.compare.title')}</h3>
+              <h3 className="text-lg font-bold text-white tracking-tight">{t('projectViewer.compare.title')}</h3>
               <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
                 {t('projectViewer.compare.subtitle', { count: items.length })}
               </p>
@@ -74,7 +74,7 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => handleCopy(item.prompt, t('projectViewer.common.prompt'))}
-                      className="flex items-center gap-1.5 rounded-xl bg-neutral-200 dark:bg-neutral-800 px-2.5 sm:px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-900 dark:text-white transition-all hover:bg-neutral-700"
+                      className="flex items-center gap-1.5 rounded-xl bg-neutral-200 dark:bg-neutral-800 px-2.5 sm:px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-900 dark:text-white transition-all hover:bg-neutral-300 dark:hover:bg-neutral-700"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">{t('projectViewer.common.prompt')}</span>
@@ -125,9 +125,9 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
                     </p>
                   </section>
 
-                  <section className="rounded-card border border-neutral-200 dark:border-neutral-800 bg-black/20 p-4">
+                  <section className="rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-black/20 p-4">
                     <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('projectViewer.common.generatedText')}</div>
-                    <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-neutral-100">
+                    <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-neutral-900 dark:text-neutral-100">
                       {item.textContent || t('projectViewer.compare.noGeneratedText')}
                     </div>
                   </section>

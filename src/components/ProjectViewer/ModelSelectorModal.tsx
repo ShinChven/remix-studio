@@ -60,7 +60,7 @@ export function ModelSelectorModal({
             </div>
             <button 
               onClick={onClose}
-              className="p-2.5 md:p-3 bg-neutral-200/50 dark:bg-neutral-800/50 hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-white rounded-xl md:rounded-card transition-all active:scale-90 border border-neutral-700/30 shrink-0"
+              className="p-2.5 md:p-3 bg-neutral-200/50 dark:bg-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white rounded-xl md:rounded-card transition-all active:scale-90 border border-neutral-300/60 dark:border-neutral-700/30 shrink-0"
             >
               <X className="w-4 h-4 md:w-5 md:h-5" />
             </button>

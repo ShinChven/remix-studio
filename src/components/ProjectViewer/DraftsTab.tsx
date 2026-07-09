@@ -108,7 +108,7 @@ export function DraftsTab({
           {displayAlbumItems.length > 0 && (
             <button 
               onClick={onSwitchToAlbum}
-              className="px-6 py-2.5 bg-white dark:bg-neutral-900 hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl border border-neutral-200 dark:border-neutral-800 transition-all active:scale-95 flex items-center gap-2"
+              className="px-6 py-2.5 bg-white dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl border border-neutral-200 dark:border-neutral-800 transition-all active:scale-95 flex items-center gap-2"
             >
               {t('projectViewer.drafts.openAlbum')}
             </button>

@@ -73,7 +73,7 @@ export function TagModal({
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-xl transition-all"
+            className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-xl transition-all"
           >
             <X className="w-5 h-5" />
           </button>
@@ -92,7 +92,7 @@ export function TagModal({
             />
             <button
               onClick={handleAddTag}
-              className="px-4 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl transition-all font-bold text-xs uppercase tracking-widest"
+              className="px-4 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl transition-all font-bold text-xs uppercase tracking-widest"
             >
               {t('tagModal.add')}
             </button>
@@ -127,7 +127,7 @@ export function TagModal({
               onSave(tags);
               onClose();
             }}
-            className="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-neutral-900 dark:text-white shadow-lg shadow-blue-500/20 rounded-xl transition-all font-black uppercase tracking-widest text-[10px]"
+            className="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 rounded-xl transition-all font-black uppercase tracking-widest text-[10px]"
           >
             {resolvedSaveButtonText}
           </button>
