@@ -112,7 +112,9 @@
       "exporting": "Exporting...",
       "success": "Library ZIP downloaded",
       "error": "Failed to export library"
-    }
+    },
+    "createdAt": "Created",
+    "updatedAt": "Updated"
   },
   "libraryImportExport": {
     "badge": "Prompt Library Workspace",

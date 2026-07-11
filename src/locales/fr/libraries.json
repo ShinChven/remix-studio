@@ -112,7 +112,9 @@
       "timeAsc": "Les plus anciens",
       "nameAsc": "Nom A-Z",
       "nameDesc": "Nom Z-A"
-    }
+    },
+    "createdAt": "Créé",
+    "updatedAt": "Modifié"
   },
   "libraryImportExport": {
     "badge": "Espace de travail de la bibliothèque de texte",

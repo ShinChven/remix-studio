@@ -112,7 +112,9 @@
       "exporting": "导出中...",
       "success": "媒体库 ZIP 已下载",
       "error": "导出媒体库失败"
-    }
+    },
+    "createdAt": "创建于",
+    "updatedAt": "更新于"
   },
   "libraryImportExport": {
     "badge": "文本资源库工作区",

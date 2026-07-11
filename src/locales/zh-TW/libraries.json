@@ -112,7 +112,9 @@
       "exporting": "匯出中...",
       "success": "素材庫 ZIP 已下載",
       "error": "素材庫匯出失敗"
-    }
+    },
+    "createdAt": "建立於",
+    "updatedAt": "更新於"
   },
   "libraryImportExport": {
     "badge": "文字資源庫工作區",

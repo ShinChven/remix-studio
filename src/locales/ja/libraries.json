@@ -112,7 +112,9 @@
       "timeAsc": "古い順",
       "nameAsc": "名前 A-Z",
       "nameDesc": "名前 Z-A"
-    }
+    },
+    "createdAt": "作成",
+    "updatedAt": "更新"
   },
   "libraryImportExport": {
     "badge": "テキストライブラリワークスペース",

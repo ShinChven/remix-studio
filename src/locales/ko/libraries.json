@@ -112,7 +112,9 @@
       "timeAsc": "오래된순",
       "nameAsc": "이름 A-Z",
       "nameDesc": "이름 Z-A"
-    }
+    },
+    "createdAt": "생성",
+    "updatedAt": "수정"
   },
   "libraryImportExport": {
     "badge": "텍스트 라이브러리 작업 공간",
