@@ -480,7 +480,11 @@
       "remove": "削除",
       "done": "完了",
       "pickerTitle": "カバー画像を選択",
-      "pickerHint": "最大 {{count}} 枚。順序は選択順です。"
+      "pickerHint": "最大 {{count}} 枚。順序は選択順です。",
+      "reorderHint": "ドラッグまたは矢印で並べ替えできます。最初のカバーが商品のメイン画像として使用されます。",
+      "dragToReorder": "ドラッグして並べ替え",
+      "moveEarlier": "前に移動",
+      "moveLater": "後ろに移動"
     }
   }
 }

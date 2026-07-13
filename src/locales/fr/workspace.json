@@ -480,7 +480,11 @@
       "remove": "Retirer",
       "done": "Terminé",
       "pickerTitle": "Choisir les couvertures",
-      "pickerHint": "Sélectionnez jusqu’à {{count}}. L’ordre suit votre sélection."
+      "pickerHint": "Sélectionnez jusqu’à {{count}}. L’ordre suit votre sélection.",
+      "reorderHint": "Glissez pour réordonner, ou utilisez les flèches. La première couverture sert d’image principale de la fiche.",
+      "dragToReorder": "Glisser pour réordonner",
+      "moveEarlier": "Déplacer plus tôt",
+      "moveLater": "Déplacer plus tard"
     }
   }
 }

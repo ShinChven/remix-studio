@@ -480,7 +480,11 @@
       "remove": "移除",
       "done": "完成",
       "pickerTitle": "選擇封面圖片",
-      "pickerHint": "最多選擇 {{count}} 張。順序按選擇順序。"
+      "pickerHint": "最多選擇 {{count}} 張。順序按選擇順序。",
+      "reorderHint": "拖曳或使用箭頭調整順序。第一張封面將作為商品的主圖。",
+      "dragToReorder": "拖曳以調整順序",
+      "moveEarlier": "前移",
+      "moveLater": "後移"
     }
   }
 }
