@@ -142,13 +142,20 @@
       "detectedTags": "检测到的标签",
       "skippedLines": "跳过的行",
       "textareaPlaceholder": "在此粘贴列表项目。\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio",
-      "dropHint": "将 `.txt` 或 `.md` 文件拖放到这里"
+      "dropHint": "将 `.txt` 或 `.md` 文件拖放到这里",
+      "descriptionJson": "粘贴一个 JSON 数组，每项为 { title, content, tags } 对象——可安全包含多行内容、冒号和短横线。",
+      "formatText": "文本",
+      "formatJson": "JSON",
+      "jsonTextareaPlaceholder": "在此粘贴 JSON 数组。\n\n[\n  {\n    \"title\": \"主题\",\n    \"content\": \"第一行\\n第二行：仍是内容\",\n    \"tags\": [\"cinematic\", \"portrait\"]\n  }\n]"
     },
     "formatGuide": {
       "title": "格式说明",
       "rule1": "每个项目都必须以 `- ` 开头，解析器才能稳定拆分条目。",
       "rule2": "如需显示标题，请使用 `Title: Content`。如需项目级标签，请在结尾使用 `| tags: a, b`。",
-      "rule3": "上方的共享标签会合并到每个解析出的项目中，并自动去重。"
+      "rule3": "上方的共享标签会合并到每个解析出的项目中，并自动去重。",
+      "jsonRule1": "提供一个 JSON 数组，每个条目都是包含 `content` 字符串的对象。",
+      "jsonRule2": "`title` 和 `tags` 为可选字段。`tags` 必须是字符串数组。",
+      "jsonRule3": "内容可以安全包含换行、冒号和短横线——不会按换行拆分。"
     },
     "parseStatus": {
       "title": "解析状态",
@@ -160,7 +167,10 @@
       "missingListMarker": "缺少 \"- \" 列表标记",
       "emptyAfterMarker": "\"- \" 之后内容为空",
       "missingContentBeforeTags": "标签提示词之前缺少内容",
-      "missingContentAfterTitle": "标题分隔符之后缺少内容"
+      "missingContentAfterTitle": "标题分隔符之后缺少内容",
+      "invalidJson": "JSON 无效——请检查语法错误",
+      "notArray": "JSON 根节点必须是项目数组",
+      "invalidItem": "项目缺少有效的 \"content\" 字符串"
     },
     "importAction": "导入 {{count}} 个项目",
     "preview": {
@@ -181,7 +191,9 @@
       "tagged": "带标签",
       "plain": "纯文本",
       "copy": "复制输出",
-      "download": "下载 .md"
+      "download": "下载 .{{ext}}",
+      "formatText": "文本",
+      "formatJson": "JSON"
     }
   },
   "libraryForm": {

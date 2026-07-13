@@ -142,13 +142,20 @@
       "detectedTags": "Detected Tags",
       "skippedLines": "Skipped Lines",
       "textareaPlaceholder": "Paste list items here.\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio",
-      "dropHint": "Drop `.txt` or `.md` files here"
+      "dropHint": "Drop `.txt` or `.md` files here",
+      "descriptionJson": "Paste a JSON array of {title, content, tags} objects — safe for multi-line content, colons, and dashes.",
+      "formatText": "Text",
+      "formatJson": "JSON",
+      "jsonTextareaPlaceholder": "Paste a JSON array here.\n\n[\n  {\n    \"title\": \"Subject\",\n    \"content\": \"Line one\\nLine two: still content\",\n    \"tags\": [\"cinematic\", \"portrait\"]\n  }\n]"
     },
     "formatGuide": {
       "title": "Format Guide",
       "rule1": "Each item must start with `- ` so the parser can split entries predictably.",
       "rule2": "Use `Title: Content` when you want a display title. Use `| tags: a, b` at the end when you want per-item tags.",
-      "rule3": "Shared tags above are merged into every parsed item and deduplicated automatically."
+      "rule3": "Shared tags above are merged into every parsed item and deduplicated automatically.",
+      "jsonRule1": "Provide a JSON array where each entry is an object with a `content` string.",
+      "jsonRule2": "`title` and `tags` are optional. `tags` must be an array of strings.",
+      "jsonRule3": "Content can safely contain line breaks, colons, and dashes — nothing is split on newlines."
     },
     "parseStatus": {
       "title": "Parse Status",
@@ -160,7 +167,10 @@
       "missingListMarker": "Missing \"- \" list marker",
       "emptyAfterMarker": "Line is empty after \"- \"",
       "missingContentBeforeTags": "Missing content before the tags segment",
-      "missingContentAfterTitle": "Missing content after the title separator"
+      "missingContentAfterTitle": "Missing content after the title separator",
+      "invalidJson": "Invalid JSON — check for syntax errors",
+      "notArray": "The JSON root must be an array of items",
+      "invalidItem": "Item is missing a valid \"content\" string"
     },
     "importAction": "Import {{count}} Items",
     "preview": {
@@ -181,7 +191,9 @@
       "tagged": "Tagged",
       "plain": "Plain",
       "copy": "Copy Output",
-      "download": "Download .md"
+      "download": "Download .{{ext}}",
+      "formatText": "Text",
+      "formatJson": "JSON"
     }
   },
   "libraryForm": {
