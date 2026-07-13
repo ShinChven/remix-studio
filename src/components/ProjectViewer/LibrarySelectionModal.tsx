@@ -12,6 +12,8 @@ interface LibrarySelectionModalProps {
   selectedLibraryIds: string[];
   isLoading?: boolean;
   error?: string | null;
+  title?: string;
+  description?: string;
 }
 
 export function LibrarySelectionModal({
@@ -21,7 +23,9 @@ export function LibrarySelectionModal({
   libraries,
   selectedLibraryIds,
   isLoading = false,
-  error = null
+  error = null,
+  title,
+  description
 }: LibrarySelectionModalProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
@@ -49,8 +53,8 @@ export function LibrarySelectionModal({
               <LibraryIcon className="w-5 h-5 text-emerald-500" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">{t('projectViewer.librarySelection.title')}</h3>
-              <p className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest mt-0.5">{t('projectViewer.librarySelection.description')}</p>
+              <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">{title || t('projectViewer.librarySelection.title')}</h3>
+              <p className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest mt-0.5">{description || t('projectViewer.librarySelection.description')}</p>
             </div>
           </div>
           <button 

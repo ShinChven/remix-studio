@@ -46,7 +46,9 @@
       "addDraftsFailed": "新增草稿失敗，請再試一次。",
       "archived": "已封存「{{name}}」",
       "unarchived": "已還原「{{name}}」",
-      "archiveFailed": "變更封存狀態失敗，請再試一次。"
+      "archiveFailed": "變更封存狀態失敗，請再試一次。",
+      "savedToLibrary": "已儲存到資料庫",
+      "saveToLibraryFailed": "儲存到資料庫失敗"
     },
     "errors": {
       "missingWorkflowInfo_one": "{{count}} 個工作流程項目缺少資訊。",
@@ -151,6 +153,7 @@
       "noTextContent": "沒有文字內容...",
       "pickFromLibrary": "從資料庫挑選",
       "changeLibrary": "更換資料庫",
+      "saveToLibrary": "儲存到資料庫",
       "unknownLibrary": "未知資料庫",
       "itemsCount": "{{count}} 項",
       "filteredTags": "已篩選：{{count}} 個標籤",
@@ -178,6 +181,10 @@
       "noResults": "沒有符合 \"{{query}}\" 的資料庫",
       "searchPlaceholder": "依名稱搜尋資料庫...",
       "added": "已加入"
+    },
+    "saveToLibrarySelection": {
+      "title": "儲存到資料庫",
+      "description": "選擇要儲存此項目的資料庫"
     },
     "libraryPreview": {
       "pickThisText": "選擇這段文字",

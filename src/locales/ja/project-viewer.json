@@ -46,7 +46,9 @@
       "addDraftsFailed": "下書きの追加に失敗しました。もう一度お試しください。",
       "archived": "「{{name}}」をアーカイブしました",
       "unarchived": "「{{name}}」を復元しました",
-      "archiveFailed": "アーカイブ状態の変更に失敗しました。もう一度お試しください。"
+      "archiveFailed": "アーカイブ状態の変更に失敗しました。もう一度お試しください。",
+      "savedToLibrary": "ライブラリに保存しました",
+      "saveToLibraryFailed": "ライブラリへの保存に失敗しました"
     },
     "errors": {
       "missingWorkflowInfo_one": "{{count}} 件のワークフロー項目に情報がありません。",
@@ -151,6 +153,7 @@
       "noTextContent": "テキスト内容がありません...",
       "pickFromLibrary": "ライブラリから選択",
       "changeLibrary": "ライブラリを変更",
+      "saveToLibrary": "ライブラリに保存",
       "unknownLibrary": "不明なライブラリ",
       "itemsCount": "{{count}} 件",
       "filteredTags": "フィルター済み: {{count}} タグ",
@@ -178,6 +181,10 @@
       "noResults": "\"{{query}}\" に一致するライブラリがありません",
       "searchPlaceholder": "名前でライブラリを検索...",
       "added": "追加済み"
+    },
+    "saveToLibrarySelection": {
+      "title": "ライブラリに保存",
+      "description": "このアイテムを保存するライブラリを選択してください"
     },
     "libraryPreview": {
       "pickThisText": "このテキストを選択",

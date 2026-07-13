@@ -46,7 +46,9 @@
       "addDraftsFailed": "Failed to add drafts. Please try again.",
       "archived": "Archived \"{{name}}\"",
       "unarchived": "Restored \"{{name}}\"",
-      "archiveFailed": "Failed to change archive status. Please try again."
+      "archiveFailed": "Failed to change archive status. Please try again.",
+      "savedToLibrary": "Saved to library",
+      "saveToLibraryFailed": "Failed to save to library"
     },
     "errors": {
       "missingWorkflowInfo_one": "Missing information in {{count}} workflow item.",
@@ -151,6 +153,7 @@
       "noTextContent": "No text content...",
       "pickFromLibrary": "Pick from Library",
       "changeLibrary": "Change Library",
+      "saveToLibrary": "Save to Library",
       "unknownLibrary": "Unknown Library",
       "itemsCount": "{{count}} items",
       "filteredTags": "Filtered: {{count}} tags",
@@ -178,6 +181,10 @@
       "noResults": "No libraries match \"{{query}}\"",
       "searchPlaceholder": "Search libraries by name...",
       "added": "Added"
+    },
+    "saveToLibrarySelection": {
+      "title": "Save to Library",
+      "description": "Choose a library to save this item to"
     },
     "libraryPreview": {
       "pickThisText": "Pick this text",

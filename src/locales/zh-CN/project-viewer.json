@@ -46,7 +46,9 @@
       "addDraftsFailed": "添加草稿失败，请重试。",
       "archived": "已归档 “{{name}}”",
       "unarchived": "已恢复 “{{name}}”",
-      "archiveFailed": "更改归档状态失败，请重试。"
+      "archiveFailed": "更改归档状态失败，请重试。",
+      "savedToLibrary": "已保存到资料库",
+      "saveToLibraryFailed": "保存到资料库失败"
     },
     "errors": {
       "missingWorkflowInfo_one": "{{count}} 个工作流项目缺少信息。",
@@ -151,6 +153,7 @@
       "noTextContent": "没有文本内容...",
       "pickFromLibrary": "从资料库中选择",
       "changeLibrary": "更换资料库",
+      "saveToLibrary": "保存到资料库",
       "unknownLibrary": "未知资料库",
       "itemsCount": "{{count}} 项",
       "filteredTags": "已筛选：{{count}} 个标签",
@@ -178,6 +181,10 @@
       "noResults": "没有匹配 \"{{query}}\" 的资料库",
       "searchPlaceholder": "按名称搜索资料库...",
       "added": "已添加"
+    },
+    "saveToLibrarySelection": {
+      "title": "保存到资料库",
+      "description": "选择要保存此项目的资料库"
     },
     "libraryPreview": {
       "pickThisText": "选择这段文本",

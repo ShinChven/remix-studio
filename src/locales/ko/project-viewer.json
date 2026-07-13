@@ -46,7 +46,9 @@
       "addDraftsFailed": "초안 추가에 실패했습니다. 다시 시도하세요.",
       "archived": "\"{{name}}\" 보관됨",
       "unarchived": "\"{{name}}\" 복원됨",
-      "archiveFailed": "보관 상태를 변경하지 못했습니다. 다시 시도하세요."
+      "archiveFailed": "보관 상태를 변경하지 못했습니다. 다시 시도하세요.",
+      "savedToLibrary": "라이브러리에 저장했습니다",
+      "saveToLibraryFailed": "라이브러리에 저장하지 못했습니다"
     },
     "errors": {
       "missingWorkflowInfo_one": "{{count}}개의 워크플로 항목에 정보가 없습니다.",
@@ -151,6 +153,7 @@
       "noTextContent": "텍스트 내용 없음...",
       "pickFromLibrary": "라이브러리에서 선택",
       "changeLibrary": "라이브러리 변경",
+      "saveToLibrary": "라이브러리에 저장",
       "unknownLibrary": "알 수 없는 라이브러리",
       "itemsCount": "{{count}}개 항목",
       "filteredTags": "필터됨: {{count}}개 태그",
@@ -178,6 +181,10 @@
       "noResults": "\"{{query}}\"와(과) 일치하는 라이브러리가 없습니다",
       "searchPlaceholder": "이름으로 라이브러리 검색...",
       "added": "추가됨"
+    },
+    "saveToLibrarySelection": {
+      "title": "라이브러리에 저장",
+      "description": "이 항목을 저장할 라이브러리를 선택하세요"
     },
     "libraryPreview": {
       "pickThisText": "이 텍스트 선택",

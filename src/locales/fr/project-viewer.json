@@ -46,7 +46,9 @@
       "addDraftsFailed": "Échec de l'ajout des brouillons. Veuillez réessayer.",
       "archived": "« {{name}} » archivé",
       "unarchived": "« {{name}} » restauré",
-      "archiveFailed": "Échec du changement de statut d'archive. Veuillez réessayer."
+      "archiveFailed": "Échec du changement de statut d'archive. Veuillez réessayer.",
+      "savedToLibrary": "Enregistré dans la bibliothèque",
+      "saveToLibraryFailed": "Échec de l'enregistrement dans la bibliothèque"
     },
     "errors": {
       "missingWorkflowInfo_one": "Informations manquantes dans {{count}} élément du workflow.",
@@ -151,6 +153,7 @@
       "noTextContent": "Aucun contenu texte...",
       "pickFromLibrary": "Choisir dans la bibliothèque",
       "changeLibrary": "Changer de bibliothèque",
+      "saveToLibrary": "Enregistrer dans la bibliothèque",
       "unknownLibrary": "Bibliothèque inconnue",
       "itemsCount": "{{count}} éléments",
       "filteredTags": "Filtré : {{count}} tags",
@@ -178,6 +181,10 @@
       "noResults": "Aucune bibliothèque ne correspond à \"{{query}}\"",
       "searchPlaceholder": "Rechercher des bibliothèques par nom...",
       "added": "Ajouté"
+    },
+    "saveToLibrarySelection": {
+      "title": "Enregistrer dans la bibliothèque",
+      "description": "Choisissez une bibliothèque où enregistrer cet élément"
     },
     "libraryPreview": {
       "pickThisText": "Choisir ce texte",
