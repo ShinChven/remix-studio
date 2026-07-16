@@ -142,13 +142,20 @@
       "detectedTags": "偵測到的標籤",
       "skippedLines": "略過的行",
       "textareaPlaceholder": "在此貼上清單項目。\n\n- Subject: Moody editorial portrait | tags: cinematic, portrait\n- Soft rim light with shallow depth of field\n- Product close-up: Frosted bottle on stone | tags: product, studio",
-      "dropHint": "將 `.txt` 或 `.md` 檔案拖放到這裡"
+      "dropHint": "將 `.txt` 或 `.md` 檔案拖放到這裡",
+      "descriptionJson": "貼上一個 JSON 陣列，每個項目為 { title, content, tags } 物件——可安全包含多行內容、冒號和短橫線。",
+      "formatText": "文字",
+      "formatJson": "JSON",
+      "jsonTextareaPlaceholder": "在此貼上 JSON 陣列。\n\n[\n  {\n    \"title\": \"主題\",\n    \"content\": \"第一行\\n第二行：仍是內容\",\n    \"tags\": [\"cinematic\", \"portrait\"]\n  }\n]"
     },
     "formatGuide": {
       "title": "格式說明",
       "rule1": "每個項目都必須以 `- ` 開頭，解析器才能穩定拆分條目。",
       "rule2": "若需要顯示標題，請使用 `Title: Content`。若需要項目標籤，請在結尾使用 `| tags: a, b`。",
-      "rule3": "上方的共用標籤會合併到每個解析出的項目中，並自動去重。"
+      "rule3": "上方的共用標籤會合併到每個解析出的項目中，並自動去重。",
+      "jsonRule1": "提供一個 JSON 陣列，每個項目都是包含 `content` 字串的物件。",
+      "jsonRule2": "`title` 和 `tags` 為選填欄位。`tags` 必須是字串陣列。",
+      "jsonRule3": "內容可以安全包含換行、冒號和短橫線——不會依換行拆分。"
     },
     "parseStatus": {
       "title": "解析狀態",
@@ -160,7 +167,10 @@
       "missingListMarker": "缺少 \"- \" 清單標記",
       "emptyAfterMarker": "\"- \" 之後內容為空",
       "missingContentBeforeTags": "標籤提示詞之前缺少內容",
-      "missingContentAfterTitle": "標題分隔符號之後缺少內容"
+      "missingContentAfterTitle": "標題分隔符號之後缺少內容",
+      "invalidJson": "JSON 無效——請檢查語法錯誤",
+      "notArray": "JSON 根節點必須是項目陣列",
+      "invalidItem": "項目缺少有效的 \"content\" 字串"
     },
     "importAction": "匯入 {{count}} 個項目",
     "preview": {
@@ -181,7 +191,9 @@
       "tagged": "含標籤",
       "plain": "純文字",
       "copy": "複製輸出",
-      "download": "下載 .md"
+      "download": "下載 .{{ext}}",
+      "formatText": "文字",
+      "formatJson": "JSON"
     }
   },
   "libraryForm": {

@@ -162,7 +162,11 @@
       "remove": "Remove",
       "done": "Done",
       "pickerTitle": "Pick cover images",
-      "pickerHint": "Select up to {{count}}. Order is selection order."
+      "pickerHint": "Select up to {{count}}. Order is selection order.",
+      "reorderHint": "Drag to reorder, or use the arrows. The first cover is used as the primary listing image.",
+      "dragToReorder": "Drag to reorder",
+      "moveEarlier": "Move earlier",
+      "moveLater": "Move later"
     }
   },
   "trash": {

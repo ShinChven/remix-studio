@@ -979,7 +979,7 @@ export function AssistantComposer({
                       onClick={() => removeImage(img.id)}
                       disabled={isSending}
                       title={t('assistant.removeImage')}
-                      className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-800/80 text-white opacity-0 group-hover/thumb:opacity-100 transition-opacity shadow-sm disabled:cursor-not-allowed hover:bg-red-600"
+                      className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-800/80 text-white opacity-100 lg:opacity-0 lg:group-hover/thumb:opacity-100 transition-opacity shadow-sm disabled:cursor-not-allowed hover:bg-red-600"
                     >
                       <X className="h-3 w-3" />
                     </button>

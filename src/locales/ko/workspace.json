@@ -480,7 +480,11 @@
       "remove": "제거",
       "done": "완료",
       "pickerTitle": "커버 이미지 선택",
-      "pickerHint": "최대 {{count}}장. 선택 순서대로 정렬됩니다."
+      "pickerHint": "최대 {{count}}장. 선택 순서대로 정렬됩니다.",
+      "reorderHint": "드래그하거나 화살표를 사용해 순서를 바꿀 수 있습니다. 첫 번째 커버가 상품의 대표 이미지로 사용됩니다.",
+      "dragToReorder": "드래그하여 순서 변경",
+      "moveEarlier": "앞으로 이동",
+      "moveLater": "뒤로 이동"
     }
   }
 }

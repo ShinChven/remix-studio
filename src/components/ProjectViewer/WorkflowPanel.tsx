@@ -50,6 +50,7 @@ interface WorkflowPanelProps {
   onUpdateTags: (id: string, tags: string[]) => void;
   onSelectFromLibrary: (id: string) => void;
   onChangeLibrary: (id: string) => void;
+  onSaveToLibrary?: (item: WorkflowItemType) => void;
   setLocalProject: (project: Project) => void;
   onUpdate: (project: Project) => void;
   setIsSettingsCollapsed: (collapsed: boolean) => void;
@@ -104,6 +105,7 @@ export function WorkflowPanel({
   onUpdateTags,
   onSelectFromLibrary,
   onChangeLibrary,
+  onSaveToLibrary,
   setLocalProject,
   onUpdate,
   setIsSettingsCollapsed,
@@ -453,6 +455,7 @@ export function WorkflowPanel({
             onUpdateTags={onUpdateTags}
             onSelectFromLibrary={onSelectFromLibrary}
             onChangeLibrary={onChangeLibrary}
+            onSaveToLibrary={onSaveToLibrary}
             onToggleDisable={onToggleDisable}
             gridView={isExpanded}
           />

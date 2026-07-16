@@ -28,10 +28,19 @@ type ParsedPreviewItem = {
 type ParseIssue = {
   line: number;
   raw: string;
-  reasonKey: 'missingListMarker' | 'emptyAfterMarker' | 'missingContentBeforeTags' | 'missingContentAfterTitle';
+  reasonKey:
+    | 'missingListMarker'
+    | 'emptyAfterMarker'
+    | 'missingContentBeforeTags'
+    | 'missingContentAfterTitle'
+    | 'invalidJson'
+    | 'notArray'
+    | 'invalidItem';
 };
 
 type ExportMode = 'tagged' | 'plain';
+type ImportFormat = 'text' | 'json';
+type ExportFormat = 'text' | 'json';
 
 const TAG_SEGMENT_PATTERN = /\s+\|\s*tags\s*:\s*(.+)$/i;
 
@@ -116,6 +125,76 @@ function parseImportText(importText: string, sharedTagsInput: string): {
   return { items, issues };
 }
 
+function parseJsonImportText(importText: string, sharedTagsInput: string): {
+  items: ParsedPreviewItem[];
+  issues: ParseIssue[];
+} {
+  const items: ParsedPreviewItem[] = [];
+  const issues: ParseIssue[] = [];
+  const sharedTags = parseTagsInput(sharedTagsInput);
+  const trimmed = importText.trim();
+
+  if (!trimmed) {
+    return { items, issues };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    issues.push({ line: 1, raw: importText, reasonKey: 'invalidJson' });
+    return { items, issues };
+  }
+
+  if (!Array.isArray(parsed)) {
+    issues.push({ line: 1, raw: importText, reasonKey: 'notArray' });
+    return { items, issues };
+  }
+
+  parsed.forEach((entry, index) => {
+    const line = index + 1;
+
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      issues.push({ line, raw: JSON.stringify(entry), reasonKey: 'invalidItem' });
+      return;
+    }
+
+    const record = entry as Record<string, unknown>;
+    const content = typeof record.content === 'string' ? record.content.trim() : '';
+
+    if (!content) {
+      issues.push({ line, raw: JSON.stringify(entry), reasonKey: 'invalidItem' });
+      return;
+    }
+
+    const title = typeof record.title === 'string' && record.title.trim() ? record.title.trim() : undefined;
+    const entryTags = Array.isArray(record.tags)
+      ? record.tags.filter((tag): tag is string => typeof tag === 'string')
+      : [];
+
+    items.push({
+      title,
+      content,
+      tags: normalizeTags([...sharedTags, ...entryTags]),
+      sourceLine: line,
+    });
+  });
+
+  return { items, issues };
+}
+
+function formatExportJson(items: LibraryItem[]): string {
+  return JSON.stringify(
+    items.map((item) => ({
+      title: item.title || undefined,
+      content: item.content,
+      tags: item.tags && item.tags.length > 0 ? normalizeTags(item.tags) : undefined,
+    })),
+    null,
+    2
+  );
+}
+
 function formatExportText(items: LibraryItem[], exportMode: ExportMode): string {
   return items
     .map((item) => {
@@ -147,6 +226,8 @@ export function LibraryImportExport() {
   const [isImporting, setIsImporting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [exportMode, setExportMode] = useState<ExportMode>('tagged');
+  const [importFormat, setImportFormat] = useState<ImportFormat>('text');
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('text');
 
   useEffect(() => {
     if (!id) return;
@@ -165,10 +246,12 @@ export function LibraryImportExport() {
   }, [id, navigate]);
 
   useEffect(() => {
-    const parsed = parseImportText(importText, sharedTagsInput);
+    const parsed = importFormat === 'json'
+      ? parseJsonImportText(importText, sharedTagsInput)
+      : parseImportText(importText, sharedTagsInput);
     setPreviewItems(parsed.items);
     setParseIssues(parsed.issues);
-  }, [importText, sharedTagsInput]);
+  }, [importText, sharedTagsInput, importFormat]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -203,7 +286,13 @@ export function LibraryImportExport() {
     let combinedText = importText;
 
     for (const file of files) {
-      if (file.type !== 'text/plain' && !file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
+      if (
+        file.type !== 'text/plain' &&
+        file.type !== 'application/json' &&
+        !file.name.endsWith('.txt') &&
+        !file.name.endsWith('.md') &&
+        !file.name.endsWith('.json')
+      ) {
         continue;
       }
 
@@ -242,7 +331,9 @@ export function LibraryImportExport() {
     }
   };
 
-  const currentExportText = library ? formatExportText(library.items, exportMode) : '';
+  const currentExportText = library
+    ? (exportFormat === 'json' ? formatExportJson(library.items) : formatExportText(library.items, exportMode))
+    : '';
   const previewTagCount = normalizeTags(previewItems.flatMap((item) => item.tags)).length;
   const libraryTagCount = library ? normalizeTags(library.items.flatMap((item) => item.tags || [])).length : 0;
 
@@ -260,11 +351,12 @@ export function LibraryImportExport() {
   const handleDownloadOutput = () => {
     if (!library || !currentExportText) return;
 
-    const blob = new Blob([currentExportText], { type: 'text/markdown' });
+    const isJson = exportFormat === 'json';
+    const blob = new Blob([currentExportText], { type: isJson ? 'application/json' : 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `${library.name.replace(/\s+/g, '_')}_${exportMode}.md`;
+    anchor.download = `${library.name.replace(/\s+/g, '_')}_${isJson ? 'json' : exportMode}.${isJson ? 'json' : 'md'}`;
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
@@ -338,14 +430,40 @@ export function LibraryImportExport() {
                   <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">{t('libraryImportExport.importSource.label')}</div>
                   <h2 className="mt-2 text-xl font-black tracking-tight text-neutral-900 dark:text-white">{t('libraryImportExport.importSource.title')}</h2>
                   <p className="mt-2 max-w-xl text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
-                    {t('libraryImportExport.importSource.description')}
+                    {importFormat === 'json'
+                      ? t('libraryImportExport.importSource.descriptionJson')
+                      : t('libraryImportExport.importSource.description')}
                     <span className="mt-1 block font-mono text-xs text-neutral-700 dark:text-neutral-300">
-                      - Title: Content | tags: cinematic, portrait
+                      {importFormat === 'json'
+                        ? '[{ "title": "Subject", "content": "Line one\\nLine two: still content", "tags": ["cinematic"] }]'
+                        : '- Title: Content | tags: cinematic, portrait'}
                     </span>
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-1 shadow-sm">
+                    <button
+                      onClick={() => setImportFormat('text')}
+                      className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
+                        importFormat === 'text'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
+                      }`}
+                    >
+                      {t('libraryImportExport.importSource.formatText')}
+                    </button>
+                    <button
+                      onClick={() => setImportFormat('json')}
+                      className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
+                        importFormat === 'json'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
+                      }`}
+                    >
+                      {t('libraryImportExport.importSource.formatJson')}
+                    </button>
+                  </div>
                   <button
                     onClick={() => setImportText('')}
                     className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-neutral-600 dark:text-neutral-400 transition-all hover:border-red-500/30 hover:text-red-300"
@@ -364,7 +482,7 @@ export function LibraryImportExport() {
                     ref={fileInputRef}
                     type="file"
                     className="hidden"
-                    accept=".txt,.md"
+                    accept=".txt,.md,.json"
                     multiple
                     onChange={handleFileUpload}
                   />
@@ -417,7 +535,9 @@ export function LibraryImportExport() {
               <textarea
                 value={importText}
                 onChange={(event) => setImportText(event.target.value)}
-                placeholder={t('libraryImportExport.importSource.textareaPlaceholder')}
+                placeholder={importFormat === 'json'
+                  ? t('libraryImportExport.importSource.jsonTextareaPlaceholder')
+                  : t('libraryImportExport.importSource.textareaPlaceholder')}
                 className="min-h-[320px] flex-1 resize-none border-none bg-transparent p-2 font-mono text-sm leading-7 text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-700 focus:outline-none focus:ring-0 custom-scrollbar"
               />
 
@@ -436,9 +556,19 @@ export function LibraryImportExport() {
                   {t('libraryImportExport.formatGuide.title')}
                 </div>
                 <div className="mt-4 space-y-3 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
-                  <p>{t('libraryImportExport.formatGuide.rule1')}</p>
-                  <p>{t('libraryImportExport.formatGuide.rule2')}</p>
-                  <p>{t('libraryImportExport.formatGuide.rule3')}</p>
+                  {importFormat === 'json' ? (
+                    <>
+                      <p>{t('libraryImportExport.formatGuide.jsonRule1')}</p>
+                      <p>{t('libraryImportExport.formatGuide.jsonRule2')}</p>
+                      <p>{t('libraryImportExport.formatGuide.jsonRule3')}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>{t('libraryImportExport.formatGuide.rule1')}</p>
+                      <p>{t('libraryImportExport.formatGuide.rule2')}</p>
+                      <p>{t('libraryImportExport.formatGuide.rule3')}</p>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -529,7 +659,7 @@ export function LibraryImportExport() {
                         )}
                       </div>
 
-                      <p className="mt-3 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">{item.content}</p>
+                      <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">{item.content}</p>
 
                       {item.tags.length > 0 && (
                         <div className="mt-4 flex flex-wrap gap-2">
@@ -569,27 +699,54 @@ export function LibraryImportExport() {
                   </p>
                 </div>
 
-                <div className="inline-flex rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-1 shadow-sm">
-                  <button
-                    onClick={() => setExportMode('tagged')}
-                    className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
-                      exportMode === 'tagged'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
-                    }`}
-                  >
-                    {t('libraryImportExport.output.tagged')}
-                  </button>
-                  <button
-                    onClick={() => setExportMode('plain')}
-                    className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
-                      exportMode === 'plain'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
-                    }`}
-                  >
-                    {t('libraryImportExport.output.plain')}
-                  </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-1 shadow-sm">
+                    <button
+                      onClick={() => setExportFormat('text')}
+                      className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
+                        exportFormat === 'text'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
+                      }`}
+                    >
+                      {t('libraryImportExport.output.formatText')}
+                    </button>
+                    <button
+                      onClick={() => setExportFormat('json')}
+                      className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
+                        exportFormat === 'json'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
+                      }`}
+                    >
+                      {t('libraryImportExport.output.formatJson')}
+                    </button>
+                  </div>
+
+                  {exportFormat === 'text' && (
+                    <div className="inline-flex rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-1 shadow-sm">
+                      <button
+                        onClick={() => setExportMode('tagged')}
+                        className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
+                          exportMode === 'tagged'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
+                        }`}
+                      >
+                        {t('libraryImportExport.output.tagged')}
+                      </button>
+                      <button
+                        onClick={() => setExportMode('plain')}
+                        className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
+                          exportMode === 'plain'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-200'
+                        }`}
+                      >
+                        {t('libraryImportExport.output.plain')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -608,7 +765,7 @@ export function LibraryImportExport() {
                   className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-blue-300 transition-all hover:bg-blue-500 hover:text-white disabled:opacity-35"
                 >
                   <Download className="h-4 w-4" />
-                  {t('libraryImportExport.output.download')}
+                  {t('libraryImportExport.output.download', { ext: exportFormat === 'json' ? 'json' : 'md' })}
                 </button>
               </div>
 

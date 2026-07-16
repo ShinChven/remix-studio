@@ -162,7 +162,11 @@
       "remove": "移除",
       "done": "完成",
       "pickerTitle": "选择封面图片",
-      "pickerHint": "最多选择 {{count}} 张。顺序按选择顺序。"
+      "pickerHint": "最多选择 {{count}} 张。顺序按选择顺序。",
+      "reorderHint": "拖动或使用箭头调整顺序。第一张封面将作为商品的主图。",
+      "dragToReorder": "拖动以调整顺序",
+      "moveEarlier": "前移",
+      "moveLater": "后移"
     }
   },
   "trash": {

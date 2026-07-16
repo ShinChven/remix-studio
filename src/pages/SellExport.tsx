@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { DragEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Package, Plus, Store as StoreIcon, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GripVertical, Loader2, Package, Plus, Store as StoreIcon, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   ConnectedStore,
@@ -57,6 +57,8 @@ export function SellExport() {
   const [watermarkSettings, setWatermarkSettings] = useState<PostWatermarkSettings>(DEFAULT_WATERMARK_SETTINGS);
   const [isWatermarkSaving, setIsWatermarkSaving] = useState(false);
   const [publishImmediately, setPublishImmediately] = useState(true);
+  const [draggedCoverIndex, setDraggedCoverIndex] = useState<number | null>(null);
+  const [dragOverCoverIndex, setDragOverCoverIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!exportId) return;
@@ -144,6 +146,39 @@ export function SellExport() {
 
   const removeCover = (albumItemId: string) => {
     setCoverItems((prev) => prev.filter((c) => c.albumItemId !== albumItemId));
+  };
+
+  const moveCover = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    setCoverItems((prev) => {
+      if (fromIndex < 0 || fromIndex >= prev.length || toIndex < 0 || toIndex >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  };
+
+  const handleCoverDragStart = (e: DragEvent, index: number) => {
+    setDraggedCoverIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleCoverDragOver = (e: DragEvent, index: number) => {
+    e.preventDefault();
+    if (dragOverCoverIndex !== index) setDragOverCoverIndex(index);
+  };
+
+  const handleCoverDrop = (e: DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedCoverIndex !== null) moveCover(draggedCoverIndex, index);
+    setDraggedCoverIndex(null);
+    setDragOverCoverIndex(null);
+  };
+
+  const handleCoverDragEnd = () => {
+    setDraggedCoverIndex(null);
+    setDragOverCoverIndex(null);
   };
 
   const onSubmit = async () => {
@@ -379,43 +414,90 @@ export function SellExport() {
               {t('sell.covers.empty')}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 items-start">
-              {coverItems.map((c) => {
-                const localItem = albumImages.find((a) => a.id === c.albumItemId);
-                const pickedItem = pickedItemsMap[c.albumItemId];
+            <>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {t('sell.covers.reorderHint')}
+              </p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 items-start">
+                {coverItems.map((c, index) => {
+                  const localItem = albumImages.find((a) => a.id === c.albumItemId);
+                  const pickedItem = pickedItemsMap[c.albumItemId];
 
-                let src = '';
-                if (c.useRaw) {
-                  src = localItem?.imageUrl || pickedItem?.rawUrl || '';
-                } else {
-                  src = localItem?.thumbnailUrl || localItem?.optimizedUrl || localItem?.imageUrl || pickedItem?.thumbnailUrl || pickedItem?.optimizedUrl || pickedItem?.previewUrl || pickedItem?.rawUrl || '';
-                }
+                  let src = '';
+                  if (c.useRaw) {
+                    src = localItem?.imageUrl || pickedItem?.rawUrl || '';
+                  } else {
+                    src = localItem?.thumbnailUrl || localItem?.optimizedUrl || localItem?.imageUrl || pickedItem?.thumbnailUrl || pickedItem?.optimizedUrl || pickedItem?.previewUrl || pickedItem?.rawUrl || '';
+                  }
 
-                if (!src) return null;
-                return (
-                  <div key={c.albumItemId} className="relative overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800/50">
-                    <img src={src} alt="" className="w-full h-auto block" />
-                    <button
-                      type="button"
-                      onClick={() => removeCover(c.albumItemId)}
-                      className="absolute right-1 top-1 rounded-full bg-red-500/90 p-1 text-white shadow"
-                      title={t('sell.covers.remove')}
+                  if (!src) return null;
+                  return (
+                    <div
+                      key={c.albumItemId}
+                      draggable
+                      onDragStart={(e) => handleCoverDragStart(e, index)}
+                      onDragOver={(e) => handleCoverDragOver(e, index)}
+                      onDrop={(e) => handleCoverDrop(e, index)}
+                      onDragEnd={handleCoverDragEnd}
+                      className={`relative overflow-hidden rounded-lg border bg-neutral-100 transition-all dark:bg-neutral-800/50 ${
+                        draggedCoverIndex === index
+                          ? 'opacity-50 border-pink-500'
+                          : dragOverCoverIndex === index
+                            ? 'border-pink-400 border-dashed'
+                            : 'border-neutral-200 dark:border-white/10'
+                      }`}
                     >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                    <label className="absolute bottom-1 left-1 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                      <input
-                        type="checkbox"
-                        checked={!!c.useRaw}
-                        onChange={(e) => setCoverUseRaw(c.albumItemId, e.target.checked)}
-                        className="h-3 w-3"
-                      />
-                      {t('sell.covers.useRaw')}
-                    </label>
-                  </div>
-                );
-              })}
-            </div>
+                      <img src={src} alt="" className="w-full h-auto block" draggable={false} />
+                      <div className="absolute left-1 top-1 flex items-center gap-1">
+                        <span className="flex h-5 w-5 cursor-grab items-center justify-center rounded-full bg-black/60 text-white active:cursor-grabbing" title={t('sell.covers.dragToReorder')}>
+                          <GripVertical className="h-3 w-3" />
+                        </span>
+                        <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-black/60 px-1 text-[10px] font-bold text-white">
+                          {index + 1}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeCover(c.albumItemId)}
+                        className="absolute right-1 top-1 rounded-full bg-red-500/90 p-1 text-white shadow"
+                        title={t('sell.covers.remove')}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                      <div className="absolute bottom-1 right-1 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => moveCover(index, index - 1)}
+                          disabled={index === 0}
+                          className="rounded-full bg-black/60 p-1 text-white shadow disabled:cursor-not-allowed disabled:opacity-30"
+                          title={t('sell.covers.moveEarlier')}
+                        >
+                          <ChevronLeft className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveCover(index, index + 1)}
+                          disabled={index === coverItems.length - 1}
+                          className="rounded-full bg-black/60 p-1 text-white shadow disabled:cursor-not-allowed disabled:opacity-30"
+                          title={t('sell.covers.moveLater')}
+                        >
+                          <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <label className="absolute bottom-1 left-1 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        <input
+                          type="checkbox"
+                          checked={!!c.useRaw}
+                          onChange={(e) => setCoverUseRaw(c.albumItemId, e.target.checked)}
+                          className="h-3 w-3"
+                        />
+                        {t('sell.covers.useRaw')}
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </section>
 

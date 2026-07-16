@@ -21,7 +21,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJob as apiDeleteProjectJob } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJob as apiDeleteProjectJob, createLibraryItem } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -216,6 +216,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [uploadingItemIds, setUploadingItemIds] = useState<Set<string>>(new Set());
   const [selectingLibraryForItemId, setSelectingLibraryForItemId] = useState<string | null>(null);
   const [changingLibraryItemId, setChangingLibraryItemId] = useState<string | null>(null);
+  const [savingLibraryItemId, setSavingLibraryItemId] = useState<string | null>(null);
+  const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
   const [lightboxData, setLightboxData] = useState<LightboxData | null>(null);
@@ -1019,6 +1021,39 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setLocalProject(updated);
     onUpdate(updated);
     setChangingLibraryItemId(null);
+  };
+
+  const openSaveWorkflowItemToLibrary = (item: WorkflowItemType) => {
+    setSavingLibraryItemId(item.id);
+    void refreshWorkflowLibraries().catch(() => {
+      toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
+    });
+  };
+
+  const handleSaveWorkflowItemToLibrary = async (libraryId: string) => {
+    const item = (localProject.workflow || []).find((workflowItem) => workflowItem.id === savingLibraryItemId);
+    if (!item) {
+      setSavingLibraryItemId(null);
+      return;
+    }
+
+    setIsSavingToLibrary(true);
+    try {
+      await createLibraryItem(libraryId, {
+        id: crypto.randomUUID(),
+        content: item.value,
+        thumbnailUrl: item.thumbnailUrl,
+        optimizedUrl: item.optimizedUrl,
+        size: item.size,
+      });
+      toast.success(t('projectViewer.toasts.savedToLibrary', { defaultValue: 'Saved to library' }));
+      setSavingLibraryItemId(null);
+    } catch (error) {
+      console.error('Failed to save workflow item to library:', error);
+      toast.error(t('projectViewer.toasts.saveToLibraryFailed', { defaultValue: 'Failed to save to library' }));
+    } finally {
+      setIsSavingToLibrary(false);
+    }
   };
 
   const openLibraryPreview = async (library: Library, workflowItemId: string) => {
@@ -1910,6 +1945,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         onUpdateTags={updateWorkflowItemTags}
         onSelectFromLibrary={openWorkflowItemLibrarySelector}
         onChangeLibrary={openWorkflowLibraryChangeSelector}
+        onSaveToLibrary={openSaveWorkflowItemToLibrary}
         setLocalProject={setLocalProject}
         onUpdate={onUpdate}
         setIsSettingsCollapsed={setIsSettingsCollapsed}
@@ -2101,24 +2137,34 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       <ConfirmModal isOpen={showDeleteProjectModal} onClose={() => setShowDeleteProjectModal(false)} onConfirm={onDelete} title={t('projectViewer.confirm.deleteProject.title')} message={t('projectViewer.confirm.deleteProject.message', { name: localProject.name })} confirmText={t('projectViewer.confirm.deleteProject.confirm')} type="danger" />
       <ConfirmModal isOpen={jobToDeleteId !== null} onClose={() => setJobToDeleteId(null)} onConfirm={() => { if (jobToDeleteId) { deleteJob(jobToDeleteId); setJobToDeleteId(null); } }} title={t('projectViewer.confirm.deleteJob.title')} message={t('projectViewer.confirm.deleteJob.message')} confirmText={t('projectViewer.confirm.deleteJob.confirm')} type="danger" />
       <LibrarySelectionModal
-        isOpen={showLibrarySelector || changingLibraryItemId !== null}
+        isOpen={showLibrarySelector || changingLibraryItemId !== null || savingLibraryItemId !== null}
         onClose={() => {
           setShowLibrarySelector(false);
           setChangingLibraryItemId(null);
+          setSavingLibraryItemId(null);
         }}
         onSelect={(libraryId) => {
           if (changingLibraryItemId) {
             handleWorkflowLibraryChange(changingLibraryItemId, libraryId);
+          } else if (savingLibraryItemId) {
+            void handleSaveWorkflowItemToLibrary(libraryId);
           } else {
             handleLibrarySelect(libraryId);
           }
         }}
         libraries={(() => {
+          if (savingLibraryItemId) {
+            const item = (localProject.workflow || []).find((workflowItem) => workflowItem.id === savingLibraryItemId);
+            const type = item?.type === 'image' ? 'image' : 'text';
+            return liveLibraries.filter((library) => library.type === type);
+          }
           return isAudioProject ? liveLibraries.filter((library) => library.type === 'text') : liveLibraries;
         })()}
-        selectedLibraryIds={(localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)}
-        isLoading={isRefreshingLibraries}
+        selectedLibraryIds={savingLibraryItemId ? [] : (localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)}
+        isLoading={isRefreshingLibraries || isSavingToLibrary}
         error={libraryRefreshError}
+        title={savingLibraryItemId ? t('projectViewer.saveToLibrarySelection.title', { defaultValue: 'Save to Library' }) : undefined}
+        description={savingLibraryItemId ? t('projectViewer.saveToLibrarySelection.description', { defaultValue: 'Choose a library to save this item to' }) : undefined}
       />
       <UniversalMediaPicker
         isOpen={!!selectingLibraryForItemId}
