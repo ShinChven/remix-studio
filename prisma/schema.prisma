@@ -497,6 +497,12 @@ model OAuthAccessToken {
   refreshToken     String?   @unique
   refreshExpiresAt DateTime?
   revoked          Boolean   @default(false)
+  // Refresh-token rotation tracking. When a token is rotated, `rotatedToId`
+  // points at its successor and `rotatedAt` records when. This lets the token
+  // endpoint recover clients whose rotation response was lost (grace-window
+  // replay) and detect genuine refresh-token reuse.
+  rotatedToId      String?
+  rotatedAt        DateTime?
   createdAt        DateTime  @default(now())
 
   client OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
