@@ -1435,7 +1435,7 @@ export function AssistantPage() {
                                );
                             })()}
                           </div>
-                          <div className="flex items-center gap-1 opacity-0 group-hover/message:opacity-100 transition-opacity mt-0.5 mr-1">
+                          <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover/message:opacity-100 transition-opacity mt-0.5 mr-1">
                             <button
                               onClick={() => {
                                 const { textContent: rawText } = parseUserMessageImages(msg.content);
@@ -1511,7 +1511,7 @@ export function AssistantPage() {
                                   toast.success(t('assistant.copied', { defaultValue: 'Copied to clipboard' }));
                                 }
                               }}
-                              className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-all opacity-0 group-hover/message:opacity-100"
+                              className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-all opacity-100 lg:opacity-0 lg:group-hover/message:opacity-100"
                               title={t('assistant.copy', { defaultValue: 'Copy text' })}
                             >
                               <Copy className="w-3.5 h-3.5" />
