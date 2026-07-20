@@ -574,6 +574,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'runninghub-seedream-v5-pro',
+      name: 'Seedream V5 Pro',
+      generatorId: 'RunningHub',
+      modelId: 'seedream-v5-pro',
+      category: 'image',
+      promptLimit: { value: 2000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
       id: 'runninghub-seedance-2-0-global-video',
       name: 'Seedance 2.0 Global',
       generatorId: 'RunningHub',

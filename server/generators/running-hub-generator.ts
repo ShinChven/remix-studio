@@ -82,7 +82,7 @@ function resolveSeedreamSize(aspectRatio?: string, imageSize?: string): [number,
 
 function isSeedream5Pro(modelId?: string, apiUrl?: string): boolean {
   const target = `${modelId || ''} ${apiUrl || ''}`.toLowerCase();
-  return target.includes('dola-seedream-5.0-pro');
+  return target.includes('dola-seedream-5.0-pro') || target.includes('seedream-v5-pro');
 }
 
 export class RunningHubGenerator extends ImageGenerator {
