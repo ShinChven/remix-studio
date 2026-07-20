@@ -48,6 +48,43 @@ function isGrokImaginePro(modelId?: string, apiUrl?: string): boolean {
   return target.includes('rhart-imagine-image-quality');
 }
 
+// Seedream 5.0 Pro takes explicit width/height (240 - 8192). Its `resolution`
+// enum overrides width*height when present, so we only send width/height to
+// preserve the user's aspect-ratio choice.
+const SEEDREAM_SIZE_MAP: Record<string, Record<string, [number, number]>> = {
+  '1K': {
+    '1:1': [1024, 1024],
+    '4:3': [1152, 864],
+    '3:4': [864, 1152],
+    '16:9': [1280, 720],
+    '9:16': [720, 1280],
+    '3:2': [1248, 832],
+    '2:3': [832, 1248],
+    '21:9': [1512, 648],
+  },
+  '2K': {
+    '1:1': [2048, 2048],
+    '4:3': [2304, 1728],
+    '3:4': [1728, 2304],
+    '16:9': [2560, 1440],
+    '9:16': [1440, 2560],
+    '3:2': [2496, 1664],
+    '2:3': [1664, 2496],
+    '21:9': [3024, 1296],
+  },
+};
+
+function resolveSeedreamSize(aspectRatio?: string, imageSize?: string): [number, number] {
+  const quality = (imageSize || '1K').toUpperCase();
+  const bucket = SEEDREAM_SIZE_MAP[quality] || SEEDREAM_SIZE_MAP['1K'];
+  return bucket[aspectRatio || '1:1'] || bucket['1:1'];
+}
+
+function isSeedream5Pro(modelId?: string, apiUrl?: string): boolean {
+  const target = `${modelId || ''} ${apiUrl || ''}`.toLowerCase();
+  return target.includes('dola-seedream-5.0-pro');
+}
+
 export class RunningHubGenerator extends ImageGenerator {
   private apiKey: string;
   private submitUrl: string;
@@ -117,6 +154,7 @@ export class RunningHubGenerator extends ImageGenerator {
     const isTextToImage = imageUrls.length === 0;
     const isQwen = isQwenImage2Pro(modelId, reqApiUrl);
     const isGrok = isGrokImaginePro(modelId, reqApiUrl);
+    const isSeedream = isSeedream5Pro(modelId, reqApiUrl);
     // Qwen uses `/image-edit`, Grok Imagine Pro uses `/edit`, the rhart model uses `/image-to-image`.
     const refEndpointType = isQwen ? 'image-edit' : isGrok ? 'edit' : 'image-to-image';
     const endpointType = isTextToImage ? 'text-to-image' : refEndpointType;
@@ -160,6 +198,19 @@ export class RunningHubGenerator extends ImageGenerator {
       if (!isTextToImage) {
         // Grok Imagine Pro /edit accepts a single imageUrl (max 1 image).
         payload.imageUrl = imageUrls[0];
+      }
+    } else if (isSeedream) {
+      const [width, height] = resolveSeedreamSize(aspectRatio, imageSize);
+      payload = {
+        prompt,
+        width,
+        height,
+      };
+      if (format) {
+        payload.outputFormat = format.toLowerCase() === 'jpg' ? 'jpeg' : format.toLowerCase();
+      }
+      if (!isTextToImage) {
+        payload.imageUrls = imageUrls;
       }
     } else {
       payload = {
