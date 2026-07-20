@@ -258,6 +258,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'google-nano-banana-2-lite',
+      name: 'nano banana 2 Lite',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-3.1-flash-lite-image',
+      category: 'image',
+      promptLimit: { value: 131072, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '4:5', '5:4', '21:9'],
+        qualities: ['1K'],
+      },
+    },
+    {
       id: 'google-gemini-3.5-flash-text',
       name: 'Gemini 3.5 Flash',
       generatorId: 'GoogleAI',
@@ -409,6 +421,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21'],
         qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'vertex-nano-banana-2-lite',
+      name: 'nano banana 2 Lite',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-3.1-flash-lite-image',
+      category: 'image',
+      promptLimit: { value: 131072, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '4:5', '5:4', '21:9'],
+        qualities: ['1K'],
       },
     },
     {
