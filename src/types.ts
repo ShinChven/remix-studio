@@ -527,6 +527,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'runninghub-nano-banana-2-pro',
+      name: 'nano banana 2 Pro',
+      generatorId: 'RunningHub',
+      modelId: 'rhart-image-n-pro',
+      category: 'image',
+      promptLimit: { value: 20000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
       id: 'runninghub-gpt-image-2',
       name: 'GPT Image 2',
       generatorId: 'RunningHub',
