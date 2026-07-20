@@ -164,9 +164,12 @@ export class RunningHubGenerator extends ImageGenerator {
     } else {
       payload = {
         prompt,
-        aspectRatio,
         resolution: imageSize.toLowerCase(), // API expects "1k", not "1K"
       };
+      // aspectRatio is optional; "auto" means letting the API decide, so omit the field.
+      if (aspectRatio !== 'auto') {
+        payload.aspectRatio = aspectRatio;
+      }
       if (!isTextToImage) {
         payload.imageUrls = imageUrls;
       }
