@@ -48,6 +48,14 @@ function isGrokImaginePro(modelId?: string, apiUrl?: string): boolean {
   return target.includes('rhart-imagine-image-quality');
 }
 
+// rhart-image-n-pro shares the default rhart payload shape but its
+// reference-image endpoint is `/edit` (imageUrls, max 10) instead of
+// `/image-to-image`.
+function isRhartImageNPro(modelId?: string, apiUrl?: string): boolean {
+  const target = `${modelId || ''} ${apiUrl || ''}`.toLowerCase();
+  return target.includes('rhart-image-n-pro');
+}
+
 // Seedream 5.0 Pro takes explicit width/height (240 - 8192). Its `resolution`
 // enum overrides width*height when present, so we only send width/height to
 // preserve the user's aspect-ratio choice.
@@ -164,9 +172,11 @@ export class RunningHubGenerator extends ImageGenerator {
     const isGrok = isGrokImaginePro(modelId, reqApiUrl);
     const isSeedream = isSeedream5Pro(modelId, reqApiUrl);
     const isWan = isWan27Pro(modelId, reqApiUrl);
-    // Qwen uses `/image-edit`, Grok Imagine Pro uses `/edit`, Wan 2.7 uses
-    // `/image-edit-pro`, the rhart model uses `/image-to-image`.
-    const refEndpointType = isQwen ? 'image-edit' : isGrok ? 'edit' : isWan ? 'image-edit-pro' : 'image-to-image';
+    const isNanoPro = isRhartImageNPro(modelId, reqApiUrl);
+    // Qwen uses `/image-edit`, Grok Imagine Pro and rhart-image-n-pro use
+    // `/edit`, Wan 2.7 uses `/image-edit-pro`, the rhart flash model uses
+    // `/image-to-image`.
+    const refEndpointType = isQwen ? 'image-edit' : (isGrok || isNanoPro) ? 'edit' : isWan ? 'image-edit-pro' : 'image-to-image';
     const endpointType = isTextToImage ? (isWan ? 'text-to-image-pro' : 'text-to-image') : refEndpointType;
 
     let actualSubmitUrl = reqApiUrl;
