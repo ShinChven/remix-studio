@@ -527,8 +527,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
-      id: 'runninghub-nano-banana-2-pro',
-      name: 'nano banana 2 Pro',
+      id: 'runninghub-nano-banana-pro',
+      name: 'nano banana Pro',
       generatorId: 'RunningHub',
       modelId: 'rhart-image-n-pro',
       category: 'image',
