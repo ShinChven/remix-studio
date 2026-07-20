@@ -522,7 +522,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       modelId: 'rhart-image-n-g31-flash',
       category: 'image',
       options: {
-        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21', 'auto'],
         qualities: ['1K', '2K', '4K'],
       },
     },
