@@ -101,6 +101,9 @@ function isWan27Pro(modelId?: string, apiUrl?: string): boolean {
   return target.includes('wan-2.7');
 }
 
+// Wan 2.7 rejects prompts longer than 2048 characters (API error 1007).
+const WAN_MAX_PROMPT_LENGTH = 2048;
+
 export class RunningHubGenerator extends ImageGenerator {
   private apiKey: string;
   private submitUrl: string;
@@ -221,8 +224,13 @@ export class RunningHubGenerator extends ImageGenerator {
       }
     } else if (isSeedream || isWan) {
       const [width, height] = resolveSeedreamSize(aspectRatio, imageSize);
+      let wanPrompt = prompt;
+      if (isWan && prompt.length > WAN_MAX_PROMPT_LENGTH) {
+        console.log(`[RunningHubGenerator] Truncating Wan 2.7 prompt from ${prompt.length} to ${WAN_MAX_PROMPT_LENGTH} chars`);
+        wanPrompt = prompt.slice(0, WAN_MAX_PROMPT_LENGTH);
+      }
       payload = {
-        prompt,
+        prompt: wanPrompt,
         width,
         height,
       };
