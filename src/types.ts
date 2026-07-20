@@ -562,6 +562,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'runninghub-seedream-5-0-pro',
+      name: 'Seedream 5.0 Pro',
+      generatorId: 'RunningHub',
+      modelId: 'dola-Seedream-5.0-pro',
+      category: 'image',
+      promptLimit: { value: 5000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
       id: 'runninghub-seedance-2-0-global-video',
       name: 'Seedance 2.0 Global',
       generatorId: 'RunningHub',
