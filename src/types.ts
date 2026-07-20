@@ -586,6 +586,17 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'runninghub-wan-2-7-pro',
+      name: 'Wan 2.7 Pro',
+      generatorId: 'RunningHub',
+      modelId: 'alibaba/wan-2.7',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
       id: 'runninghub-seedance-2-0-global-video',
       name: 'Seedance 2.0 Global',
       generatorId: 'RunningHub',

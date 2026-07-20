@@ -85,6 +85,14 @@ function isSeedream5Pro(modelId?: string, apiUrl?: string): boolean {
   return target.includes('dola-seedream-5.0-pro') || target.includes('seedream-v5-pro');
 }
 
+// Wan 2.7 Pro also takes explicit width/height and uses `-pro` endpoint
+// suffixes (`text-to-image-pro`, `image-edit-pro`). The Seedream size buckets
+// satisfy its pixel constraints (>= 768*768 total, each side 512 - 4096).
+function isWan27Pro(modelId?: string, apiUrl?: string): boolean {
+  const target = `${modelId || ''} ${apiUrl || ''}`.toLowerCase();
+  return target.includes('wan-2.7');
+}
+
 export class RunningHubGenerator extends ImageGenerator {
   private apiKey: string;
   private submitUrl: string;
@@ -155,9 +163,11 @@ export class RunningHubGenerator extends ImageGenerator {
     const isQwen = isQwenImage2Pro(modelId, reqApiUrl);
     const isGrok = isGrokImaginePro(modelId, reqApiUrl);
     const isSeedream = isSeedream5Pro(modelId, reqApiUrl);
-    // Qwen uses `/image-edit`, Grok Imagine Pro uses `/edit`, the rhart model uses `/image-to-image`.
-    const refEndpointType = isQwen ? 'image-edit' : isGrok ? 'edit' : 'image-to-image';
-    const endpointType = isTextToImage ? 'text-to-image' : refEndpointType;
+    const isWan = isWan27Pro(modelId, reqApiUrl);
+    // Qwen uses `/image-edit`, Grok Imagine Pro uses `/edit`, Wan 2.7 uses
+    // `/image-edit-pro`, the rhart model uses `/image-to-image`.
+    const refEndpointType = isQwen ? 'image-edit' : isGrok ? 'edit' : isWan ? 'image-edit-pro' : 'image-to-image';
+    const endpointType = isTextToImage ? (isWan ? 'text-to-image-pro' : 'text-to-image') : refEndpointType;
 
     let actualSubmitUrl = reqApiUrl;
     if (!actualSubmitUrl) {
@@ -199,14 +209,15 @@ export class RunningHubGenerator extends ImageGenerator {
         // Grok Imagine Pro /edit accepts a single imageUrl (max 1 image).
         payload.imageUrl = imageUrls[0];
       }
-    } else if (isSeedream) {
+    } else if (isSeedream || isWan) {
       const [width, height] = resolveSeedreamSize(aspectRatio, imageSize);
       payload = {
         prompt,
         width,
         height,
       };
-      if (format) {
+      // Wan 2.7 does not document an outputFormat parameter.
+      if (isSeedream && format) {
         payload.outputFormat = format.toLowerCase() === 'jpg' ? 'jpeg' : format.toLowerCase();
       }
       if (!isTextToImage) {
