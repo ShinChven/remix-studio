@@ -1952,38 +1952,50 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       if (itemIds.length === 1) await moveToTrash(localProject.id, itemIds[0]); else await moveToTrashBatch(localProject.id, itemIds);
 
       const query = liveQueryRef.current;
-      const limit = query.albumPageSize === 'all' ? 999999 : query.albumPageSize;
-      const fetchAlbumPage = (page: number) => fetchProjectAlbum(localProject.id, {
-        page,
-        limit,
-        sort: query.albumSort,
-        aspectRatios: query.albumSelectedRatios.length > 0 ? query.albumSelectedRatios : undefined,
-      });
+      const itemIdsSet = new Set(itemIds);
 
-      // Invalidate reads started before the delete, then wait for a confirmed
-      // server snapshot before changing anything visible in the Album UI.
+      // The delete endpoint has already committed the mutation. Update the
+      // cached page immediately instead of blocking the UI on a full page
+      // refetch (and a fresh round of signed image URLs).
       ++albumFetchTokenRef.current;
-      let updatedAlbumRes = await fetchAlbumPage(query.albumPage);
-      if (query.albumPage > updatedAlbumRes.pages) {
-        updatedAlbumRes = await fetchAlbumPage(updatedAlbumRes.pages);
-        updateAlbumParams({ page: updatedAlbumRes.pages });
+      setLocalAlbum((current) => current.filter((item) => !itemIdsSet.has(item.id)));
+
+      const nextAlbumTotal = Math.max(0, albumTotal - itemIds.length);
+      const pageSize = query.albumPageSize === 'all' ? Math.max(nextAlbumTotal, 1) : query.albumPageSize;
+      const nextAlbumPages = Math.max(1, Math.ceil(nextAlbumTotal / pageSize));
+      setAlbumTotal(nextAlbumTotal);
+      setAlbumPages(nextAlbumPages);
+
+      const removedSize = items.reduce((total, item) => total + Number(item.size || 0), 0);
+      setAlbumTotalSize((current) => Math.max(0, current - removedSize));
+
+      const removedAspectRatios = items.reduce<Record<string, number>>((counts, item) => {
+        const ratio = item.aspectRatio?.trim();
+        if (ratio) counts[ratio] = (counts[ratio] || 0) + 1;
+        return counts;
+      }, {});
+      if (Object.keys(removedAspectRatios).length > 0) {
+        setAlbumAspectRatioCounts((current) => current
+          .map(({ ratio, count }) => ({
+            ratio,
+            count: Math.max(0, count - (removedAspectRatios[ratio] || 0)),
+          }))
+          .filter(({ count }) => count > 0));
       }
 
-      ++albumFetchTokenRef.current;
-      setLocalAlbum(updatedAlbumRes.items);
-      setAlbumTotal(updatedAlbumRes.total);
-      setAlbumPages(updatedAlbumRes.pages);
-      setAlbumTotalSize(updatedAlbumRes.totalSize);
-      setAlbumAspectRatioCounts(updatedAlbumRes.aspectRatioCounts);
-      albumLoadedKeyRef.current = query.albumPage === updatedAlbumRes.page ? query.albumQueryKey : null;
+      albumLoadedKeyRef.current = query.albumQueryKey;
       albumFetchedAtRef.current = Date.now();
 
-      const itemIdsSet = new Set(itemIds);
       setSelectedAlbumIds(prev => {
         const next = new Set(prev);
         itemIdsSet.forEach(id => next.delete(id));
         return next;
       });
+
+      if (query.albumPage > nextAlbumPages) {
+        albumLoadedKeyRef.current = null;
+        updateAlbumParams({ page: nextAlbumPages });
+      }
     } catch (e: any) {
       console.error('Failed to move items to trash:', e);
       toast.error(`Failed to move items to trash: ${e.message}`);
