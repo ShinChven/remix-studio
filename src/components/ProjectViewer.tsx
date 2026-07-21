@@ -135,6 +135,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [localProject, setLocalProject] = useState<Project>(project);
   const [localJobs, setLocalJobs] = useState<Job[]>((project.jobs || []).filter(j => j.status !== 'completed'));
   const [localAlbum, setLocalAlbum] = useState<AlbumItem[]>(project.album || []);
+  const [albumPreviewItems, setAlbumPreviewItems] = useState<AlbumItem[]>(() => (project.album || []).slice(0, 5));
   const [albumTotal, setAlbumTotal] = useState<number>(0);
   const [albumPages, setAlbumPages] = useState<number>(1);
   const [albumTotalSize, setAlbumTotalSize] = useState<number>(0);
@@ -293,6 +294,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setIsLoadingAlbum(true);
     setIsLoadingCompleted(true);
     setLocalAlbum([]);
+    setAlbumPreviewItems([]);
     setAlbumTotal(0);
     setAlbumPages(1);
     setAlbumTotalSize(0);
@@ -319,9 +321,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       fetchProjectJobs(project.id, { excludeStatus: ['completed'] }).then((jobs) => {
         if (jobsFetchTokenRef.current === jobsFetchToken) setLocalJobs(jobs);
       }).catch(console.error),
-      // Fetch metadata only. Album rows are loaded at their real page size the
-      // first time the Album tab is opened and then kept in memory across tabs.
-      fetchProjectAlbum(project.id, { page: 1, limit: 1 }).then(res => {
+      // Keep a small, independent newest-items cache for the Draft canvas.
+      // Album rows themselves are still loaded at their real page size only
+      // when the Album tab is opened.
+      fetchProjectAlbum(project.id, { page: 1, limit: 5, sort: 'newest' }).then(res => {
+        if (prevAlbumProjectIdRef.current !== project.id) return;
+        setAlbumPreviewItems(res.items);
         if (albumLoadedKeyRef.current) return;
         setAlbumTotal(res.total);
         setAlbumTotalSize(res.totalSize);
@@ -359,6 +364,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       setAlbumPages(res.pages);
       setAlbumTotalSize(res.totalSize);
       setAlbumAspectRatioCounts(res.aspectRatioCounts);
+      if (albumPage === 1 && albumSort === 'newest' && albumSelectedRatios.length === 0) {
+        setAlbumPreviewItems(res.items.slice(0, 5));
+      }
       albumLoadedKeyRef.current = albumQueryKey;
       albumFetchedAtRef.current = Date.now();
     } catch (e) {
@@ -668,9 +676,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
             }).catch(() => null)
           : fetchProjectAlbum(localProject.id, {
               page: 1,
-              limit: 1,
-              sort: query.albumSort,
-              aspectRatios: query.albumSelectedRatios.length > 0 ? query.albumSelectedRatios : undefined,
+              limit: 5,
+              sort: 'newest',
             }).catch(() => null),
         tab === 'completed'
           ? fetchProjectCompletedJobs(localProject.id, {
@@ -705,10 +712,14 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           if (JSON.stringify(updatedAlbumRes.items) !== JSON.stringify(localAlbumRef.current)) {
             setLocalAlbum(updatedAlbumRes.items);
           }
+          if (query.albumPage === 1 && query.albumSort === 'newest' && query.albumSelectedRatios.length === 0) {
+            setAlbumPreviewItems(updatedAlbumRes.items.slice(0, 5));
+          }
           setAlbumPages(updatedAlbumRes.pages);
           albumLoadedKeyRef.current = query.albumQueryKey;
           albumFetchedAtRef.current = Date.now();
         } else {
+          setAlbumPreviewItems(updatedAlbumRes.items.slice(0, 5));
           // Keep the cached rows intact while the user is on another tab. Mark
           // them stale so returning to Album shows the cache immediately and
           // revalidates it in the background.
@@ -1959,6 +1970,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       // refetch (and a fresh round of signed image URLs).
       ++albumFetchTokenRef.current;
       setLocalAlbum((current) => current.filter((item) => !itemIdsSet.has(item.id)));
+      setAlbumPreviewItems((current) => current.filter((item) => !itemIdsSet.has(item.id)));
 
       const nextAlbumTotal = Math.max(0, albumTotal - itemIds.length);
       const pageSize = query.albumPageSize === 'all' ? Math.max(nextAlbumTotal, 1) : query.albumPageSize;
@@ -2226,7 +2238,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand} toggleDraftSelection={toggleDraftSelection}
               getProviderName={getProviderName} getModelName={getModelName} runJob={runDraftJob}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
-              albumItems={albumItems}
+              albumItems={albumPreviewItems}
               onSwitchToAlbum={() => setActiveTab('album')}
               projectType={localProject.type || 'image'}
               projectName={localProject.name}
