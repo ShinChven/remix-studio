@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowDownAZ,
   ArrowDownNarrowWide,
@@ -36,6 +37,7 @@ export interface UniversalPickedItem {
   optimizedUrl?: string;
   rawUrl?: string;
   size?: number;
+  optimizedSize?: number;
   createdAt?: number;
 }
 
@@ -65,6 +67,7 @@ interface UniversalMediaPickerProps {
   fixedSourceId?: string;
   sourceKinds?: PickerSourceKind[];
   multiple?: boolean;
+  enableImageVersionSelection?: boolean;
   onClose: () => void;
   onConfirm: (items: UniversalPickedItem[]) => void;
 }
@@ -159,6 +162,7 @@ function albumItemToPickerItem(item: AlbumItem, source: PickerSource): PickerIte
     thumbnailUrl: item.thumbnailUrl,
     optimizedUrl: item.optimizedUrl,
     size: item.size,
+    optimizedSize: item.optimizedSize,
     createdAt: item.createdAt,
     aspectRatio: item.aspectRatio,
     quality: item.quality,
@@ -174,9 +178,11 @@ export function UniversalMediaPicker({
   fixedSourceId,
   sourceKinds = DEFAULT_SOURCE_KINDS,
   multiple = true,
+  enableImageVersionSelection = false,
   onClose,
   onConfirm,
 }: UniversalMediaPickerProps) {
+  const { t } = useTranslation();
   const allowedTypeKey = allowedTypes.join('|');
   const sourceKindKey = sourceKinds.join('|');
   const enabledTypeSet = useMemo(() => new Set(allowedTypes), [allowedTypeKey]);
@@ -199,6 +205,7 @@ export function UniversalMediaPicker({
   const [loadingSources, setLoadingSources] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
   const [lastSelectedKey, setLastSelectedKey] = useState<string | null>(null);
+  const [imageVersion, setImageVersion] = useState<'raw' | 'optimized'>('optimized');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -210,6 +217,7 @@ export function UniversalMediaPicker({
     setSelectedKeys(new Set());
     setSelectedItemMap({});
     setItems([]);
+    setImageVersion('optimized');
   }, [allowedTypeKey, initialKind, isOpen, fixedSourceId]);
 
   useEffect(() => {
@@ -371,6 +379,29 @@ export function UniversalMediaPicker({
   const selectedItems = useMemo(() => Object.values(selectedItemMap), [selectedItemMap]);
 
   const allFilteredSelected = filteredKeys.length > 0 && filteredKeys.every((key) => selectedKeys.has(key));
+  const showImageVersionSelection = enableImageVersionSelection
+    && activeSource?.kind === 'album'
+    && activeSource.type === 'image';
+
+  const resolvePickedItem = (item: PickerItem): UniversalPickedItem => {
+    if (!enableImageVersionSelection || item.sourceKind !== 'album' || item.type !== 'image') {
+      return item;
+    }
+
+    if (imageVersion === 'optimized' && item.optimizedUrl) {
+      return {
+        ...item,
+        value: item.optimizedUrl,
+        size: item.optimizedSize ?? item.size,
+      };
+    }
+
+    return {
+      ...item,
+      value: item.rawUrl || item.value,
+      size: item.size,
+    };
+  };
 
   const toggleType = (type: LibraryType) => {
     if (!enabledTypeSet.has(type)) return;
@@ -388,7 +419,7 @@ export function UniversalMediaPicker({
     if (!multiple) {
       const item = filteredItemByKey.get(key);
       if (!item) return;
-      onConfirm([item]);
+      onConfirm([resolvePickedItem(item)]);
       onClose();
       return;
     }
@@ -448,7 +479,7 @@ export function UniversalMediaPicker({
 
   const submit = () => {
     if (selectedItems.length === 0) return;
-    onConfirm(selectedItems);
+    onConfirm(selectedItems.map(resolvePickedItem));
     onClose();
   };
 
@@ -650,6 +681,30 @@ export function UniversalMediaPicker({
               />
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-3">
+              {showImageVersionSelection && (
+                <div
+                  className="flex h-11 items-center rounded-xl border border-neutral-200 bg-white p-1 dark:border-white/10 dark:bg-neutral-950"
+                  aria-label={t('projectViewer.copyToLibrary.versionToCopy')}
+                >
+                  {(['optimized', 'raw'] as const).map((version) => (
+                    <button
+                      key={version}
+                      type="button"
+                      aria-pressed={imageVersion === version}
+                      title={t(`projectViewer.copyToLibrary.${version}Hint`)}
+                      onClick={() => setImageVersion(version)}
+                      className={cn(
+                        'h-9 rounded-lg px-3 text-[10px] font-black uppercase tracking-widest transition',
+                        imageVersion === version
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white',
+                      )}
+                    >
+                      {t(`projectViewer.copyToLibrary.${version}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
               <SortSelect value={itemSort} onChange={setItemSort} ariaLabel="Sort items" />
               {multiple && (
                 <button

@@ -2386,6 +2386,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         })()}
         defaultSourceKind="library"
         multiple={false}
+        enableImageVersionSelection
         onClose={() => setSelectingLibraryForItemId(null)}
         onConfirm={(items: UniversalPickedItem[]) => {
           const picked = items[0];
