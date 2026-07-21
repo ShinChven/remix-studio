@@ -17,6 +17,11 @@ interface Path {
   points: { x: number; y: number }[];
 }
 
+interface CanvasCoordinates {
+  point: { x: number; y: number };
+  scale: number;
+}
+
 export function ImageEditorModal({ isOpen, onClose, onSave, imageUrl }: ImageEditorModalProps) {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
@@ -73,15 +78,17 @@ export function ImageEditorModal({ isOpen, onClose, onSave, imageUrl }: ImageEdi
   }, [redrawCanvas]);
 
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { width, height } = e.currentTarget;
+    const { naturalWidth, naturalHeight } = e.currentTarget;
     if (canvasRef.current) {
-      canvasRef.current.width = width;
-      canvasRef.current.height = height;
+      // Keep drawing and crop composition in the image's natural pixel space.
+      // CSS scales this canvas to the rendered image size for interaction.
+      canvasRef.current.width = naturalWidth;
+      canvasRef.current.height = naturalHeight;
     }
     redrawCanvas();
   };
 
-  const getCoordinates = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent): CanvasCoordinates | null => {
     if (!canvasRef.current) return null;
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -102,8 +109,11 @@ export function ImageEditorModal({ isOpen, onClose, onSave, imageUrl }: ImageEdi
     }
 
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
+      point: {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY,
+      },
+      scale: (scaleX + scaleY) / 2,
     };
   };
 
@@ -114,7 +124,11 @@ export function ImageEditorModal({ isOpen, onClose, onSave, imageUrl }: ImageEdi
     if (!coords) return;
     
     setIsDrawing(true);
-    setPaths(prev => [...prev, { color: drawColor, width: drawWidth, points: [coords] }]);
+    setPaths(prev => [...prev, {
+      color: drawColor,
+      width: drawWidth * coords.scale,
+      points: [coords.point],
+    }]);
   };
 
   const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
@@ -124,11 +138,12 @@ export function ImageEditorModal({ isOpen, onClose, onSave, imageUrl }: ImageEdi
     if (!coords) return;
 
     setPaths(prev => {
-      const newPaths = [...prev];
-      if (newPaths.length > 0) {
-        newPaths[newPaths.length - 1].points.push(coords);
-      }
-      return newPaths;
+      const lastPath = prev[prev.length - 1];
+      if (!lastPath) return prev;
+      return [
+        ...prev.slice(0, -1),
+        { ...lastPath, points: [...lastPath.points, coords.point] },
+      ];
     });
   };
 
