@@ -2,6 +2,31 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.18.0] - 2026-07-21
+
+### Added
+
+- **New Models**: Added Gemini 3.6/3.5, GPT-5.6 family, Claude Sonnet 5, and Grok 4.5 text models, plus nano banana 2 Pro, nano banana 2 Lite, Wan 2.7 Pro, Seedream V5 Pro, and Seedream 5.0 Pro image models across the RunningHub, Google AI, and Vertex AI providers.
+- **Auto Aspect Ratio**: RunningHub's nano banana 2 model now supports automatically matching the source image's aspect ratio.
+- **Workflow Image Version Selection**: Added a version picker for workflow images so you can switch between previously generated versions.
+- **Save to Library**: Added a save-to-library button for text and image workflow items.
+- **Reorderable Cover Images**: Cover images on the Sell/Export page can now be reordered by drag and drop.
+- **Text Library Import/Export**: Added lossless JSON import/export for text libraries.
+
+### Changed
+
+- **Library Editor Styling**: Refined the Library Editor's typography and toolbar styling, and added internationalized timestamp labels.
+- **Lockfile Registry**: Lockfiles now point at registry.npmjs.org instead of npmmirror.com.
+
+### Fixed
+
+- **Wan 2.7 Prompt Length**: Prompts sent to Wan 2.7 are now truncated to the 2048-character API limit instead of failing.
+- **Async UI Consistency**: Fixed UI state falling out of sync with server-confirmed state during async operations.
+- **Workflow Image Editor Coordinates**: Fixed misaligned crop and draw coordinates in the workflow image editor.
+- **Album Lightbox Deletion**: Fixed the album lightbox not refreshing correctly after deleting an image.
+- **Album Deletion Updates**: Restored instant UI updates and draft canvas album previews after deleting album items.
+- **Mobile Message Actions**: Message copy/edit and attachment-remove buttons are now shown on mobile.
+
 ## [1.17.1] - 2026-07-10
 
 ### Changed
