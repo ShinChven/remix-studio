@@ -37,11 +37,11 @@ This matrix reflects the profiles shipped with the current release. Model availa
 
 | Provider | Supported Models |
 | :--- | :--- |
-| **Google AI** | `nano banana 2` |
-| **Vertex AI** | `nano banana 2` |
+| **Google AI** | `nano banana 2`, `nano banana 2 Lite` |
+| **Vertex AI** | `nano banana 2`, `nano banana 2 Lite` |
 | **OpenAI** | `GPT Image 2`, `GPT Image 1.5`, `GPT Image 1 Mini` |
 | **Grok** | `Grok Imagine`, `Grok Imagine Pro` |
-| **RunningHub** | `nano banana 2`, `GPT Image 2`, `Qwen Image 2 Pro`, `Grok Imagine Pro` |
+| **RunningHub** | `nano banana 2`, `nano banana Pro`, `GPT Image 2`, `Qwen Image 2 Pro`, `Grok Imagine Pro`, `Seedream 5.0 Pro`, `Seedream V5 Pro`, `Wan 2.7 Pro` |
 | **BytePlus** | `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I` |
 | **Kling AI** | `Kling Image O1`, `Kling V3 Omni`, `Kling V3 Standard`, `Kling V2.1 Standard`, `Kling V2 Standard`, `Kling V1.5 Standard`, `Kling V1 Standard` |
 | **Black Forest Labs** | `Flux 2 Max`, `Flux 2 Pro (Preview)`, `Flux 2 Pro`, `Flux 2 Flex`, `Flux 2 Klein 9B (Preview)`, `Flux 2 Klein 9B`, `Flux 2 Klein 4B` |

@@ -2,6 +2,31 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.18.0] - 2026-07-21
+
+### Added
+
+- **New Text Models**: Added Gemini 3.6 Flash and Gemini 3.5 Flash Lite (Google AI & Vertex AI), the GPT-5.6 family — GPT-5.6, GPT-5.6 Terra, and GPT-5.6 Luna (OpenAI), Claude Sonnet 5 (Claude), and Grok 4.5 (Grok). The default Gemini text model is now Gemini 3.6 Flash.
+- **New Image Models**: Added nano banana Pro, Seedream 5.0 Pro, Seedream V5 Pro, and Wan 2.7 Pro to the RunningHub provider, and nano banana 2 Lite to the Google AI and Vertex AI providers.
+- **Auto Aspect Ratio**: RunningHub's nano banana 2 now offers an "auto" aspect ratio option that lets the model pick the output ratio itself.
+- **Image Version Selection**: When picking album images in the media picker, you can now choose between the optimized version and the original file.
+- **Save to Library**: Added a save-to-library button to text and image workflow items.
+- **Cover Image Reordering**: Cover images on the sell/export page can now be reordered.
+- **Text Library JSON Import/Export**: Added a lossless JSON mode for text library import and export, so prompts containing newlines, colons, or list-like lines survive round-trips intact; the plain-text format remains available.
+
+### Changed
+
+- **Project Tab Data Loading**: Reworked how the project tabs (Draft, Queue, Done, Album) load and cache their data. Album pages and completed jobs are fetched on demand per tab and cached across tab switches, deleting album items updates the album, its counts, and pagination instantly without waiting for a server refetch, and the Draft canvas keeps its own always-loaded preview of the newest album items so it appears as soon as the project opens. Confirmation dialogs now show progress and block double-submission while their action is running.
+- **Library Editor**: Updated the Library Editor's typography, refined its toolbar styling, and internationalized the timestamp labels.
+- **Package Registry**: Lockfiles now resolve packages from registry.npmjs.org instead of npmmirror.com.
+
+### Fixed
+
+- **Lightbox Deletion Refresh**: The album lightbox now switches to the next image immediately after deleting the current one, instead of keeping a stale image on screen.
+- **Wan 2.7 Prompt Length**: Prompts longer than Wan 2.7's 2048-character limit are now truncated before submission instead of failing the job.
+- **Image Editor Coordinates**: Drawing and cropping in the workflow image editor now land exactly under the cursor — edits are composed in the image's natural pixel space, so saved results are no longer offset or downscaled.
+- **Mobile Assistant Buttons**: Message copy/edit and attachment-remove buttons in the assistant are now visible on touch devices instead of requiring hover.
+
 ## [1.17.1] - 2026-07-10
 
 ### Changed

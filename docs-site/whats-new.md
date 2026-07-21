@@ -8,6 +8,33 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.18.0 — A wave of new models & snappier project tabs
+
+*New text and image models across five providers, project tabs that load on demand and update instantly, and quality-of-life upgrades throughout the workspace.*
+
+**Added**
+
+- **New text models** — Gemini 3.6 Flash and Gemini 3.5 Flash Lite (Google AI & Vertex AI), the GPT-5.6 family (GPT-5.6, Terra, and Luna), Claude Sonnet 5, and Grok 4.5. The default Gemini text model is now Gemini 3.6 Flash.
+- **New image models** — nano banana Pro, Seedream 5.0 Pro, Seedream V5 Pro, and Wan 2.7 Pro on RunningHub, plus nano banana 2 Lite on Google AI and Vertex AI.
+- **Auto aspect ratio** — nano banana 2 on RunningHub gains an "auto" option that lets the model pick the output ratio itself.
+- **Optimized or original** — When picking album images in the media picker, choose whether you want the optimized version or the original file.
+- **Save to library** — Send a workflow item's text or image straight to a library with one click.
+- **Reorder cover images** — Arrange product cover images in the order you want on the sell page.
+- **Lossless library transfer** — Export and import text libraries as JSON, so prompts with newlines, colons, or list-like lines survive round-trips byte-for-byte. The simple plain-text format is still there.
+
+**Improved**
+
+- **Snappier project tabs** — The Draft, Queue, Done, and Album tabs now fetch their data on demand and cache what you've already seen. Deleting album items updates the album, its counts, and pagination instantly — no more waiting on a server refetch — and the draft canvas shows your newest images the moment the project opens.
+- **Safer confirmations** — Confirmation dialogs show progress and prevent double-submission while their action is running.
+- **Library editor polish** — Cleaner typography, a refined toolbar, and localized timestamps.
+
+**Fixed**
+
+- Deleting the current image in the album lightbox now shows the next image immediately instead of leaving a stale one on screen.
+- Wan 2.7 prompts longer than the API's 2048-character limit are truncated instead of failing the job.
+- Drawing and cropping in the image editor now land exactly where you point, and saved edits keep the image's full resolution.
+- Assistant message and attachment buttons are now reachable on phones and tablets.
+
 ## 1.17.1 — Light mode polish
 
 *A cleanup pass for light mode, plus tidier fullscreen workflow cards and smarter pagination.*
