@@ -270,10 +270,34 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'google-gemini-3.6-flash-text',
+      name: 'Gemini 3.6 Flash',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-3.6-flash',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
       id: 'google-gemini-3.5-flash-text',
       name: 'Gemini 3.5 Flash',
       generatorId: 'GoogleAI',
       modelId: 'gemini-3.5-flash',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'google-gemini-3.5-flash-lite-text',
+      name: 'Gemini 3.5 Flash Lite',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-3.5-flash-lite',
       category: 'text',
       promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
@@ -436,10 +460,34 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'vertex-gemini-3.6-flash-text',
+      name: 'Gemini 3.6 Flash',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-3.6-flash',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
       id: 'vertex-gemini-3.5-flash-text',
       name: 'Gemini 3.5 Flash',
       generatorId: 'VertexAI',
       modelId: 'gemini-3.5-flash',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'vertex-gemini-3.5-flash-lite-text',
+      name: 'Gemini 3.5 Flash Lite',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-3.5-flash-lite',
       category: 'text',
       promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
@@ -815,6 +863,42 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'openai-gpt-5.6-text',
+      name: 'GPT-5.6',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-5.6',
+      category: 'text',
+      promptLimit: { value: 1050000, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
+    {
+      id: 'openai-gpt-5.6-terra-text',
+      name: 'GPT-5.6 Terra',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-5.6-terra',
+      category: 'text',
+      promptLimit: { value: 1050000, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
+    {
+      id: 'openai-gpt-5.6-luna-text',
+      name: 'GPT-5.6 Luna',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-5.6-luna',
+      category: 'text',
+      promptLimit: { value: 1050000, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
+    {
       id: 'openai-gpt-5.5-text',
       name: 'GPT-5.5',
       generatorId: 'OpenAI',
@@ -911,6 +995,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'grok-4.5-text',
+      name: 'Grok 4.5',
+      generatorId: 'Grok',
+      modelId: 'grok-4.5',
+      category: 'text',
+      promptLimit: { value: 500000, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
+      },
+    },
+    {
       id: 'grok-4.20-text',
       name: 'Grok 4.20',
       generatorId: 'Grok',
@@ -960,6 +1056,19 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
   ],
   Claude: [
+    {
+      id: 'claude-sonnet-5-text',
+      name: 'Claude Sonnet 5',
+      generatorId: 'Claude',
+      modelId: 'claude-sonnet-5',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        // Sonnet 5 rejects non-default sampling parameters; only the default temperature is allowed.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
     {
       // Keep the stable local config id so saved projects and custom-model aliases continue to resolve.
       id: 'claude-opus-4-6-text',

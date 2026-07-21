@@ -12,7 +12,7 @@ export class GoogleAITextGenerator extends TextGenerator {
 
   async generate(req: TextGenerateRequest): Promise<TextGenerateResult> {
     const { prompt, systemPrompt, temperature = 0.7, maxTokens = 2048, refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
-    const model = modelId || 'gemini-3-flash-preview';
+    const model = modelId || 'gemini-3.6-flash';
 
     let actualApiUrl: string;
     if (reqApiUrl) {
