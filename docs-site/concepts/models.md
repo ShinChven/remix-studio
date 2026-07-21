@@ -26,11 +26,11 @@ This matrix reflects the profiles shipped with the current release. Model availa
 
 | Provider | Supported Models |
 | :--- | :--- |
-| **Google AI** | `Gemini 3.5 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`, `Gemma 4` |
-| **Vertex AI** | `Gemini 3.5 Flash`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` |
-| **OpenAI** | `GPT-5.5`, `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` |
-| **Grok** | `Grok 4.20`, `Grok 4.3`, `Grok 4.1 Fast` |
-| **Claude** | `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` |
+| **Google AI** | `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`, `Gemma 4` |
+| **Vertex AI** | `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` |
+| **OpenAI** | `GPT-5.6`, `GPT-5.6 Terra`, `GPT-5.6 Luna`, `GPT-5.5`, `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` |
+| **Grok** | `Grok 4.5`, `Grok 4.20`, `Grok 4.3`, `Grok 4.1 Fast` |
+| **Claude** | `Claude Sonnet 5`, `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` |
 | **Alibaba Cloud DashScope** | `Qwen3.6 Max`, `Qwen3.6 Plus`, `Qwen3.6 Flash`, `Qwen3.6 VL Max`, `Qwen3.6 VL Plus` |
 
 ## 3. Image Generation

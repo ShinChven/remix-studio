@@ -16,6 +16,8 @@ export class ClaudeTextGenerator extends TextGenerator {
     try {
       const { prompt, systemPrompt, modelId, temperature = 0.7, maxTokens = 2048, refImagesBase64 } = req;
       const model = modelId || 'claude-sonnet-4-6';
+      // Sonnet 5 rejects non-default sampling parameters (400) — omit temperature entirely.
+      const supportsTemperature = !model.startsWith('claude-sonnet-5');
 
       const contentParts: Anthropic.ContentBlockParam[] = [];
 
@@ -34,7 +36,7 @@ export class ClaudeTextGenerator extends TextGenerator {
       const response = await this.client.messages.create({
         model,
         max_tokens: maxTokens,
-        temperature,
+        ...(supportsTemperature ? { temperature } : {}),
         ...(systemPrompt ? { system: systemPrompt } : {}),
         messages: [{ role: 'user', content: contentParts }],
       });

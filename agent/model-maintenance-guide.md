@@ -21,8 +21,8 @@ server/generators/                    -- One generator class per provider per ca
     +-- claude-text-generator.ts      -- Default model: claude-sonnet-4-6
     +-- openai-text-generator.ts      -- Default model: gpt-5.4
     +-- grok-text-generator.ts        -- Default model: grok-4.20-0309-non-reasoning
-    +-- google-ai-text-generator.ts   -- Default model: gemini-3-flash-preview
-    +-- vertex-ai-text-generator.ts   -- Default model: gemini-3-flash-preview
+    +-- google-ai-text-generator.ts   -- Default model: gemini-3.6-flash
+    +-- vertex-ai-text-generator.ts   -- Default model: gemini-3.6-flash
     +-- google-ai-generator.ts        -- Image gen (GoogleAI)
     +-- vertex-ai-generator.ts        -- Image gen (VertexAI)
     +-- google-ai-audio-generator.ts  -- Gemini TTS (GoogleAI)
