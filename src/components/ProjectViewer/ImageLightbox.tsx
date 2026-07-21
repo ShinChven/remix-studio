@@ -476,8 +476,8 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
         />
       )}
       <img
-        key={slideshowOn && transition !== 'none' ? `${boundedIndex}-${transition}` : undefined}
-        src={images[boundedIndex]}
+        key={`${currentSrc}-${slideshowOn && transition !== 'none' ? transition : 'static'}`}
+        src={currentSrc}
         alt={t('projectViewer.imageLightbox.previewAlt', { index: boundedIndex + 1 })}
         className={`${imageSizeClass} object-contain select-none ${prevSrc ? 'relative' : ''} ${slideshowOn ? TRANSITION_CLASS[transition] : ''}`}
         onClick={(e) => e.stopPropagation()}
