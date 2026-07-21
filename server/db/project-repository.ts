@@ -475,6 +475,16 @@ export class ProjectRepository {
     });
   }
 
+  async deleteProjectJobs(userId: string, projectId: string, jobIds: string[]): Promise<number> {
+    const ids = Array.from(new Set(jobIds.map((id) => id.trim()).filter(Boolean)));
+    if (ids.length === 0) return 0;
+
+    const result = await this.prisma.job.deleteMany({
+      where: { id: { in: ids }, projectId, userId, status: { not: 'processing' } },
+    });
+    return result.count;
+  }
+
   async addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void> {
     await this.assertOwnedProject(userId, projectId);
 

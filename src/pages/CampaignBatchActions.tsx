@@ -290,9 +290,9 @@ export function CampaignBatchActions() {
         await deletePost(postId);
         ok++;
       }
+      await loadData(true, false);
       toast.success(`Deleted ${ok} post${ok === 1 ? '' : 's'}`);
       setDeleteOpen(false);
-      await loadData(true, false);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to delete posts');
     } finally {

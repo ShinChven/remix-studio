@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Archive, ArchiveRestore, Copy, Eraser, HardDrive, Hash, ImageIcon, Library as LibraryIcon, Maximize2, Minimize2, MoreVertical, Settings, Stars, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
+import { Archive, ArchiveRestore, Copy, Eraser, HardDrive, Hash, ImageIcon, Library as LibraryIcon, Loader2, Maximize2, Minimize2, MoreVertical, Settings, Stars, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
@@ -32,7 +32,8 @@ interface WorkflowPanelProps {
   onNavigateToDuplicate: () => void;
   onStartAssistantChat: () => void;
   onShowDeleteProject: () => void;
-  onToggleArchive: () => void;
+  onToggleArchive: () => Promise<void>;
+  isTogglingArchive: boolean;
   isArchived: boolean;
   onAddWorkflowItem: (type: 'text' | 'image' | 'video' | 'audio' | 'library') => void;
   onDragStart: (e: React.DragEvent, index: number) => void;
@@ -88,6 +89,7 @@ export function WorkflowPanel({
   onStartAssistantChat,
   onShowDeleteProject,
   onToggleArchive,
+  isTogglingArchive,
   isArchived,
   onAddWorkflowItem,
   onDragStart,
@@ -295,10 +297,18 @@ export function WorkflowPanel({
                   </button>
 
                   <button
-                    onClick={() => closeMenuAndRun(onToggleArchive)}
+                    onClick={async () => {
+                      await onToggleArchive();
+                      setIsActionMenuOpen(false);
+                    }}
+                    disabled={isTogglingArchive}
                     className={`${menuButtonBaseClass} text-amber-600/90 dark:text-amber-400/90 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10`}
                   >
-                    {isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+                    {isTogglingArchive
+                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      : isArchived
+                        ? <ArchiveRestore className="w-3.5 h-3.5" />
+                        : <Archive className="w-3.5 h-3.5" />}
                     {t(isArchived ? 'projectViewer.main.unarchiveProject' : 'projectViewer.main.archiveProject')}
                   </button>
 

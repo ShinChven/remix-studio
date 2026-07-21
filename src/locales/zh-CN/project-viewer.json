@@ -48,7 +48,11 @@
       "unarchived": "已恢复 “{{name}}”",
       "archiveFailed": "更改归档状态失败，请重试。",
       "savedToLibrary": "已保存到资料库",
-      "saveToLibraryFailed": "保存到资料库失败"
+      "saveToLibraryFailed": "保存到资料库失败",
+      "startJobsFailed": "启动任务失败，请重试。",
+      "startedJobsNotVisible": "部分已提交任务尚未出现在队列中。",
+      "deleteJobsFailed": "删除任务失败，请重试。",
+      "jobMutationInProgress": "另一个任务操作仍在进行中。"
     },
     "errors": {
       "missingWorkflowInfo_one": "{{count}} 个工作流项目缺少信息。",
@@ -76,11 +80,13 @@
       "openAlbum": "打开相册",
       "startSelected": "开始所选",
       "startAllNow": "立即全部开始",
+      "starting": "提交中…",
       "deleteAllDrafts": "删除所有草稿",
       "runJob": "运行任务"
     },
     "queue": {
       "retry": "重试",
+      "retrying": "重试中…",
       "clearAllFailed": "清除所有失败项",
       "running": "运行中",
       "queued": "排队中",

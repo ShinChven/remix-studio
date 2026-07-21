@@ -115,6 +115,7 @@ export function PostForm() {
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isReorderingMedia, setIsReorderingMedia] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [mediaToRemove, setMediaToRemove] = useState<string | null>(null);
   const [draggedReorderIndex, setDraggedReorderIndex] = useState<number | null>(null);
@@ -207,6 +208,7 @@ export function PostForm() {
   const handleMediaDrop = async (event: React.DragEvent, dropIndex: number) => {
     event.preventDefault();
     event.stopPropagation();
+    if (isReorderingMedia) return;
     const fromIndex = draggedReorderIndex;
     setDraggedReorderIndex(null);
     setDragOverReorderIndex(null);
@@ -231,20 +233,26 @@ export function PostForm() {
       .filter((slot): slot is Extract<Slot, { kind: 'new' }> => slot.kind === 'new')
       .map((slot) => slot.file);
 
+    const movedExistingOnly = fromIndex < visibleMediaCount || dropIndex < visibleMediaCount;
+    if (movedExistingOnly && postId && nextVisibleExisting.length > 0) {
+      setIsReorderingMedia(true);
+      try {
+        const res = await reorderPostMedia(postId, nextVisibleExisting.map((m) => m.id));
+        const removed = existingMedia.filter((media) => removedMediaIds.has(media.id));
+        setExistingMedia([...(res.media as PostMedia[]), ...removed]);
+        setNewFiles(nextNewFiles);
+      } catch (err: any) {
+        toast.error(err?.message || 'Failed to reorder media');
+        await loadData();
+      } finally {
+        setIsReorderingMedia(false);
+      }
+      return;
+    }
+
     const removed = existingMedia.filter((media) => removedMediaIds.has(media.id));
     setExistingMedia([...nextVisibleExisting, ...removed]);
     setNewFiles(nextNewFiles);
-
-    const movedExistingOnly = fromIndex < visibleMediaCount || dropIndex < visibleMediaCount;
-    if (movedExistingOnly && postId && nextVisibleExisting.length > 0) {
-      try {
-        const res = await reorderPostMedia(postId, nextVisibleExisting.map((m) => m.id));
-        setExistingMedia([...(res.media as PostMedia[]), ...removed]);
-      } catch (err: any) {
-        toast.error(err?.message || 'Failed to reorder media');
-        void loadData();
-      }
-    }
   };
 
   const handleSave = async () => {
@@ -338,6 +346,12 @@ export function PostForm() {
                   <div className="flex items-center justify-between gap-3">
                     <label className="font-semibold text-neutral-950 dark:text-white">Media</label>
                     <div className="flex items-center gap-3">
+                      {isReorderingMedia && (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-500">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Saving order…
+                        </span>
+                      )}
                       <span className="text-xs font-bold text-neutral-400">{totalMediaCount}/4</span>
                       <button
                         type="button"
@@ -376,7 +390,7 @@ export function PostForm() {
                         return (
                           <div
                             key={media.id}
-                            draggable
+                            draggable={!isReorderingMedia}
                             onDragStart={(e) => handleMediaDragStart(e, combinedIndex)}
                             onDragOver={(e) => handleMediaDragOver(e, combinedIndex)}
                             onDrop={(e) => handleMediaDrop(e, combinedIndex)}
@@ -413,7 +427,7 @@ export function PostForm() {
                         return (
                           <div
                             key={`${file.name}-${index}`}
-                            draggable
+                            draggable={!isReorderingMedia}
                             onDragStart={(e) => handleMediaDragStart(e, combinedIndex)}
                             onDragOver={(e) => handleMediaDragOver(e, combinedIndex)}
                             onDrop={(e) => handleMediaDrop(e, combinedIndex)}

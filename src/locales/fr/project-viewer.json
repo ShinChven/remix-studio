@@ -48,7 +48,11 @@
       "unarchived": "« {{name}} » restauré",
       "archiveFailed": "Échec du changement de statut d'archive. Veuillez réessayer.",
       "savedToLibrary": "Enregistré dans la bibliothèque",
-      "saveToLibraryFailed": "Échec de l'enregistrement dans la bibliothèque"
+      "saveToLibraryFailed": "Échec de l'enregistrement dans la bibliothèque",
+      "startJobsFailed": "Impossible de démarrer les tâches. Réessayez.",
+      "startedJobsNotVisible": "Certaines tâches envoyées ne sont pas encore visibles dans la file.",
+      "deleteJobsFailed": "Impossible de supprimer les tâches. Réessayez.",
+      "jobMutationInProgress": "Une autre mise à jour de tâche est toujours en cours."
     },
     "errors": {
       "missingWorkflowInfo_one": "Informations manquantes dans {{count}} élément du workflow.",
@@ -76,11 +80,13 @@
       "openAlbum": "Ouvrir l'album",
       "startSelected": "Lancer la sélection",
       "startAllNow": "Tout lancer maintenant",
+      "starting": "Démarrage…",
       "deleteAllDrafts": "Supprimer tous les brouillons",
       "runJob": "Exécuter la tâche"
     },
     "queue": {
       "retry": "Réessayer",
+      "retrying": "Nouvelle tentative…",
       "clearAllFailed": "Effacer tous les échecs",
       "running": "En cours",
       "queued": "En file",

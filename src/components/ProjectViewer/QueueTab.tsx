@@ -14,6 +14,8 @@ interface QueueTabProps {
   toggleSelectAllQueue: () => void;
   toggleQueueSelection: (id: string, isShiftPressed: boolean, scopeIds: string[]) => void;
   retrySelectedQueue: () => void;
+  isRetryingQueueBatch: boolean;
+  retryingQueueJobIds: Set<string>;
   deleteSelectedQueue: () => void;
   clearAllFailed: () => void;
   expandedJobId: string | null;
@@ -32,6 +34,8 @@ export function QueueTab({
   toggleSelectAllQueue,
   toggleQueueSelection,
   retrySelectedQueue,
+  isRetryingQueueBatch,
+  retryingQueueJobIds,
   deleteSelectedQueue,
   clearAllFailed,
   expandedJobId,
@@ -44,22 +48,25 @@ export function QueueTab({
   onReuse,
 }: QueueTabProps) {
   const { t } = useTranslation();
+  const isRetryingQueue = isRetryingQueueBatch || retryingQueueJobIds.size > 0;
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-0">
         {/* Queue Toolbar */}
         {queueJobs.length > 0 && (
-          <SelectionToolbar
-            totalCount={queueJobs.length}
-            selectedCount={selectedQueueIds.size}
-            onToggleSelectAll={toggleSelectAllQueue}
-            mobileSingleLine
-            mobileActionsRight
-            rightActions={
-              <>
+          <>
+            <SelectionToolbar
+              totalCount={queueJobs.length}
+              selectedCount={selectedQueueIds.size}
+              onToggleSelectAll={toggleSelectAllQueue}
+              mobileSingleLine
+              mobileActionsRight
+              rightActions={
+                <>
                 {selectedQueueIds.size > 0 && (
                   <button
                     onClick={deleteSelectedQueue}
+                    disabled={isRetryingQueue}
                     title={t('projectViewer.common.delete')}
                     aria-label={t('projectViewer.common.delete')}
                     className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
@@ -71,17 +78,25 @@ export function QueueTab({
                 {queueJobs.some(j => selectedQueueIds.has(j.id) && j.status === 'failed') && (
                   <button
                     onClick={retrySelectedQueue}
+                    disabled={isRetryingQueue}
                     title={t('projectViewer.queue.retry')}
                     aria-label={t('projectViewer.queue.retry')}
                     className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
                   >
-                    <Play className="w-3 h-3 fill-current" />
-                    <span className="hidden sm:inline">{t('projectViewer.queue.retry')}</span>
+                    {isRetryingQueueBatch
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <Play className="w-3 h-3 fill-current" />}
+                    <span className="hidden sm:inline">
+                      {isRetryingQueueBatch
+                        ? t('projectViewer.queue.retrying')
+                        : t('projectViewer.queue.retry')}
+                    </span>
                   </button>
                 )}
                 {queueJobs.some(j => j.status === 'failed') && (
                   <button
                     onClick={clearAllFailed}
+                    disabled={isRetryingQueue}
                     title={t('projectViewer.queue.clearAllFailed')}
                     aria-label={t('projectViewer.queue.clearAllFailed')}
                     className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
@@ -90,9 +105,15 @@ export function QueueTab({
                     <span>{t('projectViewer.queue.clearAllFailed')}</span>
                   </button>
                 )}
-              </>
-            }
-          />
+                </>
+              }
+            />
+            {isRetryingQueue && (
+              <div className="h-1 overflow-hidden bg-blue-500/10" role="progressbar" aria-label={t('projectViewer.queue.retrying')}>
+                <div className="h-full w-1/3 animate-draft-start-progress rounded-full bg-blue-500" />
+              </div>
+            )}
+          </>
         )}
 
         {/* Active Jobs */}
@@ -102,6 +123,7 @@ export function QueueTab({
               return queueJobs.map(task => {
               const isExpanded = expandedJobId === task.id;
               const isSelected = selectedQueueIds.has(task.id);
+              const isRetryingThisJob = retryingQueueJobIds.has(task.id);
               return (
                 <JobListItem
                   key={task.id}
@@ -157,10 +179,13 @@ export function QueueTab({
                       {task.status === 'failed' && (
                         <button 
                           onClick={(e) => { e.stopPropagation(); runJob(task.id); }}
-                          className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+                          disabled={isRetryingQueue}
+                          className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors disabled:cursor-wait disabled:opacity-70"
                           title={t('projectViewer.queue.retryJob')}
                         >
-                          <Play className="w-3.5 h-3.5 fill-current" />
+                          {isRetryingThisJob
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <Play className="w-3.5 h-3.5 fill-current" />}
                         </button>
                       )}
                       <button 

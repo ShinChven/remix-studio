@@ -48,7 +48,11 @@
       "unarchived": "「{{name}}」を復元しました",
       "archiveFailed": "アーカイブ状態の変更に失敗しました。もう一度お試しください。",
       "savedToLibrary": "ライブラリに保存しました",
-      "saveToLibraryFailed": "ライブラリへの保存に失敗しました"
+      "saveToLibraryFailed": "ライブラリへの保存に失敗しました",
+      "startJobsFailed": "ジョブを開始できませんでした。もう一度お試しください。",
+      "startedJobsNotVisible": "送信した一部のジョブがまだキューに表示されていません。",
+      "deleteJobsFailed": "ジョブを削除できませんでした。もう一度お試しください。",
+      "jobMutationInProgress": "別のジョブ更新がまだ進行中です。"
     },
     "errors": {
       "missingWorkflowInfo_one": "{{count}} 件のワークフロー項目に情報がありません。",
@@ -76,11 +80,13 @@
       "openAlbum": "アルバムを開く",
       "startSelected": "選択を開始",
       "startAllNow": "すべて今すぐ開始",
+      "starting": "送信中…",
       "deleteAllDrafts": "すべての下書きを削除",
       "runJob": "ジョブを実行"
     },
     "queue": {
       "retry": "再試行",
+      "retrying": "再試行中…",
       "clearAllFailed": "失敗をすべてクリア",
       "running": "実行中",
       "queued": "待機中",

@@ -55,8 +55,8 @@ export function Providers() {
     setIsDeleting(true);
     try {
       await deleteProvider(deleteTarget.id);
-      setDeleteTarget(null);
       await load();
+      setDeleteTarget(null);
     } catch {
       setError(t('providers.errors.delete'));
     } finally {

@@ -48,7 +48,11 @@
       "unarchived": "Restored \"{{name}}\"",
       "archiveFailed": "Failed to change archive status. Please try again.",
       "savedToLibrary": "Saved to library",
-      "saveToLibraryFailed": "Failed to save to library"
+      "saveToLibraryFailed": "Failed to save to library",
+      "startJobsFailed": "Failed to start jobs. Please try again.",
+      "startedJobsNotVisible": "Some submitted jobs are not visible in the queue yet.",
+      "deleteJobsFailed": "Failed to delete jobs. Please try again.",
+      "jobMutationInProgress": "Another job update is still in progress."
     },
     "errors": {
       "missingWorkflowInfo_one": "Missing information in {{count}} workflow item.",
@@ -76,11 +80,13 @@
       "openAlbum": "Open Album",
       "startSelected": "Start Selected",
       "startAllNow": "Start All Now",
+      "starting": "Starting…",
       "deleteAllDrafts": "Delete All Drafts",
       "runJob": "Run Job"
     },
     "queue": {
       "retry": "Retry",
+      "retrying": "Retrying…",
       "clearAllFailed": "Clear All Failed",
       "running": "Running",
       "queued": "Queued",

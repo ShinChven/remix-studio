@@ -48,7 +48,11 @@
       "unarchived": "已還原「{{name}}」",
       "archiveFailed": "變更封存狀態失敗，請再試一次。",
       "savedToLibrary": "已儲存到資料庫",
-      "saveToLibraryFailed": "儲存到資料庫失敗"
+      "saveToLibraryFailed": "儲存到資料庫失敗",
+      "startJobsFailed": "啟動任務失敗，請重試。",
+      "startedJobsNotVisible": "部分已提交任務尚未出現在佇列中。",
+      "deleteJobsFailed": "刪除任務失敗，請重試。",
+      "jobMutationInProgress": "另一個任務操作仍在進行中。"
     },
     "errors": {
       "missingWorkflowInfo_one": "{{count}} 個工作流程項目缺少資訊。",
@@ -76,11 +80,13 @@
       "openAlbum": "開啟相簿",
       "startSelected": "開始所選",
       "startAllNow": "立即全部開始",
+      "starting": "提交中…",
       "deleteAllDrafts": "刪除所有草稿",
       "runJob": "執行任務"
     },
     "queue": {
       "retry": "重試",
+      "retrying": "重試中…",
       "clearAllFailed": "清除所有失敗項",
       "running": "執行中",
       "queued": "排隊中",

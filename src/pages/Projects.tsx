@@ -116,9 +116,9 @@ export function Projects() {
     setTogglingId(deleteTarget.id);
     try {
       await deleteProject(deleteTarget.id);
+      await loadProjects();
       toast.success(t('projects.deleteSuccess', { name: deleteTarget.name }));
       setDeleteTarget(null);
-      await loadProjects();
     } catch (e) {
       console.error(e);
       toast.error(t('projects.deleteFailed'));

@@ -88,8 +88,8 @@ export function Home() {
     setIsDeletingProject(true);
     try {
       await deleteProject(deleteTarget.id);
-      setDeleteTarget(null);
       await loadProjects();
+      setDeleteTarget(null);
     } catch (err) {
       console.error('Failed to delete project:', err);
     } finally {
