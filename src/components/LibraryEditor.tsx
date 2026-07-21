@@ -207,13 +207,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
       for (const id of idsToDelete) {
         await apiDeleteLibraryItem(library.id, id);
       }
+      await loadItems();
       setSelectedItemIds(new Set());
       setLastSelectedIndex(null);
-      await loadItems();
+      setShowDeleteSelectedModal(false);
     } catch (e) {
       console.error('Failed to delete items:', e);
+      throw e;
     }
-    setShowDeleteSelectedModal(false);
   };
 
   const handleBatchTagSave = async (tagsToAdd: string[]) => {

@@ -128,15 +128,17 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
     if (!revokeTarget) return;
     setIsRevoking(true);
     try {
+      let successMessage: string;
       if (revokeTarget.type === 'client') {
         await revokeOAuthClient(revokeTarget.clientId);
-        toast.success(t('mcpConnections.toasts.clientRevoked'));
+        successMessage = t('mcpConnections.toasts.clientRevoked');
       } else {
         await revokePersonalAccessToken(revokeTarget.id);
-        toast.success(t('mcpConnections.toasts.tokenRevoked'));
+        successMessage = t('mcpConnections.toasts.tokenRevoked');
       }
-      setRevokeTarget(null);
       await load();
+      toast.success(successMessage);
+      setRevokeTarget(null);
     } catch {
       toast.error(t('mcpConnections.toasts.revokeFailed'));
     } finally {

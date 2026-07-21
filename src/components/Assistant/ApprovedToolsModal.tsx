@@ -55,8 +55,6 @@ export function ApprovedToolsModal({ isOpen, conversationId, onClose }: Approved
     if (mode === 'always') next.add(toolName);
     else next.delete(toolName);
 
-    const previous = approved;
-    setApproved(next);
     setSavingTool(toolName);
     try {
       const result = await updateAssistantConversationApprovedTools(
@@ -65,7 +63,6 @@ export function ApprovedToolsModal({ isOpen, conversationId, onClose }: Approved
       );
       setApproved(new Set(result.tools));
     } catch (e: any) {
-      setApproved(previous);
       toast.error(e?.message ?? t('assistant.approvedTools.saveFailed', 'Failed to update tool approval'));
     } finally {
       setSavingTool(null);

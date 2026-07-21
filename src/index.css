@@ -11,6 +11,7 @@
   --animate-spin-slow: spin-slow 4s linear infinite;
   --animate-material-spinner: material-spinner-spin 1.4s linear infinite;
   --animate-material-dash: material-spinner-dash 1.4s ease-in-out infinite;
+  --animate-draft-start-progress: draft-start-progress 1.2s ease-in-out infinite;
 
   /* Slideshow transition effects (re-triggered per image via React key) */
   --animate-slideshow-fade: slideshow-fade 1.05s ease both;
@@ -79,6 +80,11 @@
       stroke-dasharray: 90, 150;
       stroke-dashoffset: -124;
     }
+  }
+
+  @keyframes draft-start-progress {
+    from { transform: translateX(-110%); }
+    to { transform: translateX(310%); }
   }
 }
 

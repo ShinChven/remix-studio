@@ -522,6 +522,15 @@ export async function deleteProjectJob(id: string, jobId: string): Promise<void>
   await handleResponse<{ success: boolean }>(res, 'Failed to delete job');
 }
 
+export async function deleteProjectJobs(id: string, jobIds: string[]): Promise<{ deleted: number }> {
+  const res = await apiFetch(`/api/projects/${id}/jobs/delete-batch`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ jobIds }),
+  });
+  return handleResponse<{ success: boolean; deleted: number }>(res, 'Failed to delete jobs');
+}
+
 export async function fetchProjectAlbum(
   id: string,
   options: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; aspectRatios?: string[] } = {},

@@ -21,7 +21,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJob as apiDeleteProjectJob, createLibraryItem } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -237,6 +237,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [albumItemsToDelete, setAlbumItemsToDelete] = useState<AlbumItem[] | null>(null);
   const [selectedCompletedIds, setSelectedCompletedIds] = useState<Set<string>>(new Set());
   const [isAddingDrafts, setIsAddingDrafts] = useState(false);
+  const [isStartingDraftBatch, setIsStartingDraftBatch] = useState(false);
+  const [startingDraftJobIds, setStartingDraftJobIds] = useState<Set<string>>(new Set());
+  const [isRetryingQueueBatch, setIsRetryingQueueBatch] = useState(false);
+  const [retryingQueueJobIds, setRetryingQueueJobIds] = useState<Set<string>>(new Set());
+  const [isTogglingArchive, setIsTogglingArchive] = useState(false);
   const [draftsProgress, setDraftsProgress] = useState<{ current: number; total: number; stage: 'composing' | 'saving' } | null>(null);
   const [promptLimitDialog, setPromptLimitDialog] = useState<PromptLimitDialogState | null>(null);
   const [liveLibraries, setLiveLibraries] = useState<Library[]>(libraries);
@@ -254,6 +259,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
   const albumFetchTokenRef = useRef(0);
+  const jobsFetchTokenRef = useRef(0);
+  const isClearingFailedJobsRef = useRef(false);
+  const isStartingDraftJobsRef = useRef(false);
+  const isMutatingJobsRef = useRef(false);
+  const isDeletingAlbumItemsRef = useRef(false);
   const albumLoadedKeyRef = useRef<string | null>(null);
   const albumFetchedAtRef = useRef<number>(0);
   const prevAlbumProjectIdRef = useRef<string | null>(null);
@@ -263,6 +273,15 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const runProjectLiveRefreshRef = useRef<() => void>(() => {});
 
   useEffect(() => {
+    const jobsFetchToken = ++jobsFetchTokenRef.current;
+    isClearingFailedJobsRef.current = false;
+    isStartingDraftJobsRef.current = false;
+    isMutatingJobsRef.current = false;
+    isDeletingAlbumItemsRef.current = false;
+    setIsStartingDraftBatch(false);
+    setStartingDraftJobIds(new Set());
+    setIsRetryingQueueBatch(false);
+    setRetryingQueueJobIds(new Set());
     albumFetchTokenRef.current += 1;
     albumLoadedKeyRef.current = null;
     albumFetchedAtRef.current = 0;
@@ -297,12 +316,14 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setCompletedPage(1);
     Promise.all([
       fetchProjectWorkflow(project.id).then(w => setLocalProject(prev => ({ ...prev, workflow: w }))).catch(console.error),
-      fetchProjectJobs(project.id, { excludeStatus: ['completed'] }).then(j => setLocalJobs(j)).catch(console.error),
-      fetchProjectAlbum(project.id, { page: 1, limit: 5 }).then(res => {
+      fetchProjectJobs(project.id, { excludeStatus: ['completed'] }).then((jobs) => {
+        if (jobsFetchTokenRef.current === jobsFetchToken) setLocalJobs(jobs);
+      }).catch(console.error),
+      // Fetch metadata only. Album rows are loaded at their real page size the
+      // first time the Album tab is opened and then kept in memory across tabs.
+      fetchProjectAlbum(project.id, { page: 1, limit: 1 }).then(res => {
         if (albumLoadedKeyRef.current) return;
-        setLocalAlbum(res.items);
         setAlbumTotal(res.total);
-        setAlbumPages(res.pages);
         setAlbumTotalSize(res.totalSize);
         setAlbumAspectRatioCounts(res.aspectRatioCounts);
       }).catch(console.error),
@@ -332,7 +353,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         sort: albumSort,
         aspectRatios: albumSelectedRatios.length > 0 ? albumSelectedRatios : undefined,
       });
-      if (albumFetchTokenRef.current !== signalToken) return;
+      if (albumFetchTokenRef.current !== signalToken || isDeletingAlbumItemsRef.current) return;
       setLocalAlbum(res.items);
       setAlbumTotal(res.total);
       setAlbumPages(res.pages);
@@ -633,6 +654,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     try {
       const tab = activeTabRef.current;
       const query = liveQueryRef.current;
+      const jobsFetchToken = ++jobsFetchTokenRef.current;
+      const albumFetchToken = ++albumFetchTokenRef.current;
+      const completedFetchToken = ++completedFetchTokenRef.current;
       const [updatedJobs, updatedAlbumRes, updatedCompletedRes] = await Promise.all([
         fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] }).catch(() => null),
         tab === 'album'
@@ -642,7 +666,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               sort: query.albumSort,
               aspectRatios: query.albumSelectedRatios.length > 0 ? query.albumSelectedRatios : undefined,
             }).catch(() => null)
-          : fetchProjectAlbum(localProject.id, { page: 1, limit: 5 }).catch(() => null),
+          : fetchProjectAlbum(localProject.id, {
+              page: 1,
+              limit: 1,
+              sort: query.albumSort,
+              aspectRatios: query.albumSelectedRatios.length > 0 ? query.albumSelectedRatios : undefined,
+            }).catch(() => null),
         tab === 'completed'
           ? fetchProjectCompletedJobs(localProject.id, {
               page: query.completedPage,
@@ -652,25 +681,46 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           : fetchProjectCompletedJobs(localProject.id, { page: 1, limit: 1 }).catch(() => null),
       ]);
 
-      if (updatedJobs && JSON.stringify(updatedJobs) !== JSON.stringify(localJobsRef.current)) {
-        setLocalJobs(updatedJobs);
+      if (
+        updatedJobs
+        && jobsFetchTokenRef.current === jobsFetchToken
+        && !isClearingFailedJobsRef.current
+        && !isStartingDraftJobsRef.current
+        && !isMutatingJobsRef.current
+      ) {
+        if (JSON.stringify(updatedJobs) !== JSON.stringify(localJobsRef.current)) {
+          setLocalJobs(updatedJobs);
+        }
       }
 
-      if (updatedAlbumRes) {
-        if (JSON.stringify(updatedAlbumRes.items) !== JSON.stringify(localAlbumRef.current)) {
-          setLocalAlbum(updatedAlbumRes.items);
-        }
+      if (
+        updatedAlbumRes
+        && albumFetchTokenRef.current === albumFetchToken
+        && !isDeletingAlbumItemsRef.current
+      ) {
         setAlbumTotal(updatedAlbumRes.total);
-        setAlbumPages(updatedAlbumRes.pages);
         setAlbumTotalSize(updatedAlbumRes.totalSize);
         setAlbumAspectRatioCounts(updatedAlbumRes.aspectRatioCounts);
         if (tab === 'album') {
+          if (JSON.stringify(updatedAlbumRes.items) !== JSON.stringify(localAlbumRef.current)) {
+            setLocalAlbum(updatedAlbumRes.items);
+          }
+          setAlbumPages(updatedAlbumRes.pages);
           albumLoadedKeyRef.current = query.albumQueryKey;
           albumFetchedAtRef.current = Date.now();
+        } else {
+          // Keep the cached rows intact while the user is on another tab. Mark
+          // them stale so returning to Album shows the cache immediately and
+          // revalidates it in the background.
+          albumFetchedAtRef.current = 0;
         }
       }
 
-      if (updatedCompletedRes) {
+      if (
+        updatedCompletedRes
+        && completedFetchTokenRef.current === completedFetchToken
+        && !isMutatingJobsRef.current
+      ) {
         if (tab === 'completed') {
           setCompletedJobs(updatedCompletedRes.items);
           completedLoadedKeyRef.current = query.completedQueryKey;
@@ -1488,44 +1538,113 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   const toggleJobExpand = (jobId: string) => setExpandedJobId(prev => prev === jobId ? null : jobId);
 
-  const restoreAfterStartFailure = (previousJobs: Job[], error: unknown, label: string) => {
-    console.error(label, error);
-    toast.error(error instanceof Error
-      ? error.message
-      : t('projectViewer.toasts.startJobsFailed', { defaultValue: 'Failed to start jobs' }));
-    setLocalJobs(previousJobs);
-    void runProjectLiveRefresh();
+  const startDraftJobsAndOpenQueue = async (
+    request: { mode: 'allDrafts' } | { mode: 'selected'; jobIds: string[] },
+    expectedJobIds: string[],
+    errorLabel: string,
+  ) => {
+    isStartingDraftJobsRef.current = true;
+    try {
+      await apiStartProjectJobs(localProject.id, request);
+
+      // The start endpoint has committed the status transition and enqueued the
+      // work. Read it back before changing tabs so Queue never renders guessed
+      // client state.
+      ++jobsFetchTokenRef.current;
+      const confirmedJobs = await fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] });
+      ++jobsFetchTokenRef.current;
+
+      const expectedJobIdSet = new Set(expectedJobIds);
+      const confirmedQueueJobIds = new Set(
+        confirmedJobs
+          .filter((job) => expectedJobIdSet.has(job.id) && ['pending', 'processing', 'failed'].includes(job.status))
+          .map((job) => job.id),
+      );
+
+      setLocalJobs(confirmedJobs);
+      setSelectedDraftIds((current) => {
+        const next = new Set(current);
+        for (const jobId of confirmedQueueJobIds) next.delete(jobId);
+        return next;
+      });
+
+      if (confirmedQueueJobIds.size !== expectedJobIdSet.size) {
+        toast.error(t('projectViewer.toasts.startedJobsNotVisible', {
+          defaultValue: 'Some submitted jobs are not visible in the queue yet.',
+        }));
+        return;
+      }
+
+      setActiveTab('queue');
+    } catch (error) {
+      console.error(errorLabel, error);
+      toast.error(error instanceof Error
+        ? error.message
+        : t('projectViewer.toasts.startJobsFailed', { defaultValue: 'Failed to start jobs' }));
+    } finally {
+      isStartingDraftJobsRef.current = false;
+    }
+  };
+
+  const runDraftJob = async (jobId: string) => {
+    const targetJob = localJobsRef.current.find((job) => job.id === jobId);
+    if (!targetJob || targetJob.status !== 'draft' || isStartingDraftJobsRef.current) return;
+
+    setStartingDraftJobIds((current) => new Set(current).add(jobId));
+    try {
+      await startDraftJobsAndOpenQueue(
+        { mode: 'selected', jobIds: [jobId] },
+        [jobId],
+        'Failed to run draft job:',
+      );
+    } finally {
+      setStartingDraftJobIds((current) => {
+        const next = new Set(current);
+        next.delete(jobId);
+        return next;
+      });
+    }
   };
 
   const runJob = async (jobId: string) => {
-    const previousJobs = localJobsRef.current;
-    const targetJob = previousJobs.find(j => j.id === jobId);
-    if (!targetJob || !['draft', 'failed', 'pending'].includes(targetJob.status)) return;
+    const targetJob = localJobsRef.current.find((job) => job.id === jobId);
+    if (!targetJob || !['failed', 'pending'].includes(targetJob.status) || isMutatingJobsRef.current) return;
 
-    const updatedJobs = previousJobs.map(j => j.id === jobId ? { ...j, status: 'pending' as const, error: undefined } : j);
-    setLocalJobs(updatedJobs);
-    setActiveTab('queue');
+    isMutatingJobsRef.current = true;
+    setRetryingQueueJobIds((current) => new Set(current).add(jobId));
     try {
-      const result = await apiStartProjectJobs(localProject.id, { mode: 'selected', jobIds: [jobId] });
-      if (result.started < 1) void runProjectLiveRefresh();
+      await apiStartProjectJobs(localProject.id, { mode: 'selected', jobIds: [jobId] });
+      ++jobsFetchTokenRef.current;
+      const confirmedJobs = await fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] });
+      ++jobsFetchTokenRef.current;
+      setLocalJobs(confirmedJobs);
     } catch (e) {
-      restoreAfterStartFailure(previousJobs, e, 'Failed to run job:');
+      console.error('Failed to retry job:', e);
+      toast.error(e instanceof Error ? e.message : t('projectViewer.toasts.startJobsFailed'));
+    } finally {
+      isMutatingJobsRef.current = false;
+      setRetryingQueueJobIds((current) => {
+        const next = new Set(current);
+        next.delete(jobId);
+        return next;
+      });
     }
   };
 
   const runAllDrafts = async () => {
     const previousJobs = localJobsRef.current;
-    const draftCount = previousJobs.filter(j => j.status === 'draft').length;
-    if (draftCount === 0) return;
+    const draftJobIds = previousJobs.filter((job) => job.status === 'draft').map((job) => job.id);
+    if (draftJobIds.length === 0 || isStartingDraftJobsRef.current) return;
 
-    const updatedJobs = previousJobs.map(j => j.status === 'draft' ? { ...j, status: 'pending' as const, error: undefined } : j);
-    setLocalJobs(updatedJobs);
-    setActiveTab('queue');
+    setIsStartingDraftBatch(true);
     try {
-      const result = await apiStartProjectJobs(localProject.id, { mode: 'allDrafts' });
-      if (result.started < draftCount) void runProjectLiveRefresh();
-    } catch (e) {
-      restoreAfterStartFailure(previousJobs, e, 'Failed to run all drafts:');
+      await startDraftJobsAndOpenQueue(
+        { mode: 'allDrafts' },
+        draftJobIds,
+        'Failed to run all drafts:',
+      );
+    } finally {
+      setIsStartingDraftBatch(false);
     }
   };
 
@@ -1535,47 +1654,95 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     const jobIds = previousJobs
       .filter(j => previousSelectedDraftIds.has(j.id) && j.status === 'draft')
       .map(j => j.id);
-    if (jobIds.length === 0) return;
+    if (jobIds.length === 0 || isStartingDraftJobsRef.current) return;
 
-    const startJobIds = new Set(jobIds);
-    const updatedJobs = previousJobs.map(j => startJobIds.has(j.id) ? { ...j, status: 'pending' as const, error: undefined } : j);
-    setLocalJobs(updatedJobs);
-    setSelectedDraftIds(new Set());
-    setActiveTab('queue');
+    setIsStartingDraftBatch(true);
     try {
-      const result = await apiStartProjectJobs(localProject.id, { mode: 'selected', jobIds });
-      if (result.started < jobIds.length) void runProjectLiveRefresh();
-    } catch (e) {
-      setSelectedDraftIds(previousSelectedDraftIds);
-      restoreAfterStartFailure(previousJobs, e, 'Failed to run selected drafts:');
+      await startDraftJobsAndOpenQueue(
+        { mode: 'selected', jobIds },
+        jobIds,
+        'Failed to run selected drafts:',
+      );
+    } finally {
+      setIsStartingDraftBatch(false);
+    }
+  };
+
+  const reconcileJobsAfterMutation = async (includeCompleted = false) => {
+    ++jobsFetchTokenRef.current;
+    if (includeCompleted) ++completedFetchTokenRef.current;
+
+    const [confirmedJobs, confirmedCompleted] = await Promise.all([
+      fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] }),
+      includeCompleted
+        ? fetchProjectCompletedJobs(localProject.id, {
+            page: completedPage,
+            limit: completedPageSize === 'all' ? 999999 : completedPageSize,
+            sort: completedSort,
+          })
+        : Promise.resolve(null),
+    ]);
+
+    ++jobsFetchTokenRef.current;
+    setLocalJobs(confirmedJobs);
+
+    if (confirmedCompleted) {
+      ++completedFetchTokenRef.current;
+      let completedResult = confirmedCompleted;
+      if (completedPage > completedResult.pages) {
+        completedResult = await fetchProjectCompletedJobs(localProject.id, {
+          page: completedResult.pages,
+          limit: completedPageSize === 'all' ? 999999 : completedPageSize,
+          sort: completedSort,
+        });
+        setCompletedPage(completedResult.pages);
+      }
+      setCompletedJobs(completedResult.items);
+      setCompletedTotal(completedResult.total);
+      setCompletedPages(completedResult.pages);
+      completedLoadedKeyRef.current = null;
+      completedFetchedAtRef.current = Date.now();
+    }
+  };
+
+  const deleteJobsAndReconcile = async (jobIds: string[], includeCompleted = false) => {
+    if (jobIds.length === 0) return;
+    if (isMutatingJobsRef.current) {
+      const error = new Error(t('projectViewer.toasts.jobMutationInProgress', {
+        defaultValue: 'Another job update is still in progress.',
+      }));
+      toast.error(error.message);
+      throw error;
+    }
+    isMutatingJobsRef.current = true;
+    try {
+      await apiDeleteProjectJobs(localProject.id, jobIds);
+      await reconcileJobsAfterMutation(includeCompleted);
+    } catch (error) {
+      console.error('Failed to delete jobs:', error);
+      toast.error(error instanceof Error
+        ? error.message
+        : t('projectViewer.toasts.deleteJobsFailed', { defaultValue: 'Failed to delete jobs' }));
+      throw error;
+    } finally {
+      isMutatingJobsRef.current = false;
     }
   };
 
   const deleteJob = async (jobId: string) => {
-    const isCompletedJob = completedJobs.some(j => j.id === jobId);
-    const updatedJobs = localJobs.filter(j => j.id !== jobId);
-    setLocalJobs(updatedJobs);
-    if (isCompletedJob) {
-      setCompletedJobs(prev => prev.filter(j => j.id !== jobId));
-      setCompletedTotal(prev => Math.max(0, prev - 1));
-      await apiDeleteProjectJob(localProject.id, jobId);
-    } else {
-      await apiUpdateProject(localProject.id, { jobs: updatedJobs });
-    }
+    await deleteJobsAndReconcile([jobId], completedJobs.some((job) => job.id === jobId));
   };
 
   const deleteSelectedDrafts = async () => {
-    const updatedJobs = localJobs.filter(j => !selectedDraftIds.has(j.id));
-    setLocalJobs(updatedJobs);
+    const jobIds = Array.from(selectedDraftIds);
+    await deleteJobsAndReconcile(jobIds);
     setSelectedDraftIds(new Set());
-    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
 
   const deleteAllDrafts = async () => {
-    const updatedJobs = localJobs.filter(j => j.status !== 'draft');
-    setLocalJobs(updatedJobs);
+    const jobIds = localJobsRef.current.filter((job) => job.status === 'draft').map((job) => job.id);
+    await deleteJobsAndReconcile(jobIds);
     setSelectedDraftIds(new Set());
-    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
 
   const toggleDraftSelection = (jobId: string, isShiftPressed: boolean, scopeIds: string[]) => {
@@ -1635,31 +1802,33 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   };
 
   const retrySelectedQueue = async () => {
-    const previousJobs = localJobsRef.current;
-    const previousSelectedQueueIds = new Set(selectedQueueIds);
-    const jobIds = previousJobs
-      .filter(j => previousSelectedQueueIds.has(j.id) && (j.status === 'failed' || j.status === 'pending'))
+    const jobIds = localJobsRef.current
+      .filter(j => selectedQueueIds.has(j.id) && (j.status === 'failed' || j.status === 'pending'))
       .map(j => j.id);
-    if (jobIds.length === 0) return;
+    if (jobIds.length === 0 || isMutatingJobsRef.current) return;
 
-    const updatedJobs = previousJobs.map(j => previousSelectedQueueIds.has(j.id) && (j.status === 'failed' || j.status === 'pending') ? { ...j, status: 'pending' as const, error: undefined } : j);
-    setLocalJobs(updatedJobs);
-    setSelectedQueueIds(new Set());
-    setActiveTab('queue');
+    isMutatingJobsRef.current = true;
+    setIsRetryingQueueBatch(true);
     try {
-      const result = await apiStartProjectJobs(localProject.id, { mode: 'selected', jobIds });
-      if (result.started < jobIds.length) void runProjectLiveRefresh();
+      await apiStartProjectJobs(localProject.id, { mode: 'selected', jobIds });
+      ++jobsFetchTokenRef.current;
+      const confirmedJobs = await fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] });
+      ++jobsFetchTokenRef.current;
+      setLocalJobs(confirmedJobs);
+      setSelectedQueueIds(new Set());
     } catch (e) {
-      setSelectedQueueIds(previousSelectedQueueIds);
-      restoreAfterStartFailure(previousJobs, e, 'Failed to retry selected:');
+      console.error('Failed to retry selected jobs:', e);
+      toast.error(e instanceof Error ? e.message : t('projectViewer.toasts.startJobsFailed'));
+    } finally {
+      isMutatingJobsRef.current = false;
+      setIsRetryingQueueBatch(false);
     }
   };
 
   const deleteSelectedQueue = async () => {
-    const updatedJobs = localJobs.filter(j => !selectedQueueIds.has(j.id));
-    setLocalJobs(updatedJobs);
+    const jobIds = Array.from(selectedQueueIds);
+    await deleteJobsAndReconcile(jobIds);
     setSelectedQueueIds(new Set());
-    await apiUpdateProject(localProject.id, { jobs: updatedJobs });
   };
 
   const clearAllFailed = async () => {
@@ -1669,12 +1838,39 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     // stale relative to in-flight jobs (it used to wipe taskId on
     // 'processing' rows and strand them forever). The server endpoint deletes
     // only failed rows and re-enqueues remaining pending jobs atomically.
-    setSelectedQueueIds(new Set());
-    setLocalJobs(prev => prev.filter(j => j.status !== 'failed'));
+    if (!localJobsRef.current.some((job) => job.status === 'failed')) return;
+
+    isClearingFailedJobsRef.current = true;
+    let deleteCompleted = false;
     try {
       await clearFailedQueueJobs({ projectId: localProject.id });
+      deleteCompleted = true;
+
+      // Do not change the visible list until both the deletion and the
+      // authoritative follow-up read have completed. This intentionally favors
+      // correctness over an optimistic response for a destructive bulk action.
+      ++jobsFetchTokenRef.current;
+      const updatedJobs = await fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] });
+
+      // Make this confirmed read authoritative over any concurrent live refresh.
+      ++jobsFetchTokenRef.current;
+      setLocalJobs(updatedJobs);
+      setSelectedQueueIds(new Set());
     } catch (e) {
-      console.error("Failed to clear failed jobs:", e);
+      if (deleteCompleted) {
+        console.error('Failed to refresh jobs after clearing failed jobs:', e);
+        toast.error(t('projectViewer.toasts.refreshAfterClearFailedJobsFailed', {
+          defaultValue: 'Failed jobs were cleared, but the list could not be refreshed.',
+        }));
+      } else {
+        console.error('Failed to clear failed jobs:', e);
+        toast.error(t('projectViewer.toasts.clearFailedJobsFailed', {
+          defaultValue: 'Failed to clear failed jobs. Please try again.',
+        }));
+      }
+      throw e;
+    } finally {
+      isClearingFailedJobsRef.current = false;
     }
   };
 
@@ -1709,11 +1905,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const deleteSelectedCompleted = async () => {
     const idsToDelete = Array.from(selectedCompletedIds);
     if (idsToDelete.length === 0) return;
-    const remainingCompleted = completedJobs.filter(j => !selectedCompletedIds.has(j.id));
-    setCompletedJobs(remainingCompleted);
-    setCompletedTotal((prev) => Math.max(0, prev - idsToDelete.length));
+    await deleteJobsAndReconcile(idsToDelete, true);
     setSelectedCompletedIds(new Set());
-    await Promise.all(idsToDelete.map((jobId) => apiDeleteProjectJob(localProject.id, jobId)));
   };
 
   const toggleAlbumSelection = (id: string, isShiftPressed: boolean, scopeIds?: string[]) => {
@@ -1751,39 +1944,52 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   };
 
   const deleteAlbumItems = async (items: AlbumItem[]) => {
+    if (items.length === 0) return;
+
+    isDeletingAlbumItemsRef.current = true;
     try {
       const itemIds = items.map(i => i.id);
       if (itemIds.length === 1) await moveToTrash(localProject.id, itemIds[0]); else await moveToTrashBatch(localProject.id, itemIds);
-      const itemIdsSet = new Set(itemIds);
-      const updatedAlbum = localAlbum.filter(item => !itemIdsSet.has(item.id));
-      const nextAlbumTotal = Math.max(0, albumTotal - itemIds.length);
-      setLocalAlbum(updatedAlbum);
-      setAlbumTotal(nextAlbumTotal);
-      setAlbumPages(Math.max(1, Math.ceil(nextAlbumTotal / (albumPageSize === 'all' ? Math.max(nextAlbumTotal, 1) : albumPageSize))));
-      const removedSize = items.reduce((acc, item) => acc + (item.size || 0), 0);
-      setAlbumTotalSize((prev) => Math.max(0, prev - removedSize));
-      const removedAspectRatios = items.reduce<Record<string, number>>((acc, item) => {
-        const ratio = item.aspectRatio?.trim();
-        if (ratio) acc[ratio] = (acc[ratio] || 0) + 1;
-        return acc;
-      }, {});
-      if (Object.keys(removedAspectRatios).length > 0) {
-        setAlbumAspectRatioCounts((prev) => (
-          prev
-            .map(({ ratio, count }) => ({ ratio, count: count - (removedAspectRatios[ratio] || 0) }))
-            .filter(({ count }) => count > 0)
-        ));
+
+      const query = liveQueryRef.current;
+      const limit = query.albumPageSize === 'all' ? 999999 : query.albumPageSize;
+      const fetchAlbumPage = (page: number) => fetchProjectAlbum(localProject.id, {
+        page,
+        limit,
+        sort: query.albumSort,
+        aspectRatios: query.albumSelectedRatios.length > 0 ? query.albumSelectedRatios : undefined,
+      });
+
+      // Invalidate reads started before the delete, then wait for a confirmed
+      // server snapshot before changing anything visible in the Album UI.
+      ++albumFetchTokenRef.current;
+      let updatedAlbumRes = await fetchAlbumPage(query.albumPage);
+      if (query.albumPage > updatedAlbumRes.pages) {
+        updatedAlbumRes = await fetchAlbumPage(updatedAlbumRes.pages);
+        updateAlbumParams({ page: updatedAlbumRes.pages });
       }
+
+      ++albumFetchTokenRef.current;
+      setLocalAlbum(updatedAlbumRes.items);
+      setAlbumTotal(updatedAlbumRes.total);
+      setAlbumPages(updatedAlbumRes.pages);
+      setAlbumTotalSize(updatedAlbumRes.totalSize);
+      setAlbumAspectRatioCounts(updatedAlbumRes.aspectRatioCounts);
+      albumLoadedKeyRef.current = query.albumPage === updatedAlbumRes.page ? query.albumQueryKey : null;
+      albumFetchedAtRef.current = Date.now();
+
+      const itemIdsSet = new Set(itemIds);
       setSelectedAlbumIds(prev => {
         const next = new Set(prev);
         itemIdsSet.forEach(id => next.delete(id));
         return next;
       });
-      return true;
     } catch (e: any) {
       console.error('Failed to move items to trash:', e);
       toast.error(`Failed to move items to trash: ${e.message}`);
-      return false;
+      throw e;
+    } finally {
+      isDeletingAlbumItemsRef.current = false;
     }
   };
 
@@ -1828,9 +2034,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const handleToggleArchive = async () => {
     const nextStatus: 'active' | 'archived' = isArchived ? 'active' : 'archived';
     const updated = { ...localProject, status: nextStatus };
-    setLocalProject(updated);
+    setIsTogglingArchive(true);
     try {
       await apiUpdateProject(localProject.id, { status: nextStatus });
+      setLocalProject(updated);
       toast.success(
         nextStatus === 'archived'
           ? t('projectViewer.toasts.archived', { name: localProject.name })
@@ -1839,8 +2046,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       onUpdate(updated);
     } catch (e) {
       console.error('Failed to toggle archive status:', e);
-      setLocalProject(localProject);
       toast.error(t('projectViewer.toasts.archiveFailed'));
+    } finally {
+      setIsTogglingArchive(false);
     }
   };
 
@@ -1923,6 +2131,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         onStartAssistantChat={handleStartAssistantChat}
         onShowDeleteProject={() => setShowDeleteProjectModal(true)}
         onToggleArchive={handleToggleArchive}
+        isTogglingArchive={isTogglingArchive}
         isArchived={isArchived}
         onAddWorkflowItem={addWorkflowItem}
         onDragStart={handleDragStart}
@@ -2001,8 +2210,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               draftJobs={draftJobs} selectedDraftIds={selectedDraftIds} toggleSelectAllDrafts={toggleSelectAllDrafts}
               setShowDeleteSelectedModal={setShowDeleteSelectedModal} runSelectedDrafts={runSelectedDrafts}
               setShowDeleteAllDraftsModal={setShowDeleteAllDraftsModal} runAllDrafts={runAllDrafts}
+              isStartingDraftBatch={isStartingDraftBatch} startingDraftJobIds={startingDraftJobIds}
               expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand} toggleDraftSelection={toggleDraftSelection}
-              getProviderName={getProviderName} getModelName={getModelName} runJob={runJob}
+              getProviderName={getProviderName} getModelName={getModelName} runJob={runDraftJob}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
               albumItems={albumItems}
               onSwitchToAlbum={() => setActiveTab('album')}
@@ -2020,6 +2230,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
             <QueueTab
               queueJobs={queueJobs} selectedQueueIds={selectedQueueIds} toggleSelectAllQueue={toggleSelectAllQueue}
               toggleQueueSelection={toggleQueueSelection} retrySelectedQueue={retrySelectedQueue} deleteSelectedQueue={() => setShowDeleteQueueSelectedModal(true)}
+              isRetryingQueueBatch={isRetryingQueueBatch} retryingQueueJobIds={retryingQueueJobIds}
               clearAllFailed={() => setShowClearAllFailedModal(true)} expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand}
               getProviderName={getProviderName} getModelName={getModelName} runJob={runJob}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
@@ -2135,7 +2346,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       <ConfirmModal isOpen={showDeleteSelectedModal} onClose={() => setShowDeleteSelectedModal(false)} onConfirm={deleteSelectedDrafts} title={t('projectViewer.confirm.deleteSelectedDrafts.title')} message={t('projectViewer.confirm.deleteSelectedDrafts.message', { count: selectedDraftIds.size })} confirmText={t('projectViewer.confirm.deleteSelectedDrafts.confirm')} type="danger" />
       <ConfirmModal isOpen={showDeleteAllDraftsModal} onClose={() => setShowDeleteAllDraftsModal(false)} onConfirm={deleteAllDrafts} title={t('projectViewer.confirm.deleteAllDrafts.title')} message={t('projectViewer.confirm.deleteAllDrafts.message', { count: draftJobs.length })} confirmText={t('projectViewer.confirm.deleteAllDrafts.confirm')} type="danger" />
       <ConfirmModal isOpen={showDeleteProjectModal} onClose={() => setShowDeleteProjectModal(false)} onConfirm={onDelete} title={t('projectViewer.confirm.deleteProject.title')} message={t('projectViewer.confirm.deleteProject.message', { name: localProject.name })} confirmText={t('projectViewer.confirm.deleteProject.confirm')} type="danger" />
-      <ConfirmModal isOpen={jobToDeleteId !== null} onClose={() => setJobToDeleteId(null)} onConfirm={() => { if (jobToDeleteId) { deleteJob(jobToDeleteId); setJobToDeleteId(null); } }} title={t('projectViewer.confirm.deleteJob.title')} message={t('projectViewer.confirm.deleteJob.message')} confirmText={t('projectViewer.confirm.deleteJob.confirm')} type="danger" />
+      <ConfirmModal isOpen={jobToDeleteId !== null} onClose={() => setJobToDeleteId(null)} onConfirm={async () => { if (jobToDeleteId) { await deleteJob(jobToDeleteId); setJobToDeleteId(null); } }} title={t('projectViewer.confirm.deleteJob.title')} message={t('projectViewer.confirm.deleteJob.message')} confirmText={t('projectViewer.confirm.deleteJob.confirm')} type="danger" />
       <LibrarySelectionModal
         isOpen={showLibrarySelector || changingLibraryItemId !== null || savingLibraryItemId !== null}
         onClose={() => {
@@ -2237,8 +2448,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         onClose={() => { setShowDeleteAlbumModal(false); setAlbumItemsToDelete(null); }}
         onConfirm={async () => {
           if (albumItemsToDelete) {
-            const didDelete = await deleteAlbumItems(albumItemsToDelete);
-            if (!didDelete) return;
+            await deleteAlbumItems(albumItemsToDelete);
             updateLightboxAfterAlbumDelete(albumItemsToDelete);
             setShowDeleteAlbumModal(false);
             setAlbumItemsToDelete(null);

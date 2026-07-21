@@ -431,6 +431,34 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+  router.post('/api/projects/:id/jobs/delete-batch', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const body = await c.req.json().catch(() => ({}));
+      const rawJobIds: unknown[] = Array.isArray(body?.jobIds) ? body.jobIds : [];
+      const jobIds: string[] = Array.from(new Set(
+        rawJobIds
+          .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+          .map((id) => id.trim()),
+      ));
+      if (!projectId || jobIds.length === 0) {
+        return c.json({ error: 'Project id and jobIds are required' }, 400);
+      }
+
+      const deleted = await repository.deleteProjectJobs(user.userId, projectId, jobIds);
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        reason: 'job.deleted',
+      });
+      return c.json({ success: true, deleted });
+    } catch (e) {
+      console.error('[POST /api/projects/:id/jobs/delete-batch]', e);
+      return c.json({ error: 'Failed to delete jobs' }, 500);
+    }
+  });
+
   router.get('/api/projects/:id/album', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

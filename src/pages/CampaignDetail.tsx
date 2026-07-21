@@ -218,6 +218,7 @@ export function CampaignDetail() {
   const [quickSavingId, setQuickSavingId] = useState<string | null>(null);
   const [sendingPostId, setSendingPostId] = useState<string | null>(null);
   const [deletePostTarget, setDeletePostTarget] = useState<CampaignPost | null>(null);
+  const [deletingPost, setDeletingPost] = useState(false);
   const [deleteCampaignOpen, setDeleteCampaignOpen] = useState(false);
   const [deletingCampaign, setDeletingCampaign] = useState(false);
   const [aiPostId, setAiPostId] = useState<string | null>(null);
@@ -547,13 +548,16 @@ export function CampaignDetail() {
 
   const confirmDeletePost = async () => {
     if (!deletePostTarget) return;
+    setDeletingPost(true);
     try {
       await deletePost(deletePostTarget.id);
+      await loadPosts(true);
       toast.success('Post deleted');
       setDeletePostTarget(null);
-      await loadPosts(true);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to delete post');
+    } finally {
+      setDeletingPost(false);
     }
   };
 
@@ -1171,8 +1175,11 @@ export function CampaignDetail() {
               <p className="mt-4 line-clamp-3 border-l-2 pl-3 text-sm italic text-neutral-500">"{deletePostTarget.textContent}"</p>
             )}
             <div className="mt-6 flex justify-end gap-3">
-              <button className="rounded-lg px-4 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10" onClick={() => setDeletePostTarget(null)}>Cancel</button>
-              <button className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700" onClick={() => void confirmDeletePost()}>Delete Post</button>
+              <button className="rounded-lg px-4 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-neutral-300 dark:hover:bg-white/10" onClick={() => setDeletePostTarget(null)} disabled={deletingPost}>Cancel</button>
+              <button className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-wait disabled:opacity-70" onClick={() => void confirmDeletePost()} disabled={deletingPost}>
+                {deletingPost && <Loader2 className="h-4 w-4 animate-spin" />}
+                {deletingPost ? 'Deleting…' : 'Delete Post'}
+              </button>
             </div>
           </div>
         </div>

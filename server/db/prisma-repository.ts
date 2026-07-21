@@ -80,6 +80,7 @@ export class PrismaRepository implements IRepository {
   updateProject(userId: string, projectId: string, updates: Partial<Project>) { return this.projects.updateProject(userId, projectId, updates); }
   deleteProject(userId: string, projectId: string) { return this.projects.deleteProject(userId, projectId); }
   deleteProjectJob(userId: string, projectId: string, jobId: string) { return this.projects.deleteProjectJob(userId, projectId, jobId); }
+  deleteProjectJobs(userId: string, projectId: string, jobIds: string[]) { return this.projects.deleteProjectJobs(userId, projectId, jobIds); }
   rewriteJobStorageKeys(userId: string, projectId: string, oldPrefix: string, newPrefix: string) {
     return this.projects.rewriteJobStorageKeys(userId, projectId, oldPrefix, newPrefix);
   }
