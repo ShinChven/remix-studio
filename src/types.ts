@@ -258,6 +258,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'google-nano-banana-pro',
+      name: 'nano banana Pro',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-3-pro-image',
+      category: 'image',
+      promptLimit: { value: 65536, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '4:5', '5:4', '21:9'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
       id: 'google-nano-banana-2-lite',
       name: 'nano banana 2 Lite',
       generatorId: 'GoogleAI',
@@ -444,6 +456,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       promptLimit: { value: 131072, unit: 'tokens' },
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9', '9:21'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'vertex-nano-banana-pro',
+      name: 'nano banana Pro',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-3-pro-image',
+      category: 'image',
+      promptLimit: { value: 65536, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '4:5', '5:4', '21:9'],
         qualities: ['1K', '2K', '4K'],
       },
     },
@@ -1056,6 +1080,32 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
   ],
   Claude: [
+    {
+      id: 'claude-fable-5-text',
+      name: 'Claude Fable 5',
+      generatorId: 'Claude',
+      modelId: 'claude-fable-5',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        // Fable 5 uses always-on adaptive thinking and rejects disabled/manual thinking controls.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
+    {
+      id: 'claude-opus-4-8-text',
+      name: 'Claude Opus 4.8',
+      generatorId: 'Claude',
+      modelId: 'claude-opus-4-8',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        // Opus 4.8 rejects non-default sampling parameters; only the default temperature is allowed.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
     {
       id: 'claude-sonnet-5-text',
       name: 'Claude Sonnet 5',

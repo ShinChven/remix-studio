@@ -19,7 +19,7 @@ server/generators/                    -- One generator class per provider per ca
     +-- build-video-generator.ts      -- Factory: provider type -> video generator
     +-- build-audio-generator.ts      -- Factory: provider type -> audio generator
     +-- claude-text-generator.ts      -- Default model: claude-sonnet-4-6
-    +-- openai-text-generator.ts      -- Default model: gpt-5.4
+    +-- openai-text-generator.ts      -- Default model: gpt-5.6
     +-- grok-text-generator.ts        -- Default model: grok-4.20-0309-non-reasoning
     +-- google-ai-text-generator.ts   -- Default model: gemini-3.6-flash
     +-- vertex-ai-text-generator.ts   -- Default model: gemini-3.6-flash
@@ -156,12 +156,14 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 
 ---
 
-## Current Model Inventory (April 2026)
+## Current Model Inventory (July 2026)
 
 ### Google AI / Vertex AI
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
+| nano banana Pro | `gemini-3-pro-image` | image | 32,768 |
 | nano banana 2 | `gemini-3.1-flash-image-preview` | image | 32,768 |
+| nano banana 2 Lite | `gemini-3.1-flash-lite-image` | image | 32,768 |
 | Gemini 3 Flash | `gemini-3-flash-preview` | text | 65,536 |
 | Gemini 3.1 Pro | `gemini-3.1-pro-preview` | text | 65,536 |
 | Gemini 3.1 Flash Lite | `gemini-3.1-flash-lite-preview` | text | 65,536 |
@@ -175,7 +177,11 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 | GPT Image 2 | `gpt-image-2` | image | - |
 | GPT Image 1.5 | `gpt-image-1.5` | image | - |
 | GPT Image 1 Mini | `gpt-image-1-mini` | image | - |
-| GPT-5.4 | `gpt-5.4` | text | 128,000 |
+| GPT-5.6 | `gpt-5.6` | text | 131,072 |
+| GPT-5.6 Terra | `gpt-5.6-terra` | text | 131,072 |
+| GPT-5.6 Luna | `gpt-5.6-luna` | text | 131,072 |
+| GPT-5.5 | `gpt-5.5` | text | 131,072 |
+| GPT-5.4 | `gpt-5.4` | text | 131,072 |
 | GPT-5.4 Mini | `gpt-5.4-mini` | text | 128,000 |
 | GPT-5.4 Nano | `gpt-5.4-nano` | text | 128,000 |
 
@@ -190,6 +196,8 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 ### Claude (Anthropic)
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
+| Claude Fable 5 | `claude-fable-5` | text | 128,000 |
+| Claude Opus 4.8 | `claude-opus-4-8` | text | 128,000 |
 | Claude Opus 4.7 | `claude-opus-4-7` | text | 128,000 |
 | Claude Sonnet 4.6 | `claude-sonnet-4-6` | text | 64,000 |
 | Claude Haiku 4.5 | `claude-haiku-4-5-20251001` | text | 64,000 |

@@ -16,8 +16,12 @@ export class ClaudeTextGenerator extends TextGenerator {
     try {
       const { prompt, systemPrompt, modelId, temperature = 0.7, maxTokens = 2048, refImagesBase64 } = req;
       const model = modelId || 'claude-sonnet-4-6';
-      // Sonnet 5 rejects non-default sampling parameters (400) — omit temperature entirely.
-      const supportsTemperature = !model.startsWith('claude-sonnet-5');
+      // Claude's latest adaptive-thinking models reject non-default sampling parameters (400) — omit temperature entirely.
+      const supportsTemperature = !(
+        model.startsWith('claude-fable-5') ||
+        model.startsWith('claude-opus-4-8') ||
+        model.startsWith('claude-sonnet-5')
+      );
 
       const contentParts: Anthropic.ContentBlockParam[] = [];
 
