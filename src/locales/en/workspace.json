@@ -432,6 +432,8 @@
     "selectProvider": "Select Provider",
     "selectModel": "Select Model",
     "typePlaceholder": "Type a message...",
+    "mobileInputHint": "Enter for a new line · Tap the arrow to send",
+    "presetPromptEscapeHint": "Press Esc to keep typing a literal slash.",
     "send": "Send",
     "stop": "Stop",
     "confirm": "Confirm",

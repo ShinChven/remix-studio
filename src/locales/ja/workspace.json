@@ -376,6 +376,8 @@
     "selectProvider": "プロバイダーを選択",
     "selectModel": "モデルを選択",
     "typePlaceholder": "メッセージを入力...",
+    "mobileInputHint": "Enterで改行 · 矢印をタップして送信",
+    "presetPromptEscapeHint": "通常のスラッシュを入力するには Esc を押してください。",
     "send": "送信",
     "stop": "停止",
     "confirm": "確認",

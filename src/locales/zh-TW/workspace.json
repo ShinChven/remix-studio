@@ -376,6 +376,8 @@
     "selectProvider": "選擇供應商",
     "selectModel": "選擇模型",
     "typePlaceholder": "輸入訊息...",
+    "mobileInputHint": "換行鍵換行 · 點擊箭頭傳送",
+    "presetPromptEscapeHint": "按 Esc 繼續輸入一般斜線。",
     "send": "傳送",
     "stop": "停止",
     "confirm": "確定",

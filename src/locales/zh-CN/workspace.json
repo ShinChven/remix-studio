@@ -425,6 +425,8 @@
     "selectProvider": "选择服务商",
     "selectModel": "选择模型",
     "typePlaceholder": "输入消息...",
+    "mobileInputHint": "回车换行 · 点击箭头发送",
+    "presetPromptEscapeHint": "按 Esc 继续输入普通斜杠。",
     "send": "发送",
     "stop": "停止",
     "confirm": "确定",

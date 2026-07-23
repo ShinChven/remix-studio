@@ -376,6 +376,8 @@
     "selectProvider": "제공업체 선택",
     "selectModel": "모델 선택",
     "typePlaceholder": "메시지를 입력하세요...",
+    "mobileInputHint": "Enter로 줄바꿈 · 화살표를 눌러 보내기",
+    "presetPromptEscapeHint": "일반 슬래시를 입력하려면 Esc를 누르세요.",
     "send": "보내기",
     "stop": "정지",
     "confirm": "확인",

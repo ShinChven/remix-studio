@@ -56,6 +56,7 @@ const COMPRESS_MIME = 'image/jpeg';
 const MAX_RECORDING_MS = 5 * 60 * 1000;
 const CONTEXT_PROGRESS_RADIUS = 7.5;
 const CONTEXT_PROGRESS_CIRCUMFERENCE = 2 * Math.PI * CONTEXT_PROGRESS_RADIUS;
+const MOBILE_INPUT_QUERY = '(max-width: 767px), (pointer: coarse)';
 
 function summarizeSkillTitle(title: string | undefined, content: string) {
   if (title?.trim()) return title.trim();
@@ -70,7 +71,7 @@ function summarizeSkillContent(content: string) {
 }
 
 function getSkillTriggerMatch(textBeforeCursor: string): SkillTriggerMatch | null {
-  const match = textBeforeCursor.match(/(^|\s)`([^\n`]*)$/);
+  const match = textBeforeCursor.match(/(^|\s)\/([^\n/]*)$/);
   if (!match) return null;
 
   const query = match[2] || '';
@@ -630,7 +631,7 @@ export function AssistantComposer({
     const cursorPosition = textareaRef.current?.selectionStart ?? inputText.length;
     const textBeforeCursor = inputText.slice(0, cursorPosition);
     const textAfterCursor = inputText.slice(cursorPosition);
-    const match = textBeforeCursor.match(/`([^\n`]*)$/);
+    const match = textBeforeCursor.match(/\/([^\n/]*)$/);
     if (!match) return;
 
     const prefix = textBeforeCursor.slice(0, textBeforeCursor.length - match[0].length);
@@ -676,7 +677,9 @@ export function AssistantComposer({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === '`' && activePicker === 'skill') {
+    if (event.nativeEvent.isComposing) return;
+
+    if (event.key === '/' && activePicker === 'skill') {
       closePickers();
       setDismissedSkillTriggerStart(null);
       return;
@@ -718,9 +721,24 @@ export function AssistantComposer({
       return;
     }
 
-    if (event.key === 'Enter' && !event.shiftKey && (activePicker === null || activeOptions.length === 0)) {
+    if (
+      event.key === 'Enter'
+      && (event.metaKey || event.ctrlKey)
+      && (activePicker === null || activeOptions.length === 0)
+    ) {
       event.preventDefault();
-      _handleSend();
+      if (canSend) _handleSend();
+      return;
+    }
+
+    if (
+      event.key === 'Enter'
+      && !event.shiftKey
+      && (activePicker === null || activeOptions.length === 0)
+      && !window.matchMedia(MOBILE_INPUT_QUERY).matches
+    ) {
+      event.preventDefault();
+      if (canSend) _handleSend();
     }
   };
 
@@ -745,7 +763,7 @@ export function AssistantComposer({
         </div>
       )}
 
-      <div className="relative rounded-card border border-neutral-200/50 bg-white/80 p-4 shadow-2xl backdrop-blur-2xl transition-all duration-300 group-focus-within:shadow-indigo-500/10 dark:border-white/10 dark:bg-neutral-900/80">
+      <div className="relative rounded-card border border-neutral-200/50 bg-white/80 p-3 shadow-2xl backdrop-blur-2xl transition-all duration-300 group-focus-within:shadow-indigo-500/10 dark:border-white/10 dark:bg-neutral-900/80 sm:p-4">
         <div className="space-y-4">
           {/* Model selector row */}
           <div className="flex items-center gap-2 px-2">
@@ -881,7 +899,7 @@ export function AssistantComposer({
 
                 {activePicker === 'skill' && (
                   <div className="px-3 pb-2 text-[11px] text-neutral-400 dark:text-neutral-500">
-                    {t('assistant.presetPromptEscapeHint', 'Press Esc to keep typing a literal backtick.')}
+                    {t('assistant.presetPromptEscapeHint', 'Press Esc to keep typing a literal slash.')}
                   </div>
                 )}
 
@@ -991,18 +1009,24 @@ export function AssistantComposer({
           </div>
 
           {/* Textarea + action buttons */}
-          <div className="flex items-end gap-3 pl-[10px] pr-2">
-            <textarea
-              ref={textareaRef}
-              value={inputText}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
-              placeholder={placeholder || t('assistant.typePlaceholder')}
-              rows={1}
-              disabled={isSending}
-              className="custom-scrollbar max-h-[200px] flex-1 resize-none border-none bg-transparent py-1 text-base text-neutral-800 outline-none placeholder-neutral-400 disabled:opacity-50 dark:text-neutral-200 dark:placeholder-neutral-500"
-            />
+          <div className="flex items-end gap-2 pl-1 pr-0 sm:gap-3 sm:pl-[10px] sm:pr-2">
+            <div className="min-w-0 flex-1">
+              <textarea
+                ref={textareaRef}
+                value={inputText}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+                placeholder={placeholder || t('assistant.typePlaceholder')}
+                rows={1}
+                enterKeyHint="enter"
+                disabled={isSending}
+                className="custom-scrollbar block max-h-[200px] w-full resize-none border-none bg-transparent py-1 text-base text-neutral-800 outline-none placeholder-neutral-400 disabled:opacity-50 dark:text-neutral-200 dark:placeholder-neutral-500"
+              />
+              <span className="mt-1 block text-[11px] leading-none text-neutral-400 dark:text-neutral-500 sm:hidden">
+                {t('assistant.mobileInputHint', 'Enter for a new line · Tap the arrow to send')}
+              </span>
+            </div>
 
             {/* Hidden file input */}
             <input
@@ -1018,7 +1042,7 @@ export function AssistantComposer({
               <button
                 type="button"
                 onClick={onStop}
-                className="group/btn mb-0.5 flex-shrink-0 rounded-full p-2 text-red-600 transition-all hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 active:scale-95"
+                className="group/btn inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-red-600 transition-all hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 active:scale-95"
                 title={t('assistant.stop')}
               >
                 <Square className="h-4 w-4 fill-current" />
@@ -1028,7 +1052,7 @@ export function AssistantComposer({
                 type="button"
                 onClick={() => _handleSend()}
                 disabled={!canSend}
-                className="group/btn mb-0.5 flex-shrink-0 rounded-full p-2 text-indigo-600 transition-all hover:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 active:scale-95 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-20"
+                className="group/btn inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-indigo-600 transition-all hover:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 active:scale-95 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-20"
                 title={t('assistant.send')}
               >
                 <Send className="h-4 w-4" />

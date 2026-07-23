@@ -376,6 +376,8 @@
     "selectProvider": "Sélectionner un fournisseur",
     "selectModel": "Sélectionner un modèle",
     "typePlaceholder": "Saisissez un message...",
+    "mobileInputHint": "Entrée pour revenir à la ligne · Touchez la flèche pour envoyer",
+    "presetPromptEscapeHint": "Appuyez sur Échap pour saisir une barre oblique normale.",
     "send": "Envoyer",
     "stop": "Arrêter",
     "confirm": "Confirmer",
