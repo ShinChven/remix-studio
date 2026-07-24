@@ -7,7 +7,9 @@ import {
   ArrowUpAZ,
   ArrowUpNarrowWide,
   CheckCircle2,
+  ChevronDown,
   FileText,
+  Filter,
   Image as ImageIcon,
   Images,
   Layers,
@@ -18,7 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { fetchLibraries, fetchLibrary, fetchLibraryItems, fetchProject, fetchProjectAlbum, fetchProjects, imageDisplayUrl } from '../api';
-import { AlbumItem, Library, LibraryItem, LibraryType, Project } from '../types';
+import { AlbumItem, AspectRatioCount, Library, LibraryItem, LibraryType, Project } from '../types';
 import { cn } from '../lib/utils';
 
 export type PickerSourceKind = 'library' | 'album';
@@ -200,6 +202,8 @@ export function UniversalMediaPicker({
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [items, setItems] = useState<PickerItem[]>([]);
+  const [aspectRatioCounts, setAspectRatioCounts] = useState<AspectRatioCount[]>([]);
+  const [selectedAspectRatios, setSelectedAspectRatios] = useState<string[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [selectedItemMap, setSelectedItemMap] = useState<Record<string, PickerItem>>({});
   const [loadingSources, setLoadingSources] = useState(false);
@@ -217,6 +221,8 @@ export function UniversalMediaPicker({
     setSelectedKeys(new Set());
     setSelectedItemMap({});
     setItems([]);
+    setAspectRatioCounts([]);
+    setSelectedAspectRatios([]);
     setImageVersion('optimized');
   }, [allowedTypeKey, initialKind, isOpen, fixedSourceId]);
 
@@ -322,8 +328,14 @@ export function UniversalMediaPicker({
   }, [filteredSources, loadingSources]);
 
   useEffect(() => {
+    setSelectedAspectRatios([]);
+    setAspectRatioCounts([]);
+  }, [activeSource?.id, activeSource?.kind]);
+
+  useEffect(() => {
     if (!isOpen || !activeSource) {
       setItems([]);
+      setAspectRatioCounts([]);
       return;
     }
 
@@ -333,13 +345,17 @@ export function UniversalMediaPicker({
       try {
         if (activeSource.kind === 'library') {
           const result = await fetchLibraryItems(activeSource.id, 1, 500);
-          if (!cancelled) setItems((result.items || []).map((item) => libraryItemToPickerItem(item, activeSource)));
+          if (!cancelled) {
+            setItems((result.items || []).map((item) => libraryItemToPickerItem(item, activeSource)));
+            setAspectRatioCounts([]);
+          }
         } else {
-          const albumResult = await fetchProjectAlbum(activeSource.id);
+          const albumResult = await fetchProjectAlbum(activeSource.id, { aspectRatios: selectedAspectRatios });
           if (!cancelled) {
             setItems((albumResult.items || [])
               .filter((item) => activeSource.type === 'text' ? (item.textContent || item.prompt) : item.imageUrl)
               .map((item) => albumItemToPickerItem(item, activeSource)));
+            setAspectRatioCounts(albumResult.aspectRatioCounts || []);
           }
         }
       } finally {
@@ -351,7 +367,7 @@ export function UniversalMediaPicker({
     return () => {
       cancelled = true;
     };
-  }, [activeSource?.id, activeSource?.kind, activeSource?.type, isOpen]);
+  }, [activeSource?.id, activeSource?.kind, activeSource?.type, isOpen, selectedAspectRatios]);
 
   const filteredItems = useMemo(() => {
     const q = itemQuery.trim().toLowerCase();
@@ -382,6 +398,9 @@ export function UniversalMediaPicker({
   const showImageVersionSelection = enableImageVersionSelection
     && activeSource?.kind === 'album'
     && activeSource.type === 'image';
+  const showAspectRatioFilter = activeSource?.kind === 'album'
+    && (activeSource.type === 'image' || activeSource.type === 'video')
+    && aspectRatioCounts.length > 0;
 
   const resolvePickedItem = (item: PickerItem): UniversalPickedItem => {
     if (!enableImageVersionSelection || item.sourceKind !== 'album' || item.type !== 'image') {
@@ -705,6 +724,13 @@ export function UniversalMediaPicker({
                   ))}
                 </div>
               )}
+              {showAspectRatioFilter && (
+                <AspectRatioFilter
+                  options={aspectRatioCounts}
+                  selectedAspectRatios={selectedAspectRatios}
+                  onChange={setSelectedAspectRatios}
+                />
+              )}
               <SortSelect value={itemSort} onChange={setItemSort} ariaLabel="Sort items" />
               {multiple && (
                 <button
@@ -825,6 +851,104 @@ export function UniversalMediaPicker({
       </div>
     </div>,
     document.body,
+  );
+}
+
+function AspectRatioFilter({
+  options,
+  selectedAspectRatios,
+  onChange,
+}: {
+  options: AspectRatioCount[];
+  selectedAspectRatios: string[];
+  onChange: (ratios: string[]) => void;
+}) {
+  const { t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const hasFilter = selectedAspectRatios.length > 0;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const close = () => setIsOpen(false);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [isOpen]);
+
+  const toggleRatio = (ratio: string) => {
+    onChange(
+      selectedAspectRatios.includes(ratio)
+        ? selectedAspectRatios.filter((selectedRatio) => selectedRatio !== ratio)
+        : [...selectedAspectRatios, ratio],
+    );
+  };
+
+  return (
+    <div className="relative" onClick={(event) => event.stopPropagation()}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        title={t('projectViewer.album.aspectRatioFilter')}
+        aria-label={t('projectViewer.album.aspectRatioFilter')}
+        className={cn(
+          'flex h-11 items-center justify-center gap-1.5 rounded-xl border px-3 text-[10px] font-black uppercase tracking-widest transition',
+          hasFilter
+            ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300'
+            : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-white/10',
+        )}
+      >
+        <Filter className="h-3.5 w-3.5" />
+        <span>
+          {hasFilter
+            ? t('projectViewer.album.aspectRatioFilterCount', { count: selectedAspectRatios.length })
+            : t('projectViewer.album.aspectRatioFilter')}
+        </span>
+        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', isOpen && 'rotate-180')} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full z-[100] mt-2 w-56 rounded-card border border-neutral-200 bg-white p-2 shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-in fade-in zoom-in-95 duration-200 dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className={cn(
+              'mb-1 w-full rounded-xl px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest transition-colors',
+              !hasFilter
+                ? 'bg-indigo-600 text-white'
+                : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white',
+            )}
+          >
+            {t('projectViewer.album.allAspectRatios')}
+          </button>
+          <div className="max-h-64 overflow-y-auto custom-scrollbar">
+            {options.map(({ ratio, count }) => {
+              const checked = selectedAspectRatios.includes(ratio);
+              return (
+                <label
+                  key={ratio}
+                  className={cn(
+                    'flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors',
+                    checked
+                      ? 'bg-indigo-600/20 text-indigo-600 dark:text-indigo-300'
+                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white',
+                  )}
+                >
+                  <span>{ratio}</span>
+                  <span className="ml-auto rounded-md bg-neutral-100 px-1.5 py-0.5 text-[9px] font-black text-neutral-500 dark:bg-neutral-950">
+                    {count}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleRatio(ratio)}
+                    className="h-3.5 w-3.5 rounded border-neutral-400 bg-white text-indigo-500 focus:ring-indigo-500 dark:border-neutral-600 dark:bg-neutral-950"
+                  />
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
