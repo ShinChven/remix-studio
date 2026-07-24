@@ -18,6 +18,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 - **New image models** — nano banana Pro, Seedream 5.0 Pro, Seedream V5 Pro, and Wan 2.7 Pro on RunningHub, plus nano banana 2 Lite on Google AI and Vertex AI.
 - **Auto aspect ratio** — nano banana 2 on RunningHub gains an "auto" option that lets the model pick the output ratio itself.
 - **Optimized or original** — When picking album images in the media picker, choose whether you want the optimized version or the original file.
+- **Filter media by ratio** — Narrow album images and videos in the media picker to one or more aspect ratios, with counts for every available ratio.
 - **Save to library** — Send a workflow item's text or image straight to a library with one click.
 - **Reorder cover images** — Arrange product cover images in the order you want on the sell page.
 - **Lossless library transfer** — Export and import text libraries as JSON, so prompts with newlines, colons, or list-like lines survive round-trips byte-for-byte. The simple plain-text format is still there.
