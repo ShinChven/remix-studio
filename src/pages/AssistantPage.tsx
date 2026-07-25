@@ -1612,7 +1612,7 @@ export function AssistantPage() {
 
       {/* ─── Right Panel: Conversations & Config ─── */}
       <div className={`
-        fixed inset-y-0 right-0 z-40 lg:static
+        fixed top-16 bottom-0 right-0 z-40 lg:static
         ${rightPanelOpen ? 'translate-x-0 w-[85vw] sm:w-80 lg:w-64' : 'translate-x-full lg:translate-x-0 w-[85vw] sm:w-80 lg:w-16'}
         flex-shrink-0 border-l border-neutral-200/50 dark:border-white/5
         bg-white dark:bg-neutral-950 lg:bg-white/10 lg:dark:bg-black/10 backdrop-blur-xl
