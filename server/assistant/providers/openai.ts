@@ -15,6 +15,17 @@ import type { ChatMessage } from './types';
  * OpenAI-compatible; the Grok adapter subclasses this one with a different
  * default base URL.
  */
+/**
+ * GPT-5 and the o-series reject `max_tokens` outright and require
+ * `max_completion_tokens`. Everything else — including OpenAI-compatible
+ * third-party endpoints reached via a custom base URL — takes `max_tokens`.
+ */
+function outputTokenParam(modelId: string, maxTokens: number): Record<string, number> {
+  const id = modelId.toLowerCase();
+  const usesCompletionTokens = /^(gpt-5|o[1-9])/.test(id);
+  return usesCompletionTokens ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens };
+}
+
 export class OpenAIChatProvider implements ChatProvider {
   protected client: OpenAI;
 
@@ -35,7 +46,7 @@ export class OpenAIChatProvider implements ChatProvider {
         model: req.modelId,
         messages,
         ...(typeof req.temperature === 'number' ? { temperature: req.temperature } : {}),
-        ...(typeof req.maxTokens === 'number' ? { max_tokens: req.maxTokens } : {}),
+        ...(typeof req.maxTokens === 'number' ? outputTokenParam(req.modelId, req.maxTokens) : {}),
         ...(tools ? { tools, tool_choice: 'auto' as const } : {}),
       },
       { signal: req.abortSignal },
