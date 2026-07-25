@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, Project } from '../types';
-import { Plus, LayoutGrid, Clock, Loader2, Sparkles, Megaphone } from 'lucide-react';
+import { Plus, LayoutGrid, Clock, Loader2, Sparkles, Megaphone, ChevronRight } from 'lucide-react';
 import { fetchProjects, fetchLibraries, fetchAssistantProviders, deleteProject, fetchCampaigns } from '../api';
 import { Provider } from '../types';
 import type { BoundContext, AttachedImage } from './Assistant/AssistantComposer';
@@ -203,9 +203,15 @@ export function Home() {
           <>
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg md:text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-green-500" />
-                  {t('dashboard.recentProjects')}
+                <h3 className="text-lg md:text-xl font-semibold text-neutral-900 dark:text-white">
+                  <Link
+                    to="/projects"
+                    className="group inline-flex items-center gap-2 rounded-lg transition-colors hover:text-green-600 dark:hover:text-green-400"
+                  >
+                    <Clock className="w-5 h-5 text-green-500" />
+                    {t('dashboard.recentProjects')}
+                    <ChevronRight className="w-4 h-4 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
+                  </Link>
                 </h3>
                 <button
                   onClick={addProject}
@@ -237,9 +243,15 @@ export function Home() {
 
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg md:text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-                  <LayoutGrid className="w-5 h-5 text-blue-500" />
-                  {t('dashboard.libraries')}
+                <h3 className="text-lg md:text-xl font-semibold text-neutral-900 dark:text-white">
+                  <Link
+                    to="/libraries"
+                    className="group inline-flex items-center gap-2 rounded-lg transition-colors hover:text-blue-600 dark:hover:text-blue-400"
+                  >
+                    <LayoutGrid className="w-5 h-5 text-blue-500" />
+                    {t('dashboard.libraries')}
+                    <ChevronRight className="w-4 h-4 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
+                  </Link>
                 </h3>
                 <div className="flex gap-2">
                   <button
@@ -271,9 +283,15 @@ export function Home() {
 
 <section>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg md:text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-                  <Megaphone className="w-5 h-5 text-indigo-500" />
-                  {t('sidebar.campaigns', 'Campaigns')}
+                <h3 className="text-lg md:text-xl font-semibold text-neutral-900 dark:text-white">
+                  <Link
+                    to="/campaigns"
+                    className="group inline-flex items-center gap-2 rounded-lg transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+                  >
+                    <Megaphone className="w-5 h-5 text-indigo-500" />
+                    {t('sidebar.campaigns', 'Campaigns')}
+                    <ChevronRight className="w-4 h-4 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
+                  </Link>
                 </h3>
                 <div className="flex gap-2">
                   <button
