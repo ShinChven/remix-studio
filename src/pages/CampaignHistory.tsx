@@ -19,6 +19,7 @@ import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 import { getPlatformIcon, fallbackExternalUrl } from '../lib/platform';
+import { PageNav } from '../components/PageNav';
 
 export function CampaignHistory() {
   const navigate = useNavigate();
@@ -298,38 +299,7 @@ export function CampaignHistory() {
               <span className="text-[11px] font-medium text-neutral-500">
                 Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total}
               </span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  disabled={page === 1}
-                  onClick={() => updatePage(page - 1)}
-                  className="h-7 px-2.5 rounded-lg border border-neutral-200 text-[11px] font-bold text-neutral-600 disabled:opacity-30 dark:border-white/10 dark:text-neutral-400 transition-colors"
-                >
-                  Prev
-                </button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => updatePage(i + 1)}
-                      className={cn(
-                        "h-7 w-7 rounded-lg text-[11px] font-bold transition-colors",
-                        page === i + 1
-                          ? "bg-indigo-600 text-white"
-                          : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/5"
-                      )}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  disabled={page === totalPages}
-                  onClick={() => updatePage(page + 1)}
-                  className="h-7 px-2.5 rounded-lg border border-neutral-200 text-[11px] font-bold text-neutral-600 disabled:opacity-30 dark:border-white/10 dark:text-neutral-400 transition-colors"
-                >
-                  Next
-                </button>
-              </div>
+              <PageNav page={page} pages={totalPages} onPageChange={updatePage} />
             </div>
           )}
         </div>

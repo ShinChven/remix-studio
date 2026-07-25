@@ -7,7 +7,10 @@
     "next": "下一页",
     "last": "末页",
     "pageOf": "第 {{page}} / {{pages}} 页",
-    "range": "{{start}}–{{end}} / 共 {{total}}"
+    "range": "{{start}}–{{end}} / 共 {{total}}",
+    "goToPage": "前往第 {{page}} 页",
+    "jumpBack": "向前 {{n}} 页",
+    "jumpForward": "向后 {{n}} 页"
   },
   "sidebar": {
     "home": "首页",

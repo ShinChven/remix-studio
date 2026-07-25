@@ -26,6 +26,7 @@ import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
 import { BatchScheduleModal } from '../components/BatchScheduleModal';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
+import { PageNav } from '../components/PageNav';
 
 interface BatchPost {
   id: string;
@@ -522,25 +523,14 @@ export function CampaignBatchActions() {
               Showing {totalPosts === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, totalPosts)} of {totalPosts}
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={page <= 1}
-                className="rounded-lg border border-neutral-200 px-3 py-1.5 font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
-                onClick={() => updateQuery({ page: String(page - 1) })}
-              >
-                Previous
-              </button>
               <span className="px-2 text-xs font-black uppercase tracking-widest">
                 Page {page} / {Math.max(1, totalPages)}
               </span>
-              <button
-                type="button"
-                disabled={page >= totalPages}
-                className="rounded-lg border border-neutral-200 px-3 py-1.5 font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
-                onClick={() => updateQuery({ page: String(page + 1) })}
-              >
-                Next
-              </button>
+              <PageNav
+                page={page}
+                pages={Math.max(1, totalPages)}
+                onPageChange={(nextPage) => updateQuery({ page: String(nextPage) })}
+              />
             </div>
           </div>
         </section>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, ChevronLeft, ChevronRight, HardDrive, Link2Off, Upload, Store as StoreIcon, Tag, History as HistoryIcon } from 'lucide-react';
+import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, HardDrive, Link2Off, Upload, Store as StoreIcon, Tag, History as HistoryIcon } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ExportTask, DeliveryStatus } from '../types';
@@ -8,6 +8,7 @@ import { PageHeader } from '../components/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
+import { PageNav } from '../components/PageNav';
 
 const EXPORTS_PAGE_SIZE = 15;
 
@@ -587,22 +588,9 @@ export function Exports() {
              </div>
           )}
           {pages > 1 && (
-            <div className="flex items-center justify-center gap-4 pt-8 pb-4">
-              <button
-                onClick={() => handlePageChange(Math.max(1, page - 1))}
-                disabled={page === 1}
-                className="p-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
+            <div className="flex flex-col items-center gap-3 pt-8 pb-4">
+              <PageNav page={page} pages={pages} onPageChange={handlePageChange} size="lg" />
               <span className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('exports.pagination', { current: page, total: pages })}</span>
-              <button
-                onClick={() => handlePageChange(Math.min(pages, page + 1))}
-                disabled={page === pages}
-                className="p-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
             </div>
           )}
         </div>

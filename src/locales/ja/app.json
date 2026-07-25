@@ -7,7 +7,10 @@
     "next": "次のページ",
     "last": "最後のページ",
     "pageOf": "{{page}} / {{pages}} ページ",
-    "range": "{{total}} 件中 {{start}}–{{end}}"
+    "range": "{{total}} 件中 {{start}}–{{end}}",
+    "goToPage": "{{page}} ページへ移動",
+    "jumpBack": "{{n}} ページ戻る",
+    "jumpForward": "{{n}} ページ進む"
   },
   "sidebar": {
     "home": "ホーム",

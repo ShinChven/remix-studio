@@ -1,5 +1,5 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Filter, HardDrive, KeyRound, Loader2, Mail, Search, Shield, UserPlus, Users, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock3, Filter, HardDrive, KeyRound, Loader2, Mail, Search, Shield, UserPlus, Users, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { adminResetUserPassword, createUser, getUserDetail, getUsers, updateUserRole, updateUserStatus, updateUserStorageLimit } from '../api';
@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { UserDetail, UserRole, UserStatus, UserSummary } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
+import { PageNav } from '../components/PageNav';
 
 type UserFilters = {
   q: string;
@@ -409,23 +410,12 @@ export function AdminUsers() {
               <option value={50}>{t('adminUsers.pageSize', { count: 50 })}</option>
               <option value={100}>{t('adminUsers.pageSize', { count: 100 })}</option>
             </select>
-            <button
-              type="button"
-              disabled={filters.page <= 1}
-              onClick={() => setFilters((current) => ({ ...current, page: Math.max(1, current.page - 1) }))}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-2 text-neutral-700 dark:text-neutral-300 transition hover:bg-white dark:hover:bg-neutral-800 hover:shadow-sm disabled:opacity-30"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
             <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('adminUsers.pagination', { current: filters.page, total: pages })}</span>
-            <button
-              type="button"
-              disabled={filters.page >= pages}
-              onClick={() => setFilters((current) => ({ ...current, page: Math.min(pages, current.page + 1) }))}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-2 text-neutral-700 dark:text-neutral-300 transition hover:bg-white dark:hover:bg-neutral-800 hover:shadow-sm disabled:opacity-30"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
+            <PageNav
+              page={filters.page}
+              pages={pages}
+              onPageChange={(nextPage) => setFilters((current) => ({ ...current, page: nextPage }))}
+            />
           </div>
         </div>
       </div>

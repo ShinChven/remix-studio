@@ -7,7 +7,10 @@
     "next": "Next page",
     "last": "Last page",
     "pageOf": "Page {{page}} / {{pages}}",
-    "range": "{{start}}–{{end}} of {{total}}"
+    "range": "{{start}}–{{end}} of {{total}}",
+    "goToPage": "Go to page {{page}}",
+    "jumpBack": "Back {{n}} pages",
+    "jumpForward": "Forward {{n}} pages"
   },
   "sidebar": {
     "home": "Home",

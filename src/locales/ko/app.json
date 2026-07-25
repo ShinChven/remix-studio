@@ -7,7 +7,10 @@
     "next": "다음 페이지",
     "last": "마지막 페이지",
     "pageOf": "{{page}} / {{pages}} 페이지",
-    "range": "{{total}}개 중 {{start}}–{{end}}"
+    "range": "{{total}}개 중 {{start}}–{{end}}",
+    "goToPage": "{{page}} 페이지로 이동",
+    "jumpBack": "{{n}} 페이지 뒤로",
+    "jumpForward": "{{n}} 페이지 앞으로"
   },
   "sidebar": {
     "home": "홈",

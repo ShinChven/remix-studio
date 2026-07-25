@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, Loader2, MessageCircle, Search } from 'lucide-react';
+import { Loader2, MessageCircle, Search } from 'lucide-react';
 import { searchAssistantConversations, AssistantConversation } from '../api';
 import { PageHeader } from '../components/PageHeader';
+import { PageNav } from '../components/PageNav';
 
 const PAGE_SIZE = 20;
 
@@ -154,15 +155,8 @@ export function ChatHistoryPage() {
         )}
 
         {pages > 1 && (
-          <div className="flex items-center justify-center gap-4 pt-4">
-            <button
-              onClick={() => handlePageChange(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className="p-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
-              aria-label={t('chatHistory.previous', { defaultValue: 'Previous page' })}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+          <div className="flex flex-col items-center gap-3 pt-4">
+            <PageNav page={page} pages={pages} onPageChange={handlePageChange} size="lg" />
             <span className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">
               {t('chatHistory.pagination', {
                 defaultValue: 'Page {{current}} of {{total}}',
@@ -170,14 +164,6 @@ export function ChatHistoryPage() {
                 total: pages,
               })}
             </span>
-            <button
-              onClick={() => handlePageChange(Math.min(pages, page + 1))}
-              disabled={page === pages}
-              className="p-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-20 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
-              aria-label={t('chatHistory.next', { defaultValue: 'Next page' })}
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
           </div>
         )}
       </div>
