@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import { authMiddleware, adminOnly, hashPassword, verifyPassword, signToken, JwtPayload, signFlowToken, verifyFlowToken, AuthFlowPayload, generateRefreshToken, hashToken } from '../auth/auth';
-import { UserRepository } from '../auth/user-repository';
+import { SESSION_ROTATION_GRACE_MS, UserRepository } from '../auth/user-repository';
 import { checkRateLimit, getClientAddress } from '../utils/rate-limiter';
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
@@ -339,9 +339,35 @@ export function createAuthRouter(userRepository: UserRepository) {
 
     try {
       const tokenHash = hashToken(refreshToken);
-      const session = await userRepository.findSessionByTokenHash(tokenHash);
+      let session = await userRepository.findSessionByTokenHash(tokenHash);
 
-      if (!session || session.expiresAt < new Date()) {
+      if (!session) {
+        console.warn('[POST /api/auth/refresh] rejected', { reason: 'not_found' });
+        clearSessionCookie(c);
+        return c.json({ error: 'Refresh token expired or invalid' }, 401);
+      }
+
+      // The presented token was already rotated. Within the grace window this means the client
+      // never received the rotation response, so recover it by rotating the live end of its
+      // chain instead of signing it out. Outside the window, treat it as reuse of a stale token
+      // and drop the whole chain.
+      if (session.rotatedAt) {
+        const withinGrace = Date.now() - session.rotatedAt.getTime() <= SESSION_ROTATION_GRACE_MS;
+        const liveTail = withinGrace ? await userRepository.findLiveRotationTail(session.id) : null;
+
+        if (liveTail && liveTail.expiresAt > new Date()) {
+          console.warn('[POST /api/auth/refresh] recovering', { reason: 'rotation_replay_within_grace' });
+          session = { ...liveTail, user: session.user };
+        } else {
+          await userRepository.deleteRotationChain(session.id);
+          console.warn('[POST /api/auth/refresh] rejected', { reason: 'reuse_detected' });
+          clearSessionCookie(c);
+          return c.json({ error: 'Refresh token expired or invalid' }, 401);
+        }
+      }
+
+      if (session.expiresAt < new Date()) {
+        console.warn('[POST /api/auth/refresh] rejected', { reason: 'expired' });
         clearSessionCookie(c);
         return c.json({ error: 'Refresh token expired or invalid' }, 401);
       }
@@ -359,13 +385,15 @@ export function createAuthRouter(userRepository: UserRepository) {
 
       // Atomically rotate: if concurrent request already consumed this token, return 409
       const rotated = await userRepository.rotateSession(
-        tokenHash, newTokenHash, user.id, newExpiresAt,
+        session.tokenHash, newTokenHash, user.id, newExpiresAt,
         c.req.header('user-agent') ?? undefined,
         getClientAddress(c.req.raw) ?? undefined,
       );
 
       if (!rotated) {
-        // Another concurrent request already refreshed this token — tell client to retry
+        // Another concurrent request already refreshed this token. Its response carries fresh
+        // cookies for this browser, so the session is fine — the client only needs to retry
+        // the request it was making. Do not clear cookies here.
         return c.json({ error: 'Concurrent refresh detected, please retry' }, 409);
       }
 

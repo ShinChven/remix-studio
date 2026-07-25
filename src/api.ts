@@ -8,13 +8,38 @@ function getHeaders(isJson = true): HeadersInit {
 
 // ─── Token Refresh Interceptor ───────────────────────────────────────────────
 // Prevents "refresh storm": all concurrent 401s share a single refresh attempt.
-let refreshPromise: Promise<boolean> | null = null;
+// This only dedupes within one tab — the cookie jar is shared across tabs, so
+// two tabs whose access token expires at the same moment still race, and the
+// loser gets a 409 from /api/auth/refresh.
+let refreshPromise: Promise<RefreshOutcome> | null = null;
 
-async function attemptRefresh(): Promise<boolean> {
+// 'rotated'    — this tab refreshed the session itself.
+// 'concurrent' — another tab won the race (409) and its response carries the
+//                fresh cookies; the session is healthy either way.
+// 'failed'     — the session is genuinely gone.
+type RefreshOutcome = 'rotated' | 'concurrent' | 'failed';
+
+// Time given to a concurrent refresh's Set-Cookie to reach the browser before
+// we retry the original request with it.
+const CONCURRENT_REFRESH_SETTLE_MS = 300;
+
+async function attemptRefresh(): Promise<RefreshOutcome> {
   if (refreshPromise) return refreshPromise;
   refreshPromise = fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
-    .then((res) => res.ok)
-    .catch(() => false)
+    .then<RefreshOutcome>(async (res) => {
+      if (res.ok) return 'rotated';
+      // A 409 means another tab already rotated the session and installed fresh
+      // cookies in the shared jar, so only the original request needs retrying.
+      // Treating it as a failure would sign out a perfectly valid session.
+      // Refreshing again here would burn a second rotation, so just give the
+      // winner's cookies a moment to land.
+      if (res.status === 409) {
+        await new Promise((resolve) => setTimeout(resolve, CONCURRENT_REFRESH_SETTLE_MS));
+        return 'concurrent';
+      }
+      return 'failed';
+    })
+    .catch<RefreshOutcome>(() => 'failed')
     .finally(() => { refreshPromise = null; });
   return refreshPromise;
 }
@@ -43,17 +68,30 @@ async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
     // Only skip refresh for core auth flow endpoints, not business endpoints like google-drive
     if (AUTH_FLOW_PREFIXES.some(p => url.startsWith(p))) return res;
 
-    const refreshed = await attemptRefresh();
-    if (refreshed) {
-      // Retry the original request with fresh token (cookie is now updated)
-      return fetch(url, { ...options, credentials: 'include' });
-    } else {
+    const outcome = await attemptRefresh();
+    if (outcome === 'failed') {
       // Refresh failed — redirect to login (but not if already there, to avoid loops)
       if (!window.location.pathname.startsWith('/login')) {
         window.location.href = '/login';
       }
       return res;
     }
+
+    // Retry the original request with fresh token (cookie is now updated)
+    const retried = await fetch(url, { ...options, credentials: 'include' });
+
+    // Still 401 after waiting on another tab's rotation: its cookies took longer
+    // to land than the settle delay allowed. Refresh on this tab instead of
+    // guessing at a longer wait. Only worth a second pass on that path — a 401
+    // after our own successful rotation is the endpoint's own answer, not a
+    // stale cookie, and must be handed back to the caller untouched.
+    if (retried.status === 401 && outcome === 'concurrent') {
+      if (await attemptRefresh() !== 'failed') {
+        return fetch(url, { ...options, credentials: 'include' });
+      }
+    }
+
+    return retried;
   }
 
   return res;

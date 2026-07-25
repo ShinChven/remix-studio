@@ -6,6 +6,19 @@ import { decrypt, encrypt } from '../utils/crypto';
 
 const DEFAULT_STORAGE_LIMIT = 5 * 1024 * 1024 * 1024;
 const DEFAULT_INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Window during which a rotated refresh token may be presented again without being treated as
+ * reuse. It covers the case where the rotation response never reached the browser — a dropped
+ * connection, a backgrounded mobile tab, a laptop suspending mid-request — leaving the client
+ * holding the previous token. Wider than the equivalent window for OAuth clients because a
+ * browser can be frozen mid-refresh and only come back minutes later, and being wrong here
+ * signs the user out for no reason.
+ */
+export const SESSION_ROTATION_GRACE_MS = 5 * 60 * 1000;
+
+/** How long rotation tombstones are kept before housekeeping removes them. */
+const ROTATION_TOMBSTONE_TTL_MS = 60 * 60 * 1000;
 const INVITE_TIER_STORAGE_LIMITS = {
   free: 5 * 1024 * 1024 * 1024,
   professional: 100 * 1024 * 1024 * 1024,
@@ -297,17 +310,54 @@ export class UserRepository {
     });
   }
 
+  /**
+   * Deletes the session a refresh token belongs to, along with the rest of its rotation chain.
+   * Starting from a tombstone (a client logging out with a token whose rotation response it
+   * never received) this also removes the live successor, so logout always ends the session.
+   */
   async deleteSession(tokenHash: string): Promise<void> {
-    await this.prisma.userSession.deleteMany({
+    const session = await this.prisma.userSession.findUnique({
       where: { tokenHash },
+      select: { id: true },
     });
+    if (!session) return;
+    await this.deleteRotationChain(session.id);
   }
 
   /**
-   * Atomically rotates a refresh token: deletes the old session and creates a new one in a
-   * single transaction. This prevents race conditions under concurrent refresh requests,
-   * ensuring the old token can only be consumed once.
-   * Returns false if the session was already consumed (concurrent request won the race).
+   * Walks the rotation chain forward from `startId` to the session that has not been rotated
+   * yet — the one a healthy client would be holding. Returns null if the chain dead-ends,
+   * which happens once logout or housekeeping has removed its tail.
+   *
+   * Walking the whole chain rather than a single hop matters for clients on a flaky
+   * connection: they can lose several rotation responses in a row, and every token they
+   * replay should still lead to the session that is actually live.
+   */
+  async findLiveRotationTail(startId: string) {
+    const seen = new Set<string>();
+    let currentId: string | null = startId;
+    while (currentId && !seen.has(currentId)) {
+      seen.add(currentId);
+      const session = await this.prisma.userSession.findUnique({ where: { id: currentId } });
+      if (!session) return null;
+      if (!session.rotatedAt) return session;
+      currentId = session.rotatedToId;
+    }
+    return null;
+  }
+
+  /**
+   * Atomically rotates a refresh token: creates the successor session and turns the old one
+   * into a tombstone pointing at it, in a single transaction. This prevents race conditions
+   * under concurrent refresh requests, ensuring the old token can only be consumed once.
+   *
+   * The old session is tombstoned rather than deleted so that a client whose rotation response
+   * never arrived still resolves to a known session and can be recovered inside the grace
+   * window, instead of being signed out with no way back. Tombstones are purged by
+   * cleanExpiredSessions().
+   *
+   * Returns the new session id, or null if the session was already consumed (concurrent
+   * request won the race).
    */
   async rotateSession(
     oldTokenHash: string,
@@ -316,24 +366,50 @@ export class UserRepository {
     expiresAt: Date,
     userAgent?: string,
     ipAddress?: string,
-  ): Promise<boolean> {
+  ): Promise<string | null> {
     try {
-      await this.prisma.$transaction(async (tx) => {
-        // Delete old session — will throw if it no longer exists (already consumed)
-        const deleted = await tx.userSession.deleteMany({
-          where: { tokenHash: oldTokenHash },
-        });
-        if (deleted.count === 0) {
-          throw new Error('SESSION_ALREADY_CONSUMED');
-        }
-        await tx.userSession.create({
+      return await this.prisma.$transaction(async (tx) => {
+        const created = await tx.userSession.create({
           data: { userId, tokenHash: newTokenHash, expiresAt, userAgent, ipAddress },
         });
+        // Guarding on rotatedAt: null keeps this single-consumption — a concurrent
+        // rotation of the same token updates zero rows and loses the race.
+        const tombstoned = await tx.userSession.updateMany({
+          where: { tokenHash: oldTokenHash, rotatedAt: null },
+          data: { rotatedToId: created.id, rotatedAt: new Date() },
+        });
+        if (tombstoned.count === 0) {
+          throw new Error('SESSION_ALREADY_CONSUMED');
+        }
+        return created.id;
       });
-      return true;
     } catch (e: any) {
-      if (e.message === 'SESSION_ALREADY_CONSUMED') return false;
+      if (e.message === 'SESSION_ALREADY_CONSUMED') return null;
       throw e;
+    }
+  }
+
+  /**
+   * Deletes every session in the rotation chain starting at `startId` (following rotatedToId).
+   * Used when a refresh token is reused outside the rotation grace window, so a leaked token
+   * cannot keep spawning sessions.
+   */
+  async deleteRotationChain(startId: string): Promise<void> {
+    const seen = new Set<string>();
+    let currentId: string | null = startId;
+    while (currentId && !seen.has(currentId)) {
+      seen.add(currentId);
+      const session: { id: string; rotatedToId: string | null } | null =
+        await this.prisma.userSession.findUnique({
+          where: { id: currentId },
+          select: { id: true, rotatedToId: true },
+        });
+      if (!session) break;
+      const nextId = session.rotatedToId;
+      // deleteMany, not delete: a concurrent logout or housekeeping pass may have removed the
+      // row since it was read, and that must not turn into a 500 on the refresh path.
+      await this.prisma.userSession.deleteMany({ where: { id: session.id } });
+      currentId = nextId;
     }
   }
 
@@ -344,12 +420,18 @@ export class UserRepository {
   }
 
   /**
-   * Deletes all sessions whose expiresAt is in the past.
+   * Deletes all sessions whose expiresAt is in the past, plus rotation tombstones that are
+   * well past the grace window and can no longer recover anyone.
    * Safe to call periodically (e.g. every hour) as a background housekeeping task.
    */
   async cleanExpiredSessions(): Promise<number> {
     const result = await this.prisma.userSession.deleteMany({
-      where: { expiresAt: { lt: new Date() } },
+      where: {
+        OR: [
+          { expiresAt: { lt: new Date() } },
+          { rotatedAt: { lt: new Date(Date.now() - ROTATION_TOMBSTONE_TTL_MS) } },
+        ],
+      },
     });
     return result.count;
   }

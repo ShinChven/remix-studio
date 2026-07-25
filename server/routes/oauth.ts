@@ -650,6 +650,40 @@ async function handleAuthorizationCodeGrant(
   });
 }
 
+// Window during which a just-rotated refresh token may be presented again
+// without being treated as reuse. This tolerates the common case where the
+// rotation response was lost in transit (network blip, client crash before
+// persisting) so the client still holds the previous refresh token. Within the
+// window we rotate its successor and hand the client a fresh, working pair
+// instead of locking the account out until re-login.
+const REFRESH_ROTATION_GRACE_MS = 60_000;
+
+// Log an invalid_grant with a de-identified reason so refresh failures can be
+// diagnosed from server logs. Never logs token material.
+function logRefreshGrantFailure(reason: string, detail: Record<string, unknown> = {}) {
+  console.warn('[POST /token] refresh_token invalid_grant', { reason, ...detail });
+}
+
+// Walk the rotation chain forward from `startId` (following rotatedToId) and
+// revoke every token in it. Used on genuine refresh-token reuse so a stolen or
+// replayed token cannot keep spawning new access tokens.
+async function revokeRotationChain(prisma: PrismaClient, startId: string): Promise<void> {
+  const seen = new Set<string>();
+  let currentId: string | null = startId;
+  while (currentId && !seen.has(currentId)) {
+    seen.add(currentId);
+    const rec = await prisma.oAuthAccessToken.findUnique({
+      where: { id: currentId },
+      select: { id: true, rotatedToId: true, revoked: true },
+    });
+    if (!rec) break;
+    if (!rec.revoked) {
+      await prisma.oAuthAccessToken.update({ where: { id: rec.id }, data: { revoked: true } });
+    }
+    currentId = rec.rotatedToId;
+  }
+}
+
 async function handleRefreshTokenGrant(
   c: any, prisma: PrismaClient,
   clientId: string | undefined, clientSecret: string | undefined,
@@ -671,39 +705,81 @@ async function handleRefreshTokenGrant(
     }
   }
 
-  const tokenRecord = await prisma.oAuthAccessToken.findUnique({
+  let tokenRecord = await prisma.oAuthAccessToken.findUnique({
     where: { refreshToken: sha256(refreshToken) },
   });
 
-  if (!tokenRecord || tokenRecord.clientId !== clientId || tokenRecord.revoked) {
-    return c.json({ error: 'invalid_grant' }, 400);
+  if (!tokenRecord) {
+    logRefreshGrantFailure('not_found', { clientId });
+    return c.json({ error: 'invalid_grant', error_description: 'Unknown refresh token' }, 400);
+  }
+
+  if (tokenRecord.clientId !== clientId) {
+    logRefreshGrantFailure('client_mismatch', { clientId, tokenId: tokenRecord.id });
+    return c.json({ error: 'invalid_grant', error_description: 'Refresh token was not issued to this client' }, 400);
   }
 
   if (tokenRecord.refreshExpiresAt && tokenRecord.refreshExpiresAt < new Date()) {
+    logRefreshGrantFailure('expired', { tokenId: tokenRecord.id });
     return c.json({ error: 'invalid_grant', error_description: 'Refresh token expired' }, 400);
   }
 
-  // Revoke old token
-  await prisma.oAuthAccessToken.update({
-    where: { id: tokenRecord.id },
-    data: { revoked: true },
-  });
+  // The presented token was already revoked. Distinguish rotation (recoverable
+  // within the grace window) from an explicit revoke or genuine reuse.
+  if (tokenRecord.revoked) {
+    if (!tokenRecord.rotatedToId) {
+      logRefreshGrantFailure('revoked', { tokenId: tokenRecord.id });
+      return c.json({ error: 'invalid_grant', error_description: 'Refresh token was revoked' }, 400);
+    }
 
-  // Issue new tokens (rotation)
+    const successor = await prisma.oAuthAccessToken.findUnique({ where: { id: tokenRecord.rotatedToId } });
+    const withinGrace =
+      tokenRecord.rotatedAt != null &&
+      Date.now() - tokenRecord.rotatedAt.getTime() <= REFRESH_ROTATION_GRACE_MS;
+    const successorUsable =
+      !!successor &&
+      !successor.revoked &&
+      (!successor.refreshExpiresAt || successor.refreshExpiresAt > new Date());
+
+    if (withinGrace && successorUsable) {
+      // Lost-response replay: the client never received the previous rotation.
+      // Rotate the successor so the client recovers with a fresh, working pair.
+      logRefreshGrantFailure('rotation_replay_within_grace', { tokenId: tokenRecord.id });
+      tokenRecord = successor!;
+    } else {
+      // Reuse of an already-rotated refresh token outside the grace window:
+      // treat as compromise and revoke the entire rotation chain.
+      await revokeRotationChain(prisma, tokenRecord.id);
+      logRefreshGrantFailure('reuse_detected', { tokenId: tokenRecord.id });
+      return c.json({ error: 'invalid_grant', error_description: 'Refresh token has already been used' }, 400);
+    }
+  }
+
+  // Issue new tokens and revoke the old record atomically so a crash mid-way
+  // can never leave the account with a revoked refresh token and no successor.
   const newAccessToken = generateSecureToken(32);
   const newRefreshToken = generateSecureToken(32);
   const expiresInSeconds = 3600;
+  const rotatedId = tokenRecord.id;
+  const scope = tokenRecord.scope;
+  const userId = tokenRecord.userId;
 
-  await prisma.oAuthAccessToken.create({
-    data: {
-      token: sha256(newAccessToken),
-      clientId,
-      userId: tokenRecord.userId,
-      scope: tokenRecord.scope,
-      expiresAt: new Date(Date.now() + expiresInSeconds * 1000),
-      refreshToken: sha256(newRefreshToken),
-      refreshExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000),
-    },
+  await prisma.$transaction(async (tx) => {
+    const created = await tx.oAuthAccessToken.create({
+      data: {
+        token: sha256(newAccessToken),
+        clientId,
+        userId,
+        scope,
+        expiresAt: new Date(Date.now() + expiresInSeconds * 1000),
+        refreshToken: sha256(newRefreshToken),
+        refreshExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000),
+      },
+    });
+    await tx.oAuthAccessToken.update({
+      where: { id: rotatedId },
+      data: { revoked: true, rotatedToId: created.id, rotatedAt: new Date() },
+    });
   });
 
   return c.json({
@@ -711,7 +787,7 @@ async function handleRefreshTokenGrant(
     token_type: 'Bearer',
     expires_in: expiresInSeconds,
     refresh_token: newRefreshToken,
-    scope: tokenRecord.scope || 'mcp:tools',
+    scope: scope || 'mcp:tools',
   });
 }
 

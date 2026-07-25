@@ -64,11 +64,19 @@ model UserSession {
   ipAddress String?
   expiresAt DateTime
   createdAt DateTime @default(now())
+  // Refresh-token rotation tracking. A rotated session is kept as a tombstone
+  // (`rotatedAt` set, `rotatedToId` pointing at its successor) instead of being
+  // deleted, so a client whose rotation response was lost can be recovered
+  // inside the grace window and genuine token reuse can be detected.
+  // Tombstones are purged by the periodic session cleanup.
+  rotatedToId String?
+  rotatedAt   DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([tokenHash])
+  @@index([rotatedAt])
 }
 
 model InviteCode {
@@ -497,6 +505,12 @@ model OAuthAccessToken {
   refreshToken     String?   @unique
   refreshExpiresAt DateTime?
   revoked          Boolean   @default(false)
+  // Refresh-token rotation tracking. When a token is rotated, `rotatedToId`
+  // points at its successor and `rotatedAt` records when. This lets the token
+  // endpoint recover clients whose rotation response was lost (grace-window
+  // replay) and detect genuine refresh-token reuse.
+  rotatedToId      String?
+  rotatedAt        DateTime?
   createdAt        DateTime  @default(now())
 
   client OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
