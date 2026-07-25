@@ -43,6 +43,7 @@ import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 import { getPlatformIcon } from '../lib/platform';
+import { PageNav } from '../components/PageNav';
 
 type StatusFilter = 'all' | 'draft' | 'scheduled' | 'queued' | 'completed' | 'failed';
 type SortKey = 'scheduled_asc' | 'scheduled_desc' | 'created_desc' | 'created_asc';
@@ -979,25 +980,14 @@ export function CampaignDetail() {
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={page <= 1 || postsLoading}
-                    className="rounded-lg border border-neutral-200 px-3 py-1.5 font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
-                    onClick={() => updateQuery({ page: String(page - 1) })}
-                  >
-                    Previous
-                  </button>
                   <span className="px-2 text-xs font-black uppercase tracking-widest">
                     Page {page} / {Math.max(1, totalPages)}
                   </span>
-                  <button
-                    type="button"
-                    disabled={page >= totalPages || postsLoading}
-                    className="rounded-lg border border-neutral-200 px-3 py-1.5 font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
-                    onClick={() => updateQuery({ page: String(page + 1) })}
-                  >
-                    Next
-                  </button>
+                  <PageNav
+                    page={page}
+                    pages={Math.max(1, totalPages)}
+                    onPageChange={(nextPage) => updateQuery({ page: String(nextPage) })}
+                  />
                 </div>
               </div>
             </div>

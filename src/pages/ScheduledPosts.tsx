@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { fetchScheduledPosts, fetchScheduledPostCounts } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
+import { PageNav } from '../components/PageNav';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -328,22 +329,7 @@ export function ScheduledPosts() {
               {totalPages > 1 && (
                 <div className="px-6 py-4 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/30 flex items-center justify-between">
                   <span className="text-xs text-neutral-500">Page {page} of {totalPages}</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      disabled={page === 1}
-                      onClick={() => updatePage(page - 1)}
-                      className="h-8 px-4 rounded-lg border border-neutral-200 text-xs font-bold disabled:opacity-30 dark:border-white/10"
-                    >
-                      Prev
-                    </button>
-                    <button
-                      disabled={page === totalPages}
-                      onClick={() => updatePage(page + 1)}
-                      className="h-8 px-4 rounded-lg border border-neutral-200 text-xs font-bold disabled:opacity-30 dark:border-white/10"
-                    >
-                      Next
-                    </button>
-                  </div>
+                  <PageNav page={page} pages={totalPages} onPageChange={updatePage} />
                 </div>
               )}
             </div>
