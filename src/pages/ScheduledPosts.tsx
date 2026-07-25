@@ -327,7 +327,7 @@ export function ScheduledPosts() {
               )}
 
               {totalPages > 1 && (
-                <div className="px-6 py-4 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/30 flex items-center justify-between">
+                <div className="px-4 sm:px-6 py-4 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/30 flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-xs text-neutral-500">Page {page} of {totalPages}</span>
                   <PageNav page={page} pages={totalPages} onPageChange={updatePage} />
                 </div>

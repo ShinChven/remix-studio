@@ -295,7 +295,7 @@ export function CampaignHistory() {
 
           {/* Pagination */}
           {!isLoading && totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/30 dark:bg-white/2 flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-4 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/30 dark:bg-white/2 flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-[11px] font-medium text-neutral-500">
                 Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total}
               </span>

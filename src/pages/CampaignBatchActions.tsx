@@ -522,7 +522,7 @@ export function CampaignBatchActions() {
             <div>
               Showing {totalPosts === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, totalPosts)} of {totalPosts}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
               <span className="px-2 text-xs font-black uppercase tracking-widest">
                 Page {page} / {Math.max(1, totalPages)}
               </span>

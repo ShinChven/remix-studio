@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, LibraryItem } from '../types';
-import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, ArrowLeft, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive, FileText, Stars, Filter, ArrowDownNarrowWide, Check } from 'lucide-react';
+import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive, FileText, Stars, Filter, ArrowDownNarrowWide, Check } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
+import { PageNav } from './PageNav';
 import { TagModal } from './TagModal';
 import { PageHeader } from './PageHeader';
 import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItem, duplicateLibrary, fetchLibraryItems, imageDisplayUrl, exportMediaLibraryZip, copyLibraryItems, moveLibraryItems, fetchLibraryReferences } from '../api';
@@ -788,7 +789,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                     </div>
                   ) : (
                     <div
-                      className="h-11 px-3 md:px-4 flex items-center gap-3 cursor-pointer"
+                      className="px-3 py-2.5 md:px-4 sm:h-11 sm:py-0 flex items-start sm:items-center gap-3 cursor-pointer"
                       onClick={(e) => {
                         if (e.metaKey || e.ctrlKey || e.shiftKey) toggleItemSelection(item.id, index, e);
                         else setViewingItemId(item.id);
@@ -796,7 +797,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                     >
                         <div
                           onClick={(e) => toggleItemSelection(item.id, index, e)}
-                          className="p-1 -m-1 hover:bg-neutral-200/60 dark:hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
+                          className="p-1 -m-1 mt-0.5 sm:mt-0 hover:bg-neutral-200/60 dark:hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
                         >
                           {isSelected ? (
                             <CheckSquare className="w-4 h-4 text-blue-500" />
@@ -804,28 +805,31 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                             <Square className="w-4 h-4 text-neutral-400 dark:text-neutral-600" />
                           )}
                         </div>
-                        {item.title && (
-                          <span className="text-sm font-medium text-neutral-900 dark:text-white truncate shrink-0 max-w-[30%]">
-                            {item.title}
+                        {/* Phones stack title over a two-line preview; from sm up this is the original single-line row. */}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 flex-1 min-w-0">
+                          {item.title && (
+                            <span className="text-sm font-medium text-neutral-900 dark:text-white truncate sm:shrink-0 sm:max-w-[30%]">
+                              {item.title}
+                            </span>
+                          )}
+                          <span className="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 sm:line-clamp-none sm:truncate sm:flex-1 sm:min-w-0">
+                            {item.content}
                           </span>
-                        )}
-                        <span className="text-sm text-neutral-600 dark:text-neutral-400 truncate flex-1 min-w-0">
-                          {item.content}
-                        </span>
-                        {(item.tags && item.tags.length > 0) && (
-                          <span className="hidden sm:flex items-center gap-1.5 shrink-0">
-                            <span className="px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-[11px] truncate max-w-[100px]">{item.tags[0]}</span>
-                            {item.tags.length > 1 && (
-                              <span className="text-[11px] text-neutral-500 dark:text-neutral-600">+{item.tags.length - 1}</span>
-                            )}
-                          </span>
-                        )}
-                        {updatedAtLabel && (
-                          <span className="hidden md:block text-[11px] text-neutral-500 dark:text-neutral-600 tabular-nums whitespace-nowrap shrink-0">
-                            {updatedAtLabel}
-                          </span>
-                        )}
-                        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                          {(item.tags && item.tags.length > 0) && (
+                            <span className="hidden sm:flex items-center gap-1.5 shrink-0">
+                              <span className="px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-[11px] truncate max-w-[100px]">{item.tags[0]}</span>
+                              {item.tags.length > 1 && (
+                                <span className="text-[11px] text-neutral-500 dark:text-neutral-600">+{item.tags.length - 1}</span>
+                              )}
+                            </span>
+                          )}
+                          {updatedAtLabel && (
+                            <span className="hidden md:block text-[11px] text-neutral-500 dark:text-neutral-600 tabular-nums whitespace-nowrap shrink-0">
+                              {updatedAtLabel}
+                            </span>
+                          )}
+                          {/* Touch devices never hover, so the actions stay visible on phones. */}
+                          <div className="flex items-center gap-0.5 shrink-0 self-end -mr-1 sm:self-auto sm:mr-0 sm:opacity-0 sm:group-hover/item:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -858,6 +862,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
+                          </div>
                         </div>
                     </div>
                   )}
@@ -883,36 +888,11 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-6 pt-12">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-3">
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`w-10 h-10 text-xs font-medium transition-colors active:scale-95 border ${
-                    currentPage === i + 1
-                      ? 'bg-blue-600 text-white border-blue-700'
-                      : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700'
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
-            >
-              <ArrowRight className="w-5 h-5" />
-            </button>
+          <div className="flex flex-col items-center gap-3 pt-8 md:pt-12">
+            <PageNav page={currentPage} pages={totalPages} onPageChange={setCurrentPage} size="lg" />
+            <span className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500 tabular-nums">
+              {t('pagination.pageOf', { page: currentPage, pages: totalPages })}
+            </span>
           </div>
         )}
       </div>

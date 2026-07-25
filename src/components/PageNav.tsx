@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
+import { useIsCompactViewport } from '../hooks/useMediaQuery';
 
 const ELLIPSIS_JUMP = 5;
 
@@ -46,6 +47,9 @@ export function PageNav({
   className = '',
 }: PageNavProps) {
   const { t } = useTranslation();
+  // Phones cannot fit the full window: drop the siblings and the first/last jumps,
+  // which the always-visible "1" and last-page buttons already cover.
+  const isCompact = useIsCompactViewport();
 
   const effectivePages = Math.max(1, pages);
   const safePage = Math.min(Math.max(1, page), effectivePages);
@@ -58,29 +62,33 @@ export function PageNav({
     onPageChange(next);
   };
 
+  // Touch targets stay at least 36px wide on phones, where the desktop 'sm' size is too small to tap.
+  // min-w keeps the squares square for 1-3 digits and lets large page numbers grow instead of clipping.
   const base =
     size === 'lg'
-      ? 'w-11 h-11 rounded-xl text-sm'
-      : 'w-8 h-8 rounded-lg text-[11px]';
+      ? 'min-w-10 h-10 sm:min-w-11 sm:h-11 px-1 rounded-xl text-sm'
+      : 'min-w-9 h-9 sm:min-w-8 sm:h-8 px-1 rounded-lg text-xs sm:text-[11px]';
   const idle =
     'border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800';
-  const control = `${base} ${idle} flex items-center justify-center font-black transition-all active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed`;
+  const control = `${base} ${idle} shrink-0 touch-manipulation select-none flex items-center justify-center font-black transition-all active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed`;
   const icon = size === 'lg' ? 'w-5 h-5' : 'w-4 h-4';
 
-  const items = buildPageItems(safePage, effectivePages, siblings);
+  const items = buildPageItems(safePage, effectivePages, isCompact ? 0 : siblings);
 
   return (
     <div className={`flex items-center justify-center gap-1 ${className}`}>
-      <button
-        type="button"
-        onClick={() => goTo(1)}
-        disabled={isFirst}
-        aria-label={t('pagination.first')}
-        title={t('pagination.first')}
-        className={control}
-      >
-        <ChevronsLeft className={icon} />
-      </button>
+      {!isCompact && (
+        <button
+          type="button"
+          onClick={() => goTo(1)}
+          disabled={isFirst}
+          aria-label={t('pagination.first')}
+          title={t('pagination.first')}
+          className={control}
+        >
+          <ChevronsLeft className={icon} />
+        </button>
+      )}
       <button
         type="button"
         onClick={() => goTo(safePage - 1)}
@@ -107,7 +115,7 @@ export function PageNav({
               onClick={() => goTo(target)}
               aria-label={label}
               title={label}
-              className={`${base} flex items-center justify-center text-neutral-400 dark:text-neutral-600 hover:text-neutral-900 dark:hover:text-white transition-colors`}
+              className={`${base} shrink-0 touch-manipulation select-none flex items-center justify-center text-neutral-400 dark:text-neutral-600 hover:text-neutral-900 dark:hover:text-white transition-colors`}
             >
               <MoreHorizontal className={icon} />
             </button>
@@ -122,7 +130,7 @@ export function PageNav({
             onClick={() => goTo(item)}
             aria-label={t('pagination.goToPage', { page: item })}
             aria-current={isCurrent ? 'page' : undefined}
-            className={`${base} flex items-center justify-center font-black tabular-nums transition-all active:scale-95 ${
+            className={`${base} shrink-0 touch-manipulation select-none flex items-center justify-center font-black tabular-nums transition-all active:scale-95 ${
               isCurrent
                 ? 'border border-neutral-900 dark:border-white bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
                 : idle
@@ -143,16 +151,18 @@ export function PageNav({
       >
         <ChevronRight className={icon} />
       </button>
-      <button
-        type="button"
-        onClick={() => goTo(effectivePages)}
-        disabled={isLast}
-        aria-label={t('pagination.last')}
-        title={t('pagination.last')}
-        className={control}
-      >
-        <ChevronsRight className={icon} />
-      </button>
+      {!isCompact && (
+        <button
+          type="button"
+          onClick={() => goTo(effectivePages)}
+          disabled={isLast}
+          aria-label={t('pagination.last')}
+          title={t('pagination.last')}
+          className={control}
+        >
+          <ChevronsRight className={icon} />
+        </button>
+      )}
     </div>
   );
 }
