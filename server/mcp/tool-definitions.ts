@@ -389,14 +389,14 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'batch_create_prompts',
     title: 'Batch Create Prompts',
-    description: 'Create multiple text prompts (library items) in a library in a single batch. Each item requires content; title and tags are optional. For extensive library construction, especially when creating more than 10 items, call this tool multiple times with smaller batches instead of generating every item in one call. Multiple batches keep the generated items more comprehensive and avoid model input/output limits.',
+    description: 'Create multiple text prompts (library items) in a library in a single batch. Each item requires content; title and tags are optional. Batches of about 20-25 items work best: large enough to finish a big library quickly, small enough to stay inside the output token limit and keep each prompt well written. When the user asks for more items than one batch should carry, keep calling this tool in later turns until the full requested count exists — the result reports libraryTotal so you can check progress against the target. Never stop at the first batch and report the job done while items remain.',
     inputSchema: {
       library_id: z.string().describe('The library ID to add the prompts to'),
       items: z.array(z.object({
         content: z.string().min(1).describe('The prompt text content'),
         title: z.string().optional().describe('Optional title for the prompt'),
         tags: z.array(z.string()).optional().describe('Optional tags for categorization'),
-      })).min(1).max(100).describe('Array of prompts to create (1-100 items). Prefer batches of 10 or fewer items; for larger library builds, call this tool repeatedly until all items are created.'),
+      })).min(1).max(100).describe('Array of prompts to create (1-100 items). Prefer batches of about 20-25 items; for larger library builds, call this tool repeatedly until all items are created.'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     category: 'mutate',
@@ -416,13 +416,17 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         tags: item.tags,
       }));
       await repository.createLibraryItemsBatch(userId, library_id, libraryItems);
+      // libraryTotal lets the model compare progress against the requested
+      // count and decide whether another batch is still owed.
+      const libraryTotal = (library.items?.length ?? 0) + libraryItems.length;
       return {
         text: JSON.stringify({
           library_id,
           name: library.name,
           created: libraryItems.map((item) => ({ id: item.id, title: item.title })),
           count: libraryItems.length,
-          message: `${libraryItems.length} prompts created successfully`,
+          libraryTotal,
+          message: `${libraryItems.length} prompts created successfully. Library now holds ${libraryTotal} prompts — if the user asked for more than that, continue with another batch.`,
         }),
       };
     },

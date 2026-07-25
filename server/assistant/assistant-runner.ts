@@ -38,11 +38,16 @@ import { PROVIDER_MODELS_MAP } from '../../src/types';
  */
 
 export const ASSISTANT_LIMITS = {
-  MAX_ITERATIONS: 24,
-  MAX_TOOL_CALLS: 48,
+  MAX_ITERATIONS: 1000,
+  MAX_TOOL_CALLS: 1000,
   MAX_PARALLEL_TOOLS: 12,
+  // 8192 is the ceiling, not a preference: our Anthropic calls are
+  // non-streaming, and the SDK refuses a non-streaming request above 8192
+  // output tokens on Opus 4/4.1. Raising this requires streaming first.
+  MAX_OUTPUT_TOKENS: 8192,
+  MAX_TRUNCATION_RETRIES: 2,
   MAX_TURN_GAP_MS: 60_000,
-  PROVIDER_TIMEOUT_MS: 30_000,
+  PROVIDER_TIMEOUT_MS: 120_000,
   TOOL_TIMEOUT_MS: 15_000,
   RECENT_CALL_WINDOW: 6,
   PER_USER_CONCURRENT: 2,
@@ -51,6 +56,15 @@ export const ASSISTANT_LIMITS = {
   CONFIRMATION_TTL_MS: 10 * 60 * 1000,
   MAX_HISTORY_MESSAGES: 80,
 };
+
+const TRUNCATION_RETRY_HINT =
+  'Your previous response was cut off at the output token limit before you finished. '
+  + 'Continue from where you stopped, and split the remaining work across several smaller '
+  + 'tool calls across turns rather than emitting it all at once. Do not repeat work you already completed.';
+
+const TRUNCATED_ARGS_HINT =
+  'The arguments for this call were cut off at the output token limit, so the call was not executed. '
+  + 'Retry with roughly half as many items, then continue with further calls until every item is created.';
 
 export interface AssistantToolMetadata {
   name: string;
@@ -388,6 +402,11 @@ export class AssistantRunner {
     const recentCallHashes: string[] = [];
     let lastTurnEnd = Date.now();
     let lastFinalMessage: AssistantMessageRecord | undefined;
+    // Truncation recovery: `retryHint` is injected into the next provider call
+    // only (never persisted), so the model learns its last response was cut off
+    // without the nudge showing up in the user's transcript.
+    let truncationRetries = 0;
+    let retryHint: string | undefined;
 
     for (let iter = 0; iter < ASSISTANT_LIMITS.MAX_ITERATIONS; iter++) {
       if (abortSignal?.aborted) {
@@ -403,6 +422,10 @@ export class AssistantRunner {
       // Rebuild chat history from DB on every iteration — keeps the truncation
       // policy simple and ensures confirmation/resume paths see fresh state.
       const messages = await this.buildChatHistory(conversationId);
+      if (retryHint) {
+        messages.push({ role: 'user', content: retryHint });
+        retryHint = undefined;
+      }
 
       emit(onStatusEvent, { type: 'provider_call_started', iteration: iter });
       let response: ChatResponse;
@@ -411,6 +434,7 @@ export class AssistantRunner {
           modelId: realModelId,
           messages,
           tools: this.tools,
+          maxTokens: ASSISTANT_LIMITS.MAX_OUTPUT_TOKENS,
           abortSignal,
           onThought: (update) => {
             emit(onStatusEvent, {
@@ -441,6 +465,29 @@ export class AssistantRunner {
         outputTokens: response.usage?.outputTokens,
       });
       lastFinalMessage = assistantMessage;
+
+      // A `max_tokens` stop means the provider cut generation off mid-response —
+      // it is never a completed answer. When a tool call survived the cut its
+      // arguments are usually half-written, and the schema check below reports
+      // the truncation; with no tool call at all we would otherwise return
+      // truncated text as a successful final message.
+      if (response.stopReason === 'max_tokens') {
+        if (response.toolCalls.length === 0) {
+          if (++truncationRetries > ASSISTANT_LIMITS.MAX_TRUNCATION_RETRIES) {
+            emit(onStatusEvent, { type: 'circuit_open', reason: 'output_truncated' });
+            const partial = await this.recordCircuitStop(
+              conversationId,
+              'the model kept running past its output limit. Ask for this in smaller pieces.',
+            );
+            return { kind: 'error', error: 'Output truncated repeatedly', partialMessage: partial };
+          }
+          retryHint = TRUNCATION_RETRY_HINT;
+          lastTurnEnd = Date.now();
+          continue;
+        }
+      } else {
+        truncationRetries = 0;
+      }
 
       if (response.toolCalls.length === 0) {
         await this.repo.touchConversation(conversationId);
@@ -490,13 +537,19 @@ export class AssistantRunner {
           const parsed = safeParseToolInput(tool, call.arguments);
           if (!parsed.ok) {
             const errMsg = (parsed as { ok: false; error: string }).error;
+            // Truncated arguments fail the schema check for a reason the model
+            // can act on — say so, otherwise it retries at the same size.
+            const truncatedArgs = response.stopReason === 'max_tokens';
             await this.repo.appendMessage({
               conversationId,
               role: 'tool',
               toolCallId: call.id,
               toolName: call.name,
               toolArgsJson: call.arguments,
-              content: wrapToolResult(call.name, JSON.stringify({ error: errMsg }), { error: true }),
+              content: wrapToolResult(call.name, JSON.stringify({
+                error: errMsg,
+                ...(truncatedArgs ? { truncated: true, hint: TRUNCATED_ARGS_HINT } : {}),
+              }), { error: true }),
               status: 'error',
             });
             processedCalls.push(call);
