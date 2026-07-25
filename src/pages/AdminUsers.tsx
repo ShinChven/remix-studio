@@ -400,7 +400,7 @@ export function AdminUsers() {
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
             {total > 0 ? t('adminUsers.showingUsers', { count: users.length, total }) : t('adminUsers.noUsersToShow')}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3 md:justify-end">
             <select
               value={filters.pageSize}
               onChange={(e) => setFilters((current) => ({ ...current, pageSize: Number(e.target.value), page: 1 }))}
