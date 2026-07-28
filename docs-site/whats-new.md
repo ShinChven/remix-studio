@@ -14,27 +14,29 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Added**
 
-- **New text models** — Gemini 3.6 Flash and Gemini 3.5 Flash Lite (Google AI & Vertex AI), the GPT-5.6 family (GPT-5.6, Terra, and Luna), Claude Sonnet 5, and Grok 4.5. The default Gemini text model is now Gemini 3.6 Flash.
-- **New image models** — nano banana Pro, Seedream 5.0 Pro, Seedream V5 Pro, and Wan 2.7 Pro on RunningHub, plus nano banana 2 Lite on Google AI and Vertex AI.
+- **New text models** — Google AI and Vertex AI add Gemini 3.6 Flash and Gemini 3.5 Flash Lite; OpenAI adds GPT-5.6, GPT-5.6 Terra, and GPT-5.6 Luna; Anthropic adds Claude Sonnet 5; and xAI adds Grok 4.5. Gemini 3.6 Flash is now the default Gemini text model.
+- **New image models** — RunningHub adds nano banana Pro, Seedream 5.0 Pro, Seedream V5 Pro, and Wan 2.7 Pro. Google AI and Vertex AI add nano banana 2 Lite.
 - **Auto aspect ratio** — nano banana 2 on RunningHub gains an "auto" option that lets the model pick the output ratio itself.
 - **Optimized or original** — When picking album images in the media picker, choose whether you want the optimized version or the original file.
 - **Filter media by ratio** — Narrow album images and videos in the media picker to one or more aspect ratios, with counts for every available ratio.
 - **Save to library** — Send a workflow item's text or image straight to a library with one click.
 - **Reorder cover images** — Arrange product cover images in the order you want on the sell page.
-- **Lossless library transfer** — Export and import text libraries as JSON, so prompts with newlines, colons, or list-like lines survive round-trips byte-for-byte. The simple plain-text format is still there.
+- **Lossless library transfer** — Export and import text libraries as JSON, so prompts with newlines, colons, or list-like lines survive round-trips byte-for-byte. The simpler plain-text format remains available.
 
 **Improved**
 
-- **Snappier project tabs** — The Draft, Queue, Done, and Album tabs now fetch their data on demand and cache what you've already seen. Deleting album items updates the album, its counts, and pagination instantly — no more waiting on a server refetch — and the draft canvas shows your newest images the moment the project opens.
+- **Faster project tabs** — The Draft, Queue, Done, and Album tabs load their content only when needed and remember content you've already viewed, making tab changes faster.
+- **Instant album updates** — Deleting album items now updates the album, item counts, and pagination immediately.
+- **Ready-to-view drafts** — The Draft canvas shows your newest images as soon as the project opens.
 - **Safer confirmations** — Confirmation dialogs show progress and prevent double-submission while their action is running.
 - **Library editor polish** — Cleaner typography, a refined toolbar, and localized timestamps.
 
 **Fixed**
 
 - Deleting the current image in the album lightbox now shows the next image immediately instead of leaving a stale one on screen.
-- Wan 2.7 prompts longer than the API's 2048-character limit are truncated instead of failing the job.
+- Wan 2.7 prompts longer than 2,048 characters are shortened to the supported limit instead of causing the job to fail.
 - Drawing and cropping in the image editor now land exactly where you point, and saved edits keep the image's full resolution.
-- Assistant message and attachment buttons are now reachable on phones and tablets.
+- Assistant message actions and attachment removal buttons are now visible and usable on phones and tablets.
 
 ## 1.17.1 — Light mode polish
 
@@ -64,11 +66,11 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Improved**
 
-- **Model availability docs** — The documentation for supported models (LLMs, Image, Video, Audio) has been restructured into category-specific tables with a new provider summary matrix.
+- **Model availability docs** — Supported text, image, video, and audio models are now listed in separate tables, with a provider summary to make compatible services easier to compare.
 
 **Fixed**
 
-- Fixed an issue in the posts route where a failed status check prevented skipping posts correctly.
+- Posts that should be skipped are now identified correctly during campaign processing.
 
 ## 1.16.1 — A more immersive lightbox
 
@@ -77,7 +79,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 **Added**
 
 - **Immersive fullscreen** — In fullscreen, the image fills the whole screen and the controls fade away after a few seconds of inactivity. Move the mouse or press a key to bring them back.
-- **Confirmation shortcuts** — Dismiss the image delete prompt with Escape, or press D again to cancel it.
+- **Confirmation shortcuts** — When the image delete prompt is open, press Escape or D again to close it without deleting the image.
 
 **Fixed**
 
@@ -92,7 +94,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 - **Image slideshow** — Play through your images hands-free with play/pause controls and a circular countdown. The interval is adjustable and remembered for next time.
 - **Slideshow transitions** — Choose how slides change: fade, slide, zoom, blur, or an Android-style ripple. Your choice is saved across sessions.
 - **Fullscreen & keyboard shortcuts** — Toggle fullscreen and drive the lightbox from the keyboard (playback, fullscreen, delete, and interval adjustment), with hotkey hints shown on hover.
-- **Documentation site** — These docs, published to GitHub Pages, covering guides, concepts, integrations, and operations.
+- **Documentation site** — A new documentation site provides guides to Remix Studio's concepts, integrations, deployment, and operation.
 
 ## 1.15.0 — Edit images in place
 
@@ -147,7 +149,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Added**
 
-- **Real-time project status** — Project pages update live over WebSockets, no manual refresh needed.
+- **Real-time project status** — Project pages update automatically as work progresses, with no manual refresh needed.
 - **Social profile refresh** — Re-sync social account profiles and avatars, with automatic recovery when an image fails to load.
 
 **Improved**
@@ -158,14 +160,14 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 *A polish pass on the project viewer and album browsing.*
 
-**Added**
+**Improved**
 
-- **Reuse historical job settings** loads workflow snapshots only when needed, keeping the viewer fast.
+- **Faster job reuse** — Details for a previous job load only when you choose to reuse it, keeping the project viewer responsive.
 
 **Fixed**
 
 - Album counts and thumbnails update immediately after deleting items.
-- Steadier image lightbox navigation across project images.
+- Fixed cases where navigating or deleting images in the project lightbox could show the wrong image or lose your position.
 
 ## 1.12.0 — Pagination for big projects
 
@@ -173,14 +175,14 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Added**
 
-- **Paginated albums and completed jobs** with sorting controls in the Project Viewer.
-- **Confirmation dialogs** now show loading state for slower actions.
-- **Campaign schedule dates** surface in the campaign UI.
+- **Faster large projects** — Albums and completed jobs are split into pages, with controls for choosing how they are sorted.
+- **Clearer confirmations** — Confirmation dialogs show when a slower action is still running.
+- **Visible campaign dates** — Campaign pages now show their scheduled date range.
 
 **Fixed**
 
 - Completed jobs are no longer lost when partial project saves happen.
-- Health checks no longer stall on startup, so containers report healthy promptly.
+- **For administrators:** Server health checks no longer stall during startup, so containers report their status promptly.
 
 ## 1.11.0 — Custom storage domains
 
@@ -188,7 +190,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Added**
 
-- **S3 custom domains** — Configure a public endpoint or custom domain for exported assets.
+- **S3 custom domains** — Self-hosting administrators can serve exported assets through a public S3 endpoint or their own domain.
 
 **Improved**
 
@@ -200,13 +202,13 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Added**
 
-- **New models** — Grok Imagine Pro and updated Google / Vertex Gemini configurations.
+- **New and updated models** — Added Grok Imagine Pro and updated the Google AI and Vertex AI Gemini model profiles to Gemini 3.5 Flash.
 - **Job media in Completed tab** — See the context media behind each finished job.
 
 **Improved**
 
 - Watermarks render more consistently and position more accurately.
-- Orphan projects display in a responsive grid.
+- Orphan files—stored project files that are no longer connected to a live project item—now display in a responsive grid, making them easier to review and clean up.
 
 ## 1.10.2 — Send to chat & mobile sharing
 
@@ -216,7 +218,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 - **Reuse a job's exact setup** — Restore a past job's full workflow snapshot and generation settings back into the active project.
 - **Send to chat (browser extension)** — New right-click options send an image or text to the Assistant and start a new conversation.
-- **Android share target** — The installed app appears in Android's share sheet; a `/share` page lets you save to a library/project or start a new chat.
+- **Android share target** — The installed app now appears in Android's share sheet. Share text or media to save it to a library or project, or to start a new assistant conversation.
 
 ## 1.10.1 — Smarter extension imports
 
@@ -232,7 +234,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Added**
 
-- **Smarter image names** — Imports pull a name from the image's `alt` text or URL.
+- **Smarter image names** — Imported images use the description supplied by the source website when available, falling back to the image URL.
 - **Remembered destinations** — Your import destination is saved automatically.
 - The browser extension is now attached to each release for easy download.
 
@@ -251,10 +253,10 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 **Added**
 
 - **Digital store integration** — Connect Gumroad and manage products to sell your exports, with a publishing history view and a publish-immediately option.
-- **Assistant tool approvals** — Manage which assistant tools are approved, per conversation.
+- **Assistant tool approvals** — For each assistant action that writes data, choose whether it should ask every time or run automatically in that conversation.
 - **New models** — GPT Image 2, GPT-5.5, and Grok 4.3.
-- **Google Drive upload confirmation** before delivery.
-- **Name-only search** for libraries and projects.
+- **Google Drive delivery confirmation** — Review and confirm Google Drive uploads before delivery begins.
+- **Focused search** — Search libraries and projects by name without matching their contents.
 
 **Fixed**
 
@@ -262,15 +264,15 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Improved**
 
-- Page-based pagination for export tasks and a masonry album grid layout.
+- **Easier export browsing** — Export tasks are split into pages, and album images use a space-efficient masonry layout.
 
 ## 1.8.0 — Command palette
 
-*Jump anywhere and create anything from the keyboard.*
+*Find or create core workspace items without leaving the keyboard.*
 
 **Added**
 
-- **Command palette** — Navigate and create entities with ⌘K.
+- **Command palette** — Press ⌘K on macOS or Ctrl+K on Windows and Linux to find projects, libraries, and campaigns, or create a new one without leaving the keyboard.
 
 ## 1.7.5 — Deeper campaign tooling
 
@@ -291,20 +293,24 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ## 1.7.4 — Easier media selection
 
+*Find the right assets faster, while inactive campaigns remain safely paused.*
+
 **Added**
 
-- **Source filtering with search** in the media picker.
+- **Search and filter by source** — In the media picker, search your libraries and project albums to find the right source before choosing an item.
 
 **Fixed**
 
-- Posts can't execute when their campaign is inactive.
+- Posts in inactive campaigns are no longer processed or published.
 - Long campaign post links now truncate cleanly.
 
 ## 1.7.3 — Memory monitoring
 
+*New diagnostics help self-hosting administrators investigate server memory usage.*
+
 **Added**
 
-- **Server memory monitoring** endpoint, logging, and documentation.
+- **Server memory diagnostics** — Self-hosting administrators can inspect memory usage through a dedicated status endpoint and server logs. See [Memory Monitoring](/operations/memory-monitoring) for setup and interpretation guidance.
 
 **Improved**
 
@@ -312,16 +318,20 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ## 1.7.2 — Bulk selection & reliability
 
+*Select long ranges of items more quickly and get clearer results from batch uploads.*
+
 **Added**
 
 - **Shift-click range selection** for project jobs and media picker items.
-- An architecture and capabilities mindmap.
+- **Architecture overview** — A new [architecture diagram](/guide/architecture) gives contributors and administrators an overview of Remix Studio's features and system structure.
 
 **Fixed**
 
 - More reliable batch uploads with per-item error handling.
 
 ## 1.7.1 — Theme polish
+
+*Theme changes feel smoother and stay in sync with your device.*
 
 **Added**
 
@@ -334,7 +344,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Improved**
 
-- Assistant provider settings auto-save on toggle.
+- Enabling or disabling an assistant provider now saves immediately, without a separate Save action.
 
 ## 1.7.0 — A media-first home
 
@@ -358,11 +368,14 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ## 1.6.0 — Batch generation & polish
 
+*Generate library text in batches, track its progress, and manage queue problems more easily.*
+
 **Added**
 
-- **Batch AI text generation** with live progress tracking.
-- **Reasoning toggle** for the assistant, with reasoning tags stripped from generated posts.
-- **Copy-to-clipboard** for library content and a clearer Queue Monitor.
+- **Batch AI text generation** — Generate multiple text library items in one operation and follow progress while the batch runs.
+- **Optional model reasoning** — Provider settings can request supported models' reasoning output, while internal reasoning markers are removed from generated campaign posts.
+- **Faster library copying** — Copy library content to the clipboard with one click.
+- **Clearer queue controls** — The Queue Monitor is easier to scan and now includes an action for clearing queued work.
 
 **Improved**
 
@@ -370,16 +383,18 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ## 1.5.3 — Backups & X (Twitter) rebrand
 
+*New maintenance tools protect self-hosted data, while the social integration moves to X's current branding and endpoints.*
+
 **Added**
 
-- **Database backup and restore scripts** with automated retention.
+- **Database backup and restore tools** — Self-hosting administrators can create and restore database backups, with optional automatic cleanup of older backups. See [Backup & Restore](/operations/backup-and-restore) for instructions.
 
 **Improved**
 
 - Migrated Twitter endpoints and branding to X.
 
 ::: warning
-Versions 1.5.0 and 1.5.1 are known-broken — upgrade past them. See the [CHANGELOG](https://github.com/ShinChven/remix-studio/blob/main/CHANGELOG.md) for details.
+Versions 1.5.0 and 1.5.1 are known to be broken. Upgrade to version 1.5.2 or later before using campaign features. See the [CHANGELOG](https://github.com/ShinChven/remix-studio/blob/main/CHANGELOG.md) for technical details.
 :::
 
 ## 1.5.0 — Social campaigns arrive
@@ -409,10 +424,12 @@ Versions 1.5.0 and 1.5.1 are known-broken — upgrade past them. See the [CHANGE
 
 ## 1.3.0 — Reliable queueing
 
+*Background generation recovers more reliably, and library ordering is consistent for everyone.*
+
 **Added**
 
-- **Concurrency slot management** and recovery of orphaned jobs.
-- **Server-side library sorting** replacing manual drag-and-drop.
+- **More reliable generation queues** — Provider concurrency limits are managed centrally, and interrupted jobs can be recovered instead of remaining stuck.
+- **Consistent library sorting** — Libraries now use server-managed sorting instead of manual drag-and-drop, so item order stays consistent across sessions.
 
 **Improved**
 
@@ -420,10 +437,12 @@ Versions 1.5.0 and 1.5.1 are known-broken — upgrade past them. See the [CHANGE
 
 ## 1.2.0 — More providers & bulk library actions
 
+*Generate with Alibaba's Qwen models and organize multiple library items at once.*
+
 **Added**
 
-- **Alibaba Cloud DashScope** provider support with Qwen models.
-- **Batch copy and move** for library items.
+- **Alibaba Cloud DashScope** — Connect DashScope and use its supported Qwen models in Remix Studio.
+- **Batch library actions** — Copy or move multiple library items in one operation.
 
 **Fixed**
 
@@ -431,9 +450,11 @@ Versions 1.5.0 and 1.5.1 are known-broken — upgrade past them. See the [CHANGE
 
 ## 1.1.1 — Descriptions everywhere
 
+*Add context to projects and libraries so they are easier to recognize and organize.*
+
 **Added**
 
-- **Descriptions** for projects and libraries.
+- **Project and library descriptions** — Add a description that appears alongside each project's or library's name.
 
 **Improved**
 
@@ -441,11 +462,13 @@ Versions 1.5.0 and 1.5.1 are known-broken — upgrade past them. See the [CHANGE
 
 ## 1.1.0 — Assistant & album improvements
 
+*Find assistant conversations faster and manage large project albums more precisely.*
+
 **Added**
 
-- **Assistant tools tab** with a capability overview.
-- **Aspect ratio filtering** and scoped bulk operations for project albums.
-- **Assistant chat history search** and library-specific chat triggers.
+- **Assistant tools overview** — See which workspace actions the assistant can perform.
+- **More precise album selection** — Filter project albums by aspect ratio and limit bulk actions to the current selection.
+- **Faster assistant access** — Search assistant conversation history or start a conversation from a specific library.
 
 **Improved**
 
