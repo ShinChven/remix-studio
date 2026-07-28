@@ -1535,6 +1535,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       setLocalProject(updatedProject);
       setLocalJobs(stripJobWorkflowSnapshots(nextJobs));
       setActiveTab('draft');
+      // Reveal the drafts we just created: mobile swaps to the jobs view, desktop
+      // leaves full screen (which keeps the jobs pane hidden).
+      setIsWorkflowExpanded(false);
       if (typeof window !== 'undefined' && window.innerWidth < 1024) {
         setMobileView('jobs');
       }
