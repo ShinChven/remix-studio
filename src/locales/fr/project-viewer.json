@@ -70,7 +70,9 @@
       "archiveProject": "Archiver",
       "unarchiveProject": "Restaurer",
       "archivedBadge": "Archivé",
-      "buildWorkflow": "Construisez votre flux"
+      "buildWorkflow": "Construisez votre flux",
+      "hideDisabledItems": "Masquer désactivés",
+      "showDisabledItems": "Afficher désactivés"
     },
     "drafts": {
       "emptyCanvas": "Toile vide",
@@ -163,7 +165,8 @@
       "unknownLibrary": "Bibliothèque inconnue",
       "itemsCount": "{{count}} éléments",
       "filteredTags": "Filtré : {{count}} tags",
-      "wait": "Attendre"
+      "wait": "Attendre",
+      "allItemsHidden": "Tous les éléments sont masqués"
     },
     "modelSelector": {
       "title": "Sélectionner un modèle",

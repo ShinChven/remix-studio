@@ -70,7 +70,9 @@
       "archiveProject": "封存",
       "unarchiveProject": "還原",
       "archivedBadge": "已封存",
-      "buildWorkflow": "構建您的工作流"
+      "buildWorkflow": "構建您的工作流",
+      "hideDisabledItems": "隱藏已停用",
+      "showDisabledItems": "顯示已停用"
     },
     "drafts": {
       "emptyCanvas": "空白畫布",
@@ -163,7 +165,8 @@
       "unknownLibrary": "未知資料庫",
       "itemsCount": "{{count}} 項",
       "filteredTags": "已篩選：{{count}} 個標籤",
-      "wait": "等待"
+      "wait": "等待",
+      "allItemsHidden": "所有項目已隱藏"
     },
     "modelSelector": {
       "title": "選擇模型",

@@ -197,7 +197,9 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
 | Claude Fable 5 | `claude-fable-5` | text | 128,000 |
+| Claude Opus 5 | `claude-opus-5` | text | 128,000 |
 | Claude Opus 4.8 | `claude-opus-4-8` | text | 128,000 |
+| Claude Sonnet 5 | `claude-sonnet-5` | text | 128,000 |
 | Claude Opus 4.7 | `claude-opus-4-7` | text | 128,000 |
 | Claude Sonnet 4.6 | `claude-sonnet-4-6` | text | 64,000 |
 | Claude Haiku 4.5 | `claude-haiku-4-5-20251001` | text | 64,000 |
@@ -216,7 +218,7 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 | Google AI / Vertex AI | 2.0 | |
 | OpenAI | 2.0 | |
 | Grok (xAI) | 2.0 | |
-| Claude | 1.0 | Anthropic API hard limit |
+| Claude | 1.0 | Anthropic API hard limit. Fable 5, Opus 5, Opus 4.8 and Sonnet 5 reject any non-default value — list only `[1.0]` and skip the parameter in `claude-text-generator.ts` |
 
 ---
 

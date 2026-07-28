@@ -1094,6 +1094,19 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'claude-opus-5-text',
+      name: 'Claude Opus 5',
+      generatorId: 'Claude',
+      modelId: 'claude-opus-5',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        // Opus 5 rejects non-default sampling parameters; only the default temperature is allowed.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
+    {
       id: 'claude-opus-4-8-text',
       name: 'Claude Opus 4.8',
       generatorId: 'Claude',

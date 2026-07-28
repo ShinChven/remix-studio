@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Archive, ArchiveRestore, Copy, Eraser, HardDrive, Hash, ImageIcon, Library as LibraryIcon, Loader2, Maximize2, Minimize2, MoreVertical, Settings, Stars, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
+import { Archive, ArchiveRestore, Copy, Eraser, Eye, EyeOff, HardDrive, Hash, ImageIcon, Library as LibraryIcon, Loader2, Maximize2, Minimize2, MoreVertical, Settings, Stars, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
@@ -121,6 +121,7 @@ export function WorkflowPanel({
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isProjectInfoOpen, setIsProjectInfoOpen] = useState(false);
   const [isDragOverFiles, setIsDragOverFiles] = useState(false);
+  const [showDisabledItems, setShowDisabledItems] = useState(true);
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -156,6 +157,13 @@ export function WorkflowPanel({
   const selectedAllModels = [...selectedBaseModels, ...resolveCustomModels(selectedProviderType, selectedCustomAliases)];
   const selectedModel = selectedAllModels.find((m) => m.id === selectedModelId);
   const supportsImageInput = localProject.type !== 'audio' || selectedModel?.options.supportsReferenceImages === true;
+  const workflowItems = localProject.workflow || [];
+  const disabledItemsCount = workflowItems.filter((item) => item.disabled).length;
+  // Keep each item's position in the unfiltered workflow: drag and drop reorders by
+  // index, so hiding items must not shift the indices handed to the drag handlers.
+  const visibleWorkflowItems = workflowItems
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => showDisabledItems || !item.disabled);
   const sumStoredSize = (item: { size?: number; optimizedSize?: number; thumbnailSize?: number }) => {
     return Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
   };
@@ -272,6 +280,24 @@ export function WorkflowPanel({
 
               {isActionMenuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-52 p-2 rounded-xl border border-neutral-200/60 dark:border-white/10 bg-white/90 dark:bg-neutral-900/95 backdrop-blur-xl shadow-xl z-30">
+                  <button
+                    onClick={() => closeMenuAndRun(() => setShowDisabledItems((show) => !show))}
+                    disabled={disabledItemsCount === 0}
+                    className={`${menuButtonBaseClass} justify-between text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/80 dark:hover:bg-neutral-800/80 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-neutral-600 dark:disabled:hover:text-neutral-300`}
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      {showDisabledItems ? <EyeOff className="w-3.5 h-3.5 shrink-0" /> : <Eye className="w-3.5 h-3.5 shrink-0" />}
+                      <span className="truncate">
+                        {t(showDisabledItems ? 'projectViewer.main.hideDisabledItems' : 'projectViewer.main.showDisabledItems')}
+                      </span>
+                    </span>
+                    {disabledItemsCount > 0 && (
+                      <span className="shrink-0 text-[9px] font-black text-neutral-500 dark:text-neutral-500">{disabledItemsCount}</span>
+                    )}
+                  </button>
+
+                  <div className="my-1 h-px bg-neutral-200/60 dark:bg-white/10" />
+
                   <button
                     onClick={() => closeMenuAndRun(onNavigateToEdit)}
                     className={`${menuButtonBaseClass} text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/80 dark:hover:bg-neutral-800/80`}
@@ -441,7 +467,7 @@ export function WorkflowPanel({
             </div>
           </div>
         )}
-        {!isLoading && (localProject.workflow || []).map((item, index) => (
+        {!isLoading && visibleWorkflowItems.map(({ item, index }) => (
           <WorkflowItem
             key={item.id}
             item={item}
@@ -470,8 +496,12 @@ export function WorkflowPanel({
             gridView={isExpanded}
           />
         ))}
-        {!isLoading && (localProject.workflow || []).length === 0 && (
-          <div className="col-span-full text-center text-neutral-500 dark:text-neutral-500 text-[10px] font-bold uppercase tracking-[0.2em] py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-white/20 dark:bg-neutral-900/20 shadow-inner backdrop-blur-sm">{t('projectViewer.main.buildWorkflow')}</div>
+        {!isLoading && visibleWorkflowItems.length === 0 && (
+          <div className="col-span-full text-center text-neutral-500 dark:text-neutral-500 text-[10px] font-bold uppercase tracking-[0.2em] py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-white/20 dark:bg-neutral-900/20 shadow-inner backdrop-blur-sm">
+            {workflowItems.length === 0
+              ? t('projectViewer.main.buildWorkflow')
+              : t('projectViewer.workflow.allItemsHidden')}
+          </div>
         )}
       </div>
 

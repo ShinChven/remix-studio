@@ -70,7 +70,9 @@
       "archiveProject": "アーカイブ",
       "unarchiveProject": "復元",
       "archivedBadge": "アーカイブ済み",
-      "buildWorkflow": "ワークフローを作成"
+      "buildWorkflow": "ワークフローを作成",
+      "hideDisabledItems": "無効を非表示",
+      "showDisabledItems": "無効を表示"
     },
     "drafts": {
       "emptyCanvas": "空のキャンバス",
@@ -163,7 +165,8 @@
       "unknownLibrary": "不明なライブラリ",
       "itemsCount": "{{count}} 件",
       "filteredTags": "フィルター済み: {{count}} タグ",
-      "wait": "待機"
+      "wait": "待機",
+      "allItemsHidden": "すべての項目が非表示です"
     },
     "modelSelector": {
       "title": "モデルを選択",
