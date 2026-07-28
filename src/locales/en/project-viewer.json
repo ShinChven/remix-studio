@@ -70,7 +70,9 @@
       "archiveProject": "Archive",
       "unarchiveProject": "Restore",
       "archivedBadge": "Archived",
-      "buildWorkflow": "Build your workflow"
+      "buildWorkflow": "Build your workflow",
+      "hideDisabledItems": "Hide Disabled",
+      "showDisabledItems": "Show Disabled"
     },
     "drafts": {
       "emptyCanvas": "Empty Canvas",
@@ -163,7 +165,8 @@
       "unknownLibrary": "Unknown Library",
       "itemsCount": "{{count}} items",
       "filteredTags": "Filtered: {{count}} tags",
-      "wait": "Wait"
+      "wait": "Wait",
+      "allItemsHidden": "All items are hidden"
     },
     "modelSelector": {
       "title": "Select Model",

@@ -70,7 +70,9 @@
       "archiveProject": "归档",
       "unarchiveProject": "恢复",
       "archivedBadge": "已归档",
-      "buildWorkflow": "构建您的工作流"
+      "buildWorkflow": "构建您的工作流",
+      "hideDisabledItems": "隐藏已禁用",
+      "showDisabledItems": "显示已禁用"
     },
     "drafts": {
       "emptyCanvas": "空白画布",
@@ -163,7 +165,8 @@
       "unknownLibrary": "未知资料库",
       "itemsCount": "{{count}} 项",
       "filteredTags": "已筛选：{{count}} 个标签",
-      "wait": "等待"
+      "wait": "等待",
+      "allItemsHidden": "所有项目已隐藏"
     },
     "modelSelector": {
       "title": "选择模型",

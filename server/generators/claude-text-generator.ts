@@ -19,6 +19,7 @@ export class ClaudeTextGenerator extends TextGenerator {
       // Claude's latest adaptive-thinking models reject non-default sampling parameters (400) — omit temperature entirely.
       const supportsTemperature = !(
         model.startsWith('claude-fable-5') ||
+        model.startsWith('claude-opus-5') ||
         model.startsWith('claude-opus-4-8') ||
         model.startsWith('claude-sonnet-5')
       );

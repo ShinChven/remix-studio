@@ -70,7 +70,9 @@
       "archiveProject": "보관",
       "unarchiveProject": "복원",
       "archivedBadge": "보관됨",
-      "buildWorkflow": "워크플로 구축"
+      "buildWorkflow": "워크플로 구축",
+      "hideDisabledItems": "비활성 숨기기",
+      "showDisabledItems": "비활성 표시"
     },
     "drafts": {
       "emptyCanvas": "빈 캔버스",
@@ -163,7 +165,8 @@
       "unknownLibrary": "알 수 없는 라이브러리",
       "itemsCount": "{{count}}개 항목",
       "filteredTags": "필터됨: {{count}}개 태그",
-      "wait": "대기"
+      "wait": "대기",
+      "allItemsHidden": "모든 항목이 숨겨져 있습니다"
     },
     "modelSelector": {
       "title": "모델 선택",

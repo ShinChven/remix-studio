@@ -2,6 +2,13 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [Unreleased]
+
+### Added
+
+- **Claude Opus 5**: Added Claude Opus 5 to the Claude provider's text models, with a 1M-token prompt limit and 128K max output. Like Fable 5, Opus 4.8, and Sonnet 5, it accepts only the default temperature.
+- **Hide Disabled Workflow Items**: The project workflow's three-dot menu can now hide disabled items, with a count of how many are hidden. Hiding is view-only — drag-and-drop reordering still uses each item's real position.
+
 ## [1.18.0] - 2026-07-24
 
 ### Added
