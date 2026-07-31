@@ -13,9 +13,19 @@ Available MCP capabilities include:
 - **Update** a single text prompt's content, title, or tags with `update_prompt`.
 - **Delete** a single text prompt from a text library with `delete_prompt`.
 - **Inspect** storage usage, albums, libraries, library items, and usable model/provider pairings.
+- **Browse** the items inside a project album with `get_album_items`, including each item's prompt, format, aspect ratio, size, and storage keys.
+- **Download** stored files with `get_file_urls`, which converts internal storage keys into temporary presigned URLs (optionally as save-as download links).
 - **Create and update** workflow-backed projects.
 
 Write and destructive tools are **confirmation-gated**. Prompt deletion is scoped to one item in a text library and requires an explicit confirmed tool call.
+
+### File access
+
+Read tools return **storage keys**, not links. To fetch, view, or download a file, pass those keys to `get_file_urls`:
+
+- Accepts up to 50 keys per call, with `expires_in` between 60 and 86400 seconds (default 1 hour) and `download: true` for an attachment (save-as) URL.
+- Signs a key only when it is still referenced by media the authenticated user owns — library items, album items, job outputs, or campaign post media. Everything else is returned under `denied` with a reason, and values that are already absolute URLs are rejected as needing no signing.
+- Returned URLs are temporary; request new ones rather than reusing expired links. When the deployment sets `S3_PUBLIC_CUSTOM_DOMAIN`, storage returns a direct public URL instead of a signed one.
 
 ## Authentication
 

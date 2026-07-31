@@ -111,6 +111,20 @@ Remix Studio currently exposes several high-level tools to MCP clients. Each too
 - **Description:** Lists project albums with their respective sizes and item counts.
 - **Use Case:** Gives the AI visibility into the user's media projects, allowing it to reference them in conversation.
 
+### 3.7 `get_album_items`
+- **Description:** Browses the generated items inside one project's album, paginated and optionally filtered by aspect ratio.
+- **Inputs:** `project_id` (string), `sort` (`newest`/`oldest`), `aspect_ratios` (optional array), `page`, `limit`.
+- **Returns:** Per item: `id`, `jobId`, truncated `prompt`, `storageKey`, `thumbnailKey`, `optimizedKey`, `format`, `aspectRatio`, `size`, `createdAt`.
+- **Use Case:** Lets the AI reference a specific generated image before signing a URL for it.
+
+### 3.8 `get_file_urls`
+- **Description:** Mints temporary presigned HTTPS URLs for internal storage keys so files can actually be fetched, viewed, or downloaded.
+- **Inputs:** `keys` (array of internal storage keys, max 50), `expires_in` (seconds, 60–86400, default 3600), `download` (boolean — when true the URL carries `Content-Disposition: attachment`).
+- **Returns:** `urls` (`key`, `url`, `filename`), `denied` (`key`, `reason`), plus `expiresIn` / `expiresAt`.
+- **Authorization:** Each key is re-checked against the caller's own `LibraryItem`, `AlbumItem`, `Job`, and `PostMedia` rows. Keys that no record of the authenticated user references are refused, as are values that are already absolute URLs (`http(s)://`, `data:`).
+- **Note:** When the deployment sets `S3_PUBLIC_CUSTOM_DOMAIN`, the storage layer returns a direct public URL instead of a SigV4-signed one.
+- **Use Case:** "Show me / download the last image from that campaign post" — the AI resolves keys via `get_album_items` / `get_library_items` / `get_post`, then signs them here.
+
 ---
 
 ## 4. Database Schema Details

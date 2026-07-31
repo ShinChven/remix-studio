@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import type { IRepository } from '../db/repository';
 import type { UserRepository } from '../auth/user-repository';
 import type { ProviderRepository } from '../db/provider-repository';
+import type { IStorage } from '../storage/storage';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 
 const MODEL_CATEGORY_VALUES = ['text', 'image', 'audio', 'video'] as const;
@@ -85,9 +86,14 @@ export interface ToolDependencies {
   userRepository: UserRepository;
   prisma: PrismaClient;
   providerRepository: ProviderRepository;
+  /** Media bucket, used to mint presigned download URLs for owned storage keys. */
+  storage: IStorage;
 }
 
 const MAX_CONTENT_PREVIEW_CHARS = 4096;
+const MAX_SIGNED_KEYS_PER_CALL = 50;
+const DEFAULT_SIGNED_URL_TTL_SECONDS = 3600;
+const MAX_SIGNED_URL_TTL_SECONDS = 86400;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -261,6 +267,87 @@ async function assertPostMediaSourceAllowed(
   return source;
 }
 
+/**
+ * Batch ownership check for raw storage keys. A key is signable only when it is
+ * still referenced by a record the authenticated user owns — library items,
+ * album items, job outputs, or campaign post media. Returns the subset of
+ * `keys` that passed, so callers can report the rest as denied.
+ */
+async function resolveOwnedStorageKeys(
+  prisma: PrismaClient,
+  userId: string,
+  keys: string[],
+): Promise<Set<string>> {
+  const candidates = [...new Set(keys.map((key) => key.trim()).filter((key) => key && isInternalStorageValue(key)))];
+  if (candidates.length === 0) return new Set();
+
+  const inList = { in: candidates };
+  const [libraryItems, albumItems, jobs, postMedia] = await Promise.all([
+    prisma.libraryItem.findMany({
+      where: {
+        library: { userId },
+        OR: [{ content: inList }, { thumbnailUrl: inList }, { optimizedUrl: inList }],
+      },
+      select: { content: true, thumbnailUrl: true, optimizedUrl: true },
+    }),
+    prisma.albumItem.findMany({
+      where: {
+        userId,
+        OR: [{ imageUrl: inList }, { thumbnailUrl: inList }, { optimizedUrl: inList }],
+      },
+      select: { imageUrl: true, thumbnailUrl: true, optimizedUrl: true },
+    }),
+    prisma.job.findMany({
+      where: {
+        userId,
+        OR: [{ imageUrl: inList }, { thumbnailUrl: inList }, { optimizedUrl: inList }],
+      },
+      select: { imageUrl: true, thumbnailUrl: true, optimizedUrl: true },
+    }),
+    prisma.postMedia.findMany({
+      where: {
+        post: { userId },
+        OR: [{ sourceUrl: inList }, { processedUrl: inList }, { thumbnailUrl: inList }],
+      },
+      select: { sourceUrl: true, processedUrl: true, thumbnailUrl: true },
+    }),
+  ]);
+
+  // A row can match on one column while its other columns hold keys the caller
+  // never asked for, so every value is re-checked against the requested set.
+  const requested = new Set(candidates);
+  const owned = new Set<string>();
+  const allow = (value?: string | null) => {
+    if (value && requested.has(value)) owned.add(value);
+  };
+  for (const item of libraryItems) {
+    allow(item.content);
+    allow(item.thumbnailUrl);
+    allow(item.optimizedUrl);
+  }
+  for (const item of albumItems) {
+    allow(item.imageUrl);
+    allow(item.thumbnailUrl);
+    allow(item.optimizedUrl);
+  }
+  for (const job of jobs) {
+    allow(job.imageUrl);
+    allow(job.thumbnailUrl);
+    allow(job.optimizedUrl);
+  }
+  for (const media of postMedia) {
+    allow(media.sourceUrl);
+    allow(media.processedUrl);
+    allow(media.thumbnailUrl);
+  }
+  return owned;
+}
+
+function basenameForKey(key: string): string {
+  const name = key.split('/').pop() || 'download';
+  return name.replace(/["\\]/g, '');
+}
+
 function toToolWorkflowItem(item: {
   id?: string;
   type: string;
@@ -284,7 +371,7 @@ function toToolWorkflowItem(item: {
 }
 
 export function createAssistantToolDefinitions(deps: ToolDependencies): AssistantToolDefinition[] {
-  const { repository, userRepository, prisma, providerRepository } = deps;
+  const { repository, userRepository, prisma, providerRepository, storage } = deps;
 
   const tools: AssistantToolDefinition[] = [];
 
@@ -677,6 +764,170 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
           pages: projectsResult.pages,
           ...paginationHints(projectsResult.page, projectsResult.pages),
         }, null, 2),
+      };
+    },
+  });
+
+  // ─── get_album_items ───
+  tools.push({
+    name: 'get_album_items',
+    title: 'Get Album Items',
+    description: `Browse the generated items saved in one project's album. Returns each item's id, prompt, format, size, aspect ratio, and its storage keys (storageKey for the full-size file, plus thumbnail/optimized variants when present).
+
+Storage keys are internal references, not fetchable URLs — pass them to get_file_urls to obtain a temporary download URL.`,
+    inputSchema: {
+      project_id: z.string().min(1).describe('The project ID whose album to browse (from list_albums)'),
+      sort: z.enum(['newest', 'oldest']).default('newest').describe('Sort order by creation time (default "newest")'),
+      aspect_ratios: z.array(z.string()).optional().describe('Optional: only return items matching these aspect ratios (e.g. ["1:1", "16:9"])'),
+      page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
+      limit: z.number().int().min(1).max(100).default(25).describe('Items per page (default 25)'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { project_id, sort, aspect_ratios, page, limit } = input as {
+        project_id: string;
+        sort: 'newest' | 'oldest';
+        aspect_ratios?: string[];
+        page: number;
+        limit: number;
+      };
+
+      const project = await repository.getProject(userId, project_id);
+      if (!project) {
+        return {
+          text: JSON.stringify({ error: `Project "${project_id}" not found.` }),
+          isError: true,
+        };
+      }
+
+      const album = await repository.getProjectAlbum(userId, project_id, {
+        page,
+        limit,
+        sort,
+        aspectRatios: aspect_ratios,
+      });
+
+      const items = album.items.map((item) => {
+        const preview = truncateContent(item.prompt ?? '');
+        return {
+          id: item.id,
+          jobId: item.jobId ?? null,
+          prompt: preview.text,
+          promptTruncated: preview.truncated,
+          storageKey: item.imageUrl || null,
+          thumbnailKey: item.thumbnailUrl ?? null,
+          optimizedKey: item.optimizedUrl ?? null,
+          format: item.format ?? null,
+          aspectRatio: item.aspectRatio ?? null,
+          size: item.size ?? null,
+          sizeFormatted: item.size ? formatSize(item.size) : null,
+          createdAt: item.createdAt,
+        };
+      });
+
+      const response = {
+        projectId: project.id,
+        projectName: project.name,
+        projectType: project.type,
+        items,
+        total: album.total,
+        page: album.page,
+        pages: album.pages,
+        totalSize: album.totalSize,
+        totalSizeFormatted: formatSize(album.totalSize),
+        aspectRatioCounts: album.aspectRatioCounts,
+        ...paginationHints(album.page, album.pages),
+        hint: 'Pass storageKey / thumbnailKey / optimizedKey to get_file_urls to download or view a file.',
+      };
+
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
+  // ─── get_file_urls ───
+  tools.push({
+    name: 'get_file_urls',
+    title: 'Get File URLs',
+    description: `Mint temporary, presigned HTTPS URLs for stored files so they can be fetched, viewed, or downloaded. Input is one or more internal storage keys — the values returned as storageKey/thumbnailKey/optimizedKey by get_album_items and get_library_items, or sourceUrl/processedUrl/thumbnailUrl on campaign post media from get_post.
+
+Only keys still referenced by the authenticated user's own library items, album items, job outputs, or campaign post media can be signed; anything else comes back under "denied" instead of "urls". Full public URLs (http://, https://, data:) are rejected — they need no signing.
+
+Set download=true to get a URL that saves as a file (Content-Disposition: attachment) instead of rendering inline. URLs expire after expires_in seconds (default 1 hour, max 24 hours); mint fresh ones rather than storing them. When the deployment serves media from a public custom domain, the returned URL is a direct public URL rather than a signed one.`,
+    inputSchema: {
+      keys: z
+        .array(z.string().min(1))
+        .min(1)
+        .max(MAX_SIGNED_KEYS_PER_CALL)
+        .describe(`Internal storage keys to sign (max ${MAX_SIGNED_KEYS_PER_CALL} per call)`),
+      expires_in: z
+        .number()
+        .int()
+        .min(60)
+        .max(MAX_SIGNED_URL_TTL_SECONDS)
+        .default(DEFAULT_SIGNED_URL_TTL_SECONDS)
+        .describe(`URL lifetime in seconds (default ${DEFAULT_SIGNED_URL_TTL_SECONDS}, max ${MAX_SIGNED_URL_TTL_SECONDS})`),
+      download: z
+        .boolean()
+        .default(false)
+        .describe('When true, the URL forces a file download (attachment) instead of inline display'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { keys, expires_in, download } = input as {
+        keys: string[];
+        expires_in: number;
+        download: boolean;
+      };
+
+      const requested = [...new Set(keys.map((key) => key.trim()).filter(Boolean))];
+      const external = requested.filter((key) => !isInternalStorageValue(key));
+      const internal = requested.filter((key) => isInternalStorageValue(key));
+      const owned = await resolveOwnedStorageKeys(prisma, userId, internal);
+
+      const denied = [
+        ...external.map((key) => ({
+          key,
+          reason: 'Not an internal storage key — already a fetchable URL, no signing needed.',
+        })),
+        ...internal
+          .filter((key) => !owned.has(key))
+          .map((key) => ({
+            key,
+            reason: 'Not found among media owned by the authenticated user (library items, album items, job outputs, or campaign post media).',
+          })),
+      ];
+
+      const signable = internal.filter((key) => owned.has(key));
+      const expiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
+      const urls = await Promise.all(
+        signable.map(async (key) => ({
+          key,
+          url: await storage.getPresignedUrl(
+            key,
+            expires_in,
+            download ? { responseContentDisposition: `attachment; filename="${basenameForKey(key)}"` } : undefined,
+          ),
+          filename: basenameForKey(key),
+        })),
+      );
+
+      const response = {
+        urls,
+        denied,
+        expiresIn: expires_in,
+        expiresAt,
+        download,
+        hint: 'These URLs are temporary. Fetch or hand them to the user promptly, and re-call get_file_urls instead of reusing an expired URL.',
+      };
+
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
       };
     },
   });

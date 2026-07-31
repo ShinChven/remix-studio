@@ -7,6 +7,10 @@ export interface IStorage {
   listObjectsWithMetadata(prefix: string): Promise<{ key: string; size: number | undefined }[]>;
   getSize(key: string): Promise<number | undefined>;
   rename(oldPrefix: string, newPrefix: string): Promise<void>;
-  getPresignedUrl(key: string, expiresIn?: number): Promise<string>;
+  getPresignedUrl(
+    key: string,
+    expiresIn?: number,
+    opts?: { responseContentDisposition?: string; responseContentType?: string },
+  ): Promise<string>;
   getReadStream(key: string): Promise<any>;
 }
