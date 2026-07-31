@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import type { IRepository } from '../db/repository';
 import type { UserRepository } from '../auth/user-repository';
 import type { ProviderRepository } from '../db/provider-repository';
+import type { IStorage } from '../storage/storage';
 import { createAssistantToolDefinitions, AssistantToolDefinition } from './tool-definitions';
 import { getTransportInputSchema, resolveExternalToolCall } from './tool-confirmation';
 
@@ -93,6 +94,7 @@ function createMcpServerInstance(
   userRepository: UserRepository,
   prisma: PrismaClient,
   providerRepository: ProviderRepository,
+  storage: IStorage,
   userId: string,
 ) {
   const server = new McpServer({
@@ -100,7 +102,7 @@ function createMcpServerInstance(
     version: '1.0.0',
   });
 
-  const tools = createAssistantToolDefinitions({ repository, userRepository, prisma, providerRepository });
+  const tools = createAssistantToolDefinitions({ repository, userRepository, prisma, providerRepository, storage });
   for (const tool of tools) {
     registerToolOnServer(server, tool, userId);
   }
@@ -113,6 +115,7 @@ export function createMcpRouter(
   repository: IRepository,
   userRepository: UserRepository,
   providerRepository: ProviderRepository,
+  storage: IStorage,
 ) {
   const router = new Hono<{ Variables: Variables }>();
 
@@ -132,7 +135,7 @@ export function createMcpRouter(
 
   router.all('/mcp', async (c) => {
     const userId = c.get('mcpUserId');
-    const server = createMcpServerInstance(repository, userRepository, prisma, providerRepository, userId);
+    const server = createMcpServerInstance(repository, userRepository, prisma, providerRepository, storage, userId);
 
     const transport = new WebStandardStreamableHTTPServerTransport();
 
