@@ -11,6 +11,11 @@ All notable changes to Remix Studio are documented here by version number.
 - **Signed File URLs for MCP & Assistant**: Added a `get_file_urls` tool that turns internal storage keys — from albums, libraries, and campaign post media — into temporary presigned URLs so connected agents can actually view, fetch, or download a file, with an optional `download` mode that returns a save-as link. Keys are only signed when they still belong to the authenticated user's own media; anything else is refused with a reason.
 - **Album Item Browsing over MCP**: Added a `get_album_items` tool that pages through one project's album and returns each item's prompt, format, aspect ratio, size, and storage keys, so an agent can pick a specific generated image before requesting a URL for it.
 
+### Fixed
+
+- **Gemini Batch Tool Calls in the Assistant**: Assistant turns that ran several tools at once — creating a run of campaign posts, for example — died mid-batch on Gemini 3.5 Flash Lite. Gemini issues an id with each parallel function call and, from 3.5 onwards, rejects the follow-up turn unless every function response carries the id back; the adapter was dropping them. Those ids are now kept with the tool call and echoed on both the replayed call and its response. Two calls to the same tool with identical arguments are also no longer merged into one, so a batch containing repeats still creates every item.
+- **Flash Lite Stopping Part-Way Through a Batch**: Flash Lite models default to minimal thinking, which is tuned for one-shot extraction rather than multi-step tool loops. The assistant now asks for a medium thinking level on those models whenever tools are available, so they work through a batch instead of trailing off.
+
 ## [1.18.0] - 2026-07-24
 
 ### Added
