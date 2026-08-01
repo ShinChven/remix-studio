@@ -188,29 +188,31 @@ model LibraryItem {
 }
 
 model Project {
-  id             String   @id @default(uuid())
-  userId         String
-  name           String
-  description    String?  @db.Text
-  type           String   @default("image") // "image", "text", or "video"
-  status         String   @default("active") // "active" or "archived"
-  providerId     String?
-  aspectRatio    String?
-  quality        String?
-  format         String?
-  shuffle        Boolean?
-  modelConfigId  String?
-  prefix         String?
-  background     String?
-  systemPrompt   String?  @db.Text
-  temperature    Float?
-  maxTokens      Int?
+  id                String   @id @default(uuid())
+  userId            String
+  name              String
+  description       String?  @db.Text
+  type              String   @default("image") // "image", "text", or "video"
+  status            String   @default("active") // "active" or "archived"
+  providerId        String?
+  aspectRatio       String?
+  quality           String?
+  format            String?
+  shuffle           Boolean?
+  modelConfigId     String?
+  prefix            String?
+  background        String?
+  systemPrompt      String?  @db.Text
+  temperature       Float?
+  maxTokens         Int?
   // Video generation defaults
-  duration       Int? // seconds
-  resolution     String? // '720p' | '1080p' | '4k'
-  sound          String? // 'on' | 'off'
-  lastQueueCount Int?
-  createdAt      DateTime @default(now())
+  duration          Int? // seconds
+  resolution        String? // '720p' | '1080p' | '4k'
+  sound             String? // 'on' | 'off'
+  lastQueueCount    Int?
+  // Workflow view preference: null/true shows disabled items, false hides them.
+  showDisabledItems Boolean?
+  createdAt         DateTime @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   jobs          Job[]

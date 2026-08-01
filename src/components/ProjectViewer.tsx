@@ -2079,6 +2079,28 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   };
 
+  // Whether disabled workflow items are shown is a per-project preference stored on
+  // the project, so hiding them on one device carries over to the next. Missing means
+  // "show" — that was the behaviour before the preference was persisted.
+  const showDisabledItems = localProject.showDisabledItems ?? true;
+
+  const handleToggleShowDisabledItems = async () => {
+    const previous = showDisabledItems;
+    const next = !previous;
+    // Applied optimistically: it only filters the list, so waiting on the write
+    // would make the menu feel unresponsive.
+    setLocalProject((prev) => ({ ...prev, showDisabledItems: next }));
+    try {
+      // Written on its own rather than through onUpdate, which re-sends the whole
+      // workflow — far too much traffic for flipping a view filter.
+      await apiUpdateProject(localProject.id, { showDisabledItems: next });
+    } catch (e) {
+      console.error('Failed to save disabled-item visibility:', e);
+      setLocalProject((prev) => ({ ...prev, showDisabledItems: previous }));
+      toast.error(t('projectViewer.toasts.disabledVisibilityFailed'));
+    }
+  };
+
   const handleToggleItemDisable = (id: string) => {
     const updated = {
       ...localProject,
@@ -2189,6 +2211,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         setIsModelSelectorOpen={setIsModelSelectorOpen}
         onAddDraftsToQueue={addDraftsToQueue}
         onToggleDisable={handleToggleItemDisable}
+        showDisabledItems={showDisabledItems}
+        onToggleShowDisabledItems={handleToggleShowDisabledItems}
         onFilesDrop={handleFilesDrop}
       />
 

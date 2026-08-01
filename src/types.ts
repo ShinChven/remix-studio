@@ -1609,6 +1609,8 @@ export interface Project {
   steps?: number;
   guidance?: number;
   lastQueueCount?: number;
+  // Workflow view preference: undefined/true shows disabled items, false hides them.
+  showDisabledItems?: boolean;
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud';

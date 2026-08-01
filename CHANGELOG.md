@@ -7,7 +7,7 @@ All notable changes to Remix Studio are documented here by version number.
 ### Added
 
 - **Claude Opus 5**: Added Claude Opus 5 to the Claude provider's text models, with a 1M-token prompt limit and 128K max output. Like Fable 5, Opus 4.8, and Sonnet 5, it accepts only the default temperature.
-- **Hide Disabled Workflow Items**: The project workflow's three-dot menu can now hide disabled items, with a count of how many are hidden. Hiding is view-only — drag-and-drop reordering still uses each item's real position.
+- **Hide Disabled Workflow Items**: The project workflow's three-dot menu can now hide disabled items, with a count of how many are hidden. The choice is saved with the project, so it carries across reloads and devices. Hiding is view-only — drag-and-drop reordering still uses each item's real position.
 - **Signed File URLs for MCP & Assistant**: Added a `get_file_urls` tool that turns internal storage keys — from albums, libraries, and campaign post media — into temporary presigned URLs so connected agents can actually view, fetch, or download a file, with an optional `download` mode that returns a save-as link. Keys are only signed when they still belong to the authenticated user's own media; anything else is refused with a reason.
 - **Album Item Browsing over MCP**: Added a `get_album_items` tool that pages through one project's album and returns each item's prompt, format, aspect ratio, size, and storage keys, so an agent can pick a specific generated image before requesting a URL for it.
 

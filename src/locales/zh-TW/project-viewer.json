@@ -47,6 +47,7 @@
       "archived": "已封存「{{name}}」",
       "unarchived": "已還原「{{name}}」",
       "archiveFailed": "變更封存狀態失敗，請再試一次。",
+      "disabledVisibilityFailed": "無法儲存已停用項目的顯示設定，請再試一次。",
       "savedToLibrary": "已儲存到資料庫",
       "saveToLibraryFailed": "儲存到資料庫失敗",
       "startJobsFailed": "啟動任務失敗，請重試。",

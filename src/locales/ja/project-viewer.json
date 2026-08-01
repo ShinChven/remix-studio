@@ -47,6 +47,7 @@
       "archived": "「{{name}}」をアーカイブしました",
       "unarchived": "「{{name}}」を復元しました",
       "archiveFailed": "アーカイブ状態の変更に失敗しました。もう一度お試しください。",
+      "disabledVisibilityFailed": "無効アイテムの表示設定を保存できませんでした。もう一度お試しください。",
       "savedToLibrary": "ライブラリに保存しました",
       "saveToLibraryFailed": "ライブラリへの保存に失敗しました",
       "startJobsFailed": "ジョブを開始できませんでした。もう一度お試しください。",

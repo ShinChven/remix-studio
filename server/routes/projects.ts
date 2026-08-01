@@ -528,6 +528,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         resolution: typeof body.resolution === 'string' ? body.resolution : undefined,
         sound: body.sound === 'on' || body.sound === 'off' ? body.sound : undefined,
         lastQueueCount: typeof body.lastQueueCount === 'number' ? body.lastQueueCount : undefined,
+        showDisabledItems: typeof body.showDisabledItems === 'boolean' ? body.showDisabledItems : undefined,
       };
 
       await repository.createProject(user.userId, project);
@@ -594,6 +595,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (typeof body?.resolution === 'string') updates.resolution = body.resolution;
       if (body?.sound === 'on' || body?.sound === 'off') updates.sound = body.sound;
       if (typeof body?.lastQueueCount === 'number') updates.lastQueueCount = body.lastQueueCount;
+      if (typeof body?.showDisabledItems === 'boolean') updates.showDisabledItems = body.showDisabledItems;
       
       // Storage check for new jobs (Drafts)
       if (updates.jobs) {

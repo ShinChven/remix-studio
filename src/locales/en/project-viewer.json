@@ -47,6 +47,7 @@
       "archived": "Archived \"{{name}}\"",
       "unarchived": "Restored \"{{name}}\"",
       "archiveFailed": "Failed to change archive status. Please try again.",
+      "disabledVisibilityFailed": "Failed to save the disabled-item view setting. Please try again.",
       "savedToLibrary": "Saved to library",
       "saveToLibraryFailed": "Failed to save to library",
       "startJobsFailed": "Failed to start jobs. Please try again.",
