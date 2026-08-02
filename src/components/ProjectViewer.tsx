@@ -2084,7 +2084,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   // "show" — that was the behaviour before the preference was persisted.
   const showDisabledItems = localProject.showDisabledItems ?? true;
 
-  const handleToggleShowDisabledItems = async () => {
+  const handleToggleShowDisabledItems = useCallback(async () => {
     const previous = showDisabledItems;
     const next = !previous;
     // Applied optimistically: it only filters the list, so waiting on the write
@@ -2099,7 +2099,37 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       setLocalProject((prev) => ({ ...prev, showDisabledItems: previous }));
       toast.error(t('projectViewer.toasts.disabledVisibilityFailed'));
     }
-  };
+  }, [showDisabledItems, localProject.id, t]);
+
+  // Pressing H toggles the disabled-item filter, mirroring the workflow menu entry.
+  // Ignored while typing, while a modifier is held (so browser and OS shortcuts still
+  // work), and while a modal, lightbox, or drawer is open — those cover the workflow
+  // list and some carry single-letter shortcuts of their own.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'h' && e.key !== 'H') return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing) return;
+
+      const active = (e.target as HTMLElement | null) ?? (document.activeElement as HTMLElement | null);
+      if (active) {
+        const tagName = active.tagName.toLowerCase();
+        if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || active.isContentEditable) return;
+      }
+
+      // Overlays in this app are all full-screen `fixed inset-0` layers, so their
+      // presence is the cheapest reliable signal that something sits on top.
+      if (document.querySelector('.fixed.inset-0')) return;
+
+      // No-op with nothing to hide, matching the menu entry being disabled then.
+      if (!(localProject.workflow || []).some((item) => item.disabled)) return;
+
+      e.preventDefault();
+      void handleToggleShowDisabledItems();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [localProject.workflow, handleToggleShowDisabledItems]);
 
   const handleToggleItemDisable = (id: string) => {
     const updated = {

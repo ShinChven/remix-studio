@@ -294,9 +294,14 @@ export function WorkflowPanel({
                         {t(showDisabledItems ? 'projectViewer.main.hideDisabledItems' : 'projectViewer.main.showDisabledItems')}
                       </span>
                     </span>
-                    {disabledItemsCount > 0 && (
-                      <span className="shrink-0 text-[9px] font-black text-neutral-500 dark:text-neutral-500">{disabledItemsCount}</span>
-                    )}
+                    <span className="shrink-0 flex items-center gap-1.5">
+                      {disabledItemsCount > 0 && (
+                        <span className="text-[9px] font-black text-neutral-500 dark:text-neutral-500">{disabledItemsCount}</span>
+                      )}
+                      <kbd className="hidden lg:inline-flex items-center rounded border border-neutral-200 dark:border-white/10 bg-neutral-100 dark:bg-neutral-800 px-1.5 font-mono text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
+                        H
+                      </kbd>
+                    </span>
                   </button>
 
                   <div className="my-1 h-px bg-neutral-200/60 dark:bg-white/10" />
