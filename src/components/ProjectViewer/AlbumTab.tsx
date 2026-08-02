@@ -210,17 +210,19 @@ export function AlbumTab({
     return decoded || item.id;
   };
 
-  const renderReuseButton = (item: AlbumItem, variant: 'overlay' | 'inline') => {
+  // 'title' sits beside the filename's edit pencil on media cards; 'inline'
+  // sits with the row actions in the text and audio lists.
+  const renderReuseButton = (item: AlbumItem, variant: 'title' | 'inline') => {
     if (!onReuseWorkflow) return null;
     const isLoading = reusingAlbumItemId === item.id;
-    const iconClass = variant === 'overlay' ? 'w-4 h-4' : 'w-3.5 h-3.5';
+    const iconClass = variant === 'title' ? 'w-[1em] h-[1em]' : 'w-3.5 h-3.5';
     return (
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onReuseWorkflow(item); }}
         disabled={Boolean(reusingAlbumItemId)}
-        className={variant === 'overlay'
-          ? 'w-7 h-7 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/20 transition-all shadow-lg disabled:opacity-50'
+        className={variant === 'title'
+          ? 'flex-shrink-0 inline-flex items-center justify-center rounded-sm text-[13px] leading-none text-neutral-500 hover:text-blue-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 disabled:opacity-50'
           : 'flex-shrink-0 p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors disabled:opacity-50'}
         title={t('projectViewer.album.reuseWorkflow')}
         aria-label={t('projectViewer.album.reuseWorkflow')}
@@ -710,8 +712,6 @@ export function AlbumTab({
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
-
-                      {renderReuseButton(item, 'overlay')}
                     </div>
 
                     <img
@@ -807,6 +807,7 @@ export function AlbumTab({
                       >
                         <Pencil className="w-[1em] h-[1em]" />
                       </button>
+                      {renderReuseButton(item, 'title')}
                     </div>
                     <button
                       type="button"
