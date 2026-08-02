@@ -62,6 +62,7 @@ export interface IRepository {
 
   // === Album CRUD ===
   getAllProjectAlbumItems(userId: string, projectId: string): Promise<AlbumItem[]>;
+  getAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
   addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void>;
   deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
 

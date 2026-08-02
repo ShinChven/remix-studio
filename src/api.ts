@@ -547,9 +547,18 @@ export async function fetchProjectCompletedJobs(
 export async function fetchProjectJobConfiguration(
   id: string,
   jobId: string,
-): Promise<Pick<import('./types').Job, 'workflowSnapshot' | 'providerId' | 'modelConfigId' | 'aspectRatio' | 'quality' | 'background' | 'format' | 'duration' | 'resolution' | 'sound'>> {
+): Promise<import('./types').JobConfiguration> {
   const res = await apiFetch(`/api/projects/${id}/jobs/${jobId}/configuration`, { headers: getHeaders(false) });
-  return handleResponse<Pick<import('./types').Job, 'workflowSnapshot' | 'providerId' | 'modelConfigId' | 'aspectRatio' | 'quality' | 'background' | 'format' | 'duration' | 'resolution' | 'sound'>>(res, 'Failed to get job configuration');
+  return handleResponse<import('./types').JobConfiguration>(res, 'Failed to get job configuration');
+}
+
+/** Resolve the generation settings behind an album item (via the job that produced it). */
+export async function fetchProjectAlbumItemConfiguration(
+  id: string,
+  itemId: string,
+): Promise<import('./types').JobConfiguration> {
+  const res = await apiFetch(`/api/projects/${id}/album/${itemId}/configuration`, { headers: getHeaders(false) });
+  return handleResponse<import('./types').JobConfiguration>(res, 'Failed to get album item configuration');
 }
 
 export async function deleteProjectJob(id: string, jobId: string): Promise<void> {

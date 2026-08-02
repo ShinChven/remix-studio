@@ -322,6 +322,8 @@
       "imageContexts": "+{{count}} 图",
       "view": "查看",
       "openOriginal": "打开原图",
+      "reuseWorkflow": "重用工作流",
+      "reuseWorkflowUnavailable": "该作品的工作流已不可用。",
       "playVideo": "播放视频",
       "viewFullPrompt": "点击查看完整提示词",
       "raw": "原始",

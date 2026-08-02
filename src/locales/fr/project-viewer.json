@@ -322,6 +322,8 @@
       "imageContexts": "+{{count}} img",
       "view": "Voir",
       "openOriginal": "Ouvrir l'original",
+      "reuseWorkflow": "Réutiliser le workflow",
+      "reuseWorkflowUnavailable": "Le workflow de ce résultat n'est plus disponible.",
       "playVideo": "Lire la vidéo",
       "viewFullPrompt": "Cliquer pour voir le prompt complet",
       "raw": "BRUT",

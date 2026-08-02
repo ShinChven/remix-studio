@@ -322,6 +322,8 @@
       "imageContexts": "+{{count}} 画像",
       "view": "表示",
       "openOriginal": "元画像を開く",
+      "reuseWorkflow": "ワークフローを再利用",
+      "reuseWorkflowUnavailable": "この結果のワークフローは利用できません。",
       "playVideo": "動画を再生",
       "viewFullPrompt": "クリックして完全なプロンプトを表示",
       "raw": "RAW",
