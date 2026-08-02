@@ -47,6 +47,7 @@
       "archived": "已归档 “{{name}}”",
       "unarchived": "已恢复 “{{name}}”",
       "archiveFailed": "更改归档状态失败，请重试。",
+      "disabledVisibilityFailed": "无法保存已禁用项目的显示设置，请重试。",
       "savedToLibrary": "已保存到资料库",
       "saveToLibraryFailed": "保存到资料库失败",
       "startJobsFailed": "启动任务失败，请重试。",

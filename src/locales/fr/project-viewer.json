@@ -47,6 +47,7 @@
       "archived": "« {{name}} » archivé",
       "unarchived": "« {{name}} » restauré",
       "archiveFailed": "Échec du changement de statut d'archive. Veuillez réessayer.",
+      "disabledVisibilityFailed": "Échec de l'enregistrement du réglage d'affichage des éléments désactivés. Veuillez réessayer.",
       "savedToLibrary": "Enregistré dans la bibliothèque",
       "saveToLibraryFailed": "Échec de l'enregistrement dans la bibliothèque",
       "startJobsFailed": "Impossible de démarrer les tâches. Réessayez.",

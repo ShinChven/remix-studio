@@ -59,6 +59,8 @@ interface WorkflowPanelProps {
   setIsModelSelectorOpen: (open: boolean) => void;
   onAddDraftsToQueue: () => void;
   onToggleDisable?: (id: string) => void;
+  showDisabledItems: boolean;
+  onToggleShowDisabledItems: () => void;
   onFilesDrop?: (files: File[]) => void;
 }
 
@@ -115,13 +117,14 @@ export function WorkflowPanel({
   setIsModelSelectorOpen,
   onAddDraftsToQueue,
   onToggleDisable,
+  showDisabledItems,
+  onToggleShowDisabledItems,
   onFilesDrop,
 }: WorkflowPanelProps) {
   const { t } = useTranslation();
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isProjectInfoOpen, setIsProjectInfoOpen] = useState(false);
   const [isDragOverFiles, setIsDragOverFiles] = useState(false);
-  const [showDisabledItems, setShowDisabledItems] = useState(true);
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -281,7 +284,7 @@ export function WorkflowPanel({
               {isActionMenuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-52 p-2 rounded-xl border border-neutral-200/60 dark:border-white/10 bg-white/90 dark:bg-neutral-900/95 backdrop-blur-xl shadow-xl z-30">
                   <button
-                    onClick={() => closeMenuAndRun(() => setShowDisabledItems((show) => !show))}
+                    onClick={() => closeMenuAndRun(onToggleShowDisabledItems)}
                     disabled={disabledItemsCount === 0}
                     className={`${menuButtonBaseClass} justify-between text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/80 dark:hover:bg-neutral-800/80 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-neutral-600 dark:disabled:hover:text-neutral-300`}
                   >
