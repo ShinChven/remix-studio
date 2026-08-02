@@ -77,7 +77,8 @@ APP_URL=http://localhost:3000
 Threads publishes images and videos by fetching them from a **public URL** that Meta cURLs server-side. Remix Studio supplies time-limited presigned URLs from your configured [S3-compatible storage](/concepts/storage).
 
 - Your storage's public endpoint (`S3_PUBLIC_ENDPOINT` / custom domain) must be reachable from the public internet, or Meta cannot fetch the media and publishing will fail.
-- Supported post shapes: text-only, single image, single video, and carousels of **2 to 20** image/video items.
+- The Threads adapter supports text-only, one image/video, and carousel publishing (the adapter enforces Threads' 20-item ceiling). The current Remix Studio post editor limits a post to **four** media items, so UI-created carousels contain 2–4 items.
+- Remix Studio creates child containers sequentially, waits for every child and the parent container to finish processing, then publishes. A container that reports `ERROR`/`EXPIRED` or does not finish within the polling window fails that channel execution.
 
 ## Troubleshooting
 

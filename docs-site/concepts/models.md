@@ -30,15 +30,15 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Vertex AI** | `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` |
 | **OpenAI** | `GPT-5.6`, `GPT-5.6 Terra`, `GPT-5.6 Luna`, `GPT-5.5`, `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` |
 | **Grok** | `Grok 4.5`, `Grok 4.20`, `Grok 4.3`, `Grok 4.1 Fast` |
-| **Claude** | `Claude Sonnet 5`, `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` |
+| **Claude** | `Claude Fable 5`, `Claude Opus 5`, `Claude Opus 4.8`, `Claude Sonnet 5`, `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` |
 | **Alibaba Cloud DashScope** | `Qwen3.6 Max`, `Qwen3.6 Plus`, `Qwen3.6 Flash`, `Qwen3.6 VL Max`, `Qwen3.6 VL Plus` |
 
 ## 3. Image Generation
 
 | Provider | Supported Models |
 | :--- | :--- |
-| **Google AI** | `nano banana 2`, `nano banana 2 Lite` |
-| **Vertex AI** | `nano banana 2`, `nano banana 2 Lite` |
+| **Google AI** | `nano banana 2`, `nano banana Pro`, `nano banana 2 Lite` |
+| **Vertex AI** | `nano banana 2`, `nano banana Pro`, `nano banana 2 Lite` |
 | **OpenAI** | `GPT Image 2`, `GPT Image 1.5`, `GPT Image 1 Mini` |
 | **Grok** | `Grok Imagine`, `Grok Imagine Pro` |
 | **RunningHub** | `nano banana 2`, `nano banana Pro`, `GPT Image 2`, `Qwen Image 2 Pro`, `Grok Imagine Pro`, `Seedream 5.0 Pro`, `Seedream V5 Pro`, `Wan 2.7 Pro` |
@@ -70,17 +70,21 @@ This matrix reflects the profiles shipped with the current release. Model availa
 
 ## 6. Chat Assistant Models
 
-The built-in Remix Studio [Assistant](/concepts/assistant) acts as your agent within the app. By default, it is powered by **Gemini** models (such as `Gemini 3.1 Pro`), but the assistant runner supports multiple backends. You can select your preferred assistant model from the assistant settings, including capable reasoning models from:
-- **Google AI / Vertex AI** (e.g., Gemini)
+The in-app [Assistant](/concepts/assistant) can use text profiles belonging to provider records of these types:
+
+- **Google AI**
 - **Anthropic (Claude)**
 - **OpenAI**
-- **Grok**
 - **Alibaba Cloud**
 
-These models are optimized for tool-calling and understanding the internal state of your library and storage.
+Vertex AI and Grok profiles can be used by generation projects where supported, but their provider types are not accepted by the current assistant chat adapter.
+
+The assistant receives the shared tool catalog independently of the model profile. Successful orchestration still depends on the upstream model handling tool calls reliably; a profile being categorized as text does not guarantee equal agent performance.
 
 ## Choosing Models
 
 - Models are selected per provider as saved **model profiles**, so jobs reference a profile instead of repeating raw model settings.
-- A project sets a default provider; individual jobs can override the provider (and therefore the model). See [Providers & Models](/concepts/providers).
+- A project sets a default provider/model; the resolved choice is copied into each draft/job. See [Providers & Models](/concepts/providers).
 - The assistant and MCP clients can list usable model/provider pairings via `list_available_models`.
+- Profile options drive the project UI: prompt limits, context support, aspect ratio, quality, background, duration, resolution, sound, and audio-format controls are shown only when declared.
+- A custom alias adds a model to an existing provider adapter; it does not add a new transport or generator family.

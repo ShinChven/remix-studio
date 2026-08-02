@@ -1,16 +1,33 @@
 # Configuration Reference
 
-Remix Studio is configured entirely through environment variables. This page documents every variable, grouped by purpose. For local development copy `.env.example`; for containerized deployments copy one of the `docker/env.*.example` files.
+Remix Studio is configured through environment variables. This page documents the variables read by the application and the supported Docker Compose templates. For local development copy `.env.example`; for containerized deployments copy the example matching the compose layout.
 
 ## Ports & URLs
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `APP_PORT` | `3000` | Port the app listens on. |
+| `PORT` | `3000` | Port the Node.js process listens on inside its runtime. |
+| `APP_PORT` | `3000` | Host port mapped to the container's `PORT` by the supplied compose files. It is not read directly by `server.ts`. |
 | `APP_URL` | `http://localhost:3000` | Public base URL. Must match the base of any OAuth callback URLs you register. |
 | `POSTGRES_PORT` | `5432` | Host-published PostgreSQL port (compose). |
 | `MINIO_API_PORT` | `9000` | Host-published MinIO API port (compose). |
 | `MINIO_CONSOLE_PORT` | `9001` | Host-published MinIO console port (compose). |
+
+`APP_URL` must be the browser-visible origin, with no path suffix. It is used to build social, store, Google login/Drive, and other callback URLs. `PORT` and `APP_PORT` can differ when a container listens on one port and the host publishes another.
+
+## Runtime & Reverse Proxy
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `NODE_ENV` | development tooling dependent | Use `production` for the built server. Also changes secure defaults such as storage bucket auto-creation. |
+| `TRUST_PROXY` | `false` | When `1`, `true`, or `yes`, rate limiting uses the leading `X-Forwarded-For` address. Enable only behind a trusted proxy that overwrites this header. |
+| `JOB_PROCESSING_TIMEOUT_MS` | `7200000` (2 hours) | Maximum time an observed detached provider task may remain non-terminal before the job is failed and its concurrency slot released. |
+| `DISABLE_HMR` | unset | Development-only Vite switch used when hot-module-reload WebSockets are unsuitable. |
+| `GEMINI_API_KEY` | unset | Build-time/development compatibility variable exposed by Vite. Normal Remix Studio generation and assistant use provider credentials stored in the app. |
+
+::: warning Trust proxy carefully
+If clients can connect directly to the app and supply their own `X-Forwarded-For`, enabling `TRUST_PROXY` lets them choose the address used by the in-memory authentication rate limiter. Restrict direct access and configure the proxy to replace forwarded headers.
+:::
 
 ## Database
 
@@ -71,6 +88,16 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | `X_CLIENT_ID` / `X_CLIENT_SECRET` | OAuth 2.0 credentials for X (Twitter) campaigns. See [X Setup](/integrations/x-platform). |
 | `THREADS_APP_ID` / `THREADS_APP_SECRET` | Threads (Meta) use-case credentials. Redirect: `${APP_URL}/api/social/threads/callback`. See [Threads Setup](/integrations/threads-platform). |
 
+## Digital Stores
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `GUMROAD_CLIENT_ID` | empty | OAuth application client ID used by **Exports → Stores**. |
+| `GUMROAD_CLIENT_SECRET` | empty | Gumroad OAuth client secret. |
+| `GUMROAD_SCOPE` | `edit_products view_profile view_sales` | Space-separated OAuth scopes requested when connecting Gumroad. |
+
+The redirect URL is `${APP_URL}/api/stores/gumroad/callback`. Store tokens are encrypted using the same deployment encryption facility as other external credentials.
+
 ## Backups (Docker)
 
 | Variable | Default | Description |
@@ -79,6 +106,18 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | `BACKUP_KEEP_DAYS` | `7` | Retention in days. `0` keeps all backups. |
 
 See [Backup & Restore](/operations/backup-and-restore).
+
+## Compose Service Names, Ports & Volumes
+
+These variables are consumed by the supplied compose files and helper scripts rather than by the Node.js application:
+
+| Variable | Purpose |
+| :--- | :--- |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Bundled PostgreSQL initialization and connection values. Keep `DATABASE_URL` consistent with them. |
+| `POSTGRES_CONTAINER_NAME`, `MINIO_CONTAINER_NAME`, `APP_CONTAINER_NAME` | Optional container-name overrides used by compose templates. |
+| `POSTGRES_DATA_DIR`, `MINIO_DATA_DIR` | Host directories for persistent database and MinIO data. |
+| `POSTGRES_PORT`, `MINIO_API_PORT`, `MINIO_CONSOLE_PORT` | Host-published ports. |
+| `BACKUP_DIR`, `BACKUP_KEEP_DAYS` | Database dump mount and helper-script retention. |
 
 ## Deployment Image
 
@@ -91,3 +130,4 @@ See [Backup & Restore](/operations/backup-and-restore).
 - The app auto-creates a default admin user if `DEFAULT_ADMIN_EMAIL` and `DEFAULT_ADMIN_PASSWORD` are provided and the user does not already exist.
 - Storage is implemented against S3-compatible APIs, so MinIO works well for development and AWS S3 works for production.
 - For host-based local development (`docker compose up -d postgres minio` + `npm run dev`), reach MinIO at `http://localhost:9000`.
+- A database backup does not include bucket objects or `PROVIDER_ENCRYPTION_KEY`; back up all three separately.
