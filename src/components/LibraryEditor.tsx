@@ -828,8 +828,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                               {updatedAtLabel}
                             </span>
                           )}
-                          {/* Touch devices never hover, so the actions stay visible on phones. */}
-                          <div className="flex items-center gap-0.5 shrink-0 self-end -mr-1 sm:self-auto sm:mr-0 sm:opacity-0 sm:group-hover/item:opacity-100 transition-opacity">
+                          {/* Actions stay visible at every breakpoint — no hover required. */}
+                          <div className="flex items-center gap-0.5 shrink-0 self-end -mr-1 sm:self-auto sm:mr-0">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
