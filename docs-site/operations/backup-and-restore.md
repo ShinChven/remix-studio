@@ -1,8 +1,20 @@
-# Database Backup & Restore
+# Backup & Restore
 
-This guide covers how to back up and restore the PostgreSQL database used by Remix Studio when running via Docker. The application container includes `pg_dump`, `psql`, and automated helper scripts.
+This guide covers the PostgreSQL helper scripts shipped with the Docker image and the additional data needed for a complete Remix Studio backup.
 
-## Architecture
+::: warning A database dump is not a complete backup
+PostgreSQL stores records and object keys. Generated media, library uploads, campaign media, thumbnails, and export ZIPs live in object storage. Provider and external-service credentials also require the original `PROVIDER_ENCRYPTION_KEY` to decrypt.
+:::
+
+For a recoverable deployment, back up:
+
+1. PostgreSQL.
+2. The main object-storage bucket (`S3_BUCKET`).
+3. The export bucket (`S3_EXPORT_BUCKET`) if archives must be retained.
+4. Environment/deployment secrets, especially `PROVIDER_ENCRYPTION_KEY` and `JWT_SECRET`.
+5. The application version or image tag used at backup time.
+
+## Database Backup Architecture
 
 Backup files are generated inside the application container and saved to `/app/backups`. To ensure these backups persist across container restarts and updates, this path must be mounted as a host volume.
 
@@ -87,7 +99,32 @@ Add:
 0 2 * * * docker exec remix-studio-app /app/backup.sh >> /var/log/remix-studio-backup.log 2>&1
 ```
 
-## Restoring From a Backup
+The helper applies retention only to matching database dump files in `/app/backups`. It does not copy object storage or secrets.
+
+## Backing Up Object Storage
+
+Use the native versioning/replication/export feature of your storage provider or a compatible tool that preserves object bytes and keys.
+
+- **MinIO**: mirror both buckets to a different disk or remote target; copying the local MinIO data directory is safe only with a storage-consistent snapshot.
+- **AWS S3 / R2 / managed storage**: enable versioning and/or replication, or run a scheduled bucket copy to an independent account/location.
+- **Other S3-compatible services**: verify that multipart objects, metadata, and every prefix are included.
+
+Record the exact bucket names, endpoints, regions, and custom-domain settings. Restoring bytes under different keys will leave database references broken.
+
+For the most consistent backup, pause new generation, uploads, exports, campaign-media processing, and trash cleanup while capturing the database and buckets. If that is not possible, take storage and database snapshots as close together as possible and expect to use project orphan analysis after recovery.
+
+## Backing Up Secrets
+
+Keep an encrypted copy of production configuration in a secret manager or offline recovery store. At minimum preserve:
+
+- `PROVIDER_ENCRYPTION_KEY` — required to decrypt saved provider, social, store, and connected-service credentials.
+- `JWT_SECRET` — changing it invalidates existing access tokens.
+- Database and object-storage credentials, or the identity configuration used to obtain them.
+- OAuth client secrets for Google, X, Threads, and Gumroad.
+
+Do not put an unencrypted `.env` file in the same publicly accessible backup location as the database and buckets.
+
+## Restoring PostgreSQL
 
 ::: danger Data loss warning
 Restoring a backup will **drop and recreate** the target database. All current data is permanently lost and replaced with the state from the backup. The restore script prompts for confirmation before proceeding.
@@ -129,3 +166,30 @@ docker exec remix-studio-app npx prisma migrate deploy
 ```bash
 docker compose restart app
 ```
+
+## Restoring a Complete Deployment
+
+Use this order for a disaster recovery:
+
+1. Stop Remix Studio workers or keep the application offline.
+2. Provision PostgreSQL and both object-storage buckets.
+3. Restore the bucket objects under their original keys.
+4. Restore the PostgreSQL dump.
+5. Restore the original `PROVIDER_ENCRYPTION_KEY` and remaining environment configuration.
+6. Start the target application version and run `prisma migrate deploy`.
+7. Verify `/healthz` and `/readyz`.
+8. Test representative project media, library media, an export download, provider credential access, and a non-destructive connected-service read.
+9. Upgrade to a newer application version only after the restored version is healthy.
+
+If bucket names or public endpoints changed, update the S3 environment variables. Stored database values are generally object keys, while signed/display URLs are rebuilt by the server; however, externally cached URLs and third-party posts are not rewritten.
+
+## Verification and Retention
+
+A backup is useful only if it can be restored. Periodically:
+
+- Test-decompress a database dump with `gzip -t`.
+- Restore to an isolated PostgreSQL database.
+- Compare object counts/bytes for both buckets.
+- Open original, optimized, and thumbnail variants.
+- Confirm encrypted provider credentials can be decrypted with the recovered key.
+- Keep at least one copy outside the deployment host and storage account.

@@ -1,55 +1,101 @@
 # Workflows & Combinations
 
-A **workflow** is the heart of Remix Studio. It defines the inputs that get combined into generation drafts. Instead of writing each prompt variant by hand, you assemble reusable and direct inputs, and the engine expands them.
+A **workflow** is the ordered recipe used to compose generation drafts. It contains direct text/media steps and references to reusable [libraries](/concepts/libraries). The workflow is resolved into drafts first; only the drafts you start consume provider calls.
 
-## Inputs
+## Workflow Inputs
 
-A workflow is built from two kinds of inputs across text, image, video, and audio slots:
+Workflow steps can be:
 
-- **Library-backed inputs** — pulled from reusable [libraries](/concepts/libraries) (prompt fragments, reference images, etc.).
-- **Direct inputs** — pinned or manually entered text/image/audio/video values inline in the workflow.
+- **Direct text** — fixed text added to every generated prompt.
+- **Direct image, video, or audio** — a fixed media context added to every generated draft, when the project/model accepts that modality.
+- **Library reference** — one eligible item is chosen from a text, image, video, or audio library.
 
-You can mix both freely. You can also change the source library on a workflow item, and filter library items by tags using an **AND/OR tag match mode**.
+Direct steps contribute one fixed choice. A library step contributes all of its non-empty, tag-matching items. Disabled steps are skipped entirely without being deleted.
 
-## The Combination Engine
+Text choices are joined in workflow order with a blank line between them. Media choices are collected into the corresponding image, video, and audio context arrays. This means workflow order is significant for composed text even though a library's own items are sorted only for browsing.
 
-When you run the workflow, the engine expands your inputs into draft permutations.
+## Filtering a Library Step
 
-> If you have **3** subject prompts, **4** style prompts, and **2** reference-image sets, Remix Studio produces **3 × 4 × 2 = 24** drafts from one workflow — before you send anything to a provider.
+A library step can select tags and choose an **OR** or **AND** match mode:
 
-This is the full Cartesian product across the selected inputs.
+- **OR** includes items containing at least one selected tag.
+- **AND** includes only items containing every selected tag.
+- No selected tags means every non-empty item is eligible.
+
+If filtering leaves a library step with no eligible items, that step contributes no choice. Use the library preview from the workflow to check the effective item set before creating drafts.
+
+## Combination Mode
+
+With shuffle disabled, the engine calculates the Cartesian product of all contributing choice groups.
+
+> 3 subjects × 4 styles × 2 reference images = **24 possible combinations**.
+
+The **Job Quantity** field controls how many drafts are actually created. The total shown beside it is the number of possible combinations, and the total can be copied into the quantity field for a complete sweep.
+
+Combination order is deterministic. If the requested quantity exceeds the number of unique combinations, the engine cycles from the beginning and creates repeated combinations with new job IDs and filename suffixes. Set the quantity to the displayed total or less when you require unique drafts.
 
 ## Shuffle Mode
 
-When `shuffle` is enabled, the workflow **samples** from those libraries instead of enumerating the full Cartesian product. Use it for exploratory sampling when the full combination set would be too large.
+With shuffle enabled, the engine creates exactly the requested number of samples. For every sample it:
 
-| Mode | Behavior | Use when |
+1. Keeps every non-empty direct step.
+2. Picks one random eligible item independently from each library step.
+3. Composes the resulting text and media contexts.
+
+Sampling is with replacement, so the same combination can appear more than once. Shuffle is useful for exploration or when a full Cartesian product is too large; it is not a guarantee of unique or evenly distributed combinations.
+
+| Mode | Draft selection | Best for |
 | :--- | :--- | :--- |
-| Combination (default) | Enumerates every permutation | You want exhaustive coverage |
-| Shuffle | Randomly samples permutations | You want exploratory variety without thousands of drafts |
+| Combination | Deterministic sequence through the Cartesian product | Exhaustive or reproducible coverage |
+| Shuffle | Independent random pick per library step for each draft | Fast exploration and bounded sample sizes |
 
-## Drafts → Queue
+## Draft Composition and Filenames
 
-Expanding a workflow creates **drafts**. Drafts are not executed automatically — you choose which to run:
+Creating drafts stores the resolved values, not only a pointer to the workflow:
 
-1. Expand the workflow into drafts (all permutations, or a shuffle sample).
-2. Review and select the drafts you actually want.
-3. Queue all or selected drafts. Only jobs marked `pending` are enqueued.
+- Composed prompt text.
+- Image, video, and audio context arrays.
+- Provider and model selection.
+- Output options such as aspect ratio, quality, format, duration, resolution, or sound.
+- A workflow snapshot for later inspection and reuse.
 
-This separation lets you generate a large draft set cheaply, then spend API calls only on the runs you care about. Execution is handled by the [queue](/concepts/queue) with provider-level concurrency.
+Library item titles and tags become filename parts. The project filename prefix is prepended when configured, and a short unique suffix prevents collisions.
 
-## Editing Workflow Items
+If a model declares a prompt limit, Remix Studio checks the composed drafts. When one or more exceed that limit, you can cancel or allow the app to truncate affected prompts before they are saved.
 
-The workflow list supports productivity features:
+## Drafts, Queue, and Completed Results
 
-- **Drag and drop** media files directly into the workflow list.
-- **Paste** text and media with `Cmd+V` / `Ctrl+V`.
-- The list **auto-scrolls** to the bottom as new items are added.
-- An **Image Editor** lets you crop and draw directly on workflow images, with a reset option to revert edits.
+The project separates preparation from execution:
 
-Workflow state is synchronized carefully: the app fetches fresh project state before applying updates and serializes rapid updates with database locks to avoid overwriting concurrent changes.
+1. **Draft** — review the prompt, contexts, model, and output settings. Start one, selected drafts, or all drafts.
+2. **Queue** — pending, processing, and failed jobs appear here. Retry or remove jobs individually or in a selection.
+3. **Done** — completed job records, including the configuration that produced each result.
+4. **Album / Texts / Audios** — durable output items used for viewing, copying, exporting, or campaign media.
+
+Starting a draft changes it into a pending server-side job. A storage estimate is checked before this transition. See [Queue & Concurrency](/concepts/queue) for dispatch and recovery behavior.
+
+## Editing Workflow Steps
+
+The workflow editor supports:
+
+- Reordering steps.
+- Temporarily disabling a step.
+- Changing the library used by an existing library step.
+- Previewing a library and editing its tag filter.
+- Dragging files into the workflow or pasting text/media with `Cmd+V` / `Ctrl+V`.
+- Cropping or drawing on direct workflow images, with reset support.
+- Saving direct inputs into compatible libraries.
+
+Project updates replace the stored workflow with the submitted ordered list. The UI serializes rapid saves, and assistant/MCP callers must fetch the latest project immediately before replacing a workflow so that unchanged steps are deliberately carried forward.
+
+## Output Type and Model Compatibility
+
+The project type determines the output processor: text, image, video, or audio. Input support is then constrained by the selected model's declared capabilities. For example, an audio project accepts text and only offers reference images when that audio model declares image support.
+
+The presence of an input control does not make every provider/model combination valid. Select the provider and model first, then use the options the project editor exposes for that model. See [Supported Workflows](/concepts/supported-workflows).
 
 ## Related
 
-- [Supported Workflows](/concepts/supported-workflows) — the full matrix of input → output types.
-- [Projects & Albums](/concepts/projects) — where workflows live and outputs land.
+- [Libraries & Prompts](/concepts/libraries) — reusable choice groups and tag filters.
+- [Projects & Albums](/concepts/projects) — project tabs, outputs, and reuse.
+- [Queue & Concurrency](/concepts/queue) — how selected drafts execute.

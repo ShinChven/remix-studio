@@ -15,10 +15,11 @@ In Docker deployments, the application container runs `prisma migrate deploy` au
 
 See [Docker Deployment](/guide/docker-deployment) for image-tag details.
 
-## Breaking Changes to Be Aware Of
+## Compatibility Notes
 
-- **All existing sessions are invalidated after upgrading.** The authentication system was hardened to use HttpOnly cookies exclusively and now includes a session version in each token. Existing JWTs are no longer accepted, so all users must sign in again.
-- **Reference image URLs can use HTTP or HTTPS, but cannot point to private IPs.** Jobs that reference images via internal network addresses will be rejected.
+- Normal upgrades do not automatically invalidate every current session. Individual security migrations or releases can change token/session behavior; read the release notes between your current and target versions.
+- Reference URLs can use HTTP or HTTPS, but server-side provider and media fetches reject unsafe private/internal network targets.
+- Database migrations are forward operations. Restore the pre-upgrade database and matching object-storage snapshot if a rollback requires an older schema.
 
 ## Keep PROVIDER_ENCRYPTION_KEY Stable
 
@@ -31,10 +32,12 @@ If you previously ran an older version with a longer key value, the app may have
 ## Recommended Upgrade Procedure (Docker)
 
 1. **Back up the database** first — see [Backup & Restore](/operations/backup-and-restore).
-2. Pull the new image (or update `REMIX_STUDIO_IMAGE`).
-3. Restart the stack; the container applies migrations on startup.
-4. Confirm health at `/healthz` and `/readyz`.
-5. Notify users that they will need to sign in again.
+2. Back up the main/export buckets and confirm the encryption key is recoverable.
+3. Read every release note between the installed and target versions.
+4. Pull the new image (or update `REMIX_STUDIO_IMAGE`).
+5. Restart the stack; the container applies migrations on startup.
+6. Confirm health at `/healthz` and `/readyz`.
+7. Test sign-in, provider decryption, representative media, queue dispatch, and export download.
 
 ## Changelog
 

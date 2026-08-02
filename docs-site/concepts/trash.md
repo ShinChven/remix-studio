@@ -1,38 +1,54 @@
 # Recycle Bin (Trash)
 
-Deleting media in Remix Studio is **soft delete** first: items move to a per-user **recycle bin** instead of being destroyed immediately. This gives you a safety net to recover from accidental deletes before the space is reclaimed.
+Trash provides recoverable deletion for project album results. It is user-scoped and preserves enough album metadata and storage references to restore an item to its original project.
 
-## What Goes to Trash
+## What Uses Trash
 
-[Album](/concepts/projects) media items (generated outputs and uploads) are moved to the recycle bin when deleted, individually or in bulk. Trashed items keep their image, thumbnail, and optimized variants so they can be previewed and restored intact.
+Deleting one or several album items from a project moves them to Trash. A trash record keeps:
 
-## Restoring
+- Original project ID and name.
+- Prompt or generated text.
+- Image, video, and audio context references.
+- Original, optimized, and thumbnail storage keys.
+- Provider/model and output metadata.
+- Size, duration, and resolution where applicable.
 
-- **Restore a single item** back to its project album.
-- **Restore in batch** — select multiple trashed items and restore them together.
+Deleting a library, an entire project, an export, a job record, or a project orphan follows a different path and is not recoverable here.
+
+## Restore
+
+Restore one item or select several for batch restore. The database recreates the album records in their original projects and removes the corresponding trash records. Project live events notify open viewers.
+
+Restoration depends on the project and referenced objects still existing. Deleting the whole project or manually removing bucket objects can make a trash record unrestorable.
 
 ## Permanent Deletion
 
-When you are sure, remove items for good:
+Trash supports:
 
-- **Delete a single item** permanently.
-- **Delete in batch** — permanently remove a selected set.
-- **Empty trash** — permanently remove everything in the recycle bin at once.
+- Permanent deletion of one item.
+- Batch permanent deletion of selected items.
+- **Empty Trash** for every item owned by the current user.
 
-::: warning
-Permanent deletion and emptying the trash cannot be undone — the underlying objects are removed from storage.
+Permanent deletion gathers the original, optimized, thumbnail, and context keys that belong to the trash records, deletes the objects, then removes the records.
+
+::: danger
+Permanent deletion cannot be undone. Verify your selection and backups before using batch delete or Empty Trash.
 :::
 
-## Trash & Storage
+## Storage Accounting
 
-Trashed items **still count toward your storage usage** until they are permanently deleted. Storage reporting breaks usage into projects, libraries, archives, and recycle-bin categories, so you can see how much space the recycle bin is holding and empty it to reclaim quota. See [Storage](/concepts/storage).
+Moving an item to Trash does not reclaim its bytes because the underlying objects remain available. Trash is shown as a separate category in account storage analysis and counts against the user's limit until permanently deleted.
 
-## Live Updates
+Project orphan analysis treats trash references as live, so valid trashed objects are not incorrectly offered as orphans.
 
-Trash and restore actions publish project events through the live hub, so album views update in real time without a manual refresh. See [Projects & Albums](/concepts/projects).
+## Working Safely
+
+- Use Trash for visible album items you may need to recover.
+- Use Project Orphans only for unreferenced storage leftovers.
+- Remove completed job records separately when you only want to clear execution history.
+- Empty Trash only after confirming no project/campaign/export workflow still depends on those results outside Remix Studio.
 
 ## Related
 
-- [Projects & Albums](/concepts/projects) — where items are trashed from and restored to.
-- [Storage](/concepts/storage) — how recycle-bin contents count against your quota.
-- [Exports & Delivery](/concepts/exports) — packaging the media you keep.
+- [Projects & Albums](/concepts/projects) — album deletion and orphan cleanup.
+- [Storage](/concepts/storage) — quota categories and object variants.
