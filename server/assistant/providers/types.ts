@@ -23,6 +23,13 @@ export interface ToolCall {
   name: string;
   arguments: unknown;
   thoughtSignature?: string;
+  /**
+   * The provider's own identifier for this call, when it issues one. Gemini
+   * 3.5+ hands out an id on every parallel function call and rejects the next
+   * turn with 400 INVALID_ARGUMENT unless the matching functionResponse echoes
+   * it back, so the adapter has to keep it alongside our internal `id`.
+   */
+  providerCallId?: string;
 }
 
 export interface ChatRequest {

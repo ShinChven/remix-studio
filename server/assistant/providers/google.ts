@@ -26,6 +26,11 @@ export function resolveRealGeminiModelId(modelId: string): string {
   return modelId;
 }
 
+/** Gemini's low-latency tier — `gemini-3.5-flash-lite`, `…-flash-lite-preview`, etc. */
+function isFlashLite(modelId: string): boolean {
+  return /flash-lite/.test(modelId);
+}
+
 /**
  * Google AI (Gemini) chat adapter. Uses the official @google/genai SDK.
  */
@@ -61,14 +66,27 @@ export class GoogleAIChatProvider implements ChatProvider {
 
     if (realModelId.includes('gemma-4')) {
       config.thinkingConfig = { thinkingLevel: 'HIGH' } as any;
-    } else if (
-      includeThoughts && (
-        realModelId.includes('gemini-3') ||
-        realModelId.includes('gemini-2.5') ||
-        realModelId.includes('thinking')
-      )
-    ) {
-      config.thinkingConfig = { includeThoughts: true };
+    } else {
+      const thinkingConfig: any = {};
+      if (
+        includeThoughts && (
+          realModelId.includes('gemini-3') ||
+          realModelId.includes('gemini-2.5') ||
+          realModelId.includes('thinking')
+        )
+      ) {
+        thinkingConfig.includeThoughts = true;
+      }
+      // Flash-Lite ships with thinking at its minimal level, which is tuned for
+      // one-shot extraction and classification. Driving a tool loop on that
+      // setting makes the model stop part-way through a batch instead of
+      // continuing, so raise it whenever tools are on the table.
+      if (tools && isFlashLite(realModelId)) {
+        thinkingConfig.thinkingLevel = 'MEDIUM';
+      }
+      if (Object.keys(thinkingConfig).length > 0) {
+        config.thinkingConfig = thinkingConfig;
+      }
     }
 
     const shouldStreamThoughts = typeof req.onThought === 'function'
@@ -113,6 +131,7 @@ export class GoogleAIChatProvider implements ChatProvider {
           name: part.functionCall.name,
           arguments: part.functionCall.args ?? {},
           thoughtSignature: typeof part.thoughtSignature === 'string' ? part.thoughtSignature : undefined,
+          providerCallId: typeof part.functionCall.id === 'string' ? part.functionCall.id : undefined,
         });
       }
     }
@@ -166,17 +185,24 @@ export class GoogleAIChatProvider implements ChatProvider {
           continue;
         }
         if (part.functionCall) {
-          const key = JSON.stringify([
-            part.functionCall.name ?? '',
-            part.functionCall.args ?? {},
-            part.thoughtSignature ?? '',
-          ]);
+          // Prefer the provider's id as the dedupe key: two genuinely distinct
+          // calls in a batch can carry identical name+args (creating the same
+          // post twice, say), and collapsing them would drop work *and* leave
+          // Gemini 3.5+ with fewer responses than calls on the next turn.
+          const key = typeof part.functionCall.id === 'string' && part.functionCall.id
+            ? `id:${part.functionCall.id}`
+            : JSON.stringify([
+              part.functionCall.name ?? '',
+              part.functionCall.args ?? {},
+              part.thoughtSignature ?? '',
+            ]);
           if (!toolCallsByKey.has(key)) {
             toolCallsByKey.set(key, {
               id: `call_${crypto.randomUUID()}`,
               name: part.functionCall.name,
               arguments: part.functionCall.args ?? {},
               thoughtSignature: typeof part.thoughtSignature === 'string' ? part.thoughtSignature : undefined,
+              providerCallId: typeof part.functionCall.id === 'string' ? part.functionCall.id : undefined,
             });
           }
         }
@@ -201,7 +227,11 @@ export class GoogleAIChatProvider implements ChatProvider {
         ...(thoughtText ? [{ text: thoughtText, thought: true }] : []),
         ...(visibleText ? [{ text: visibleText }] : []),
         ...Array.from(toolCallsByKey.values()).map((call) => ({
-          functionCall: { name: call.name, args: call.arguments ?? {} },
+          functionCall: {
+            ...(call.providerCallId ? { id: call.providerCallId } : {}),
+            name: call.name,
+            args: call.arguments ?? {},
+          },
           ...(call.thoughtSignature ? { thoughtSignature: call.thoughtSignature } : {}),
         })),
       ],
@@ -345,6 +375,9 @@ function mapMessages(messages: ChatMessage[]): {
   const systemParts: string[] = [];
   const contents: any[] = [];
   const toolCallNameById = new Map<string, string>();
+  // Internal tool-call id → the id Gemini issued for that call, so the matching
+  // functionResponse can carry it back (required from Gemini 3.5 onwards).
+  const providerCallIdByToolCallId = new Map<string, string>();
   let pendingToolResponses: any[] = [];
 
   const flushPendingToolResponses = () => {
@@ -384,7 +417,12 @@ function mapMessages(messages: ChatMessage[]): {
       if (m.toolCalls) {
         for (const tc of m.toolCalls) {
           toolCallNameById.set(tc.id, tc.name);
-          const part: any = { functionCall: { name: tc.name, args: tc.arguments ?? {} } };
+          const call: any = { name: tc.name, args: tc.arguments ?? {} };
+          if (typeof tc.providerCallId === 'string' && tc.providerCallId.length > 0) {
+            call.id = tc.providerCallId;
+            providerCallIdByToolCallId.set(tc.id, tc.providerCallId);
+          }
+          const part: any = { functionCall: call };
           if (typeof tc.thoughtSignature === 'string' && tc.thoughtSignature.length > 0) {
             part.thoughtSignature = tc.thoughtSignature;
           }
@@ -402,7 +440,14 @@ function mapMessages(messages: ChatMessage[]): {
       } else {
         try { parsed = JSON.parse(m.content); } catch { parsed = { result: m.content }; }
       }
-      pendingToolResponses.push({ functionResponse: { name: m.name, response: parsed } });
+      const providerCallId = providerCallIdByToolCallId.get(m.toolCallId);
+      pendingToolResponses.push({
+        functionResponse: {
+          ...(providerCallId ? { id: providerCallId } : {}),
+          name: m.name,
+          response: parsed,
+        },
+      });
     }
   }
 
