@@ -8,6 +8,32 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.19.0 — Smarter assistants & cleaner workflows
+
+*Hide workflow clutter, let assistants work reliably through bigger batches, and move around long lists more easily on every screen size.*
+
+**Added**
+
+- **Hide disabled workflow items** — Use the workflow's three-dot menu or press `H` to hide or reveal disabled items. The menu shows how many are hidden, and your choice is saved with the project so it follows you across reloads and devices. Hidden items keep their real positions when you reorder the workflow.
+- **Claude Opus 5** — The Claude provider now offers Opus 5 with a 1-million-token prompt limit and up to 128K output tokens.
+- **Assistants can browse and fetch album files** — New MCP tools let the in-app assistant and connected agents page through a project's album, inspect image details, and turn internal media keys into temporary view or download links. Links are issued only for media owned by the signed-in user.
+- **Numbered pagination** — Projects, libraries, exports, chats, campaigns, scheduled posts, administration pages, and project tabs now offer direct page-number navigation, first/last jumps, and compact five-page skips.
+- **Automatic truncation recovery** — When a model reaches its output limit in the middle of a response or tool call, the assistant can now ask it to continue automatically. Larger bulk jobs also get more room to finish and clearer progress reporting.
+
+**Improved**
+
+- **Phone-friendly lists** — Pagination condenses to fit narrow screens, uses larger touch targets, and wraps cleanly beside page totals. Text library entries now show a useful two-line preview and keep edit actions available on touch devices.
+- **Quicker dashboard navigation** — Select the Recent Projects, Libraries, or Campaigns heading to open the corresponding full list.
+- **Clearer documentation** — Refreshed the release history and expanded the MCP and model-maintenance guides, including documentation for album browsing and temporary file URLs.
+
+**Fixed**
+
+- **Reliable Gemini batch work** — Gemini 3.5 Flash Lite now preserves every parallel tool-call ID and uses a more suitable thinking level for multi-step work, so campaign batches and repeated calls no longer fail or stop part-way through.
+- **Fewer unexpected sign-outs** — Concurrent refreshes from multiple tabs and responses lost during a network interruption no longer end an otherwise valid browser session.
+- **Resilient OAuth connections** — MCP and other OAuth clients can recover safely when a rotated refresh-token response is lost, while stale-token reuse is still detected and revoked.
+- **Visible mobile chat controls** — The conversation drawer no longer slips underneath the fixed phone header, so search and new-chat buttons remain accessible.
+- **Drafts visible after fullscreen work** — Adding workflow items as drafts now closes the expanded workflow after a successful save, taking you straight to the new drafts.
+
 ## 1.18.0 — A wave of new models & snappier project tabs
 
 *New text and image models across five providers, project tabs that load on demand and update instantly, and quality-of-life upgrades throughout the workspace.*

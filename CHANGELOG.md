@@ -4,17 +4,31 @@ All notable changes to Remix Studio are documented here by version number.
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-08-02
+
 ### Added
 
 - **Claude Opus 5**: Added Claude Opus 5 to the Claude provider's text models, with a 1M-token prompt limit and 128K max output. Like Fable 5, Opus 4.8, and Sonnet 5, it accepts only the default temperature.
 - **Hide Disabled Workflow Items**: The project workflow's three-dot menu can now hide disabled items, with a count of how many are hidden, and the `H` key toggles them from anywhere in the project view (the menu entry shows the shortcut). The choice is saved with the project, so it carries across reloads and devices. Hiding is view-only — drag-and-drop reordering still uses each item's real position.
 - **Signed File URLs for MCP & Assistant**: Added a `get_file_urls` tool that turns internal storage keys — from albums, libraries, and campaign post media — into temporary presigned URLs so connected agents can actually view, fetch, or download a file, with an optional `download` mode that returns a save-as link. Keys are only signed when they still belong to the authenticated user's own media; anything else is refused with a reason.
 - **Album Item Browsing over MCP**: Added a `get_album_items` tool that pages through one project's album and returns each item's prompt, format, aspect ratio, size, and storage keys, so an agent can pick a specific generated image before requesting a URL for it.
+- **Numbered Pagination**: Replaced previous/next-only controls across projects, libraries, exports, store uploads, chats, users, campaigns, scheduled posts, and project tabs with a shared page-number navigator. It includes first/last jumps and compact ellipsis controls that skip five pages at a time.
+- **Assistant Truncation Recovery**: The assistant can now detect responses or tool arguments cut off by a model's output limit and ask the model to continue automatically. Bulk tasks also have higher iteration and tool-call ceilings, longer provider timeouts, clearer batch progress, and the correct completion-token parameter for OpenAI reasoning models.
+
+### Changed
+
+- **Mobile Pagination & Library Editing**: Pagination now uses larger touch targets and a compact phone layout, surrounding status rows can wrap instead of overflowing, and the Library Editor uses the shared navigator. Text library rows stack their title and preview on small screens and keep their actions accessible without hover.
+- **Dashboard Navigation**: Recent Projects, Libraries, and Campaigns headings now link to their full list pages, with hover and chevron cues that make the navigation discoverable.
+- **Documentation**: Refined the user-facing What's New history, documented the new MCP album and file URL tools, and expanded the MCP OAuth and model-maintenance notes.
 
 ### Fixed
 
 - **Gemini Batch Tool Calls in the Assistant**: Assistant turns that ran several tools at once — creating a run of campaign posts, for example — died mid-batch on Gemini 3.5 Flash Lite. Gemini issues an id with each parallel function call and, from 3.5 onwards, rejects the follow-up turn unless every function response carries the id back; the adapter was dropping them. Those ids are now kept with the tool call and echoed on both the replayed call and its response. Two calls to the same tool with identical arguments are also no longer merged into one, so a batch containing repeats still creates every item.
 - **Flash Lite Stopping Part-Way Through a Batch**: Flash Lite models default to minimal thinking, which is tuned for one-shot extraction rather than multi-step tool loops. The assistant now asks for a medium thinking level on those models whenever tools are available, so they work through a batch instead of trailing off.
+- **Session Refresh Reliability**: Concurrent refreshes from multiple browser tabs and refresh responses lost to a network interruption no longer sign the user out. Session rotation now keeps a short-lived recovery chain, retries safely inside a grace window, and logs de-identified rejection reasons for diagnosis.
+- **OAuth Refresh Reliability**: MCP and other OAuth clients can recover when a rotated refresh-token response is lost. Token rotation is now transactional, permits a short replay grace window, detects reuse outside that window, revokes the affected chain, and returns safe diagnostic error codes.
+- **Mobile Assistant Drawer**: The conversation drawer now starts below the fixed app header on phones, keeping search and new-chat controls visible.
+- **Drafts Added from Fullscreen Workflow**: After workflow items are successfully added as drafts, the expanded workflow now closes so the newly created drafts are visible immediately; a failed request leaves the workflow view unchanged.
 
 ## [1.18.0] - 2026-07-24
 
