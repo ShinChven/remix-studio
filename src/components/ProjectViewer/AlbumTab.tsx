@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List, RefreshCw, Loader2 } from 'lucide-react';
 import { AlbumItem, AspectRatioCount, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import type { AlbumExportVersion } from '../../api';
@@ -29,6 +29,10 @@ interface AlbumTabProps {
   getModelName: (providerId?: string, modelId?: string) => string;
   setLightboxData: (data: { images: string[], index: number, albumItemIds?: string[], onDelete?: (index: number) => void, onIndexChange?: (index: number) => void } | null) => void;
   onRenameAlbumItem: (itemId: string, filename: string) => Promise<AlbumItem>;
+  /** Restore the workflow that produced this item onto the project. */
+  onReuseWorkflow?: (item: AlbumItem) => void;
+  /** Id of the item whose configuration is currently being loaded. */
+  reusingAlbumItemId?: string | null;
   onExportStarted: () => void;
   projectType?: ProjectType;
   page: number;
@@ -159,6 +163,8 @@ export function AlbumTab({
   getModelName,
   setLightboxData,
   onRenameAlbumItem,
+  onReuseWorkflow,
+  reusingAlbumItemId,
   onExportStarted,
   projectType = 'image',
   page,
@@ -202,6 +208,26 @@ export function AlbumTab({
     const path = (item.imageUrl || '').split('?')[0];
     const decoded = decodeURIComponent(path.split('/').pop() || '');
     return decoded || item.id;
+  };
+
+  const renderReuseButton = (item: AlbumItem, variant: 'overlay' | 'inline') => {
+    if (!onReuseWorkflow) return null;
+    const isLoading = reusingAlbumItemId === item.id;
+    const iconClass = variant === 'overlay' ? 'w-4 h-4' : 'w-3.5 h-3.5';
+    return (
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onReuseWorkflow(item); }}
+        disabled={Boolean(reusingAlbumItemId)}
+        className={variant === 'overlay'
+          ? 'w-7 h-7 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/20 transition-all shadow-lg disabled:opacity-50'
+          : 'flex-shrink-0 p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors disabled:opacity-50'}
+        title={t('projectViewer.album.reuseWorkflow')}
+        aria-label={t('projectViewer.album.reuseWorkflow')}
+      >
+        {isLoading ? <Loader2 className={`${iconClass} animate-spin`} /> : <RefreshCw className={iconClass} />}
+      </button>
+    );
   };
 
   const openRenameModal = (item: AlbumItem) => {
@@ -501,6 +527,8 @@ export function AlbumTab({
                     <span className="hidden sm:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-blue-400/80">{t('projectViewer.album.view')}</span>
                   </button>
 
+                  {renderReuseButton(item, 'inline')}
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -560,6 +588,8 @@ export function AlbumTab({
                     >
                       {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
                     </button>
+
+                    {renderReuseButton(item, 'inline')}
 
                     <button
                       onClick={(e) => {
@@ -680,6 +710,8 @@ export function AlbumTab({
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
+
+                      {renderReuseButton(item, 'overlay')}
                     </div>
 
                     <img

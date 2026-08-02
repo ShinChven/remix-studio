@@ -538,6 +538,12 @@ export class ProjectRepository {
     });
   }
 
+  async getAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null> {
+    const item = await this.prisma.albumItem.findFirst({ where: { id: itemId, projectId, userId } });
+    if (!item) return null;
+    return this.mapAlbumItem(item);
+  }
+
   async deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null> {
     const item = await this.prisma.albumItem.findFirst({ where: { id: itemId, projectId, userId } });
     if (!item) return null;

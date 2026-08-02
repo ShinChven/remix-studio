@@ -1545,6 +1545,16 @@ export interface Job {
   workflowSnapshot?: WorkflowItem[];
 }
 
+/**
+ * The generation settings that can be pushed back onto a project ("reuse").
+ * Sourced from the job that produced a result, so it can be resolved from a
+ * queue/completed job or from the album item that job left behind.
+ */
+export type JobConfiguration = Pick<
+  Job,
+  'workflowSnapshot' | 'providerId' | 'modelConfigId' | 'aspectRatio' | 'quality' | 'background' | 'format' | 'duration' | 'resolution' | 'sound'
+>;
+
 export interface AlbumItem {
   id: string;
   jobId: string;

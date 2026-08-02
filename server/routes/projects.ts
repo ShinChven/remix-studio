@@ -411,6 +411,46 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+  /**
+   * GET /api/projects/:id/album/:itemId/configuration
+   *
+   * Same payload as the job configuration endpoint, resolved from the album
+   * item's originating job so a finished result can be reused straight from the
+   * album. The workflow snapshot only lives on the job, so it comes back empty
+   * once that job has been deleted; the item's own settings still fill the rest.
+   */
+  router.get('/api/projects/:id/album/:itemId/configuration', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const itemId = c.req.param('itemId');
+      if (!projectId || !itemId) return c.json({ error: 'Project id and album item id are required' }, 400);
+
+      const item = await repository.getAlbumItem(user.userId, projectId, itemId);
+      if (!item) return c.json({ error: 'Album item not found' }, 404);
+
+      const job = item.jobId ? await repository.getJob(user.userId, projectId, item.jobId) : null;
+
+      return c.json({
+        workflowSnapshot: job?.workflowSnapshot
+          ? await signWorkflowItems(job.workflowSnapshot, storage)
+          : [],
+        providerId: job?.providerId ?? item.providerId,
+        modelConfigId: job?.modelConfigId ?? item.modelConfigId,
+        aspectRatio: job?.aspectRatio ?? item.aspectRatio,
+        quality: job?.quality ?? item.quality,
+        background: job?.background,
+        format: job?.format ?? item.format,
+        duration: job?.duration ?? item.duration,
+        resolution: job?.resolution ?? item.resolution,
+        sound: job?.sound,
+      });
+    } catch (e) {
+      console.error('[GET /api/projects/:id/album/:itemId/configuration]', e);
+      return c.json({ error: 'Failed to get album item configuration' }, 500);
+    }
+  });
+
   router.delete('/api/projects/:id/jobs/:jobId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

@@ -322,6 +322,8 @@
       "imageContexts": "+{{count}} img",
       "view": "보기",
       "openOriginal": "원본 열기",
+      "reuseWorkflow": "워크플로 재사용",
+      "reuseWorkflowUnavailable": "이 결과의 워크플로를 사용할 수 없습니다.",
       "playVideo": "비디오 재생",
       "viewFullPrompt": "클릭하여 전체 프롬프트 보기",
       "raw": "원본",

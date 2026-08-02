@@ -48,7 +48,7 @@ The final tab is named for the project modality. It contains durable `AlbumItem`
 - Text projects show generated text and its prompt/context; multiple text results can be compared.
 - Audio projects provide audio result controls.
 
-The collection supports selection, page-size choices, filename changes, export, copy-to-library, and recycle-bin deletion. The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view.
+The collection supports selection, page-size choices, filename changes, export, copy-to-library, workflow reuse, and recycle-bin deletion. The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view.
 
 ## Copying Results to a Library
 
@@ -71,7 +71,12 @@ Exports run outside the generation queue in their own persistent worker and appe
 
 Job rows retain a workflow snapshot and resolved generation settings. The **Reuse configuration** action restores those settings into the project editor so a prior result or failure can be used as the starting point for new drafts.
 
-Reuse changes the current editable workflow/settings only after confirmation; it does not alter the old job or album item.
+The same action is available from the results themselves, so you can pick a setup by looking at the finished piece instead of a job row:
+
+- Album, text, and audio entries each carry a **Reuse workflow** control that resolves the settings through the job that produced them.
+- The image lightbox offers the same control (shortcut `R`), and closes on confirmation so you land on the restored workflow.
+
+Reuse changes the current editable workflow/settings only after confirmation; it does not alter the old job or album item. The workflow snapshot lives on the job record, so reusing from an album item whose Done record was deleted reports that the workflow is no longer available.
 
 ## Orphan Files
 

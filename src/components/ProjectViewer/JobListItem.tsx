@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckSquare, ChevronDown, Square, RefreshCw } from 'lucide-react';
 import { Job } from '../../types';
 import { InfoChip } from './InfoChip';
@@ -63,6 +64,7 @@ export function JobListItem({
   onToggleSelect,
   onReuse,
 }: JobListItemProps) {
+  const { t } = useTranslation();
   const headerClassName = isSelected
     ? accentClasses[accentColor]
     : isExpanded
@@ -142,7 +144,7 @@ export function JobListItem({
                 <button
                   onClick={(e) => { e.stopPropagation(); onReuse(job); }}
                   className="p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
-                  title="Reuse Configuration"
+                  title={t('projectViewer.common.reuseConfiguration')}
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </button>

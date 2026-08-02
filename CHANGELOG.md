@@ -4,6 +4,10 @@ All notable changes to Remix Studio are documented here by version number.
 
 ## [Unreleased]
 
+### Added
+
+- **Reuse a Workflow from the Album**: Reusing a configuration no longer means hunting for the right row in Done. Album, text, and audio entries now carry their own reuse control, and the image lightbox has one too (shortcut `R`), so a setup can be picked while looking at the finished piece. The settings are resolved through the job behind the item, the same confirmation applies before the project workflow is replaced, and the lightbox closes once it is. Items whose Done record has since been deleted report that the workflow is no longer available.
+
 ## [1.19.0] - 2026-08-02
 
 ### Added

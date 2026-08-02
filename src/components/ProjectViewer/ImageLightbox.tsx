@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { X, ChevronLeft, ChevronRight, Trash2, Play, Pause, Maximize, Minimize, Wand2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Trash2, Play, Pause, Maximize, Minimize, Wand2, RefreshCw } from 'lucide-react';
 import { useWakeLock } from '../../hooks/useWakeLock';
 
 interface ImageLightboxProps {
@@ -9,6 +9,8 @@ interface ImageLightboxProps {
   startIndex: number;
   onClose: () => void;
   onDelete?: (index: number) => void;
+  /** Restore the workflow that produced the image being viewed. */
+  onReuse?: (index: number) => void;
   onIndexChange?: (index: number) => void;
 }
 
@@ -72,7 +74,7 @@ function loadStoredInterval() {
   }
 }
 
-export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexChange }: ImageLightboxProps) {
+export function ImageLightbox({ images, startIndex, onClose, onDelete, onReuse, onIndexChange }: ImageLightboxProps) {
   const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(() => clampIndex(startIndex, images.length));
   const [slideshowOn, setSlideshowOn] = useState(false);
@@ -172,6 +174,13 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
     // Pause the slideshow before prompting deletion; the modal shows over fullscreen.
     setSlideshowOn(false);
     onDelete(index);
+  };
+
+  const requestReuse = (index: number) => {
+    if (!onReuse) return;
+    // Same as deletion: the confirmation shows over the lightbox, so stop advancing.
+    setSlideshowOn(false);
+    onReuse(index);
   };
 
   const applyInterval = (value: number) => {
@@ -282,6 +291,12 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
         requestDelete(clampIndex(currentIndex, images.length));
         return;
       }
+      if (e.key === 'r' || e.key === 'R') {
+        if (inInput || !onReuse) return;
+        e.preventDefault();
+        requestReuse(clampIndex(currentIndex, images.length));
+        return;
+      }
       if (e.key === 'ArrowUp') {
         if (inInput) return;
         e.preventDefault();
@@ -313,7 +328,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [images.length, onClose, onDelete, currentIndex]);
+  }, [images.length, onClose, onDelete, onReuse, currentIndex]);
 
   if (!images || images.length === 0) return null;
   const boundedIndex = clampIndex(currentIndex, images.length);
@@ -434,6 +449,15 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onIndexCh
               )}
             </div>
           </>
+        )}
+        {onReuse && (
+          <button
+            onClick={(e) => { e.stopPropagation(); requestReuse(boundedIndex); }}
+            className="p-2 text-white/50 hover:text-blue-400 transition-colors bg-black/50 hover:bg-black/80 rounded-full"
+            title={`${t('projectViewer.album.reuseWorkflow')} (R)`}
+          >
+            <RefreshCw className="w-6 h-6" />
+          </button>
         )}
         {onDelete && (
           <button

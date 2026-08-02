@@ -7,6 +7,7 @@ import {
   DEFAULT_AUDIO_PROJECT_CONFIG,
   Project,
   Job,
+  JobConfiguration,
   Library,
   WorkflowItem as WorkflowItemType,
   WorkflowItemType as WorkflowItemTypeKind,
@@ -21,7 +22,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -196,7 +197,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
   const [itemToRemoveId, setItemToRemoveId] = useState<string | null>(null);
   const [jobToDeleteId, setJobToDeleteId] = useState<string | null>(null);
-  const [jobToReuse, setJobToReuse] = useState<Job | null>(null);
+  const [configToReuse, setConfigToReuse] = useState<JobConfiguration | null>(null);
 
 
 
@@ -207,7 +208,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [showLibrarySelector, setShowLibrarySelector] = useState(false);
   const [previewingLibrary, setPreviewingLibrary] = useState<Library | null>(null);
   const [previewingWorkflowItemId, setPreviewingWorkflowItemId] = useState<string | null>(null);
-  const [reuseConfigJobId, setReuseConfigJobId] = useState<string | null>(null);
+  const [reuseConfigSourceId, setReuseConfigSourceId] = useState<string | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(project.providerId || '');
   const [selectedModelId, setSelectedModelId] = useState<string>('');
@@ -456,49 +457,71 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setCompletedPage(1);
   }, []);
 
-  const handleReuseWorkflow = async (job: Job) => {
-    if (reuseConfigJobId) return;
+  /** Load a job's or album item's configuration, then ask for confirmation before applying it. */
+  const loadReuseConfiguration = async (
+    sourceId: string,
+    load: () => Promise<JobConfiguration>,
+    unavailableMessage: string,
+  ) => {
+    if (reuseConfigSourceId) return;
 
-    setReuseConfigJobId(job.id);
+    setReuseConfigSourceId(sourceId);
     try {
-      const config = await fetchProjectJobConfiguration(localProject.id, job.id);
+      const config = await load();
       if (!config.workflowSnapshot || config.workflowSnapshot.length === 0) {
-        toast.error(t('projectViewer.common.reuseConfigurationUnavailable'));
+        toast.error(unavailableMessage);
         return;
       }
-      setJobToReuse({ ...job, ...config });
+      setConfigToReuse(config);
     } catch (e: any) {
-      toast.error(e?.message || t('projectViewer.common.reuseConfigurationUnavailable'));
+      toast.error(e?.message || unavailableMessage);
     } finally {
-      setReuseConfigJobId(null);
+      setReuseConfigSourceId(null);
     }
   };
 
-  const confirmReuseWorkflow = () => {
-    if (!jobToReuse || !jobToReuse.workflowSnapshot) return;
+  const handleReuseWorkflow = (job: Job) =>
+    loadReuseConfiguration(
+      job.id,
+      () => fetchProjectJobConfiguration(localProject.id, job.id),
+      t('projectViewer.common.reuseConfigurationUnavailable'),
+    );
 
-    const newProviderId = jobToReuse.providerId || localProject.providerId;
-    const newModelConfigId = jobToReuse.modelConfigId || localProject.modelConfigId;
+  const handleReuseAlbumWorkflow = (item: AlbumItem) =>
+    loadReuseConfiguration(
+      item.id,
+      () => fetchProjectAlbumItemConfiguration(localProject.id, item.id),
+      t('projectViewer.album.reuseWorkflowUnavailable'),
+    );
+
+  const confirmReuseWorkflow = () => {
+    if (!configToReuse || !configToReuse.workflowSnapshot) return;
+
+    const newProviderId = configToReuse.providerId || localProject.providerId;
+    const newModelConfigId = configToReuse.modelConfigId || localProject.modelConfigId;
 
     const updated = {
       ...localProject,
-      workflow: jobToReuse.workflowSnapshot,
+      workflow: configToReuse.workflowSnapshot,
       providerId: newProviderId,
       modelConfigId: newModelConfigId,
-      aspectRatio: jobToReuse.aspectRatio || localProject.aspectRatio,
-      quality: jobToReuse.quality || localProject.quality,
-      format: jobToReuse.format || localProject.format,
-      background: jobToReuse.background || localProject.background,
-      duration: jobToReuse.duration || localProject.duration,
-      resolution: jobToReuse.resolution || localProject.resolution,
-      sound: jobToReuse.sound || localProject.sound,
+      aspectRatio: configToReuse.aspectRatio || localProject.aspectRatio,
+      quality: configToReuse.quality || localProject.quality,
+      format: configToReuse.format || localProject.format,
+      background: configToReuse.background || localProject.background,
+      duration: configToReuse.duration || localProject.duration,
+      resolution: configToReuse.resolution || localProject.resolution,
+      sound: configToReuse.sound || localProject.sound,
     };
 
     setLocalProject(updated);
     if (newProviderId) setSelectedProviderId(newProviderId);
     if (newModelConfigId) setSelectedModelId(newModelConfigId);
     onUpdate(updated);
-    setJobToReuse(null);
+    setConfigToReuse(null);
+    // Reusing from the album is done from the lightbox too; close it so the
+    // restored workflow is what the user lands on.
+    setLightboxData(null);
     toast.success(t('projectViewer.common.reuseConfiguration'));
     setMobileView('workflow');
   };
@@ -2356,6 +2379,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               setShowDeleteAlbumModal={setShowDeleteAlbumModal} getProviderName={getProviderName} getModelName={getModelName}
               setLightboxData={setLightboxData}
               onRenameAlbumItem={renameAlbumItem}
+              onReuseWorkflow={handleReuseAlbumWorkflow}
+              reusingAlbumItemId={reuseConfigSourceId}
               onExportStarted={() => navigate('/exports')}
               projectType={localProject.type || 'image'}
               page={albumPage}
@@ -2375,7 +2400,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         </div>
       </div>
 
-      <ConfirmModal isOpen={jobToReuse !== null} onClose={() => setJobToReuse(null)} onConfirm={confirmReuseWorkflow} title={t('projectViewer.confirm.reuseConfiguration.title')} message={t('projectViewer.confirm.reuseConfiguration.message')} confirmText={t('projectViewer.confirm.reuseConfiguration.confirm')} type="info" />
+      <ConfirmModal isOpen={configToReuse !== null} onClose={() => setConfigToReuse(null)} onConfirm={confirmReuseWorkflow} title={t('projectViewer.confirm.reuseConfiguration.title')} message={t('projectViewer.confirm.reuseConfiguration.message')} confirmText={t('projectViewer.confirm.reuseConfiguration.confirm')} type="info" />
       <ConfirmModal isOpen={itemToRemoveId !== null} onClose={() => setItemToRemoveId(null)} onConfirm={confirmRemoveWorkflowItem} title={t('projectViewer.confirm.removeWorkflowItem.title')} message={t('projectViewer.confirm.removeWorkflowItem.message')} confirmText={t('projectViewer.confirm.removeWorkflowItem.confirm')} type="danger" />
       <PromptModal item={editingItem} onClose={() => setEditingItem(null)} onSave={(value) => { if (editingItem) updateWorkflowItem(editingItem.id, value); setEditingItem(null); }} />
       {editingImageItem && editingImageItem.value && (
@@ -2519,6 +2544,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               setShowDeleteAlbumModal(true);
             }
           } : lightboxData.onDelete}
+          onReuse={lightboxData.albumItemIds ? (index) => {
+            const albumItemId = lightboxData.albumItemIds?.[index];
+            const item = albumItemId ? localAlbumRef.current.find((albumItem) => albumItem.id === albumItemId) : undefined;
+            if (item) handleReuseAlbumWorkflow(item);
+          } : undefined}
           onIndexChange={(index) => {
             setLightboxData((current) => current && current.index !== index ? { ...current, index } : current);
             lightboxData.onIndexChange?.(index);
