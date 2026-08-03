@@ -1390,6 +1390,20 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  Kimi: [
+    {
+      id: 'kimi-k3-text',
+      name: 'Kimi K3',
+      generatorId: 'Kimi',
+      modelId: 'kimi-k3',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
+      },
+    },
+  ],
   BlackForestLabs: [
     {
       id: 'bfl-flux-2-max',
@@ -1623,7 +1637,7 @@ export interface Project {
   showDisabledItems?: boolean;
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud' | 'Kimi';
 
 /**
  * A custom model variant that inherits all options from a built-in base model

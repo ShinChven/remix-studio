@@ -51,6 +51,9 @@ export async function listProviderModels(
     case 'Alibabacloud':
       result = await listAlibabacloudModels(apiKey, apiUrl);
       break;
+    case 'Kimi':
+      result = await listKimiModels(apiKey, apiUrl);
+      break;
     case 'RunningHub':
     case 'KlingAI':
     case 'BytePlus':
@@ -341,4 +344,40 @@ function categorizeAlibabacloudModel(id: string): 'text' | 'image' | 'video' | '
   if (lower.includes('video') || lower.includes('wanvideo')) return 'video';
   if (lower.includes('audio') || lower.includes('tts') || lower.includes('paraformer') || lower.includes('sambert')) return 'audio';
   return 'text';
+}
+
+// ---------------------------------------------------------------------------
+// Kimi (Moonshot AI) — OpenAI-compatible API
+// ---------------------------------------------------------------------------
+
+async function listKimiModels(
+  apiKey: string,
+  apiUrl?: string | null,
+): Promise<ProviderModelsResult> {
+  const base = (apiUrl || 'https://api.moonshot.ai/v1').replace(/\/$/, '');
+
+  try {
+    const res = await fetch(`${base}/models`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      return { models: [], error: `HTTP ${res.status}: ${text}` };
+    }
+    const data: any = await res.json();
+    // Kimi's catalogue is chat-only today, so every listed model is text.
+    const models: ProviderModel[] = (data.data || []).map((m: any) => ({
+      id: m.id,
+      name: m.id,
+      description: '',
+      category: 'text' as const,
+    }));
+    models.sort((a, b) => a.id.localeCompare(b.id));
+    return { models };
+  } catch (e: any) {
+    return { models: [], error: e.message };
+  }
 }

@@ -20,6 +20,7 @@ const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
   Replicate:  { icon: 'bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400', badge: 'bg-fuchsia-600/10 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-600/20 dark:border-fuchsia-600/30' },
   BlackForestLabs: { icon: 'bg-stone-500/10 text-stone-800 dark:text-stone-200', badge: 'bg-stone-600/10 text-stone-800 dark:text-stone-200 border-stone-600/20 dark:border-stone-600/30' },
   Alibabacloud: { icon: 'bg-violet-500/10 text-violet-600 dark:text-violet-400', badge: 'bg-violet-600/10 text-violet-700 dark:text-violet-400 border-violet-600/20 dark:border-violet-600/30' },
+  Kimi:       { icon: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400', badge: 'bg-indigo-600/10 text-indigo-700 dark:text-indigo-400 border-indigo-600/20 dark:border-indigo-600/30' },
 };
 const DEFAULT_TYPE_COLORS = {
   icon: 'bg-neutral-500/10 text-neutral-600 dark:text-neutral-300',

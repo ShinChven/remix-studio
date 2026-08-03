@@ -6,6 +6,7 @@ import { OpenAITextGenerator } from './openai-text-generator';
 import { ClaudeTextGenerator } from './claude-text-generator';
 import { GrokTextGenerator } from './grok-text-generator';
 import { AlibabacloudTextGenerator } from './alibabacloud-text-generator';
+import { KimiTextGenerator } from './kimi-text-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -32,6 +33,8 @@ export function buildTextGenerator(
       return new GrokTextGenerator(apiKey, safeApiUrl);
     case 'Alibabacloud':
       return new AlibabacloudTextGenerator(apiKey, safeApiUrl);
+    case 'Kimi':
+      return new KimiTextGenerator(apiKey, safeApiUrl);
     case 'RunningHub':
     case 'KlingAI':
     case 'BytePlus':
