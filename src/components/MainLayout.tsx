@@ -208,7 +208,7 @@ export function MainLayout() {
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-[120] transition-all duration-300 ease-in-out lg:relative
+        fixed inset-y-0 left-0 z-[120] transition-ui duration-300 ease-in-out lg:relative
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         ${isCollapsed ? 'lg:w-20' : 'lg:w-64'} w-72
         bg-white/95 dark:bg-black/10 border-r border-neutral-200/50 dark:border-white/5 flex flex-col group backdrop-blur-3xl shadow-2xl shadow-black/10 dark:shadow-black/40
@@ -370,7 +370,7 @@ export function MainLayout() {
             <Link
               to="/admin/users"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`mt-3 flex items-center rounded-xl border transition-all ${location.pathname.startsWith('/admin/')
+              className={`mt-3 flex items-center rounded-xl border transition-ui ${location.pathname.startsWith('/admin/')
                   ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
                   : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl text-neutral-700 dark:text-neutral-300 hover:bg-white/60 dark:hover:bg-neutral-800/60 shadow-sm'
                 } p-3 text-sm ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'

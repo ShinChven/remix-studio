@@ -105,7 +105,7 @@ export function SettingsPanel({
     <div className="shrink overflow-hidden flex flex-col p-4 border-t border-neutral-200/50 dark:border-white/5 bg-white/60 dark:bg-black/60 backdrop-blur-2xl shadow-[0_-12px_48px_rgba(0,0,0,0.2)] min-h-0">
       <button
         onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
-        className="w-full p-3 bg-white/40 dark:bg-black/40 backdrop-blur-md border border-neutral-200/50 dark:border-white/5 rounded-xl mb-3 hover:bg-white/60 dark:hover:bg-neutral-900/50 transition-all group flex flex-col gap-2.5 shadow-inner"
+        className="w-full p-3 bg-white/40 dark:bg-black/40 backdrop-blur-md border border-neutral-200/50 dark:border-white/5 rounded-xl mb-3 hover:bg-white/60 dark:hover:bg-neutral-900/50 transition-ui group flex flex-col gap-2.5 shadow-inner"
       >
         {/* Row 1: Provider Name + Chevron */}
         <div className="w-full flex items-start justify-between gap-2">

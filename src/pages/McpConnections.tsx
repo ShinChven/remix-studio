@@ -668,7 +668,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
               tokens.map((token) => (
                 <div
                   key={token.id}
-                  className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-900/80 p-4 md:p-5 rounded-xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
+                  className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-900/80 p-4 md:p-5 rounded-xl transition-ui group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
                 >
                   <div className="flex items-center gap-4 overflow-hidden">
                     <div className="flex-shrink-0 p-3 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover/card:scale-110 transition-transform">
@@ -925,7 +925,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
               clients.map((client) => (
                 <div
                   key={client.id}
-                  className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-900/80 p-4 md:p-5 rounded-xl transition-all group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
+                  className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-900/80 p-4 md:p-5 rounded-xl transition-ui group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
                 >
                   <div className="flex items-center gap-4 overflow-hidden">
                     <div className="flex-shrink-0 p-3 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 group-hover/card:scale-110 transition-transform">

@@ -781,7 +781,7 @@ export function CampaignDetail() {
               )}
 
               {!postsLoading && posts.map((post) => (
-                <article key={post.id} className="group overflow-hidden rounded-card border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-xl dark:border-white/5 dark:bg-neutral-900/70 dark:hover:bg-neutral-800/80">
+                <article key={post.id} className="group overflow-hidden rounded-card border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl transition-ui duration-300 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-xl dark:border-white/5 dark:bg-neutral-900/70 dark:hover:bg-neutral-800/80">
                   <div className="space-y-6 p-4 sm:p-6 lg:p-8">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex items-center gap-4">

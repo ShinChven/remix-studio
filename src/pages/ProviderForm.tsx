@@ -173,7 +173,7 @@ export function ProviderForm() {
                     key={t}
                     type="button"
                     onClick={() => setType(t)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all relative group ${
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-ui relative group ${
                       type === t 
                         ? 'bg-amber-600 text-white border-amber-700 shadow-md shadow-amber-600/20 ring-2 ring-amber-500/20' 
                         : 'bg-white/50 dark:bg-neutral-900/40 border-neutral-200 dark:border-white/5 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-white dark:hover:bg-neutral-900 backdrop-blur-xl shadow-sm'

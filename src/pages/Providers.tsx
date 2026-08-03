@@ -134,7 +134,7 @@ export function Providers() {
                   <div
                     key={provider.id}
                     onClick={() => navigate(`/provider/${provider.id}`)}
-                    className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-800/80 px-4 py-4 rounded-card text-left transition-all group flex items-center justify-between gap-3 cursor-pointer shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5"
+                    className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-800/80 px-4 py-4 rounded-card text-left transition-ui group flex items-center justify-between gap-3 cursor-pointer shadow-sm hover:shadow-xl duration-300 hover:-translate-y-0.5"
                   >
                     <div className="flex items-center gap-2.5 md:gap-3 overflow-hidden min-w-0">
                       <div className={`flex-shrink-0 p-1.5 md:p-2 rounded-lg ${colors.icon} group-hover:scale-110 transition-transform`}>

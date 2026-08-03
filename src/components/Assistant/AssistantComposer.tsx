@@ -763,7 +763,7 @@ export function AssistantComposer({
         </div>
       )}
 
-      <div className="relative rounded-card border border-neutral-200/50 bg-white/80 p-3 shadow-2xl backdrop-blur-2xl transition-all duration-300 group-focus-within:shadow-indigo-500/10 dark:border-white/10 dark:bg-neutral-900/80 sm:p-4">
+      <div className="relative rounded-card border border-neutral-200/50 bg-white/80 p-3 shadow-2xl backdrop-blur-2xl transition-ui duration-300 group-focus-within:shadow-indigo-500/10 dark:border-white/10 dark:bg-neutral-900/80 sm:p-4">
         <div className="space-y-4">
           {/* Model selector row */}
           <div className="flex items-center gap-2 px-2">

@@ -172,7 +172,7 @@ export function Projects() {
           actions={
             <Link
               to="/projects/queues"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-neutral-200/50 bg-white/40 text-neutral-600 shadow-sm backdrop-blur-3xl transition-all hover:border-indigo-500/40 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:border-indigo-400/30 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-neutral-200/50 bg-white/40 text-neutral-600 shadow-sm backdrop-blur-3xl transition-ui hover:border-indigo-500/40 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:border-indigo-400/30 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
               title={t('sidebar.queueMonitor')}
               aria-label={t('sidebar.queueMonitor')}
             >
@@ -215,7 +215,7 @@ export function Projects() {
                     onChange={handleSearchChange}
                     onKeyDown={handleSearchKeyDown}
                     placeholder={t('projects.searchPlaceholder')}
-                    className="w-full bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all shadow-sm"
+                    className="w-full bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-ui shadow-sm"
                   />
               </div>
 

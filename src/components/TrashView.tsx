@@ -192,7 +192,7 @@ export function TrashView() {
             return (
               <div 
                 key={item.id} 
-                className={`group relative bg-white/70 dark:bg-neutral-900/70 border rounded-card overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 backdrop-blur-xl
+                className={`group relative bg-white/70 dark:bg-neutral-900/70 border rounded-card overflow-hidden flex flex-col transition-ui duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 backdrop-blur-xl
                   ${isSelected ? 'border-blue-500 ring-4 ring-blue-500/10 bg-blue-500/5' : 'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/30'}`}
               >
                 {/* Image Section */}
@@ -214,7 +214,7 @@ export function TrashView() {
                   <div className={`absolute top-4 left-4 z-10 transition-all opacity-100`}>
                     <button
                       onClick={() => toggleSelection(item.id, false)}
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center border shadow-xl transition-all ${isSelected ? 'bg-blue-600 border-blue-500' : 'bg-black/40 backdrop-blur-xl border-white/20 hover:border-white/40'}`}
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center border shadow-xl transition-ui ${isSelected ? 'bg-blue-600 border-blue-500' : 'bg-black/40 backdrop-blur-xl border-white/20 hover:border-white/40'}`}
                     >
                       {isSelected ? <CheckSquare className="w-5 h-5 text-white" /> : <Square className="w-5 h-5 text-white/40" />}
                     </button>

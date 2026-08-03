@@ -91,7 +91,7 @@ export function StoreUploadHistory() {
             return (
               <div
                 key={item.id}
-                className={`bg-white/70 dark:bg-neutral-900/70 p-4 md:p-5 rounded-card border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all shadow-sm hover:shadow-xl backdrop-blur-xl duration-300 hover:-translate-y-0.5 ${
+                className={`bg-white/70 dark:bg-neutral-900/70 p-4 md:p-5 rounded-card border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-ui shadow-sm hover:shadow-xl backdrop-blur-xl duration-300 hover:-translate-y-0.5 ${
                   isSuccess ? 'border-neutral-200/50 dark:border-white/5' : 'border-red-500/30'
                 }`}
               >

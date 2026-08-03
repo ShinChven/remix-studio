@@ -218,7 +218,7 @@ export function Login() {
                 maxLength={6}
                 value={twoFactorCode}
                 onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.3em] backdrop-blur-md"
+                className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-ui font-mono tracking-[0.3em] backdrop-blur-md"
                 required
               />
             </div>
@@ -253,7 +253,7 @@ export function Login() {
                 value={inviteCode}
                 onChange={(event) => setInviteCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                 placeholder={t('login.enterInviteCode')}
-                className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono tracking-[0.2em] backdrop-blur-md"
+                className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-ui font-mono tracking-[0.2em] backdrop-blur-md"
                 required
               />
               <p className="mt-2 text-xs text-zinc-500">{t('login.inviteCodeDescription')}</p>
@@ -282,7 +282,7 @@ export function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
+                  className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-ui font-mono backdrop-blur-md"
                   required
                 />
               </div>
@@ -292,7 +292,7 @@ export function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-all font-mono backdrop-blur-md"
+                  className="w-full bg-black/20 border border-white/10 rounded-card px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30 transition-ui font-mono backdrop-blur-md"
                   required
                 />
               </div>
@@ -316,7 +316,7 @@ export function Login() {
                 type="button"
                 onClick={handlePasskeyLogin}
                 disabled={passkeyLoading}
-                className="flex items-center justify-center gap-2 rounded-card border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50 backdrop-blur-md"
+                className="flex items-center justify-center gap-2 rounded-card border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 transition-ui hover:bg-white/10 active:scale-[0.98] disabled:opacity-50 backdrop-blur-md"
               >
                 {passkeyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />}
                 {t('login.passkey')}
@@ -324,7 +324,7 @@ export function Login() {
 
               <a
                 href={googleAuthUrl}
-                className="flex items-center justify-center gap-2 rounded-card border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 transition-all hover:bg-white/10 active:scale-[0.98] backdrop-blur-md"
+                className="flex items-center justify-center gap-2 rounded-card border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 transition-ui hover:bg-white/10 active:scale-[0.98] backdrop-blur-md"
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" aria-hidden="true">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />

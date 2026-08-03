@@ -555,7 +555,7 @@ export function AlbumTab({
               return (
                 <div
                   key={item.id}
-                  className={`group rounded-card border px-4 py-3 transition-all backdrop-blur-xl ${isSelected ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:border-cyan-500/30'}`}
+                  className={`group rounded-card border px-4 py-3 transition-ui backdrop-blur-xl ${isSelected ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:border-cyan-500/30'}`}
                 >
                   <div className="flex items-center gap-2 sm:gap-3">
                     <button
@@ -675,13 +675,13 @@ export function AlbumTab({
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = getCssAspectRatio(item.aspectRatio);
               return (
-                <div key={item.id} id={`album-item-${item.id}`} className={`bg-white/20 dark:bg-black/20 border overflow-hidden flex flex-col group transition-all duration-300 active:scale-100 rounded-xl border-neutral-200/20 dark:border-white/5 backdrop-blur-md ${isSelected ? 'ring-2 ring-inset ring-blue-500 shadow-xl shadow-blue-500/20 z-10 scale-[1.02]' : 'hover:shadow-2xl hover:z-10 hover:-translate-y-1'}`}>
+                <div key={item.id} id={`album-item-${item.id}`} className={`bg-white/20 dark:bg-black/20 border overflow-hidden flex flex-col group transition-ui duration-300 active:scale-100 rounded-xl border-neutral-200/20 dark:border-white/5 backdrop-blur-md ${isSelected ? 'ring-2 ring-inset ring-blue-500 shadow-xl shadow-blue-500/20 z-10 scale-[1.02]' : 'hover:shadow-2xl hover:z-10 hover:-translate-y-1'}`}>
                   <div className="bg-neutral-50 dark:bg-neutral-950 relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: aspectRatioStr }}>
                     {/* Selection Overlay */}
                     <div className={`absolute top-4 left-4 z-20 transition-all opacity-100`}>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey, displayItemIds); }}
-                        className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20 hover:border-white/40'}`}
+                        className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-ui ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20 hover:border-white/40'}`}
                       >
                         {isSelected && <CheckSquare className="w-4 h-4 text-neutral-900 dark:text-white" />}
                         {!isSelected && <Square className="w-4 h-4 text-white/40" />}
@@ -696,7 +696,7 @@ export function AlbumTab({
                           setAlbumItemsToDelete([item]);
                           setShowDeleteAlbumModal(true);
                         }}
-                        className="w-7 h-7 rounded-xl bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-lg"
+                        className="w-7 h-7 rounded-xl bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-ui shadow-lg"
                         title={t('projectViewer.common.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -707,7 +707,7 @@ export function AlbumTab({
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="w-7 h-7 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/20 transition-all shadow-lg"
+                        className="w-7 h-7 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/20 transition-ui shadow-lg"
                         title={t('projectViewer.album.openOriginal')}
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -759,7 +759,7 @@ export function AlbumTab({
                         className="absolute inset-0 z-10 flex items-center justify-center pointer-events-auto group/play"
                         title={t('projectViewer.album.playVideo')}
                       >
-                        <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-2xl transition-all group-hover/play:scale-110 group-hover/play:bg-purple-600/70">
+                        <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-2xl transition-ui group-hover/play:scale-110 group-hover/play:bg-purple-600/70">
                           <Play className="w-6 h-6 text-neutral-900 dark:text-white fill-white ml-0.5" />
                         </div>
                       </button>
