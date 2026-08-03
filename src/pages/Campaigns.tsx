@@ -263,7 +263,7 @@ export function Campaigns() {
                   <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-neutral-500 dark:text-neutral-500" />
                   <input
                     placeholder={t('searchPlaceholder')}
-                    className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white/40 py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 shadow-sm outline-none backdrop-blur-3xl transition-all placeholder:text-neutral-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 sm:w-64"
+                    className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white/40 py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 shadow-sm outline-none backdrop-blur-3xl transition-ui placeholder:text-neutral-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 sm:w-64"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -611,7 +611,7 @@ export function Campaigns() {
                 </div>
 
                 <button
-                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white/50 py-3 text-[15px] font-bold text-neutral-700 shadow-sm backdrop-blur-xl transition-all hover:bg-white hover:text-neutral-950 hover:shadow-md active:scale-[0.98] dark:border-white/10 dark:bg-white/5 dark:text-neutral-300 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white/50 py-3 text-[15px] font-bold text-neutral-700 shadow-sm backdrop-blur-xl transition-ui hover:bg-white hover:text-neutral-950 hover:shadow-md active:scale-[0.98] dark:border-white/10 dark:bg-white/5 dark:text-neutral-300 dark:hover:bg-white/10 dark:hover:text-white"
                   onClick={() => navigate('/campaigns/scheduled')}
                 >
                   {scheduledPosts.length > 0 ? t('viewAllScheduled') : t('openCalendar')}

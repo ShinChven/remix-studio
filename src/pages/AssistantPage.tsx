@@ -1616,7 +1616,7 @@ export function AssistantPage() {
         ${rightPanelOpen ? 'translate-x-0 w-[85vw] sm:w-80 lg:w-64' : 'translate-x-full lg:translate-x-0 w-[85vw] sm:w-80 lg:w-16'}
         flex-shrink-0 border-l border-neutral-200/50 dark:border-white/5
         bg-white dark:bg-neutral-950 lg:bg-white/10 lg:dark:bg-black/10 backdrop-blur-xl
-        transition-all duration-300 flex flex-col shadow-2xl lg:shadow-none
+        transition-ui duration-300 flex flex-col shadow-2xl lg:shadow-none
       `}>
         <div className={`flex h-full min-h-0 flex-col ${rightPanelOpen ? 'w-[85vw] sm:w-80 lg:w-64' : 'w-[85vw] sm:w-80 lg:w-16'}`}>
           <div className="sticky top-0 z-10 h-16 flex-shrink-0 border-b border-neutral-200/50 bg-white/80 px-2 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/80 lg:bg-white/20 lg:dark:bg-black/20">

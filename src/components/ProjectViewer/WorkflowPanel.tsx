@@ -428,15 +428,15 @@ export function WorkflowPanel({
       ), document.body)}
 
       <div className="h-[57px] p-3 border-b border-neutral-200/50 dark:border-white/5 flex gap-2 bg-white/30 dark:bg-black/20 items-center backdrop-blur-xl">
-        <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
+        <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
           <Type className="w-3 h-3" /> {t('projectViewer.common.text')}
         </button>
         {supportsImageInput && (
-          <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
+          <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
             <ImageIcon className="w-3 h-3" /> {t('projectViewer.common.imageShort')}
           </button>
         )}
-        <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
+        <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
           <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
         </button>
         {localProject.type === 'video' && (
@@ -445,12 +445,12 @@ export function WorkflowPanel({
               return (
                 <>
                   {selectedModel?.options.supportsReferenceVideo && (
-                    <button onClick={() => onAddWorkflowItem('video')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
+                    <button onClick={() => onAddWorkflowItem('video')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
                       <VideoIcon className="w-3 h-3" /> {t('projectViewer.common.video')}
                     </button>
                   )}
                   {selectedModel?.options.supportsReferenceAudio && (
-                    <button onClick={() => onAddWorkflowItem('audio')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
+                    <button onClick={() => onAddWorkflowItem('audio')} className="flex-1 flex items-center justify-center gap-1.5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
                       <Volume2 className="w-3 h-3" /> {t('projectViewer.common.audio')}
                     </button>
                   )}

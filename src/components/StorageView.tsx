@@ -336,7 +336,7 @@ export function StorageView() {
             <Link 
               key={proj.id} 
               to={`/project/${proj.id}`}
-              className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 rounded-card p-5 hover:border-blue-500/50 hover:bg-white/80 dark:hover:bg-neutral-900/80 backdrop-blur-xl transition-all group flex flex-col justify-between h-full min-h-[160px] shadow-sm"
+              className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 rounded-card p-5 hover:border-blue-500/50 hover:bg-white/80 dark:hover:bg-neutral-900/80 backdrop-blur-xl transition-ui group flex flex-col justify-between h-full min-h-[160px] shadow-sm"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">

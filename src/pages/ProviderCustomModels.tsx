@@ -259,7 +259,7 @@ export function ProviderCustomModels() {
               </button>
               <button
                 onClick={() => setEditor(null)}
-                className="px-5 py-2.5 bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
+                className="px-5 py-2.5 bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl text-xs font-black uppercase tracking-widest transition-ui shadow-sm active:scale-95"
               >
                 {t('providerCustomModels.cancel')}
               </button>
@@ -286,7 +286,7 @@ export function ProviderCustomModels() {
               return (
                 <div
                   key={idx}
-                  className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 hover:border-neutral-400 dark:hover:border-neutral-700 px-5 py-4 rounded-card transition-all flex items-center justify-between gap-4 shadow-sm hover:shadow-md backdrop-blur-xl"
+                  className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 hover:border-neutral-400 dark:hover:border-neutral-700 px-5 py-4 rounded-card transition-ui flex items-center justify-between gap-4 shadow-sm hover:shadow-md backdrop-blur-xl"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">

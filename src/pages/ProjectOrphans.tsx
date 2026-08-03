@@ -263,13 +263,13 @@ export function ProjectOrphans() {
                    <div 
                     key={file.key} 
                     onClick={(e) => toggleSelection(file.key, e.shiftKey)}
-                    className={`group relative aspect-square w-full rounded-xl overflow-hidden border transition-all cursor-pointer hover:scale-[1.02] ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'}`}
+                    className={`group relative aspect-square w-full rounded-xl overflow-hidden border transition-ui cursor-pointer hover:scale-[1.02] ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'}`}
                    >
                      {/* Overlay Actions */}
                      <div className="absolute inset-0 bg-black/60 opacity-100 transition-opacity z-10 flex flex-col justify-between p-1.5">
                         <div className="flex justify-between items-start">
                            <div 
-                            className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20'}`}
+                            className={`w-5 h-5 rounded flex items-center justify-center border transition-ui ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20'}`}
                            >
                              {isSelected ? <CheckSquare className="w-3 h-3 text-white" /> : <Square className="w-3 h-3 text-white/40" />}
                            </div>
@@ -289,7 +289,7 @@ export function ProjectOrphans() {
                               e.stopPropagation();
                               setLightboxData({ images: orphans.map(o => o.url), index: idx });
                             }}
-                            className="px-2 py-0.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded text-[7px] font-black uppercase tracking-widest text-white transition-all whitespace-nowrap"
+                            className="px-2 py-0.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded text-[7px] font-black uppercase tracking-widest text-white transition-ui whitespace-nowrap"
                            >
                              {t('projectOrphans.preview')}
                            </button>

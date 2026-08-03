@@ -74,7 +74,7 @@ export function JobListItem({
   return (
     <div className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300 border-b border-neutral-200/50 dark:border-neutral-800/50">
       <div
-        className={`bg-white/10 dark:bg-black/10 backdrop-blur-sm flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between transition-all cursor-pointer group/task p-3 lg:py-2.5 rounded-none border-0 ${headerClassName}`}
+        className={`bg-white/10 dark:bg-black/10 backdrop-blur-sm flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between transition-ui cursor-pointer group/task p-3 lg:py-2.5 rounded-none border-0 ${headerClassName}`}
         onClick={() => onToggleExpand(job.id)}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">

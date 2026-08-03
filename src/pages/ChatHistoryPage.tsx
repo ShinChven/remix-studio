@@ -94,7 +94,7 @@ export function ChatHistoryPage() {
               placeholder={t('chatHistory.searchPlaceholder', {
                 defaultValue: 'Search by title or message content...',
               })}
-              className="w-full bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all shadow-sm"
+              className="w-full bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-ui shadow-sm"
             />
           </div>
           <button
@@ -138,7 +138,7 @@ export function ChatHistoryPage() {
               <Link
                 key={conv.id}
                 to={`/assistant/${conv.id}`}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 hover:bg-white/70 dark:hover:bg-neutral-800/60 transition-all group"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 hover:bg-white/70 dark:hover:bg-neutral-800/60 transition-ui group"
               >
                 <MessageCircle className="w-4 h-4 flex-shrink-0 text-neutral-500 group-hover:text-indigo-500 transition-colors" />
                 <div className="flex-1 min-w-0">

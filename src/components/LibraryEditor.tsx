@@ -771,14 +771,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                             <div className="flex items-center gap-1.5">
                                <button
                                  onClick={(e) => { e.stopPropagation(); setTagModalItemId(item.id); }}
-                                 className="p-1.5 bg-neutral-50/80 dark:bg-neutral-950/80 text-neutral-600 dark:text-neutral-400 hover:text-blue-400 rounded-lg backdrop-blur-md border border-white/5 hover:border-blue-400/20 transition-all active:scale-90"
+                                 className="p-1.5 bg-neutral-50/80 dark:bg-neutral-950/80 text-neutral-600 dark:text-neutral-400 hover:text-blue-400 rounded-lg backdrop-blur-md border border-white/5 hover:border-blue-400/20 transition-ui active:scale-90"
                                  title={t('libraryEditor.editTags')}
                                >
                                  <TagIcon className="w-3.5 h-3.5" />
                                </button>
                                <button
                                  onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }}
-                                 className="p-1.5 bg-neutral-50/80 dark:bg-neutral-950/80 text-neutral-600 dark:text-neutral-400 hover:text-red-500 rounded-lg backdrop-blur-md border border-white/5 hover:border-red-500/20 transition-all active:scale-90"
+                                 className="p-1.5 bg-neutral-50/80 dark:bg-neutral-950/80 text-neutral-600 dark:text-neutral-400 hover:text-red-500 rounded-lg backdrop-blur-md border border-white/5 hover:border-red-500/20 transition-ui active:scale-90"
                                >
                                  <Trash2 className="w-3.5 h-3.5" />
                                </button>

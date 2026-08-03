@@ -84,7 +84,7 @@ function ClearFailedButton({ onClick, isClearing, className = '' }: { onClick: (
   return (
     <button
       onClick={onClick}
-      className={`flex min-h-10 min-w-0 items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 shadow-sm backdrop-blur-xl transition-all hover:bg-red-500/20 active:scale-95 disabled:opacity-40 sm:min-w-28 ${className}`}
+      className={`flex min-h-10 min-w-0 items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 shadow-sm backdrop-blur-xl transition-ui hover:bg-red-500/20 active:scale-95 disabled:opacity-40 sm:min-w-28 ${className}`}
       disabled={isClearing}
       title={t('projectViewer.queue.clearAllFailed')}
       aria-label={t('projectViewer.queue.clearAllFailed')}
@@ -389,7 +389,7 @@ export function QueueMonitor() {
             {hasFailedJobs && (
               <button
                 onClick={() => setClearFailedTarget({ type: 'all', name: t('queueMonitor.title') })}
-                className="flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-red-500 shadow-sm backdrop-blur-xl transition-all hover:bg-red-500/20 active:scale-95 disabled:opacity-40"
+                className="flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-red-500 shadow-sm backdrop-blur-xl transition-ui hover:bg-red-500/20 active:scale-95 disabled:opacity-40"
                 disabled={isClearingFailed}
               >
                 {isClearingFailed ? <Loader2 className="h-4 w-4 animate-spin" /> : <BrushCleaning className="h-4 w-4" />}
@@ -398,7 +398,7 @@ export function QueueMonitor() {
             )}
             <button
               onClick={() => load(view)}
-              className="flex items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/60 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-neutral-700 shadow-sm backdrop-blur-xl transition-all hover:bg-neutral-100 active:scale-95 disabled:opacity-40 dark:border-white/5 dark:bg-neutral-900/60 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              className="flex items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/60 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-neutral-700 shadow-sm backdrop-blur-xl transition-ui hover:bg-neutral-100 active:scale-95 disabled:opacity-40 dark:border-white/5 dark:bg-neutral-900/60 dark:text-neutral-300 dark:hover:bg-neutral-800"
               disabled={isLoading}
             >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
