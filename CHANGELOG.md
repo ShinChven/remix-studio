@@ -6,6 +6,7 @@ All notable changes to Remix Studio are documented here by version number.
 
 ### Added
 
+- **Kimi (Moonshot AI) Provider**: Added Kimi as a provider type, bundled with the `Kimi K3` text profile — a 1M-token context window with native vision, so reference images can be attached to a text workflow. Kimi speaks the OpenAI Chat Completions protocol, so the text generator and chat adapter reuse the OpenAI implementations against `https://api.moonshot.ai/v1`; the API URL can be overridden to reach the mainland China endpoint. Kimi providers are also accepted by the in-app assistant, and the provider screen lists the account's models. The K2 series and `moonshot-v1` models are deliberately not bundled: K2 was discontinued in May 2026, and `kimi-k2.5` plus the `moonshot-v1` family are already closed to new accounts ahead of their August 31, 2026 sunset.
 - **Reuse a Workflow from the Album**: Reusing a configuration no longer means hunting for the right row in Done. Album, text, and audio entries now carry their own reuse control, and the image lightbox has one too (shortcut `R`), so a setup can be picked while looking at the finished piece. The settings are resolved through the job behind the item, the same confirmation applies before the project workflow is replaced, and the lightbox closes once it is. Items whose Done record has since been deleted report that the workflow is no longer available.
 
 ## [1.19.0] - 2026-08-02

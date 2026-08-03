@@ -16,6 +16,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Grok** | ✅ | ✅ | ✅ | - |
 | **Claude** | ✅ | - | - | - |
 | **Alibaba Cloud DashScope** | ✅ | - | - | - |
+| **Kimi (Moonshot AI)** | ✅ | - | - | - |
 | **RunningHub** | - | ✅ | ✅ | - |
 | **BytePlus** | - | ✅ | ✅ | - |
 | **Kling AI** | - | ✅ | ✅ | - |
@@ -32,6 +33,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Grok** | `Grok 4.5`, `Grok 4.20`, `Grok 4.3`, `Grok 4.1 Fast` |
 | **Claude** | `Claude Fable 5`, `Claude Opus 5`, `Claude Opus 4.8`, `Claude Sonnet 5`, `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` |
 | **Alibaba Cloud DashScope** | `Qwen3.6 Max`, `Qwen3.6 Plus`, `Qwen3.6 Flash`, `Qwen3.6 VL Max`, `Qwen3.6 VL Plus` |
+| **Kimi (Moonshot AI)** | `Kimi K3` |
 
 ## 3. Image Generation
 
@@ -76,6 +78,7 @@ The in-app [Assistant](/concepts/assistant) can use text profiles belonging to p
 - **Anthropic (Claude)**
 - **OpenAI**
 - **Alibaba Cloud**
+- **Kimi (Moonshot AI)**
 
 Vertex AI and Grok profiles can be used by generation projects where supported, but their provider types are not accepted by the current assistant chat adapter.
 

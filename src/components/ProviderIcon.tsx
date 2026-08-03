@@ -56,6 +56,13 @@ export function ProviderIcon({ type, className = "w-5 h-5" }: ProviderIconProps)
       );
     case 'Alibabacloud':
       return <SiAlibabacloud className={className} />;
+    case 'Kimi':
+      // Crescent mark for Moonshot AI — react-icons has no Kimi/Moonshot glyph.
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20.5 15.5A9 9 0 0 1 8.5 3.5a9 9 0 1 0 12 12Z" />
+        </svg>
+      );
     default:
       // Fallback key icon
       return (
