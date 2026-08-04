@@ -1225,6 +1225,23 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'byteplus-seedance-2-5-video',
+      name: 'Seedance 2.5',
+      generatorId: 'BytePlus',
+      modelId: 'dreamina-seedance-2-5-260628',
+      category: 'video',
+      promptLimit: { value: 20480, unit: 'characters' },
+      options: {
+        aspectRatios: ['adaptive', '16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+        resolutions: ['480p', '720p'],
+        durations: [4, 5, 6, 8, 10, 12, 15, 20, 25, 30, -1],
+        sounds: ['on', 'off'],
+        supportsReferenceImages: true,
+        supportsReferenceVideo: true,
+        supportsReferenceAudio: true,
+      },
+    },
+    {
       id: 'byteplus-seedance-1-5-pro-video',
       name: 'Seedance 1.5 Pro',
       generatorId: 'BytePlus',
