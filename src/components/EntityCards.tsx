@@ -190,7 +190,7 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
 
       {/* Gradient & Blur Overlay */}
       <div 
-        className="absolute inset-x-0 bottom-0 h-[55%] pointer-events-none transition-opacity duration-300 backdrop-blur-md bg-gradient-to-t from-black/80 via-black/30 to-transparent"
+        className="absolute inset-x-0 bottom-0 h-[55%] pointer-events-none transition-opacity duration-300 bg-gradient-to-t from-black/80 via-black/30 to-transparent"
         style={{
           maskImage: 'linear-gradient(to top, black 20%, transparent 100%)',
           WebkitMaskImage: 'linear-gradient(to top, black 20%, transparent 100%)'
@@ -200,7 +200,7 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
       {/* Archived Badge Top-Left */}
       {isArchived && (
         <div className="absolute top-4 left-4 z-20">
-          <span className="flex items-center gap-1 bg-black/40 backdrop-blur-md text-white/90 border border-white/20 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest shadow-sm">
+          <span className="flex items-center gap-1 bg-black/60 text-white/90 border border-white/20 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest shadow-sm">
             <Archive className="w-3 h-3" />
             {t('projects.archivedBadge')}
           </span>
@@ -251,7 +251,7 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
                   e.stopPropagation();
                   onStartAssistantChat(project);
                 }}
-                className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors backdrop-blur-sm"
+                className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
                 title={t('projects.projectCard.startAssistantChat', { defaultValue: 'Start Assistant Chat' })}
               >
                 <Stars className="w-4 h-4" />
@@ -265,7 +265,7 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
                   e.stopPropagation();
                   setIsMenuOpen(!isMenuOpen);
                 }}
-                className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors backdrop-blur-sm"
+                className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
                 title={t('common.moreOptions', { defaultValue: 'More options' })}
               >
                 <MoreHorizontal className="w-5 h-5" />

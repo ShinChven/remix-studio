@@ -269,7 +269,7 @@ export function ProjectOrphans() {
                      <div className="absolute inset-0 bg-black/60 opacity-100 transition-opacity z-10 flex flex-col justify-between p-1.5">
                         <div className="flex justify-between items-start">
                            <div 
-                            className={`w-5 h-5 rounded flex items-center justify-center border transition-ui ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20'}`}
+                            className={`w-5 h-5 rounded flex items-center justify-center border transition-ui ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/60 border-white/20'}`}
                            >
                              {isSelected ? <CheckSquare className="w-3 h-3 text-white" /> : <Square className="w-3 h-3 text-white/40" />}
                            </div>
@@ -278,7 +278,7 @@ export function ProjectOrphans() {
                             target="_blank" 
                             rel="noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="w-5 h-5 rounded bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20"
+                            className="w-5 h-5 rounded bg-black/60 border border-white/20 flex items-center justify-center text-white hover:bg-white/20"
                            >
                              <ExternalLink className="w-3 h-3" />
                            </a>
@@ -289,7 +289,7 @@ export function ProjectOrphans() {
                               e.stopPropagation();
                               setLightboxData({ images: orphans.map(o => o.url), index: idx });
                             }}
-                            className="px-2 py-0.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded text-[7px] font-black uppercase tracking-widest text-white transition-ui whitespace-nowrap"
+                            className="px-2 py-0.5 bg-white/20 hover:bg-white/30 border border-white/20 rounded text-[7px] font-black uppercase tracking-widest text-white transition-ui whitespace-nowrap"
                            >
                              {t('projectOrphans.preview')}
                            </button>

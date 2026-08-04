@@ -48,7 +48,7 @@ function ThemeSwitcher({ isCollapsed }: { isCollapsed: boolean }) {
 
   return (
     <div
-      className={`flex items-center rounded-xl bg-neutral-200/50 dark:bg-neutral-950/40 p-1 backdrop-blur-md border border-neutral-300/30 dark:border-white/5 shadow-inner ${
+      className={`flex items-center rounded-xl bg-neutral-200/50 dark:bg-neutral-950/40 p-1 border border-neutral-300/30 dark:border-white/5 shadow-inner ${
         isCollapsed ? 'flex-col gap-1' : 'w-full gap-1'
       }`}
     >
@@ -340,7 +340,7 @@ export function MainLayout() {
             onClick={() => setIsMobileMenuOpen(false)}
             className={`flex items-center overflow-hidden rounded-xl border p-3 transition-colors ${isAccountActive
                 ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
-                : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl hover:bg-white/60 dark:hover:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 shadow-sm'
+                : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 shadow-sm'
               } ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
               }`}
           >
@@ -372,7 +372,7 @@ export function MainLayout() {
               onClick={() => setIsMobileMenuOpen(false)}
               className={`mt-3 flex items-center rounded-xl border transition-ui ${location.pathname.startsWith('/admin/')
                   ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
-                  : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl text-neutral-700 dark:text-neutral-300 hover:bg-white/60 dark:hover:bg-neutral-800/60 shadow-sm'
+                  : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:bg-white/60 dark:hover:bg-neutral-800/60 shadow-sm'
                 } p-3 text-sm ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
                 }`}
               title={t('sidebar.userManagement')}

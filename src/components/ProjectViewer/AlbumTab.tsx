@@ -681,7 +681,7 @@ export function AlbumTab({
                     <div className={`absolute top-4 left-4 z-20 transition-all opacity-100`}>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey, displayItemIds); }}
-                        className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-ui ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/40 backdrop-blur-md border-white/20 hover:border-white/40'}`}
+                        className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-ui ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/60 border-white/20 hover:border-white/40'}`}
                       >
                         {isSelected && <CheckSquare className="w-4 h-4 text-neutral-900 dark:text-white" />}
                         {!isSelected && <Square className="w-4 h-4 text-white/40" />}
@@ -696,7 +696,7 @@ export function AlbumTab({
                           setAlbumItemsToDelete([item]);
                           setShowDeleteAlbumModal(true);
                         }}
-                        className="w-7 h-7 rounded-xl bg-red-600/80 backdrop-blur-md border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-ui shadow-lg"
+                        className="w-7 h-7 rounded-xl bg-red-600/90 border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-ui shadow-lg"
                         title={t('projectViewer.common.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -707,7 +707,7 @@ export function AlbumTab({
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="w-7 h-7 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/20 transition-ui shadow-lg"
+                        className="w-7 h-7 rounded-xl bg-white/25 border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/40 transition-ui shadow-lg"
                         title={t('projectViewer.album.openOriginal')}
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -759,14 +759,14 @@ export function AlbumTab({
                         className="absolute inset-0 z-10 flex items-center justify-center pointer-events-auto group/play"
                         title={t('projectViewer.album.playVideo')}
                       >
-                        <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-2xl transition-ui group-hover/play:scale-110 group-hover/play:bg-purple-600/70">
+                        <div className="w-14 h-14 rounded-full bg-black/60 border border-white/30 flex items-center justify-center shadow-2xl transition-ui group-hover/play:scale-110 group-hover/play:bg-purple-600/70">
                           <Play className="w-6 h-6 text-neutral-900 dark:text-white fill-white ml-0.5" />
                         </div>
                       </button>
                     )}
 
                     {/* Sequential Identifier Overlay */}
-                    <div className="absolute bottom-4 right-4 z-10 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-mono text-white/80 border border-white/10 opacity-100 transition-opacity pointer-events-none">
+                    <div className="absolute bottom-4 right-4 z-10 px-2 py-0.5 bg-black/70 rounded-lg text-[10px] font-mono text-white/80 border border-white/10 opacity-100 transition-opacity pointer-events-none">
                       #{(index + 1).toString().padStart(2, '0')}
                     </div>
 
@@ -774,12 +774,12 @@ export function AlbumTab({
                     {(item.aspectRatio || item.createdAt) && (
                       <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5 opacity-100 transition-opacity duration-500 delay-75 pointer-events-none">
                         {item.aspectRatio && (
-                          <span className="px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-bold text-white/60 border border-white/5 uppercase tracking-widest leading-none">
+                          <span className="px-2 py-0.5 bg-black/60 rounded-full text-[9px] font-bold text-white/60 border border-white/5 uppercase tracking-widest leading-none">
                             {item.aspectRatio}
                           </span>
                         )}
                         {item.createdAt && (
-                          <span className="px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-bold text-white/60 border border-white/5 tracking-widest leading-none">
+                          <span className="px-2 py-0.5 bg-black/60 rounded-full text-[9px] font-bold text-white/60 border border-white/5 tracking-widest leading-none">
                             {new Date(item.createdAt).toLocaleString(undefined, { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
@@ -787,7 +787,7 @@ export function AlbumTab({
                     )}
 
                     {isSelected && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-blue-500/10 backdrop-blur-[2px]">
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-blue-500/20">
                         <CheckCircle2 className="w-14 h-14 text-blue-500 animate-in zoom-in duration-300" />
                       </div>
                     )}

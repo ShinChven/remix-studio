@@ -214,7 +214,7 @@ export function TrashView() {
                   <div className={`absolute top-4 left-4 z-10 transition-all opacity-100`}>
                     <button
                       onClick={() => toggleSelection(item.id, false)}
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center border shadow-xl transition-ui ${isSelected ? 'bg-blue-600 border-blue-500' : 'bg-black/40 backdrop-blur-xl border-white/20 hover:border-white/40'}`}
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center border shadow-xl transition-ui ${isSelected ? 'bg-blue-600 border-blue-500' : 'bg-black/60 border-white/20 hover:border-white/40'}`}
                     >
                       {isSelected ? <CheckSquare className="w-5 h-5 text-white" /> : <Square className="w-5 h-5 text-white/40" />}
                     </button>

@@ -322,7 +322,7 @@ export function Home() {
                         style={{ backgroundImage: `url(${thumbnail})` }}
                       />
                       <div
-                        className="absolute inset-x-0 bottom-0 h-[55%] pointer-events-none transition-opacity duration-300 backdrop-blur-md bg-gradient-to-t from-black/80 via-black/30 to-transparent"
+                        className="absolute inset-x-0 bottom-0 h-[55%] pointer-events-none transition-opacity duration-300 bg-gradient-to-t from-black/80 via-black/30 to-transparent"
                         style={{
                           maskImage: 'linear-gradient(to top, black 20%, transparent 100%)',
                           WebkitMaskImage: 'linear-gradient(to top, black 20%, transparent 100%)'
