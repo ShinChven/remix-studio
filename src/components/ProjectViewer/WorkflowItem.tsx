@@ -277,13 +277,23 @@ export function WorkflowItem({
       {item.type === 'image' && (
         <div className={`space-y-2 ${gridView ? 'lg:flex-1 lg:min-h-0 lg:flex lg:flex-col' : ''}`}>
           {item.value && !uploadingItemIds.has(item.id) && (
-            <div className={`relative aspect-video rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 ${gridView ? 'lg:aspect-auto lg:flex-1 lg:min-h-0' : ''}`}>
-               <img 
-                 src={imageDisplayUrl(item.thumbnailUrl || item.value)} 
-                 alt="Reference" 
-                 className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
-                 onClick={() => onLightbox([imageDisplayUrl(item.optimizedUrl || item.value)], 0)} 
+            // Phones show the reference uncropped (portrait references are the norm and a
+            // 16:9 crop leaves only a sliver visible); desktop keeps the compact 16:9 tile.
+            <div className={`relative flex items-center justify-center rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100/70 dark:bg-black/40 lg:block lg:aspect-video ${gridView ? 'lg:aspect-auto lg:flex-1 lg:min-h-0' : ''}`}>
+               <img
+                 src={imageDisplayUrl(item.thumbnailUrl || item.value)}
+                 alt="Reference"
+                 className="w-auto max-w-full max-h-[50vh] object-contain cursor-pointer hover:opacity-80 transition-opacity lg:w-full lg:h-full lg:max-h-none lg:object-cover"
+                 onClick={() => onLightbox([imageDisplayUrl(item.optimizedUrl || item.value)], 0)}
                />
+               <button
+                 type="button"
+                 onClick={() => onLightbox([imageDisplayUrl(item.optimizedUrl || item.value)], 0)}
+                 className="absolute top-2 right-2 p-2 bg-white/90 dark:bg-neutral-900/90 rounded-md border border-neutral-200 dark:border-neutral-800 shadow-sm text-neutral-500 hover:text-blue-500 hover:border-blue-200 transition-colors lg:hidden"
+                 aria-label={t('projectViewer.common.preview', { defaultValue: 'Preview' })}
+               >
+                 <Maximize2 className="w-3.5 h-3.5" />
+               </button>
             </div>
           )}
         </div>
