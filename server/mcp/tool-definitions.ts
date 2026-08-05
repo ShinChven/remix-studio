@@ -1817,13 +1817,14 @@ Important workflow behavior:
   tools.push({
     name: 'batch_update_library_items',
     title: 'Batch Update Library Items',
-    description: 'Update the title and/or tags of multiple items in a library in a single batch (up to 100 items). Content editing is not supported in batch — use update_library_item for that. Useful for bulk re-tagging or renaming after importing or reviewing a library.',
+    description: 'Update the title, tags, and/or text content of multiple items in a library in a single batch (up to 100 items). Each entry may change a different set of fields. Prefer this over repeated update_library_item calls whenever more than one item is being changed — including rewriting or expanding the content of many prompts at once.',
     inputSchema: {
       library_id: z.string().describe('The library ID that contains the items'),
       updates: z.array(z.object({
         item_id: z.string().describe('ID of the item to update'),
         title: z.string().optional().describe('New title (omit to keep existing; pass empty string to clear)'),
         tags: z.array(z.string()).optional().describe('Replacement tags (omit to keep existing; pass [] to clear all)'),
+        content: z.string().optional().describe('New text content (text libraries only; omit to keep existing)'),
       })).min(1).max(100).describe('List of items to update (1–100)'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -1831,7 +1832,7 @@ Important workflow behavior:
     handler: async (userId, input) => {
       const { library_id, updates } = input as {
         library_id: string;
-        updates: { item_id: string; title?: string; tags?: string[] }[];
+        updates: { item_id: string; title?: string; tags?: string[]; content?: string }[];
       };
 
       const library = await repository.getLibrary(userId, library_id);
@@ -1842,9 +1843,10 @@ Important workflow behavior:
       const results: { item_id: string; status: 'updated' | 'error'; error?: string }[] = [];
 
       for (const upd of updates) {
-        const itemUpdates: { title?: string; tags?: string[] } = {};
+        const itemUpdates: { title?: string; tags?: string[]; content?: string } = {};
         if (upd.title !== undefined) itemUpdates.title = upd.title;
         if (upd.tags !== undefined) itemUpdates.tags = upd.tags;
+        if (upd.content !== undefined) itemUpdates.content = upd.content;
 
         if (Object.keys(itemUpdates).length === 0) {
           results.push({ item_id: upd.item_id, status: 'error', error: 'No fields to update.' });
