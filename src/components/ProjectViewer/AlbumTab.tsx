@@ -670,7 +670,7 @@ export function AlbumTab({
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,240px),1fr))] gap-4 p-4">
             {displayItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = getCssAspectRatio(item.aspectRatio);
