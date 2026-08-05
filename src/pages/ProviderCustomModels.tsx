@@ -135,23 +135,23 @@ export function ProviderCustomModels() {
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
-      <div className="w-full space-y-6">
+      <div className="w-full space-y-4 md:space-y-6">
         {/* Back */}
         <button
           onClick={() => navigate(`/provider/${id}`)}
-          className="text-sm text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors"
+          className="text-xs md:text-sm text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 flex items-center gap-1 transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> {t('providerCustomModels.backToProvider', { name: provider.name })}
+          <ArrowLeft className="w-3.5 h-3.5 md:w-4 md:h-4" /> {t('providerCustomModels.backToProvider', { name: provider.name })}
         </button>
 
         {/* Header */}
-        <header className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 dark:text-white font-display flex items-center gap-3">
-              <Layers className="w-7 h-7 text-cyan-500" />
+        <header className="flex items-start justify-between gap-3 md:items-center">
+          <div className="min-w-0">
+            <h2 className="text-xl md:text-3xl font-bold text-neutral-900 dark:text-white font-display flex items-center gap-2 md:gap-3">
+              <Layers className="w-5 h-5 md:w-7 md:h-7 text-cyan-500 shrink-0" />
               {t('providerCustomModels.title')}
             </h2>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+            <p className="text-[13px] md:text-sm text-neutral-600 dark:text-neutral-400 mt-1 leading-snug">
               {t('providerCustomModels.description')}
             </p>
           </div>

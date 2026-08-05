@@ -122,16 +122,16 @@ export function AccountTwoFactorSetup() {
   }
 
   return (
-    <div className="p-6 lg:p-10">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <Link to="/account?tab=security" className="inline-flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-200">
-              <ArrowLeft className="h-4 w-4" />
+    <div className="p-4 sm:p-6 lg:p-10">
+      <div className="mx-auto max-w-5xl space-y-4 md:space-y-6">
+        <div className="flex items-start justify-between gap-3 md:items-center md:gap-4">
+          <div className="min-w-0">
+            <Link to="/account?tab=security" className="inline-flex items-center gap-2 text-xs md:text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-200">
+              <ArrowLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
               {t('accountTwoFactorSetup.backToSecurity')}
             </Link>
-            <h2 className="mt-3 text-2xl font-bold text-neutral-900 dark:text-white">{t('accountTwoFactorSetup.title')}</h2>
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+            <h2 className="mt-2 text-xl font-bold text-neutral-900 dark:text-white md:mt-3 md:text-2xl">{t('accountTwoFactorSetup.title')}</h2>
+            <p className="mt-1 text-[13px] leading-snug text-neutral-600 dark:text-neutral-400 md:mt-2 md:text-sm">
               {t('accountTwoFactorSetup.description', { email: user?.email || t('accountTwoFactorSetup.thisAccount') })}
             </p>
           </div>

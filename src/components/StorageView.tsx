@@ -90,23 +90,23 @@ export function StorageView() {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-950 p-6 lg:p-12 custom-scrollbar">
+    <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-950 p-4 sm:p-6 lg:p-12 custom-scrollbar">
       {/* Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-12"
+        className="mb-6 md:mb-12"
       >
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center">
-            <HardDrive className="w-6 h-6 text-blue-400" />
+        <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-blue-600/10 flex items-center justify-center shrink-0">
+            <HardDrive className="w-4 h-4 md:w-6 md:h-6 text-blue-400" />
           </div>
-          <h1 className="text-3xl font-black text-neutral-900 dark:text-white tracking-tight">{t('storageView.title')}</h1>
+          <h1 className="text-xl md:text-3xl font-black text-neutral-900 dark:text-white tracking-tight">{t('storageView.title')}</h1>
         </div>
-        <p className="text-neutral-600 dark:text-neutral-400 text-lg">{t('storageView.description')}</p>
+        <p className="text-neutral-600 dark:text-neutral-400 text-[13px] leading-snug md:text-lg md:leading-normal">{t('storageView.description')}</p>
       </motion.div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 md:gap-12 items-start">
         {/* Left Column: Data Blocks */}
         <div className="xl:col-span-7 space-y-8">
           {/* Main 3x2 (or adaptive) Grid */}

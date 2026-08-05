@@ -375,49 +375,49 @@ export function LibraryImportExport() {
 
   return (
     <div className="h-full overflow-y-auto bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(34,197,94,0.10),_transparent_28%),linear-gradient(180deg,_#09090b_0%,_#050505_100%)] custom-scrollbar">
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-8 px-4 py-4 md:px-8 md:py-8">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="flex items-start gap-4">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-4 py-4 md:gap-8 md:px-8 md:py-8">
+        <div className="flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div className="flex items-start gap-3 md:gap-4">
             <button
               onClick={() => navigate(`/library/${id}`)}
-              className="mt-1 rounded-card border border-neutral-200/80 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-950/70 p-3 text-neutral-500 dark:text-neutral-500 transition-all hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/80"
+              className="mt-0.5 md:mt-1 rounded-card border border-neutral-200/80 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-950/70 p-2 md:p-3 text-neutral-500 dark:text-neutral-500 transition-all hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/80"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
             </button>
 
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">
+            <div className="min-w-0 space-y-2 md:space-y-3">
+              <div className="hidden md:inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">
                 <FileText className="h-3.5 w-3.5" />
                 {t('libraryImportExport.badge')}
               </div>
 
               <div>
-                <h1 className="text-3xl font-black tracking-tight text-neutral-900 dark:text-white md:text-5xl">
+                <h1 className="text-xl font-black tracking-tight text-neutral-900 dark:text-white md:text-5xl">
                   {t('libraryImportExport.title')}
                 </h1>
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
+                <p className="mt-1 max-w-2xl text-[13px] leading-snug text-neutral-600 dark:text-neutral-400 md:mt-2 md:text-sm md:leading-relaxed">
                   {t('libraryImportExport.description')}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 shadow-sm">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-3">
+            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.stats.library')}</div>
-              <div className="mt-2 truncate text-sm font-bold text-neutral-900 dark:text-white">{library.name}</div>
+              <div className="mt-1 truncate text-sm font-bold text-neutral-900 dark:text-white md:mt-2">{library.name}</div>
             </div>
-            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 shadow-sm">
+            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.stats.currentItems')}</div>
-              <div className="mt-2 text-2xl font-black text-neutral-900 dark:text-white">{library.items.length}</div>
+              <div className="mt-1 text-xl font-black text-neutral-900 dark:text-white md:mt-2 md:text-2xl">{library.items.length}</div>
             </div>
-            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 shadow-sm">
+            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.stats.currentTags')}</div>
-              <div className="mt-2 text-2xl font-black text-neutral-900 dark:text-white">{libraryTagCount}</div>
+              <div className="mt-1 text-xl font-black text-neutral-900 dark:text-white md:mt-2 md:text-2xl">{libraryTagCount}</div>
             </div>
-            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 shadow-sm">
+            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.stats.readyToImport')}</div>
-              <div className="mt-2 text-2xl font-black text-blue-400">{previewItems.length}</div>
+              <div className="mt-1 text-xl font-black text-blue-400 md:mt-2 md:text-2xl">{previewItems.length}</div>
             </div>
           </div>
         </div>
@@ -490,7 +490,7 @@ export function LibraryImportExport() {
               </div>
 
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
-                <label className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 shadow-sm">
+                <label className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">
                     <Tag className="h-3.5 w-3.5 text-blue-400" />
                     {t('libraryImportExport.importSource.sharedTags')}
@@ -505,11 +505,11 @@ export function LibraryImportExport() {
                 </label>
 
                 <div className="grid grid-cols-2 gap-3 lg:w-[240px]">
-                  <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 shadow-sm">
+                  <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
                     <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.importSource.detectedTags')}</div>
                     <div className="mt-2 text-xl font-black text-neutral-900 dark:text-white">{previewTagCount}</div>
                   </div>
-                  <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 shadow-sm">
+                  <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
                     <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.importSource.skippedLines')}</div>
                     <div className={`mt-2 text-xl font-black ${parseIssues.length > 0 ? 'text-amber-300' : 'text-neutral-900 dark:text-white'}`}>
                       {parseIssues.length}

@@ -187,7 +187,7 @@ export function ProjectOrphans() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-        <div className="w-full space-y-8">
+        <div className="w-full space-y-6 md:space-y-8">
           
           {/* Legend / Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

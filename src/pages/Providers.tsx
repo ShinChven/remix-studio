@@ -78,7 +78,7 @@ export function Providers() {
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
-      <div className="w-full space-y-8">
+      <div className="w-full space-y-6 md:space-y-8">
         <PageHeader
           title={t('providers.title')}
           description={t('providers.description')}

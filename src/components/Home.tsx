@@ -146,7 +146,7 @@ export function Home() {
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
-      <div className="w-full space-y-8">
+      <div className="w-full space-y-6 md:space-y-8">
         {!isLoading && providers.length === 0 && (
           <section className="animate-in fade-in slide-in-from-top-4 duration-700">
             <div className="relative overflow-hidden rounded-card border border-indigo-500/20 bg-indigo-500/5 p-6 md:p-8 backdrop-blur-3xl dark:border-indigo-500/30 dark:bg-indigo-500/10">
@@ -182,7 +182,7 @@ export function Home() {
         )}
 
         {/* Unified Hero Section - Matrix Style */}
-        <section className="flex flex-col items-center justify-center py-10 md:py-24">
+        <section className="flex flex-col items-center justify-center py-6 md:py-24">
           <AssistantHero
             selectedProviderId={selectedProviderId}
             setSelectedProviderId={setSelectedProviderId}
