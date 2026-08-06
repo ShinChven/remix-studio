@@ -31,9 +31,9 @@ export function PromptLimitModal({
     <div className="fixed inset-0 z-[320] flex items-center justify-center p-4 md:p-8">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onCancel} />
 
-      <div className="relative w-full max-w-xl overflow-hidden rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl">
-        <div className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 p-6">
-          <div className="flex items-start gap-4">
+      <div className="relative w-full max-w-xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl">
+        <div className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 p-5 sm:p-6">
+          <div className="flex items-start gap-3 sm:gap-4">
             <div className="rounded-card border border-amber-500/20 bg-amber-500/10 p-3 text-amber-400">
               <AlertTriangle className="h-6 w-6" />
             </div>
@@ -53,7 +53,7 @@ export function PromptLimitModal({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-neutral-200/50 dark:border-neutral-800/50 bg-neutral-50/30 dark:bg-neutral-950/30 p-5 sm:flex-row sm:justify-end">
+        <div className="flex flex-col gap-3 border-t border-neutral-200/50 dark:border-neutral-800/50 bg-neutral-50/30 dark:bg-neutral-950/30 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:flex-row sm:justify-end">
           <button
             onClick={onCancel}
             className="rounded-xl border border-neutral-200 dark:border-neutral-800 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600 dark:text-neutral-400 transition-all hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-white"

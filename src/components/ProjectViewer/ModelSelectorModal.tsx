@@ -44,18 +44,18 @@ export function ModelSelectorModal({
 
   return (
     <div 
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300"
       onClick={onClose}
     >
-      <div 
-        className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl rounded-card md:rounded-[40px] shadow-[0_50px_100px_rgba(0,0,0,0.9)] max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
+      <div
+        className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl rounded-card md:rounded-[40px] shadow-[0_50px_100px_rgba(0,0,0,0.9)] max-w-4xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[85dvh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 md:p-8 border-b border-neutral-200/50 dark:border-neutral-800/50 flex flex-col gap-5 bg-neutral-50/20 dark:bg-neutral-950/20 backdrop-blur-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="text-2xl md:text-3xl font-black text-neutral-900 dark:text-white tracking-tight leading-none mb-2">{t('projectViewer.modelSelector.title')}</h3>
+        <div className="p-4 sm:p-6 md:p-8 border-b border-neutral-200/50 dark:border-neutral-800/50 flex flex-col gap-4 sm:gap-5 bg-neutral-50/20 dark:bg-neutral-950/20 backdrop-blur-md">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-neutral-900 dark:text-white tracking-tight leading-none mb-2">{t('projectViewer.modelSelector.title')}</h3>
               <p className="text-neutral-500 dark:text-neutral-500 text-xs md:text-sm font-medium">{t('projectViewer.modelSelector.description')}</p>
             </div>
             <button 
@@ -82,7 +82,7 @@ export function ModelSelectorModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 custom-scrollbar">
           {providers.length === 0 ? (
             <div className="text-center py-20 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-card border border-dashed border-neutral-200 dark:border-neutral-800">
               <AlertCircle className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
@@ -149,7 +149,7 @@ export function ModelSelectorModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-neutral-50/40 dark:bg-neutral-950/40 border-t border-neutral-200/50 dark:border-neutral-800/50 flex items-center justify-center">
+        <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-neutral-50/40 dark:bg-neutral-950/40 border-t border-neutral-200/50 dark:border-neutral-800/50 flex items-center justify-center">
            <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
              {t('projectViewer.modelSelector.footer')}
            </p>

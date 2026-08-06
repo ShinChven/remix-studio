@@ -20,11 +20,11 @@ export function PromptModal({ item, onClose, onSave }: PromptModalProps) {
   if (!item) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 md:p-8">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={onClose} />
-      
-      <div className="relative w-full max-w-5xl h-[80vh] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/20 dark:bg-neutral-950/20">
+
+      <div className="relative w-full max-w-5xl h-[100dvh] sm:h-[80dvh] bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 sm:border sm:rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="p-4 sm:p-6 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/20 dark:bg-neutral-950/20">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-blue-600/10 rounded-xl">
               <Type className="w-5 h-5 text-blue-500" />
@@ -42,30 +42,30 @@ export function PromptModal({ item, onClose, onSave }: PromptModalProps) {
           </button>
         </div>
 
-        <div className="flex-1 p-6 md:p-8 flex flex-col">
+        <div className="flex-1 min-h-0 p-4 sm:p-6 md:p-8 flex flex-col">
           <textarea
             autoFocus
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={t('projectViewer.promptModal.placeholder')}
-            className="flex-1 w-full bg-transparent border-none text-neutral-900 dark:text-neutral-200 text-lg md:text-xl font-medium leading-relaxed focus:outline-none focus:ring-0 resize-none placeholder:text-neutral-400 dark:placeholder:text-neutral-800 custom-scrollbar"
+            className="flex-1 w-full bg-transparent border-none text-neutral-900 dark:text-neutral-200 text-base sm:text-lg md:text-xl font-medium leading-relaxed focus:outline-none focus:ring-0 resize-none placeholder:text-neutral-400 dark:placeholder:text-neutral-800 custom-scrollbar"
           />
         </div>
 
-        <div className="p-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 flex items-center justify-between gap-4">
-          <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest pl-2">
+        <div className="p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 flex items-center justify-between gap-3">
+          <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest sm:pl-2">
             {t('projectViewer.promptModal.characterCount', { count: value.length })}
           </div>
-          <div className="flex items-center gap-3">
-            <button 
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
               onClick={onClose}
-              className="px-6 py-2.5 text-neutral-600 dark:text-neutral-400 hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
+              className="px-4 py-2.5 sm:px-6 text-neutral-600 dark:text-neutral-400 hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
             >
               {t('projectViewer.common.cancel')}
             </button>
-            <button 
+            <button
               onClick={() => onSave(value)}
-              className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center gap-2"
+              className="px-5 py-3 sm:px-8 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center gap-2 whitespace-nowrap"
             >
               <Save className="w-3.5 h-3.5" />
               {t('projectViewer.promptModal.saveChanges')}
