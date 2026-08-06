@@ -26,10 +26,12 @@ export interface JwtPayload {
 export interface AuthFlowPayload {
   purpose:
     | 'login-2fa'
-    | 'google-drive-connect'
+    | 'drive-connect'
     | 'google-oauth'
     | 'passkey-register'
     | 'passkey-login';
+  /** Which drive is being connected, for `drive-connect` flows. */
+  provider?: string;
   userId?: string;
   email?: string;
   challenge?: string;
@@ -54,7 +56,6 @@ export interface UserRecord {
   twoFactorSecret?: string | null;
   twoFactorTempSecret?: string | null;
   twoFactorTempExpiresAt?: number | null;
-  googleDriveRefreshToken?: string | null;
   createdAt: number;
   updatedAt?: number;
   lastLoginAt?: number;

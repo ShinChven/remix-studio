@@ -1,0 +1,89 @@
+{
+  "releases": {
+    "title": "Publications",
+    "description": "Connectez les disques et les boutiques vers lesquels vos exportations finalisées sont publiées.",
+    "headerLink": "Publications",
+    "backToExports": "Retour aux exportations",
+    "loadError": "Échec du chargement des connexions de publication",
+    "connectSuccess": "Connexion ajoutée",
+    "disconnectSuccess": "Connexion supprimée",
+    "disconnectError": "Échec de la suppression de la connexion",
+    "connect": "Connecter",
+    "addAnother": "Connecter un autre compte",
+    "reconnect": "Reconnecter",
+    "disconnect": "Déconnecter",
+    "cancel": "Annuler",
+    "notConfigured": "Indisponible",
+    "notConfiguredHint": "Aucun identifiant n'est configuré sur ce serveur pour ce fournisseur.",
+    "connectedCount": "{{count}} connecté(s)",
+    "availableTitle": "Destinations disponibles",
+    "availableDescription": "Connectez autant de comptes que vous le souhaitez — plusieurs disques par fournisseur sont acceptés.",
+    "empty": {
+      "title": "Aucune connexion pour l'instant",
+      "description": "Connectez un disque pour envoyer vos exportations sous forme de fichiers, ou une boutique pour les vendre."
+    },
+    "drives": {
+      "title": "Disques",
+      "description": "Stockage cloud vers lequel vos archives d'exportation sont envoyées.",
+      "empty": "Aucun disque connecté pour l'instant."
+    },
+    "storefronts": {
+      "title": "Boutiques",
+      "description": "Boutiques où vos exportations peuvent être publiées comme produits payants.",
+      "empty": "Aucune boutique connectée pour l'instant."
+    },
+    "providerHint": {
+      "gumroad": "Vendez des produits numériques sur Gumroad.",
+      "google-drive": "Envoyez vos archives d'exportation vers Google Drive.",
+      "onedrive": "Envoyez vos archives d'exportation vers OneDrive.",
+      "mega": "Envoyez vos archives d'exportation vers MEGA."
+    },
+    "confirmDisconnectTitle": "Supprimer la connexion",
+    "confirmDisconnectMessage": "Supprimer {{name}} ? Les prochaines exportations ne seront plus publiées vers cette destination.",
+    "credentials": {
+      "title": "Connecter {{provider}}",
+      "description": "{{provider}} utilise les identifiants de votre compte plutôt qu'une redirection.",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "twoFactor": "Code à deux facteurs",
+      "twoFactorHint": "Nécessaire uniquement si l'authentification à deux facteurs est activée sur le compte.",
+      "storageNotice": "Votre mot de passe est stocké chiffré car il est requis à chaque envoi pour se connecter.",
+      "submit": "Connecter",
+      "connecting": "Connexion…",
+      "failed": "Échec de la connexion"
+    },
+    "drive": {
+      "releaseToDrive": "Publier vers un disque",
+      "uploadQueued": "Publication mise en file — suivez l'icône d'envoi pour la progression",
+      "uploadSuccess": "Publié sur votre disque !",
+      "uploadFailed": "Échec de la publication vers le disque",
+      "openFile": "Ouvrir le fichier",
+      "uploading": "Envoi en cours…",
+      "confirmDialog": {
+        "title": "Publier vers un disque",
+        "message": "Envoyer « {{name}} » vers un disque connecté. Les archives volumineuses peuvent prendre du temps.",
+        "confirm": "Envoyer"
+      }
+    },
+    "history": {
+      "headerLink": "Historique",
+      "title": "Historique des publications",
+      "description": "Toutes les exportations envoyées vers un disque ou une boutique connectés.",
+      "backToReleases": "Retour aux publications",
+      "loadError": "Échec du chargement de l'historique des publications",
+      "empty": {
+        "title": "Aucune publication pour l'instant",
+        "description": "Dès que vous publierez une exportation, le résultat apparaîtra ici."
+      },
+      "status": {
+        "success": "Réussi",
+        "failed": "Échoué"
+      },
+      "openTarget": "Ouvrir chez le fournisseur",
+      "untitled": "Publication sans titre",
+      "stats": {
+        "total": "Total"
+      }
+    }
+  }
+}

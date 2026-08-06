@@ -1,25 +1,38 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, Clock, ExternalLink, History as HistoryIcon, List, Loader2, Store as StoreIcon, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Cloud, ExternalLink, HardDrive, History as HistoryIcon, List, Loader2, Store as StoreIcon, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchStoreUploads, StoreUploadHistoryItem } from '../api';
+import { fetchReleaseHistory, ReleaseHistoryItem } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { PageNav } from '../components/PageNav';
 
 const PAGE_SIZE = 20;
 
-function platformLabel(platform: string) {
-  if (platform === 'gumroad') return 'Gumroad';
-  return platform;
+/** Presentation for every destination a release can land on. */
+const PLATFORM_META: Record<string, { label: string; icon: typeof Cloud; accent: string }> = {
+  gumroad: { label: 'Gumroad', icon: StoreIcon, accent: 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 border-pink-200 dark:border-pink-500/20' },
+  'google-drive': { label: 'Google Drive', icon: HardDrive, accent: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' },
+  onedrive: { label: 'OneDrive', icon: Cloud, accent: 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-500/10 border-sky-200 dark:border-sky-500/20' },
+  mega: { label: 'MEGA', icon: Cloud, accent: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20' },
+};
+
+function platformMeta(platform: string) {
+  return (
+    PLATFORM_META[platform] ?? {
+      label: platform,
+      icon: Cloud,
+      accent: 'text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-500/10 border-neutral-200 dark:border-neutral-500/20',
+    }
+  );
 }
 
-export function StoreUploadHistory() {
+export function ReleaseHistory() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
 
-  const [items, setItems] = useState<StoreUploadHistoryItem[]>([]);
+  const [items, setItems] = useState<ReleaseHistoryItem[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -27,7 +40,7 @@ export function StoreUploadHistory() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetchStoreUploads(page, PAGE_SIZE)
+    fetchReleaseHistory(page, PAGE_SIZE)
       .then((res) => {
         if (cancelled) return;
         setItems(res.items);
@@ -36,7 +49,7 @@ export function StoreUploadHistory() {
       })
       .catch((err: any) => {
         if (cancelled) return;
-        toast.error(err?.message || t('exports.uploads.loadError'));
+        toast.error(err?.message || t('releases.history.loadError'));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -55,14 +68,14 @@ export function StoreUploadHistory() {
   return (
     <div className="p-4 md:p-8 w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <PageHeader
-        title={t('exports.uploads.title')}
-        description={t('exports.uploads.description')}
-        backLink={{ to: '/exports', label: t('exports.uploads.backToExports') }}
+        title={t('releases.history.title')}
+        description={t('releases.history.description')}
+        backLink={{ to: '/releases', label: t('releases.history.backToReleases') }}
         actions={(
           <div className="flex-shrink-0 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card flex items-center gap-2 shadow-sm backdrop-blur-md h-[42px]">
             <List className="h-4 w-4 text-neutral-500 dark:text-neutral-500 flex-shrink-0" />
             <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-300 uppercase tracking-widest">
-              {total} <span className="opacity-50 ml-0.5">{t('exports.uploads.stats.total')}</span>
+              {total} <span className="opacity-50 ml-0.5">{t('releases.history.stats.total')}</span>
             </span>
           </div>
         )}
@@ -76,18 +89,21 @@ export function StoreUploadHistory() {
         <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
           <HistoryIcon className="w-12 h-12 mx-auto opacity-10 mb-4" />
           <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">
-            {t('exports.uploads.empty.title')}
+            {t('releases.history.empty.title')}
           </div>
           <div className="text-[8px] font-bold uppercase tracking-widest opacity-40 max-w-[260px] mx-auto leading-relaxed">
-            {t('exports.uploads.empty.description')}
+            {t('releases.history.empty.description')}
           </div>
         </div>
       ) : (
         <div className="space-y-3">
           {items.map((item) => {
             const isSuccess = item.status === 'success';
+            const meta = platformMeta(item.platform);
+            const PlatformIcon = meta.icon;
+            const accountName = item.store?.profileName || item.driveConnection?.displayName || item.driveConnection?.email;
             const targetUrl = item.targetUrl || item.product?.gumroadShortUrl || null;
-            const title = item.title || item.product?.title || t('exports.uploads.untitled');
+            const title = item.title || item.product?.title || t('releases.history.untitled');
             return (
               <div
                 key={item.id}
@@ -103,9 +119,9 @@ export function StoreUploadHistory() {
                   }`} />
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
-                      <span className="w-fit text-[9px] font-black text-pink-600 dark:text-pink-400 uppercase tracking-widest bg-pink-50 dark:bg-pink-500/10 px-2 py-0.5 rounded border border-pink-200 dark:border-pink-500/20 flex items-center gap-1">
-                        <StoreIcon className="w-2.5 h-2.5" />
-                        {platformLabel(item.platform)}
+                      <span className={`w-fit text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border flex items-center gap-1 ${meta.accent}`}>
+                        <PlatformIcon className="w-2.5 h-2.5" />
+                        {meta.label}
                       </span>
                       <span className="text-[11px] sm:text-[10px] font-bold text-neutral-900 dark:text-white sm:text-neutral-400 truncate tracking-tight">
                         {title}
@@ -117,10 +133,10 @@ export function StoreUploadHistory() {
                         <Clock className="w-3 h-3" />
                         {new Date(item.createdAt).toLocaleString()}
                       </div>
-                      {item.store?.profileName ? (
+                      {accountName ? (
                         <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">
-                          <StoreIcon className="w-3 h-3" />
-                          {item.store.profileName}
+                          <PlatformIcon className="w-3 h-3" />
+                          {accountName}
                         </div>
                       ) : null}
                       {targetUrl ? (
@@ -150,12 +166,12 @@ export function StoreUploadHistory() {
                     {isSuccess ? (
                       <div className="flex items-center gap-1.5 text-emerald-500 text-[9px] font-black uppercase tracking-widest bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/10">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        {t('exports.uploads.status.success')}
+                        {t('releases.history.status.success')}
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 text-red-500 text-[9px] font-black uppercase tracking-widest bg-red-500/10 px-2.5 py-1.5 rounded-lg border border-red-500/20">
                         <XCircle className="w-3.5 h-3.5" />
-                        {t('exports.uploads.status.failed')}
+                        {t('releases.history.status.failed')}
                       </div>
                     )}
                   </div>
@@ -166,7 +182,7 @@ export function StoreUploadHistory() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 sm:p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all active:scale-90 bg-blue-500/5 sm:bg-transparent"
-                      title={t('exports.uploads.openProduct')}
+                      title={t('releases.history.openTarget')}
                     >
                       <ExternalLink className="w-5 h-5 sm:w-4 sm:h-4" />
                     </a>

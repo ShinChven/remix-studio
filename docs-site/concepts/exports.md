@@ -42,8 +42,8 @@ The global page lists exports across projects and shows:
 - Queue/archiving progress.
 - Completed size and a download action.
 - Failure messages.
-- Active Google Drive or store-delivery progress.
-- Delete, Drive upload, and sell actions when eligible.
+- Active drive or storefront release progress.
+- Delete, drive release, and sell actions when eligible.
 
 Download URLs are presigned when the task is read and expire after 24 hours. Reload the page to obtain a new URL; the archive itself is not deleted merely because a link expires.
 
@@ -55,22 +55,26 @@ The watermark screen previews the first selected image and configures text, posi
 
 The selected scope and raw/optimized choice are carried into the watermark screen. Watermarking creates processed bytes for the archive; it does not overwrite the album originals.
 
-## Google Drive Delivery
+## Drive Releases
 
-Connect Google Drive from the Exports/Account flow. A completed export can then be submitted to the delivery queue.
+Drives are connected on the **Releases** page, not on Exports. Google Drive, OneDrive, and MEGA are supported, and you can connect as many accounts as you like — several Google Drives side by side is fine.
+
+A completed export can then be released to any of them. When more than one drive is connected, the upload action asks which one to use; with a single drive it goes straight there.
 
 The delivery worker:
 
 1. Loads the completed ZIP from the export bucket.
-2. Refreshes Google credentials when needed.
-3. Uses a resumable upload and records transferred/total bytes.
-4. Stores the returned external ID/URL on completion.
+2. Refreshes the connection's credentials when needed (and marks the connection expired if that fails, so the UI can prompt for a reconnect).
+3. Streams the archive to the provider in resumable chunks and records transferred/total bytes.
+4. Stores the returned external ID/URL on completion and writes a release-history row.
 
-Disconnecting Drive clears the stored refresh token. It does not remove files already uploaded to Drive.
+Removing a connection deletes its stored credentials. It does not remove files already uploaded to that drive.
 
-## Store Delivery
+Google Drive and OneDrive authorize over OAuth. MEGA has no OAuth API, so it is connected with the account's email and password (plus a two-factor code when enabled); the password is stored encrypted because MEGA's key derivation needs it on every sign-in.
 
-When a supported store is connected, a completed archive can become a digital product. Product publishing uses the same delivery-task infrastructure but adds product metadata, cover processing, file upload, and publish phases.
+## Storefront Releases
+
+When a supported storefront is connected, a completed archive can become a digital product. Product publishing uses the same delivery-task infrastructure but adds product metadata, cover processing, file upload, and publish phases.
 
 See [Selling Exports](/concepts/selling-exports).
 

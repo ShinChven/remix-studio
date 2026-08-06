@@ -790,7 +790,7 @@ export class ProjectRepository {
   // === DeliveryTask CRUD + Queue ===
 
   async saveDeliveryTask(userId: string, taskId: string, data: any): Promise<void> {
-    const { exportTaskId, destination, productId, phase, status, bytesTransferred, totalBytes, externalId, externalUrl, error, createdAt, expiresAt } = data;
+    const { exportTaskId, destination, productId, driveConnectionId, phase, status, bytesTransferred, totalBytes, externalId, externalUrl, error, createdAt, expiresAt } = data;
     await this.prisma.deliveryTask.upsert({
       where: { id: taskId },
       create: {
@@ -799,6 +799,7 @@ export class ProjectRepository {
         exportTaskId,
         destination: destination ?? 'drive',
         productId: productId ?? null,
+        driveConnectionId: driveConnectionId ?? null,
         phase: phase ?? null,
         status: status ?? 'pending',
         bytesTransferred: bytesTransferred != null ? BigInt(bytesTransferred) : BigInt(0),
@@ -823,7 +824,10 @@ export class ProjectRepository {
   }
 
   async getDeliveryTask(userId: string, taskId: string): Promise<any | undefined> {
-    const t = await this.prisma.deliveryTask.findFirst({ where: { id: taskId, userId } });
+    const t = await this.prisma.deliveryTask.findFirst({
+      where: { id: taskId, userId },
+      include: { driveConnection: { select: { provider: true, displayName: true } } },
+    });
     if (!t) return undefined;
     return this.mapDeliveryTask(t);
   }
@@ -834,6 +838,7 @@ export class ProjectRepository {
         userId,
         status: { in: ['pending', 'processing'] },
       },
+      include: { driveConnection: { select: { provider: true, displayName: true } } },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
     return tasks.map((t) => this.mapDeliveryTask(t));
@@ -891,6 +896,9 @@ export class ProjectRepository {
       exportTaskId: t.exportTaskId,
       destination: t.destination,
       productId: t.productId ?? undefined,
+      driveConnectionId: t.driveConnectionId ?? undefined,
+      driveProvider: t.driveConnection?.provider ?? undefined,
+      driveName: t.driveConnection?.displayName ?? undefined,
       phase: t.phase ?? undefined,
       status: t.status,
       bytesTransferred: t.bytesTransferred != null ? Number(t.bytesTransferred) : 0,

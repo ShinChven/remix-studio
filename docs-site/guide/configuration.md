@@ -88,15 +88,34 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | `X_CLIENT_ID` / `X_CLIENT_SECRET` | OAuth 2.0 credentials for X (Twitter) campaigns. See [X Setup](/integrations/x-platform). |
 | `THREADS_APP_ID` / `THREADS_APP_SECRET` | Threads (Meta) use-case credentials. Redirect: `${APP_URL}/api/social/threads/callback`. See [Threads Setup](/integrations/threads-platform). |
 
-## Digital Stores
+## Releases
+
+Destinations for finished exports are connected on the **Releases** page. Credentials are encrypted using the same deployment encryption facility as other external credentials.
+
+### Storefronts
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `GUMROAD_CLIENT_ID` | empty | OAuth application client ID used by **Exports → Stores**. |
+| `GUMROAD_CLIENT_ID` | empty | OAuth application client ID used by **Releases**. |
 | `GUMROAD_CLIENT_SECRET` | empty | Gumroad OAuth client secret. |
 | `GUMROAD_SCOPE` | `edit_products view_profile view_sales` | Space-separated OAuth scopes requested when connecting Gumroad. |
 
-The redirect URL is `${APP_URL}/api/stores/gumroad/callback`. Store tokens are encrypted using the same deployment encryption facility as other external credentials.
+The redirect URL is `${APP_URL}/api/stores/gumroad/callback`.
+
+### Drives
+
+Google Drive reuses the Google OAuth application configured above; add `${APP_URL}/api/auth/google-drive/callback` as an authorized redirect URI.
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `MICROSOFT_CLIENT_ID` | empty | Entra ID application client ID used for OneDrive. |
+| `MICROSOFT_CLIENT_SECRET` | empty | Entra ID application client secret. |
+| `MICROSOFT_TENANT_ID` | `common` | `common`, `organizations`, `consumers`, or a tenant GUID. |
+| `MICROSOFT_REDIRECT_URI` | derived from `APP_URL` | Override when the callback URL differs from `${APP_URL}/api/releases/drives/onedrive/callback`. |
+
+The OneDrive app needs the delegated scopes `offline_access`, `User.Read`, and `Files.ReadWrite`.
+
+MEGA needs no server-side configuration — each user signs in with their own account from the Releases page.
 
 ## Backups (Docker)
 

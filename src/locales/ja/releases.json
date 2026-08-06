@@ -1,0 +1,89 @@
+{
+  "releases": {
+    "title": "リリース",
+    "description": "完成したエクスポートの配信先となるドライブやストアを接続します。",
+    "headerLink": "リリース",
+    "backToExports": "エクスポートに戻る",
+    "loadError": "リリース接続の読み込みに失敗しました",
+    "connectSuccess": "接続を追加しました",
+    "disconnectSuccess": "接続を削除しました",
+    "disconnectError": "接続の削除に失敗しました",
+    "connect": "接続",
+    "addAnother": "別のアカウントを接続",
+    "reconnect": "再接続",
+    "disconnect": "切断",
+    "cancel": "キャンセル",
+    "notConfigured": "利用不可",
+    "notConfiguredHint": "このサーバーにはこのプロバイダーの認証情報が設定されていません。",
+    "connectedCount": "{{count}} 件接続済み",
+    "availableTitle": "利用可能な配信先",
+    "availableDescription": "アカウントは何個でも接続できます。1 つのプロバイダーに複数のドライブを接続しても構いません。",
+    "empty": {
+      "title": "まだ接続がありません",
+      "description": "ファイルとして配信するにはドライブを、販売するにはストアを接続してください。"
+    },
+    "drives": {
+      "title": "ドライブ",
+      "description": "エクスポートのアーカイブをアップロードするクラウドストレージ。",
+      "empty": "接続済みのドライブはありません。"
+    },
+    "storefronts": {
+      "title": "ストア",
+      "description": "エクスポートを有料商品として公開できるストア。",
+      "empty": "接続済みのストアはありません。"
+    },
+    "providerHint": {
+      "gumroad": "Gumroad でデジタル商品を販売します。",
+      "google-drive": "エクスポートのアーカイブを Google ドライブにアップロードします。",
+      "onedrive": "エクスポートのアーカイブを OneDrive にアップロードします。",
+      "mega": "エクスポートのアーカイブを MEGA にアップロードします。"
+    },
+    "confirmDisconnectTitle": "接続を削除",
+    "confirmDisconnectMessage": "{{name}} を削除しますか？以降のエクスポートはこの配信先に送られなくなります。",
+    "credentials": {
+      "title": "{{provider}} を接続",
+      "description": "{{provider}} はリダイレクトではなくアカウントの認証情報でサインインします。",
+      "email": "メールアドレス",
+      "password": "パスワード",
+      "twoFactor": "2 段階認証コード",
+      "twoFactorHint": "アカウントで 2 段階認証を有効にしている場合のみ必要です。",
+      "storageNotice": "アップロードのたびにサインインが必要なため、パスワードは暗号化して保存されます。",
+      "submit": "接続",
+      "connecting": "接続中…",
+      "failed": "接続に失敗しました"
+    },
+    "drive": {
+      "releaseToDrive": "ドライブへリリース",
+      "uploadQueued": "リリースをキューに追加しました — アップロードアイコンで進行状況を確認できます",
+      "uploadSuccess": "ドライブへリリースしました",
+      "uploadFailed": "ドライブへのリリースに失敗しました",
+      "openFile": "ファイルを開く",
+      "uploading": "アップロード中…",
+      "confirmDialog": {
+        "title": "ドライブへリリース",
+        "message": "「{{name}}」を接続済みのドライブへアップロードします。大きなアーカイブは時間がかかることがあります。",
+        "confirm": "アップロード"
+      }
+    },
+    "history": {
+      "headerLink": "履歴",
+      "title": "リリース履歴",
+      "description": "接続済みのドライブやストアへ送信したエクスポートの記録。",
+      "backToReleases": "リリースに戻る",
+      "loadError": "リリース履歴の読み込みに失敗しました",
+      "empty": {
+        "title": "まだリリースがありません",
+        "description": "エクスポートをリリースすると、その結果がここに表示されます。"
+      },
+      "status": {
+        "success": "成功",
+        "failed": "失敗"
+      },
+      "openTarget": "プロバイダーで開く",
+      "untitled": "無題のリリース",
+      "stats": {
+        "total": "合計"
+      }
+    }
+  }
+}

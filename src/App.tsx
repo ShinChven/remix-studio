@@ -31,8 +31,8 @@ import { TrashView } from './components/TrashView.tsx';
 import { ProjectOrphans } from './pages/ProjectOrphans.tsx';
 import { ExportWatermark } from './pages/ExportWatermark.tsx';
 import { Exports } from './pages/Exports.tsx';
-import { StoreSettings } from './pages/StoreSettings.tsx';
-import { StoreUploadHistory } from './pages/StoreUploadHistory.tsx';
+import { Releases } from './pages/Releases.tsx';
+import { ReleaseHistory } from './pages/ReleaseHistory.tsx';
 import { SellExport } from './pages/SellExport.tsx';
 import { Account } from './pages/Account.tsx';
 import { AccountTwoFactorSetup } from './pages/AccountTwoFactorSetup.tsx';
@@ -113,9 +113,12 @@ export default function App() {
               <Route path="provider/:id/edit" element={<ProviderForm />} />
               <Route path="provider/:id/custom-models" element={<ProviderCustomModels />} />
               <Route path="exports" element={<Exports />} />
-              <Route path="exports/stores" element={<StoreSettings />} />
-              <Route path="exports/uploads" element={<StoreUploadHistory />} />
               <Route path="exports/:exportId/sell" element={<SellExport />} />
+              <Route path="releases" element={<Releases />} />
+              <Route path="releases/history" element={<ReleaseHistory />} />
+              {/* Pre-rebrand paths */}
+              <Route path="exports/stores" element={<Navigate to="/releases" replace />} />
+              <Route path="exports/uploads" element={<Navigate to="/releases/history" replace />} />
               <Route path="trash" element={<TrashView />} />
               <Route path="storage" element={<Navigate to="/account?tab=storage" replace />} />
               <Route path="account" element={<Account />} />

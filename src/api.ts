@@ -1168,31 +1168,22 @@ export async function deleteProjectExport(projectId: string, taskId: string): Pr
   return deleteExport(taskId);
 }
 
-// ========== Google Drive ==========
+// ========== Releases (drives) ==========
 
-export async function fetchGoogleDriveStatus(): Promise<{ connected: boolean }> {
-  const res = await apiFetch('/api/auth/google-drive/status', { headers: getHeaders(false) });
-  return handleResponse<{ connected: boolean }>(res, 'Failed to check Google Drive status');
-}
-
-export async function disconnectGoogleDrive(): Promise<void> {
-  const res = await apiFetch('/api/auth/google-drive/disconnect', {
-    method: 'DELETE',
-    headers: getHeaders(),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Failed to disconnect Google Drive');
-  }
-}
-
-/** Submit a Drive upload job. Returns deliveryTaskId — poll fetchDeliveryStatus() for progress. */
-export async function uploadExportToDrive(taskId: string): Promise<{ deliveryTaskId: string }> {
+/**
+ * Queue a release of a finished export to a connected drive. Returns
+ * deliveryTaskId — poll fetchDeliveryStatus() for progress.
+ */
+export async function uploadExportToDrive(
+  taskId: string,
+  driveConnectionId?: string,
+): Promise<{ deliveryTaskId: string }> {
   const res = await apiFetch(`/api/exports/${taskId}/upload-to-drive`, {
     method: 'POST',
     headers: getHeaders(),
+    body: JSON.stringify({ driveConnectionId }),
   });
-  return handleResponse<{ deliveryTaskId: string }>(res, 'Failed to submit Drive upload job');
+  return handleResponse<{ deliveryTaskId: string }>(res, 'Failed to queue drive release');
 }
 
 export interface DeliveryStatus {
@@ -1200,6 +1191,9 @@ export interface DeliveryStatus {
   exportTaskId: string;
   destination: 'drive' | 'gumroad';
   productId?: string;
+  driveConnectionId?: string;
+  driveProvider?: string;
+  driveName?: string;
   phase?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   bytesTransferred: number;
@@ -1962,6 +1956,67 @@ export function refreshSocialAccountProfile(platform: string, id: string): Promi
   return promise;
 }
 
+// ========== Releases (connections) ==========
+
+/** Kinds of place a finished export can be released to. */
+export type ReleaseConnectionKind = 'store' | 'drive';
+
+export interface ReleaseConnection {
+  id: string;
+  kind: ReleaseConnectionKind;
+  /** Provider id: "gumroad" | "google-drive" | "onedrive" | "mega". */
+  platform: string;
+  accountId: string;
+  displayName: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+  folderId: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReleaseProvider {
+  id: string;
+  kind: ReleaseConnectionKind;
+  label: string;
+  /** "oauth" providers redirect; "credentials" providers take a sign-in form. */
+  authKind: 'oauth' | 'credentials';
+  /** False when this server is missing the provider's credentials. */
+  configured: boolean;
+}
+
+export async function fetchReleaseConnections(): Promise<{
+  connections: ReleaseConnection[];
+  providers: ReleaseProvider[];
+}> {
+  const res = await apiFetch('/api/releases/connections', { headers: getHeaders(false) });
+  return handleResponse<{ connections: ReleaseConnection[]; providers: ReleaseProvider[] }>(
+    res,
+    'Failed to load release connections',
+  );
+}
+
+export async function connectDriveWithCredentials(
+  provider: string,
+  credentials: { email: string; password: string; secondFactorCode?: string },
+): Promise<{ connection: ReleaseConnection }> {
+  const res = await apiFetch(`/api/releases/drives/${provider}/connect`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(credentials),
+  });
+  return handleResponse<{ connection: ReleaseConnection }>(res, 'Failed to connect drive');
+}
+
+export async function disconnectDrive(id: string): Promise<void> {
+  const res = await apiFetch(`/api/releases/drives/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  return handleResponse<void>(res, 'Failed to disconnect drive');
+}
+
 // ========== Store Integrations ==========
 
 export interface ConnectedStore {
@@ -1990,10 +2045,12 @@ export async function disconnectStore(platform: string, id: string): Promise<voi
   return handleResponse<void>(res, 'Failed to disconnect store');
 }
 
-export interface StoreUploadHistoryItem {
+/** One attempt to release an export — to a storefront or to a drive. */
+export interface ReleaseHistoryItem {
   id: string;
   userId: string;
   storeId: string | null;
+  driveConnectionId: string | null;
   productId: string | null;
   exportTaskId: string | null;
   platform: string;
@@ -2004,20 +2061,27 @@ export interface StoreUploadHistoryItem {
   error: string | null;
   createdAt: string;
   store?: { id: string; platform: string; profileName: string | null; accountId: string } | null;
+  driveConnection?: {
+    id: string;
+    provider: string;
+    displayName: string | null;
+    email: string | null;
+    accountId: string;
+  } | null;
   product?: { id: string; title: string; gumroadShortUrl: string | null } | null;
 }
 
-export async function fetchStoreUploads(
+export async function fetchReleaseHistory(
   page: number = 1,
   pageSize: number = 20,
-): Promise<{ items: StoreUploadHistoryItem[]; total: number; page: number; pages: number }> {
+): Promise<{ items: ReleaseHistoryItem[]; total: number; page: number; pages: number }> {
   const url = new URL('/api/store-uploads', window.location.origin);
   url.searchParams.set('page', page.toString());
   url.searchParams.set('pageSize', pageSize.toString());
   const res = await apiFetch(url.toString(), { headers: getHeaders(false) });
-  return handleResponse<{ items: StoreUploadHistoryItem[]; total: number; page: number; pages: number }>(
+  return handleResponse<{ items: ReleaseHistoryItem[]; total: number; page: number; pages: number }>(
     res,
-    'Failed to load upload history',
+    'Failed to load release history',
   );
 }
 

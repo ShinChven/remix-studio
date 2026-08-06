@@ -1,0 +1,89 @@
+{
+  "releases": {
+    "title": "發佈",
+    "description": "連接用於接收已完成匯出的雲端硬碟與商店。",
+    "headerLink": "發佈",
+    "backToExports": "返回匯出",
+    "loadError": "載入發佈連線失敗",
+    "connectSuccess": "已新增連線",
+    "disconnectSuccess": "已移除連線",
+    "disconnectError": "移除連線失敗",
+    "connect": "連接",
+    "addAnother": "連接其他帳號",
+    "reconnect": "重新連接",
+    "disconnect": "中斷連線",
+    "cancel": "取消",
+    "notConfigured": "無法使用",
+    "notConfiguredHint": "此伺服器未設定該服務商的憑證。",
+    "connectedCount": "已連接 {{count}} 個",
+    "availableTitle": "可用的目標",
+    "availableDescription": "可以連接任意數量的帳號，同一個服務商連接多個雲端硬碟也沒問題。",
+    "empty": {
+      "title": "尚未連接任何目標",
+      "description": "連接雲端硬碟可將匯出以檔案投遞，連接商店則可以販售。"
+    },
+    "drives": {
+      "title": "雲端硬碟",
+      "description": "用於上傳匯出壓縮檔的雲端儲存空間。",
+      "empty": "尚未連接任何雲端硬碟。"
+    },
+    "storefronts": {
+      "title": "商店",
+      "description": "可將匯出以付費商品發佈的商店。",
+      "empty": "尚未連接任何商店。"
+    },
+    "providerHint": {
+      "gumroad": "在 Gumroad 上販售數位商品。",
+      "google-drive": "將匯出壓縮檔上傳到 Google 雲端硬碟。",
+      "onedrive": "將匯出壓縮檔上傳到 OneDrive。",
+      "mega": "將匯出壓縮檔上傳到 MEGA。"
+    },
+    "confirmDisconnectTitle": "移除連線",
+    "confirmDisconnectMessage": "確定移除 {{name}} 嗎？之後的匯出將不再發佈到此目標。",
+    "credentials": {
+      "title": "連接 {{provider}}",
+      "description": "{{provider}} 使用帳號憑證登入，而非轉址授權。",
+      "email": "電子郵件",
+      "password": "密碼",
+      "twoFactor": "兩步驟驗證碼",
+      "twoFactorHint": "僅在帳號啟用兩步驟驗證時才需要填寫。",
+      "storageNotice": "每次上傳都需要重新登入，因此密碼會加密保存。",
+      "submit": "連接",
+      "connecting": "連接中…",
+      "failed": "連接失敗"
+    },
+    "drive": {
+      "releaseToDrive": "發佈到雲端硬碟",
+      "uploadQueued": "發佈作業已排入佇列 —— 可透過上傳圖示查看進度",
+      "uploadSuccess": "已發佈到你的雲端硬碟！",
+      "uploadFailed": "發佈到雲端硬碟失敗",
+      "openFile": "開啟檔案",
+      "uploading": "上傳中…",
+      "confirmDialog": {
+        "title": "發佈到雲端硬碟",
+        "message": "將「{{name}}」上傳到已連接的雲端硬碟。較大的壓縮檔可能需要一些時間。",
+        "confirm": "上傳"
+      }
+    },
+    "history": {
+      "headerLink": "歷史",
+      "title": "發佈歷史",
+      "description": "所有已投遞到雲端硬碟或商店的匯出紀錄。",
+      "backToReleases": "返回發佈",
+      "loadError": "載入發佈歷史失敗",
+      "empty": {
+        "title": "還沒有發佈紀錄",
+        "description": "發佈匯出後，結果會顯示在這裡。"
+      },
+      "status": {
+        "success": "成功",
+        "failed": "失敗"
+      },
+      "openTarget": "在服務商中開啟",
+      "untitled": "未命名發佈",
+      "stats": {
+        "total": "總計"
+      }
+    }
+  }
+}

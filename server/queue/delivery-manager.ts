@@ -3,9 +3,15 @@ import type { Readable } from 'node:stream';
 import type { PrismaClient } from '@prisma/client';
 import { S3Storage } from '../storage/s3-storage';
 import { IRepository } from '../db/repository';
-import { UserRepository } from '../auth/user-repository';
 import { decrypt } from '../utils/crypto';
 import { GumroadStore } from '../services/store/gumroad-store';
+import { DriveAuthError, DriveFactory } from '../services/drive';
+import {
+  loadDriveConnection,
+  markDriveConnectionExpired,
+  saveRefreshedTokens,
+} from '../services/drive/connections';
+import { chunkReadable } from '../utils/stream-chunks';
 import {
   applyPostWatermark,
   normalizePostWatermarkPayload,
@@ -13,73 +19,16 @@ import {
   type PostWatermarkConfig,
 } from '../utils/watermark';
 
-/** Max concurrent Drive upload jobs. */
+/** Max concurrent release jobs. */
 const MAX_CONCURRENT_DELIVERIES = 1;
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
 const REAPER_INTERVAL_MS = 60_000;
-const DRIVE_UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024;
+/** Only persist drive progress once this many bytes have moved since the last write. */
+const PROGRESS_WRITE_INTERVAL = 4 * 1024 * 1024;
 
 // 48 h TTL on delivery tasks (success or failure)
 const TTL_48H = () => Math.floor(Date.now() / 1000) + 2 * 86400;
-
-function bufferFromChunk(chunk: Buffer | Uint8Array | string): Buffer {
-  if (Buffer.isBuffer(chunk)) return chunk;
-  return typeof chunk === 'string' ? Buffer.from(chunk) : Buffer.from(chunk);
-}
-
-function takeBufferedBytes(buffers: Buffer[], bytesToTake: number): Buffer {
-  const chunk = Buffer.allocUnsafe(bytesToTake);
-  let written = 0;
-
-  while (written < bytesToTake) {
-    const head = buffers[0];
-    if (!head) throw new Error('Buffered stream ended unexpectedly');
-
-    const bytes = Math.min(head.length, bytesToTake - written);
-    head.copy(chunk, written, 0, bytes);
-    written += bytes;
-
-    if (bytes === head.length) {
-      buffers.shift();
-    } else {
-      buffers[0] = head.subarray(bytes);
-    }
-  }
-
-  return chunk;
-}
-
-async function* chunkReadable(readable: Readable, chunkSize: number): AsyncGenerator<Buffer> {
-  const buffers: Buffer[] = [];
-  let bufferedBytes = 0;
-
-  for await (const rawChunk of readable) {
-    const chunk = bufferFromChunk(rawChunk as Buffer | Uint8Array | string);
-    buffers.push(chunk);
-    bufferedBytes += chunk.length;
-
-    while (bufferedBytes >= chunkSize) {
-      yield takeBufferedBytes(buffers, chunkSize);
-      bufferedBytes -= chunkSize;
-    }
-  }
-
-  if (bufferedBytes > 0) {
-    yield takeBufferedBytes(buffers, bufferedBytes);
-  }
-}
-
-function getDriveAckBytes(rangeHeader: string | null): number | null {
-  if (!rangeHeader) return null;
-  const match = /^bytes=0-(\d+)$/.exec(rangeHeader.trim());
-  if (!match) return null;
-  return Number(match[1]) + 1;
-}
-
-function toFetchBody(chunk: Buffer): Uint8Array {
-  return new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
-}
 
 function parseCoverWatermarkSetting(value: unknown): PostWatermarkConfig | null {
   if (!value || typeof value !== 'object') return null;
@@ -96,6 +45,10 @@ export interface DeliveryTask {
   exportTaskId: string;
   destination: 'drive' | 'gumroad';
   productId?: string;
+  /** Which connected drive a `drive` release targets. */
+  driveConnectionId?: string;
+  /** Provider id of that drive, surfaced so the UI can label progress. */
+  driveProvider?: string;
   phase?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   bytesTransferred: number;
@@ -115,7 +68,6 @@ export class DeliveryManager {
   constructor(
     private repository: IRepository,
     private exportStorage: S3Storage,
-    private userRepository: UserRepository,
     private prisma?: PrismaClient,
     private storage?: S3Storage,
   ) {}
@@ -129,7 +81,12 @@ export class DeliveryManager {
   async startDelivery(
     userId: string,
     exportTaskId: string,
-    options: { destination?: 'drive' | 'gumroad'; productId?: string } = {},
+    options: {
+      destination?: 'drive' | 'gumroad';
+      productId?: string;
+      driveConnectionId?: string;
+      driveProvider?: string;
+    } = {},
   ): Promise<string> {
     const taskId = crypto.randomUUID();
     const data: DeliveryTask = {
@@ -138,6 +95,8 @@ export class DeliveryManager {
       exportTaskId,
       destination: options.destination ?? 'drive',
       productId: options.productId,
+      driveConnectionId: options.driveConnectionId,
+      driveProvider: options.driveProvider,
       status: 'pending',
       bytesTransferred: 0,
       createdAt: Date.now(),
@@ -228,7 +187,14 @@ export class DeliveryManager {
           productId: task.productId,
           status: 'failed',
           error: err.message,
-        }).catch((e) => console.warn('[DeliveryManager] Failed to record upload history:', e));
+        }).catch((e) => console.warn('[DeliveryManager] Failed to record release history:', e));
+      }
+      if (destination !== 'gumroad') {
+        if (err instanceof DriveAuthError && task.driveConnectionId && this.prisma) {
+          await markDriveConnectionExpired(this.prisma, task.driveConnectionId);
+        }
+        await this.recordDriveReleaseHistory(task, { status: 'failed', error: err.message })
+          .catch((e) => console.warn('[DeliveryManager] Failed to record release history:', e));
       }
     } finally {
       clearInterval(heartbeatInterval);
@@ -264,170 +230,130 @@ export class DeliveryManager {
     });
   }
 
+  /** Release history entry for a drive upload (storefronts use recordStoreUploadHistory). */
+  private async recordDriveReleaseHistory(
+    task: any,
+    args: { status: 'success' | 'failed'; externalId?: string | null; targetUrl?: string | null; error?: string | null },
+  ): Promise<void> {
+    if (!this.prisma) return;
+    // A task claimed straight from the queue has no provider attached yet, so a
+    // failure raised before the connection loads still needs it looked up.
+    let provider: string | undefined = task.driveProvider;
+    if (!provider && task.driveConnectionId) {
+      const connection = await this.prisma.driveConnection.findUnique({
+        where: { id: task.driveConnectionId },
+        select: { provider: true },
+      });
+      provider = connection?.provider;
+    }
+
+    await this.prisma.storeUploadHistory.create({
+      data: {
+        userId: task.userId,
+        driveConnectionId: task.driveConnectionId ?? null,
+        exportTaskId: task.exportTaskId ?? null,
+        platform: provider ?? 'drive',
+        title: task.fileName ?? null,
+        status: args.status,
+        externalId: args.externalId ?? null,
+        targetUrl: args.targetUrl ?? null,
+        error: args.error ?? null,
+      },
+    });
+  }
+
+  // ─── Drive Release ─────────────────────────────────────────────────────────
+
   private async runDrivePublish(task: any): Promise<void> {
     const { id: taskId, userId, exportTaskId } = task;
 
-    // Load the completed export task
+    if (!this.prisma) {
+      throw new Error('DeliveryManager: Prisma client not configured for drive delivery');
+    }
+
     const exportTask = await this.repository.getExportTask(userId, exportTaskId);
     if (!exportTask || exportTask.status !== 'completed' || !exportTask.s3Key) {
       throw new Error('Source export is not completed or has no S3 key');
     }
 
-    await this.runDriveUpload(task, exportTask);
+    const connectionId = task.driveConnectionId;
+    if (!connectionId) {
+      throw new Error('This release has no drive selected. Please pick a drive on the Exports page.');
+    }
+    const connection = await loadDriveConnection(this.prisma, userId, connectionId);
+    if (!connection) {
+      throw new Error('The selected drive is no longer connected.');
+    }
+
+    const provider = DriveFactory.getProvider(connection.provider);
+    const fileName = exportTask.s3Key.split('/').pop() || `export_${exportTaskId}.zip`;
+    const totalBytes = Number(exportTask.size || 0);
+    if (!Number.isFinite(totalBytes) || totalBytes <= 0) {
+      throw new Error('Source export is missing a valid size');
+    }
+
+    // Carried on the task so failure history can name the file and provider.
+    task.fileName = fileName;
+    task.driveProvider = connection.provider;
+
+    await this.repository.saveDeliveryTask(userId, taskId, {
+      ...task,
+      status: 'processing',
+      phase: 'uploading',
+      totalBytes,
+    });
+
+    let lastPersistedBytes = 0;
+    const result = await provider.upload(connection.session, {
+      fileName,
+      totalBytes,
+      openStream: async () => {
+        try {
+          return await this.exportStorage.readStream(exportTask.s3Key);
+        } catch (err: any) {
+          if (err.name === 'NoSuchKey' || err.code === 'NoSuchKey') {
+            throw new Error('Source export file no longer exists in storage. Please generate a new export.');
+          }
+          throw err;
+        }
+      },
+      onProgress: async (bytesTransferred) => {
+        // Providers can report progress far more often than is worth a write.
+        if (bytesTransferred !== totalBytes && bytesTransferred - lastPersistedBytes < PROGRESS_WRITE_INTERVAL) return;
+        lastPersistedBytes = bytesTransferred;
+        await this.repository.saveDeliveryTask(userId, taskId, {
+          ...task,
+          status: 'processing',
+          phase: 'uploading',
+          totalBytes,
+          bytesTransferred,
+        });
+      },
+      onTokenRefresh: async (tokens) => {
+        await saveRefreshedTokens(this.prisma!, connection.id, tokens);
+      },
+    });
+
+    await this.repository.saveDeliveryTask(userId, taskId, {
+      ...task,
+      status: 'completed',
+      phase: null,
+      totalBytes,
+      bytesTransferred: totalBytes,
+      externalId: result.fileId,
+      externalUrl: result.url ?? undefined,
+      expiresAt: TTL_48H(),
+    });
+
+    await this.recordDriveReleaseHistory(task, {
+      status: 'success',
+      externalId: result.fileId,
+      targetUrl: result.url,
+    }).catch((e) => console.warn('[DeliveryManager] Failed to record release history:', e));
+
+    console.log(`[DeliveryManager] ${taskId} released to ${provider.label} (${result.fileId})`);
   }
 
-  private async runDriveUpload(task: any, exportTask: any): Promise<void> {
-    const { id: taskId, userId, exportTaskId } = task;
-
-    // Check Google Drive is connected
-    const encryptedToken = await this.userRepository.getGoogleDriveRefreshToken(userId);
-      if (!encryptedToken) throw new Error('Google Drive is not connected');
-
-      const clientId = process.env.GOOGLE_CLIENT_ID;
-      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-      if (!clientId || !clientSecret) throw new Error('Google OAuth is not configured on this server');
-
-      // Get a fresh access token
-      const refreshToken = decrypt(encryptedToken);
-      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: clientId,
-          client_secret: clientSecret,
-          refresh_token: refreshToken,
-          grant_type: 'refresh_token',
-        }),
-      });
-
-      if (!tokenRes.ok) {
-        const errText = await tokenRes.text();
-        console.error('[DeliveryManager] Token refresh failed:', errText);
-        if (tokenRes.status === 400 || tokenRes.status === 401) {
-          await this.userRepository.clearGoogleDriveRefreshToken(userId);
-        }
-        throw new Error('Google Drive authorization expired. Please reconnect on the Exports page.');
-      }
-
-      const { access_token } = await tokenRes.json() as { access_token: string };
-      const fileName = exportTask.s3Key.split('/').pop() || `export_${exportTaskId}.zip`;
-      const totalBytes = exportTask.size;
-      if (!Number.isFinite(totalBytes) || totalBytes <= 0) {
-        throw new Error('Source export is missing a valid size');
-      }
-
-      // Update totalBytes so frontend can show progress
-      await this.repository.saveDeliveryTask(userId, taskId, {
-        ...task,
-        status: 'processing',
-        totalBytes,
-      });
-
-      // ── Resumable upload to Google Drive ────────────────────────────────
-      // 1. Initiate resumable session
-      const initRes = await fetch(
-        `https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            'Content-Type': 'application/json; charset=UTF-8',
-            'X-Upload-Content-Type': 'application/zip',
-            ...(totalBytes ? { 'X-Upload-Content-Length': String(totalBytes) } : {}),
-          },
-          body: JSON.stringify({ name: fileName, mimeType: 'application/zip' }),
-        }
-      );
-      if (!initRes.ok) {
-        const errText = await initRes.text();
-        throw new Error(`Drive resumable init failed: ${errText}`);
-      }
-
-      const resumableUri = initRes.headers.get('Location');
-      if (!resumableUri) throw new Error('No resumable URI returned from Drive');
-
-      // 2. Stream the ZIP from S3 and upload it to Drive in bounded resumable chunks
-      let zipStream: Readable;
-      try {
-        zipStream = await this.exportStorage.readStream(exportTask.s3Key);
-      } catch (err: any) {
-        if (err.name === 'NoSuchKey' || err.code === 'NoSuchKey') {
-          throw new Error('Source export file no longer exists in storage. Please generate a new export.');
-        }
-        throw err;
-      }
-      let bytesTransferred = 0;
-      let finalResponse: Response | null = null;
-
-      try {
-        for await (const chunk of chunkReadable(zipStream, DRIVE_UPLOAD_CHUNK_SIZE)) {
-          const rangeStart = bytesTransferred;
-          const rangeEnd = rangeStart + chunk.length - 1;
-          const response = await fetch(resumableUri, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/zip',
-              'Content-Length': String(chunk.length),
-              'Content-Range': `bytes ${rangeStart}-${rangeEnd}/${totalBytes}`,
-            },
-            body: toFetchBody(chunk) as any,
-          });
-
-          if (response.status !== 308 && !response.ok) {
-            const errText = await response.text();
-            throw new Error(`Drive upload failed (${response.status}): ${errText}`);
-          }
-
-          if (response.status === 308) {
-            const ackBytes = getDriveAckBytes(response.headers.get('Range'));
-            if (ackBytes == null) {
-              throw new Error('Drive did not acknowledge the uploaded chunk');
-            }
-            if (ackBytes !== rangeEnd + 1) {
-              throw new Error(`Drive acknowledged ${ackBytes} bytes, expected ${rangeEnd + 1}`);
-            }
-            bytesTransferred = ackBytes;
-          } else {
-            bytesTransferred = rangeEnd + 1;
-          }
-
-          await this.repository.saveDeliveryTask(userId, taskId, {
-            ...task,
-            status: 'processing',
-            totalBytes,
-            bytesTransferred,
-          });
-
-          if (response.status !== 308) {
-            finalResponse = response;
-            break;
-          }
-        }
-      } finally {
-        zipStream.destroy();
-      }
-
-      if (bytesTransferred !== totalBytes) {
-        throw new Error(`Drive upload ended early at ${bytesTransferred} of ${totalBytes} bytes`);
-      }
-
-      if (!finalResponse) {
-        throw new Error('Drive upload did not return a completion response');
-      }
-
-      const driveFile = await finalResponse.json() as { id: string };
-      const externalUrl = `https://drive.google.com/file/d/${driveFile.id}/view`;
-
-      await this.repository.saveDeliveryTask(userId, taskId, {
-        ...task,
-        status: 'completed',
-        externalId: driveFile.id,
-        externalUrl,
-        bytesTransferred,
-        expiresAt: TTL_48H(),
-      });
-    console.log(`[DeliveryManager] ${taskId} completed — Drive file ${driveFile.id}`);
-  }
 
   // ─── Gumroad Publish ───────────────────────────────────────────────────────
 

@@ -1784,7 +1784,6 @@ export interface User {
   createdBy?: UserReference | null;
   hasPassword?: boolean;
   twoFactorEnabled?: boolean;
-  googleDriveConnected?: boolean;
   createdAt: number;
   updatedAt?: number;
   lastLoginAt?: number;
@@ -1865,6 +1864,11 @@ export interface DeliveryStatus {
   exportTaskId: string;
   destination: 'drive' | 'gumroad';
   productId?: string;
+  /** Which connected drive a 'drive' release targets. */
+  driveConnectionId?: string;
+  /** Provider id of that drive, e.g. 'google-drive'. */
+  driveProvider?: string;
+  driveName?: string;
   phase?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   bytesTransferred: number;
