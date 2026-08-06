@@ -12,6 +12,7 @@ All notable changes to Remix Studio are documented here by version number.
 ### Changed
 
 - **Compact Page Headers on Phones**: Page headers were sized for the desktop layout and pushed the actual content of a screen well below the fold on a phone. The shared header now uses a smaller title, tighter back link, and denser description below `md`, and the gap between it and the first content block shrank on the pages that stack their sections. The screens with hand-built headers follow the same rhythm: Import & Export drops its badge and oversized display title, the provider form's sticky bar keeps its title and buttons on one row, and Storage, Custom Models, two-factor setup, and the library editor's chips all scale down. Page padding on phones drops from 24px to 16px. Desktop layouts are unchanged.
+- **Headers Scroll Away on Phones**: The library editor and the orphaned-files cleanup kept their header on screen permanently and scrolled only the list beneath it, so a fixed band of title, description, and controls ate a quarter of a phone screen. On phones the whole page now scrolls and the header leaves with it, while the list's selection toolbar still pins to the top; from `lg` the pinned-header layout is unchanged. The Recycle Bin's pinned toolbar also stays on one row instead of stacking — roughly half its previous height — hiding the item totals only while a selection is active, and the prompt editor's header is tighter on small screens.
 
 ## [1.19.0] - 2026-08-02
 

@@ -417,8 +417,9 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     });
   };
 
+  // Phones scroll the whole page so the header can leave the screen; from lg the header is pinned and only the list scrolls.
   return (
-    <div className="h-full flex flex-col p-4 md:p-8 w-full overflow-hidden animate-in fade-in duration-700">
+    <div className="h-full flex flex-col px-4 pb-4 md:p-8 w-full overflow-y-auto lg:overflow-hidden custom-scrollbar animate-in fade-in duration-700">
       <PageHeader
         title={library.name}
         description={(
@@ -439,6 +440,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           </div>
         )}
         size="large"
+        className="pt-4 lg:pt-0"
         actions={(
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 sm:flex-none">
@@ -549,11 +551,11 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         )}
       />
 
-      <div className="flex-1 overflow-y-auto pr-2 md:pr-4 -mr-2 md:-mr-4 custom-scrollbar space-y-3 md:space-y-6 pb-20">
+      <div className="flex-1 lg:overflow-y-auto pr-2 md:pr-4 -mr-2 md:-mr-4 custom-scrollbar space-y-3 md:space-y-6 pb-20">
         {/* Batch Action Toolbar (Mirrors item style) */}
         {items.length > -1 && (
           <div className={`
-            sticky top-0 z-20 flex flex-nowrap items-center justify-between gap-2 p-3 border transition-colors
+            sticky top-0 z-20 flex flex-nowrap items-center justify-between gap-2 p-2 md:p-3 border transition-colors
             ${selectedItemIds.size > 0
               ? 'bg-blue-600 text-white border-blue-700'
               : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800'}

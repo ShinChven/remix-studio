@@ -135,39 +135,47 @@ export function TrashView() {
           description={t('trash.description')}
         />
 
-      <div className="sticky top-0 z-20 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 p-4 rounded-card shadow-lg shadow-black/5 dark:shadow-black/20">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">
+      {/* Stays on one row on phones — stacking made this pinned bar twice as tall as it needs to be. */}
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-2 md:gap-4 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 p-2.5 md:p-4 rounded-card shadow-lg shadow-black/5 dark:shadow-black/20">
+        {/* A phone cannot fit the totals next to the selection actions, and the count is already on the restore button. */}
+        <div className={`min-w-0 items-center gap-1.5 md:gap-2 ${selectedIds.size > 0 ? 'hidden sm:flex' : 'flex'}`}>
+          <span className="truncate text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">
             {t('trash.stats.items', { count: items.length })}
           </span>
           <span className="text-neutral-800">·</span>
-          <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
+          <span className="truncate text-[10px] font-bold text-blue-400 uppercase tracking-widest">
             {t('trash.stats.total', { size: formatSize(totalSize) })}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 md:gap-3">
           {selectedIds.size > 0 && (
-            <div className="flex items-center gap-2 animate-in slide-in-from-right-4 duration-300">
+            <div className="flex items-center gap-1.5 md:gap-2 animate-in slide-in-from-right-4 duration-300">
               <button
                 onClick={handleRestoreBatch}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-blue-500/30 transition-all shadow-lg shadow-blue-500/5"
+                title={t('trash.actions.restoreCount', { count: selectedIds.size })}
+                className="flex items-center gap-1.5 md:gap-2 px-2.5 py-1.5 md:px-4 md:py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-blue-500/30 transition-all shadow-lg shadow-blue-500/5"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> {t('trash.actions.restoreCount', { count: selectedIds.size })}
+                <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">{t('trash.actions.restoreCount', { count: selectedIds.size })}</span>
+                <span className="sm:hidden">{selectedIds.size}</span>
               </button>
               <button
                 onClick={() => setShowDeleteSelectedConfirm(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-red-500/30 transition-all shadow-lg shadow-red-500/5"
+                title={t('trash.actions.deletePermanently')}
+                aria-label={t('trash.actions.deletePermanently')}
+                className="flex items-center gap-2 px-2.5 py-1.5 md:px-4 md:py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-red-500/30 transition-all shadow-lg shadow-red-500/5"
               >
-                <Trash2 className="w-3.5 h-3.5" /> {t('trash.actions.deletePermanently')}
+                <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">{t('trash.actions.deletePermanently')}</span>
               </button>
             </div>
           )}
-          
+
           {items.length > 0 && (
             <button
               onClick={() => setShowEmptyConfirm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-900 hover:bg-red-100 dark:hover:bg-red-900/20 text-neutral-600 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-neutral-200 dark:border-neutral-800 hover:border-red-500/30 transition-all ml-2"
+              className="flex items-center gap-2 px-2.5 py-1.5 md:px-4 md:py-2 bg-white dark:bg-neutral-900 hover:bg-red-100 dark:hover:bg-red-900/20 text-neutral-600 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-neutral-200 dark:border-neutral-800 hover:border-red-500/30 transition-all md:ml-2"
             >
               {t('trash.actions.emptyTrash')}
             </button>
