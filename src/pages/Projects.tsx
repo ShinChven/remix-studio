@@ -165,7 +165,7 @@ export function Projects() {
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
-      <div className="w-full space-y-8 pb-20">
+      <div className="w-full space-y-6 md:space-y-8 pb-20">
         <PageHeader
           title={t('projects.title')}
           description={t('projects.description')}

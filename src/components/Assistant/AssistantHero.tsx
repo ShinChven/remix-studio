@@ -30,7 +30,7 @@ export const AssistantHero: React.FC<AssistantHeroProps> = ({
 
   return (
     <div className={`w-full max-w-2xl mx-auto ${className}`}>
-      <h2 className="text-2xl md:text-3xl font-semibold text-center text-neutral-800 dark:text-neutral-200 mb-12 md:mb-16 h-[4rem] md:h-[4.5rem] flex items-center justify-center">
+      <h2 className="text-xl md:text-3xl font-semibold text-center text-neutral-800 dark:text-neutral-200 mb-6 md:mb-16 h-[3rem] md:h-[4.5rem] flex items-center justify-center">
         <div className="w-full">
           <MatrixText texts={greetings} interval={interval} />
         </div>

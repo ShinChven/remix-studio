@@ -306,7 +306,7 @@ export function PostForm() {
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
-      <div className="w-full space-y-8 pb-20">
+      <div className="w-full space-y-6 md:space-y-8 pb-20">
         <PageHeader
           title={isEditing ? 'Edit Post' : 'Create New Post'}
           description={isEditing ? 'Update your campaign post.' : 'Add a new post to your campaign.'}

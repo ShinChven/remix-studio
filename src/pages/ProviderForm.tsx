@@ -121,23 +121,23 @@ export function ProviderForm() {
     <div className="min-h-full flex flex-col bg-white dark:bg-neutral-950">
       <div className="flex-1 w-full flex flex-col overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-6 border-b border-neutral-200/50 dark:border-white/5 bg-white/50 dark:bg-neutral-950/50 backdrop-blur-3xl sticky top-0 z-20">
+        <div className="px-4 py-3 md:px-6 md:py-6 border-b border-neutral-200/50 dark:border-white/5 bg-white/50 dark:bg-neutral-950/50 backdrop-blur-3xl sticky top-0 z-20">
           <div className="mx-auto w-full">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <div className="flex flex-row items-center justify-between gap-3 md:gap-4">
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-lg md:text-2xl font-bold text-neutral-900 dark:text-white tracking-tight truncate">
                     {isEditing ? t('providerForm.editTitle') : t('providerForm.newTitle')}
                   </h2>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-500 font-medium">{t('providerForm.securityNote')}</p>
+                  <p className="hidden md:block text-sm text-neutral-500 dark:text-neutral-500 font-medium">{t('providerForm.securityNote')}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex shrink-0 items-center gap-2 md:gap-3">
                 <button
                   type="button"
                   onClick={() => isEditing ? navigate(`/provider/${id}`) : navigate('/providers')}
-                  className="px-6 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm"
+                  className="px-3 py-2 md:px-6 md:py-2.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm"
                 >
                   {t('providerForm.cancel')}
                 </button>
@@ -145,9 +145,9 @@ export function ProviderForm() {
                   form="provider-form"
                   type="submit"
                   disabled={isSubmitting || !name.trim()}
-                  className="px-8 py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:text-black rounded-lg text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-amber-500/20 active:scale-95 disabled:opacity-30 flex items-center justify-center gap-2 border border-amber-600"
+                  className="px-4 py-2 md:px-8 md:py-2.5 bg-amber-500 hover:bg-amber-600 text-white dark:text-black rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-amber-500/20 active:scale-95 disabled:opacity-30 flex items-center justify-center gap-1.5 md:gap-2 border border-amber-600"
                 >
-                   <Save className="w-4 h-4" />
+                   <Save className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   {isSubmitting ? t('providerForm.saving') : isEditing ? t('providerForm.submitSave') : t('providerForm.submitCreate')}
                 </button>
               </div>
@@ -155,7 +155,7 @@ export function ProviderForm() {
           </div>
         </div>
 
-        <div className="px-6 md:px-8 py-10 space-y-10 max-w-screen-2xl mx-auto w-full">
+        <div className="px-4 py-6 md:px-8 md:py-10 space-y-6 md:space-y-10 max-w-screen-2xl mx-auto w-full">
           {/* Provider Type Selection Grid / Read-only Display during Edit */}
           <section className="space-y-6">
             {isEditing ? (

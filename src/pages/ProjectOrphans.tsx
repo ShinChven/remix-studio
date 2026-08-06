@@ -136,8 +136,9 @@ export function ProjectOrphans() {
 
   const totalSize = orphans.reduce((acc, current) => acc + (current.size || 0), 0);
 
+  // Phones scroll the whole page so the header can leave the screen; from lg the header is pinned and only the list scrolls.
   return (
-    <div className="h-full flex flex-col bg-neutral-50 dark:bg-neutral-950 overflow-hidden">
+    <div className="h-full flex flex-col bg-neutral-50 dark:bg-neutral-950 overflow-y-auto lg:overflow-hidden custom-scrollbar">
       {/* Header */}
       <PageHeader
         title={t('projectOrphans.title')}
@@ -186,8 +187,8 @@ export function ProjectOrphans() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-        <div className="w-full space-y-8">
+      <main className="flex-1 lg:overflow-y-auto p-4 md:p-8 custom-scrollbar">
+        <div className="w-full space-y-6 md:space-y-8">
           
           {/* Legend / Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -380,7 +380,7 @@ export function Account() {
 
   if (!user) {
     return (
-      <div className="p-6 lg:p-10">
+      <div className="p-4 sm:p-6 lg:p-10">
         <div className="w-full rounded-card border border-red-500/20 bg-red-500/10 p-5 text-red-300">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
@@ -395,8 +395,8 @@ export function Account() {
   }
 
   return (
-    <div className="p-6 lg:p-10">
-      <div className="w-full space-y-8">
+    <div className="p-4 sm:p-6 lg:p-10">
+      <div className="w-full space-y-6 md:space-y-8">
         <PageHeader
           title={t('account.title')}
           description={t('account.description')}
