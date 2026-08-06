@@ -40,7 +40,12 @@
       },
       "openProject": "프로젝트 열기 →"
     },
-    "pagination": "{{total}}페이지 중 {{current}}페이지"
+    "pagination": "{{total}}페이지 중 {{current}}페이지",
+    "exportBundle": {
+      "action": "프로젝트 내보내기",
+      "queued": "\"{{name}}\" 패키징 중입니다. 내보내기 페이지에서 진행 상황을 확인하세요.",
+      "failed": "프로젝트 내보내기를 시작하지 못했습니다"
+    }
   },
   "projectForm": {
     "newTitle": "새 프로젝트",

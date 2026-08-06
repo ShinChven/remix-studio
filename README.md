@@ -31,6 +31,7 @@ It combines four layers in one product: an in-app assistant for planning and ope
 - Create drafts in bulk, then queue only the runs you want to execute
 - Manage provider credentials, model profiles, custom aliases, and provider-level concurrency limits
 - Review generated outputs in-app, retry failures, and export finished results as ZIP archives
+- Package a whole project — settings, workflow, album, and media — into one ZIP, and import it back as a new project
 - Plan social campaigns, generate post copy in batches, attach reusable media, and schedule posts across connected channels
 - Release completed export packages to connected drives (Google Drive, OneDrive, MEGA) and storefronts
 - Keep generated assets in S3-compatible storage such as AWS S3 or MinIO

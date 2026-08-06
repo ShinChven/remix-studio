@@ -787,6 +787,118 @@ export class ProjectRepository {
     return result;
   }
 
+  // === ProjectImportTask CRUD + Queue ===
+
+  async getProjectImportTasks(
+    userId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ items: any[]; total: number; page: number; pages: number }> {
+    const skip = (page - 1) * limit;
+    const [total, tasks] = await Promise.all([
+      this.prisma.projectImportTask.count({ where: { userId } }),
+      this.prisma.projectImportTask.findMany({
+        where: { userId },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      items: tasks.map((t) => this.mapProjectImportTask(t)),
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
+  async getProjectImportTask(userId: string, taskId: string): Promise<any | undefined> {
+    const t = await this.prisma.projectImportTask.findFirst({ where: { id: taskId, userId } });
+    if (!t) return undefined;
+    return this.mapProjectImportTask(t);
+  }
+
+  async saveProjectImportTask(userId: string, taskId: string, data: any): Promise<void> {
+    const payload = {
+      fileName: data.fileName ?? null,
+      status: data.status ?? 'pending',
+      projectId: data.projectId ?? null,
+      projectName: data.projectName ?? null,
+      current: data.current ?? 0,
+      total: data.total ?? 0,
+      size: data.size != null ? BigInt(data.size) : null,
+      s3Key: data.s3Key ?? null,
+      error: data.error ?? null,
+      expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+    };
+
+    await this.prisma.projectImportTask.upsert({
+      where: { id: taskId },
+      create: {
+        id: taskId,
+        userId,
+        createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+        ...payload,
+      },
+      update: payload,
+    });
+  }
+
+  async deleteProjectImportTask(userId: string, taskId: string): Promise<void> {
+    await this.prisma.projectImportTask.deleteMany({ where: { id: taskId, userId } });
+  }
+
+  /**
+   * Atomically claim the next pending ProjectImportTask. Mirrors
+   * claimNextExportTask — FOR UPDATE SKIP LOCKED keeps concurrent workers from
+   * unpacking the same bundle twice.
+   */
+  async claimNextProjectImportTask(workerId: string): Promise<any | null> {
+    const rows = await this.prisma.$queryRaw<any[]>`
+      UPDATE "ProjectImportTask"
+      SET    status        = 'processing',
+             "claimedAt"   = NOW(),
+             "workerId"    = ${workerId},
+             "heartbeatAt" = NOW(),
+             attempts      = attempts + 1
+      WHERE  id = (
+        SELECT id FROM "ProjectImportTask"
+        WHERE  status = 'pending'
+        ORDER  BY "createdAt" ASC
+        FOR UPDATE SKIP LOCKED
+        LIMIT  1
+      )
+      RETURNING *
+    `;
+    if (!rows.length) return null;
+    return this.mapProjectImportTask(rows[0]);
+  }
+
+  async heartbeatProjectImportTask(taskId: string): Promise<void> {
+    await this.prisma.projectImportTask.updateMany({
+      where: { id: taskId },
+      data: { heartbeatAt: new Date() },
+    });
+  }
+
+  /**
+   * Requeue (or fail) imports whose worker went away. An import that already
+   * created its project keeps whatever it wrote; a retry starts a fresh one.
+   */
+  async reapStaleProjectImportTasks(thresholdMinutes = 5): Promise<number> {
+    const result = await this.prisma.$executeRaw`
+      UPDATE "ProjectImportTask"
+      SET    status      = CASE WHEN attempts >= 3 THEN 'failed' ELSE 'pending' END,
+             error       = CASE WHEN attempts >= 3 THEN 'worker timeout' ELSE error END,
+             "claimedAt" = NULL,
+             "workerId"  = NULL
+      WHERE  status = 'processing'
+        AND  "heartbeatAt" < NOW() - (${thresholdMinutes} || ' minutes')::INTERVAL
+    `;
+    return result;
+  }
+
   // === DeliveryTask CRUD + Queue ===
 
   async saveDeliveryTask(userId: string, taskId: string, data: any): Promise<void> {
@@ -1364,6 +1476,24 @@ export class ProjectRepository {
       optimizedSize: a.optimizedSize != null ? Number(a.optimizedSize) : undefined,
       thumbnailSize: a.thumbnailSize != null ? Number(a.thumbnailSize) : undefined,
       createdAt: a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt,
+    };
+  }
+
+  private mapProjectImportTask(t: any): any {
+    return {
+      id: t.id,
+      userId: t.userId,
+      fileName: t.fileName ?? undefined,
+      status: t.status,
+      projectId: t.projectId ?? undefined,
+      projectName: t.projectName ?? undefined,
+      current: t.current ?? 0,
+      total: t.total ?? 0,
+      size: t.size != null ? Number(t.size) : undefined,
+      s3Key: t.s3Key ?? undefined,
+      error: t.error ?? undefined,
+      createdAt: t.createdAt instanceof Date ? t.createdAt.getTime() : t.createdAt,
+      expiresAt: t.expiresAt ? (t.expiresAt instanceof Date ? t.expiresAt.getTime() : t.expiresAt) : undefined,
     };
   }
 

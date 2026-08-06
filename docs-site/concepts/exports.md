@@ -49,6 +49,39 @@ Download URLs are presigned when the task is read and expire after 24 hours. Rel
 
 Deleting an export removes both its database task and its export-bucket object. It does not delete the source album items.
 
+## Project Bundles
+
+An album export packages results. A **project bundle** packages the project itself — its settings, workflow, album metadata, and every media file those reference — into one portable ZIP that can be imported back later, or into a different Remix Studio installation.
+
+Export one from the **Projects** page: open a project card's menu and choose **Export Project**. The bundle is built by the same export worker and appears on the Exports page marked *Project Bundle*, so it can be downloaded, released to a drive, or sold like any other archive.
+
+### Bundle Layout
+
+| Path | Contents |
+| :--- | :--- |
+| `project.json` | Manifest: format version, project settings, workflow items, album items |
+| `media/…` | One entry per referenced storage object (originals, optimized, thumbnails) |
+
+Every storage key inside the manifest is rewritten to its `media/…` path, so the archive is self-contained and carries nothing about the exporting installation's bucket layout. Files referenced more than once — a library image pinned in the workflow that is also an album item's context — are stored once and referenced by both.
+
+Bundles carry finished work, not generation history: queued and completed **job** rows are not included. A media file that has gone missing from storage is skipped, and the manifest is trimmed to match.
+
+### Importing
+
+On the **Exports** page, use **Import Project** (or drop a `.zip` onto the panel). The archive is streamed straight into the export bucket, then a background worker unpacks it:
+
+1. Reads and validates `project.json`, rejecting archives that are not project bundles or were written by a newer format version.
+2. Checks the unpacked media against the storage quota before writing anything.
+3. Creates a **new** project — the source project's id is never reused, so importing a bundle beside its original is safe.
+4. Uploads each referenced media file into the new project's storage prefix and rewrites every reference to the new key.
+5. Writes the workflow and album rows.
+
+Progress is shown per file on the Exports page, and the finished entry links straight to the imported project. Import tasks use the same claim/heartbeat/reap machinery as exports, so an interrupted worker's task is retried. The uploaded ZIP is deleted once the import finishes, whether it succeeded or failed.
+
+Imported album items stand alone — they keep their prompt, settings, and media, but not a link back to the job that produced them.
+
+Bundle uploads are a single request body. If a reverse proxy sits in front of the app, its request-size limit (for example nginx's `client_max_body_size`) has to allow the largest bundle you intend to import.
+
 ## Image Watermark Settings
 
 The watermark screen previews the first selected image and configures text, position, padding, font size, opacity, and color. Settings are stored per user and are saved when the export starts.
