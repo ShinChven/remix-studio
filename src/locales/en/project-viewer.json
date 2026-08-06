@@ -423,6 +423,7 @@
       "reuseConfiguration": {
         "title": "Reuse Configuration",
         "message": "This will replace your current workflow with the configuration from this job. Are you sure?",
+        "messageReconstructed": "The original workflow was not stored for this result, so it will be rebuilt from the result's own prompt and references — it reproduces this one result instead of the recipe that varied it. This replaces your current workflow. Are you sure?",
         "confirm": "Reuse"
       }
     }

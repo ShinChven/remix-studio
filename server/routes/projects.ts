@@ -63,6 +63,59 @@ function normalizeWorkflowForStorage(workflow: WorkflowItem[], bucket: string): 
   });
 }
 
+/**
+ * Strip presigned URLs back to bare S3 keys on everything a job carries: its
+ * media contexts and the workflow snapshot kept for "reuse". The snapshot is
+ * read back weeks later, so storing a signed URL would hand the reuse flow a
+ * link that has long since expired.
+ */
+function normalizeJobsForStorage(jobs: Job[], bucket: string): Job[] {
+  return jobs.map((job) => {
+    const imageContexts = job.imageContexts
+      ? job.imageContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
+      : job.imageContexts;
+    const videoContexts = job.videoContexts
+      ? job.videoContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
+      : job.videoContexts;
+    const audioContexts = job.audioContexts
+      ? job.audioContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
+      : job.audioContexts;
+    const workflowSnapshot = job.workflowSnapshot
+      ? normalizeWorkflowForStorage(job.workflowSnapshot, bucket)
+      : job.workflowSnapshot;
+    return { ...job, imageContexts, videoContexts, audioContexts, workflowSnapshot };
+  });
+}
+
+/**
+ * Rebuild a one-combination workflow from a finished result's own prompt and
+ * media references. Used when the job behind a result predates workflow
+ * snapshots (or lost its snapshot to an older bulk-save bug): reusing it
+ * reproduces exactly that result rather than the recipe that varied it, so
+ * callers are told the workflow was reconstructed.
+ */
+function reconstructWorkflowSnapshot(source: {
+  prompt?: string;
+  imageContexts?: string[];
+  videoContexts?: string[];
+  audioContexts?: string[];
+}): WorkflowItem[] {
+  const items: WorkflowItem[] = [];
+  // Fresh ids: these become real workflow items on the project the moment the
+  // user confirms, and must not collide with anything already stored.
+  const push = (type: WorkflowItem['type'], value: string) => {
+    items.push({ id: randomUUID(), type, value, order: items.length });
+  };
+
+  const prompt = source.prompt?.trim();
+  if (prompt) push('text', prompt);
+  source.imageContexts?.forEach((value) => value && push('image', value));
+  source.videoContexts?.forEach((value) => value && push('video', value));
+  source.audioContexts?.forEach((value) => value && push('audio', value));
+
+  return items;
+}
+
 function basenameFromKey(value: string | undefined): string {
   if (!value) return '';
   const clean = value.split('?')[0];
@@ -392,10 +445,12 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const job = await repository.getJob(user.userId, projectId, jobId);
       if (!job) return c.json({ error: 'Job not found' }, 404);
 
+      const snapshot = job.workflowSnapshot?.length ? job.workflowSnapshot : null;
+      const reconstructed = snapshot ? null : reconstructWorkflowSnapshot(job);
+
       return c.json({
-        workflowSnapshot: job.workflowSnapshot
-          ? await signWorkflowItems(job.workflowSnapshot, storage)
-          : [],
+        workflowSnapshot: await signWorkflowItems(snapshot ?? reconstructed ?? [], storage),
+        workflowReconstructed: !snapshot && (reconstructed?.length ?? 0) > 0,
         providerId: job.providerId,
         modelConfigId: job.modelConfigId,
         aspectRatio: job.aspectRatio,
@@ -417,8 +472,10 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
    *
    * Same payload as the job configuration endpoint, resolved from the album
    * item's originating job so a finished result can be reused straight from the
-   * album. The workflow snapshot only lives on the job, so it comes back empty
-   * once that job has been deleted; the item's own settings still fill the rest.
+   * album. The workflow snapshot only lives on the job, so when that job is
+   * gone — or predates snapshots entirely — the workflow is rebuilt from the
+   * item's own prompt and references and flagged as reconstructed; the item's
+   * settings fill the rest.
    */
   router.get('/api/projects/:id/album/:itemId/configuration', authMiddleware, async (c) => {
     try {
@@ -432,10 +489,12 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const job = item.jobId ? await repository.getJob(user.userId, projectId, item.jobId) : null;
 
+      const snapshot = job?.workflowSnapshot?.length ? job.workflowSnapshot : null;
+      const reconstructed = snapshot ? null : reconstructWorkflowSnapshot(item);
+
       return c.json({
-        workflowSnapshot: job?.workflowSnapshot
-          ? await signWorkflowItems(job.workflowSnapshot, storage)
-          : [],
+        workflowSnapshot: await signWorkflowItems(snapshot ?? reconstructed ?? [], storage),
+        workflowReconstructed: !snapshot && (reconstructed?.length ?? 0) > 0,
         providerId: job?.providerId ?? item.providerId,
         modelConfigId: job?.modelConfigId ?? item.modelConfigId,
         aspectRatio: job?.aspectRatio ?? item.aspectRatio,
@@ -553,7 +612,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         status: projectStatus,
         createdAt: typeof body.createdAt === 'number' ? body.createdAt : Date.now(),
         workflow: Array.isArray(body.workflow) ? normalizeWorkflowForStorage(body.workflow, storage.getBucketName()) : [],
-        jobs: Array.isArray(body.jobs) ? body.jobs : [],
+        jobs: Array.isArray(body.jobs) ? normalizeJobsForStorage(body.jobs, storage.getBucketName()) : [],
         album: [],
         providerId: typeof body.providerId === 'string' ? body.providerId : undefined,
         modelConfigId: typeof body.modelConfigId === 'string' ? body.modelConfigId : undefined,
@@ -608,19 +667,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         updates.workflow = normalizeWorkflowForStorage(body.workflow, bucket);
       }
       if (Array.isArray(body?.jobs)) {
-        const bucket = storage.getBucketName();
-        updates.jobs = body.jobs.map((job: Job) => {
-          const imageContexts = job.imageContexts 
-            ? job.imageContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
-            : job.imageContexts;
-          const videoContexts = job.videoContexts
-            ? job.videoContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
-            : job.videoContexts;
-          const audioContexts = job.audioContexts
-            ? job.audioContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
-            : job.audioContexts;
-          return { ...job, imageContexts, videoContexts, audioContexts };
-        });
+        updates.jobs = normalizeJobsForStorage(body.jobs, storage.getBucketName());
       }
       if (typeof body?.providerId === 'string') updates.providerId = body.providerId;
       if (typeof body?.aspectRatio === 'string') updates.aspectRatio = body.aspectRatio;
