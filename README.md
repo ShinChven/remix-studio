@@ -32,7 +32,7 @@ It combines four layers in one product: an in-app assistant for planning and ope
 - Manage provider credentials, model profiles, custom aliases, and provider-level concurrency limits
 - Review generated outputs in-app, retry failures, and export finished results as ZIP archives
 - Plan social campaigns, generate post copy in batches, attach reusable media, and schedule posts across connected channels
-- Deliver completed export packages to external destinations such as Google Drive
+- Release completed export packages to connected drives (Google Drive, OneDrive, MEGA) and storefronts
 - Keep generated assets in S3-compatible storage such as AWS S3 or MinIO
 - Operate the system through the UI, the in-app assistant, or external MCP clients
 - Protect access with auth, admin controls, 2FA, passkeys, and user storage limits
@@ -122,7 +122,7 @@ flowchart TD
 5. Mix direct inputs with library-backed inputs across text, image, video, and audio slots.
 6. Expand the workflow into draft permutations, or sample it with shuffle mode.
 7. Queue all or selected drafts with provider-level concurrency limits.
-8. Review outputs, retry failures, export archives, and optionally deliver them to Google Drive.
+8. Review outputs, retry failures, export archives, and optionally release them to a connected drive or storefront.
 9. Turn generated copy and media into campaign posts, schedule them on a timeline, and publish through connected social channels.
 
 ## Supported Workflows

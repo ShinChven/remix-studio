@@ -1,10 +1,10 @@
 # Selling Exports
 
-A completed [export archive](/concepts/exports) can be attached to a digital product and published to a connected store. Store publishing runs through the same persistent delivery worker used by Google Drive, with additional product and cover phases.
+A completed [export archive](/concepts/exports) can be attached to a digital product and published to a connected store. Storefront publishing runs through the same persistent delivery worker used by drive releases, with additional product and cover phases.
 
 ## Supported Store
 
-The current store adapter is **Gumroad**. Configure `GUMROAD_CLIENT_ID`, `GUMROAD_CLIENT_SECRET`, and optionally `GUMROAD_SCOPE`, then connect under **Exports → Stores**.
+The current store adapter is **Gumroad**. Configure `GUMROAD_CLIENT_ID`, `GUMROAD_CLIENT_SECRET`, and optionally `GUMROAD_SCOPE`, then connect it on the **Releases** page.
 
 The OAuth redirect is:
 
@@ -70,11 +70,11 @@ For an immediate publish, the delivery worker:
 
 Product status moves through `draft`, `publishing`, `published`, or `failed`. Delivery phase/progress is also displayed on the Exports page.
 
-## Failures and Upload History
+## Failures and Release History
 
 Failures store both the product error and delivery-task error. Correct the store credentials, export availability, metadata, or remote Gumroad issue before trying again.
 
-**Exports → Upload History** records successful and failed attempts with the platform, title, remote ID/URL, and error at the time of upload. Disconnecting a store or later deleting a local product does not erase the historical event automatically.
+**Releases → History** records successful and failed attempts — to storefronts and to drives alike — with the platform, title, remote ID/URL, and error at the time of upload. Disconnecting a destination or later deleting a local product does not erase the historical event automatically.
 
 ::: warning
 Publishing is an external side effect. Deleting a Remix Studio record does not unpublish or refund a Gumroad product. Manage existing listings, customers, and refunds in Gumroad.

@@ -1,0 +1,89 @@
+{
+  "releases": {
+    "title": "Releases",
+    "description": "Connect the drives and storefronts your finished exports are released to.",
+    "headerLink": "Releases",
+    "backToExports": "Back to Exports",
+    "loadError": "Failed to load release connections",
+    "connectSuccess": "Connection added",
+    "disconnectSuccess": "Connection removed",
+    "disconnectError": "Failed to remove connection",
+    "connect": "Connect",
+    "addAnother": "Connect another",
+    "reconnect": "Reconnect",
+    "disconnect": "Disconnect",
+    "cancel": "Cancel",
+    "notConfigured": "Unavailable",
+    "notConfiguredHint": "This server has no credentials configured for this provider.",
+    "connectedCount": "{{count}} connected",
+    "availableTitle": "Available destinations",
+    "availableDescription": "Connect as many accounts as you like — several drives per provider is fine.",
+    "empty": {
+      "title": "Nothing connected yet",
+      "description": "Connect a drive to ship exports as files, or a storefront to sell them."
+    },
+    "drives": {
+      "title": "Drives",
+      "description": "Cloud storage your export archives are uploaded to.",
+      "empty": "No drives connected yet."
+    },
+    "storefronts": {
+      "title": "Storefronts",
+      "description": "Shops your exports can be published to as paid products.",
+      "empty": "No storefronts connected yet."
+    },
+    "providerHint": {
+      "gumroad": "Sell digital products on Gumroad.",
+      "google-drive": "Upload export archives to Google Drive.",
+      "onedrive": "Upload export archives to OneDrive.",
+      "mega": "Upload export archives to MEGA."
+    },
+    "confirmDisconnectTitle": "Remove connection",
+    "confirmDisconnectMessage": "Remove {{name}}? Future exports will no longer be released to it.",
+    "credentials": {
+      "title": "Connect {{provider}}",
+      "description": "{{provider}} signs in with your account credentials instead of a redirect.",
+      "email": "Email",
+      "password": "Password",
+      "twoFactor": "Two-factor code",
+      "twoFactorHint": "Only needed if the account has two-factor authentication enabled.",
+      "storageNotice": "Your password is stored encrypted because it is required to sign in for every upload.",
+      "submit": "Connect",
+      "connecting": "Connecting…",
+      "failed": "Failed to connect"
+    },
+    "drive": {
+      "releaseToDrive": "Release to a drive",
+      "uploadQueued": "Release queued — watch the upload icon for progress",
+      "uploadSuccess": "Released to your drive!",
+      "uploadFailed": "Drive release failed",
+      "openFile": "Open file",
+      "uploading": "Uploading…",
+      "confirmDialog": {
+        "title": "Release to a drive",
+        "message": "Upload \"{{name}}\" to a connected drive. Large archives can take a while.",
+        "confirm": "Upload"
+      }
+    },
+    "history": {
+      "headerLink": "History",
+      "title": "Release History",
+      "description": "Every export shipped to a connected drive or storefront.",
+      "backToReleases": "Back to Releases",
+      "loadError": "Failed to load release history",
+      "empty": {
+        "title": "No releases yet",
+        "description": "Once you release an export, the result will appear here."
+      },
+      "status": {
+        "success": "Success",
+        "failed": "Failed"
+      },
+      "openTarget": "Open in provider",
+      "untitled": "Untitled release",
+      "stats": {
+        "total": "Total"
+      }
+    }
+  }
+}

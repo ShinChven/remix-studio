@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { randomUUID } from 'node:crypto';
+import type { PrismaClient } from '@prisma/client';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
@@ -182,7 +183,7 @@ export async function signWorkflowItems(workflow: WorkflowItem[], storage: S3Sto
   );
 }
 
-export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectEvents?: ProjectEventPublisher) {
+export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, prisma: PrismaClient, projectEvents?: ProjectEventPublisher) {
   const router = new Hono<{ Variables: Variables }>();
 
   // NOTE: /rename must be registered before /:id to avoid route shadowing
@@ -1378,7 +1379,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   /**
    * POST /api/exports/:taskId/upload-to-drive
    *
-   * Submit a Drive upload job to the global delivery queue.
+   * Queue a release of this export to one of the user's connected drives.
    * Returns { deliveryTaskId } immediately — frontend polls GET /api/deliveries/:id.
    */
   router.post('/api/exports/:taskId/upload-to-drive', authMiddleware, async (c) => {
@@ -1392,20 +1393,40 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         return c.json({ error: 'Export is not ready for upload' }, 400);
       }
 
-      // Verify Drive is connected before accepting the job
-      const encryptedToken = await userRepository.getGoogleDriveRefreshToken(user.userId);
-      if (!encryptedToken) {
-        return c.json({ error: 'Google Drive is not connected. Please connect it in Account settings.' }, 400);
-      }
-      if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-        return c.json({ error: 'Google OAuth is not configured' }, 500);
+      const body = await c.req.json().catch(() => ({} as any));
+      const requestedId = typeof body?.driveConnectionId === 'string' ? body.driveConnectionId : null;
+
+      const connections = await prisma.driveConnection.findMany({
+        where: { userId: user.userId },
+        select: { id: true, provider: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (connections.length === 0) {
+        return c.json({ error: 'No drive is connected. Connect one on the Releases page.' }, 400);
       }
 
-      const deliveryTaskId = await deliveryManager.startDelivery(user.userId, taskId, { destination: 'drive' });
+      // With a single drive connected the caller may omit the target.
+      const connection = requestedId
+        ? connections.find((item) => item.id === requestedId)
+        : connections.length === 1
+          ? connections[0]
+          : null;
+      if (!connection) {
+        return c.json(
+          { error: requestedId ? 'Drive connection not found' : 'Pick which drive to release to.' },
+          400,
+        );
+      }
+
+      const deliveryTaskId = await deliveryManager.startDelivery(user.userId, taskId, {
+        destination: 'drive',
+        driveConnectionId: connection.id,
+        driveProvider: connection.provider,
+      });
       return c.json({ deliveryTaskId }, 202);
     } catch (e) {
       console.error('[POST /api/exports/:taskId/upload-to-drive]', e);
-      return c.json({ error: 'Failed to submit Drive upload job' }, 500);
+      return c.json({ error: 'Failed to submit drive release job' }, 500);
     }
   });
 

@@ -1,0 +1,89 @@
+{
+  "releases": {
+    "title": "发布",
+    "description": "连接用于接收已完成导出的网盘和店铺。",
+    "headerLink": "发布",
+    "backToExports": "返回导出",
+    "loadError": "加载发布连接失败",
+    "connectSuccess": "已添加连接",
+    "disconnectSuccess": "已移除连接",
+    "disconnectError": "移除连接失败",
+    "connect": "连接",
+    "addAnother": "连接其他账号",
+    "reconnect": "重新连接",
+    "disconnect": "断开连接",
+    "cancel": "取消",
+    "notConfigured": "不可用",
+    "notConfiguredHint": "此服务器未配置该服务商的凭据。",
+    "connectedCount": "已连接 {{count}} 个",
+    "availableTitle": "可用目标",
+    "availableDescription": "可以连接任意数量的账号，同一个服务商连接多个网盘也没问题。",
+    "empty": {
+      "title": "尚未连接任何目标",
+      "description": "连接网盘可将导出作为文件投递，连接店铺则可以出售。"
+    },
+    "drives": {
+      "title": "网盘",
+      "description": "用于上传导出压缩包的云存储。",
+      "empty": "尚未连接任何网盘。"
+    },
+    "storefronts": {
+      "title": "店铺",
+      "description": "可将导出作为付费商品发布的店铺。",
+      "empty": "尚未连接任何店铺。"
+    },
+    "providerHint": {
+      "gumroad": "在 Gumroad 上销售数字商品。",
+      "google-drive": "将导出压缩包上传到 Google 云端硬盘。",
+      "onedrive": "将导出压缩包上传到 OneDrive。",
+      "mega": "将导出压缩包上传到 MEGA。"
+    },
+    "confirmDisconnectTitle": "移除连接",
+    "confirmDisconnectMessage": "确定移除 {{name}} 吗？之后的导出将不再发布到该目标。",
+    "credentials": {
+      "title": "连接 {{provider}}",
+      "description": "{{provider}} 使用账号凭据登录，而不是跳转授权。",
+      "email": "邮箱",
+      "password": "密码",
+      "twoFactor": "两步验证码",
+      "twoFactorHint": "仅当账号启用了两步验证时才需要填写。",
+      "storageNotice": "每次上传都需要重新登录，因此密码会被加密保存。",
+      "submit": "连接",
+      "connecting": "连接中…",
+      "failed": "连接失败"
+    },
+    "drive": {
+      "releaseToDrive": "发布到网盘",
+      "uploadQueued": "发布任务已排队 —— 可通过上传图标查看进度",
+      "uploadSuccess": "已发布到你的网盘！",
+      "uploadFailed": "发布到网盘失败",
+      "openFile": "打开文件",
+      "uploading": "上传中…",
+      "confirmDialog": {
+        "title": "发布到网盘",
+        "message": "将“{{name}}”上传到已连接的网盘。较大的压缩包可能需要一些时间。",
+        "confirm": "上传"
+      }
+    },
+    "history": {
+      "headerLink": "历史",
+      "title": "发布历史",
+      "description": "所有已投递到网盘或店铺的导出记录。",
+      "backToReleases": "返回发布",
+      "loadError": "加载发布历史失败",
+      "empty": {
+        "title": "还没有发布记录",
+        "description": "发布导出后，结果会显示在这里。"
+      },
+      "status": {
+        "success": "成功",
+        "failed": "失败"
+      },
+      "openTarget": "在服务商中打开",
+      "untitled": "未命名发布",
+      "stats": {
+        "total": "总计"
+      }
+    }
+  }
+}
