@@ -170,7 +170,7 @@ export function CommandPalette() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-[15vh] px-4">
+    <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-16 sm:pt-[15vh] px-4">
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
         onClick={() => setOpen(false)} 
@@ -192,7 +192,7 @@ export function CommandPalette() {
           {loading && <Loader2 className="w-5 h-5 text-neutral-500 animate-spin" />}
         </div>
 
-        <Command.List className="max-h-[60vh] overflow-y-auto p-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-neutral-500 [&_[cmdk-group-heading]]:dark:text-neutral-400 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-4">
+        <Command.List className="max-h-[60dvh] overflow-y-auto p-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-neutral-500 [&_[cmdk-group-heading]]:dark:text-neutral-400 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-4">
           <Command.Empty className="py-6 text-center text-sm text-neutral-500">
             No results found.
           </Command.Empty>

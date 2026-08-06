@@ -60,8 +60,8 @@ export function TagModal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={onClose} />
       
-      <div className="relative w-full max-w-lg bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/20 dark:bg-neutral-950/20">
+      <div className="relative w-full max-w-lg max-h-[calc(100dvh-2rem)] bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="p-4 sm:p-6 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/20 dark:bg-neutral-950/20">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-blue-500/10 rounded-xl">
               <TagIcon className="w-5 h-5 text-blue-500" />
@@ -79,7 +79,7 @@ export function TagModal({
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="flex gap-2 mb-4">
             <input
               type="text"
@@ -115,7 +115,7 @@ export function TagModal({
           </div>
         </div>
 
-        <div className="p-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 flex justify-end gap-3">
+        <div className="p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 flex justify-end gap-3">
           <button 
             onClick={onClose}
             className="px-6 py-2.5 text-neutral-600 dark:text-neutral-400 hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"

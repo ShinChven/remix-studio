@@ -505,9 +505,9 @@ export function UniversalMediaPicker({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[650] flex items-center justify-center p-3 md:p-8">
+    <div className="fixed inset-0 z-[650] flex items-center justify-center sm:p-3 md:p-8">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose} />
-      <div className="relative flex h-[88vh] w-full max-w-7xl overflow-hidden rounded-card border border-neutral-200 bg-white shadow-2xl dark:border-white/10 dark:bg-neutral-950">
+      <div className="relative flex h-[100dvh] w-full max-w-7xl overflow-hidden border-neutral-200 bg-white shadow-2xl sm:h-[88dvh] sm:rounded-card sm:border dark:border-white/10 dark:bg-neutral-950">
         {!fixedSourceId && (
           <aside className="hidden w-80 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 p-5 dark:border-white/10 dark:bg-neutral-900/80 md:flex">
             <div className="mb-4 flex shrink-0 items-center gap-3">
@@ -520,7 +520,7 @@ export function UniversalMediaPicker({
               </div>
             </div>
 
-            <div className="mb-4 grid grid-cols-2 gap-2">
+            <div className={cn('mb-4 grid-cols-2 gap-2', enabledKinds.length > 1 ? 'grid' : 'hidden')}>
               {enabledKinds.map((kind) => (
                 <button
                   key={kind}
@@ -543,7 +543,7 @@ export function UniversalMediaPicker({
               ))}
             </div>
 
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className={cn('mb-4 flex-wrap gap-2', enabledTypeSet.size > 1 ? 'flex' : 'hidden')}>
               {ALL_TYPES.filter((type) => enabledTypeSet.has(type)).map((type) => {
                 const Icon = typeIcon(type);
                 const selected = selectedTypes.has(type);
@@ -616,139 +616,146 @@ export function UniversalMediaPicker({
         )}
 
         <main className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-start justify-between gap-4 border-b border-neutral-200 p-4 dark:border-white/10 md:p-5">
+          <div className="flex items-start justify-between gap-3 border-b border-neutral-200 p-3 dark:border-white/10 md:gap-4 md:p-5">
             <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
+              <p className="truncate text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
                 {activeSource ? `${sourceKindLabel(activeSource.kind)} / ${activeSource.name} · ${activeSource.itemCount} items` : 'No source selected'}
               </p>
-              <h2 className="mt-1 text-lg font-bold text-neutral-950 dark:text-white md:text-xl">{title}</h2>
-              <p className="mt-1 text-sm text-neutral-500">
+              <h2 className="mt-0.5 text-base font-bold text-neutral-950 dark:text-white md:mt-1 md:text-xl">{title}</h2>
+              <p className="mt-1 hidden text-sm text-neutral-500 md:block">
                 {multiple ? 'Use filters and sorting to find the items you need.' : 'Choose a source, then click an item to use it.'}
               </p>
             </div>
             <button
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white md:h-10 md:w-10"
               onClick={onClose}
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="flex flex-col gap-3 border-b border-neutral-200 p-4 dark:border-white/10 md:hidden">
-            <div className="grid grid-cols-2 gap-2">
-              {enabledKinds.map((kind) => (
-                <button
-                  key={kind}
-                  onClick={() => {
-                    setActiveKind(kind);
-                    setActiveSourceId(null);
-                    setItems([]);
-                    setSelectedKeys(new Set());
-                    setSelectedItemMap({});
-                  }}
-                  className={cn(
-                    'h-10 rounded-xl border text-sm font-bold transition',
-                    activeKind === kind
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300'
-                      : 'border-neutral-200 bg-white text-neutral-500 dark:border-white/10 dark:bg-neutral-900',
-                  )}
+          {!fixedSourceId && (
+            <div className="flex flex-col gap-2 border-b border-neutral-200 p-3 dark:border-white/10 md:hidden">
+              <div className="flex items-center gap-2">
+                {enabledKinds.length > 1 && (
+                  <div className="flex shrink-0 rounded-xl border border-neutral-200 p-0.5 dark:border-white/10">
+                    {enabledKinds.map((kind) => (
+                      <button
+                        key={kind}
+                        onClick={() => {
+                          setActiveKind(kind);
+                          setActiveSourceId(null);
+                          setItems([]);
+                          setSelectedKeys(new Set());
+                          setSelectedItemMap({});
+                        }}
+                        className={cn(
+                          'h-9 rounded-lg px-3 text-xs font-bold transition',
+                          activeKind === kind
+                            ? 'bg-indigo-600 text-white'
+                            : 'text-neutral-500 dark:text-neutral-400',
+                        )}
+                      >
+                        {sourceKindLabel(kind)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <select
+                  className="h-10 min-w-0 flex-1 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white"
+                  aria-label={`Select ${activeKind}`}
+                  value={activeSource?.id || ''}
+                  onChange={(event) => setActiveSourceId(event.target.value)}
                 >
-                  {sourceKindLabel(kind)}
-                </button>
-              ))}
+                  {!activeSource && <option value="">Select source...</option>}
+                  {filteredSources.map((source) => (
+                    <option key={`${source.kind}:${source.id}`} value={source.id}>{source.name}</option>
+                  ))}
+                </select>
+              </div>
+              {enabledTypeSet.size > 1 && (
+                <div className="flex flex-wrap gap-2">
+                  {ALL_TYPES.filter((type) => enabledTypeSet.has(type)).map((type) => {
+                    const selected = selectedTypes.has(type);
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => toggleType(type)}
+                        className={cn(
+                          'h-8 rounded-lg border px-2 text-[10px] font-black uppercase tracking-widest transition',
+                          selected
+                            ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300'
+                            : 'border-neutral-200 bg-white text-neutral-500 dark:border-white/10 dark:bg-neutral-900',
+                        )}
+                      >
+                        {typeLabel(type)}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {ALL_TYPES.filter((type) => enabledTypeSet.has(type)).map((type) => {
-                const selected = selectedTypes.has(type);
-                return (
-                  <button
-                    key={type}
-                    onClick={() => toggleType(type)}
-                    className={cn(
-                      'h-8 rounded-lg border px-2 text-[10px] font-black uppercase tracking-widest transition',
-                      selected
-                        ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300'
-                        : 'border-neutral-200 bg-white text-neutral-500 dark:border-white/10 dark:bg-neutral-900',
-                    )}
-                  >
-                    {typeLabel(type)}
-                  </button>
-                );
-              })}
-            </div>
-            <select
-              className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white"
-              value={activeSource?.id || ''}
-              onChange={(event) => setActiveSourceId(event.target.value)}
-            >
-              {!activeSource && <option value="">Select source...</option>}
-              {filteredSources.map((source) => (
-                <option key={`${source.kind}:${source.id}`} value={source.id}>{source.name}</option>
-              ))}
-            </select>
-            <SortSelect value={sourceSort} onChange={setSourceSort} ariaLabel="Sort sources" />
-          </div>
+          )}
 
-          <div className="flex flex-col gap-3 border-b border-neutral-200 p-4 dark:border-white/10 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 p-3 dark:border-white/10 md:gap-3 md:p-4">
+            <div className="relative min-w-[8rem] flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 md:left-4" />
               <input
-                className="h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-11 pr-4 text-sm outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-900 dark:text-white"
+                className="h-10 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-3 text-sm outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-900 dark:text-white md:h-11 md:pl-11 md:pr-4"
                 placeholder="Search items..."
                 value={itemQuery}
                 onChange={(event) => setItemQuery(event.target.value)}
               />
             </div>
-            <div className="flex shrink-0 flex-wrap items-center gap-3">
-              {showImageVersionSelection && (
-                <div
-                  className="flex h-11 items-center rounded-xl border border-neutral-200 bg-white p-1 dark:border-white/10 dark:bg-neutral-950"
-                  aria-label={t('projectViewer.copyToLibrary.versionToCopy')}
-                >
-                  {(['optimized', 'raw'] as const).map((version) => (
-                    <button
-                      key={version}
-                      type="button"
-                      aria-pressed={imageVersion === version}
-                      title={t(`projectViewer.copyToLibrary.${version}Hint`)}
-                      onClick={() => setImageVersion(version)}
-                      className={cn(
-                        'h-9 rounded-lg px-3 text-[10px] font-black uppercase tracking-widest transition',
-                        imageVersion === version
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white',
-                      )}
-                    >
-                      {t(`projectViewer.copyToLibrary.${version}`)}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {showAspectRatioFilter && (
-                <AspectRatioFilter
-                  options={aspectRatioCounts}
-                  selectedAspectRatios={selectedAspectRatios}
-                  onChange={setSelectedAspectRatios}
-                />
-              )}
-              <SortSelect value={itemSort} onChange={setItemSort} ariaLabel="Sort items" />
-              {multiple && (
-                <button
-                  onClick={toggleSelectAll}
-                  className={cn(
-                    'h-11 rounded-xl border px-4 text-sm font-bold transition whitespace-nowrap',
-                    allFilteredSelected
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400'
-                      : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-white/10',
-                  )}
-                >
-                  {allFilteredSelected ? 'Deselect All' : 'Select All'}
-                </button>
-              )}
-            </div>
+            {showImageVersionSelection && (
+              <div
+                className="flex h-10 shrink-0 items-center rounded-xl border border-neutral-200 bg-white p-1 dark:border-white/10 dark:bg-neutral-950 md:h-11"
+                aria-label={t('projectViewer.copyToLibrary.versionToCopy')}
+              >
+                {(['optimized', 'raw'] as const).map((version) => (
+                  <button
+                    key={version}
+                    type="button"
+                    aria-pressed={imageVersion === version}
+                    title={t(`projectViewer.copyToLibrary.${version}Hint`)}
+                    onClick={() => setImageVersion(version)}
+                    className={cn(
+                      'h-8 rounded-lg px-2.5 text-[10px] font-black uppercase tracking-widest transition md:h-9 md:px-3',
+                      imageVersion === version
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white',
+                    )}
+                  >
+                    {t(`projectViewer.copyToLibrary.${version}`)}
+                  </button>
+                ))}
+              </div>
+            )}
+            {showAspectRatioFilter && (
+              <AspectRatioFilter
+                options={aspectRatioCounts}
+                selectedAspectRatios={selectedAspectRatios}
+                onChange={setSelectedAspectRatios}
+              />
+            )}
+            <SortSelect value={itemSort} onChange={setItemSort} ariaLabel="Sort items" className="w-[7.5rem] shrink-0 md:w-auto" />
+            {multiple && (
+              <button
+                onClick={toggleSelectAll}
+                className={cn(
+                  'h-10 shrink-0 rounded-xl border px-3 text-sm font-bold transition whitespace-nowrap md:h-11 md:px-4',
+                  allFilteredSelected
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400'
+                    : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-white/10',
+                )}
+              >
+                <span className="md:hidden">{allFilteredSelected ? 'None' : 'All'}</span>
+                <span className="hidden md:inline">{allFilteredSelected ? 'Deselect All' : 'Select All'}</span>
+              </button>
+            )}
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">
+          <div className="min-h-0 flex-1 overflow-y-auto p-3 md:p-5">
             {!activeSource ? (
               <EmptyPickerState icon={Layers} title="No source selected" description="Choose a library or album first." />
             ) : loadingItems ? (
@@ -759,7 +766,7 @@ export function UniversalMediaPicker({
             ) : filteredItems.length === 0 ? (
               <EmptyPickerState icon={Search} title="No items found" description="Try a different filter or search." />
             ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-4">
                 {filteredItems.map((item) => {
                   const key = `${item.sourceKind}:${item.sourceId}:${item.itemId}`;
                   const selected = selectedKeys.has(key);
@@ -769,7 +776,7 @@ export function UniversalMediaPicker({
                     <button
                       key={key}
                       className={cn(
-                        'group flex min-h-[130px] flex-col overflow-hidden rounded-card border bg-white text-left shadow-sm transition active:scale-[0.99] dark:bg-neutral-900',
+                        'group relative flex min-h-[120px] flex-col overflow-hidden rounded-card border bg-white text-left shadow-sm transition active:scale-[0.99] dark:bg-neutral-900 md:min-h-[130px]',
                         selected
                           ? 'border-indigo-500 ring-2 ring-indigo-500/30'
                           : 'border-neutral-200 hover:border-indigo-400/50 dark:border-white/10',
@@ -777,14 +784,14 @@ export function UniversalMediaPicker({
                       onClick={(event) => toggleItem(key, event.shiftKey)}
                     >
                       {item.type === 'text' ? (
-                        <div className="flex min-h-[120px] flex-1 flex-col justify-between bg-neutral-50 p-4 dark:bg-neutral-950">
+                        <div className="flex min-h-[120px] flex-1 flex-col justify-between bg-neutral-50 p-3 dark:bg-neutral-950 md:p-4">
                           <div className="flex items-center justify-between gap-2">
                             <span className="inline-flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-[9px] font-black uppercase tracking-widest text-neutral-500 dark:bg-white/10">
                               <FileText className="h-3 w-3" /> Text
                             </span>
                             {selected && <CheckCircle2 className="h-5 w-5 text-indigo-600" />}
                           </div>
-                          <p className="mt-3 line-clamp-4 text-sm text-neutral-700 dark:text-neutral-300">{item.value}</p>
+                          <p className="mt-3 line-clamp-4 text-xs text-neutral-700 dark:text-neutral-300 md:text-sm">{item.value}</p>
                         </div>
                       ) : item.type === 'audio' ? (
                         <div className="flex min-h-[120px] flex-1 items-center justify-center bg-neutral-100 dark:bg-neutral-800">
@@ -792,9 +799,9 @@ export function UniversalMediaPicker({
                           {selected && <div className="absolute inset-0 flex items-center justify-center bg-indigo-600/25"><CheckCircle2 className="h-9 w-9 text-white" /></div>}
                         </div>
                       ) : (
-                        <div className="relative w-full shrink-0 bg-neutral-100 dark:bg-neutral-800" style={{ aspectRatio }}>
+                        <div className="relative w-full shrink-0 overflow-hidden bg-neutral-100 dark:bg-neutral-800" style={{ aspectRatio }}>
                           {item.previewUrl ? (
-                            <img src={imageDisplayUrl(item.previewUrl)} alt={item.title || item.itemId} className="h-full w-full object-cover" />
+                            <img src={imageDisplayUrl(item.previewUrl)} alt={item.title || item.itemId} className="absolute inset-0 h-full w-full object-cover" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center">
                               <Icon className="h-8 w-8 text-neutral-400" />
@@ -809,8 +816,8 @@ export function UniversalMediaPicker({
                           )}
                         </div>
                       )}
-                      <div className="mt-auto w-full p-3">
-                        <div className="mb-2 flex items-center gap-2">
+                      <div className="mt-auto w-full p-2 md:p-3">
+                        <div className="mb-2 hidden items-center gap-2 md:flex">
                           <span className="rounded-lg bg-neutral-100 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-neutral-500 dark:bg-white/10">
                             {sourceKindLabel(item.sourceKind)}
                           </span>
@@ -818,8 +825,8 @@ export function UniversalMediaPicker({
                             {typeLabel(item.type)}
                           </span>
                         </div>
-                        <p className="truncate text-sm font-bold text-neutral-950 dark:text-white">{itemLabel(item)}</p>
-                        <p className="mt-1 truncate font-mono text-[10px] text-neutral-500">{item.rawUrl || item.sourceLabel}</p>
+                        <p className="truncate text-xs font-bold text-neutral-950 dark:text-white md:text-sm">{itemLabel(item)}</p>
+                        <p className="mt-1 hidden truncate font-mono text-[10px] text-neutral-500 md:block">{item.rawUrl || item.sourceLabel}</p>
                       </div>
                     </button>
                   );
@@ -828,21 +835,21 @@ export function UniversalMediaPicker({
             )}
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-neutral-200 p-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between md:p-5">
+          <div className="flex items-center justify-between gap-3 border-t border-neutral-200 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-white/10 md:p-5">
             {multiple ? (
               <p className="text-sm text-neutral-500">
                 <span className="font-bold text-neutral-950 dark:text-white">{selectedItems.length}</span> selected
               </p>
             ) : (
-              <p className="text-sm text-neutral-500">Click any item above to select it.</p>
+              <p className="hidden text-sm text-neutral-500 sm:block">Click any item above to select it.</p>
             )}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-1 items-center justify-end gap-3">
               <button className="h-10 rounded-xl border border-neutral-200 px-4 text-sm font-bold text-neutral-600 transition hover:bg-neutral-50 dark:border-white/10 dark:text-neutral-300 dark:hover:bg-white/10" onClick={onClose}>
                 Cancel
               </button>
               {multiple && (
-                <button className="inline-flex h-10 min-w-[150px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-60" onClick={submit} disabled={selectedItems.length === 0}>
-                  <CheckCircle2 className="h-4 w-4" /> Add Selected
+                <button className="inline-flex h-10 min-w-[110px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-60 md:min-w-[150px]" onClick={submit} disabled={selectedItems.length === 0}>
+                  <CheckCircle2 className="h-4 w-4" /> <span className="md:hidden">Add</span><span className="hidden md:inline">Add Selected</span>
                 </button>
               )}
             </div>
@@ -890,7 +897,7 @@ function AspectRatioFilter({
         title={t('projectViewer.album.aspectRatioFilter')}
         aria-label={t('projectViewer.album.aspectRatioFilter')}
         className={cn(
-          'flex h-11 items-center justify-center gap-1.5 rounded-xl border px-3 text-[10px] font-black uppercase tracking-widest transition',
+          'flex h-10 items-center justify-center gap-1.5 rounded-xl border px-3 text-[10px] font-black uppercase tracking-widest transition md:h-11',
           hasFilter
             ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300'
             : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-white/10',
@@ -957,25 +964,27 @@ function SortSelect({
   onChange,
   ariaLabel,
   compact = false,
+  className,
 }: {
   value: UniversalPickerSort;
   onChange: (value: UniversalPickerSort) => void;
   ariaLabel: string;
   compact?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="relative">
+    <div className={cn('relative', className)}>
       <select
         className={cn(
           'w-full appearance-none border border-neutral-200 bg-white font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white',
-          compact ? 'h-9 rounded-lg pl-3 pr-9 text-xs' : 'h-11 rounded-xl pl-3 pr-10 text-sm',
+          compact ? 'h-9 rounded-lg pl-3 pr-9 text-xs' : 'h-10 rounded-xl pl-3 pr-9 text-xs md:h-11 md:pr-10 md:text-sm',
         )}
         value={value}
         onChange={(event) => onChange(event.target.value as UniversalPickerSort)}
         aria-label={ariaLabel}
       >
-        <option value="newest">Newest first</option>
-        <option value="oldest">Oldest first</option>
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
         <option value="name-asc">Name A-Z</option>
         <option value="name-desc">Name Z-A</option>
       </select>
