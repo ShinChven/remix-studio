@@ -1121,8 +1121,18 @@ export class ProjectRepository {
           background: (job as any).background ?? null,
           filename: job.filename ?? null,
           providerId: job.providerId ?? null,
-          workflowSnapshot: job.workflowSnapshot ?? null,
         };
+
+        // The workflow snapshot is write-once from the client's point of view:
+        // job lists are served without it (only GET .../configuration includes
+        // it), so a bulk save carries `undefined` for every job it did not just
+        // create. Writing `?? null` there erased the snapshot of every draft,
+        // pending, or failed job whenever a later batch of drafts was saved,
+        // and the album items those jobs went on to produce then reported that
+        // their workflow was no longer available. Only write what was sent.
+        if (job.workflowSnapshot !== undefined) {
+          updateData.workflowSnapshot = job.workflowSnapshot;
+        }
 
         // On retry, clear the prior error so the UI doesn't keep showing it.
         if (dbStatus === 'failed' && nextStatus === 'pending') {

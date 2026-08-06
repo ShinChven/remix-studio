@@ -423,6 +423,7 @@
       "reuseConfiguration": {
         "title": "Réutiliser la configuration",
         "message": "Cela remplacera votre workflow actuel par la configuration de cette tâche. Êtes-vous sûr ?",
+        "messageReconstructed": "Le workflow d'origine n'a pas été conservé pour ce résultat : il sera reconstruit à partir du prompt et des références de ce résultat, ce qui reproduit ce seul résultat et non la recette qui le faisait varier. Cela remplacera votre workflow actuel. Êtes-vous sûr ?",
         "confirm": "Réutiliser"
       }
     }

@@ -2400,7 +2400,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         </div>
       </div>
 
-      <ConfirmModal isOpen={configToReuse !== null} onClose={() => setConfigToReuse(null)} onConfirm={confirmReuseWorkflow} title={t('projectViewer.confirm.reuseConfiguration.title')} message={t('projectViewer.confirm.reuseConfiguration.message')} confirmText={t('projectViewer.confirm.reuseConfiguration.confirm')} type="info" />
+      <ConfirmModal isOpen={configToReuse !== null} onClose={() => setConfigToReuse(null)} onConfirm={confirmReuseWorkflow} title={t('projectViewer.confirm.reuseConfiguration.title')} message={t(configToReuse?.workflowReconstructed ? 'projectViewer.confirm.reuseConfiguration.messageReconstructed' : 'projectViewer.confirm.reuseConfiguration.message')} confirmText={t('projectViewer.confirm.reuseConfiguration.confirm')} type="info" />
       <ConfirmModal isOpen={itemToRemoveId !== null} onClose={() => setItemToRemoveId(null)} onConfirm={confirmRemoveWorkflowItem} title={t('projectViewer.confirm.removeWorkflowItem.title')} message={t('projectViewer.confirm.removeWorkflowItem.message')} confirmText={t('projectViewer.confirm.removeWorkflowItem.confirm')} type="danger" />
       <PromptModal item={editingItem} onClose={() => setEditingItem(null)} onSave={(value) => { if (editingItem) updateWorkflowItem(editingItem.id, value); setEditingItem(null); }} />
       {editingImageItem && editingImageItem.value && (

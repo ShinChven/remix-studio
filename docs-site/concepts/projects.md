@@ -76,7 +76,9 @@ The same action is available from the results themselves, so you can pick a setu
 - Album, text, and audio entries each carry a **Reuse workflow** control that resolves the settings through the job that produced them.
 - The image lightbox offers the same control (shortcut `R`), and closes on confirmation so you land on the restored workflow.
 
-Reuse changes the current editable workflow/settings only after confirmation; it does not alter the old job or album item. The workflow snapshot lives on the job record, so reusing from an album item whose Done record was deleted reports that the workflow is no longer available.
+Reuse changes the current editable workflow/settings only after confirmation; it does not alter the old job or album item.
+
+The snapshot lives on the job record. When it is missing — the Done record was deleted, or the job predates workflow snapshots — the workflow is rebuilt from the result's own prompt and media references instead. A rebuilt workflow reproduces that single result rather than the recipe that varied it, and the confirmation says so before replacing anything. Only a result with neither a prompt nor references reports that no workflow is available.
 
 ## Orphan Files
 

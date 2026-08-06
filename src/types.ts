@@ -1584,7 +1584,14 @@ export interface Job {
 export type JobConfiguration = Pick<
   Job,
   'workflowSnapshot' | 'providerId' | 'modelConfigId' | 'aspectRatio' | 'quality' | 'background' | 'format' | 'duration' | 'resolution' | 'sound'
->;
+> & {
+  /**
+   * True when no snapshot was stored and the workflow was rebuilt from the
+   * result's own prompt and references — it reproduces that single result
+   * instead of the recipe that varied it.
+   */
+  workflowReconstructed?: boolean;
+};
 
 export interface AlbumItem {
   id: string;
