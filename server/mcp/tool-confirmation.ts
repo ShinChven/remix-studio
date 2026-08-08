@@ -99,6 +99,18 @@ export function summarizeToolEffect(
         ? `Update project ${getLabel(objectArgs.projectId, 'project')}.`
         : `Update project ${getLabel(objectArgs.projectId, 'project')} and replace its workflow with ${workflowCount} item${workflowCount === 1 ? '' : 's'}. Existing workflow items not included in this replacement will be removed.`;
     }
+    case 'export_project':
+      return typeof objectArgs.task_id === 'string' && objectArgs.task_id
+        ? `Check on export ${String(objectArgs.task_id)}.`
+        : `Export project ${getLabel(objectArgs.project_id, 'project')} as a portable .zip bundle.`;
+    case 'export_project_album': {
+      if (typeof objectArgs.task_id === 'string' && objectArgs.task_id) {
+        return `Check on export ${String(objectArgs.task_id)}.`;
+      }
+      const itemIds = Array.isArray(objectArgs.item_ids) ? objectArgs.item_ids : null;
+      const scope = itemIds ? `${itemIds.length} selected item${itemIds.length === 1 ? '' : 's'}` : 'every item';
+      return `Export ${scope} from the album of project ${getLabel(objectArgs.project_id, 'project')} as a .zip.`;
+    }
     case 'create_campaign':
       return `Create campaign named "${String(objectArgs.name ?? '')}".`;
     case 'update_campaign': {

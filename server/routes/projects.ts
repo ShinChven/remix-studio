@@ -9,8 +9,13 @@ import { QueueManager } from '../queue/queue-manager';
 import { ExportManager } from '../queue/export-manager';
 import { DeliveryManager } from '../queue/delivery-manager';
 import { ProjectImportManager } from '../queue/project-import-manager';
-import { buildProjectBundleManifest } from '../services/project-bundle';
+import {
+  ProjectExportError,
+  startProjectAlbumExport,
+  startProjectBundleExport,
+} from '../services/project-export';
 import { checkStorageLimit } from '../utils/storage-check';
+import { normalizeWorkflowForStorage, stripToKey } from '../utils/storage-keys';
 import { UserRepository } from '../auth/user-repository';
 import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem } from '../../src/types';
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
@@ -30,40 +35,6 @@ async function presignIfKey(value: string, storage: S3Storage): Promise<string> 
     return storage.getPresignedUrl(key);
   }
   return value;
-}
-
-/** Extract bare S3 key from a presigned URL, or return the value as-is if already a key */
-function stripToKey(value: string | undefined, bucket: string): string | undefined {
-  if (!value || !value.startsWith('http')) return value;
-  try {
-    const url = new URL(value);
-    // Path-style: /bucket/key (used by MinIO/LocalStack)
-    const prefix = `/${bucket}/`;
-    if (url.pathname.startsWith(prefix)) {
-      return decodeURIComponent(url.pathname.slice(prefix.length));
-    }
-    // Virtual-hosted style: bucket.host/key (used by AWS S3)
-    if (url.hostname.startsWith(`${bucket}.`)) {
-      return decodeURIComponent(url.pathname.slice(1));
-    }
-    return value;
-  } catch {
-    return value;
-  }
-}
-
-function normalizeWorkflowForStorage(workflow: WorkflowItem[], bucket: string): WorkflowItem[] {
-  return workflow.map((item) => {
-    if (item.type === 'image' || item.type === 'video' || item.type === 'audio') {
-      return {
-        ...item,
-        value: stripToKey(item.value, bucket) || item.value,
-        thumbnailUrl: stripToKey(item.thumbnailUrl, bucket),
-        optimizedUrl: stripToKey(item.optimizedUrl, bucket),
-      };
-    }
-    return item;
-  });
 }
 
 /**
@@ -241,6 +212,8 @@ export async function signWorkflowItems(workflow: WorkflowItem[], storage: S3Sto
 
 export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectImportManager: ProjectImportManager, prisma: PrismaClient, projectEvents?: ProjectEventPublisher) {
   const router = new Hono<{ Variables: Variables }>();
+
+  const exportDeps = { repository, userRepository, storage, exportStorage, exportManager };
 
   // NOTE: /rename must be registered before /:id to avoid route shadowing
   router.post('/api/projects/rename', authMiddleware, async (c) => {
@@ -1326,54 +1299,16 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         ? normalizePostWatermarkPayload(postWatermarkSettingSchema.parse(body.watermarkSettings))
         : undefined;
 
-      const project = await repository.getProject(user.userId, projectId);
-      if (!project) return c.json({ error: 'Project not found' }, 404);
-      if (watermarkSettings?.enabled && project.type !== 'image') {
-        return c.json({ error: 'Watermark export is only available for image projects' }, 400);
-      }
-
-      const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
-      const albumItems = albumPage.items;
-      const itemsToExport = itemIds
-        ? albumItems.filter((item) => itemIds.includes(item.id))
-        : albumItems;
-
-      if (itemsToExport.length === 0) return c.json({ error: 'No items to export' }, 400);
-
-      // Estimate the ZIP size using the selected asset version. Media files are already
-      // compressed, so the ZIP will be roughly the sum of source sizes.
-      const estimatedZipSize = (
-        await Promise.all(
-          itemsToExport.map(async (item) => {
-            const key = exportVersion === 'optimized' && item.optimizedUrl ? item.optimizedUrl : item.imageUrl;
-            const knownSize = exportVersion === 'optimized' && item.optimizedUrl
-              ? item.optimizedSize || item.size
-              : item.size;
-            return knownSize || (await storage.getSize(key).catch(() => undefined)) || 5 * 1024 * 1024;
-          })
-        )
-      ).reduce((acc, size) => acc + size, 0);
-      const { allowed, currentUsage, limit } = await checkStorageLimit(
-        user.userId,
-        estimatedZipSize,
-        userRepository,
-        storage,
-        exportStorage,
-        repository
-      );
-
-      if (!allowed) {
-        return c.json({ 
-          error: `Storage limit exceeded. Cannot export album. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedZipSize / (1024 * 1024)).toFixed(1)}MB.` 
-        }, 403);
-      }
-
-      const taskId = await exportManager.startExport(user.userId, projectId, project.name, itemsToExport, packageName, {
+      const { taskId } = await startProjectAlbumExport(exportDeps, user.userId, {
+        projectId,
+        itemIds,
+        packageName,
         exportVersion,
-        ...(watermarkSettings ? { watermarkSettings } : {}),
+        watermarkSettings,
       });
       return c.json({ taskId });
     } catch (e) {
+      if (e instanceof ProjectExportError) return c.json({ error: e.message }, e.status);
       console.error('[POST /api/projects/:id/export]', e);
       return c.json({ error: 'Failed to start export' }, 500);
     }
@@ -1396,87 +1331,10 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const body = await c.req.json().catch(() => ({}));
       const packageName = typeof body?.packageName === 'string' ? body.packageName : undefined;
 
-      const project = await repository.getProject(user.userId, projectId);
-      if (!project) return c.json({ error: 'Project not found' }, 404);
-
-      const bucket = storage.getBucketName();
-      const [workflow, albumPage] = await Promise.all([
-        repository.getProjectWorkflow(user.userId, projectId),
-        repository.getProjectAlbum(user.userId, projectId, { limit: 999999 }),
-      ]);
-
-      // The manifest has to carry bare storage keys to resolve them to files,
-      // so anything stored as a presigned URL is stripped back down first.
-      const manifest = buildProjectBundleManifest({
-        project: { ...project, id: projectId },
-        workflow: normalizeWorkflowForStorage(workflow, bucket),
-        album: albumPage.items.map((item) => ({
-          ...item,
-          imageUrl: stripToKey(item.imageUrl, bucket) || item.imageUrl,
-          thumbnailUrl: stripToKey(item.thumbnailUrl, bucket),
-          optimizedUrl: stripToKey(item.optimizedUrl, bucket),
-          imageContexts: item.imageContexts?.map((v) => stripToKey(v, bucket) || v),
-          videoContexts: item.videoContexts?.map((v) => stripToKey(v, bucket) || v),
-          audioContexts: item.audioContexts?.map((v) => stripToKey(v, bucket) || v),
-        })),
-      });
-
-      // Resolve real sizes for the quota estimate, and drop entries whose file
-      // has gone missing so the archiver never stalls on a dead key.
-      const mediaItems: Array<AlbumItem & { exportName?: string }> = [];
-      let estimatedSize = 0;
-      for (const entry of manifest.media) {
-        if (!entry.sourceKey) continue;
-        const size = entry.size ?? (await storage.getSize(entry.sourceKey).catch(() => undefined));
-        if (size == null && !(await storage.exists(entry.sourceKey).catch(() => false))) {
-          console.warn(`[POST /api/projects/:id/export-bundle] Skipping missing file ${entry.sourceKey}`);
-          continue;
-        }
-        entry.size = size;
-        estimatedSize += size ?? 5 * 1024 * 1024;
-        mediaItems.push({
-          id: entry.path,
-          jobId: '',
-          prompt: '',
-          imageUrl: entry.sourceKey,
-          size,
-          createdAt: Date.now(),
-          exportName: entry.path,
-        });
-      }
-
-      // Keep the manifest honest about what the archive actually contains.
-      const packedPaths = new Set(mediaItems.map((item) => item.exportName));
-      manifest.media = manifest.media.filter((entry) => packedPaths.has(entry.path));
-
-      const { allowed, currentUsage, limit } = await checkStorageLimit(
-        user.userId,
-        estimatedSize,
-        userRepository,
-        storage,
-        exportStorage,
-        repository
-      );
-      if (!allowed) {
-        return c.json({
-          error: `Storage limit exceeded. Cannot export project. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedSize / (1024 * 1024)).toFixed(1)}MB.`,
-        }, 403);
-      }
-
-      const taskId = await exportManager.startExport(
-        user.userId,
-        projectId,
-        project.name,
-        mediaItems,
-        packageName || `${project.name}_Project`,
-        {
-          sourceType: 'project-bundle',
-          bundleManifest: manifest,
-        }
-      );
-
+      const { taskId } = await startProjectBundleExport(exportDeps, user.userId, { projectId, packageName });
       return c.json({ taskId });
     } catch (e) {
+      if (e instanceof ProjectExportError) return c.json({ error: e.message }, e.status);
       console.error('[POST /api/projects/:id/export-bundle]', e);
       return c.json({ error: 'Failed to start project export' }, 500);
     }

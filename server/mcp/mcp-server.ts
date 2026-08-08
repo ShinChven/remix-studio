@@ -6,7 +6,8 @@ import crypto from 'crypto';
 import type { IRepository } from '../db/repository';
 import type { UserRepository } from '../auth/user-repository';
 import type { ProviderRepository } from '../db/provider-repository';
-import type { IStorage } from '../storage/storage';
+import type { S3Storage } from '../storage/s3-storage';
+import type { ExportManager } from '../queue/export-manager';
 import { createAssistantToolDefinitions, AssistantToolDefinition } from './tool-definitions';
 import { getTransportInputSchema, resolveExternalToolCall } from './tool-confirmation';
 
@@ -94,7 +95,9 @@ function createMcpServerInstance(
   userRepository: UserRepository,
   prisma: PrismaClient,
   providerRepository: ProviderRepository,
-  storage: IStorage,
+  storage: S3Storage,
+  exportStorage: S3Storage,
+  exportManager: ExportManager,
   userId: string,
   appBaseUrl: string,
 ) {
@@ -103,7 +106,16 @@ function createMcpServerInstance(
     version: '1.0.0',
   });
 
-  const tools = createAssistantToolDefinitions({ repository, userRepository, prisma, providerRepository, storage, appBaseUrl });
+  const tools = createAssistantToolDefinitions({
+    repository,
+    userRepository,
+    prisma,
+    providerRepository,
+    storage,
+    exportStorage,
+    exportManager,
+    appBaseUrl,
+  });
   for (const tool of tools) {
     registerToolOnServer(server, tool, userId);
   }
@@ -116,7 +128,9 @@ export function createMcpRouter(
   repository: IRepository,
   userRepository: UserRepository,
   providerRepository: ProviderRepository,
-  storage: IStorage,
+  storage: S3Storage,
+  exportStorage: S3Storage,
+  exportManager: ExportManager,
 ) {
   const router = new Hono<{ Variables: Variables }>();
 
@@ -142,6 +156,8 @@ export function createMcpRouter(
       prisma,
       providerRepository,
       storage,
+      exportStorage,
+      exportManager,
       userId,
       getBaseUrl(c.req.raw),
     );

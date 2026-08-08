@@ -15,9 +15,20 @@ Available MCP capabilities include:
 - **Inspect** storage usage, albums, libraries, library items, and usable model/provider pairings.
 - **Browse** the items inside a project album with `get_album_items`, including each item's prompt, format, aspect ratio, size, and storage keys.
 - **Download** stored files with `get_file_urls`, which converts internal storage keys into temporary presigned URLs (optionally as save-as download links).
+- **Export** a project album as a .zip with `export_project_album`, or a whole project as a portable bundle with `export_project`.
 - **Create and update** workflow-backed projects.
 
 Write and destructive tools are **confirmation-gated**. Prompt deletion is scoped to one item in a text library and requires an explicit confirmed tool call.
+
+### Exports
+
+`export_project_album` archives the media saved in a project's album — the **entire album by default**, or just the ids passed in `item_ids`. `export_project` archives a whole project (settings, workflow, album metadata, and every media file they reference) as a bundle another Remix Studio installation can import.
+
+Both are queued in the background, exactly like an export started from the web interface:
+
+- The call waits up to `wait_seconds` (default 120, max 600) and returns `downloadUrl` once the archive is ready — a temporary link valid for about 24 hours.
+- If the archive is still building when the wait runs out, the response carries `status`, `filesArchived`/`filesTotal`, and a `taskId`. Re-call the same tool with `task_id` to keep waiting; do not start a second export.
+- Finished archives appear in the user's exports list and count against their storage quota, so an export can be refused with a storage-limit error.
 
 ### File access
 
@@ -77,7 +88,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 | Area | Read tools | Write/destructive tools |
 | :--- | :--- | :--- |
 | Libraries | `list_libraries`, `get_library_items`, `search_library_items` | `create_library`, `update_library`, `create_prompt`, `batch_create_prompts`, `update_prompt`, `update_library_item`, `batch_update_library_items`, `delete_prompt` |
-| Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project` |
+| Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `export_project`, `export_project_album` |
 | Files | `get_file_urls` | — |
 | Campaigns | `list_social_accounts`, `list_campaigns` | `create_campaign`, `update_campaign` |
 | Posts | `get_post`, `get_post_text` | `create_post`, `update_post`, `update_post_text`, `add_media_to_post`, `schedule_post` |
@@ -87,6 +98,7 @@ Important boundaries:
 - Prompt creation/deletion is for **text libraries**.
 - `update_library_item` can update text content only for a text library; batch updates change titles/tags only and accept at most 100 items.
 - `update_project` replaces the entire workflow when `workflowItems` is supplied. Call `get_project` immediately beforehand and carry forward every step that should remain.
+- Export tools are confirmation-gated writes because the archive they produce consumes the user's storage quota. Polling with `task_id` goes through the same protocol.
 - Media added to a post must be an internal storage key already owned by the authenticated user and valid for that campaign.
 - Scheduling requires a valid time, an active channel on the campaign, and ready media.
 

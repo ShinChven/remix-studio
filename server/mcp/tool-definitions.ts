@@ -4,8 +4,15 @@ import { PrismaClient } from '@prisma/client';
 import type { IRepository } from '../db/repository';
 import type { UserRepository } from '../auth/user-repository';
 import type { ProviderRepository } from '../db/provider-repository';
-import type { IStorage } from '../storage/storage';
-import { createAppUrlBuilder } from './app-urls';
+import type { S3Storage } from '../storage/s3-storage';
+import type { ExportManager, ExportTask } from '../queue/export-manager';
+import {
+  ProjectExportError,
+  startProjectAlbumExport,
+  startProjectBundleExport,
+  type StartedProjectExport,
+} from '../services/project-export';
+import { createAppUrlBuilder, type AppUrlBuilder } from './app-urls';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 
 const MODEL_CATEGORY_VALUES = ['text', 'image', 'audio', 'video'] as const;
@@ -88,7 +95,11 @@ export interface ToolDependencies {
   prisma: PrismaClient;
   providerRepository: ProviderRepository;
   /** Media bucket, used to mint presigned download URLs for owned storage keys. */
-  storage: IStorage;
+  storage: S3Storage;
+  /** Export bucket, where finished archives land. */
+  exportStorage: S3Storage;
+  /** Queue that builds export archives in the background. */
+  exportManager: ExportManager;
   /**
    * Public origin used to build browser links (library/project/campaign URLs)
    * returned by tools. Only consulted when `APP_URL` is not configured.
@@ -354,6 +365,57 @@ function basenameForKey(key: string): string {
   return name.replace(/["\\]/g, '');
 }
 
+const EXPORT_POLL_INTERVAL_MS = 2000;
+const DEFAULT_EXPORT_WAIT_SECONDS = 120;
+const MAX_EXPORT_WAIT_SECONDS = 600;
+
+/**
+ * Archives are built by a background worker, so a tool call waits on the task
+ * rather than owning the work. Returns as soon as the task settles, or when the
+ * caller's wait budget runs out — whichever comes first.
+ */
+async function waitForExportTask(
+  exportManager: ExportManager,
+  userId: string,
+  taskId: string,
+  waitSeconds: number,
+): Promise<ExportTask | undefined> {
+  const deadline = Date.now() + waitSeconds * 1000;
+  let task = await exportManager.getTask(userId, taskId);
+
+  while (task && (task.status === 'pending' || task.status === 'processing')) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    await new Promise((resolve) => setTimeout(resolve, Math.min(EXPORT_POLL_INTERVAL_MS, remaining)));
+    task = await exportManager.getTask(userId, taskId);
+  }
+
+  return task;
+}
+
+function describeExportTask(task: ExportTask, toolName: string, appUrls: AppUrlBuilder) {
+  const settled = task.status === 'completed' || task.status === 'failed';
+  return {
+    taskId: task.id,
+    status: task.status,
+    projectId: task.projectId ?? null,
+    projectUrl: task.projectId ? appUrls.project(task.projectId) : null,
+    projectName: task.projectName,
+    packageName: task.packageName ?? null,
+    filesArchived: task.current,
+    filesTotal: task.total,
+    size: task.size ?? null,
+    sizeFormatted: task.size ? formatSize(task.size) : null,
+    downloadUrl: task.downloadUrl ?? null,
+    error: task.error ?? null,
+    hint: task.status === 'completed'
+      ? 'downloadUrl is a temporary link (valid ~24h). The archive also stays in the user\'s exports list.'
+      : settled
+        ? 'The export did not produce an archive. Read "error" before retrying.'
+        : `Still building. Call ${toolName} again with task_id="${task.id}" to keep waiting — do not start a second export.`,
+  };
+}
+
 function toToolWorkflowItem(item: {
   id?: string;
   type: string;
@@ -377,7 +439,8 @@ function toToolWorkflowItem(item: {
 }
 
 export function createAssistantToolDefinitions(deps: ToolDependencies): AssistantToolDefinition[] {
-  const { repository, userRepository, prisma, providerRepository, storage } = deps;
+  const { repository, userRepository, prisma, providerRepository, storage, exportStorage, exportManager } = deps;
+  const exportDeps = { repository, userRepository, storage, exportStorage, exportManager };
   const appUrls = createAppUrlBuilder(deps.appBaseUrl);
 
   const tools: AssistantToolDefinition[] = [];
@@ -859,6 +922,136 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
         text: JSON.stringify(response, null, 2),
         structuredContent: response,
       };
+    },
+  });
+
+  // ─── export_project ───
+  tools.push({
+    name: 'export_project',
+    title: 'Export Project',
+    description: `Package one whole project into a portable .zip bundle: its settings, workflow, album metadata, and every media file those reference. The bundle can be imported into another Remix Studio installation, so this is the tool for backing up or moving a project — not for handing the user plain image files (use export_project_album for that).
+
+The archive is built in the background. The call waits up to wait_seconds for it to finish and returns a temporary download URL when it does; if it is still building, re-call with the returned task_id to keep waiting instead of starting a second export. Finished archives also appear in the user's exports list and count against their storage quota.`,
+    inputSchema: {
+      project_id: z.string().min(1).optional().describe('The project ID to export (from list_albums). Required unless task_id is given.'),
+      package_name: z.string().min(1).max(200).optional().describe('Optional archive filename (default "<project name>_Project.zip")'),
+      task_id: z.string().min(1).optional().describe('Resume waiting on an export already started by this tool. When set, no new export is started and project_id is ignored.'),
+      wait_seconds: z
+        .number()
+        .int()
+        .min(0)
+        .max(MAX_EXPORT_WAIT_SECONDS)
+        .default(DEFAULT_EXPORT_WAIT_SECONDS)
+        .describe(`How long to wait for the archive before returning progress (default ${DEFAULT_EXPORT_WAIT_SECONDS}s, max ${MAX_EXPORT_WAIT_SECONDS}s)`),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    category: 'mutate',
+    handler: async (userId, input) => {
+      const { project_id, package_name, task_id, wait_seconds } = input as {
+        project_id?: string;
+        package_name?: string;
+        task_id?: string;
+        wait_seconds: number;
+      };
+
+      let taskId = task_id?.trim();
+      if (!taskId) {
+        if (!project_id?.trim()) {
+          return { text: JSON.stringify({ error: 'project_id is required unless task_id is provided.' }), isError: true };
+        }
+        try {
+          const started: StartedProjectExport = await startProjectBundleExport(exportDeps, userId, {
+            projectId: project_id.trim(),
+            packageName: package_name,
+          });
+          taskId = started.taskId;
+        } catch (e) {
+          if (e instanceof ProjectExportError) {
+            return { text: JSON.stringify({ error: e.message }), isError: true };
+          }
+          throw e;
+        }
+      }
+
+      const task = await waitForExportTask(exportManager, userId, taskId, wait_seconds);
+      if (!task) {
+        return { text: JSON.stringify({ error: `Export task "${taskId}" not found.` }), isError: true };
+      }
+
+      const response = describeExportTask(task, 'export_project', appUrls);
+      return { text: JSON.stringify(response, null, 2), structuredContent: response };
+    },
+  });
+
+  // ─── export_project_album ───
+  tools.push({
+    name: 'export_project_album',
+    title: 'Export Project Album',
+    description: `Package the media files saved in one project's album into a .zip the user can download. Exports the entire album by default — pass item_ids only when the user asked for a specific subset (ids come from get_album_items).
+
+The archive is built in the background. The call waits up to wait_seconds for it to finish and returns a temporary download URL when it does; if it is still building, re-call with the returned task_id to keep waiting instead of starting a second export. Finished archives also appear in the user's exports list and count against their storage quota.
+
+For a single file, get_file_urls is cheaper — it needs no archive. To move a project between installations, use export_project instead.`,
+    inputSchema: {
+      project_id: z.string().min(1).optional().describe('The project ID whose album to export (from list_albums). Required unless task_id is given.'),
+      item_ids: z
+        .array(z.string().min(1))
+        .optional()
+        .describe('Optional album item IDs to export. Omit to export the whole album (the default).'),
+      export_version: z
+        .enum(['raw', 'optimized'])
+        .default('raw')
+        .describe('Which asset variant to archive: "raw" originals (default) or "optimized" smaller variants where available'),
+      package_name: z.string().min(1).max(200).optional().describe('Optional archive filename (default "<project name>_Album.zip")'),
+      task_id: z.string().min(1).optional().describe('Resume waiting on an export already started by this tool. When set, no new export is started and the other inputs are ignored.'),
+      wait_seconds: z
+        .number()
+        .int()
+        .min(0)
+        .max(MAX_EXPORT_WAIT_SECONDS)
+        .default(DEFAULT_EXPORT_WAIT_SECONDS)
+        .describe(`How long to wait for the archive before returning progress (default ${DEFAULT_EXPORT_WAIT_SECONDS}s, max ${MAX_EXPORT_WAIT_SECONDS}s)`),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    category: 'mutate',
+    handler: async (userId, input) => {
+      const { project_id, item_ids, export_version, package_name, task_id, wait_seconds } = input as {
+        project_id?: string;
+        item_ids?: string[];
+        export_version: 'raw' | 'optimized';
+        package_name?: string;
+        task_id?: string;
+        wait_seconds: number;
+      };
+
+      let taskId = task_id?.trim();
+      if (!taskId) {
+        if (!project_id?.trim()) {
+          return { text: JSON.stringify({ error: 'project_id is required unless task_id is provided.' }), isError: true };
+        }
+        try {
+          const started: StartedProjectExport = await startProjectAlbumExport(exportDeps, userId, {
+            projectId: project_id.trim(),
+            itemIds: item_ids?.length ? item_ids : undefined,
+            packageName: package_name,
+            exportVersion: export_version,
+          });
+          taskId = started.taskId;
+        } catch (e) {
+          if (e instanceof ProjectExportError) {
+            return { text: JSON.stringify({ error: e.message }), isError: true };
+          }
+          throw e;
+        }
+      }
+
+      const task = await waitForExportTask(exportManager, userId, taskId, wait_seconds);
+      if (!task) {
+        return { text: JSON.stringify({ error: `Export task "${taskId}" not found.` }), isError: true };
+      }
+
+      const response = describeExportTask(task, 'export_project_album', appUrls);
+      return { text: JSON.stringify(response, null, 2), structuredContent: response };
     },
   });
 

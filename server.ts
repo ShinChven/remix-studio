@@ -244,7 +244,7 @@ async function startServer() {
   app.route('/', createSocialRouter(prisma));
   app.route('/', createReleaseRouter(prisma));
   app.route('/', createProductsRouter(prisma, deliveryManager));
-  app.route('/', createMcpRouter(prisma, repository, userRepository, providerRepository, storage));
+  app.route('/', createMcpRouter(prisma, repository, userRepository, providerRepository, storage, exportStorage, exportManager));
 
   // === Assistant chat runtime ===
   const assistantRepo = new AssistantRepository(prisma);
@@ -254,6 +254,8 @@ async function startServer() {
     prisma,
     providerRepository,
     storage,
+    exportStorage,
+    exportManager,
   });
   app.route('/', createAssistantRouter(assistantRepo, assistantRunner, providerRepository));
 
