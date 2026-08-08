@@ -313,7 +313,7 @@ export function Exports() {
             {/* Releases + history capsule */}
             <div className="flex-shrink-0 flex items-center gap-3 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card shadow-sm backdrop-blur-md h-[42px]">
               <Link
-                to="/releases"
+                to="/exports/releases"
                 className="flex items-center gap-2 hover:opacity-80 transition"
               >
                 <Rocket className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
@@ -323,7 +323,7 @@ export function Exports() {
               </Link>
               <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-800" />
               <Link
-                to="/releases/history"
+                to="/exports/releases/history"
                 className="flex items-center gap-2 hover:opacity-80 transition"
               >
                 <HistoryIcon className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
