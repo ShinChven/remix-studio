@@ -85,13 +85,15 @@ function registerToolOnServer(server: McpServer, tool: AssistantToolDefinition, 
   );
 }
 
-function createMcpServerInstance(toolDeps: ToolDependencies, userId: string) {
+function createMcpServerInstance(toolDeps: ToolDependencies, userId: string, appBaseUrl: string) {
   const server = new McpServer({
     name: 'remix-studio',
     version: '1.0.0',
   });
 
-  const tools = createAssistantToolDefinitions(toolDeps);
+  // appBaseUrl is per-request (the incoming origin), so it is layered on top
+  // of the shared dependencies rather than stored with them.
+  const tools = createAssistantToolDefinitions({ ...toolDeps, appBaseUrl });
   for (const tool of tools) {
     registerToolOnServer(server, tool, userId);
   }
@@ -118,7 +120,7 @@ export function createMcpRouter(prisma: PrismaClient, toolDeps: ToolDependencies
 
   router.all('/mcp', async (c) => {
     const userId = c.get('mcpUserId');
-    const server = createMcpServerInstance(toolDeps, userId);
+    const server = createMcpServerInstance(toolDeps, userId, getBaseUrl(c.req.raw));
 
     const transport = new WebStandardStreamableHTTPServerTransport();
 

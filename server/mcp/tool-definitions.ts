@@ -8,6 +8,7 @@ import type { IStorage } from '../storage/storage';
 import type { QueueManager } from '../queue/queue-manager';
 import type { ProjectEventPublisher } from '../live/project-live-hub';
 import { checkStorageLimit } from '../utils/storage-check';
+import { createAppUrlBuilder } from './app-urls';
 import { generateJobs } from '../../src/lib/remixEngine';
 import {
   DEFAULT_AUDIO_PROJECT_CONFIG,
@@ -103,6 +104,11 @@ export interface ToolDependencies {
   queueManager: QueueManager;
   /** Optional live-update hub so open project views refresh after job changes. */
   projectEvents?: ProjectEventPublisher;
+  /**
+   * Public origin used to build browser links (library/project/campaign URLs)
+   * returned by tools. Only consulted when `APP_URL` is not configured.
+   */
+  appBaseUrl?: string;
 }
 
 const MAX_CONTENT_PREVIEW_CHARS = 4096;
@@ -454,6 +460,7 @@ function toToolWorkflowItem(item: {
 
 export function createAssistantToolDefinitions(deps: ToolDependencies): AssistantToolDefinition[] {
   const { repository, userRepository, prisma, providerRepository, storage, exportStorage, queueManager, projectEvents } = deps;
+  const appUrls = createAppUrlBuilder(deps.appBaseUrl);
 
   const tools: AssistantToolDefinition[] = [];
 
@@ -510,7 +517,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'create_library',
     title: 'Create Library',
-    description: 'Create a new library of a specific type (text, image, audio, video). Description is optional and should explain what the library contains or when to use it.',
+    description: 'Create a new library of a specific type (text, image, audio, video). Description is optional and should explain what the library contains or when to use it. Returns the library "url" — share it with the user so they can open the new library.',
     inputSchema: {
       name: z.string().min(1).max(256).describe('Library name'),
       description: z.string().max(2000).optional().describe('Optional library description explaining what it contains or how it should be used'),
@@ -524,7 +531,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       const nextDescription = description?.trim() || undefined;
       await repository.createLibrary(userId, { id, name, description: nextDescription, type });
       return {
-        text: JSON.stringify({ id, name, description: nextDescription ?? null, type, message: 'Library created successfully' }),
+        text: JSON.stringify({ id, name, description: nextDescription ?? null, type, url: appUrls.library(id), message: 'Library created successfully' }),
       };
     },
   });
@@ -533,7 +540,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'update_library',
     title: 'Update Library',
-    description: 'Update an existing library name and/or description. Only provided fields are changed.',
+    description: 'Update an existing library name and/or description. Only provided fields are changed. Returns the library "url" so it can be linked back to the user.',
     inputSchema: {
       library_id: z.string().describe('The library ID to update'),
       name: z.string().min(1).max(256).optional().describe('New library name'),
@@ -561,6 +568,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       return {
         text: JSON.stringify({
           library_id,
+          url: appUrls.library(library_id),
           name: nextName ?? library.name,
           description: hasDescription ? (description.trim() || null) : (library.description ?? null),
           previousName: library.name,
@@ -598,7 +606,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       const id = crypto.randomUUID();
       await repository.createLibraryItem(userId, library_id, { id, content, title, tags });
       return {
-        text: JSON.stringify({ id, library_id, name: library.name, title, tags, message: 'Prompt created successfully' }),
+        text: JSON.stringify({ id, library_id, libraryUrl: appUrls.library(library_id), name: library.name, title, tags, message: 'Prompt created successfully' }),
       };
     },
   });
@@ -640,6 +648,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       return {
         text: JSON.stringify({
           library_id,
+          libraryUrl: appUrls.library(library_id),
           name: library.name,
           created: libraryItems.map((item) => ({ id: item.id, title: item.title })),
           count: libraryItems.length,
@@ -701,6 +710,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
           text: JSON.stringify({
             item_id,
             library_id,
+            libraryUrl: appUrls.library(library_id),
             libraryName: library.name,
             title: title ?? existingItem.title ?? null,
             updatedFields: Object.keys(updates),
@@ -749,6 +759,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
           text: JSON.stringify({
             item_id,
             library_id,
+            libraryUrl: appUrls.library(library_id),
             libraryName: library.name,
             title: existingItem.title ?? null,
             message: 'Prompt deleted successfully.',
@@ -764,7 +775,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'search_library_items',
     title: 'Search Library Items',
-    description: 'Search library items by keyword (matches content and title) and/or tags. Returns matching items with their library context. Long content is truncated in the preview.',
+    description: 'Search library items by keyword (matches content and title) and/or tags. Returns matching items with their library context, including the owning library\'s "libraryUrl" so results can be linked back to the app. Long content is truncated in the preview.',
     inputSchema: {
       query: z.string().optional().describe('Optional search keyword to match against item content and title'),
       library_id: z.string().optional().describe('Optional: limit search to a specific library'),
@@ -793,6 +804,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         return {
           id: item.id,
           libraryId: item.libraryId,
+          libraryUrl: appUrls.library(item.libraryId),
           libraryName: item.libraryName,
           libraryDescription: item.libraryDescription ?? null,
           content: preview.text,
@@ -856,7 +868,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'list_albums',
     title: 'List Albums',
-    description: 'List project albums for the authenticated user, with project descriptions, album item count, and total album size per project. Defaults to active projects only — pass status="archived" or "all" to include archived.',
+    description: 'List project albums for the authenticated user, with project descriptions, album item count, total album size, and the "projectUrl" that opens each project in Remix Studio. Defaults to active projects only — pass status="archived" or "all" to include archived.',
     inputSchema: {
       status: z.enum(['active', 'archived', 'all']).default('active').describe('Project status filter (default "active")'),
       page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
@@ -878,6 +890,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         const stats = statsByProject[project.id] ?? { itemCount: 0, totalSize: 0 };
         return {
           projectId: project.id,
+          projectUrl: appUrls.project(project.id),
           projectName: project.name,
           projectDescription: project.description ?? null,
           projectStatus: project.status,
@@ -959,6 +972,7 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
 
       const response = {
         projectId: project.id,
+        projectUrl: appUrls.project(project.id),
         projectName: project.name,
         projectType: project.type,
         items,
@@ -1231,7 +1245,7 @@ Set download=true to get a URL that saves as a file (Content-Disposition: attach
   tools.push({
     name: 'list_libraries',
     title: 'List Libraries',
-    description: 'List libraries (text, image, audio, video) for the authenticated user. Returns library id, name, description, type, and item count. Use the library id as libraryId when composing workflow items of type *_from_library or *_library.',
+    description: 'List libraries (text, image, audio, video) for the authenticated user. Returns library id, name, description, type, item count, and a "url" that opens the library in Remix Studio — show that url when presenting a library to the user. Use the library id as libraryId when composing workflow items of type *_from_library or *_library.',
     inputSchema: {
       query: z.string().optional().describe('Optional: search libraries by name (case-insensitive)'),
       type: z.enum(['text', 'image', 'audio', 'video']).optional().describe('Optional: filter by library type'),
@@ -1250,6 +1264,7 @@ Set download=true to get a URL that saves as a file (Content-Disposition: attach
       const result = await repository.getUserLibraries(userId, page, limit, query, false, type as any);
       const libraries = result.items.map((lib) => ({
         id: lib.id,
+        url: appUrls.library(lib.id),
         name: lib.name,
         description: lib.description ?? null,
         type: lib.type,
@@ -1277,7 +1292,7 @@ Field semantics:
 - Text libraries: use item.text as the "value" of a "text" workflow item.
 - Image/audio/video libraries: use item.storageKey as the "value" of the matching workflow item type to pin a specific file.
 
-Use this tool to find an item by name/title before composing a workflow. Combine with list_libraries to first discover the libraryId.`,
+Use this tool to find an item by name/title before composing a workflow. Combine with list_libraries to first discover the libraryId. The response also carries "libraryUrl", the link that opens this library in Remix Studio — surface it when telling the user about the library.`,
     inputSchema: {
       library_id: z.string().describe('The library ID to browse (from list_libraries)'),
       query: z.string().optional().describe('Optional: filter items by title/name (case-insensitive substring match)'),
@@ -1330,6 +1345,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
 
       const response = {
         libraryId: library_id,
+        libraryUrl: appUrls.library(library_id),
         libraryName: library.name,
         libraryDescription: library.description ?? null,
         libraryType: library.type,
@@ -1353,7 +1369,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
   tools.push({
     name: 'get_project',
     title: 'Get Project',
-    description: 'Read one project, including its current workflow. Always call this to fetch the latest workflow immediately before update_project when changing workflowItems — even if you read the project earlier in the conversation — so unchanged workflow items can be carried forward from the current state and not from a stale copy.',
+    description: 'Read one project, including its current workflow and the "url" that opens it in Remix Studio (show that url when presenting the project). Always call this to fetch the latest workflow immediately before update_project when changing workflowItems — even if you read the project earlier in the conversation — so unchanged workflow items can be carried forward from the current state and not from a stale copy.',
     inputSchema: {
       projectId: z.string().describe('The project ID to inspect'),
     },
@@ -1377,6 +1393,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
       const workflowItems = workflow.map(toToolWorkflowItem);
       const response = {
         projectId: project.id,
+        url: appUrls.project(project.id),
         name: project.name,
         description: project.description ?? null,
         type: project.type,
@@ -1416,7 +1433,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
   tools.push({
     name: 'create_project_with_workflow',
     title: 'Create Project with Workflow',
-    description: `Create a new project with a preset workflow.
+    description: `Create a new project with a preset workflow. The result carries the project "url" — show it to the user so they can open the new project.
 
 Workflow item types:
 - "text": static prompt text. Requires "value" with the text content. To use a specific item from a text library, first call get_library_items and pass the returned item.text as "value".
@@ -1638,11 +1655,12 @@ Recommended workflow:
       return {
         text: JSON.stringify({
           projectId,
+          url: appUrls.project(projectId),
           name,
           description: description?.trim() || null,
           type,
           workflowItemCount: workflow.length,
-          message: 'Project created successfully. Open it in Remix Studio to review the workflow and run generation.',
+          message: 'Project created successfully. Share the url so the user can open it in Remix Studio to review the workflow and run generation.',
         }),
       };
     },
@@ -1652,7 +1670,7 @@ Recommended workflow:
   tools.push({
     name: 'update_project',
     title: 'Update Project',
-    description: `Update an existing project's metadata, settings, or workflow. Only provided non-workflow fields will be updated.
+    description: `Update an existing project's metadata, settings, or workflow. Only provided non-workflow fields will be updated. The result carries the project "url" so the change can be linked back to the user.
 
 Important workflow behavior:
 - If workflowItems is omitted, the existing workflow is unchanged.
@@ -1882,6 +1900,7 @@ Important workflow behavior:
       return {
         text: JSON.stringify({
           projectId,
+          url: appUrls.project(projectId),
           name: updatedName,
           description: description !== undefined ? (description.trim() || null) : (existingProject.description ?? null),
           updatedFields: Object.keys(updates),
@@ -1901,7 +1920,9 @@ Returned fields:
 - "drafts": jobs staged but not started — what draft_jobs creates and start_jobs consumes.
 - "pending" / "processing" / "queued": waiting to run, running now, and the sum of the two ("the queue").
 - "completed" / "failed": finished runs, successful and not.
-- "albumItems": results saved to the project album (a completed job leaves one behind, and album items also survive job cleanup, so this is usually the higher number).`,
+- "albumItems": results saved to the project album (a completed job leaves one behind, and album items also survive job cleanup, so this is usually the higher number).
+
+Also returns the project's "url" — show it when reporting progress so the user can open the queue.`,
     inputSchema: {
       projectId: z.string().describe('The project ID to count jobs for'),
     },
@@ -1919,7 +1940,13 @@ Returned fields:
       }
 
       const counts = await readProjectCounts(userId, projectId);
-      const response = { projectId, name: project.name, type: project.type ?? 'image', ...counts };
+      const response = {
+        projectId,
+        name: project.name,
+        url: appUrls.project(projectId),
+        type: project.type ?? 'image',
+        ...counts,
+      };
 
       return {
         text: JSON.stringify(response, null, 2),
@@ -1936,7 +1963,9 @@ Returned fields:
 
 Each draft gets one prompt combination built from the project's enabled workflow items: static text is used as-is and every library reference contributes one of its items. With shuffle on, each draft picks randomly; with shuffle off, drafts walk the combinations in order and wrap around once they are exhausted.
 
-The project supplies the provider, model, and generation settings (aspect ratio, quality, format, duration, resolution, sound) — set them with update_project first if they are missing. Call get_project to review the workflow, and get_project_job_counts to see what is already staged.`,
+The project supplies the provider, model, and generation settings (aspect ratio, quality, format, duration, resolution, sound) — set them with update_project first if they are missing. Call get_project to review the workflow, and get_project_job_counts to see what is already staged.
+
+Returns the project's "url" — share it so the user can review the drafts before starting them.`,
     inputSchema: {
       projectId: z.string().describe('The project to stage drafts on'),
       count: z.number().int().min(1).max(MAX_DRAFT_JOBS_PER_CALL)
@@ -2045,6 +2074,7 @@ The project supplies the provider, model, and generation settings (aspect ratio,
       const response = {
         projectId,
         name: project.name,
+        url: appUrls.project(projectId),
         drafted: created,
         promptPreviews: drafts.slice(0, 3).map((job) => job.prompt.slice(0, 200)),
         counts,
@@ -2064,7 +2094,9 @@ The project supplies the provider, model, and generation settings (aspect ratio,
     title: 'Start Jobs',
     description: `Move a project's draft jobs into the generation queue and start running them. Drafts are taken oldest first.
 
-Omit "count" to start every draft, or pass a number to start only that many — useful for trying a handful before committing a large batch. This spends provider credits, so confirm the count with the user first. Use get_project_job_counts to see what is staged and how the queue is draining.`,
+Omit "count" to start every draft, or pass a number to start only that many — useful for trying a handful before committing a large batch. This spends provider credits, so confirm the count with the user first. Use get_project_job_counts to see what is staged and how the queue is draining.
+
+Returns the project's "url" — share it so the user can watch generation run.`,
     inputSchema: {
       projectId: z.string().describe('The project whose drafts should start'),
       count: z.number().int().min(1).optional()
@@ -2091,6 +2123,7 @@ Omit "count" to start every draft, or pass a number to start only that many — 
         const response = {
           projectId,
           name: project.name,
+          url: appUrls.project(projectId),
           started: 0,
           counts,
           message: 'No draft jobs to start. Stage some with draft_jobs first.',
@@ -2117,6 +2150,7 @@ Omit "count" to start every draft, or pass a number to start only that many — 
       const response = {
         projectId,
         name: project.name,
+        url: appUrls.project(projectId),
         started,
         remainingDrafts: counts.drafts,
         counts,
@@ -2173,6 +2207,7 @@ Omit "count" to start every draft, or pass a number to start only that many — 
           text: JSON.stringify({
             item_id,
             library_id,
+            libraryUrl: appUrls.library(library_id),
             updatedFields: Object.keys(updates),
             message: 'Library item updated successfully.',
           }),
@@ -2237,6 +2272,7 @@ Omit "count" to start every draft, or pass a number to start only that many — 
       return {
         text: JSON.stringify({
           library_id,
+          libraryUrl: appUrls.library(library_id),
           libraryName: library.name,
           results,
           successCount,
@@ -2272,7 +2308,7 @@ Omit "count" to start every draft, or pass a number to start only that many — 
   tools.push({
     name: 'create_campaign',
     title: 'Create Campaign',
-    description: 'Creates a new social media campaign.',
+    description: 'Creates a new social media campaign. Returns the campaign "url" — show it so the user can open the new campaign.',
     inputSchema: {
       name: z.string().min(1).max(200).describe('Name of the campaign'),
       description: z.string().max(5000).optional(),
@@ -2294,24 +2330,26 @@ Omit "count" to start every draft, or pass a number to start only that many — 
         },
         include: { socialAccounts: { select: SAFE_SOCIAL_ACCOUNT_SELECT } }
       });
-      return { text: JSON.stringify(campaign), structuredContent: campaign };
+      const payload = { ...campaign, url: appUrls.campaign(campaign.id) };
+      return { text: JSON.stringify(payload), structuredContent: payload };
     }
   });
 
   tools.push({
     name: 'list_campaigns',
     title: 'List Campaigns',
-    description: 'Returns the users social media campaigns.',
+    description: 'Returns the users social media campaigns, each with a "url" that opens it in Remix Studio — show that url when presenting a campaign to the user.',
     inputSchema: {
       status: z.enum(CAMPAIGN_STATUS_VALUES).optional().describe('Filter by status'),
     },
     annotations: { readOnlyHint: true, destructiveHint: false },
     category: 'read',
     handler: async (userId, { status }) => {
-      const campaigns = await prisma.campaign.findMany({
+      const rows = await prisma.campaign.findMany({
         where: { userId, ...(status ? { status } : {}) },
         include: { socialAccounts: { select: SAFE_SOCIAL_ACCOUNT_SELECT }, _count: { select: { posts: true } } }
       });
+      const campaigns = rows.map((campaign) => ({ ...campaign, url: appUrls.campaign(campaign.id) }));
       return { text: JSON.stringify(campaigns), structuredContent: { campaigns } };
     }
   });
@@ -2319,7 +2357,7 @@ Omit "count" to start every draft, or pass a number to start only that many — 
   tools.push({
     name: 'update_campaign',
     title: 'Update Campaign',
-    description: 'Updates a social media campaign.',
+    description: 'Updates a social media campaign. Returns the campaign "url" so the change can be linked back to the user.',
     inputSchema: {
       campaignId: z.string().min(1),
       name: z.string().min(1).max(200).optional(),
@@ -2346,14 +2384,15 @@ Omit "count" to start every draft, or pass a number to start only that many — 
         },
         include: { socialAccounts: { select: SAFE_SOCIAL_ACCOUNT_SELECT } }
       });
-      return { text: JSON.stringify(updated), structuredContent: updated };
+      const payload = { ...updated, url: appUrls.campaign(updated.id) };
+      return { text: JSON.stringify(payload), structuredContent: payload };
     }
   });
 
   tools.push({
     name: 'create_post',
     title: 'Create Post',
-    description: 'Creates a new post in a campaign.',
+    description: 'Creates a new post in a campaign. Returns the post "url" (and its "campaignUrl") — show the post url so the user can open it.',
     inputSchema: {
       campaignId: z.string().min(1),
       textContent: z.string().max(28000).optional(),
@@ -2381,14 +2420,19 @@ Omit "count" to start every draft, or pass a number to start only that many — 
           status: nextStatus,
         }
       });
-      return { text: JSON.stringify(post), structuredContent: post };
+      const payload = {
+        ...post,
+        url: appUrls.campaignPost(post.campaignId, post.id),
+        campaignUrl: appUrls.campaign(post.campaignId),
+      };
+      return { text: JSON.stringify(payload), structuredContent: payload };
     }
   });
 
   tools.push({
     name: 'get_post',
     title: 'Get Post',
-    description: 'Get details of a specific post.',
+    description: 'Get details of a specific post, including the post "url" and its "campaignUrl" for linking back to Remix Studio.',
     inputSchema: {
       postId: z.string().min(1),
     },
@@ -2400,7 +2444,12 @@ Omit "count" to start every draft, or pass a number to start only that many — 
         include: { media: { orderBy: { position: 'asc' } }, executions: true }
       });
       if (!post) throw new Error("Post not found");
-      return { text: JSON.stringify(post), structuredContent: post };
+      const payload = {
+        ...post,
+        url: appUrls.campaignPost(post.campaignId, post.id),
+        campaignUrl: appUrls.campaign(post.campaignId),
+      };
+      return { text: JSON.stringify(payload), structuredContent: payload };
     }
   });
 
@@ -2430,7 +2479,9 @@ Omit "count" to start every draft, or pass a number to start only that many — 
       if (!post) throw new Error("Post not found");
       const payload = {
         postId: post.id,
+        url: appUrls.campaignPost(post.campaignId, post.id),
         campaignId: post.campaignId,
+        campaignUrl: appUrls.campaign(post.campaignId),
         campaignName: post.campaign?.name ?? null,
         textContent: post.textContent ?? '',
         textLength: (post.textContent ?? '').length,
@@ -2476,7 +2527,12 @@ Omit "count" to start every draft, or pass a number to start only that many — 
           ...(status !== undefined && { status })
         }
       });
-      return { text: JSON.stringify(updated), structuredContent: updated };
+      const payload = {
+        ...updated,
+        url: appUrls.campaignPost(updated.campaignId, updated.id),
+        campaignUrl: appUrls.campaign(updated.campaignId),
+      };
+      return { text: JSON.stringify(payload), structuredContent: payload };
     }
   });
 
@@ -2510,7 +2566,9 @@ Omit "count" to start every draft, or pass a number to start only that many — 
       });
       const payload = {
         postId: updated.id,
+        url: appUrls.campaignPost(updated.campaignId, updated.id),
         campaignId: updated.campaignId,
+        campaignUrl: appUrls.campaign(updated.campaignId),
         campaignName: updated.campaign?.name ?? null,
         textContent: updated.textContent ?? '',
         textLength: (updated.textContent ?? '').length,
@@ -2554,10 +2612,13 @@ Omit "count" to start every draft, or pass a number to start only that many — 
           status: 'pending'
         }
       });
-      return {
-        text: JSON.stringify({ ...media, campaignId: post.campaignId }),
-        structuredContent: { ...media, campaignId: post.campaignId },
+      const payload = {
+        ...media,
+        campaignId: post.campaignId,
+        postUrl: appUrls.campaignPost(post.campaignId, post.id),
+        campaignUrl: appUrls.campaign(post.campaignId),
       };
+      return { text: JSON.stringify(payload), structuredContent: payload };
     }
   });
 
@@ -2587,7 +2648,12 @@ Omit "count" to start every draft, or pass a number to start only that many — 
           status: 'scheduled'
         }
       });
-      return { text: JSON.stringify(updated), structuredContent: updated };
+      const payload = {
+        ...updated,
+        url: appUrls.campaignPost(updated.campaignId, updated.id),
+        campaignUrl: appUrls.campaign(updated.campaignId),
+      };
+      return { text: JSON.stringify(payload), structuredContent: payload };
     }
   });
 

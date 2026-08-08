@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { fetchLibraries, fetchProjects, fetchProjectWorkflow, updateProject, createLibraryItem, saveImage, createLibrary, createProject } from '../api';
 import { Library, Project } from '../types';
 import { useTranslation } from 'react-i18next';
@@ -142,9 +142,12 @@ function CreateProjectModal({ isOpen, onClose, type, onSuccess }: { isOpen: bool
 export default function ExtensionImport() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const destinationParam = searchParams.get('destination');
+  const requestedDestination = destinationParam === 'project' || destinationParam === 'library' ? destinationParam : null;
   const [importData, setImportData] = useState<ImportData | null>(null);
-  
-  const [destinationType, setDestinationType] = useState<'library' | 'project'>('library');
+
+  const [destinationType, setDestinationType] = useState<'library' | 'project'>(requestedDestination ?? 'library');
 
   const handleDestinationChange = (type: 'library' | 'project') => {
     setDestinationType(type);
@@ -179,7 +182,7 @@ export default function ExtensionImport() {
     const applyPayload = (payload: ImportData) => {
       setImportData(payload);
 
-      if (payload?.type) {
+      if (payload?.type && !requestedDestination) {
         const saved = localStorage.getItem(`remix_studio_import_destination_${payload.type}`);
         if (saved === 'project' || saved === 'library') {
           setDestinationType(saved);

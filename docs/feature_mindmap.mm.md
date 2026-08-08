@@ -101,6 +101,7 @@
       - Batch Schedule / Unschedule posts
       - Batch Send immediately
       - Batch AI Text Generation (Generate text for multiple posts simultaneously with background polling)
+      - Batch Set Text (Apply one identical text to every selected post)
     - **Social Integrations**
       - Connect/Disconnect social accounts (Supported: X/Twitter, Instagram, LinkedIn, Facebook)
       - View scheduled posts calendar/counts
