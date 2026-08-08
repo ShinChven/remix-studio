@@ -22,6 +22,43 @@ interface CanvasCoordinates {
   scale: number;
 }
 
+interface ExportRect {
+  sx: number;
+  sy: number;
+  sw: number;
+  sh: number;
+}
+
+/**
+ * Resolve the source rectangle (in the image's natural pixel space) that should
+ * be exported. `crop` comes from react-image-crop and is expressed in *rendered*
+ * pixels, so it has to be scaled up; when there is no crop the full natural
+ * size is used as-is instead of being scaled a second time.
+ */
+function getExportRect(image: HTMLImageElement, crop?: PixelCrop): ExportRect {
+  const { naturalWidth, naturalHeight } = image;
+
+  if (!crop?.width || !crop?.height) {
+    return { sx: 0, sy: 0, sw: naturalWidth, sh: naturalHeight };
+  }
+
+  // Rendered size of the <img>; fall back to natural size before layout settles.
+  const displayWidth = image.width || naturalWidth;
+  const displayHeight = image.height || naturalHeight;
+
+  const scaleX = naturalWidth / displayWidth;
+  const scaleY = naturalHeight / displayHeight;
+
+  // Round to whole pixels: a fractional canvas size gets truncated by the
+  // browser, which is what produced the odd off-by-a-few output dimensions.
+  const sx = Math.min(Math.max(Math.round(crop.x * scaleX), 0), Math.max(naturalWidth - 1, 0));
+  const sy = Math.min(Math.max(Math.round(crop.y * scaleY), 0), Math.max(naturalHeight - 1, 0));
+  const sw = Math.min(Math.max(Math.round(crop.width * scaleX), 1), naturalWidth - sx);
+  const sh = Math.min(Math.max(Math.round(crop.height * scaleY), 1), naturalHeight - sy);
+
+  return { sx, sy, sw, sh };
+}
+
 export function ImageEditorModal({ isOpen, onClose, onSave, imageUrl }: ImageEditorModalProps) {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
@@ -158,29 +195,15 @@ export function ImageEditorModal({ isOpen, onClose, onSave, imageUrl }: ImageEdi
     const overlayCanvas = canvasRef.current;
     
     const targetCanvas = document.createElement('canvas');
-    
-    const cropX = completedCrop?.x ?? 0;
-    const cropY = completedCrop?.y ?? 0;
-    const cropWidth = completedCrop?.width ?? image.naturalWidth;
-    const cropHeight = completedCrop?.height ?? image.naturalHeight;
 
-    const finalCropWidth = cropWidth || image.naturalWidth;
-    const finalCropHeight = cropHeight || image.naturalHeight;
+    const { sx, sy, sw, sh } = getExportRect(image, completedCrop);
 
-    if (finalCropWidth === image.naturalWidth && finalCropHeight === image.naturalHeight) {
+    if (sx === 0 && sy === 0 && sw === image.naturalWidth && sh === image.naturalHeight) {
       // No crop made
       setCrop(undefined);
       setCompletedCrop(undefined);
       return;
     }
-
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-
-    const sx = cropX * scaleX;
-    const sy = cropY * scaleY;
-    const sw = finalCropWidth * scaleX;
-    const sh = finalCropHeight * scaleY;
 
     targetCanvas.width = sw;
     targetCanvas.height = sh;
@@ -218,24 +241,10 @@ export function ImageEditorModal({ isOpen, onClose, onSave, imageUrl }: ImageEdi
       const overlayCanvas = canvasRef.current;
       
       const targetCanvas = document.createElement('canvas');
-      
-      const cropX = completedCrop?.x ?? 0;
-      const cropY = completedCrop?.y ?? 0;
-      const cropWidth = completedCrop?.width ?? image.naturalWidth;
-      const cropHeight = completedCrop?.height ?? image.naturalHeight;
 
-      // Handle cases where crop is effectively 0
-      const finalCropWidth = cropWidth || image.naturalWidth;
-      const finalCropHeight = cropHeight || image.naturalHeight;
-
-      // Ensure we use the exact pixel crop from the natural image dimensions
-      const scaleX = image.naturalWidth / image.width;
-      const scaleY = image.naturalHeight / image.height;
-
-      const sx = cropX * scaleX;
-      const sy = cropY * scaleY;
-      const sw = finalCropWidth * scaleX;
-      const sh = finalCropHeight * scaleY;
+      // Without a crop this is the image's natural size, so a draw-only edit
+      // keeps the original dimensions instead of being scaled up.
+      const { sx, sy, sw, sh } = getExportRect(image, completedCrop);
 
       targetCanvas.width = sw;
       targetCanvas.height = sh;
