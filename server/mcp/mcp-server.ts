@@ -96,13 +96,14 @@ function createMcpServerInstance(
   providerRepository: ProviderRepository,
   storage: IStorage,
   userId: string,
+  appBaseUrl: string,
 ) {
   const server = new McpServer({
     name: 'remix-studio',
     version: '1.0.0',
   });
 
-  const tools = createAssistantToolDefinitions({ repository, userRepository, prisma, providerRepository, storage });
+  const tools = createAssistantToolDefinitions({ repository, userRepository, prisma, providerRepository, storage, appBaseUrl });
   for (const tool of tools) {
     registerToolOnServer(server, tool, userId);
   }
@@ -135,7 +136,15 @@ export function createMcpRouter(
 
   router.all('/mcp', async (c) => {
     const userId = c.get('mcpUserId');
-    const server = createMcpServerInstance(repository, userRepository, prisma, providerRepository, storage, userId);
+    const server = createMcpServerInstance(
+      repository,
+      userRepository,
+      prisma,
+      providerRepository,
+      storage,
+      userId,
+      getBaseUrl(c.req.raw),
+    );
 
     const transport = new WebStandardStreamableHTTPServerTransport();
 
