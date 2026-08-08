@@ -35,23 +35,10 @@
     "providerHint": {
       "gumroad": "在 Gumroad 上销售数字商品。",
       "google-drive": "将导出压缩包上传到 Google 云端硬盘。",
-      "onedrive": "将导出压缩包上传到 OneDrive。",
-      "mega": "将导出压缩包上传到 MEGA。"
+      "onedrive": "将导出压缩包上传到 OneDrive。"
     },
     "confirmDisconnectTitle": "移除连接",
     "confirmDisconnectMessage": "确定移除 {{name}} 吗？之后的导出将不再发布到该目标。",
-    "credentials": {
-      "title": "连接 {{provider}}",
-      "description": "{{provider}} 使用账号凭据登录，而不是跳转授权。",
-      "email": "邮箱",
-      "password": "密码",
-      "twoFactor": "两步验证码",
-      "twoFactorHint": "仅当账号启用了两步验证时才需要填写。",
-      "storageNotice": "每次上传都需要重新登录，因此密码会被加密保存。",
-      "submit": "连接",
-      "connecting": "连接中…",
-      "failed": "连接失败"
-    },
     "drive": {
       "releaseToDrive": "发布到网盘",
       "uploadQueued": "发布任务已排队 —— 可通过上传图标查看进度",

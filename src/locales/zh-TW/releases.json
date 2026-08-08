@@ -35,23 +35,10 @@
     "providerHint": {
       "gumroad": "在 Gumroad 上販售數位商品。",
       "google-drive": "將匯出壓縮檔上傳到 Google 雲端硬碟。",
-      "onedrive": "將匯出壓縮檔上傳到 OneDrive。",
-      "mega": "將匯出壓縮檔上傳到 MEGA。"
+      "onedrive": "將匯出壓縮檔上傳到 OneDrive。"
     },
     "confirmDisconnectTitle": "移除連線",
     "confirmDisconnectMessage": "確定移除 {{name}} 嗎？之後的匯出將不再發佈到此目標。",
-    "credentials": {
-      "title": "連接 {{provider}}",
-      "description": "{{provider}} 使用帳號憑證登入，而非轉址授權。",
-      "email": "電子郵件",
-      "password": "密碼",
-      "twoFactor": "兩步驟驗證碼",
-      "twoFactorHint": "僅在帳號啟用兩步驟驗證時才需要填寫。",
-      "storageNotice": "每次上傳都需要重新登入，因此密碼會加密保存。",
-      "submit": "連接",
-      "connecting": "連接中…",
-      "failed": "連接失敗"
-    },
     "drive": {
       "releaseToDrive": "發佈到雲端硬碟",
       "uploadQueued": "發佈作業已排入佇列 —— 可透過上傳圖示查看進度",

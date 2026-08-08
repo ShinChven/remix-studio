@@ -1,10 +1,9 @@
 import type { Readable } from 'node:stream';
 import { GoogleDriveProvider } from './google-drive';
 import { OneDriveProvider } from './onedrive';
-import { MegaProvider } from './mega';
 
 /** Providers a finished export can be released to as a plain file. */
-export const DRIVE_PROVIDERS = ['google-drive', 'onedrive', 'mega'] as const;
+export const DRIVE_PROVIDERS = ['google-drive', 'onedrive'] as const;
 export type DriveProviderId = (typeof DRIVE_PROVIDERS)[number];
 
 export function isDriveProviderId(value: string): value is DriveProviderId {
@@ -16,8 +15,6 @@ export interface DriveTokenSet {
   refreshToken?: string;
   expiresAt?: Date;
   scopes?: string[];
-  /** Password-style secrets (MEGA), stored as an encrypted JSON blob. */
-  credentials?: Record<string, string>;
 }
 
 export interface DriveProfile {
@@ -36,7 +33,6 @@ export interface DriveConnectResult {
 export interface DriveSession {
   accessToken?: string;
   refreshToken?: string;
-  credentials?: Record<string, string>;
   folderId?: string | null;
 }
 
@@ -74,17 +70,11 @@ export class DriveAuthError extends Error {
 export interface IDriveProvider {
   readonly provider: DriveProviderId;
   readonly label: string;
-  /** How a connection is established: a redirect dance, or a credentials form. */
-  readonly authKind: 'oauth' | 'credentials';
   /** False when the server is missing the env vars this provider needs. */
   isConfigured(): boolean;
 
-  // OAuth providers
-  getAuthUrl?(state: string): string;
-  exchangeCode?(code: string): Promise<DriveConnectResult>;
-
-  // Credentials providers
-  connectWithCredentials?(input: Record<string, string>): Promise<DriveConnectResult>;
+  getAuthUrl(state: string): string;
+  exchangeCode(code: string): Promise<DriveConnectResult>;
 
   upload(session: DriveSession, input: DriveUploadInput): Promise<DriveUploadResult>;
 }
@@ -92,7 +82,6 @@ export interface IDriveProvider {
 const registry: Record<DriveProviderId, () => IDriveProvider> = {
   'google-drive': () => new GoogleDriveProvider(),
   onedrive: () => new OneDriveProvider(),
-  mega: () => new MegaProvider(),
 };
 
 export class DriveFactory {

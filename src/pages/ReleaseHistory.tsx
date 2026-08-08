@@ -14,6 +14,8 @@ const PLATFORM_META: Record<string, { label: string; icon: typeof Cloud; accent:
   gumroad: { label: 'Gumroad', icon: StoreIcon, accent: 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 border-pink-200 dark:border-pink-500/20' },
   'google-drive': { label: 'Google Drive', icon: HardDrive, accent: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' },
   onedrive: { label: 'OneDrive', icon: Cloud, accent: 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-500/10 border-sky-200 dark:border-sky-500/20' },
+  // MEGA can no longer be connected, but releases made before it was removed
+  // stay in the history and should still be named properly.
   mega: { label: 'MEGA', icon: Cloud, accent: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20' },
 };
 

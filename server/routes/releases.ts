@@ -83,14 +83,12 @@ export function createReleaseRouter(prisma: PrismaClient) {
             id: store.id,
             kind: 'store' as const,
             label: store.label,
-            authKind: 'oauth' as const,
             configured: Boolean(process.env.GUMROAD_CLIENT_ID && process.env.GUMROAD_CLIENT_SECRET),
           })),
           ...DriveFactory.list().map((drive) => ({
             id: drive.provider,
             kind: 'drive' as const,
             label: drive.label,
-            authKind: drive.authKind,
             configured: drive.isConfigured(),
           })),
         ],
@@ -119,9 +117,6 @@ export function createReleaseRouter(prisma: PrismaClient) {
         return c.json({ error: `Unsupported drive provider: ${provider}` }, 400);
       }
       const drive = DriveFactory.getProvider(provider);
-      if (drive.authKind !== 'oauth' || !drive.getAuthUrl) {
-        return c.json({ error: `${drive.label} is connected with credentials, not a redirect.` }, 400);
-      }
 
       const state = crypto.randomBytes(32).toString('hex');
       const flowToken = signFlowToken(
@@ -170,7 +165,6 @@ export function createReleaseRouter(prisma: PrismaClient) {
 
     try {
       const drive = DriveFactory.getProvider(provider);
-      if (!drive.exchangeCode) throw new Error(`${drive.label} does not support this flow`);
       const { tokens, profile } = await drive.exchangeCode(code);
       await upsertDriveConnection(prisma, { userId: flow.userId, provider, tokens, profile });
       return c.redirect(`${RELEASES_REDIRECT_PATH}?success=connected`);
@@ -184,46 +178,6 @@ export function createReleaseRouter(prisma: PrismaClient) {
     handleDriveCallback(c, c.req.param('provider')),
   );
   router.get(GOOGLE_DRIVE_CALLBACK_PATH, (c) => handleDriveCallback(c, 'google-drive'));
-
-  /** Password-based providers (MEGA) post their credentials instead of redirecting. */
-  router.post('/api/releases/drives/:provider/connect', authMiddleware, async (c) => {
-    const provider = c.req.param('provider');
-    const user = c.get('user') as JwtPayload;
-
-    try {
-      if (!isDriveProviderId(provider)) {
-        return c.json({ error: `Unsupported drive provider: ${provider}` }, 400);
-      }
-      const drive = DriveFactory.getProvider(provider);
-      if (drive.authKind !== 'credentials' || !drive.connectWithCredentials) {
-        return c.json({ error: `${drive.label} is connected through OAuth, not credentials.` }, 400);
-      }
-
-      const body = await c.req.json().catch(() => ({}));
-      const input: Record<string, string> = {
-        email: typeof body.email === 'string' ? body.email : '',
-        password: typeof body.password === 'string' ? body.password : '',
-      };
-      if (typeof body.secondFactorCode === 'string' && body.secondFactorCode.trim()) {
-        input.secondFactorCode = body.secondFactorCode.trim();
-      }
-      if (!input.email || !input.password) {
-        return c.json({ error: 'Email and password are required.' }, 400);
-      }
-
-      const { tokens, profile } = await drive.connectWithCredentials(input);
-      const connection = await upsertDriveConnection(prisma, {
-        userId: user.userId,
-        provider,
-        tokens,
-        profile,
-      });
-      return c.json({ connection }, 201);
-    } catch (error: any) {
-      console.error('[Releases] drive credentials connect', error);
-      return c.json({ error: error.message || 'Failed to connect drive' }, 400);
-    }
-  });
 
   router.delete('/api/releases/drives/:id', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;

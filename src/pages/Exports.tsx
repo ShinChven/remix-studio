@@ -16,7 +16,6 @@ const EXPORTS_PAGE_SIZE = 15;
 const DRIVE_ICON: Record<string, typeof Cloud> = {
   'google-drive': HardDrive,
   onedrive: Cloud,
-  mega: Cloud,
 };
 
 export function Exports() {

@@ -471,7 +471,7 @@ model Product {
 
 /// Release history — one row per attempt to ship an export to a connected
 /// destination, whether that is a storefront (Gumroad) or a drive
-/// (Google Drive / OneDrive / MEGA).
+/// (Google Drive / OneDrive).
 model StoreUploadHistory {
   id                String   @id @default(uuid())
   userId            String
@@ -479,7 +479,7 @@ model StoreUploadHistory {
   driveConnectionId String?
   productId         String?
   exportTaskId      String?
-  platform          String // "gumroad" | "google-drive" | "onedrive" | "mega"
+  platform          String // "gumroad" | "google-drive" | "onedrive"
   title             String? // Product title / archive name at time of upload
   status            String // "success" | "failed"
   externalId        String? // Provider object id (gumroad product id, drive file id, …)
@@ -713,18 +713,17 @@ model Store {
 
 /// A cloud drive a user can release finished exports to. Several connections
 /// per provider are allowed, so one account can hold e.g. two Google Drives
-/// and a MEGA account side by side.
+/// and a OneDrive side by side.
 model DriveConnection {
   id           String    @id @default(uuid())
   userId       String
-  provider     String // "google-drive" | "onedrive" | "mega"
-  accountId    String // Remote account id (or the account email for MEGA)
+  provider     String // "google-drive" | "onedrive"
+  accountId    String // Remote account id
   displayName  String?
   email        String?
   avatarUrl    String?
   accessToken  String?   @db.Text // Encrypted at rest
   refreshToken String?   @db.Text // Encrypted at rest
-  credentials  String?   @db.Text // Encrypted JSON, for password-based providers (MEGA)
   scopes       Json?
   expiresAt    DateTime?
   folderId     String? // Optional destination folder on the remote drive

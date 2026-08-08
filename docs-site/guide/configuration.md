@@ -115,7 +115,6 @@ Google Drive reuses the Google OAuth application configured above; add `${APP_UR
 
 The OneDrive app needs the delegated scopes `offline_access`, `User.Read`, and `Files.ReadWrite`.
 
-MEGA needs no server-side configuration — each user signs in with their own account from the Releases page.
 
 ## Backups (Docker)
 

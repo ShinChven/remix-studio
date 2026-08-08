@@ -41,7 +41,6 @@ function ackedBytes(rangeHeader: string | null): number | null {
 export class GoogleDriveProvider implements IDriveProvider {
   readonly provider = 'google-drive' as const;
   readonly label = 'Google Drive';
-  readonly authKind = 'oauth' as const;
 
   isConfigured(): boolean {
     return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);

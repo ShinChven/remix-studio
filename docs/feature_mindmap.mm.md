@@ -119,7 +119,7 @@
       - Import a bundle back as a new project, with storage keys remapped
       - Background unpacking with per-file progress and quota checks
     - **Releases (multi-cloud + storefronts)**
-      - Connect multiple drives per provider (Google Drive, OneDrive, MEGA)
+      - Connect multiple drives per provider (Google Drive, OneDrive)
       - Connect storefronts (Gumroad) to sell exports
       - Resumable background uploads for large exported packages
       - Pick a target drive per release and track delivery status

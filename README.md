@@ -44,7 +44,7 @@ flowchart LR
 - **Compose at scale** — Mix fixed inputs with library-backed choices. Run the Cartesian product for exhaustive coverage or use shuffle mode for bounded exploration: 3 subjects × 4 styles × 2 references becomes 24 reviewable drafts.
 - **Review before execution** — Remix Studio separates composition from provider calls. Inspect resolved prompts, media contexts, model settings, and workflow snapshots, then queue only the drafts worth running.
 - **Run resiliently across providers** — Model profiles drive valid controls for text, image, video, audio, and music workflows. Database-backed jobs, per-provider concurrency, detached polling, restart recovery, retries, and live project updates keep batches moving.
-- **Turn output into operations** — Keep results in durable albums, reuse prior configurations, edit and export assets, add watermarks, release archives to connected drives such as Google Drive, OneDrive, and MEGA, publish products to storefronts, or schedule campaigns for X and Threads.
+- **Turn output into operations** — Keep results in durable albums, reuse prior configurations, edit and export assets, add watermarks, release archives to connected drives such as Google Drive and OneDrive, publish products to storefronts, or schedule campaigns for X and Threads.
 - **Move whole projects around** — Package a project's settings, workflow, album, and media into a single ZIP, then import it back as a new project on any deployment.
 
 ## Human Control Where It Matters

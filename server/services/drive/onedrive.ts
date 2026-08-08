@@ -42,7 +42,6 @@ function nextExpectedStart(ranges: unknown): number | null {
 export class OneDriveProvider implements IDriveProvider {
   readonly provider = 'onedrive' as const;
   readonly label = 'OneDrive';
-  readonly authKind = 'oauth' as const;
 
   isConfigured(): boolean {
     return Boolean(process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET);
