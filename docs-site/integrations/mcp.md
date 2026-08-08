@@ -82,7 +82,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 | Jobs | `get_project_job_counts` | `draft_jobs`, `start_jobs` |
 | Files | `get_file_urls` | — |
 | Campaigns | `list_social_accounts`, `list_campaigns` | `create_campaign`, `update_campaign` |
-| Posts | `get_post`, `get_post_text` | `create_post`, `update_post`, `update_post_text`, `add_media_to_post`, `schedule_post` |
+| Posts | `list_posts`, `get_post`, `get_post_text` | `create_post`, `update_post`, `update_post_text`, `add_media_to_post`, `schedule_post` |
 
 Important boundaries:
 
