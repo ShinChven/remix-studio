@@ -10,7 +10,7 @@ import { listDriveConnections, upsertDriveConnection } from '../services/drive/c
 import { encrypt, decrypt } from '../utils/crypto';
 
 /** Where every connect/disconnect flow lands the browser afterwards. */
-const RELEASES_REDIRECT_PATH = '/releases';
+const RELEASES_REDIRECT_PATH = '/exports/releases';
 
 const STOREFRONTS = [{ id: 'gumroad', label: 'Gumroad' }] as const;
 

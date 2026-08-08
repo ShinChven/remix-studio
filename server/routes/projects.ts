@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
 import type { PrismaClient } from '@prisma/client';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
@@ -7,6 +8,8 @@ import { S3Storage } from '../storage/s3-storage';
 import { QueueManager } from '../queue/queue-manager';
 import { ExportManager } from '../queue/export-manager';
 import { DeliveryManager } from '../queue/delivery-manager';
+import { ProjectImportManager } from '../queue/project-import-manager';
+import { buildProjectBundleManifest } from '../services/project-bundle';
 import { checkStorageLimit } from '../utils/storage-check';
 import { UserRepository } from '../auth/user-repository';
 import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem } from '../../src/types';
@@ -236,7 +239,7 @@ export async function signWorkflowItems(workflow: WorkflowItem[], storage: S3Sto
   );
 }
 
-export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, prisma: PrismaClient, projectEvents?: ProjectEventPublisher) {
+export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectImportManager: ProjectImportManager, prisma: PrismaClient, projectEvents?: ProjectEventPublisher) {
   const router = new Hono<{ Variables: Variables }>();
 
   // NOTE: /rename must be registered before /:id to avoid route shadowing
@@ -1376,6 +1379,109 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+  /**
+   * POST /api/projects/:id/export-bundle
+   *
+   * Package a whole project — settings, workflow, album and every media file
+   * they reference — into one portable .zip. The archive lands in the normal
+   * exports list, so it can be downloaded, released to a drive, or sold like
+   * any other package.
+   */
+  router.post('/api/projects/:id/export-bundle', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+
+      const body = await c.req.json().catch(() => ({}));
+      const packageName = typeof body?.packageName === 'string' ? body.packageName : undefined;
+
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Project not found' }, 404);
+
+      const bucket = storage.getBucketName();
+      const [workflow, albumPage] = await Promise.all([
+        repository.getProjectWorkflow(user.userId, projectId),
+        repository.getProjectAlbum(user.userId, projectId, { limit: 999999 }),
+      ]);
+
+      // The manifest has to carry bare storage keys to resolve them to files,
+      // so anything stored as a presigned URL is stripped back down first.
+      const manifest = buildProjectBundleManifest({
+        project: { ...project, id: projectId },
+        workflow: normalizeWorkflowForStorage(workflow, bucket),
+        album: albumPage.items.map((item) => ({
+          ...item,
+          imageUrl: stripToKey(item.imageUrl, bucket) || item.imageUrl,
+          thumbnailUrl: stripToKey(item.thumbnailUrl, bucket),
+          optimizedUrl: stripToKey(item.optimizedUrl, bucket),
+          imageContexts: item.imageContexts?.map((v) => stripToKey(v, bucket) || v),
+          videoContexts: item.videoContexts?.map((v) => stripToKey(v, bucket) || v),
+          audioContexts: item.audioContexts?.map((v) => stripToKey(v, bucket) || v),
+        })),
+      });
+
+      // Resolve real sizes for the quota estimate, and drop entries whose file
+      // has gone missing so the archiver never stalls on a dead key.
+      const mediaItems: Array<AlbumItem & { exportName?: string }> = [];
+      let estimatedSize = 0;
+      for (const entry of manifest.media) {
+        if (!entry.sourceKey) continue;
+        const size = entry.size ?? (await storage.getSize(entry.sourceKey).catch(() => undefined));
+        if (size == null && !(await storage.exists(entry.sourceKey).catch(() => false))) {
+          console.warn(`[POST /api/projects/:id/export-bundle] Skipping missing file ${entry.sourceKey}`);
+          continue;
+        }
+        entry.size = size;
+        estimatedSize += size ?? 5 * 1024 * 1024;
+        mediaItems.push({
+          id: entry.path,
+          jobId: '',
+          prompt: '',
+          imageUrl: entry.sourceKey,
+          size,
+          createdAt: Date.now(),
+          exportName: entry.path,
+        });
+      }
+
+      // Keep the manifest honest about what the archive actually contains.
+      const packedPaths = new Set(mediaItems.map((item) => item.exportName));
+      manifest.media = manifest.media.filter((entry) => packedPaths.has(entry.path));
+
+      const { allowed, currentUsage, limit } = await checkStorageLimit(
+        user.userId,
+        estimatedSize,
+        userRepository,
+        storage,
+        exportStorage,
+        repository
+      );
+      if (!allowed) {
+        return c.json({
+          error: `Storage limit exceeded. Cannot export project. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedSize / (1024 * 1024)).toFixed(1)}MB.`,
+        }, 403);
+      }
+
+      const taskId = await exportManager.startExport(
+        user.userId,
+        projectId,
+        project.name,
+        mediaItems,
+        packageName || `${project.name}_Project`,
+        {
+          sourceType: 'project-bundle',
+          bundleManifest: manifest,
+        }
+      );
+
+      return c.json({ taskId });
+    } catch (e) {
+      console.error('[POST /api/projects/:id/export-bundle]', e);
+      return c.json({ error: 'Failed to start project export' }, 500);
+    }
+  });
+
   router.get('/api/projects/:id/export/:taskId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
@@ -1536,6 +1642,116 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     } catch (e) {
       console.error('[DELETE /api/exports/:taskId]', e);
       return c.json({ error: 'Failed to delete export task' }, 500);
+    }
+  });
+
+  // === Project bundle import ===
+
+  /**
+   * POST /api/project-imports
+   *
+   * Body is the raw .zip (no multipart wrapper) so a multi-gigabyte bundle
+   * streams straight into storage instead of being buffered in memory. The
+   * archive is unpacked into a new project by ProjectImportManager; the
+   * response returns immediately with a task to poll.
+   */
+  router.post('/api/project-imports', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const taskId = randomUUID();
+    const s3Key = ProjectImportManager.uploadKey(user.userId, taskId);
+
+    try {
+      const rawName = c.req.header('x-file-name');
+      const fileName = rawName ? decodeURIComponent(rawName).slice(0, 255) : undefined;
+
+      const declaredLength = Number(c.req.header('content-length') || '0');
+      if (Number.isFinite(declaredLength) && declaredLength > 0) {
+        // The uploaded archive plus everything it unpacks to has to fit, so
+        // reserve twice its size up front rather than failing halfway through.
+        const { allowed, currentUsage, limit } = await checkStorageLimit(
+          user.userId,
+          declaredLength * 2,
+          userRepository,
+          storage,
+          exportStorage,
+          repository
+        );
+        if (!allowed) {
+          return c.json({
+            error: `Storage limit exceeded. Cannot import project. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${((declaredLength * 2) / (1024 * 1024)).toFixed(1)}MB.`,
+          }, 403);
+        }
+      }
+
+      const body = c.req.raw.body;
+      if (!body) return c.json({ error: 'No archive was uploaded' }, 400);
+
+      await exportStorage.uploadStream(
+        s3Key,
+        Readable.fromWeb(body as any),
+        'application/zip'
+      );
+
+      const size = await exportStorage.getSize(s3Key).catch(() => undefined);
+      await projectImportManager.enqueue({ userId: user.userId, taskId, fileName, s3Key, size });
+
+      return c.json({ taskId });
+    } catch (e) {
+      console.error('[POST /api/project-imports]', e);
+      // Never leave a half-written archive eating the user's quota.
+      await exportStorage.delete(s3Key).catch(() => {});
+      return c.json({ error: 'Failed to upload project bundle' }, 500);
+    }
+  });
+
+  router.get('/api/project-imports', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const pageValue = Number(c.req.query('page') || '1');
+      const pageSizeValue = Number(c.req.query('pageSize') || c.req.query('limit') || '10');
+      const page = Math.max(1, Math.floor(Number.isFinite(pageValue) ? pageValue : 1));
+      const pageSize = Math.max(1, Math.min(50, Math.floor(Number.isFinite(pageSizeValue) ? pageSizeValue : 10)));
+
+      const result = await repository.getProjectImportTasks(user.userId, page, pageSize);
+      return c.json(result);
+    } catch (e) {
+      console.error('[GET /api/project-imports]', e);
+      return c.json({ error: 'Failed to list project imports' }, 500);
+    }
+  });
+
+  router.get('/api/project-imports/:taskId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const task = await repository.getProjectImportTask(user.userId, c.req.param('taskId'));
+      if (!task) return c.json({ error: 'Import not found' }, 404);
+      return c.json(task);
+    } catch (e) {
+      console.error('[GET /api/project-imports/:taskId]', e);
+      return c.json({ error: 'Failed to fetch import' }, 500);
+    }
+  });
+
+  router.delete('/api/project-imports/:taskId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const taskId = c.req.param('taskId');
+      const task = await repository.getProjectImportTask(user.userId, taskId);
+      if (!task) return c.json({ error: 'Import not found' }, 404);
+      if (task.status === 'processing') {
+        return c.json({ error: 'This import is still running' }, 409);
+      }
+      // Only the record goes away — an imported project is the user's to keep.
+      if (task.s3Key) {
+        await exportStorage.delete(task.s3Key).catch((s3Err) => {
+          console.warn(`[DELETE /api/project-imports/:taskId] Failed to delete ${task.s3Key}:`, s3Err);
+        });
+      }
+      await repository.deleteProjectImportTask(user.userId, taskId);
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/project-imports/:taskId]', e);
+      return c.json({ error: 'Failed to delete import task' }, 500);
     }
   });
 

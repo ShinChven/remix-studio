@@ -4,7 +4,7 @@ A completed [export archive](/concepts/exports) can be attached to a digital pro
 
 ## Supported Store
 
-The current store adapter is **Gumroad**. Configure `GUMROAD_CLIENT_ID`, `GUMROAD_CLIENT_SECRET`, and optionally `GUMROAD_SCOPE`, then connect it on the **Releases** page.
+The current store adapter is **Gumroad**. Configure `GUMROAD_CLIENT_ID`, `GUMROAD_CLIENT_SECRET`, and optionally `GUMROAD_SCOPE`, then connect it on the **Releases** page (`/exports/releases`, linked from the Exports header).
 
 The OAuth redirect is:
 

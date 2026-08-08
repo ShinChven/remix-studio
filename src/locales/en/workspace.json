@@ -56,6 +56,31 @@
       "confirm": "Delete Record"
     }
   },
+  "projectImports": {
+    "title": "Project Bundles",
+    "description": "Upload a project bundle to bring a whole project back in.",
+    "selectFile": "Import Project",
+    "uploading": "Uploading {{percent}}%",
+    "untitled": "Untitled project",
+    "bundleBadge": "Project Bundle",
+    "deleteRecord": "Delete import record",
+    "status": {
+      "queued": "Queued",
+      "unpacking": "Unpacking",
+      "imported": "Imported",
+      "failed": "Failed"
+    },
+    "toast": {
+      "queued": "Bundle uploaded — unpacking it now.",
+      "completed": "Imported \"{{name}}\".",
+      "failed": "Project import failed"
+    },
+    "errors": {
+      "notZip": "Pick a .zip project bundle.",
+      "uploadFailed": "Failed to upload the project bundle",
+      "deleteFailed": "Failed to delete the import record"
+    }
+  },
   "sell": {
     "title": "Sell to a store",
     "description": "Configure how this export will be published as a product.",

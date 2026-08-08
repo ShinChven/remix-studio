@@ -56,6 +56,31 @@
       "confirm": "기록 삭제"
     }
   },
+  "projectImports": {
+    "title": "프로젝트 번들",
+    "description": "프로젝트 번들을 업로드하면 프로젝트 전체를 다시 가져올 수 있습니다.",
+    "selectFile": "프로젝트 가져오기",
+    "uploading": "업로드 중 {{percent}}%",
+    "untitled": "제목 없는 프로젝트",
+    "bundleBadge": "프로젝트 번들",
+    "deleteRecord": "가져오기 기록 삭제",
+    "status": {
+      "queued": "대기 중",
+      "unpacking": "압축 해제 중",
+      "imported": "가져옴",
+      "failed": "실패"
+    },
+    "toast": {
+      "queued": "번들을 업로드했습니다. 압축을 푸는 중입니다.",
+      "completed": "\"{{name}}\"을(를) 가져왔습니다.",
+      "failed": "프로젝트 가져오기에 실패했습니다"
+    },
+    "errors": {
+      "notZip": ".zip 형식의 프로젝트 번들을 선택하세요.",
+      "uploadFailed": "프로젝트 번들 업로드에 실패했습니다",
+      "deleteFailed": "가져오기 기록 삭제에 실패했습니다"
+    }
+  },
   "trash": {
     "title": "휴지통",
     "description": "삭제된 항목을 검토하고 필요한 항목을 복원하거나 영구적으로 삭제하십시오.",

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor, Send, Compass, Search, ArrowUpCircle, Rocket } from 'lucide-react';
+import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor, Send, Compass, Search, ArrowUpCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
@@ -315,16 +315,7 @@ export function MainLayout() {
             to="/exports"
             icon={<FileArchive className="w-5 h-5 flex-shrink-0" />}
             label={t('sidebar.exports')}
-            isActive={location.pathname === '/exports'}
-            isCollapsed={isCollapsed}
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-
-          <NavItem
-            to="/releases"
-            icon={<Rocket className="w-5 h-5 flex-shrink-0" />}
-            label={t('sidebar.releases')}
-            isActive={location.pathname.startsWith('/releases')}
+            isActive={location.pathname === '/exports' || location.pathname.startsWith('/exports/')}
             isCollapsed={isCollapsed}
             onClick={() => setIsMobileMenuOpen(false)}
           />

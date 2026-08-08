@@ -56,6 +56,31 @@
       "confirm": "レコードを削除"
     }
   },
+  "projectImports": {
+    "title": "プロジェクトバンドル",
+    "description": "プロジェクトバンドルをアップロードすると、プロジェクト全体を取り込めます。",
+    "selectFile": "プロジェクトを取り込む",
+    "uploading": "アップロード中 {{percent}}%",
+    "untitled": "名称未設定のプロジェクト",
+    "bundleBadge": "プロジェクトバンドル",
+    "deleteRecord": "取り込み履歴を削除",
+    "status": {
+      "queued": "待機中",
+      "unpacking": "展開中",
+      "imported": "取り込み済み",
+      "failed": "失敗"
+    },
+    "toast": {
+      "queued": "バンドルをアップロードしました。展開しています。",
+      "completed": "「{{name}}」を取り込みました。",
+      "failed": "プロジェクトの取り込みに失敗しました"
+    },
+    "errors": {
+      "notZip": ".zip 形式のプロジェクトバンドルを選んでください。",
+      "uploadFailed": "プロジェクトバンドルのアップロードに失敗しました",
+      "deleteFailed": "取り込み履歴の削除に失敗しました"
+    }
+  },
   "trash": {
     "title": "ゴミ箱",
     "description": "削除されたアイテムを確認し、必要なものを元に戻すか、永久に削除します。",

@@ -1,4 +1,4 @@
-import { AlbumItem, AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
+import { AlbumItem, AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -1166,6 +1166,117 @@ export async function deleteExport(taskId: string): Promise<void> {
 /** @deprecated use deleteExport(taskId) instead */
 export async function deleteProjectExport(projectId: string, taskId: string): Promise<void> {
   return deleteExport(taskId);
+}
+
+// ========== Project bundles (export / import a whole project) ==========
+
+/**
+ * Package a whole project — settings, workflow, album and their media — into
+ * one portable .zip. The archive shows up in the normal exports list.
+ */
+export async function startProjectBundleExport(
+  projectId: string,
+  packageName?: string,
+): Promise<{ taskId: string }> {
+  const res = await apiFetch(`/api/projects/${projectId}/export-bundle`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ packageName }),
+  });
+  return handleResponse<{ taskId: string }>(res, 'Failed to start project export');
+}
+
+type BundleUploadOptions = { onProgress?: (percent: number) => void; signal?: AbortSignal };
+
+/** Raised when the upload was rejected for an expired session. */
+class UnauthorizedUploadError extends Error {}
+
+function sendBundleUpload(file: File, options: BundleUploadOptions): Promise<{ taskId: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/project-imports');
+    xhr.withCredentials = true;
+    xhr.setRequestHeader('Content-Type', 'application/zip');
+    // Header values must be latin-1; encode so non-ASCII names survive.
+    xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && options.onProgress) {
+        options.onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      let payload: any = {};
+      try { payload = JSON.parse(xhr.responseText); } catch { /* non-JSON error page */ }
+      if (xhr.status >= 200 && xhr.status < 300 && payload.taskId) {
+        resolve({ taskId: payload.taskId });
+      } else if (xhr.status === 401) {
+        reject(new UnauthorizedUploadError('Session expired'));
+      } else {
+        reject(new Error(payload.error || 'Failed to upload project bundle'));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Failed to upload project bundle'));
+    xhr.onabort = () => reject(new DOMException('Upload cancelled', 'AbortError'));
+
+    options.signal?.addEventListener('abort', () => xhr.abort(), { once: true });
+    xhr.send(file);
+  });
+}
+
+/**
+ * Upload a project bundle. The zip is sent as the raw request body so large
+ * archives stream instead of being buffered; XHR is used because fetch gives
+ * no upload progress, which also means this bypasses apiFetch's refresh
+ * interceptor — so an expired session is refreshed and retried here.
+ */
+export async function uploadProjectBundle(
+  file: File,
+  options: BundleUploadOptions = {},
+): Promise<{ taskId: string }> {
+  try {
+    return await sendBundleUpload(file, options);
+  } catch (err) {
+    if (!(err instanceof UnauthorizedUploadError)) throw err;
+
+    const outcome = await attemptRefresh();
+    if (outcome === 'failed') {
+      if (!window.location.pathname.startsWith('/login')) window.location.href = '/login';
+      throw new Error('Session expired');
+    }
+    return sendBundleUpload(file, options);
+  }
+}
+
+export async function fetchProjectImports(
+  page: number = 1,
+  pageSize: number = 10,
+): Promise<{ items: ProjectImportTask[]; total: number; page: number; pages: number }> {
+  const url = new URL('/api/project-imports', window.location.origin);
+  url.searchParams.set('page', page.toString());
+  url.searchParams.set('pageSize', pageSize.toString());
+  const res = await apiFetch(url.toString(), { headers: getHeaders(false) });
+  return handleResponse<{ items: ProjectImportTask[]; total: number; page: number; pages: number }>(
+    res,
+    'Failed to list project imports',
+  );
+}
+
+export async function fetchProjectImport(taskId: string): Promise<ProjectImportTask> {
+  const res = await apiFetch(`/api/project-imports/${taskId}`, { headers: getHeaders(false) });
+  return handleResponse<ProjectImportTask>(res, 'Failed to fetch import');
+}
+
+export async function deleteProjectImport(taskId: string): Promise<void> {
+  const res = await apiFetch(`/api/project-imports/${taskId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete import');
+  }
 }
 
 // ========== Releases (drives) ==========

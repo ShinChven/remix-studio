@@ -114,6 +114,10 @@
       - Background Zip Streaming (low-memory impact streaming archiver)
       - Export album items (Raw or Optimized versions)
       - View export tasks status and history
+    - **Project Bundles**
+      - Export a whole project (settings, workflow, album, media) as one portable ZIP
+      - Import a bundle back as a new project, with storage keys remapped
+      - Background unpacking with per-file progress and quota checks
     - **Releases (multi-cloud + storefronts)**
       - Connect multiple drives per provider (Google Drive, OneDrive)
       - Connect storefronts (Gumroad) to sell exports
