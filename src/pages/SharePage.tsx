@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Image as ImageIcon, Type, FolderPlus, MessageCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { Image as ImageIcon, Type, Layers, Folder, MessageCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../components/PageHeader';
 import { stashPwaShareHandoff, type PwaShareHandoff } from '../lib/pwa-share';
@@ -120,13 +120,13 @@ export default function SharePage() {
     return true;
   };
 
-  const handleSendToImport = () => {
+  const handleSendToImport = (destination: 'library' | 'project') => {
     const payload = buildHandoff();
     if (share && share.images.length > 1) {
       toast.warning(`Only the first of ${share.images.length} images will be saved`);
     }
     if (!handoffOrNotify(payload)) return;
-    navigate('/import');
+    navigate(`/import?destination=${destination}`);
   };
 
   const handleSendToChat = () => {
@@ -208,13 +208,20 @@ export default function SharePage() {
           )}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <button
-            onClick={handleSendToImport}
+            onClick={() => handleSendToImport('library')}
             className="flex items-center justify-center gap-3 rounded-xl border border-neutral-200 bg-white px-5 py-4 text-sm font-bold text-neutral-900 shadow-sm transition-all hover:bg-neutral-50 active:scale-[0.98] dark:border-white/10 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800"
           >
-            <FolderPlus className="h-5 w-5 text-blue-500" />
-            Save to Library or Project
+            <Layers className="h-5 w-5 text-blue-500" />
+            Save to Library
+          </button>
+          <button
+            onClick={() => handleSendToImport('project')}
+            className="flex items-center justify-center gap-3 rounded-xl border border-neutral-200 bg-white px-5 py-4 text-sm font-bold text-neutral-900 shadow-sm transition-all hover:bg-neutral-50 active:scale-[0.98] dark:border-white/10 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800"
+          >
+            <Folder className="h-5 w-5 text-blue-500" />
+            Save to Project
           </button>
           <button
             onClick={handleSendToChat}
