@@ -673,7 +673,7 @@ export function CampaignDetail() {
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Campaign Progress</h2>
               <div className="mt-4 text-3xl font-bold text-indigo-600 dark:text-indigo-400">{progress}%</div>
               <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-                <div className="h-full bg-indigo-600" style={{ width: `${progress}%` }} />
+                <div className="h-full w-full origin-left bg-indigo-600 transition-transform" style={{ transform: `scaleX(${progress / 100})` }} />
               </div>
               <p className="mt-2 mb-4 text-xs text-neutral-500 dark:text-neutral-400">{counts.completed} of {totalPosts} posts published</p>
 

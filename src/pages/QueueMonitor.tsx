@@ -256,7 +256,7 @@ function ProviderPanel({
               <InfoChip className="text-neutral-500 dark:text-neutral-500">{provider.type}</InfoChip>
             </div>
             <div className="mt-2 h-2 w-48 max-w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-              <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${slotPercent}%` }} />
+              <div className="h-full w-full origin-left rounded-full bg-blue-500 transition-transform" style={{ transform: `scaleX(${slotPercent / 100})` }} />
             </div>
           </div>
         </div>
