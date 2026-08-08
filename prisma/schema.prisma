@@ -31,6 +31,7 @@ model User {
   projects                Project[]
   trashItems              TrashItem[]
   exportTasks             ExportTask[]
+  projectImportTasks      ProjectImportTask[]
   deliveryTasks           DeliveryTask[]
   passkeys                PasskeyCredential[]
   oauthAuthorizationCodes OAuthAuthorizationCode[]
@@ -368,6 +369,39 @@ model ExportTask {
 
   @@index([userId])
   @@index([userId, projectId])
+  @@index([status, createdAt])
+}
+
+/**
+ * An uploaded project bundle waiting to be (or being) unpacked into a new
+ * project. The zip itself lives in the export bucket at `s3Key` until the
+ * worker is done with it.
+ */
+model ProjectImportTask {
+  id          String    @id @default(uuid())
+  userId      String
+  fileName    String?
+  status      String    @default("pending")
+  /** Project created by a finished import. */
+  projectId   String?
+  projectName String?
+  /** Media files unpacked so far, out of `total`. */
+  current     Int       @default(0)
+  total       Int       @default(0)
+  size        BigInt?
+  s3Key       String?
+  error       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  // Queue fields
+  claimedAt   DateTime?
+  workerId    String?
+  heartbeatAt DateTime?
+  attempts    Int       @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
   @@index([status, createdAt])
 }
 

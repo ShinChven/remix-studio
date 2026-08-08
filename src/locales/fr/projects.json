@@ -40,7 +40,12 @@
       },
       "openProject": "Ouvrir le projet →"
     },
-    "pagination": "Page {{current}} sur {{total}}"
+    "pagination": "Page {{current}} sur {{total}}",
+    "exportBundle": {
+      "action": "Exporter le projet",
+      "queued": "Empaquetage de « {{name}} » — suivez la progression sur la page Exports.",
+      "failed": "Impossible de lancer l'export du projet"
+    }
   },
   "projectForm": {
     "newTitle": "Nouveau projet",

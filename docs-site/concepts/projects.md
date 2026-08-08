@@ -67,6 +67,8 @@ Export selected album items or the full collection as a named ZIP. For supported
 
 Exports run outside the generation queue in their own persistent worker and appear on the global Exports page. See [Exports & Delivery](/concepts/exports).
 
+To move a whole project rather than its results, use **Export Project** on the project card's menu. That produces a project bundle — settings, workflow, album, and media in one ZIP — which the Exports page can import back as a new project. See [Project Bundles](/concepts/exports#project-bundles).
+
 ## Reusing Configuration
 
 Job rows retain a workflow snapshot and resolved generation settings. The **Reuse configuration** action restores those settings into the project editor so a prior result or failure can be used as the starting point for new drafts.

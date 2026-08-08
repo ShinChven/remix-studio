@@ -1852,7 +1852,8 @@ export interface ExportTask {
   id: string;
   projectId?: string;
   projectName: string;
-  sourceType?: 'project' | 'library';
+  /** 'project-bundle' archives carry a whole project and can be re-imported. */
+  sourceType?: 'project' | 'library' | 'project-bundle';
   libraryId?: string;
   packageName?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -1862,6 +1863,23 @@ export interface ExportTask {
   downloadUrl?: string;
   exportVersion?: 'raw' | 'optimized';
   watermarked?: boolean;
+  error?: string;
+  createdAt: number;
+}
+
+/** An uploaded project bundle being unpacked into a new project. */
+export interface ProjectImportTask {
+  id: string;
+  fileName?: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  /** Set once the import has created its project. */
+  projectId?: string;
+  projectName?: string;
+  /** Media files unpacked so far, out of `total`. */
+  current: number;
+  total: number;
+  /** Size of the uploaded archive in bytes. */
+  size?: number;
   error?: string;
   createdAt: number;
 }

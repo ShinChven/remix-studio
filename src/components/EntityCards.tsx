@@ -12,6 +12,7 @@ import {
   LayoutGrid,
   Loader2,
   Music,
+  Package as PackageIcon,
   Pin,
   Stars,
   Trash2,
@@ -139,13 +140,15 @@ function projectThumbnail(id: string, type: ProjectType = 'image', resolvedTheme
 interface ProjectCardProps {
   project: Project;
   isToggling?: boolean;
+  isExporting?: boolean;
   onStartAssistantChat?: (project: Project) => void;
   onToggleArchive?: (project: Project) => void;
   onDuplicate?: (project: Project) => void;
+  onExportBundle?: (project: Project) => void;
   onDelete?: (project: Project) => void;
 }
 
-export function ProjectCard({ project, isToggling = false, onStartAssistantChat, onToggleArchive, onDuplicate, onDelete }: ProjectCardProps) {
+export function ProjectCard({ project, isToggling = false, isExporting = false, onStartAssistantChat, onToggleArchive, onDuplicate, onExportBundle, onDelete }: ProjectCardProps) {
   const { t } = useTranslation();
   const { resolvedTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -285,6 +288,21 @@ export function ProjectCard({ project, isToggling = false, onStartAssistantChat,
                     >
                       <Copy className="w-4 h-4" />
                       {t('projectViewer.main.duplicateProject')}
+                    </button>
+                  )}
+                  {onExportBundle && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsMenuOpen(false);
+                        if (!isExporting) onExportBundle(project);
+                      }}
+                      disabled={isExporting}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50"
+                    >
+                      {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <PackageIcon className="w-4 h-4" />}
+                      {t('projects.exportBundle.action')}
                     </button>
                   )}
                   {onToggleArchive && (
