@@ -1,5 +1,7 @@
 import React from 'react';
-import { Instagram, Linkedin, Facebook, Globe } from 'lucide-react';
+import { Globe } from 'lucide-react';
+// lucide-react 1.x dropped its brand icons; react-icons still carries them.
+import { FaInstagram, FaLinkedin, FaFacebook } from 'react-icons/fa6';
 import { XIcon } from '../components/XIcon';
 import { ThreadsIcon } from '../components/ThreadsIcon';
 
@@ -12,11 +14,11 @@ export function getPlatformIcon(platform = '', className = 'h-4 w-4') {
     case 'threads':
       return <ThreadsIcon className={className} />;
     case 'instagram':
-      return <Instagram className={className} />;
+      return <FaInstagram className={className} />;
     case 'linkedin':
-      return <Linkedin className={className} />;
+      return <FaLinkedin className={className} />;
     case 'facebook':
-      return <Facebook className={className} />;
+      return <FaFacebook className={className} />;
     default:
       return <Globe className={className} />;
   }
