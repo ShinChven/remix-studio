@@ -1722,6 +1722,41 @@ export function createPostsRouter(
     }
   });
 
+  const batchSetTextSchema = z.object({
+    postIds: z.array(z.string().min(1)).min(1),
+    textContent: z.string(),
+  });
+
+  postsRouter.post('/api/posts/batch-set-text', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    try {
+      const body = await c.req.json();
+      const data = batchSetTextSchema.parse(body);
+
+      const postIds = Array.from(new Set(data.postIds));
+      const owned = await prisma.post.findMany({
+        where: { id: { in: postIds }, userId: user.userId },
+        select: { id: true },
+      });
+      const ownedIds = new Set(owned.map((post) => post.id));
+      const skipped = postIds
+        .filter((postId) => !ownedIds.has(postId))
+        .map((postId) => ({ postId, reason: 'Not found' }));
+
+      const result = ownedIds.size > 0
+        ? await prisma.post.updateMany({
+          where: { id: { in: Array.from(ownedIds) }, userId: user.userId },
+          data: { textContent: data.textContent },
+        })
+        : { count: 0 };
+
+      return c.json({ updated: result.count, skipped });
+    } catch (error) {
+      console.error('Failed to batch-set post text:', error);
+      return c.json({ error: 'Failed to batch-set post text' }, 400);
+    }
+  });
+
   postsRouter.post('/api/posts/:id/send', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;
     const id = c.req.param('id');

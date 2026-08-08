@@ -63,6 +63,7 @@ The campaign Batch Actions view supports searchable, paginated post selection an
 - Batch unschedule, which returns scheduled posts to draft.
 - Batch Send Now for an active campaign.
 - Batch AI text generation.
+- Batch set text, which writes one identical text to every selected post.
 - Creating one new draft post per selected/uploaded media item.
 
 Batch operations report skipped items individually—for example, already completed posts, invalid dates, or media that is still processing.
@@ -76,6 +77,10 @@ Optional per-user watermark settings are applied to image media during processin
 ### Batch AI Text Generation
 
 Select posts, then choose an assistant-capable provider/model and a reusable prompt from a text library or enter instructions directly. The task can optionally include each post's images as model context.
+
+### Batch Set Text
+
+When every selected post should carry the same caption, **Set Text** writes it directly—no model, no queue. Enter the text, apply it, and the posts are updated in one request; any text those posts already had is replaced.
 
 The server processes the selected post IDs asynchronously and reports per-post success/failure. Generated text replaces the targeted post's text; it does not automatically schedule or send the post.
 

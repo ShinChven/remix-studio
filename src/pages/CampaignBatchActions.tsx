@@ -9,6 +9,7 @@ import {
   Send,
   Sparkles,
   Trash2,
+  Type,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -24,6 +25,7 @@ import {
 } from '../api';
 import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
 import { BatchScheduleModal } from '../components/BatchScheduleModal';
+import { BatchSetTextModal } from '../components/BatchSetTextModal';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { PageNav } from '../components/PageNav';
@@ -89,6 +91,7 @@ export function CampaignBatchActions() {
   const [deleting, setDeleting] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiTask, setAiTask] = useState<BatchGenerateTextResult | null>(null);
+  const [setTextOpen, setSetTextOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [previewMedia, setPreviewMedia] = useState<string[] | null>(null);
 
@@ -363,6 +366,9 @@ export function CampaignBatchActions() {
             <button disabled={selectedPostIds.length === 0} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 px-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => setAiOpen(true)}>
               <Sparkles className="h-4 w-4" /> AI Generate
             </button>
+            <button disabled={selectedPostIds.length === 0} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 px-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => setSetTextOpen(true)}>
+              <Type className="h-4 w-4" /> Set Text
+            </button>
             <button disabled={selectedPostIds.length === 0} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 px-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => setScheduleOpen(true)}>
               <Clock className="h-4 w-4" /> Schedule
             </button>
@@ -577,6 +583,13 @@ export function CampaignBatchActions() {
             setAiTask(task);
             setAiOpen(false);
           }}
+        />
+      )}
+      {setTextOpen && (
+        <BatchSetTextModal
+          postIds={selectedPostIds}
+          onClose={() => setSetTextOpen(false)}
+          onComplete={() => void loadData(true)}
         />
       )}
       {scheduleOpen && (
