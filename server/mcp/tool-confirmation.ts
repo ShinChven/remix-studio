@@ -99,6 +99,16 @@ export function summarizeToolEffect(
         ? `Update project ${getLabel(objectArgs.projectId, 'project')}.`
         : `Update project ${getLabel(objectArgs.projectId, 'project')} and replace its workflow with ${workflowCount} item${workflowCount === 1 ? '' : 's'}. Existing workflow items not included in this replacement will be removed.`;
     }
+    case 'draft_jobs': {
+      const count = typeof objectArgs.count === 'number' ? objectArgs.count : 0;
+      return `Stage ${count} draft job${count === 1 ? '' : 's'} on project ${getLabel(objectArgs.projectId, 'project')}. Drafts do not run until they are started.`;
+    }
+    case 'start_jobs': {
+      const count = typeof objectArgs.count === 'number' ? objectArgs.count : null;
+      return count == null
+        ? `Start every draft job on project ${getLabel(objectArgs.projectId, 'project')}. This runs generation and spends provider credits.`
+        : `Start ${count} draft job${count === 1 ? '' : 's'} on project ${getLabel(objectArgs.projectId, 'project')}. This runs generation and spends provider credits.`;
+    }
     case 'create_campaign':
       return `Create campaign named "${String(objectArgs.name ?? '')}".`;
     case 'update_campaign': {

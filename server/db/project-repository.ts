@@ -234,6 +234,67 @@ export class ProjectRepository {
     });
   }
 
+  async countProjectJobsByStatus(userId: string, projectId: string): Promise<Record<Job['status'], number>> {
+    const rows = await this.prisma.job.groupBy({
+      by: ['status'],
+      where: { projectId, userId },
+      _count: { _all: true },
+    });
+
+    const counts: Record<Job['status'], number> = {
+      draft: 0,
+      pending: 0,
+      processing: 0,
+      completed: 0,
+      failed: 0,
+    };
+    for (const row of rows) {
+      const status = row.status as Job['status'];
+      if (status in counts) counts[status] += row._count._all;
+    }
+    return counts;
+  }
+
+  /**
+   * Append jobs to a project without touching the ones already there.
+   *
+   * `saveJobs` (the bulk client snapshot path) deletes every draft/pending/
+   * failed row missing from the list it is given, so it cannot be used to add
+   * a batch of drafts on its own. Callers that only want to append — the MCP
+   * draft tool, for instance — go through here instead.
+   */
+  async createProjectJobs(userId: string, projectId: string, jobs: Job[]): Promise<number> {
+    await this.assertOwnedProject(userId, projectId);
+    if (jobs.length === 0) return 0;
+
+    const result = await this.prisma.job.createMany({
+      data: jobs.map((job) => ({
+        id: job.id,
+        projectId,
+        userId,
+        prompt: job.prompt,
+        status: job.status ?? 'draft',
+        imageContexts: job.imageContexts ?? [],
+        videoContexts: job.videoContexts ?? [],
+        audioContexts: job.audioContexts ?? [],
+        modelConfigId: job.modelConfigId ?? null,
+        aspectRatio: job.aspectRatio ?? null,
+        quality: job.quality ?? null,
+        format: job.format ?? null,
+        duration: job.duration ?? null,
+        resolution: job.resolution ?? null,
+        sound: job.sound ?? null,
+        background: (job as any).background ?? null,
+        filename: job.filename ?? null,
+        providerId: job.providerId ?? null,
+        workflowSnapshot: job.workflowSnapshot ?? null,
+        createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
+      })) as any,
+    });
+
+    return result.count;
+  }
+
   async startProjectJobs(userId: string, projectId: string, jobIds: string[]): Promise<number> {
     const ids = Array.from(new Set(jobIds.map((id) => id.trim()).filter(Boolean)));
     if (ids.length === 0) return 0;

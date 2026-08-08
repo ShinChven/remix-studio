@@ -1,5 +1,5 @@
 import { IRepository } from '../db/repository';
-import { S3Storage } from '../storage/s3-storage';
+import { IStorage } from '../storage/storage';
 import { UserRepository } from '../auth/user-repository';
 
 /**
@@ -13,8 +13,8 @@ import { UserRepository } from '../auth/user-repository';
  */
 export async function getUserStorageUsage(
   userId: string,
-  _storage: S3Storage,
-  exportStorage: S3Storage,
+  _storage: IStorage,
+  exportStorage: IStorage,
   repository: IRepository
 ): Promise<number> {
   const usage = await repository.getStorageUsageAggregate(userId);
@@ -38,8 +38,8 @@ export async function checkStorageLimit(
   userId: string,
   incomingSizeBytes: number,
   userRepository: UserRepository,
-  storage: S3Storage,
-  exportStorage: S3Storage,
+  storage: IStorage,
+  exportStorage: IStorage,
   repository: IRepository
 ): Promise<{ allowed: boolean; currentUsage: number; limit: number }> {
   const user = await userRepository.findById(userId);
