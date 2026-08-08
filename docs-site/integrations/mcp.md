@@ -80,7 +80,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 | Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project` |
 | Files | `get_file_urls` | — |
 | Campaigns | `list_social_accounts`, `list_campaigns` | `create_campaign`, `update_campaign` |
-| Posts | `get_post`, `get_post_text` | `create_post`, `update_post`, `update_post_text`, `add_media_to_post`, `schedule_post` |
+| Posts | `list_posts`, `get_post`, `get_post_text` | `create_post`, `update_post`, `update_post_text`, `add_media_to_post`, `schedule_post` |
 
 Important boundaries:
 

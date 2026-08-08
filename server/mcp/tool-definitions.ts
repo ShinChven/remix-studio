@@ -24,6 +24,9 @@ const WORKFLOW_ITEM_TYPES = [
 const SOCIAL_ACCOUNT_STATUS_VALUES = ['active', 'disconnected', 'expired'] as const;
 const CAMPAIGN_STATUS_VALUES = ['active', 'completed', 'archived'] as const;
 const MCP_POST_STATUS_VALUES = ['draft', 'scheduled'] as const;
+// Posts also reach 'completed'/'failed' through the publishing engine, so reads
+// can filter on states the write tools are not allowed to set.
+const POST_STATUS_FILTER_VALUES = ['draft', 'scheduled', 'completed', 'failed'] as const;
 const POST_MEDIA_TYPE_VALUES = ['image', 'video', 'gif'] as const;
 const SAFE_SOCIAL_ACCOUNT_SELECT = {
   id: true,
@@ -97,6 +100,9 @@ export interface ToolDependencies {
 }
 
 const MAX_CONTENT_PREVIEW_CHARS = 4096;
+// A page of posts carries many bodies at once, so previews stay short — callers
+// fetch the full copy with get_post_text once they know which post they want.
+const MAX_POST_PREVIEW_CHARS = 280;
 const MAX_SIGNED_KEYS_PER_CALL = 50;
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 3600;
 const MAX_SIGNED_URL_TTL_SECONDS = 86400;
@@ -2041,6 +2047,82 @@ Important workflow behavior:
         campaignUrl: appUrls.campaign(post.campaignId),
       };
       return { text: JSON.stringify(payload), structuredContent: payload };
+    }
+  });
+
+  tools.push({
+    name: 'list_posts',
+    title: 'List Posts',
+    description: `List the posts inside one campaign, newest first. This is how you get a postId — list_campaigns only reports how many posts a campaign has, and every other post tool requires an id.
+
+Each entry carries the post's "url", its status and schedule, a short "textPreview" (with "textLength" for the true size), and "mediaCount". When you need a post's full copy, call get_post_text with its postId; for its media and publishing history, call get_post.`,
+    inputSchema: {
+      campaignId: z.string().min(1).describe('The campaign to list posts for (from list_campaigns)'),
+      status: z.enum(POST_STATUS_FILTER_VALUES).optional().describe('Optional: only return posts in this status'),
+      page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
+      limit: z.number().int().min(1).max(100).default(25).describe('Posts per page (default 25)'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { campaignId, status, page, limit } = input as {
+        campaignId: string;
+        status?: string;
+        page: number;
+        limit: number;
+      };
+      const campaign = await prisma.campaign.findFirst({
+        where: { id: campaignId, userId },
+        select: { id: true, name: true },
+      });
+      if (!campaign) throw new Error("Campaign not found");
+
+      const where = { campaignId, userId, ...(status ? { status } : {}) };
+      const total = await prisma.post.count({ where });
+      const pages = Math.max(1, Math.ceil(total / limit));
+      const rows = await prisma.post.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          textContent: true,
+          status: true,
+          scheduledAt: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: { select: { media: true } },
+        },
+      });
+
+      const posts = rows.map((post) => {
+        const preview = truncateContent(post.textContent ?? '', MAX_POST_PREVIEW_CHARS);
+        return {
+          postId: post.id,
+          url: appUrls.campaignPost(campaignId, post.id),
+          textPreview: preview.text,
+          textTruncated: preview.truncated,
+          textLength: preview.originalLength,
+          status: post.status,
+          scheduledAt: post.scheduledAt,
+          mediaCount: post._count.media,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+        };
+      });
+
+      const response = {
+        campaignId,
+        campaignUrl: appUrls.campaign(campaignId),
+        campaignName: campaign.name,
+        posts,
+        total,
+        page,
+        pages,
+        ...paginationHints(page, pages),
+      };
+      return { text: JSON.stringify(response, null, 2), structuredContent: response };
     }
   });
 
