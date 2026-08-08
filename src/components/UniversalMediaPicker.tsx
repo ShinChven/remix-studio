@@ -22,6 +22,7 @@ import {
 import { fetchLibraries, fetchLibrary, fetchLibraryItems, fetchProject, fetchProjectAlbum, fetchProjects, imageDisplayUrl } from '../api';
 import { AlbumItem, AspectRatioCount, Library, LibraryItem, LibraryType, Project } from '../types';
 import { cn } from '../lib/utils';
+import { getLastMediaPickerSource, setLastMediaPickerSource } from '../lib/media-picker-memory';
 
 export type PickerSourceKind = 'library' | 'album';
 export type UniversalPickerSort = 'newest' | 'oldest' | 'name-asc' | 'name-desc';
@@ -70,6 +71,7 @@ interface UniversalMediaPickerProps {
   sourceKinds?: PickerSourceKind[];
   multiple?: boolean;
   enableImageVersionSelection?: boolean;
+  memoryKey?: string;
   onClose: () => void;
   onConfirm: (items: UniversalPickedItem[]) => void;
 }
@@ -181,6 +183,7 @@ export function UniversalMediaPicker({
   sourceKinds = DEFAULT_SOURCE_KINDS,
   multiple = true,
   enableImageVersionSelection = false,
+  memoryKey,
   onClose,
   onConfirm,
 }: UniversalMediaPickerProps) {
@@ -190,7 +193,17 @@ export function UniversalMediaPicker({
   const enabledTypeSet = useMemo(() => new Set(allowedTypes), [allowedTypeKey]);
   const enabledKinds = useMemo(() => sourceKinds.filter((kind) => DEFAULT_SOURCE_KINDS.includes(kind)), [sourceKindKey]);
   const enabledKindKey = enabledKinds.join('|');
-  const initialKind = enabledKinds.includes(defaultSourceKind) ? defaultSourceKind : (enabledKinds[0] || 'library');
+  const memoryEnabled = !!memoryKey && !fixedSourceId;
+  const rememberedSource = useMemo(
+    () => (memoryEnabled && isOpen ? getLastMediaPickerSource(memoryKey!) : null),
+    [memoryEnabled, memoryKey, isOpen],
+  );
+  const preferredKind = rememberedSource && enabledKinds.includes(rememberedSource.kind)
+    ? rememberedSource.kind
+    : defaultSourceKind;
+  const initialKind = enabledKinds.includes(preferredKind) ? preferredKind : (enabledKinds[0] || 'library');
+  const initialSourceId = fixedSourceId
+    || (rememberedSource && rememberedSource.kind === initialKind ? rememberedSource.sourceId : null);
 
   const [activeKind, setActiveKind] = useState<PickerSourceKind>(initialKind);
   const [selectedTypes, setSelectedTypes] = useState<Set<LibraryType>>(() => new Set(allowedTypes));
@@ -217,14 +230,14 @@ export function UniversalMediaPicker({
     setSelectedTypes(new Set(allowedTypes));
     setSourceQuery('');
     setItemQuery('');
-    setActiveSourceId(fixedSourceId || null);
+    setActiveSourceId(initialSourceId);
     setSelectedKeys(new Set());
     setSelectedItemMap({});
     setItems([]);
     setAspectRatioCounts([]);
     setSelectedAspectRatios([]);
     setImageVersion('optimized');
-  }, [allowedTypeKey, initialKind, isOpen, fixedSourceId]);
+  }, [allowedTypeKey, initialKind, initialSourceId, isOpen, fixedSourceId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -331,6 +344,11 @@ export function UniversalMediaPicker({
     setSelectedAspectRatios([]);
     setAspectRatioCounts([]);
   }, [activeSource?.id, activeSource?.kind]);
+
+  useEffect(() => {
+    if (!isOpen || !memoryEnabled || !activeSource) return;
+    setLastMediaPickerSource(memoryKey!, { kind: activeSource.kind, sourceId: activeSource.id });
+  }, [isOpen, memoryEnabled, memoryKey, activeSource?.id, activeSource?.kind]);
 
   useEffect(() => {
     if (!isOpen || !activeSource) {

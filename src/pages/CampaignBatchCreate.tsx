@@ -465,6 +465,7 @@ export function CampaignBatchCreate() {
         title="Media Picker"
         allowedTypes={['image', 'video']}
         defaultSourceKind={pickerMode || 'library'}
+        memoryKey={`campaign-media:${pickerMode || 'library'}`}
         multiple
         onClose={closePicker}
         onConfirm={addPickedItemsToQueue}
