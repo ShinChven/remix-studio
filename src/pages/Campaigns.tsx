@@ -7,16 +7,15 @@ import {
   Calendar,
   Clock,
   ExternalLink,
-  Facebook,
   Globe,
-  Instagram,
-  Linkedin,
   Megaphone,
   MoreHorizontal,
   Plus,
   Search,
   Share2,
 } from 'lucide-react';
+// lucide-react 1.x dropped its brand icons; react-icons still carries them.
+import { FaInstagram, FaLinkedin, FaFacebook } from 'react-icons/fa6';
 import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
 import { deleteCampaign, fetchCampaigns, fetchRecentPosts, fetchScheduledPosts, updateCampaign, refreshSocialAccountProfile } from '../api';
@@ -113,11 +112,11 @@ function getPlatformIcon(platform = '', className = "h-3.5 w-3.5") {
     case 'x':
       return <XIcon className={className} />;
     case 'instagram':
-      return <Instagram className={className} />;
+      return <FaInstagram className={className} />;
     case 'linkedin':
-      return <Linkedin className={className} />;
+      return <FaLinkedin className={className} />;
     case 'facebook':
-      return <Facebook className={className} />;
+      return <FaFacebook className={className} />;
     default:
       return <Globe className={className} />;
   }

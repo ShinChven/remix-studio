@@ -14,9 +14,6 @@ import {
   Megaphone,
   ArrowRight,
   ExternalLink,
-  Instagram,
-  Linkedin,
-  Facebook,
   Globe,
   Image as ImageIcon,
 } from 'lucide-react';

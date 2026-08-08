@@ -10,6 +10,8 @@
       "DOM.Iterable"
     ],
     "skipLibCheck": true,
+    // TypeScript 7 defaults this to true; the codebase predates strict mode.
+    "strict": false,
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",

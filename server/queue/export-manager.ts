@@ -1,4 +1,4 @@
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { PassThrough } from 'node:stream';
 import { once } from 'node:events';
 import crypto from 'crypto';
@@ -263,7 +263,7 @@ export class ExportManager {
       }
 
       // ── Streaming pipeline ────────────────────────────────────────────────
-      const archive = archiver('zip', { zlib: { level: 0 } });
+      const archive = new ZipArchive({ zlib: { level: 0 } });
       const passThrough = new PassThrough();
       let bytesUploaded = 0;
 
