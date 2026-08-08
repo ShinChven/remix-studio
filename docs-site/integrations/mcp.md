@@ -27,6 +27,15 @@ Read tools return **storage keys**, not links. To fetch, view, or download a fil
 - Signs a key only when it is still referenced by media the authenticated user owns — library items, album items, job outputs, or campaign post media. Everything else is returned under `denied` with a reason, and values that are already absolute URLs are rejected as needing no signing.
 - Returned URLs are temporary; request new ones rather than reusing expired links. When the deployment sets `S3_PUBLIC_CUSTOM_DOMAIN`, storage returns a direct public URL instead of a signed one.
 
+### Record links
+
+Tools return absolute Remix Studio links next to the raw ids, so a client can show the user where a record lives instead of quoting an id:
+
+- `url` — the library, project, campaign, or post the call is about (`list_libraries` entries, `get_project`, `create_campaign`, `get_post`, …).
+- `libraryUrl` / `projectUrl` / `campaignUrl` — the parent record when it is context for something else (`search_library_items` results, `get_album_items`, post tools).
+
+The origin comes from `APP_URL` when it is configured; otherwise the server falls back to the origin of the incoming MCP request (honoring `X-Forwarded-Proto` / `X-Forwarded-Host`). Set `APP_URL` to the browser-visible origin of your deployment so the links are shareable.
+
 ## Authentication
 
 MCP requests require a bearer token obtained through either:
