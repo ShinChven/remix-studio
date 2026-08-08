@@ -441,8 +441,8 @@ export function Exports() {
                         <div className="flex items-center gap-2 group-hover/task:translate-x-1 transition-transform">
                           <div className="w-20 sm:w-24 h-1.5 bg-neutral-100 dark:bg-neutral-900 rounded-full overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-inner">
                             <div
-                              className="h-full bg-blue-500 transition-all duration-500"
-                              style={{ width: task.status === 'pending' || task.total <= 0 ? '0%' : `${(task.current / task.total) * 100}%` }}
+                              className="h-full w-full bg-blue-500 origin-left transition-transform duration-500"
+                              style={{ transform: `scaleX(${task.status === 'pending' || task.total <= 0 ? 0 : task.current / task.total})` }}
                             />
                           </div>
                           <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
@@ -456,8 +456,8 @@ export function Exports() {
                         <div className="flex items-center gap-2">
                           <div className="w-16 sm:w-20 h-1.5 bg-white dark:bg-neutral-900 rounded-full overflow-hidden border border-emerald-200 dark:border-emerald-900/40 shadow-inner">
                             <div
-                              className="h-full bg-emerald-500 transition-all duration-500"
-                              style={{ width: driveDelivery?.status === 'pending' ? '5%' : `${driveProgress}%` }}
+                              className="h-full w-full bg-emerald-500 origin-left transition-transform duration-500"
+                              style={{ transform: `scaleX(${driveDelivery?.status === 'pending' ? 0.05 : driveProgress / 100})` }}
                             />
                           </div>
                           <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter">
@@ -471,8 +471,8 @@ export function Exports() {
                         <div className="flex items-center gap-2">
                           <div className="w-16 sm:w-20 h-1.5 bg-white dark:bg-neutral-900 rounded-full overflow-hidden border border-pink-200 dark:border-pink-900/40 shadow-inner">
                             <div
-                              className="h-full bg-pink-500 transition-all duration-500"
-                              style={{ width: gumroadDelivery?.status === 'pending' ? '5%' : `${gumroadProgress}%` }}
+                              className="h-full w-full bg-pink-500 origin-left transition-transform duration-500"
+                              style={{ transform: `scaleX(${gumroadDelivery?.status === 'pending' ? 0.05 : gumroadProgress / 100})` }}
                             />
                           </div>
                           <span className="text-[8px] font-black text-pink-500 uppercase tracking-tighter">
