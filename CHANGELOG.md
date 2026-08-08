@@ -2,6 +2,12 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [Unreleased]
+
+### Added
+
+- **Batch Set Post Text**: Campaign Batch Actions could only fill post text through the model — useful when each post needs its own wording, wasteful when they should all carry the same caption. A **Set Text** action next to AI Generate takes one block of text and writes it to every selected post in a single request, with no provider, prompt, or background task involved. Existing text on those posts is replaced, and posts that no longer exist are reported as skipped the way the other batch operations report them.
+
 ## [1.20.0] - 2026-08-08
 
 ### Added

@@ -1969,6 +1969,15 @@ export async function batchUnschedulePosts(postIds: string[]): Promise<BatchOpRe
   return handleResponse<BatchOpResult>(res, 'Failed to batch-unschedule posts');
 }
 
+export async function batchSetPostText(postIds: string[], textContent: string): Promise<BatchOpResult> {
+  const res = await apiFetch('/api/posts/batch-set-text', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ postIds, textContent }),
+  });
+  return handleResponse<BatchOpResult>(res, 'Failed to set post text');
+}
+
 export async function sendPostNow(postId: string): Promise<any> {
   const res = await apiFetch(`/api/posts/${postId}/send`, {
     method: 'POST',
