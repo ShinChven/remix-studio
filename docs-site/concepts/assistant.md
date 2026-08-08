@@ -25,6 +25,7 @@ The assistant can read account-scoped workspace data through tools rather than r
 - Libraries and paginated/searchable library items.
 - Storage totals and category breakdowns.
 - Project workflows and album summaries.
+- Per-project job counts: drafts staged, queue depth, completed and failed runs, and album totals.
 - Usable provider/model pairings.
 - Social accounts, campaigns, posts, post text, and post media metadata.
 
@@ -44,6 +45,7 @@ The assistant can:
 - Create prompts individually or in batches.
 - Update prompt text, titles, and tags, including batch metadata updates.
 - Create projects with complete workflows and update existing projects.
+- Stage draft jobs from a project's workflow, and start all of them or a chosen number. Starting queues real generation and spends provider credits, so it is a confirmation-gated write like any other.
 - Create and update campaigns and posts, attach owned media, and schedule posts.
 
 The tool catalog is visible under **Assistant Settings → Tools**, including each tool's input schema, category, and whether approval is required.

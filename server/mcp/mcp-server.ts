@@ -3,11 +3,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { Hono } from 'hono';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
-import type { IRepository } from '../db/repository';
-import type { UserRepository } from '../auth/user-repository';
-import type { ProviderRepository } from '../db/provider-repository';
-import type { IStorage } from '../storage/storage';
-import { createAssistantToolDefinitions, AssistantToolDefinition } from './tool-definitions';
+import { createAssistantToolDefinitions, AssistantToolDefinition, ToolDependencies } from './tool-definitions';
 import { getTransportInputSchema, resolveExternalToolCall } from './tool-confirmation';
 
 type Variables = { mcpUserId: string };
@@ -89,20 +85,13 @@ function registerToolOnServer(server: McpServer, tool: AssistantToolDefinition, 
   );
 }
 
-function createMcpServerInstance(
-  repository: IRepository,
-  userRepository: UserRepository,
-  prisma: PrismaClient,
-  providerRepository: ProviderRepository,
-  storage: IStorage,
-  userId: string,
-) {
+function createMcpServerInstance(toolDeps: ToolDependencies, userId: string) {
   const server = new McpServer({
     name: 'remix-studio',
     version: '1.0.0',
   });
 
-  const tools = createAssistantToolDefinitions({ repository, userRepository, prisma, providerRepository, storage });
+  const tools = createAssistantToolDefinitions(toolDeps);
   for (const tool of tools) {
     registerToolOnServer(server, tool, userId);
   }
@@ -110,13 +99,7 @@ function createMcpServerInstance(
   return server;
 }
 
-export function createMcpRouter(
-  prisma: PrismaClient,
-  repository: IRepository,
-  userRepository: UserRepository,
-  providerRepository: ProviderRepository,
-  storage: IStorage,
-) {
+export function createMcpRouter(prisma: PrismaClient, toolDeps: ToolDependencies) {
   const router = new Hono<{ Variables: Variables }>();
 
   const authMiddleware = async (c: any, next: any) => {
@@ -135,7 +118,7 @@ export function createMcpRouter(
 
   router.all('/mcp', async (c) => {
     const userId = c.get('mcpUserId');
-    const server = createMcpServerInstance(repository, userRepository, prisma, providerRepository, storage, userId);
+    const server = createMcpServerInstance(toolDeps, userId);
 
     const transport = new WebStandardStreamableHTTPServerTransport();
 
