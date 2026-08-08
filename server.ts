@@ -253,6 +253,7 @@ async function startServer() {
     providerRepository,
     storage,
     exportStorage,
+    exportManager,
     queueManager,
     projectEvents: projectLiveHub,
   };
