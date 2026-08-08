@@ -35,23 +35,10 @@
     "providerHint": {
       "gumroad": "Gumroad에서 디지털 상품을 판매합니다.",
       "google-drive": "내보내기 아카이브를 Google 드라이브에 업로드합니다.",
-      "onedrive": "내보내기 아카이브를 OneDrive에 업로드합니다.",
-      "mega": "내보내기 아카이브를 MEGA에 업로드합니다."
+      "onedrive": "내보내기 아카이브를 OneDrive에 업로드합니다."
     },
     "confirmDisconnectTitle": "연결 삭제",
     "confirmDisconnectMessage": "{{name}}을(를) 삭제할까요? 이후 내보내기는 이 대상으로 전달되지 않습니다.",
-    "credentials": {
-      "title": "{{provider}} 연결",
-      "description": "{{provider}}은(는) 리디렉션 대신 계정 자격 증명으로 로그인합니다.",
-      "email": "이메일",
-      "password": "비밀번호",
-      "twoFactor": "2단계 인증 코드",
-      "twoFactorHint": "계정에 2단계 인증이 켜져 있을 때만 필요합니다.",
-      "storageNotice": "업로드할 때마다 로그인이 필요하므로 비밀번호는 암호화되어 저장됩니다.",
-      "submit": "연결",
-      "connecting": "연결 중…",
-      "failed": "연결하지 못했습니다"
-    },
     "drive": {
       "releaseToDrive": "드라이브로 릴리스",
       "uploadQueued": "릴리스를 대기열에 추가했습니다 — 업로드 아이콘에서 진행 상황을 확인하세요",

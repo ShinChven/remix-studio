@@ -25,7 +25,7 @@ The same shared tool layer also powers [MCP access](/integrations/mcp), so clien
 - Manage provider credentials, model profiles, custom aliases, and provider-level concurrency limits.
 - Review generated outputs in-app, retry failures, and export finished results as ZIP archives.
 - Plan social campaigns, generate post copy in batches, attach reusable media, and schedule posts across connected channels.
-- Release completed export packages to connected drives (Google Drive, OneDrive, MEGA) and storefronts.
+- Release completed export packages to connected drives (Google Drive, OneDrive) and storefronts.
 - Keep generated assets in S3-compatible storage such as AWS S3 or MinIO.
 - Operate the system through the UI, the in-app assistant, or external MCP clients.
 - Protect access with auth, admin controls, 2FA, passkeys, and user storage limits.

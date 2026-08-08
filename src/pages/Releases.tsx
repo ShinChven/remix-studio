@@ -18,7 +18,6 @@ import { toast } from 'sonner';
 import {
   ReleaseConnection,
   ReleaseProvider,
-  connectDriveWithCredentials,
   disconnectDrive,
   disconnectStore,
   fetchReleaseConnections,
@@ -32,7 +31,6 @@ const PROVIDER_STYLE: Record<string, { icon: typeof Cloud; accent: string; tint:
   gumroad: { icon: StoreIcon, accent: 'text-pink-500', tint: 'bg-pink-500/10' },
   'google-drive': { icon: HardDrive, accent: 'text-emerald-500', tint: 'bg-emerald-500/10' },
   onedrive: { icon: Cloud, accent: 'text-sky-500', tint: 'bg-sky-500/10' },
-  mega: { icon: Cloud, accent: 'text-red-500', tint: 'bg-red-500/10' },
 };
 
 function providerStyle(platform: string) {
@@ -47,7 +45,6 @@ export function Releases() {
   const [loading, setLoading] = useState(true);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ReleaseConnection | null>(null);
-  const [credentialsProvider, setCredentialsProvider] = useState<ReleaseProvider | null>(null);
 
   const providerLabel = useMemo(() => {
     const byId = new Map(providers.map((provider) => [provider.id, provider.label]));
@@ -310,15 +307,6 @@ export function Releases() {
                       <Lock className="h-4 w-4" />
                       {t('releases.notConfigured')}
                     </span>
-                  ) : provider.authKind === 'credentials' ? (
-                    <button
-                      type="button"
-                      onClick={() => setCredentialsProvider(provider)}
-                      className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold text-neutral-700 transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-950/30 dark:text-neutral-200 dark:hover:bg-white/10"
-                    >
-                      <Plus className="h-4 w-4" />
-                      {label}
-                    </button>
                   ) : (
                     <a
                       href={connectHref(provider)}
@@ -335,17 +323,6 @@ export function Releases() {
         </section>
       </div>
 
-      {credentialsProvider ? (
-        <CredentialsConnectDialog
-          provider={credentialsProvider}
-          onClose={() => setCredentialsProvider(null)}
-          onConnected={() => {
-            setCredentialsProvider(null);
-            void loadConnections();
-          }}
-        />
-      ) : null}
-
       <ConfirmDialog
         isOpen={!!deleteTarget}
         title={t('releases.confirmDisconnectTitle')}
@@ -358,126 +335,6 @@ export function Releases() {
         onCancel={() => setDeleteTarget(null)}
         variant="danger"
       />
-    </div>
-  );
-}
-
-/** Sign-in form for drives without OAuth (MEGA). */
-function CredentialsConnectDialog({
-  provider,
-  onClose,
-  onConnected,
-}: {
-  provider: ReleaseProvider;
-  onClose: () => void;
-  onConnected: () => void;
-}) {
-  const { t } = useTranslation();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [secondFactorCode, setSecondFactorCode] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-      await connectDriveWithCredentials(provider.id, { email, password, secondFactorCode });
-      toast.success(t('releases.connectSuccess'));
-      onConnected();
-    } catch (error: any) {
-      toast.error(error?.message || t('releases.credentials.failed'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const inputClass =
-    'w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 dark:border-white/10 dark:bg-neutral-950 dark:text-white';
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-md space-y-4 rounded-2xl border border-neutral-200/50 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900"
-      >
-        <div>
-          <h2 className="text-lg font-bold text-neutral-950 dark:text-white">
-            {t('releases.credentials.title', { provider: provider.label })}
-          </h2>
-          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-            {t('releases.credentials.description', { provider: provider.label })}
-          </p>
-        </div>
-
-        <label className="block space-y-1.5">
-          <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-            {t('releases.credentials.email')}
-          </span>
-          <input
-            type="email"
-            required
-            autoComplete="off"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className={inputClass}
-          />
-        </label>
-
-        <label className="block space-y-1.5">
-          <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-            {t('releases.credentials.password')}
-          </span>
-          <input
-            type="password"
-            required
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className={inputClass}
-          />
-        </label>
-
-        <label className="block space-y-1.5">
-          <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-            {t('releases.credentials.twoFactor')}
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            value={secondFactorCode}
-            onChange={(event) => setSecondFactorCode(event.target.value)}
-            className={inputClass}
-          />
-          <span className="block text-xs text-neutral-500 dark:text-neutral-400">
-            {t('releases.credentials.twoFactorHint')}
-          </span>
-        </label>
-
-        <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-400">
-          {t('releases.credentials.storageNotice')}
-        </p>
-
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-10 items-center rounded-xl px-4 text-sm font-bold text-neutral-600 transition hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10"
-          >
-            {t('releases.cancel')}
-          </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-neutral-900 px-4 text-sm font-bold text-white transition hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-          >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {submitting ? t('releases.credentials.connecting') : t('releases.credentials.submit')}
-          </button>
-        </div>
-      </form>
     </div>
   );
 }

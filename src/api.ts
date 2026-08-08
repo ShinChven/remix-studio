@@ -1964,7 +1964,7 @@ export type ReleaseConnectionKind = 'store' | 'drive';
 export interface ReleaseConnection {
   id: string;
   kind: ReleaseConnectionKind;
-  /** Provider id: "gumroad" | "google-drive" | "onedrive" | "mega". */
+  /** Provider id: "gumroad" | "google-drive" | "onedrive". */
   platform: string;
   accountId: string;
   displayName: string | null;
@@ -1980,8 +1980,6 @@ export interface ReleaseProvider {
   id: string;
   kind: ReleaseConnectionKind;
   label: string;
-  /** "oauth" providers redirect; "credentials" providers take a sign-in form. */
-  authKind: 'oauth' | 'credentials';
   /** False when this server is missing the provider's credentials. */
   configured: boolean;
 }
@@ -1995,18 +1993,6 @@ export async function fetchReleaseConnections(): Promise<{
     res,
     'Failed to load release connections',
   );
-}
-
-export async function connectDriveWithCredentials(
-  provider: string,
-  credentials: { email: string; password: string; secondFactorCode?: string },
-): Promise<{ connection: ReleaseConnection }> {
-  const res = await apiFetch(`/api/releases/drives/${provider}/connect`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(credentials),
-  });
-  return handleResponse<{ connection: ReleaseConnection }>(res, 'Failed to connect drive');
 }
 
 export async function disconnectDrive(id: string): Promise<void> {

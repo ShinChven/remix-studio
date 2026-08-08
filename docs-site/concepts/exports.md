@@ -57,7 +57,7 @@ The selected scope and raw/optimized choice are carried into the watermark scree
 
 ## Drive Releases
 
-Drives are connected on the **Releases** page, not on Exports. Google Drive, OneDrive, and MEGA are supported, and you can connect as many accounts as you like — several Google Drives side by side is fine.
+Drives are connected on the **Releases** page, not on Exports. Google Drive and OneDrive are supported, and you can connect as many accounts as you like — several Google Drives side by side is fine.
 
 A completed export can then be released to any of them. When more than one drive is connected, the upload action asks which one to use; with a single drive it goes straight there.
 
@@ -70,7 +70,11 @@ The delivery worker:
 
 Removing a connection deletes its stored credentials. It does not remove files already uploaded to that drive.
 
-Google Drive and OneDrive authorize over OAuth. MEGA has no OAuth API, so it is connected with the account's email and password (plus a two-factor code when enabled); the password is stored encrypted because MEGA's key derivation needs it on every sign-in.
+Every drive authorizes over OAuth, so Remix Studio only ever holds a revocable, scoped token — never an account password.
+
+::: info MEGA was removed
+MEGA used to be offered as a third drive. It has no OAuth API: connecting an account meant storing its password, because MEGA derives the account's master key from it on every sign-in. That is an unscoped, unrevocable, full-account secret, so MEGA support was dropped and existing connections (and the passwords behind them) are deleted on upgrade. Past MEGA releases remain visible in Release History.
+:::
 
 ## Storefront Releases
 

@@ -115,7 +115,7 @@
       - Export album items (Raw or Optimized versions)
       - View export tasks status and history
     - **Releases (multi-cloud + storefronts)**
-      - Connect multiple drives per provider (Google Drive, OneDrive, MEGA)
+      - Connect multiple drives per provider (Google Drive, OneDrive)
       - Connect storefronts (Gumroad) to sell exports
       - Resumable background uploads for large exported packages
       - Pick a target drive per release and track delivery status

@@ -78,7 +78,6 @@ export async function upsertDriveConnection(
   const secrets = {
     accessToken: tokens.accessToken ? encrypt(tokens.accessToken) : null,
     refreshToken: tokens.refreshToken ? encrypt(tokens.refreshToken) : null,
-    credentials: tokens.credentials ? encrypt(JSON.stringify(tokens.credentials)) : null,
     expiresAt: tokens.expiresAt ?? null,
     scopes: tokens.scopes ?? undefined,
   };
@@ -124,15 +123,6 @@ export async function loadDriveConnection(
   const row = await prisma.driveConnection.findFirst({ where: { id: connectionId, userId } });
   if (!row) return null;
 
-  let credentials: Record<string, string> | undefined;
-  if (row.credentials) {
-    try {
-      credentials = JSON.parse(decrypt(row.credentials));
-    } catch {
-      credentials = undefined;
-    }
-  }
-
   return {
     id: row.id,
     provider: row.provider,
@@ -140,7 +130,6 @@ export async function loadDriveConnection(
     session: {
       accessToken: row.accessToken ? decrypt(row.accessToken) : undefined,
       refreshToken: row.refreshToken ? decrypt(row.refreshToken) : undefined,
-      credentials,
       folderId: row.folderId,
     },
   };

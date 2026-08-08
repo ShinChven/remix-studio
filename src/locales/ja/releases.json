@@ -35,23 +35,10 @@
     "providerHint": {
       "gumroad": "Gumroad でデジタル商品を販売します。",
       "google-drive": "エクスポートのアーカイブを Google ドライブにアップロードします。",
-      "onedrive": "エクスポートのアーカイブを OneDrive にアップロードします。",
-      "mega": "エクスポートのアーカイブを MEGA にアップロードします。"
+      "onedrive": "エクスポートのアーカイブを OneDrive にアップロードします。"
     },
     "confirmDisconnectTitle": "接続を削除",
     "confirmDisconnectMessage": "{{name}} を削除しますか？以降のエクスポートはこの配信先に送られなくなります。",
-    "credentials": {
-      "title": "{{provider}} を接続",
-      "description": "{{provider}} はリダイレクトではなくアカウントの認証情報でサインインします。",
-      "email": "メールアドレス",
-      "password": "パスワード",
-      "twoFactor": "2 段階認証コード",
-      "twoFactorHint": "アカウントで 2 段階認証を有効にしている場合のみ必要です。",
-      "storageNotice": "アップロードのたびにサインインが必要なため、パスワードは暗号化して保存されます。",
-      "submit": "接続",
-      "connecting": "接続中…",
-      "failed": "接続に失敗しました"
-    },
     "drive": {
       "releaseToDrive": "ドライブへリリース",
       "uploadQueued": "リリースをキューに追加しました — アップロードアイコンで進行状況を確認できます",

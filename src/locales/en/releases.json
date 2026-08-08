@@ -35,23 +35,10 @@
     "providerHint": {
       "gumroad": "Sell digital products on Gumroad.",
       "google-drive": "Upload export archives to Google Drive.",
-      "onedrive": "Upload export archives to OneDrive.",
-      "mega": "Upload export archives to MEGA."
+      "onedrive": "Upload export archives to OneDrive."
     },
     "confirmDisconnectTitle": "Remove connection",
     "confirmDisconnectMessage": "Remove {{name}}? Future exports will no longer be released to it.",
-    "credentials": {
-      "title": "Connect {{provider}}",
-      "description": "{{provider}} signs in with your account credentials instead of a redirect.",
-      "email": "Email",
-      "password": "Password",
-      "twoFactor": "Two-factor code",
-      "twoFactorHint": "Only needed if the account has two-factor authentication enabled.",
-      "storageNotice": "Your password is stored encrypted because it is required to sign in for every upload.",
-      "submit": "Connect",
-      "connecting": "Connecting…",
-      "failed": "Failed to connect"
-    },
     "drive": {
       "releaseToDrive": "Release to a drive",
       "uploadQueued": "Release queued — watch the upload icon for progress",
