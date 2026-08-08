@@ -33,7 +33,7 @@ export function PaginationBar({
   const endIndex = Math.min(total, safePage * pageSize);
 
   return (
-    <div className="flex flex-col items-center gap-3 border-t border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-950/40 px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4">
+    <div className="flex flex-col items-center gap-3 border-t border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-950/40 px-3 py-3 @xl/pane:flex-row @xl/pane:flex-wrap @xl/pane:items-center @xl/pane:justify-between @xl/pane:px-4">
       <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
         <span>{t('pagination.range', { start: startIndex, end: endIndex, total })}</span>
       </div>
@@ -47,7 +47,7 @@ export function PaginationBar({
               const v = e.target.value;
               onPageSizeChange(v === 'all' ? 'all' : Number(v));
             }}
-            className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white/60 dark:bg-neutral-900/60 px-2 py-1.5 sm:py-1 text-[10px] font-black text-neutral-700 dark:text-neutral-200 focus:outline-none focus:border-blue-500"
+            className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white/60 dark:bg-neutral-900/60 px-2 py-1.5 @xl/pane:py-1 text-[10px] font-black text-neutral-700 dark:text-neutral-200 focus:outline-none focus:border-blue-500"
           >
             {PAGE_SIZE_OPTIONS.map((opt) => (
               <option key={String(opt)} value={String(opt)}>

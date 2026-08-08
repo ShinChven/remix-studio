@@ -60,9 +60,9 @@ export function DraftsTab({
   const displayAlbumItems = albumItems.slice(0, 5);
 
   const StackedGallery = () => (
-    <div className="min-h-full py-12 md:py-20 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-1000">
+    <div className="min-h-full py-12 @2xl/pane:py-20 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-1000">
       {projectType !== 'text' && projectType !== 'audio' && (
-        <div className="relative w-64 h-64 md:w-80 md:h-80 mb-12 group cursor-pointer" onClick={onSwitchToAlbum}>
+        <div className="relative w-56 h-56 @xl/pane:w-64 @xl/pane:h-64 @3xl/pane:w-80 @3xl/pane:h-80 mb-12 group cursor-pointer" onClick={onSwitchToAlbum}>
           {displayAlbumItems.map((item, idx) => {
             const rotations = [-6, 4, -2, 5, -3];
             const xOffsets = [-20, 15, -5, 25, -10];
@@ -96,7 +96,7 @@ export function DraftsTab({
         </div>
       )}
 
-      <div className="w-full max-w-xl mx-auto px-4 sm:px-6 text-center space-y-4 flex flex-col items-center">
+      <div className="w-full max-w-xl mx-auto px-4 @xl/pane:px-6 text-center space-y-4 flex flex-col items-center">
         <h3 className="text-lg font-black text-neutral-900 dark:text-white uppercase tracking-widest bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
           {displayAlbumItems.length > 0 ? projectName : t('projectViewer.drafts.emptyCanvas')}
         </h3>
@@ -134,19 +134,17 @@ export function DraftsTab({
               totalCount={draftJobs.length}
               selectedCount={selectedDraftIds.size}
               onToggleSelectAll={toggleSelectAllDrafts}
-              mobileSingleLine
-              mobileActionsRight
               rightActions={
                 <>
                 <button
                   onClick={selectedDraftIds.size > 0 ? () => setShowDeleteSelectedModal(true) : () => setShowDeleteAllDraftsModal(true)}
                   disabled={isStartingDrafts}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                   title={selectedDraftIds.size > 0 ? t('projectViewer.common.deleteSelected') : t('projectViewer.drafts.deleteAllDrafts')}
                   aria-label={selectedDraftIds.size > 0 ? t('projectViewer.common.deleteSelected') : t('projectViewer.drafts.deleteAllDrafts')}
                 >
                   <Trash2 className="w-3 h-3" />
-                  <span className="hidden sm:inline">
+                  <span className="hidden @min-[56rem]/pane:inline">
                     {selectedDraftIds.size > 0 ? t('projectViewer.common.deleteSelected') : t('projectViewer.common.deleteAll')}
                   </span>
                 </button>
@@ -155,12 +153,12 @@ export function DraftsTab({
                   disabled={isStartingDrafts}
                   title={selectedDraftIds.size > 0 ? t('projectViewer.drafts.startSelected') : t('projectViewer.drafts.startAllNow')}
                   aria-label={selectedDraftIds.size > 0 ? t('projectViewer.drafts.startSelected') : t('projectViewer.drafts.startAllNow')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:cursor-wait disabled:opacity-70"
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:cursor-wait disabled:opacity-70"
                 >
                   {isStartingDrafts
                     ? <Loader2 className="w-3 h-3 animate-spin" />
                     : <Play className="w-3 h-3 fill-current" />}
-                  <span className="hidden sm:inline">
+                  <span className="hidden @min-[56rem]/pane:inline">
                     {isStartingDrafts
                       ? t('projectViewer.drafts.starting', { defaultValue: 'Starting…' })
                       : selectedDraftIds.size > 0
@@ -263,7 +261,7 @@ export function DraftsTab({
                       {task.imageContexts && task.imageContexts.length > 0 && (
                         <div className="space-y-3">
                             <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>
-                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                            <div className="grid grid-cols-3 @md/pane:grid-cols-4 @2xl/pane:grid-cols-6 @4xl/pane:grid-cols-8 gap-3">
                               {task.imageContexts.map((ctx, idx) => (
                                 <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-blue-500/50">
                                   <img 
@@ -287,7 +285,7 @@ export function DraftsTab({
                       {task.videoContexts && task.videoContexts.length > 0 && (
                         <div className="space-y-3">
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-violet-300/70">Reference Videos</label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 @2xl/pane:grid-cols-2 gap-3">
                             {task.videoContexts.map((ctx, idx) => (
                               <video key={idx} src={imageDisplayUrl(ctx)} controls className="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-black" />
                             ))}

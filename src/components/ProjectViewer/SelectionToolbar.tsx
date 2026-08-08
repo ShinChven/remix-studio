@@ -31,15 +31,11 @@ interface SelectionToolbarProps {
    * separated by a vertical divider (e.g. AlbumTab's item count + MB display).
    */
   prefix?: React.ReactNode;
-  /** Keep the mobile toolbar on a single row for compact icon-first action sets. */
-  mobileSingleLine?: boolean;
-  /** Push mobile action buttons to the right edge while keeping desktop layout unchanged. */
-  mobileActionsRight?: boolean;
 }
 
-/** A thin vertical divider — hidden on small screens so it never orphans on a wrapped line. */
+/** A thin vertical divider — only shown once the pane is wide enough for labelled buttons. */
 function Divider() {
-  return <div className="hidden lg:block h-4 w-px bg-neutral-200 dark:bg-neutral-800 flex-shrink-0" />;
+  return <div className="hidden @min-[56rem]/pane:block h-4 w-px bg-neutral-200 dark:bg-neutral-800 flex-shrink-0" />;
 }
 
 export function SelectionToolbar({
@@ -51,8 +47,6 @@ export function SelectionToolbar({
   zeroSelectionActions,
   rightActions,
   prefix,
-  mobileSingleLine = false,
-  mobileActionsRight = false,
 }: SelectionToolbarProps) {
   const { t } = useTranslation();
 
@@ -60,18 +54,13 @@ export function SelectionToolbar({
     accentColor === 'emerald' ? 'text-emerald-500' : 'text-blue-500';
 
   return (
-    <div
-      className={`sticky top-0 z-20 flex justify-between bg-white/40 dark:bg-black/40 backdrop-blur-2xl border border-neutral-200/50 dark:border-white/5 gap-2 sm:gap-3 shadow-lg shadow-black/5 dark:shadow-black/20 p-3 rounded-none border-x-0 border-t-0 ${
-        mobileSingleLine ? 'flex-row items-center' : 'flex-col lg:flex-row lg:items-center'
-      }`}
-    >
-      <div
-        className={`flex items-center min-w-0 gap-1.5 sm:gap-x-3 sm:gap-y-2 ${
-          mobileSingleLine ? 'flex-nowrap min-w-0' : 'flex-wrap'
-        }`}
-      >
+    // Everything here wraps. Buttons keep their intrinsic width (flex-shrink-0), so a
+    // no-wrap row would let the two groups slide over each other once the pane got
+    // narrow; wrapping makes an overflow impossible at any width.
+    <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between bg-white/40 dark:bg-black/40 backdrop-blur-2xl border border-neutral-200/50 dark:border-white/5 gap-x-2 gap-y-2 @min-[56rem]/pane:gap-x-3 shadow-lg shadow-black/5 dark:shadow-black/20 p-2 @min-[56rem]/pane:p-3 rounded-none border-x-0 border-t-0">
+      <div className="flex flex-wrap items-center min-w-0 gap-1.5 @min-[56rem]/pane:gap-x-3 @min-[56rem]/pane:gap-y-2">
         {prefix && (
-          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+          <div className="hidden @xl/pane:flex items-center gap-2 flex-shrink-0">
             {prefix}
             <Divider />
           </div>
@@ -81,31 +70,28 @@ export function SelectionToolbar({
           onClick={onToggleSelectAll}
           title={t('projectViewer.common.selectAll')}
           aria-label={t('projectViewer.common.selectAll')}
-          className="flex items-center justify-start gap-3 min-h-8 p-1 rounded-lg text-[10px] font-bold text-neutral-600 dark:text-neutral-400 hover:text-white uppercase tracking-widest transition-colors flex-shrink-0"
+          className="flex items-center justify-start gap-2 @min-[56rem]/pane:gap-3 min-h-8 p-1 rounded-lg text-[10px] font-bold text-neutral-600 dark:text-neutral-400 hover:text-white uppercase tracking-widest transition-colors flex-shrink-0"
         >
           {selectedCount === totalCount && totalCount > 0 ? (
-            <CheckSquare className={`w-4 h-4 sm:w-4 sm:h-4 ${checkIconClass}`} />
+            <CheckSquare className={`w-4 h-4 ${checkIconClass}`} />
           ) : (
-            <Square className="w-4 h-4 sm:w-4 sm:h-4" />
+            <Square className="w-4 h-4" />
           )}
-          <span className="hidden sm:inline whitespace-nowrap">{t('projectViewer.common.selectAll')}</span>
+          <span className="hidden @min-[56rem]/pane:inline whitespace-nowrap">{t('projectViewer.common.selectAll')}</span>
         </button>
 
-        <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest whitespace-nowrap flex-shrink-0 sm:hidden">
+        {/* Compact stand-in for the "N selected" label while the pane is too narrow for it. */}
+        <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest whitespace-nowrap flex-shrink-0 @min-[56rem]/pane:hidden">
           {selectedCount > 0 ? `${selectedCount}/${totalCount}` : `${totalCount}`}
         </span>
 
         {selectedCount > 0 && (
           <>
             <Divider />
-            <span className="hidden sm:inline text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest flex-shrink-0 whitespace-nowrap">
+            <span className="hidden @min-[56rem]/pane:inline text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest flex-shrink-0 whitespace-nowrap">
               {t('projectViewer.common.selectedCount', { count: selectedCount })}
             </span>
-            <div
-              className={`flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ${
-                mobileActionsRight ? 'ml-auto sm:ml-0' : ''
-              }`}
-            >
+            <div className="flex flex-wrap items-center gap-1.5 @min-[56rem]/pane:gap-2 min-w-0">
               {selectionActions}
             </div>
           </>
@@ -114,11 +100,7 @@ export function SelectionToolbar({
         {selectedCount === 0 && zeroSelectionActions && (
           <>
             <Divider />
-            <div
-              className={`flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ${
-                mobileActionsRight ? 'ml-auto sm:ml-0' : ''
-              }`}
-            >
+            <div className="flex flex-wrap items-center gap-1.5 @min-[56rem]/pane:gap-2 min-w-0">
               {zeroSelectionActions}
             </div>
           </>
@@ -127,13 +109,7 @@ export function SelectionToolbar({
 
       {/* Right group */}
       {rightActions && (
-        <div
-          className={`flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ${
-            mobileSingleLine
-              ? 'ml-auto flex-nowrap'
-              : 'ml-auto flex-wrap w-full pt-2 border-t border-neutral-200/50 dark:border-neutral-800/50 lg:w-auto lg:pt-0 lg:border-none'
-          }`}
-        >
+        <div className="flex flex-wrap items-center justify-end gap-1.5 @min-[56rem]/pane:gap-2 ml-auto min-w-0">
           {rightActions}
         </div>
       )}

@@ -94,14 +94,14 @@ const AspectRatioFilterControl = memo(function AspectRatioFilterControl({
         onClick={() => setShowAspectRatioFilter((show) => !show)}
         title={t('projectViewer.album.aspectRatioFilter')}
         aria-label={t('projectViewer.album.aspectRatioFilter')}
-        className={`flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg border transition-all ${
+        className={`flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg border transition-all ${
           hasAspectRatioFilter
             ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border-blue-500/30'
             : 'bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 border-neutral-300 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 dark:border-neutral-700'
         }`}
       >
         <Filter className="w-3 h-3" />
-        <span className="hidden sm:inline">
+        <span className="hidden @min-[56rem]/pane:inline">
           {selectedAspectRatios.length === 0
             ? t('projectViewer.album.aspectRatioFilter')
             : t('projectViewer.album.aspectRatioFilterCount', { count: selectedAspectRatios.length })}
@@ -370,8 +370,6 @@ export function AlbumTab({
             totalCount={displayItems.length}
             selectedCount={selectedDisplayItemIds.length}
             onToggleSelectAll={() => toggleSelectAllAlbum(displayItemIds)}
-            mobileSingleLine
-            mobileActionsRight
             prefix={!isTextProject && (
               <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest">
                 <Layers className="w-4 h-4 text-blue-500" />
@@ -386,10 +384,10 @@ export function AlbumTab({
                   onClick={() => openExportDialog(!hasVisibleSelection)}
                   title={hasVisibleSelection ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
                   aria-label={hasVisibleSelection ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
                 >
                   <FileArchive className="w-3 h-3" />
-                  <span className="hidden sm:inline">
+                  <span className="hidden @min-[56rem]/pane:inline">
                     {hasVisibleSelection ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
                   </span>
                 </button>
@@ -397,10 +395,10 @@ export function AlbumTab({
                   onClick={() => setShowCopyDialog(true)}
                   title={hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
                   aria-label={hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
                 >
                   <Copy className="w-3 h-3" />
-                  <span className="hidden sm:inline">
+                  <span className="hidden @min-[56rem]/pane:inline">
                     {hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
                   </span>
                 </button>
@@ -409,10 +407,10 @@ export function AlbumTab({
                     onClick={() => setShowCompareDialog(true)}
                     title={t('projectViewer.album.compareSelected')}
                     aria-label={t('projectViewer.album.compareSelected')}
-                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all"
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all"
                   >
                     <Layers className="w-3 h-3" />
-                    <span className="hidden sm:inline">{t('projectViewer.album.compareSelected')}</span>
+                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.album.compareSelected')}</span>
                   </button>
                 )}
                 {hasVisibleSelection && (
@@ -424,10 +422,10 @@ export function AlbumTab({
                     }}
                     title={t('projectViewer.common.deleteSelected')}
                     aria-label={t('projectViewer.common.deleteSelected')}
-                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                   >
                     <Trash2 className="w-3 h-3" />
-                    <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
+                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.common.deleteSelected')}</span>
                   </button>
                 )}
                 {showAspectRatioFilterControl && (
@@ -441,7 +439,7 @@ export function AlbumTab({
                 )}
                 <label
                   title={t('pagination.pageSize')}
-                  className="flex items-center gap-1.5 min-h-8 px-2 sm:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 min-h-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all cursor-pointer"
                 >
                   <List className="w-3 h-3" />
                   <span className="sr-only">{t('pagination.pageSize')}</span>
@@ -465,14 +463,14 @@ export function AlbumTab({
                   onClick={() => onSortChange(sort === 'newest' ? 'oldest' : 'newest')}
                   title={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
                   aria-label={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all"
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all"
                 >
                   {sort === 'newest' ? (
                     <ArrowDownWideNarrow className="w-3 h-3" />
                   ) : (
                     <ArrowUpWideNarrow className="w-3 h-3" />
                   )}
-                  <span className="hidden sm:inline">
+                  <span className="hidden @min-[56rem]/pane:inline">
                     {sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
                   </span>
                 </button>
@@ -522,11 +520,11 @@ export function AlbumTab({
                       {item.textContent || item.prompt}
                     </p>
                     {(item.imageContexts?.length || 0) > 0 && (
-                      <span className="hidden sm:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-500">
+                      <span className="hidden @min-[56rem]/pane:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-500">
                         {t('projectViewer.album.imageContexts', { count: item.imageContexts?.length || 0 })}
                       </span>
                     )}
-                    <span className="hidden sm:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-blue-400/80">{t('projectViewer.album.view')}</span>
+                    <span className="hidden @min-[56rem]/pane:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-blue-400/80">{t('projectViewer.album.view')}</span>
                   </button>
 
                   {renderReuseButton(item, 'inline')}
@@ -557,7 +555,7 @@ export function AlbumTab({
                   key={item.id}
                   className={`group rounded-card border px-4 py-3 transition-ui backdrop-blur-xl ${isSelected ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:border-cyan-500/30'}`}
                 >
-                  <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 @xl/pane:gap-3">
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey, displayItemIds); }}
                       className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isSelected ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700'}`}
@@ -577,7 +575,7 @@ export function AlbumTab({
                     </button>
 
                     {item.createdAt && (
-                      <span className="hidden sm:inline flex-shrink-0 text-[9px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 whitespace-nowrap">
+                      <span className="hidden @min-[56rem]/pane:inline flex-shrink-0 text-[9px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 whitespace-nowrap">
                         {formatAudioTimestamp(item.createdAt)}
                       </span>
                     )}
@@ -670,36 +668,39 @@ export function AlbumTab({
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+          // Column count follows the pane's width, not the window's. Each step keeps
+          // cards at ~200px or wider — below that the overlay controls and the
+          // metadata rows stop fitting.
+          <div className="grid grid-cols-1 @min-[26rem]/pane:grid-cols-2 @min-[44rem]/pane:grid-cols-3 @min-[60rem]/pane:grid-cols-4 @min-[76rem]/pane:grid-cols-5 @min-[92rem]/pane:grid-cols-6 gap-3 @xl/pane:gap-4 p-3 @xl/pane:p-4">
             {displayItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = getCssAspectRatio(item.aspectRatio);
               return (
-                <div key={item.id} id={`album-item-${item.id}`} className={`bg-white/20 dark:bg-black/20 border overflow-hidden flex flex-col group transition-ui duration-300 active:scale-100 rounded-xl border-neutral-200/20 dark:border-white/5 backdrop-blur-md ${isSelected ? 'ring-2 ring-inset ring-blue-500 shadow-xl shadow-blue-500/20 z-10 scale-[1.02]' : 'hover:shadow-2xl hover:z-10 hover:-translate-y-1'}`}>
+                <div key={item.id} id={`album-item-${item.id}`} className={`@container/card bg-white/20 dark:bg-black/20 border overflow-hidden flex flex-col group transition-ui duration-300 active:scale-100 rounded-xl border-neutral-200/20 dark:border-white/5 backdrop-blur-md ${isSelected ? 'ring-2 ring-inset ring-blue-500 shadow-xl shadow-blue-500/20 z-10 scale-[1.02]' : 'hover:shadow-2xl hover:z-10 hover:-translate-y-1'}`}>
                   <div className="bg-neutral-50 dark:bg-neutral-950 relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: aspectRatioStr }}>
                     {/* Selection Overlay */}
-                    <div className={`absolute top-4 left-4 z-20 transition-all opacity-100`}>
+                    <div className="absolute top-2 left-2 @min-[16rem]/card:top-3 @min-[16rem]/card:left-3 z-20 transition-all opacity-100">
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleAlbumSelection(item.id, e.shiftKey, displayItemIds); }}
-                        className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-ui ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/60 border-white/20 hover:border-white/40'}`}
+                        className={`w-6 h-6 @min-[16rem]/card:w-7 @min-[16rem]/card:h-7 rounded-lg @min-[16rem]/card:rounded-xl flex items-center justify-center border transition-ui ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/60 border-white/20 hover:border-white/40'}`}
                       >
-                        {isSelected && <CheckSquare className="w-4 h-4 text-neutral-900 dark:text-white" />}
-                        {!isSelected && <Square className="w-4 h-4 text-white/40" />}
+                        {isSelected && <CheckSquare className="w-3.5 h-3.5 @min-[16rem]/card:w-4 @min-[16rem]/card:h-4 text-neutral-900 dark:text-white" />}
+                        {!isSelected && <Square className="w-3.5 h-3.5 @min-[16rem]/card:w-4 @min-[16rem]/card:h-4 text-white/40" />}
                       </button>
                     </div>
 
                     {/* Actions Overlay */}
-                    <div className="absolute top-4 right-4 z-20 opacity-100 transition-all flex flex-col gap-2">
+                    <div className="absolute top-2 right-2 @min-[16rem]/card:top-3 @min-[16rem]/card:right-3 z-20 opacity-100 transition-all flex flex-col gap-1.5 @min-[16rem]/card:gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setAlbumItemsToDelete([item]);
                           setShowDeleteAlbumModal(true);
                         }}
-                        className="w-7 h-7 rounded-xl bg-red-600/90 border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-ui shadow-lg"
+                        className="w-6 h-6 @min-[16rem]/card:w-7 @min-[16rem]/card:h-7 rounded-lg @min-[16rem]/card:rounded-xl bg-red-600/90 border border-red-500/50 flex items-center justify-center text-white hover:bg-red-600 transition-ui shadow-lg"
                         title={t('projectViewer.common.delete')}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5 @min-[16rem]/card:w-4 @min-[16rem]/card:h-4" />
                       </button>
 
                       <a
@@ -707,10 +708,10 @@ export function AlbumTab({
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="w-7 h-7 rounded-xl bg-white/25 border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/40 transition-ui shadow-lg"
+                        className="w-6 h-6 @min-[16rem]/card:w-7 @min-[16rem]/card:h-7 rounded-lg @min-[16rem]/card:rounded-xl bg-white/25 border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/40 transition-ui shadow-lg"
                         title={t('projectViewer.album.openOriginal')}
                       >
-                        <ExternalLink className="w-4 h-4" />
+                        <ExternalLink className="w-3.5 h-3.5 @min-[16rem]/card:w-4 @min-[16rem]/card:h-4" />
                       </a>
                     </div>
 
@@ -759,27 +760,27 @@ export function AlbumTab({
                         className="absolute inset-0 z-10 flex items-center justify-center pointer-events-auto group/play"
                         title={t('projectViewer.album.playVideo')}
                       >
-                        <div className="w-14 h-14 rounded-full bg-black/60 border border-white/30 flex items-center justify-center shadow-2xl transition-ui group-hover/play:scale-110 group-hover/play:bg-purple-600/70">
-                          <Play className="w-6 h-6 text-neutral-900 dark:text-white fill-white ml-0.5" />
+                        <div className="w-10 h-10 @min-[16rem]/card:w-14 @min-[16rem]/card:h-14 rounded-full bg-black/60 border border-white/30 flex items-center justify-center shadow-2xl transition-ui group-hover/play:scale-110 group-hover/play:bg-purple-600/70">
+                          <Play className="w-4 h-4 @min-[16rem]/card:w-6 @min-[16rem]/card:h-6 text-neutral-900 dark:text-white fill-white ml-0.5" />
                         </div>
                       </button>
                     )}
 
                     {/* Sequential Identifier Overlay */}
-                    <div className="absolute bottom-4 right-4 z-10 px-2 py-0.5 bg-black/70 rounded-lg text-[10px] font-mono text-white/80 border border-white/10 opacity-100 transition-opacity pointer-events-none">
+                    <div className="absolute bottom-2 right-2 @min-[16rem]/card:bottom-3 @min-[16rem]/card:right-3 z-10 px-1.5 @min-[16rem]/card:px-2 py-0.5 bg-black/70 rounded-lg text-[9px] @min-[16rem]/card:text-[10px] font-mono text-white/80 border border-white/10 opacity-100 transition-opacity pointer-events-none">
                       #{(index + 1).toString().padStart(2, '0')}
                     </div>
 
-                    {/* Aspect Ratio + Date Pill */}
+                    {/* Aspect Ratio + Date Pill — capped so it can never run under the #NN pill. */}
                     {(item.aspectRatio || item.createdAt) && (
-                      <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5 opacity-100 transition-opacity duration-500 delay-75 pointer-events-none">
+                      <div className="absolute bottom-2 left-2 @min-[16rem]/card:bottom-3 @min-[16rem]/card:left-3 z-10 flex items-center gap-1 @min-[16rem]/card:gap-1.5 max-w-[calc(100%-4.5rem)] opacity-100 transition-opacity duration-500 delay-75 pointer-events-none">
                         {item.aspectRatio && (
-                          <span className="px-2 py-0.5 bg-black/60 rounded-full text-[9px] font-bold text-white/60 border border-white/5 uppercase tracking-widest leading-none">
+                          <span className="px-1.5 @min-[16rem]/card:px-2 py-0.5 bg-black/60 rounded-full text-[9px] font-bold text-white/60 border border-white/5 uppercase tracking-widest leading-none whitespace-nowrap">
                             {item.aspectRatio}
                           </span>
                         )}
                         {item.createdAt && (
-                          <span className="px-2 py-0.5 bg-black/60 rounded-full text-[9px] font-bold text-white/60 border border-white/5 tracking-widest leading-none">
+                          <span className="hidden @min-[15rem]/card:inline px-2 py-0.5 bg-black/60 rounded-full text-[9px] font-bold text-white/60 border border-white/5 tracking-widest leading-none truncate">
                             {new Date(item.createdAt).toLocaleString(undefined, { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
@@ -788,13 +789,13 @@ export function AlbumTab({
 
                     {isSelected && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-blue-500/20">
-                        <CheckCircle2 className="w-14 h-14 text-blue-500 animate-in zoom-in duration-300" />
+                        <CheckCircle2 className="w-10 h-10 @min-[16rem]/card:w-14 @min-[16rem]/card:h-14 text-blue-500 animate-in zoom-in duration-300" />
                       </div>
                     )}
                   </div>
-                  <div className="mt-auto min-h-[160px] flex flex-col bg-white/40 dark:bg-black/40 backdrop-blur-md relative border-t border-neutral-200/50 dark:border-white/5">
-                    <div className="p-5 flex-1 flex flex-col justify-start">
-                    <div className="mb-3 flex items-center gap-1.5">
+                  <div className="mt-auto @min-[16rem]/card:min-h-[160px] flex flex-col bg-white/40 dark:bg-black/40 backdrop-blur-md relative border-t border-neutral-200/50 dark:border-white/5">
+                    <div className="p-3 @min-[16rem]/card:p-4 @min-[20rem]/card:p-5 flex-1 flex flex-col justify-start">
+                    <div className="mb-2 @min-[16rem]/card:mb-3 flex items-center gap-1.5">
                       <h3 className="min-w-0 flex-1 truncate text-[13px] font-black leading-5 text-neutral-900 dark:text-white" title={getAlbumFilename(item)}>
                         {getAlbumFilename(item)}
                       </h3>
@@ -812,7 +813,7 @@ export function AlbumTab({
                     <button
                       type="button"
                       onClick={() => setPromptItem(item)}
-                      className="mb-4 block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 h-10"
+                      className="mb-3 @min-[16rem]/card:mb-4 block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 h-10"
                       title={t('projectViewer.album.viewFullPrompt')}
                     >
                       <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400 line-clamp-2 font-medium group-hover:text-neutral-200 transition-colors cursor-pointer hover:text-white">
@@ -820,7 +821,7 @@ export function AlbumTab({
                       </p>
                     </button>
                     <div className="mt-auto flex flex-col items-start gap-2 w-full">
-                      <div className="grid grid-cols-2 gap-1.5 p-1 bg-neutral-50/50 dark:bg-neutral-950/50 rounded-lg border border-neutral-200/50 dark:border-white/5 w-full">
+                      <div className="grid grid-cols-1 @min-[13rem]/card:grid-cols-2 gap-1.5 p-1 bg-neutral-50/50 dark:bg-neutral-950/50 rounded-lg border border-neutral-200/50 dark:border-white/5 w-full">
                         <span className="text-[8px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-white/50 dark:bg-neutral-900/50 rounded border border-neutral-200/50 dark:border-white/5 text-center truncate" title={getProviderName(item.providerId)}>
                           {getProviderName(item.providerId)}
                         </span>
@@ -829,7 +830,7 @@ export function AlbumTab({
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-1 px-1.5 py-1 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-lg border border-neutral-200/30 dark:border-neutral-800/30 w-full">
+                      <div className="grid grid-cols-1 @min-[13rem]/card:grid-cols-3 gap-1 px-1.5 py-1 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-lg border border-neutral-200/30 dark:border-neutral-800/30 w-full">
                         {[
                           { label: t('projectViewer.album.raw'), size: item.size },
                           { label: t('projectViewer.album.optimized'), size: item.optimizedSize },
@@ -846,7 +847,7 @@ export function AlbumTab({
                         ) : <div key={i} />)}
                       </div>
 
-                      <div className="flex justify-between items-center gap-1.5 h-6 w-full">
+                      <div className="flex flex-wrap justify-between items-center gap-1.5 min-h-6 w-full">
                         {item.resolution && (
                           <span className="flex-1 flex items-center justify-center px-2 text-[9px] font-bold text-neutral-500 dark:text-neutral-500 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-md border border-neutral-200/50 dark:border-white/5 uppercase tracking-widest truncate">
                             {item.resolution}

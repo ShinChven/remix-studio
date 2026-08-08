@@ -2269,7 +2269,14 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         onFilesDrop={handleFilesDrop}
       />
 
-      <div className={`flex-1 flex-col overflow-hidden min-h-0 ${mobileView === 'jobs' ? 'flex h-full' : 'hidden'} ${isWorkflowExpanded ? 'lg:hidden' : 'lg:flex'}`}>
+      {/*
+        `@container/pane` makes this column a query container. Everything inside it
+        (toolbars, job rows, the album grid) sizes itself against the pane's own
+        width instead of the viewport — the pane is only ~30% of the window on
+        desktop, so viewport breakpoints would hand it desktop-sized chrome and
+        the toolbar rows would collide.
+      */}
+      <div className={`@container/pane flex-1 flex-col overflow-hidden min-h-0 ${mobileView === 'jobs' ? 'flex h-full' : 'hidden'} ${isWorkflowExpanded ? 'lg:hidden' : 'lg:flex'}`}>
         <div className="p-3 border-b border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-black/40 backdrop-blur-3xl shadow-sm flex flex-col gap-3 relative z-10">
           <div className="min-h-[40px] flex items-center justify-center gap-4">
             <div className="flex bg-neutral-100/30 dark:bg-black/40 border border-neutral-200/50 dark:border-white/5 rounded-xl p-1 flex-1 max-w-lg shadow-inner backdrop-blur-md">

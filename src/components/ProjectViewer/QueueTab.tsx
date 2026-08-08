@@ -59,8 +59,6 @@ export function QueueTab({
               totalCount={queueJobs.length}
               selectedCount={selectedQueueIds.size}
               onToggleSelectAll={toggleSelectAllQueue}
-              mobileSingleLine
-              mobileActionsRight
               rightActions={
                 <>
                 {selectedQueueIds.size > 0 && (
@@ -69,10 +67,10 @@ export function QueueTab({
                     disabled={isRetryingQueue}
                     title={t('projectViewer.common.delete')}
                     aria-label={t('projectViewer.common.delete')}
-                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                   >
                     <Trash2 className="w-3 h-3" />
-                    <span className="hidden sm:inline">{t('projectViewer.common.delete')}</span>
+                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.common.delete')}</span>
                   </button>
                 )}
                 {queueJobs.some(j => selectedQueueIds.has(j.id) && j.status === 'failed') && (
@@ -81,12 +79,12 @@ export function QueueTab({
                     disabled={isRetryingQueue}
                     title={t('projectViewer.queue.retry')}
                     aria-label={t('projectViewer.queue.retry')}
-                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
                   >
                     {isRetryingQueueBatch
                       ? <Loader2 className="w-3 h-3 animate-spin" />
                       : <Play className="w-3 h-3 fill-current" />}
-                    <span className="hidden sm:inline">
+                    <span className="hidden @min-[56rem]/pane:inline">
                       {isRetryingQueueBatch
                         ? t('projectViewer.queue.retrying')
                         : t('projectViewer.queue.retry')}
@@ -99,7 +97,7 @@ export function QueueTab({
                     disabled={isRetryingQueue}
                     title={t('projectViewer.queue.clearAllFailed')}
                     aria-label={t('projectViewer.queue.clearAllFailed')}
-                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                   >
                     <BrushCleaning className="w-3 h-3" />
                     <span>{t('projectViewer.queue.clearAllFailed')}</span>
@@ -208,7 +206,7 @@ export function QueueTab({
                       {task.imageContexts && task.imageContexts.length > 0 && (
                         <div className="space-y-3">
                             <label className="text-[9px] font-black uppercase tracking-[0.1em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>
-                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                            <div className="grid grid-cols-3 @md/pane:grid-cols-4 @2xl/pane:grid-cols-6 @4xl/pane:grid-cols-8 gap-3">
                               {task.imageContexts.map((ctx, idx) => (
                                 <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-blue-500/50">
                                   <img 
@@ -232,7 +230,7 @@ export function QueueTab({
                       {task.videoContexts && task.videoContexts.length > 0 && (
                         <div className="space-y-3">
                           <label className="text-[9px] font-black uppercase tracking-[0.1em] text-violet-300/70 px-1">Reference Videos</label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 @2xl/pane:grid-cols-2 gap-3">
                             {task.videoContexts.map((ctx, idx) => (
                               <video key={idx} src={imageDisplayUrl(ctx)} controls className="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-black" />
                             ))}
