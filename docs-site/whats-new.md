@@ -8,6 +8,34 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.20.0 — Portable projects, more places to release, and a phone-ready workspace
+
+*Pack a whole project into one file, send finished exports to any number of cloud drives, reuse a setup straight from the album, and work comfortably from a phone.*
+
+**Added**
+
+- **Export and import a whole project** — **Export Project** on a project card's menu packs a project into a single portable ZIP: its settings, workflow, and album metadata plus every file they reference. The bundle lands on the **Exports** page like any other archive, so it can be downloaded, released to a drive, or sold. Drop a `.zip` back onto the Exports page to import it — always as a **new** project, so a bundle can sit beside the project it came from. Bundles carry finished work, not generation history.
+- **Releases: every destination in one place** — The store settings screen is now **Releases**, reached from the Exports header. It holds storefronts and cloud drives together, and drives are no longer a single slot: connect any number of them, including several accounts on the same provider. **OneDrive** joins Google Drive, existing connections carry over automatically, and release history covers drive uploads as well as storefront publishes.
+- **Kimi (Moonshot AI)** — Added Kimi as a provider, with the `Kimi K3` text profile: a 1-million-token context window and native vision, so reference images can be attached to a text workflow. The API URL can be pointed at the mainland China endpoint, and Kimi providers work with the in-app assistant.
+- **Seedance 2.5 video** — BytePlus adds Dreamina Seedance 2.5, which accepts video and audio references alongside image frames — up to 30 images, 10 videos, and 10 audio clips per job. Audio generation now follows the project's sound setting.
+- **Reuse a workflow from the album** — Album, text, and audio entries each carry their own reuse control, and the image lightbox has one too (press `R`), so a setup can be picked while looking at the finished piece. If a result has no stored snapshot, the workflow is rebuilt from its own prompt and references, and the confirmation says so.
+- **Bulk text edits from an assistant** — Connected agents can rewrite the content of many library items in one batch instead of one call per item, and approval prompts now name how many items are affected and what is changing.
+
+**Improved**
+
+- **A workspace that fits a phone** — The media picker is a full-height sheet with a two-column grid, dialogs use the real viewport height so their buttons stay reachable, page headers are compact and scroll away with the content, and workflow image references are shown whole instead of cropped to a letterbox slice. Desktop layouts are unchanged.
+- **A calmer, faster interface** — Fixed the pointer-move flicker in Chrome and Safari, removed backdrop blur from cards, the main layout, the album, and the recycle bin, and made progress bars update without forcing the page to re-lay-out.
+- **Clearer documentation** — The README and the docs site were rewritten and audited against current behaviour.
+
+**Fixed**
+
+- **Reuse no longer reports "no longer available"** — Adding a second batch of drafts erased the saved setup of every draft, pending, and failed job already in the project, so results from those jobs could not be reused even though nothing had been deleted. Saved setups now survive bulk changes, and they no longer carry links that expire.
+- **Text library actions on desktop** — Copy, tag, edit, and delete buttons on text library rows are visible without hovering.
+
+**Removed**
+
+- **MEGA as a release destination** — MEGA has no OAuth API, so connecting an account meant storing its email and password in full: a secret that cannot be limited to one folder, cannot be revoked without changing the password, and grants whoever holds it the entire account. MEGA connections and their stored passwords are deleted on upgrade, queued MEGA releases are marked failed, and past MEGA releases stay in Release History. Google Drive and OneDrive, which authorize over OAuth, remain.
+
 ## 1.19.0 — Smarter assistants & cleaner workflows
 
 *Hide workflow clutter, let assistants work reliably through bigger batches, and move around long lists more easily on every screen size.*
