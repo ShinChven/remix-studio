@@ -57,7 +57,7 @@ The selected scope and raw/optimized choice are carried into the watermark scree
 
 ## Drive Releases
 
-Drives are connected on the **Releases** page, not on Exports. Google Drive, OneDrive, and MEGA are supported, and you can connect as many accounts as you like — several Google Drives side by side is fine.
+Drives are connected on the **Releases** page — a sub-page of Exports at `/exports/releases`, reachable from the link in the Exports header. Google Drive, OneDrive, and MEGA are supported, and you can connect as many accounts as you like — several Google Drives side by side is fine.
 
 A completed export can then be released to any of them. When more than one drive is connected, the upload action asks which one to use; with a single drive it goes straight there.
 

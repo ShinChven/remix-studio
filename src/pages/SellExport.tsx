@@ -250,7 +250,7 @@ export function SellExport() {
             {t('sell.noStoresHint')}
             <button
               type="button"
-              onClick={() => navigate('/releases')}
+              onClick={() => navigate('/exports/releases')}
               className="ml-2 underline font-bold"
             >
               {t('releases.headerLink')}

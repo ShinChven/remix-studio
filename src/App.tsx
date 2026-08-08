@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { ApiKeyCheck } from './components/ApiKeyCheck';
 import { MainLayout } from './components/MainLayout';
@@ -52,6 +52,15 @@ import { CampaignHistory } from './pages/CampaignHistory.tsx';
 import { ScheduledPosts } from './pages/ScheduledPosts.tsx';
 import ExtensionImport from './pages/ExtensionImport.tsx';
 import SharePage from './pages/SharePage.tsx';
+
+/**
+ * Redirect for a retired path, carrying the query string and hash across so
+ * links like the OAuth callback's `?success=connected` still land intact.
+ */
+function LegacyRedirect({ to }: { to: string }) {
+  const { search, hash } = useLocation();
+  return <Navigate to={`${to}${search}${hash}`} replace />;
+}
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -113,12 +122,15 @@ export default function App() {
               <Route path="provider/:id/edit" element={<ProviderForm />} />
               <Route path="provider/:id/custom-models" element={<ProviderCustomModels />} />
               <Route path="exports" element={<Exports />} />
+              <Route path="exports/releases" element={<Releases />} />
+              <Route path="exports/releases/history" element={<ReleaseHistory />} />
               <Route path="exports/:exportId/sell" element={<SellExport />} />
-              <Route path="releases" element={<Releases />} />
-              <Route path="releases/history" element={<ReleaseHistory />} />
               {/* Pre-rebrand paths */}
-              <Route path="exports/stores" element={<Navigate to="/releases" replace />} />
-              <Route path="exports/uploads" element={<Navigate to="/releases/history" replace />} />
+              <Route path="exports/stores" element={<LegacyRedirect to="/exports/releases" />} />
+              <Route path="exports/uploads" element={<LegacyRedirect to="/exports/releases/history" />} />
+              {/* Releases before it moved under Exports */}
+              <Route path="releases" element={<LegacyRedirect to="/exports/releases" />} />
+              <Route path="releases/history" element={<LegacyRedirect to="/exports/releases/history" />} />
               <Route path="trash" element={<TrashView />} />
               <Route path="storage" element={<Navigate to="/account?tab=storage" replace />} />
               <Route path="account" element={<Account />} />
