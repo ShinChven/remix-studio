@@ -325,7 +325,7 @@ export function CampaignBatchCreate() {
 
   return (
     <div className="relative flex h-full flex-col overflow-y-auto p-4 md:p-8">
-      <div className="w-full space-y-8 pb-32">
+      <div className="w-full space-y-6 md:space-y-8 pb-32">
         <PageHeader
           title="Create Batch"
           description={<>Queue media from uploads, libraries, or albums for <span className="font-semibold text-neutral-950 dark:text-white">{campaign?.name}</span></>}

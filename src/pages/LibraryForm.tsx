@@ -82,7 +82,7 @@ export function LibraryForm() {
 
   return (
     <div className="h-full overflow-y-auto p-4 md:p-8">
-      <div className="w-full space-y-8 pb-20">
+      <div className="w-full space-y-6 md:space-y-8 pb-20">
         <PageHeader
           title={isNew ? t('libraryForm.newTitle') : t('libraryForm.editTitle')}
           description={t('libraryForm.description')}

@@ -57,7 +57,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **OpenAI** | `Sora 2`, `Sora 2 Pro` |
 | **Grok** | `Grok Imagine Video` |
 | **RunningHub** | `Seedance 2.0 Global`, `Seedance 2.0 Global Multimodal Reference` |
-| **BytePlus** | `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` |
+| **BytePlus** | `Seedance 2.5`, `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` |
 | **Kling AI** | `Kling Video O1`, `Kling V3 Omni Video` |
 | **Replicate** | `Seedance 2.0 Fast`, `Seedance 2.0` |
 

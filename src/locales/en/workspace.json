@@ -26,70 +26,6 @@
   "exports": {
     "title": "Exports",
     "description": "Manage your generated ZIP archives across all projects.",
-    "drive": {
-      "connected": "Drive Connected",
-      "disconnect": "Disconnect",
-      "connect": "Connect Drive",
-      "disconnectSuccess": "Google Drive disconnected",
-      "disconnectError": "Failed to disconnect Google Drive",
-      "uploadQueued": "Drive upload queued — watch the Drive icon for progress",
-      "uploadSuccess": "Uploaded to Google Drive!",
-      "uploadFailed": "Drive upload failed",
-      "openFile": "Open file",
-      "uploading": "Uploading to Drive…",
-      "uploadToDrive": "Upload to Google Drive",
-      "confirmDialog": {
-        "title": "Upload to Google Drive?",
-        "message": "Upload \"{{name}}\" to your connected Google Drive? This may take a while for large archives.",
-        "confirm": "Upload"
-      }
-    },
-    "stores": {
-      "headerLink": "Stores",
-      "title": "Store Settings",
-      "description": "Connect digital stores so you can publish exports to them.",
-      "backToExports": "Back to Exports",
-      "connectedTitle": "Connected Stores",
-      "connectedDescription": "These stores are available when exporting content.",
-      "availableTitle": "Available Stores",
-      "availableDescription": "Connect a new store. You can connect multiple accounts per platform.",
-      "connect": "Connect",
-      "connectGumroad": "Connect Gumroad",
-      "addAnother": "Connect another",
-      "reconnect": "Reconnect",
-      "disconnect": "Disconnect",
-      "cancel": "Cancel",
-      "empty": {
-        "title": "No stores connected",
-        "description": "Connect a store to publish exports as digital products."
-      },
-      "connectSuccess": "Store connected",
-      "disconnectSuccess": "Store disconnected",
-      "disconnectError": "Failed to disconnect store",
-      "loadError": "Failed to load stores",
-      "confirmDisconnectTitle": "Disconnect Store",
-      "confirmDisconnectMessage": "Are you sure you want to disconnect {{name}}? Future exports will no longer be able to publish to this store."
-    },
-    "uploads": {
-      "headerLink": "History",
-      "title": "Upload History",
-      "description": "Past attempts to publish exports as products on connected stores.",
-      "backToExports": "Back to Exports",
-      "loadError": "Failed to load upload history",
-      "empty": {
-        "title": "No upload history yet",
-        "description": "Once you publish an export to a store, the result will appear here."
-      },
-      "status": {
-        "success": "Success",
-        "failed": "Failed"
-      },
-      "openProduct": "Open product page",
-      "untitled": "Untitled product",
-      "stats": {
-        "total": "Total"
-      }
-    },
     "stats": {
       "database": "Database",
       "total": "Total",
@@ -118,6 +54,31 @@
       "title": "Delete Export Record",
       "message": "Are you sure you want to delete this export record? This action cannot be undone.",
       "confirm": "Delete Record"
+    }
+  },
+  "projectImports": {
+    "title": "Project Bundles",
+    "description": "Upload a project bundle to bring a whole project back in.",
+    "selectFile": "Import Project",
+    "uploading": "Uploading {{percent}}%",
+    "untitled": "Untitled project",
+    "bundleBadge": "Project Bundle",
+    "deleteRecord": "Delete import record",
+    "status": {
+      "queued": "Queued",
+      "unpacking": "Unpacking",
+      "imported": "Imported",
+      "failed": "Failed"
+    },
+    "toast": {
+      "queued": "Bundle uploaded — unpacking it now.",
+      "completed": "Imported \"{{name}}\".",
+      "failed": "Project import failed"
+    },
+    "errors": {
+      "notZip": "Pick a .zip project bundle.",
+      "uploadFailed": "Failed to upload the project bundle",
+      "deleteFailed": "Failed to delete the import record"
     }
   },
   "sell": {

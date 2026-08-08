@@ -312,7 +312,7 @@ export function CampaignBatchActions() {
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
-      <div className="w-full space-y-8 pb-24">
+      <div className="w-full space-y-6 md:space-y-8 pb-24">
         <PageHeader
           title="Batch Actions"
           description={<>Manage multiple posts for <span className="font-semibold text-neutral-950 dark:text-white">{campaign?.name}</span></>}

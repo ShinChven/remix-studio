@@ -19,6 +19,13 @@ type BytePlusTaskResponse = {
   };
 };
 
+type BytePlusMediaRole =
+  | 'first_frame'
+  | 'last_frame'
+  | 'reference_image'
+  | 'reference_video'
+  | 'reference_audio';
+
 type BytePlusContentItem =
   | {
       type: 'text';
@@ -29,11 +36,32 @@ type BytePlusContentItem =
       image_url: {
         url: string;
       };
-      role?: 'first_frame' | 'last_frame' | 'reference_image';
+      role?: BytePlusMediaRole;
+    }
+  | {
+      type: 'video_url';
+      video_url: {
+        url: string;
+      };
+      role?: BytePlusMediaRole;
+    }
+  | {
+      type: 'audio_url';
+      audio_url: {
+        url: string;
+      };
+      role?: BytePlusMediaRole;
     };
 
 const DEFAULT_BASE_URL = 'https://ark.ap-southeast.bytepluses.com/api/v3';
-const DEFAULT_MODEL = 'seedance-1-5-pro-251215';
+const DEFAULT_MODEL = 'dreamina-seedance-2-5-260628';
+
+/** Dreamina Seedance 2.x accepts video/audio references on top of the 1.x image roles. */
+const SEEDANCE_2_PATTERN = /seedance-2[-.]/;
+
+/** Per-request reference caps published for each Seedance 2.x tier. */
+const SEEDANCE_2_5_LIMITS = { images: 30, videos: 10, audios: 10 };
+const SEEDANCE_2_0_LIMITS = { images: 9, videos: 3, audios: 3 };
 
 export class BytePlusVideoGenerator extends VideoGenerator {
   private apiKey: string;
@@ -58,7 +86,12 @@ export class BytePlusVideoGenerator extends VideoGenerator {
       if (req.aspectRatio) payload.ratio = req.aspectRatio;
       if (req.resolution) payload.resolution = req.resolution;
       if (typeof req.duration === 'number') payload.duration = req.duration;
-      if (model === 'seedance-1-5-pro-251215') payload.generate_audio = true;
+      if (this.supportsGeneratedAudio(model)) payload.generate_audio = req.sound !== 'off';
+
+      if (this.isSeedance2(model)) {
+        payload.watermark = false;
+        if (typeof req.seed === 'number') payload.seed = req.seed;
+      }
 
       const res = await fetch(`${this.baseUrl}/contents/generations/tasks`, {
         method: 'POST',
@@ -173,7 +206,19 @@ export class BytePlusVideoGenerator extends VideoGenerator {
     }
   }
 
+  private isSeedance2(model: string): boolean {
+    return SEEDANCE_2_PATTERN.test(model);
+  }
+
+  private supportsGeneratedAudio(model: string): boolean {
+    return this.isSeedance2(model) || model.startsWith('seedance-1-5-pro');
+  }
+
   private buildContent(model: string, req: VideoGenerateRequest): BytePlusContentItem[] {
+    if (this.isSeedance2(model)) {
+      return this.buildSeedance2Content(model, req);
+    }
+
     const content: BytePlusContentItem[] = [];
     const prompt = (req.prompt || '').trim();
     if (prompt) {
@@ -203,6 +248,55 @@ export class BytePlusVideoGenerator extends VideoGenerator {
 
     for (const url of imageUrls.slice(0, 4)) {
       content.push(this.createImageItem(url, 'reference_image'));
+    }
+
+    return content;
+  }
+
+  /**
+   * Seedance 2.x is a single multimodal endpoint: images keep the 1.x frame roles for
+   * text/image-to-video, and any video or audio reference switches the request into
+   * omni-reference mode where every image is a `reference_image`.
+   */
+  private buildSeedance2Content(model: string, req: VideoGenerateRequest): BytePlusContentItem[] {
+    const limits = model.includes('seedance-2-5') ? SEEDANCE_2_5_LIMITS : SEEDANCE_2_0_LIMITS;
+    const content: BytePlusContentItem[] = [];
+
+    const prompt = (req.prompt || '').trim();
+    if (prompt) {
+      content.push({ type: 'text', text: prompt });
+    }
+
+    const imageUrls = this.resolveImageUrls(req).slice(0, limits.images);
+    const videoUrls = (req.refVideoUrls || []).slice(0, limits.videos);
+    const audioUrls = (req.refAudioUrls || []).slice(0, limits.audios);
+
+    if (!prompt && imageUrls.length === 0 && videoUrls.length === 0) {
+      throw new Error('BytePlus video generation requires a prompt or at least one reference image or video');
+    }
+
+    if (audioUrls.length > 0 && imageUrls.length === 0 && videoUrls.length === 0) {
+      throw new Error('Seedance reference audio requires at least one reference image or video');
+    }
+
+    const omniReference = videoUrls.length > 0 || audioUrls.length > 0 || imageUrls.length > 2;
+    if (omniReference) {
+      for (const url of imageUrls) {
+        content.push(this.createImageItem(url, 'reference_image'));
+      }
+    } else if (imageUrls.length === 1) {
+      content.push(this.createImageItem(imageUrls[0], 'first_frame'));
+    } else if (imageUrls.length === 2) {
+      content.push(this.createImageItem(imageUrls[0], 'first_frame'));
+      content.push(this.createImageItem(imageUrls[1], 'last_frame'));
+    }
+
+    for (const url of videoUrls) {
+      content.push({ type: 'video_url', video_url: { url }, role: 'reference_video' });
+    }
+
+    for (const url of audioUrls) {
+      content.push({ type: 'audio_url', audio_url: { url }, role: 'reference_audio' });
     }
 
     return content;

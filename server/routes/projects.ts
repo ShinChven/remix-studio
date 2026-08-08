@@ -1,11 +1,15 @@
 import { Hono } from 'hono';
 import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
+import type { PrismaClient } from '@prisma/client';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
 import { QueueManager } from '../queue/queue-manager';
 import { ExportManager } from '../queue/export-manager';
 import { DeliveryManager } from '../queue/delivery-manager';
+import { ProjectImportManager } from '../queue/project-import-manager';
+import { buildProjectBundleManifest } from '../services/project-bundle';
 import { checkStorageLimit } from '../utils/storage-check';
 import { UserRepository } from '../auth/user-repository';
 import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem } from '../../src/types';
@@ -60,6 +64,59 @@ function normalizeWorkflowForStorage(workflow: WorkflowItem[], bucket: string): 
     }
     return item;
   });
+}
+
+/**
+ * Strip presigned URLs back to bare S3 keys on everything a job carries: its
+ * media contexts and the workflow snapshot kept for "reuse". The snapshot is
+ * read back weeks later, so storing a signed URL would hand the reuse flow a
+ * link that has long since expired.
+ */
+function normalizeJobsForStorage(jobs: Job[], bucket: string): Job[] {
+  return jobs.map((job) => {
+    const imageContexts = job.imageContexts
+      ? job.imageContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
+      : job.imageContexts;
+    const videoContexts = job.videoContexts
+      ? job.videoContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
+      : job.videoContexts;
+    const audioContexts = job.audioContexts
+      ? job.audioContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
+      : job.audioContexts;
+    const workflowSnapshot = job.workflowSnapshot
+      ? normalizeWorkflowForStorage(job.workflowSnapshot, bucket)
+      : job.workflowSnapshot;
+    return { ...job, imageContexts, videoContexts, audioContexts, workflowSnapshot };
+  });
+}
+
+/**
+ * Rebuild a one-combination workflow from a finished result's own prompt and
+ * media references. Used when the job behind a result predates workflow
+ * snapshots (or lost its snapshot to an older bulk-save bug): reusing it
+ * reproduces exactly that result rather than the recipe that varied it, so
+ * callers are told the workflow was reconstructed.
+ */
+function reconstructWorkflowSnapshot(source: {
+  prompt?: string;
+  imageContexts?: string[];
+  videoContexts?: string[];
+  audioContexts?: string[];
+}): WorkflowItem[] {
+  const items: WorkflowItem[] = [];
+  // Fresh ids: these become real workflow items on the project the moment the
+  // user confirms, and must not collide with anything already stored.
+  const push = (type: WorkflowItem['type'], value: string) => {
+    items.push({ id: randomUUID(), type, value, order: items.length });
+  };
+
+  const prompt = source.prompt?.trim();
+  if (prompt) push('text', prompt);
+  source.imageContexts?.forEach((value) => value && push('image', value));
+  source.videoContexts?.forEach((value) => value && push('video', value));
+  source.audioContexts?.forEach((value) => value && push('audio', value));
+
+  return items;
 }
 
 function basenameFromKey(value: string | undefined): string {
@@ -182,7 +239,7 @@ export async function signWorkflowItems(workflow: WorkflowItem[], storage: S3Sto
   );
 }
 
-export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectEvents?: ProjectEventPublisher) {
+export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectImportManager: ProjectImportManager, prisma: PrismaClient, projectEvents?: ProjectEventPublisher) {
   const router = new Hono<{ Variables: Variables }>();
 
   // NOTE: /rename must be registered before /:id to avoid route shadowing
@@ -391,10 +448,12 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const job = await repository.getJob(user.userId, projectId, jobId);
       if (!job) return c.json({ error: 'Job not found' }, 404);
 
+      const snapshot = job.workflowSnapshot?.length ? job.workflowSnapshot : null;
+      const reconstructed = snapshot ? null : reconstructWorkflowSnapshot(job);
+
       return c.json({
-        workflowSnapshot: job.workflowSnapshot
-          ? await signWorkflowItems(job.workflowSnapshot, storage)
-          : [],
+        workflowSnapshot: await signWorkflowItems(snapshot ?? reconstructed ?? [], storage),
+        workflowReconstructed: !snapshot && (reconstructed?.length ?? 0) > 0,
         providerId: job.providerId,
         modelConfigId: job.modelConfigId,
         aspectRatio: job.aspectRatio,
@@ -416,8 +475,10 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
    *
    * Same payload as the job configuration endpoint, resolved from the album
    * item's originating job so a finished result can be reused straight from the
-   * album. The workflow snapshot only lives on the job, so it comes back empty
-   * once that job has been deleted; the item's own settings still fill the rest.
+   * album. The workflow snapshot only lives on the job, so when that job is
+   * gone — or predates snapshots entirely — the workflow is rebuilt from the
+   * item's own prompt and references and flagged as reconstructed; the item's
+   * settings fill the rest.
    */
   router.get('/api/projects/:id/album/:itemId/configuration', authMiddleware, async (c) => {
     try {
@@ -431,10 +492,12 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const job = item.jobId ? await repository.getJob(user.userId, projectId, item.jobId) : null;
 
+      const snapshot = job?.workflowSnapshot?.length ? job.workflowSnapshot : null;
+      const reconstructed = snapshot ? null : reconstructWorkflowSnapshot(item);
+
       return c.json({
-        workflowSnapshot: job?.workflowSnapshot
-          ? await signWorkflowItems(job.workflowSnapshot, storage)
-          : [],
+        workflowSnapshot: await signWorkflowItems(snapshot ?? reconstructed ?? [], storage),
+        workflowReconstructed: !snapshot && (reconstructed?.length ?? 0) > 0,
         providerId: job?.providerId ?? item.providerId,
         modelConfigId: job?.modelConfigId ?? item.modelConfigId,
         aspectRatio: job?.aspectRatio ?? item.aspectRatio,
@@ -552,7 +615,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         status: projectStatus,
         createdAt: typeof body.createdAt === 'number' ? body.createdAt : Date.now(),
         workflow: Array.isArray(body.workflow) ? normalizeWorkflowForStorage(body.workflow, storage.getBucketName()) : [],
-        jobs: Array.isArray(body.jobs) ? body.jobs : [],
+        jobs: Array.isArray(body.jobs) ? normalizeJobsForStorage(body.jobs, storage.getBucketName()) : [],
         album: [],
         providerId: typeof body.providerId === 'string' ? body.providerId : undefined,
         modelConfigId: typeof body.modelConfigId === 'string' ? body.modelConfigId : undefined,
@@ -607,19 +670,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         updates.workflow = normalizeWorkflowForStorage(body.workflow, bucket);
       }
       if (Array.isArray(body?.jobs)) {
-        const bucket = storage.getBucketName();
-        updates.jobs = body.jobs.map((job: Job) => {
-          const imageContexts = job.imageContexts 
-            ? job.imageContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
-            : job.imageContexts;
-          const videoContexts = job.videoContexts
-            ? job.videoContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
-            : job.videoContexts;
-          const audioContexts = job.audioContexts
-            ? job.audioContexts.map(ctx => stripToKey(ctx, bucket) || ctx)
-            : job.audioContexts;
-          return { ...job, imageContexts, videoContexts, audioContexts };
-        });
+        updates.jobs = normalizeJobsForStorage(body.jobs, storage.getBucketName());
       }
       if (typeof body?.providerId === 'string') updates.providerId = body.providerId;
       if (typeof body?.aspectRatio === 'string') updates.aspectRatio = body.aspectRatio;
@@ -1328,6 +1379,109 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+  /**
+   * POST /api/projects/:id/export-bundle
+   *
+   * Package a whole project — settings, workflow, album and every media file
+   * they reference — into one portable .zip. The archive lands in the normal
+   * exports list, so it can be downloaded, released to a drive, or sold like
+   * any other package.
+   */
+  router.post('/api/projects/:id/export-bundle', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+
+      const body = await c.req.json().catch(() => ({}));
+      const packageName = typeof body?.packageName === 'string' ? body.packageName : undefined;
+
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Project not found' }, 404);
+
+      const bucket = storage.getBucketName();
+      const [workflow, albumPage] = await Promise.all([
+        repository.getProjectWorkflow(user.userId, projectId),
+        repository.getProjectAlbum(user.userId, projectId, { limit: 999999 }),
+      ]);
+
+      // The manifest has to carry bare storage keys to resolve them to files,
+      // so anything stored as a presigned URL is stripped back down first.
+      const manifest = buildProjectBundleManifest({
+        project: { ...project, id: projectId },
+        workflow: normalizeWorkflowForStorage(workflow, bucket),
+        album: albumPage.items.map((item) => ({
+          ...item,
+          imageUrl: stripToKey(item.imageUrl, bucket) || item.imageUrl,
+          thumbnailUrl: stripToKey(item.thumbnailUrl, bucket),
+          optimizedUrl: stripToKey(item.optimizedUrl, bucket),
+          imageContexts: item.imageContexts?.map((v) => stripToKey(v, bucket) || v),
+          videoContexts: item.videoContexts?.map((v) => stripToKey(v, bucket) || v),
+          audioContexts: item.audioContexts?.map((v) => stripToKey(v, bucket) || v),
+        })),
+      });
+
+      // Resolve real sizes for the quota estimate, and drop entries whose file
+      // has gone missing so the archiver never stalls on a dead key.
+      const mediaItems: Array<AlbumItem & { exportName?: string }> = [];
+      let estimatedSize = 0;
+      for (const entry of manifest.media) {
+        if (!entry.sourceKey) continue;
+        const size = entry.size ?? (await storage.getSize(entry.sourceKey).catch(() => undefined));
+        if (size == null && !(await storage.exists(entry.sourceKey).catch(() => false))) {
+          console.warn(`[POST /api/projects/:id/export-bundle] Skipping missing file ${entry.sourceKey}`);
+          continue;
+        }
+        entry.size = size;
+        estimatedSize += size ?? 5 * 1024 * 1024;
+        mediaItems.push({
+          id: entry.path,
+          jobId: '',
+          prompt: '',
+          imageUrl: entry.sourceKey,
+          size,
+          createdAt: Date.now(),
+          exportName: entry.path,
+        });
+      }
+
+      // Keep the manifest honest about what the archive actually contains.
+      const packedPaths = new Set(mediaItems.map((item) => item.exportName));
+      manifest.media = manifest.media.filter((entry) => packedPaths.has(entry.path));
+
+      const { allowed, currentUsage, limit } = await checkStorageLimit(
+        user.userId,
+        estimatedSize,
+        userRepository,
+        storage,
+        exportStorage,
+        repository
+      );
+      if (!allowed) {
+        return c.json({
+          error: `Storage limit exceeded. Cannot export project. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedSize / (1024 * 1024)).toFixed(1)}MB.`,
+        }, 403);
+      }
+
+      const taskId = await exportManager.startExport(
+        user.userId,
+        projectId,
+        project.name,
+        mediaItems,
+        packageName || `${project.name}_Project`,
+        {
+          sourceType: 'project-bundle',
+          bundleManifest: manifest,
+        }
+      );
+
+      return c.json({ taskId });
+    } catch (e) {
+      console.error('[POST /api/projects/:id/export-bundle]', e);
+      return c.json({ error: 'Failed to start project export' }, 500);
+    }
+  });
+
   router.get('/api/projects/:id/export/:taskId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
@@ -1378,7 +1532,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   /**
    * POST /api/exports/:taskId/upload-to-drive
    *
-   * Submit a Drive upload job to the global delivery queue.
+   * Queue a release of this export to one of the user's connected drives.
    * Returns { deliveryTaskId } immediately — frontend polls GET /api/deliveries/:id.
    */
   router.post('/api/exports/:taskId/upload-to-drive', authMiddleware, async (c) => {
@@ -1392,20 +1546,40 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         return c.json({ error: 'Export is not ready for upload' }, 400);
       }
 
-      // Verify Drive is connected before accepting the job
-      const encryptedToken = await userRepository.getGoogleDriveRefreshToken(user.userId);
-      if (!encryptedToken) {
-        return c.json({ error: 'Google Drive is not connected. Please connect it in Account settings.' }, 400);
-      }
-      if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-        return c.json({ error: 'Google OAuth is not configured' }, 500);
+      const body = await c.req.json().catch(() => ({} as any));
+      const requestedId = typeof body?.driveConnectionId === 'string' ? body.driveConnectionId : null;
+
+      const connections = await prisma.driveConnection.findMany({
+        where: { userId: user.userId },
+        select: { id: true, provider: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (connections.length === 0) {
+        return c.json({ error: 'No drive is connected. Connect one on the Releases page.' }, 400);
       }
 
-      const deliveryTaskId = await deliveryManager.startDelivery(user.userId, taskId, { destination: 'drive' });
+      // With a single drive connected the caller may omit the target.
+      const connection = requestedId
+        ? connections.find((item) => item.id === requestedId)
+        : connections.length === 1
+          ? connections[0]
+          : null;
+      if (!connection) {
+        return c.json(
+          { error: requestedId ? 'Drive connection not found' : 'Pick which drive to release to.' },
+          400,
+        );
+      }
+
+      const deliveryTaskId = await deliveryManager.startDelivery(user.userId, taskId, {
+        destination: 'drive',
+        driveConnectionId: connection.id,
+        driveProvider: connection.provider,
+      });
       return c.json({ deliveryTaskId }, 202);
     } catch (e) {
       console.error('[POST /api/exports/:taskId/upload-to-drive]', e);
-      return c.json({ error: 'Failed to submit Drive upload job' }, 500);
+      return c.json({ error: 'Failed to submit drive release job' }, 500);
     }
   });
 
@@ -1468,6 +1642,116 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     } catch (e) {
       console.error('[DELETE /api/exports/:taskId]', e);
       return c.json({ error: 'Failed to delete export task' }, 500);
+    }
+  });
+
+  // === Project bundle import ===
+
+  /**
+   * POST /api/project-imports
+   *
+   * Body is the raw .zip (no multipart wrapper) so a multi-gigabyte bundle
+   * streams straight into storage instead of being buffered in memory. The
+   * archive is unpacked into a new project by ProjectImportManager; the
+   * response returns immediately with a task to poll.
+   */
+  router.post('/api/project-imports', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const taskId = randomUUID();
+    const s3Key = ProjectImportManager.uploadKey(user.userId, taskId);
+
+    try {
+      const rawName = c.req.header('x-file-name');
+      const fileName = rawName ? decodeURIComponent(rawName).slice(0, 255) : undefined;
+
+      const declaredLength = Number(c.req.header('content-length') || '0');
+      if (Number.isFinite(declaredLength) && declaredLength > 0) {
+        // The uploaded archive plus everything it unpacks to has to fit, so
+        // reserve twice its size up front rather than failing halfway through.
+        const { allowed, currentUsage, limit } = await checkStorageLimit(
+          user.userId,
+          declaredLength * 2,
+          userRepository,
+          storage,
+          exportStorage,
+          repository
+        );
+        if (!allowed) {
+          return c.json({
+            error: `Storage limit exceeded. Cannot import project. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${((declaredLength * 2) / (1024 * 1024)).toFixed(1)}MB.`,
+          }, 403);
+        }
+      }
+
+      const body = c.req.raw.body;
+      if (!body) return c.json({ error: 'No archive was uploaded' }, 400);
+
+      await exportStorage.uploadStream(
+        s3Key,
+        Readable.fromWeb(body as any),
+        'application/zip'
+      );
+
+      const size = await exportStorage.getSize(s3Key).catch(() => undefined);
+      await projectImportManager.enqueue({ userId: user.userId, taskId, fileName, s3Key, size });
+
+      return c.json({ taskId });
+    } catch (e) {
+      console.error('[POST /api/project-imports]', e);
+      // Never leave a half-written archive eating the user's quota.
+      await exportStorage.delete(s3Key).catch(() => {});
+      return c.json({ error: 'Failed to upload project bundle' }, 500);
+    }
+  });
+
+  router.get('/api/project-imports', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const pageValue = Number(c.req.query('page') || '1');
+      const pageSizeValue = Number(c.req.query('pageSize') || c.req.query('limit') || '10');
+      const page = Math.max(1, Math.floor(Number.isFinite(pageValue) ? pageValue : 1));
+      const pageSize = Math.max(1, Math.min(50, Math.floor(Number.isFinite(pageSizeValue) ? pageSizeValue : 10)));
+
+      const result = await repository.getProjectImportTasks(user.userId, page, pageSize);
+      return c.json(result);
+    } catch (e) {
+      console.error('[GET /api/project-imports]', e);
+      return c.json({ error: 'Failed to list project imports' }, 500);
+    }
+  });
+
+  router.get('/api/project-imports/:taskId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const task = await repository.getProjectImportTask(user.userId, c.req.param('taskId'));
+      if (!task) return c.json({ error: 'Import not found' }, 404);
+      return c.json(task);
+    } catch (e) {
+      console.error('[GET /api/project-imports/:taskId]', e);
+      return c.json({ error: 'Failed to fetch import' }, 500);
+    }
+  });
+
+  router.delete('/api/project-imports/:taskId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const taskId = c.req.param('taskId');
+      const task = await repository.getProjectImportTask(user.userId, taskId);
+      if (!task) return c.json({ error: 'Import not found' }, 404);
+      if (task.status === 'processing') {
+        return c.json({ error: 'This import is still running' }, 409);
+      }
+      // Only the record goes away — an imported project is the user's to keep.
+      if (task.s3Key) {
+        await exportStorage.delete(task.s3Key).catch((s3Err) => {
+          console.warn(`[DELETE /api/project-imports/:taskId] Failed to delete ${task.s3Key}:`, s3Err);
+        });
+      }
+      await repository.deleteProjectImportTask(user.userId, taskId);
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/project-imports/:taskId]', e);
+      return c.json({ error: 'Failed to delete import task' }, 500);
     }
   });
 

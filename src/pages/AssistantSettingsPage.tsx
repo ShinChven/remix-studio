@@ -445,8 +445,8 @@ export function AssistantSettingsPage() {
         document.getElementById('mobile-header-assistant-title')!,
       )}
 
-      <div className="h-full overflow-y-auto p-6 lg:p-10">
-        <div className="w-full space-y-8">
+      <div className="h-full overflow-y-auto p-4 sm:p-6 lg:p-10">
+        <div className="w-full space-y-6 md:space-y-8">
           <PageHeader
             title={t('assistant.chatSettings', { defaultValue: 'Chat settings' })}
             description={t('assistant.chatSettingsDescription', {

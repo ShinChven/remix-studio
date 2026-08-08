@@ -32,14 +32,14 @@ export function ProjectPreviewModal({
   }, [onClose]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8">
+    <div className="fixed inset-0 z-[600] flex items-center justify-center sm:p-4 md:p-8">
       <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={onClose} />
-      
-      <div className="relative w-full max-w-4xl h-[85vh] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+
+      <div className="relative w-full max-w-4xl h-[100dvh] sm:h-[85dvh] bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 sm:border sm:rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
         {/* Header */}
-        <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/20 dark:bg-neutral-950/20">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-600/10 rounded-xl">
+        <div className="p-4 sm:p-6 border-b border-neutral-200 dark:border-neutral-800 flex items-start justify-between gap-3 bg-neutral-50/20 dark:bg-neutral-950/20">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="hidden sm:block p-2.5 bg-indigo-600/10 rounded-xl">
               <Sparkles className="w-5 h-5 text-indigo-500" />
             </div>
             <div>
@@ -73,8 +73,8 @@ export function ProjectPreviewModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar bg-neutral-50/10 dark:bg-neutral-950/10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 custom-scrollbar bg-neutral-50/10 dark:bg-neutral-950/10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {/* Left: Configuration Summary */}
             <div className="space-y-6">
               <section>
@@ -203,18 +203,18 @@ export function ProjectPreviewModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 flex justify-end">
+        <div className="p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 flex flex-wrap justify-end gap-2 sm:gap-3">
           <Link
             to={`/project/${project.id}`}
             onClick={onClose}
-            className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-indigo-500 shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+            className="px-5 py-3 sm:px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-indigo-500 shadow-lg shadow-indigo-500/20 flex items-center gap-2"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             Open Full Project
           </Link>
-          <button 
+          <button
             onClick={onClose}
-            className="px-8 py-3 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-neutral-300 dark:border-neutral-700"
+            className="px-5 py-3 sm:px-8 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-neutral-300 dark:border-neutral-700"
           >
             Close Viewer
           </button>

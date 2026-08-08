@@ -40,7 +40,12 @@
       },
       "openProject": "プロジェクトを開く →"
     },
-    "pagination": "{{total}} ページ中 {{current}} ページ"
+    "pagination": "{{total}} ページ中 {{current}} ページ",
+    "exportBundle": {
+      "action": "プロジェクトを書き出す",
+      "queued": "「{{name}}」をパッケージ化しています。書き出しページで進行状況を確認できます。",
+      "failed": "プロジェクトの書き出しを開始できませんでした"
+    }
   },
   "projectForm": {
     "newTitle": "新規プロジェクト",

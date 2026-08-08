@@ -40,7 +40,12 @@
       },
       "openProject": "打开项目 →"
     },
-    "pagination": "第 {{current}} / {{total}} 页"
+    "pagination": "第 {{current}} / {{total}} 页",
+    "exportBundle": {
+      "action": "导出项目",
+      "queued": "正在打包“{{name}}”，可在导出页面查看进度。",
+      "failed": "启动项目导出失败"
+    }
   },
   "projectForm": {
     "newTitle": "新建项目",

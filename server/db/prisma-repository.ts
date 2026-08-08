@@ -110,6 +110,15 @@ export class PrismaRepository implements IRepository {
   heartbeatExportTask(taskId: string) { return this.projects.heartbeatExportTask(taskId); }
   reapStaleExportTasks(thresholdMinutes?: number) { return this.projects.reapStaleExportTasks(thresholdMinutes); }
 
+  // === Project import CRUD + Queue ===
+  getProjectImportTasks(userId: string, page?: number, limit?: number) { return this.projects.getProjectImportTasks(userId, page, limit); }
+  getProjectImportTask(userId: string, taskId: string) { return this.projects.getProjectImportTask(userId, taskId); }
+  saveProjectImportTask(userId: string, taskId: string, data: any) { return this.projects.saveProjectImportTask(userId, taskId, data); }
+  deleteProjectImportTask(userId: string, taskId: string) { return this.projects.deleteProjectImportTask(userId, taskId); }
+  claimNextProjectImportTask(workerId: string) { return this.projects.claimNextProjectImportTask(workerId); }
+  heartbeatProjectImportTask(taskId: string) { return this.projects.heartbeatProjectImportTask(taskId); }
+  reapStaleProjectImportTasks(thresholdMinutes?: number) { return this.projects.reapStaleProjectImportTasks(thresholdMinutes); }
+
   // === Delivery Task CRUD + Queue ===
   saveDeliveryTask(userId: string, taskId: string, data: any) { return this.projects.saveDeliveryTask(userId, taskId, data); }
   getDeliveryTask(userId: string, taskId: string) { return this.projects.getDeliveryTask(userId, taskId); }

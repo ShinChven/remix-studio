@@ -417,28 +417,30 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     });
   };
 
+  // Phones scroll the whole page so the header can leave the screen; from lg the header is pinned and only the list scrolls.
   return (
-    <div className="h-full flex flex-col p-4 md:p-8 w-full overflow-hidden animate-in fade-in duration-700">
+    <div className="h-full flex flex-col px-4 pb-4 md:p-8 w-full overflow-y-auto lg:overflow-hidden custom-scrollbar animate-in fade-in duration-700">
       <PageHeader
         title={library.name}
         description={(
-          <div className="mt-2 md:mt-3 space-y-3">
+          <div className="mt-1 space-y-2 md:mt-3 md:space-y-3">
             {library.description && (
-              <p className="max-w-3xl text-sm leading-6 text-neutral-600 dark:text-neutral-400">
+              <p className="max-w-3xl text-[13px] leading-snug text-neutral-600 dark:text-neutral-400 md:text-sm md:leading-6">
                 {library.description}
               </p>
             )}
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600 dark:text-neutral-400 px-3 py-1.5 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
+            <div className="flex flex-wrap items-center gap-2 md:gap-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600 dark:text-neutral-400 px-2 py-1 md:px-3 md:py-1.5 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
                 {t('libraryEditor.collectionType', { type: library.type || 'text' })}
               </div>
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/20 rounded-lg shadow-sm">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 px-2 py-1 md:px-3 md:py-1.5 bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/20 rounded-lg shadow-sm">
                 {t('libraries.libraryCard.items', { count: totalItems })}
               </div>
             </div>
           </div>
         )}
         size="large"
+        className="pt-4 lg:pt-0"
         actions={(
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 sm:flex-none">
@@ -549,11 +551,11 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         )}
       />
 
-      <div className="flex-1 overflow-y-auto pr-2 md:pr-4 -mr-2 md:-mr-4 custom-scrollbar space-y-3 md:space-y-6 pb-20">
+      <div className="flex-1 lg:overflow-y-auto pr-2 md:pr-4 -mr-2 md:-mr-4 custom-scrollbar space-y-3 md:space-y-6 pb-20">
         {/* Batch Action Toolbar (Mirrors item style) */}
         {items.length > -1 && (
           <div className={`
-            sticky top-0 z-20 flex flex-nowrap items-center justify-between gap-2 p-3 border transition-colors
+            sticky top-0 z-20 flex flex-nowrap items-center justify-between gap-2 p-2 md:p-3 border transition-colors
             ${selectedItemIds.size > 0
               ? 'bg-blue-600 text-white border-blue-700'
               : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800'}

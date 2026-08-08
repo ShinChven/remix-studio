@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Project } from '../types';
 import { Activity, Plus, Play, Clock, Loader2, Search } from 'lucide-react';
-import { fetchProjects, updateProject, deleteProject } from '../api';
+import { fetchProjects, updateProject, deleteProject, startProjectBundleExport } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { PageNav } from '../components/PageNav';
 import type { BoundContext } from '../components/Assistant/AssistantComposer';
@@ -32,6 +32,7 @@ export function Projects() {
   const [searchInput, setSearchInput] = useState(q);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -112,6 +113,23 @@ export function Projects() {
     }
   };
 
+  /**
+   * Package the whole project — settings, workflow, album and media — into one
+   * archive. It lands in Exports, where it can be downloaded or re-imported.
+   */
+  const handleExportBundle = async (project: Project) => {
+    setExportingId(project.id);
+    try {
+      await startProjectBundleExport(project.id, `${project.name}_Project`);
+      toast.success(t('projects.exportBundle.queued', { name: project.name }));
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || t('projects.exportBundle.failed'));
+    } finally {
+      setExportingId(null);
+    }
+  };
+
   const confirmDeleteProject = async () => {
     if (!deleteTarget) return;
     setTogglingId(deleteTarget.id);
@@ -165,7 +183,7 @@ export function Projects() {
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
-      <div className="w-full space-y-8 pb-20">
+      <div className="w-full space-y-6 md:space-y-8 pb-20">
         <PageHeader
           title={t('projects.title')}
           description={t('projects.description')}
@@ -243,9 +261,11 @@ export function Projects() {
                     key={project.id}
                     project={project}
                     isToggling={togglingId === project.id}
+                    isExporting={exportingId === project.id}
                     onStartAssistantChat={handleStartAssistantChat}
                     onToggleArchive={handleToggleArchive}
                     onDuplicate={(item) => navigate('/project/new', { state: { copyFrom: item.id } })}
+                    onExportBundle={handleExportBundle}
                     onDelete={setDeleteTarget}
                   />
                 ))}

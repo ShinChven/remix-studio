@@ -78,6 +78,17 @@ export function summarizeToolEffect(
     }
     case 'delete_prompt':
       return `Delete prompt ${getLabel(objectArgs.item_id, 'prompt')} from library ${getLabel(objectArgs.library_id, 'library')}.`;
+    case 'update_library_item': {
+      const fields = ['title', 'tags', 'content'].filter((key) => Object.prototype.hasOwnProperty.call(objectArgs, key));
+      return `Update item ${getLabel(objectArgs.item_id, 'item')} in library ${getLabel(objectArgs.library_id, 'library')}${fields.length ? ` (${fields.join(', ')})` : ''}.`;
+    }
+    case 'batch_update_library_items': {
+      const updates = Array.isArray(objectArgs.updates) ? objectArgs.updates : [];
+      const fields = ['title', 'tags', 'content'].filter((key) =>
+        updates.some((upd) => isPlainObject(upd) && Object.prototype.hasOwnProperty.call(upd, key)),
+      );
+      return `Update ${updates.length} item${updates.length === 1 ? '' : 's'} in library ${getLabel(objectArgs.library_id, 'library')}${fields.length ? ` (${fields.join(', ')})` : ''}.`;
+    }
     case 'create_project_with_workflow': {
       const workflowCount = Array.isArray(objectArgs.workflowItems) ? objectArgs.workflowItems.length : 0;
       return `Create a ${String(objectArgs.type ?? 'new')} project named "${String(objectArgs.name ?? '')}" with ${workflowCount} workflow item${workflowCount === 1 ? '' : 's'}.`;

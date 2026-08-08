@@ -30,7 +30,7 @@ import { ProjectRepository } from './server/db/project-repository';
 import { createStorageRouter } from './server/routes/storage-router';
 import { createOAuthRouter } from './server/routes/oauth';
 import { createSocialRouter } from './server/routes/social';
-import { createStoreRouter } from './server/routes/stores';
+import { createReleaseRouter } from './server/routes/releases';
 import { createProductsRouter } from './server/routes/products';
 import { createMcpRouter } from './server/mcp/mcp-server';
 import { createAssistantRouter } from './server/routes/assistant';
@@ -39,6 +39,7 @@ import { AssistantRunner } from './server/assistant/assistant-runner';
 import { QueueManager } from './server/queue/queue-manager';
 import { ExportManager } from './server/queue/export-manager';
 import { DeliveryManager } from './server/queue/delivery-manager';
+import { ProjectImportManager } from './server/queue/project-import-manager';
 import { PostManager } from './server/queue/post-manager';
 import { MediaProcessingPoller } from './server/queue/media-processing-poller';
 import { ImageProcessor } from './server/queue/image-processor';
@@ -135,13 +136,15 @@ async function startServer() {
     await queueManager.healStuckProcessingJobs();
   });
   const exportManager = new ExportManager(repository, storage, exportStorage, userRepository);
-  const deliveryManager = new DeliveryManager(repository, exportStorage, userRepository, prisma, storage);
+  const deliveryManager = new DeliveryManager(repository, exportStorage, prisma, storage);
+  const projectImportManager = new ProjectImportManager(repository, storage, exportStorage, userRepository);
   const postManager = new PostManager(prisma, storage);
   const mediaProcessingPoller = new MediaProcessingPoller(prisma, storage);
 
   // Start background workers
   exportManager.startWorkerLoop();
   deliveryManager.startWorkerLoop();
+  projectImportManager.startWorkerLoop();
   postManager.start();
   mediaProcessingPoller.start();
 
@@ -227,7 +230,7 @@ async function startServer() {
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
   app.route('/', createLibraryRouter(repository, storage, userRepository, exportStorage, exportManager));
-  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager, projectLiveHub));
+  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager, projectImportManager, prisma, projectLiveHub));
   app.route('/', createImageRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createVideoRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createAudioRouter(storage, exportStorage, repository, userRepository));
@@ -239,7 +242,7 @@ async function startServer() {
   app.route('/', createPostsRouter(prisma, postManager, providerRepository, storage, exportStorage, repository, userRepository));
   app.route('/', createOAuthRouter(prisma));
   app.route('/', createSocialRouter(prisma));
-  app.route('/', createStoreRouter(prisma));
+  app.route('/', createReleaseRouter(prisma));
   app.route('/', createProductsRouter(prisma, deliveryManager));
   app.route('/', createMcpRouter(prisma, repository, userRepository, providerRepository, storage));
 

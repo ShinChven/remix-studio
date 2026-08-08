@@ -1,23 +1,28 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, HardDrive, Link2Off, Upload, Store as StoreIcon, Tag, History as HistoryIcon } from 'lucide-react';
+import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, HardDrive, Cloud, Upload, Rocket, Tag, History as HistoryIcon } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ExportTask, DeliveryStatus } from '../types';
-import { fetchAllExports, deleteExport, uploadExportToDrive, fetchDeliveryStatus, fetchActiveDeliveries, disconnectGoogleDrive, fetchCurrentUser, fetchStores } from '../api';
+import { fetchAllExports, deleteExport, uploadExportToDrive, fetchDeliveryStatus, fetchActiveDeliveries, fetchReleaseConnections, ReleaseConnection, ReleaseProvider } from '../api';
 import { PageHeader } from '../components/PageHeader';
-import { useAuth } from '../contexts/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
 import { PageNav } from '../components/PageNav';
+import { ProjectImportPanel } from '../components/ProjectImportPanel';
 
 const EXPORTS_PAGE_SIZE = 15;
 
+/** Icon per drive provider, mirroring the Releases page. */
+const DRIVE_ICON: Record<string, typeof Cloud> = {
+  'google-drive': HardDrive,
+  onedrive: Cloud,
+  mega: Cloud,
+};
+
 export function Exports() {
   const { t } = useTranslation();
-  const { user: authUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
-  const [user, setUser] = useState(authUser);
   const [exports, setExports] = useState<ExportTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -25,7 +30,7 @@ export function Exports() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [taskToUploadDrive, setTaskToUploadDrive] = useState<ExportTask | null>(null);
-  const [disconnecting, setDisconnecting] = useState(false);
+  const [selectedDriveId, setSelectedDriveId] = useState<string | null>(null);
 
   // deliveryId → DeliveryStatus for in-progress uploads (drive + gumroad)
   const [deliveries, setDeliveries] = useState<Record<string, DeliveryStatus>>({});
@@ -38,6 +43,8 @@ export function Exports() {
   const [pendingDeliveries, setPendingDeliveries] = useState<Record<string, string>>({});
   const [pendingGumroadDeliveries, setPendingGumroadDeliveries] = useState<Record<string, string>>({});
   const [hasStores, setHasStores] = useState(false);
+  const [drives, setDrives] = useState<ReleaseConnection[]>([]);
+  const [providers, setProviders] = useState<ReleaseProvider[]>([]);
   const deliveryPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exportsLoadSeqRef = useRef(0);
   const activeExportCount = exports.filter(t => t.status === 'pending' || t.status === 'processing').length;
@@ -50,27 +57,6 @@ export function Exports() {
     const value = bytes / Math.pow(1024, index);
     return `${parseFloat(value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2).replace(/\.0$/, ''))} ${sizes[index]}`;
   };
-
-  // Sync local user state when auth context updates
-  useEffect(() => { setUser(authUser); }, [authUser]);
-
-  // Handle OAuth callback result via URL params
-  useEffect(() => {
-    const success = searchParams.get('success');
-    const error = searchParams.get('error');
-    if (success) {
-      toast.success(decodeURIComponent(success.replace(/\+/g, ' ')));
-      fetchCurrentUser().then(setUser).catch(() => {});
-      const next = new URLSearchParams(searchParams);
-      next.delete('success');
-      setSearchParams(next, { replace: true });
-    } else if (error) {
-      toast.error(decodeURIComponent(error.replace(/\+/g, ' ')));
-      const next = new URLSearchParams(searchParams);
-      next.delete('error');
-      setSearchParams(next, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
 
   // Poll delivery statuses (drive + gumroad).
   // Note: deliveries is intentionally NOT in the dep array — we read it via ref to
@@ -128,17 +114,19 @@ export function Exports() {
             } else {
               toast.success(
                 <span>
-                  {t('exports.drive.uploadSuccess')}{' '}
-                  <a href={status.externalUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                    {t('exports.drive.openFile')}
-                  </a>
+                  {t('releases.drive.uploadSuccess')}{' '}
+                  {status.externalUrl ? (
+                    <a href={status.externalUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                      {t('releases.drive.openFile')}
+                    </a>
+                  ) : null}
                 </span>
               );
             }
             removeFromPending(dId, status.destination);
           } else if (status.status === 'failed' && !toastedRef.current.has(dId)) {
             toastedRef.current.add(dId);
-            const fallback = status.destination === 'gumroad' ? t('sell.publishFailed') : t('exports.drive.uploadFailed');
+            const fallback = status.destination === 'gumroad' ? t('sell.publishFailed') : t('releases.drive.uploadFailed');
             toast.error(status.error || fallback);
             removeFromPending(dId, status.destination);
           }
@@ -157,28 +145,30 @@ export function Exports() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingDeliveries, pendingGumroadDeliveries, t]);
 
-  // Probe whether the user has any stores connected (drives the Sell icon visibility).
+  // Which release destinations exist decides whether the Sell and drive
+  // actions show up on a finished export at all.
   useEffect(() => {
     let cancelled = false;
-    fetchStores()
-      .then((stores) => { if (!cancelled) setHasStores(stores.length > 0); })
-      .catch(() => { if (!cancelled) setHasStores(false); });
+    fetchReleaseConnections()
+      .then(({ connections, providers: available }) => {
+        if (cancelled) return;
+        setHasStores(connections.some((c) => c.kind === 'store'));
+        setDrives(connections.filter((c) => c.kind === 'drive'));
+        setProviders(available);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHasStores(false);
+        setDrives([]);
+      });
     return () => { cancelled = true; };
   }, []);
 
-  const handleDisconnectDrive = async () => {
-    setDisconnecting(true);
-    try {
-      await disconnectGoogleDrive();
-      const me = await fetchCurrentUser();
-      setUser(me);
-      toast.success(t('exports.drive.disconnectSuccess'));
-    } catch (err: any) {
-      toast.error(err.message || t('exports.drive.disconnectError'));
-    } finally {
-      setDisconnecting(false);
-    }
-  };
+  const driveLabel = (platform: string) =>
+    providers.find((provider) => provider.id === platform)?.label ?? platform;
+
+  const driveName = (drive: ReleaseConnection) =>
+    drive.displayName || drive.email || driveLabel(drive.platform);
 
   const loadExports = useCallback(async (pageToLoad: number, options: { showLoading?: boolean } = {}) => {
     const requestId = ++exportsLoadSeqRef.current;
@@ -278,23 +268,26 @@ export function Exports() {
   };
 
   const handleUploadToDrive = (task: ExportTask) => {
-    if (pendingDeliveries[task.id]) return;
+    if (pendingDeliveries[task.id] || drives.length === 0) return;
+    // With one drive there is nothing to pick, so pre-select it and the dialog
+    // becomes a plain confirmation.
+    setSelectedDriveId(drives.length === 1 ? drives[0].id : null);
     setTaskToUploadDrive(task);
   };
 
   const confirmUploadToDrive = async () => {
     const task = taskToUploadDrive;
-    if (!task) return;
+    if (!task || !selectedDriveId) return;
     if (pendingDeliveries[task.id]) {
       setTaskToUploadDrive(null);
       return;
     }
     try {
-      const { deliveryTaskId } = await uploadExportToDrive(task.id);
+      const { deliveryTaskId } = await uploadExportToDrive(task.id, selectedDriveId);
       setPendingDeliveries(prev => ({ ...prev, [task.id]: deliveryTaskId }));
-      toast.success(t('exports.drive.uploadQueued'));
+      toast.success(t('releases.drive.uploadQueued'));
     } catch (err: any) {
-      toast.error(err.message || t('exports.drive.uploadFailed'));
+      toast.error(err.message || t('releases.drive.uploadFailed'));
     } finally {
       setTaskToUploadDrive(null);
     }
@@ -317,55 +310,28 @@ export function Exports() {
         description={t('exports.description')}
         actions={
           <div className="flex items-center flex-wrap gap-3">
-            {/* Stores + Upload history capsule */}
+            {/* Releases + history capsule */}
             <div className="flex-shrink-0 flex items-center gap-3 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card shadow-sm backdrop-blur-md h-[42px]">
               <Link
-                to="/exports/stores"
+                to="/releases"
                 className="flex items-center gap-2 hover:opacity-80 transition"
               >
-                <StoreIcon className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
+                <Rocket className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
                 <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest">
-                  {t('exports.stores.headerLink')}
+                  {t('releases.headerLink')}
                 </span>
               </Link>
               <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-800" />
               <Link
-                to="/exports/uploads"
+                to="/releases/history"
                 className="flex items-center gap-2 hover:opacity-80 transition"
               >
                 <HistoryIcon className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
                 <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest">
-                  {t('exports.uploads.headerLink')}
+                  {t('releases.history.headerLink')}
                 </span>
               </Link>
             </div>
-
-            {/* Google Drive control */}
-            {user?.googleDriveConnected ? (
-              <div className="flex-shrink-0 flex items-center gap-3 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card shadow-sm backdrop-blur-md h-[42px]">
-                <div className="flex items-center gap-2">
-                  <HardDrive className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                  <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest">{t('exports.drive.connected')}</span>
-                </div>
-                <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-800" />
-                <button
-                  onClick={handleDisconnectDrive}
-                  disabled={disconnecting}
-                  className="flex items-center gap-1.5 text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest hover:text-red-500 transition disabled:opacity-50"
-                >
-                  {disconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3.5 w-3.5" />}
-                  <span>{t('exports.drive.disconnect')}</span>
-                </button>
-              </div>
-            ) : (
-              <a
-                href="/api/auth/google-drive/connect"
-                className="flex-shrink-0 flex items-center justify-center gap-2 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition shadow-sm backdrop-blur-md h-[42px]"
-              >
-                <HardDrive className="h-4 w-4 text-neutral-600 dark:text-neutral-500 flex-shrink-0" />
-                <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-400 uppercase tracking-widest text-center">{t('exports.drive.connect')}</span>
-              </a>
-            )}
 
             {/* Combined Stats Pill */}
             <div className="flex-shrink-0 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card flex items-center gap-4 shadow-sm backdrop-blur-md h-[42px]">
@@ -394,6 +360,8 @@ export function Exports() {
           </div>
         }
       />
+
+      <ProjectImportPanel />
 
       {!loading && exports.length === 0 ? (
         <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
@@ -444,6 +412,11 @@ export function Exports() {
                       <span className="text-[11px] sm:text-[10px] font-bold text-neutral-900 dark:text-white sm:text-neutral-400 truncate tracking-tight">
                         {task.packageName || `Archive #${task.id.slice(0, 8)}`}
                       </span>
+                      {task.sourceType === 'project-bundle' && (
+                        <span className="w-fit rounded border border-violet-200 bg-violet-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-violet-600 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-400">
+                          {t('projectImports.bundleBadge')}
+                        </span>
+                      )}
                     </div>
 
                     {/* Context Info */}
@@ -469,7 +442,7 @@ export function Exports() {
                           <div className="w-20 sm:w-24 h-1.5 bg-neutral-100 dark:bg-neutral-900 rounded-full overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-inner">
                             <div
                               className="h-full bg-blue-500 transition-all duration-500"
-                              style={{ width: task.status === 'pending' ? '0%' : `${(task.current / task.total) * 100}%` }}
+                              style={{ width: task.status === 'pending' || task.total <= 0 ? '0%' : `${(task.current / task.total) * 100}%` }}
                             />
                           </div>
                           <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
@@ -488,7 +461,7 @@ export function Exports() {
                             />
                           </div>
                           <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter">
-                            Drive: {driveProgress}%
+                            {driveLabel(driveDelivery?.driveProvider || 'google-drive')}: {driveProgress}%
                           </span>
                         </div>
                       )}
@@ -551,12 +524,12 @@ export function Exports() {
                         <Download className="w-5 h-5 sm:w-4 sm:h-4" />
                       </a>
                     )}
-                    {task.status === 'completed' && user?.googleDriveConnected && (
+                    {task.status === 'completed' && drives.length > 0 && (
                       <button
                         onClick={() => handleUploadToDrive(task)}
                         disabled={!!isDriveUploading}
                         className="p-2 sm:p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500/5 sm:bg-transparent"
-                        title={isDriveUploading ? t('exports.drive.uploading') : t('exports.drive.uploadToDrive')}
+                        title={isDriveUploading ? t('releases.drive.uploading') : t('releases.drive.releaseToDrive')}
                       >
                         {isDriveUploading ? <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 animate-spin" /> : <Upload className="w-5 h-5 sm:w-4 sm:h-4" />}
                       </button>
@@ -610,17 +583,71 @@ export function Exports() {
         type="danger"
       />
 
-      <ConfirmModal
-        isOpen={!!taskToUploadDrive}
-        onClose={() => setTaskToUploadDrive(null)}
-        onConfirm={confirmUploadToDrive}
-        title={t('exports.drive.confirmDialog.title')}
-        message={t('exports.drive.confirmDialog.message', {
-          name: taskToUploadDrive?.packageName || `Archive #${taskToUploadDrive?.id.slice(0, 8) ?? ''}`,
-        })}
-        confirmText={t('exports.drive.confirmDialog.confirm')}
-        type="info"
-      />
+      {taskToUploadDrive ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md space-y-4 rounded-2xl border border-neutral-200/50 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900">
+            <div>
+              <h2 className="text-lg font-bold text-neutral-950 dark:text-white">
+                {t('releases.drive.confirmDialog.title')}
+              </h2>
+              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                {t('releases.drive.confirmDialog.message', {
+                  name: taskToUploadDrive.packageName || `Archive #${taskToUploadDrive.id.slice(0, 8)}`,
+                })}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              {drives.map((drive) => {
+                const DriveIcon = DRIVE_ICON[drive.platform] ?? Cloud;
+                const isSelected = selectedDriveId === drive.id;
+                return (
+                  <button
+                    key={drive.id}
+                    type="button"
+                    onClick={() => setSelectedDriveId(drive.id)}
+                    className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                      isSelected
+                        ? 'border-emerald-500 bg-emerald-500/10'
+                        : 'border-neutral-200 hover:bg-neutral-50 dark:border-white/10 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <DriveIcon className="h-4 w-4 flex-shrink-0 text-emerald-500" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold text-neutral-900 dark:text-white">
+                        {driveName(drive)}
+                      </span>
+                      <span className="block truncate text-xs text-neutral-500 dark:text-neutral-400">
+                        {driveLabel(drive.platform)}
+                      </span>
+                    </span>
+                    {isSelected ? <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-500" /> : null}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setTaskToUploadDrive(null)}
+                className="inline-flex h-10 items-center rounded-xl px-4 text-sm font-bold text-neutral-600 transition hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10"
+              >
+                {t('releases.cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={!selectedDriveId}
+                onClick={confirmUploadToDrive}
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+              >
+                <Upload className="h-4 w-4" />
+                {t('releases.drive.confirmDialog.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

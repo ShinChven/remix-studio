@@ -356,7 +356,7 @@ export default function ExtensionImport() {
 
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative">
-      <div className="w-full space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="w-full space-y-6 md:space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <PageHeader
           title={`Import ${importData.type === 'image' ? 'Image' : 'Text'}`}
           description="Save this item to your Remix Studio workspace."

@@ -67,6 +67,8 @@ Export selected album items or the full collection as a named ZIP. For supported
 
 Exports run outside the generation queue in their own persistent worker and appear on the global Exports page. See [Exports & Delivery](/concepts/exports).
 
+To move a whole project rather than its results, use **Export Project** on the project card's menu. That produces a project bundle — settings, workflow, album, and media in one ZIP — which the Exports page can import back as a new project. See [Project Bundles](/concepts/exports#project-bundles).
+
 ## Reusing Configuration
 
 Job rows retain a workflow snapshot and resolved generation settings. The **Reuse configuration** action restores those settings into the project editor so a prior result or failure can be used as the starting point for new drafts.
@@ -76,7 +78,9 @@ The same action is available from the results themselves, so you can pick a setu
 - Album, text, and audio entries each carry a **Reuse workflow** control that resolves the settings through the job that produced them.
 - The image lightbox offers the same control (shortcut `R`), and closes on confirmation so you land on the restored workflow.
 
-Reuse changes the current editable workflow/settings only after confirmation; it does not alter the old job or album item. The workflow snapshot lives on the job record, so reusing from an album item whose Done record was deleted reports that the workflow is no longer available.
+Reuse changes the current editable workflow/settings only after confirmation; it does not alter the old job or album item.
+
+The snapshot lives on the job record. When it is missing — the Done record was deleted, or the job predates workflow snapshots — the workflow is rebuilt from the result's own prompt and media references instead. A rebuilt workflow reproduces that single result rather than the recipe that varied it, and the confirmation says so before replacing anything. Only a result with neither a prompt nor references reports that no workflow is available.
 
 ## Orphan Files
 

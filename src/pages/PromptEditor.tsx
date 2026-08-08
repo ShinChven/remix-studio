@@ -87,11 +87,11 @@ export function PromptEditor() {
 
   return (
     <div className={`h-full flex flex-col bg-neutral-50 dark:bg-neutral-950 transition-all ${isFullScreen ? 'fixed inset-0 z-[60] p-4 md:p-6' : 'p-4 md:p-8'}`}>
-      <div className="w-full flex flex-col h-full gap-6 animate-in fade-in duration-500">
+      <div className="w-full flex flex-col h-full gap-3 md:gap-6 animate-in fade-in duration-500">
 
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-card md:rounded-card p-4 md:pl-6 shadow-2xl backdrop-blur-3xl">
-          <div className="flex items-center gap-3 md:gap-4 flex-1">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-card md:rounded-card p-3 md:p-4 md:pl-6 shadow-2xl backdrop-blur-3xl">
+          <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
             <button
               onClick={() => navigate(`/library/${id}`)}
               className="p-2 md:p-3 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/80 dark:hover:bg-neutral-800/80 rounded-xl md:rounded-card transition-all border border-neutral-200/50 dark:border-neutral-800/50"

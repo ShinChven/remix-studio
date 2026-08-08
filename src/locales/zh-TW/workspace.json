@@ -26,70 +26,6 @@
   "exports": {
     "title": "匯出",
     "description": "管理所有生成的專案 ZIP 封存。",
-    "drive": {
-      "connected": "Google Drive 已連接",
-      "disconnect": "斷開連接",
-      "connect": "連接 Google Drive",
-      "disconnectSuccess": "Google Drive 已斷開連接",
-      "disconnectError": "斷開 Google Drive 連接失敗",
-      "uploadQueued": "上傳任務已加入隊列 — 請關注 Drive 圖示查看進度",
-      "uploadSuccess": "已成功上傳到 Google Drive！",
-      "uploadFailed": "上傳到 Google Drive 失敗",
-      "openFile": "開啟檔案",
-      "uploading": "正在上傳到 Drive...",
-      "uploadToDrive": "上傳到 Google Drive",
-      "confirmDialog": {
-        "title": "上傳到 Google Drive？",
-        "message": "將「{{name}}」上傳到已連接的 Google Drive？大型壓縮檔可能需要一些時間。",
-        "confirm": "上傳"
-      }
-    },
-    "stores": {
-      "headerLink": "店鋪",
-      "title": "店鋪設定",
-      "description": "連接數位店鋪以便將匯出內容發佈到這些平台。",
-      "backToExports": "返回匯出",
-      "connectedTitle": "已連接的店鋪",
-      "connectedDescription": "匯出內容時可使用這些已連接的店鋪。",
-      "availableTitle": "可用平台",
-      "availableDescription": "連接新店鋪。每個平台支援連接多個帳號。",
-      "connect": "連接",
-      "connectGumroad": "連接 Gumroad",
-      "addAnother": "再連一個",
-      "reconnect": "重新連接",
-      "disconnect": "斷開連接",
-      "cancel": "取消",
-      "empty": {
-        "title": "尚未連接任何店鋪",
-        "description": "連接一個店鋪，將匯出內容作為數位產品發佈。"
-      },
-      "connectSuccess": "店鋪已連接",
-      "disconnectSuccess": "店鋪已斷開連接",
-      "disconnectError": "斷開店鋪連接失敗",
-      "loadError": "載入店鋪列表失敗",
-      "confirmDisconnectTitle": "斷開店鋪連接",
-      "confirmDisconnectMessage": "確定要斷開 {{name}} 的連接嗎？後續匯出將無法再發佈到此店鋪。"
-    },
-    "uploads": {
-      "headerLink": "歷史",
-      "title": "上傳歷史",
-      "description": "匯出發佈到已連接店鋪的嘗試紀錄。",
-      "backToExports": "返回匯出",
-      "loadError": "載入上傳歷史失敗",
-      "empty": {
-        "title": "尚無上傳紀錄",
-        "description": "將匯出發佈到店鋪後，結果會顯示在此處。"
-      },
-      "status": {
-        "success": "成功",
-        "failed": "失敗"
-      },
-      "openProduct": "開啟商品頁",
-      "untitled": "未命名商品",
-      "stats": {
-        "total": "總計"
-      }
-    },
     "stats": {
       "database": "資料庫",
       "total": "總計",
@@ -118,6 +54,31 @@
       "title": "刪除匯出紀錄",
       "message": "確定要刪除此匯出紀錄嗎？此操作無法撤銷。",
       "confirm": "刪除紀錄"
+    }
+  },
+  "projectImports": {
+    "title": "專案套件",
+    "description": "上傳專案套件即可將整個專案匯入回來。",
+    "selectFile": "匯入專案",
+    "uploading": "上傳中 {{percent}}%",
+    "untitled": "未命名專案",
+    "bundleBadge": "專案套件",
+    "deleteRecord": "刪除匯入紀錄",
+    "status": {
+      "queued": "排隊中",
+      "unpacking": "解壓中",
+      "imported": "已匯入",
+      "failed": "失敗"
+    },
+    "toast": {
+      "queued": "專案套件已上傳，正在解壓。",
+      "completed": "已匯入「{{name}}」。",
+      "failed": "專案匯入失敗"
+    },
+    "errors": {
+      "notZip": "請選擇 .zip 格式的專案套件。",
+      "uploadFailed": "上傳專案套件失敗",
+      "deleteFailed": "刪除匯入紀錄失敗"
     }
   },
   "trash": {

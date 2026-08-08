@@ -1,4 +1,4 @@
-import { AlbumItem, AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
+import { AlbumItem, AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -1168,31 +1168,133 @@ export async function deleteProjectExport(projectId: string, taskId: string): Pr
   return deleteExport(taskId);
 }
 
-// ========== Google Drive ==========
+// ========== Project bundles (export / import a whole project) ==========
 
-export async function fetchGoogleDriveStatus(): Promise<{ connected: boolean }> {
-  const res = await apiFetch('/api/auth/google-drive/status', { headers: getHeaders(false) });
-  return handleResponse<{ connected: boolean }>(res, 'Failed to check Google Drive status');
+/**
+ * Package a whole project — settings, workflow, album and their media — into
+ * one portable .zip. The archive shows up in the normal exports list.
+ */
+export async function startProjectBundleExport(
+  projectId: string,
+  packageName?: string,
+): Promise<{ taskId: string }> {
+  const res = await apiFetch(`/api/projects/${projectId}/export-bundle`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ packageName }),
+  });
+  return handleResponse<{ taskId: string }>(res, 'Failed to start project export');
 }
 
-export async function disconnectGoogleDrive(): Promise<void> {
-  const res = await apiFetch('/api/auth/google-drive/disconnect', {
+type BundleUploadOptions = { onProgress?: (percent: number) => void; signal?: AbortSignal };
+
+/** Raised when the upload was rejected for an expired session. */
+class UnauthorizedUploadError extends Error {}
+
+function sendBundleUpload(file: File, options: BundleUploadOptions): Promise<{ taskId: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/project-imports');
+    xhr.withCredentials = true;
+    xhr.setRequestHeader('Content-Type', 'application/zip');
+    // Header values must be latin-1; encode so non-ASCII names survive.
+    xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && options.onProgress) {
+        options.onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      let payload: any = {};
+      try { payload = JSON.parse(xhr.responseText); } catch { /* non-JSON error page */ }
+      if (xhr.status >= 200 && xhr.status < 300 && payload.taskId) {
+        resolve({ taskId: payload.taskId });
+      } else if (xhr.status === 401) {
+        reject(new UnauthorizedUploadError('Session expired'));
+      } else {
+        reject(new Error(payload.error || 'Failed to upload project bundle'));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Failed to upload project bundle'));
+    xhr.onabort = () => reject(new DOMException('Upload cancelled', 'AbortError'));
+
+    options.signal?.addEventListener('abort', () => xhr.abort(), { once: true });
+    xhr.send(file);
+  });
+}
+
+/**
+ * Upload a project bundle. The zip is sent as the raw request body so large
+ * archives stream instead of being buffered; XHR is used because fetch gives
+ * no upload progress, which also means this bypasses apiFetch's refresh
+ * interceptor — so an expired session is refreshed and retried here.
+ */
+export async function uploadProjectBundle(
+  file: File,
+  options: BundleUploadOptions = {},
+): Promise<{ taskId: string }> {
+  try {
+    return await sendBundleUpload(file, options);
+  } catch (err) {
+    if (!(err instanceof UnauthorizedUploadError)) throw err;
+
+    const outcome = await attemptRefresh();
+    if (outcome === 'failed') {
+      if (!window.location.pathname.startsWith('/login')) window.location.href = '/login';
+      throw new Error('Session expired');
+    }
+    return sendBundleUpload(file, options);
+  }
+}
+
+export async function fetchProjectImports(
+  page: number = 1,
+  pageSize: number = 10,
+): Promise<{ items: ProjectImportTask[]; total: number; page: number; pages: number }> {
+  const url = new URL('/api/project-imports', window.location.origin);
+  url.searchParams.set('page', page.toString());
+  url.searchParams.set('pageSize', pageSize.toString());
+  const res = await apiFetch(url.toString(), { headers: getHeaders(false) });
+  return handleResponse<{ items: ProjectImportTask[]; total: number; page: number; pages: number }>(
+    res,
+    'Failed to list project imports',
+  );
+}
+
+export async function fetchProjectImport(taskId: string): Promise<ProjectImportTask> {
+  const res = await apiFetch(`/api/project-imports/${taskId}`, { headers: getHeaders(false) });
+  return handleResponse<ProjectImportTask>(res, 'Failed to fetch import');
+}
+
+export async function deleteProjectImport(taskId: string): Promise<void> {
+  const res = await apiFetch(`/api/project-imports/${taskId}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Failed to disconnect Google Drive');
+    throw new Error(errorData.error || 'Failed to delete import');
   }
 }
 
-/** Submit a Drive upload job. Returns deliveryTaskId — poll fetchDeliveryStatus() for progress. */
-export async function uploadExportToDrive(taskId: string): Promise<{ deliveryTaskId: string }> {
+// ========== Releases (drives) ==========
+
+/**
+ * Queue a release of a finished export to a connected drive. Returns
+ * deliveryTaskId — poll fetchDeliveryStatus() for progress.
+ */
+export async function uploadExportToDrive(
+  taskId: string,
+  driveConnectionId?: string,
+): Promise<{ deliveryTaskId: string }> {
   const res = await apiFetch(`/api/exports/${taskId}/upload-to-drive`, {
     method: 'POST',
     headers: getHeaders(),
+    body: JSON.stringify({ driveConnectionId }),
   });
-  return handleResponse<{ deliveryTaskId: string }>(res, 'Failed to submit Drive upload job');
+  return handleResponse<{ deliveryTaskId: string }>(res, 'Failed to queue drive release');
 }
 
 export interface DeliveryStatus {
@@ -1200,6 +1302,9 @@ export interface DeliveryStatus {
   exportTaskId: string;
   destination: 'drive' | 'gumroad';
   productId?: string;
+  driveConnectionId?: string;
+  driveProvider?: string;
+  driveName?: string;
   phase?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   bytesTransferred: number;
@@ -1962,6 +2067,67 @@ export function refreshSocialAccountProfile(platform: string, id: string): Promi
   return promise;
 }
 
+// ========== Releases (connections) ==========
+
+/** Kinds of place a finished export can be released to. */
+export type ReleaseConnectionKind = 'store' | 'drive';
+
+export interface ReleaseConnection {
+  id: string;
+  kind: ReleaseConnectionKind;
+  /** Provider id: "gumroad" | "google-drive" | "onedrive" | "mega". */
+  platform: string;
+  accountId: string;
+  displayName: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+  folderId: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReleaseProvider {
+  id: string;
+  kind: ReleaseConnectionKind;
+  label: string;
+  /** "oauth" providers redirect; "credentials" providers take a sign-in form. */
+  authKind: 'oauth' | 'credentials';
+  /** False when this server is missing the provider's credentials. */
+  configured: boolean;
+}
+
+export async function fetchReleaseConnections(): Promise<{
+  connections: ReleaseConnection[];
+  providers: ReleaseProvider[];
+}> {
+  const res = await apiFetch('/api/releases/connections', { headers: getHeaders(false) });
+  return handleResponse<{ connections: ReleaseConnection[]; providers: ReleaseProvider[] }>(
+    res,
+    'Failed to load release connections',
+  );
+}
+
+export async function connectDriveWithCredentials(
+  provider: string,
+  credentials: { email: string; password: string; secondFactorCode?: string },
+): Promise<{ connection: ReleaseConnection }> {
+  const res = await apiFetch(`/api/releases/drives/${provider}/connect`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(credentials),
+  });
+  return handleResponse<{ connection: ReleaseConnection }>(res, 'Failed to connect drive');
+}
+
+export async function disconnectDrive(id: string): Promise<void> {
+  const res = await apiFetch(`/api/releases/drives/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  return handleResponse<void>(res, 'Failed to disconnect drive');
+}
+
 // ========== Store Integrations ==========
 
 export interface ConnectedStore {
@@ -1990,10 +2156,12 @@ export async function disconnectStore(platform: string, id: string): Promise<voi
   return handleResponse<void>(res, 'Failed to disconnect store');
 }
 
-export interface StoreUploadHistoryItem {
+/** One attempt to release an export — to a storefront or to a drive. */
+export interface ReleaseHistoryItem {
   id: string;
   userId: string;
   storeId: string | null;
+  driveConnectionId: string | null;
   productId: string | null;
   exportTaskId: string | null;
   platform: string;
@@ -2004,20 +2172,27 @@ export interface StoreUploadHistoryItem {
   error: string | null;
   createdAt: string;
   store?: { id: string; platform: string; profileName: string | null; accountId: string } | null;
+  driveConnection?: {
+    id: string;
+    provider: string;
+    displayName: string | null;
+    email: string | null;
+    accountId: string;
+  } | null;
   product?: { id: string; title: string; gumroadShortUrl: string | null } | null;
 }
 
-export async function fetchStoreUploads(
+export async function fetchReleaseHistory(
   page: number = 1,
   pageSize: number = 20,
-): Promise<{ items: StoreUploadHistoryItem[]; total: number; page: number; pages: number }> {
+): Promise<{ items: ReleaseHistoryItem[]; total: number; page: number; pages: number }> {
   const url = new URL('/api/store-uploads', window.location.origin);
   url.searchParams.set('page', page.toString());
   url.searchParams.set('pageSize', pageSize.toString());
   const res = await apiFetch(url.toString(), { headers: getHeaders(false) });
-  return handleResponse<{ items: StoreUploadHistoryItem[]; total: number; page: number; pages: number }>(
+  return handleResponse<{ items: ReleaseHistoryItem[]; total: number; page: number; pages: number }>(
     res,
-    'Failed to load upload history',
+    'Failed to load release history',
   );
 }
 

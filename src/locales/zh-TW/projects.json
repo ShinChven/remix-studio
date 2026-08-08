@@ -40,7 +40,12 @@
       },
       "openProject": "開啟專案 →"
     },
-    "pagination": "第 {{current}} / {{total}} 頁"
+    "pagination": "第 {{current}} / {{total}} 頁",
+    "exportBundle": {
+      "action": "匯出專案",
+      "queued": "正在打包「{{name}}」，可於匯出頁面查看進度。",
+      "failed": "啟動專案匯出失敗"
+    }
   },
   "projectForm": {
     "newTitle": "新建專案",

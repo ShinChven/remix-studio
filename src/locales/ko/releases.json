@@ -1,0 +1,89 @@
+{
+  "releases": {
+    "title": "릴리스",
+    "description": "완성된 내보내기를 전달할 드라이브와 스토어를 연결합니다.",
+    "headerLink": "릴리스",
+    "backToExports": "내보내기로 돌아가기",
+    "loadError": "릴리스 연결을 불러오지 못했습니다",
+    "connectSuccess": "연결을 추가했습니다",
+    "disconnectSuccess": "연결을 삭제했습니다",
+    "disconnectError": "연결을 삭제하지 못했습니다",
+    "connect": "연결",
+    "addAnother": "다른 계정 연결",
+    "reconnect": "다시 연결",
+    "disconnect": "연결 해제",
+    "cancel": "취소",
+    "notConfigured": "사용 불가",
+    "notConfiguredHint": "이 서버에는 해당 제공자의 자격 증명이 설정되어 있지 않습니다.",
+    "connectedCount": "{{count}}개 연결됨",
+    "availableTitle": "사용 가능한 대상",
+    "availableDescription": "계정은 원하는 만큼 연결할 수 있으며, 한 제공자에 여러 드라이브를 연결해도 됩니다.",
+    "empty": {
+      "title": "아직 연결이 없습니다",
+      "description": "파일로 전달하려면 드라이브를, 판매하려면 스토어를 연결하세요."
+    },
+    "drives": {
+      "title": "드라이브",
+      "description": "내보내기 아카이브를 업로드할 클라우드 저장소입니다.",
+      "empty": "연결된 드라이브가 없습니다."
+    },
+    "storefronts": {
+      "title": "스토어",
+      "description": "내보내기를 유료 상품으로 게시할 수 있는 스토어입니다.",
+      "empty": "연결된 스토어가 없습니다."
+    },
+    "providerHint": {
+      "gumroad": "Gumroad에서 디지털 상품을 판매합니다.",
+      "google-drive": "내보내기 아카이브를 Google 드라이브에 업로드합니다.",
+      "onedrive": "내보내기 아카이브를 OneDrive에 업로드합니다.",
+      "mega": "내보내기 아카이브를 MEGA에 업로드합니다."
+    },
+    "confirmDisconnectTitle": "연결 삭제",
+    "confirmDisconnectMessage": "{{name}}을(를) 삭제할까요? 이후 내보내기는 이 대상으로 전달되지 않습니다.",
+    "credentials": {
+      "title": "{{provider}} 연결",
+      "description": "{{provider}}은(는) 리디렉션 대신 계정 자격 증명으로 로그인합니다.",
+      "email": "이메일",
+      "password": "비밀번호",
+      "twoFactor": "2단계 인증 코드",
+      "twoFactorHint": "계정에 2단계 인증이 켜져 있을 때만 필요합니다.",
+      "storageNotice": "업로드할 때마다 로그인이 필요하므로 비밀번호는 암호화되어 저장됩니다.",
+      "submit": "연결",
+      "connecting": "연결 중…",
+      "failed": "연결하지 못했습니다"
+    },
+    "drive": {
+      "releaseToDrive": "드라이브로 릴리스",
+      "uploadQueued": "릴리스를 대기열에 추가했습니다 — 업로드 아이콘에서 진행 상황을 확인하세요",
+      "uploadSuccess": "드라이브로 릴리스했습니다",
+      "uploadFailed": "드라이브 릴리스에 실패했습니다",
+      "openFile": "파일 열기",
+      "uploading": "업로드 중…",
+      "confirmDialog": {
+        "title": "드라이브로 릴리스",
+        "message": "\"{{name}}\"을(를) 연결된 드라이브에 업로드합니다. 큰 아카이브는 시간이 걸릴 수 있습니다.",
+        "confirm": "업로드"
+      }
+    },
+    "history": {
+      "headerLink": "기록",
+      "title": "릴리스 기록",
+      "description": "연결된 드라이브나 스토어로 전달한 모든 내보내기입니다.",
+      "backToReleases": "릴리스로 돌아가기",
+      "loadError": "릴리스 기록을 불러오지 못했습니다",
+      "empty": {
+        "title": "아직 릴리스가 없습니다",
+        "description": "내보내기를 릴리스하면 결과가 여기에 표시됩니다."
+      },
+      "status": {
+        "success": "성공",
+        "failed": "실패"
+      },
+      "openTarget": "제공자에서 열기",
+      "untitled": "제목 없는 릴리스",
+      "stats": {
+        "total": "전체"
+      }
+    }
+  }
+}

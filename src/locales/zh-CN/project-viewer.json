@@ -15,6 +15,7 @@
       "save": "保存",
       "cancel": "取消",
       "close": "关闭",
+      "preview": "预览",
       "copy": "复制",
       "edit": "编辑",
       "copyToLibrary": "复制到库",
@@ -422,6 +423,7 @@
       "reuseConfiguration": {
         "title": "重用配置",
         "message": "这将用此任务的配置替换您当前的工作流。确定吗？",
+        "messageReconstructed": "此结果没有保存原始工作流，将根据结果自身的提示词与引用重建——它只会复现这一个结果，而不是当初产生变化的配方。这将替换您当前的工作流。确定吗？",
         "confirm": "重用"
       }
     }

@@ -95,7 +95,7 @@ export function SellExport() {
           }
         }
       } catch (err: any) {
-        if (!cancelled) toast.error(err?.message || t('exports.stores.loadError'));
+        if (!cancelled) toast.error(err?.message || t('releases.loadError'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -242,7 +242,7 @@ export function SellExport() {
         <PageHeader
           title={t('sell.title')}
           description={t('sell.description')}
-          backLink={{ to: '/exports', label: t('exports.stores.backToExports') }}
+          backLink={{ to: '/exports', label: t('releases.backToExports') }}
         />
 
         {stores.length === 0 ? (
@@ -250,10 +250,10 @@ export function SellExport() {
             {t('sell.noStoresHint')}
             <button
               type="button"
-              onClick={() => navigate('/exports/stores')}
+              onClick={() => navigate('/releases')}
               className="ml-2 underline font-bold"
             >
-              {t('exports.stores.headerLink')}
+              {t('releases.headerLink')}
             </button>
           </div>
         ) : null}

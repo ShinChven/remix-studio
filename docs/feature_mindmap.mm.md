@@ -114,10 +114,16 @@
       - Background Zip Streaming (low-memory impact streaming archiver)
       - Export album items (Raw or Optimized versions)
       - View export tasks status and history
-    - **Cloud Storage (Google Drive)**
-      - Connect Google Drive
+    - **Project Bundles**
+      - Export a whole project (settings, workflow, album, media) as one portable ZIP
+      - Import a bundle back as a new project, with storage keys remapped
+      - Background unpacking with per-file progress and quota checks
+    - **Releases (multi-cloud + storefronts)**
+      - Connect multiple drives per provider (Google Drive, OneDrive, MEGA)
+      - Connect storefronts (Gumroad) to sell exports
       - Resumable background uploads for large exported packages
-      - Track delivery status
+      - Pick a target drive per release and track delivery status
+      - Release history across every destination
     - **MCP (Model Context Protocol) & Developer API**
       - Register and manage OAuth Clients (Update redirect URIs, Revoke)
       - Generate Personal Access Tokens (PAT) with configurable expiry (7/30/90/365 days)

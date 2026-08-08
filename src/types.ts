@@ -1225,6 +1225,23 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'byteplus-seedance-2-5-video',
+      name: 'Seedance 2.5',
+      generatorId: 'BytePlus',
+      modelId: 'dreamina-seedance-2-5-260628',
+      category: 'video',
+      promptLimit: { value: 20480, unit: 'characters' },
+      options: {
+        aspectRatios: ['adaptive', '16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+        resolutions: ['480p', '720p'],
+        durations: [4, 5, 6, 8, 10, 12, 15, 20, 25, 30, -1],
+        sounds: ['on', 'off'],
+        supportsReferenceImages: true,
+        supportsReferenceVideo: true,
+        supportsReferenceAudio: true,
+      },
+    },
+    {
       id: 'byteplus-seedance-1-5-pro-video',
       name: 'Seedance 1.5 Pro',
       generatorId: 'BytePlus',
@@ -1567,7 +1584,14 @@ export interface Job {
 export type JobConfiguration = Pick<
   Job,
   'workflowSnapshot' | 'providerId' | 'modelConfigId' | 'aspectRatio' | 'quality' | 'background' | 'format' | 'duration' | 'resolution' | 'sound'
->;
+> & {
+  /**
+   * True when no snapshot was stored and the workflow was rebuilt from the
+   * result's own prompt and references — it reproduces that single result
+   * instead of the recipe that varied it.
+   */
+  workflowReconstructed?: boolean;
+};
 
 export interface AlbumItem {
   id: string;
@@ -1767,7 +1791,6 @@ export interface User {
   createdBy?: UserReference | null;
   hasPassword?: boolean;
   twoFactorEnabled?: boolean;
-  googleDriveConnected?: boolean;
   createdAt: number;
   updatedAt?: number;
   lastLoginAt?: number;
@@ -1829,7 +1852,8 @@ export interface ExportTask {
   id: string;
   projectId?: string;
   projectName: string;
-  sourceType?: 'project' | 'library';
+  /** 'project-bundle' archives carry a whole project and can be re-imported. */
+  sourceType?: 'project' | 'library' | 'project-bundle';
   libraryId?: string;
   packageName?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -1843,11 +1867,33 @@ export interface ExportTask {
   createdAt: number;
 }
 
+/** An uploaded project bundle being unpacked into a new project. */
+export interface ProjectImportTask {
+  id: string;
+  fileName?: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  /** Set once the import has created its project. */
+  projectId?: string;
+  projectName?: string;
+  /** Media files unpacked so far, out of `total`. */
+  current: number;
+  total: number;
+  /** Size of the uploaded archive in bytes. */
+  size?: number;
+  error?: string;
+  createdAt: number;
+}
+
 export interface DeliveryStatus {
   id: string;
   exportTaskId: string;
   destination: 'drive' | 'gumroad';
   productId?: string;
+  /** Which connected drive a 'drive' release targets. */
+  driveConnectionId?: string;
+  /** Provider id of that drive, e.g. 'google-drive'. */
+  driveProvider?: string;
+  driveName?: string;
   phase?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   bytesTransferred: number;
