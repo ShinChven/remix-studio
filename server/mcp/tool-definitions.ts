@@ -5,8 +5,17 @@ import type { IRepository } from '../db/repository';
 import type { UserRepository } from '../auth/user-repository';
 import type { ProviderRepository } from '../db/provider-repository';
 import type { IStorage } from '../storage/storage';
+import type { QueueManager } from '../queue/queue-manager';
+import type { ProjectEventPublisher } from '../live/project-live-hub';
+import { checkStorageLimit } from '../utils/storage-check';
 import { createAppUrlBuilder } from './app-urls';
-import { PROVIDER_MODELS_MAP } from '../../src/types';
+import { generateJobs } from '../../src/lib/remixEngine';
+import {
+  DEFAULT_AUDIO_PROJECT_CONFIG,
+  parseAudioProjectConfig,
+  PROVIDER_MODELS_MAP,
+} from '../../src/types';
+import type { Job, Library, ModelConfig, Project } from '../../src/types';
 
 const MODEL_CATEGORY_VALUES = ['text', 'image', 'audio', 'video'] as const;
 const PROVIDER_TYPE_VALUES = Object.keys(PROVIDER_MODELS_MAP) as [
@@ -92,6 +101,12 @@ export interface ToolDependencies {
   providerRepository: ProviderRepository;
   /** Media bucket, used to mint presigned download URLs for owned storage keys. */
   storage: IStorage;
+  /** Archive bucket, needed alongside `storage` for storage-quota checks. */
+  exportStorage: IStorage;
+  /** Generation queue, used to enqueue jobs the tools move to 'pending'. */
+  queueManager: QueueManager;
+  /** Optional live-update hub so open project views refresh after job changes. */
+  projectEvents?: ProjectEventPublisher;
   /**
    * Public origin used to build browser links (library/project/campaign URLs)
    * returned by tools. Only consulted when `APP_URL` is not configured.
@@ -103,6 +118,10 @@ const MAX_CONTENT_PREVIEW_CHARS = 4096;
 // A page of posts carries many bodies at once, so previews stay short — callers
 // fetch the full copy with get_post_text once they know which post they want.
 const MAX_POST_PREVIEW_CHARS = 280;
+const MAX_DRAFT_JOBS_PER_CALL = 200;
+const MAX_JOB_FILENAME_LENGTH = 200;
+/** Same rough per-job reservation the REST job routes use for quota checks. */
+const JOB_STORAGE_ESTIMATE_BYTES = 25 * 1024 * 1024;
 const MAX_SIGNED_KEYS_PER_CALL = 50;
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 3600;
 const MAX_SIGNED_URL_TTL_SECONDS = 86400;
@@ -360,6 +379,69 @@ function basenameForKey(key: string): string {
   return name.replace(/["\\]/g, '');
 }
 
+/**
+ * Mirror of the project viewer's job filename builder: a readable slug made of
+ * the project prefix plus the tags/titles of the library items that composed
+ * the prompt, suffixed with a short uuid so two identical combinations never
+ * collide in storage.
+ */
+function buildJobFilename(filenameParts: string[], suffixId: string): string {
+  const safeSuffixId = suffixId.replace(/[^a-zA-Z0-9-_]/g, '_');
+  const readableName = filenameParts
+    .filter(Boolean)
+    .join('_')
+    .replace(/[^a-zA-Z0-9-_]/g, '_');
+  const separator = readableName ? '_' : '';
+  const maxReadableLength = Math.max(0, MAX_JOB_FILENAME_LENGTH - separator.length - safeSuffixId.length);
+
+  return `${readableName.substring(0, maxReadableLength)}${separator}${safeSuffixId}`;
+}
+
+/**
+ * Per-job generation settings, resolved from the project and — where the
+ * project leaves a field unset — from the first option the model advertises.
+ * Matches what the project viewer writes onto drafts it creates.
+ */
+function buildJobSettings(project: Project, model: ModelConfig | undefined): Partial<Job> {
+  const type = project.type ?? 'image';
+
+  if (type === 'text') return {};
+
+  if (type === 'audio') {
+    const audioConfig = project.systemPrompt
+      ? parseAudioProjectConfig(project.systemPrompt)
+      : DEFAULT_AUDIO_PROJECT_CONFIG;
+    const isMusic = audioConfig.kind === 'remix-audio-music';
+    return {
+      quality: isMusic
+        ? (audioConfig.mode === 'instrumental' ? 'instrumental' : 'with-lyrics')
+        : audioConfig.speakers[0].voice,
+      background: isMusic ? 'music' : audioConfig.mode,
+      format: (project.format
+        || model?.options.audioFormats?.[0]
+        || (isMusic ? 'mp3' : 'wav')) as Job['format'],
+    };
+  }
+
+  const common: Partial<Job> = {
+    aspectRatio: project.aspectRatio || model?.options.aspectRatios?.[0] || '1024x1024',
+    quality: project.quality || model?.options.qualities?.[0] || 'standard',
+    background: project.background || model?.options.backgrounds?.[0],
+  };
+
+  if (type === 'video') {
+    return {
+      ...common,
+      duration: project.duration || model?.options.durations?.[0] || 4,
+      resolution: project.resolution || model?.options.resolutions?.[0] || '720p',
+      sound: project.sound || 'on',
+      format: 'mp4',
+    };
+  }
+
+  return { ...common, format: (project.format || 'png') as Job['format'] };
+}
+
 function toToolWorkflowItem(item: {
   id?: string;
   type: string;
@@ -383,10 +465,59 @@ function toToolWorkflowItem(item: {
 }
 
 export function createAssistantToolDefinitions(deps: ToolDependencies): AssistantToolDefinition[] {
-  const { repository, userRepository, prisma, providerRepository, storage } = deps;
+  const { repository, userRepository, prisma, providerRepository, storage, exportStorage, queueManager, projectEvents } = deps;
   const appUrls = createAppUrlBuilder(deps.appBaseUrl);
 
   const tools: AssistantToolDefinition[] = [];
+
+  /** Draft / queue / done / album tallies for one project, shared by the job tools. */
+  async function readProjectCounts(userId: string, projectId: string) {
+    const [statusCounts, album] = await Promise.all([
+      repository.countProjectJobsByStatus(userId, projectId),
+      repository.getProjectAlbum(userId, projectId, { limit: 1 }),
+    ]);
+
+    return {
+      drafts: statusCounts.draft,
+      pending: statusCounts.pending,
+      processing: statusCounts.processing,
+      queued: statusCounts.pending + statusCounts.processing,
+      completed: statusCounts.completed,
+      failed: statusCounts.failed,
+      totalJobs:
+        statusCounts.draft + statusCounts.pending + statusCounts.processing
+        + statusCounts.completed + statusCounts.failed,
+      albumItems: album.total,
+    };
+  }
+
+  /**
+   * Reserve quota for jobs that are about to occupy storage, using the same
+   * per-job estimate as the REST routes so both paths refuse at the same point.
+   */
+  async function assertStorageHeadroom(userId: string, jobCount: number): Promise<ToolResult | null> {
+    if (jobCount <= 0) return null;
+
+    const { allowed, currentUsage, limit } = await checkStorageLimit(
+      userId,
+      jobCount * JOB_STORAGE_ESTIMATE_BYTES,
+      userRepository,
+      storage,
+      exportStorage,
+      repository,
+    );
+    if (allowed) return null;
+
+    return {
+      text: JSON.stringify({
+        error: 'Storage limit exceeded.',
+        remainingBytes: Math.max(0, limit - currentUsage),
+        requiredBytes: jobCount * JOB_STORAGE_ESTIMATE_BYTES,
+        message: `Storage limit exceeded. Remaining: ${formatSize(Math.max(0, limit - currentUsage))}. Required for ${jobCount} job${jobCount === 1 ? '' : 's'}: ~${formatSize(jobCount * JOB_STORAGE_ESTIMATE_BYTES)}.`,
+      }),
+      isError: true,
+    };
+  }
 
   // ─── create_library ───
   tools.push({
@@ -1781,6 +1912,260 @@ Important workflow behavior:
           updatedFields: Object.keys(updates),
           message: 'Project updated successfully.',
         }),
+      };
+    },
+  });
+
+  // ─── get_project_job_counts ───
+  tools.push({
+    name: 'get_project_job_counts',
+    title: 'Get Project Job Counts',
+    description: `Count a project's jobs by stage, plus how many results have landed in its album.
+
+Returned fields:
+- "drafts": jobs staged but not started — what draft_jobs creates and start_jobs consumes.
+- "pending" / "processing" / "queued": waiting to run, running now, and the sum of the two ("the queue").
+- "completed" / "failed": finished runs, successful and not.
+- "albumItems": results saved to the project album (a completed job leaves one behind, and album items also survive job cleanup, so this is usually the higher number).
+
+Also returns the project's "url" — show it when reporting progress so the user can open the queue.`,
+    inputSchema: {
+      projectId: z.string().describe('The project ID to count jobs for'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { projectId } = input as { projectId: string };
+
+      const project = await repository.getProject(userId, projectId);
+      if (!project) {
+        return {
+          text: JSON.stringify({ error: `Project "${projectId}" not found.` }),
+          isError: true,
+        };
+      }
+
+      const counts = await readProjectCounts(userId, projectId);
+      const response = {
+        projectId,
+        name: project.name,
+        url: appUrls.project(projectId),
+        type: project.type ?? 'image',
+        ...counts,
+      };
+
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
+  // ─── draft_jobs ───
+  tools.push({
+    name: 'draft_jobs',
+    title: 'Draft Jobs',
+    description: `Stage draft jobs on a project by running its workflow, exactly like the "add to queue" button in the project viewer. Drafts do not run and cost nothing until start_jobs moves them into the queue.
+
+Each draft gets one prompt combination built from the project's enabled workflow items: static text is used as-is and every library reference contributes one of its items. With shuffle on, each draft picks randomly; with shuffle off, drafts walk the combinations in order and wrap around once they are exhausted.
+
+The project supplies the provider, model, and generation settings (aspect ratio, quality, format, duration, resolution, sound) — set them with update_project first if they are missing. Call get_project to review the workflow, and get_project_job_counts to see what is already staged.
+
+Returns the project's "url" — share it so the user can review the drafts before starting them.`,
+    inputSchema: {
+      projectId: z.string().describe('The project to stage drafts on'),
+      count: z.number().int().min(1).max(MAX_DRAFT_JOBS_PER_CALL)
+        .describe(`How many drafts to create (1–${MAX_DRAFT_JOBS_PER_CALL}). Call again for larger batches.`),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    category: 'mutate',
+    handler: async (userId, input) => {
+      const { projectId, count } = input as { projectId: string; count: number };
+
+      const project = await repository.getProject(userId, projectId);
+      if (!project) {
+        return {
+          text: JSON.stringify({ error: `Project "${projectId}" not found.` }),
+          isError: true,
+        };
+      }
+
+      if (!project.providerId || !project.modelConfigId) {
+        return {
+          text: JSON.stringify({
+            error: `Project "${project.name}" has no provider/model configured. Pick a pair with list_available_models and set it with update_project before drafting jobs.`,
+          }),
+          isError: true,
+        };
+      }
+
+      const workflow = await repository.getProjectWorkflow(userId, projectId);
+      const enabledItems = workflow.filter((item) => !item.disabled);
+      if (enabledItems.length === 0) {
+        return {
+          text: JSON.stringify({
+            error: `Project "${project.name}" has no enabled workflow items. Add some with update_project before drafting jobs.`,
+          }),
+          isError: true,
+        };
+      }
+
+      const emptyItems = enabledItems.filter((item) => !item.value?.trim());
+      if (emptyItems.length > 0) {
+        return {
+          text: JSON.stringify({
+            error: `${emptyItems.length} enabled workflow item${emptyItems.length === 1 ? ' is' : 's are'} empty. Fill or disable them with update_project before drafting jobs.`,
+          }),
+          isError: true,
+        };
+      }
+
+      // Library-backed workflow items are stored as a library ID; the remix
+      // engine needs the items themselves to build combinations.
+      const libraryIds = Array.from(new Set(
+        enabledItems.filter((item) => item.type === 'library').map((item) => item.value),
+      ));
+      const libraries: Library[] = [];
+      for (const libraryId of libraryIds) {
+        const library = await repository.getLibrary(userId, libraryId);
+        if (!library) {
+          return {
+            text: JSON.stringify({
+              error: `Workflow references library "${libraryId}", which no longer exists. Fix the workflow with update_project before drafting jobs.`,
+            }),
+            isError: true,
+          };
+        }
+        libraries.push(library);
+      }
+
+      const combinations = generateJobs(workflow, libraries, count, !!project.shuffle);
+      if (combinations.length === 0) {
+        return {
+          text: JSON.stringify({
+            error: `Project "${project.name}" workflow produced no prompt combinations. Its libraries may be empty or filtered down to nothing by their selected tags.`,
+          }),
+          isError: true,
+        };
+      }
+
+      const storageError = await assertStorageHeadroom(userId, combinations.length);
+      if (storageError) return storageError;
+
+      const provider = await providerRepository.getPublicProvider(userId, project.providerId);
+      const model = provider?.models.find((m) => m.id === project.modelConfigId);
+      const settings = buildJobSettings(project, model);
+
+      const drafts: Job[] = combinations.map((combo) => ({
+        id: crypto.randomUUID(),
+        prompt: combo.prompt,
+        imageContexts: combo.imageContexts,
+        videoContexts: combo.videoContexts,
+        audioContexts: combo.audioContexts,
+        status: 'draft' as const,
+        providerId: project.providerId,
+        modelConfigId: project.modelConfigId,
+        ...settings,
+        filename: buildJobFilename(
+          [project.prefix ?? '', ...combo.filenameParts],
+          crypto.randomUUID().slice(0, 8),
+        ),
+        workflowSnapshot: workflow,
+      }));
+
+      const created = await repository.createProjectJobs(userId, projectId, drafts);
+      projectEvents?.notifyProjectChanged({ userId, projectId, reason: 'jobs.changed' });
+
+      const counts = await readProjectCounts(userId, projectId);
+      const response = {
+        projectId,
+        name: project.name,
+        url: appUrls.project(projectId),
+        drafted: created,
+        promptPreviews: drafts.slice(0, 3).map((job) => job.prompt.slice(0, 200)),
+        counts,
+        message: `Staged ${created} draft${created === 1 ? '' : 's'}. They stay idle until start_jobs queues them.`,
+      };
+
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
+  // ─── start_jobs ───
+  tools.push({
+    name: 'start_jobs',
+    title: 'Start Jobs',
+    description: `Move a project's draft jobs into the generation queue and start running them. Drafts are taken oldest first.
+
+Omit "count" to start every draft, or pass a number to start only that many — useful for trying a handful before committing a large batch. This spends provider credits, so confirm the count with the user first. Use get_project_job_counts to see what is staged and how the queue is draining.
+
+Returns the project's "url" — share it so the user can watch generation run.`,
+    inputSchema: {
+      projectId: z.string().describe('The project whose drafts should start'),
+      count: z.number().int().min(1).optional()
+        .describe('How many drafts to start, oldest first. Omit to start every draft.'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    category: 'mutate',
+    handler: async (userId, input) => {
+      const { projectId, count } = input as { projectId: string; count?: number };
+
+      const project = await repository.getProject(userId, projectId);
+      if (!project) {
+        return {
+          text: JSON.stringify({ error: `Project "${projectId}" not found.` }),
+          isError: true,
+        };
+      }
+
+      const drafts = await repository.findProjectJobsForStart(userId, projectId, { mode: 'allDrafts' });
+      const targets = count == null ? drafts : drafts.slice(0, count);
+
+      if (targets.length === 0) {
+        const counts = await readProjectCounts(userId, projectId);
+        const response = {
+          projectId,
+          name: project.name,
+          url: appUrls.project(projectId),
+          started: 0,
+          counts,
+          message: 'No draft jobs to start. Stage some with draft_jobs first.',
+        };
+        return {
+          text: JSON.stringify(response, null, 2),
+          structuredContent: response,
+        };
+      }
+
+      // Quota covers everything that will be waiting to run, not just this
+      // batch — jobs already pending have not written their output yet.
+      const pendingCount = await repository.countPendingProjectJobs(userId, projectId);
+      const storageError = await assertStorageHeadroom(userId, pendingCount + targets.length);
+      if (storageError) return storageError;
+
+      const jobIds = targets.map((job) => job.id);
+      const started = await repository.startProjectJobs(userId, projectId, jobIds);
+      projectEvents?.notifyProjectChanged({ userId, projectId, reason: 'jobs.changed' });
+
+      await queueManager.enqueueProjectJobs(userId, projectId, jobIds);
+
+      const counts = await readProjectCounts(userId, projectId);
+      const response = {
+        projectId,
+        name: project.name,
+        url: appUrls.project(projectId),
+        started,
+        remainingDrafts: counts.drafts,
+        counts,
+        message: `Queued ${started} job${started === 1 ? '' : 's'}. Generation runs in the background — poll get_project_job_counts to follow progress.`,
+      };
+
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
       };
     },
   });

@@ -244,17 +244,23 @@ async function startServer() {
   app.route('/', createSocialRouter(prisma));
   app.route('/', createReleaseRouter(prisma));
   app.route('/', createProductsRouter(prisma, deliveryManager));
-  app.route('/', createMcpRouter(prisma, repository, userRepository, providerRepository, storage));
-
-  // === Assistant chat runtime ===
-  const assistantRepo = new AssistantRepository(prisma);
-  const assistantRunner = new AssistantRunner(assistantRepo, providerRepository, {
+  // Shared by the external MCP transport and the in-app assistant so both
+  // expose exactly the same tools.
+  const toolDeps = {
     repository,
     userRepository,
     prisma,
     providerRepository,
     storage,
-  });
+    exportStorage,
+    queueManager,
+    projectEvents: projectLiveHub,
+  };
+  app.route('/', createMcpRouter(prisma, toolDeps));
+
+  // === Assistant chat runtime ===
+  const assistantRepo = new AssistantRepository(prisma);
+  const assistantRunner = new AssistantRunner(assistantRepo, providerRepository, toolDeps);
   app.route('/', createAssistantRouter(assistantRepo, assistantRunner, providerRepository));
 
   // Shared legacy path (can be refactored eventually)

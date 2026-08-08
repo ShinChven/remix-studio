@@ -34,6 +34,8 @@ export interface IRepository {
     options: { mode: 'allDrafts' | 'selected'; jobIds?: string[] },
   ): Promise<Array<Pick<Job, 'id' | 'status'>>>;
   countPendingProjectJobs(userId: string, projectId: string): Promise<number>;
+  countProjectJobsByStatus(userId: string, projectId: string): Promise<Record<Job['status'], number>>;
+  createProjectJobs(userId: string, projectId: string, jobs: Job[]): Promise<number>;
   startProjectJobs(userId: string, projectId: string, jobIds: string[]): Promise<number>;
   getJob(userId: string, projectId: string, jobId: string): Promise<Job | null>;
   getProjectCompletedJobs(

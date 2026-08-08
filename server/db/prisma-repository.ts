@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { AppData, Library, LibraryItem, LibraryType, Project, ProjectStatus, AlbumItem, TrashItem } from '../../src/types';
+import { AppData, Library, LibraryItem, LibraryType, Project, ProjectStatus, AlbumItem, TrashItem, Job } from '../../src/types';
 import { IRepository } from './repository';
 import { LibraryRepository } from './library-repository';
 import { ProjectRepository } from './project-repository';
@@ -57,6 +57,12 @@ export class PrismaRepository implements IRepository {
   }
   countPendingProjectJobs(userId: string, projectId: string) {
     return this.projects.countPendingProjectJobs(userId, projectId);
+  }
+  countProjectJobsByStatus(userId: string, projectId: string) {
+    return this.projects.countProjectJobsByStatus(userId, projectId);
+  }
+  createProjectJobs(userId: string, projectId: string, jobs: Job[]) {
+    return this.projects.createProjectJobs(userId, projectId, jobs);
   }
   startProjectJobs(userId: string, projectId: string, jobIds: string[]) {
     return this.projects.startProjectJobs(userId, projectId, jobIds);
