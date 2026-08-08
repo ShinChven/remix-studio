@@ -250,6 +250,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [isRefreshingLibraries, setIsRefreshingLibraries] = useState(false);
   const [libraryRefreshError, setLibraryRefreshError] = useState<string | null>(null);
 
+  const workflowPickerType: Exclude<WorkflowItemTypeKind, 'library'> = (() => {
+    const item = (localProject.workflow || []).find((workflowItem) => workflowItem.id === selectingLibraryForItemId);
+    return item && item.type !== 'library' ? item.type : 'text';
+  })();
+
   const [isLoadingWorkflow, setIsLoadingWorkflow] = useState(true);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const [isLoadingAlbum, setIsLoadingAlbum] = useState(true);
@@ -2493,13 +2498,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       <UniversalMediaPicker
         isOpen={!!selectingLibraryForItemId}
         title="Pick Workflow Item"
-        allowedTypes={(() => {
-          const item = (localProject.workflow || []).find((workflowItem) => workflowItem.id === selectingLibraryForItemId);
-          return item && item.type !== 'library' ? [item.type] : ['text'];
-        })()}
+        allowedTypes={[workflowPickerType]}
         defaultSourceKind="library"
         multiple={false}
         enableImageVersionSelection
+        memoryKey={`workflow-item:${workflowPickerType}`}
         onClose={() => setSelectingLibraryForItemId(null)}
         onConfirm={(items: UniversalPickedItem[]) => {
           const picked = items[0];
