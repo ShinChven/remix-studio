@@ -452,7 +452,7 @@ export function SettingsPanel({
                   </div>
 
                   {audioConfig.mode === 'multi' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 @lg/panel:grid-cols-2 gap-3">
                       <div className="space-y-2.5">
                         <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                           {t('projectViewer.settings.speakerOneName')}
@@ -496,7 +496,7 @@ export function SettingsPanel({
                     </div>
                   )}
 
-                  <div className={`grid grid-cols-1 gap-3 ${audioConfig.mode === 'multi' ? 'md:grid-cols-2' : ''}`}>
+                  <div className={`grid grid-cols-1 gap-3 ${audioConfig.mode === 'multi' ? '@lg/panel:grid-cols-2' : ''}`}>
                     <div className="space-y-2.5">
                       <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                         {audioConfig.mode === 'multi' ? t('projectViewer.settings.speakerOneVoice') : t('projectViewer.settings.voice')}

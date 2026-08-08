@@ -67,8 +67,6 @@ export function CompletedTab({
             selectedCount={selectedCompletedIds.size}
             accentColor="emerald"
             onToggleSelectAll={toggleSelectAllCompleted}
-            mobileSingleLine
-            mobileActionsRight
             rightActions={
               <>
                 {selectedCompletedIds.size > 0 && (
@@ -76,20 +74,20 @@ export function CompletedTab({
                     onClick={() => setShowDeleteSelectedModal(true)}
                     title={t('projectViewer.common.deleteSelected')}
                     aria-label={t('projectViewer.common.deleteSelected')}
-                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                   >
                     <Trash2 className="w-3 h-3" />
-                    <span className="hidden sm:inline">{t('projectViewer.common.deleteSelected')}</span>
+                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.common.deleteSelected')}</span>
                   </button>
                 )}
                 <button
                   onClick={() => onSortChange(sort === 'newest' ? 'oldest' : 'newest')}
                   title={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
                   aria-label={sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 sm:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all"
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all"
                 >
                   {sort === 'newest' ? <ArrowDownWideNarrow className="w-3 h-3" /> : <ArrowUpWideNarrow className="w-3 h-3" />}
-                  <span className="hidden sm:inline">
+                  <span className="hidden @min-[56rem]/pane:inline">
                     {sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
                   </span>
                 </button>
@@ -153,7 +151,7 @@ export function CompletedTab({
                       {job.imageContexts && job.imageContexts.length > 0 && (
                         <div className="space-y-3">
                             <label className="text-[9px] font-black uppercase tracking-[0.1em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>
-                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                            <div className="grid grid-cols-3 @md/pane:grid-cols-4 @2xl/pane:grid-cols-6 @4xl/pane:grid-cols-8 gap-3">
                               {job.imageContexts.map((ctx, idx) => (
                                 <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-emerald-500/50">
                                   <img 
@@ -177,7 +175,7 @@ export function CompletedTab({
                       {job.videoContexts && job.videoContexts.length > 0 && (
                         <div className="space-y-3">
                           <label className="text-[9px] font-black uppercase tracking-[0.1em] text-violet-300/70 px-1">Reference Videos</label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 @2xl/pane:grid-cols-2 gap-3">
                             {job.videoContexts.map((ctx, idx) => (
                               <video key={idx} src={imageDisplayUrl(ctx)} controls className="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-black" />
                             ))}

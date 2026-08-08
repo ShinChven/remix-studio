@@ -74,7 +74,7 @@ export function JobListItem({
   return (
     <div className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300 border-b border-neutral-200/50 dark:border-neutral-800/50">
       <div
-        className={`bg-white/10 dark:bg-black/10 backdrop-blur-sm flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between transition-ui cursor-pointer group/task p-3 lg:py-2.5 rounded-none border-0 ${headerClassName}`}
+        className={`bg-white/10 dark:bg-black/10 backdrop-blur-sm flex flex-col gap-3 @lg/pane:flex-row @lg/pane:items-center @lg/pane:justify-between transition-ui cursor-pointer group/task p-3 @lg/pane:py-2.5 rounded-none border-0 ${headerClassName}`}
         onClick={() => onToggleExpand(job.id)}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -97,10 +97,10 @@ export function JobListItem({
           </span>
         </div>
 
-        <div className="flex flex-col gap-2 pl-10 sm:pl-0 lg:pl-0 lg:items-end lg:flex-shrink-0">
+        <div className="flex flex-col gap-2 pl-10 @lg/pane:pl-0 @lg/pane:items-end @lg/pane:flex-shrink-0">
           {(providerName || modelName) && (
-            <div className="flex items-center lg:hidden">
-              <InfoChip className="max-w-[9rem] sm:max-w-none gap-1">
+            <div className="flex items-center @lg/pane:hidden">
+              <InfoChip className="max-w-[9rem] @md/pane:max-w-none gap-1">
                 {providerName && (
                   <span className="truncate leading-none text-neutral-500 dark:text-neutral-500">
                     {providerName}
@@ -116,9 +116,9 @@ export function JobListItem({
             </div>
           )}
 
-          <div className="flex items-center gap-2 lg:flex-wrap lg:justify-end">
+          <div className="flex items-center gap-2 @lg/pane:flex-wrap @lg/pane:justify-end">
             {(providerName || modelName) && (
-              <div className="hidden lg:flex items-center">
+              <div className="hidden @lg/pane:flex items-center">
                 <InfoChip className="max-w-none gap-1">
                   {providerName && (
                     <span className="truncate leading-none text-neutral-500 dark:text-neutral-500">

@@ -214,7 +214,7 @@ export function WorkflowPanel({
 
   return (
     <div
-      className={`w-full ${isExpanded ? 'lg:flex-1 lg:w-auto lg:min-w-0' : 'lg:w-96'} lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/30 backdrop-blur-3xl flex-col flex-shrink-0 relative ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}
+      className={`@container/panel w-full ${isExpanded ? 'lg:flex-1 lg:w-auto lg:min-w-0' : 'lg:w-96'} lg:h-full min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-neutral-200/50 dark:border-white/5 bg-white/30 dark:bg-black/30 backdrop-blur-3xl flex-col flex-shrink-0 relative ${mobileView === 'workflow' ? 'flex h-full' : 'hidden lg:flex'}`}
       onDragOver={handlePanelDragOver}
       onDragLeave={handlePanelDragLeave}
       onDrop={handlePanelDrop}
