@@ -8,6 +8,7 @@ import { PageHeader } from '../components/PageHeader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
 import { PageNav } from '../components/PageNav';
+import { ProjectImportPanel } from '../components/ProjectImportPanel';
 
 const EXPORTS_PAGE_SIZE = 15;
 
@@ -360,6 +361,8 @@ export function Exports() {
         }
       />
 
+      <ProjectImportPanel />
+
       {!loading && exports.length === 0 ? (
         <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
           <List className="w-12 h-12 mx-auto opacity-10 mb-4" />
@@ -409,6 +412,11 @@ export function Exports() {
                       <span className="text-[11px] sm:text-[10px] font-bold text-neutral-900 dark:text-white sm:text-neutral-400 truncate tracking-tight">
                         {task.packageName || `Archive #${task.id.slice(0, 8)}`}
                       </span>
+                      {task.sourceType === 'project-bundle' && (
+                        <span className="w-fit rounded border border-violet-200 bg-violet-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-violet-600 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-400">
+                          {t('projectImports.bundleBadge')}
+                        </span>
+                      )}
                     </div>
 
                     {/* Context Info */}
@@ -434,7 +442,7 @@ export function Exports() {
                           <div className="w-20 sm:w-24 h-1.5 bg-neutral-100 dark:bg-neutral-900 rounded-full overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-inner">
                             <div
                               className="h-full bg-blue-500 transition-all duration-500"
-                              style={{ width: task.status === 'pending' ? '0%' : `${(task.current / task.total) * 100}%` }}
+                              style={{ width: task.status === 'pending' || task.total <= 0 ? '0%' : `${(task.current / task.total) * 100}%` }}
                             />
                           </div>
                           <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">

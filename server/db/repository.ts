@@ -78,6 +78,15 @@ export interface IRepository {
   heartbeatExportTask(taskId: string): Promise<void>;
   reapStaleExportTasks(thresholdMinutes?: number): Promise<number>;
 
+  // === Project import CRUD + Queue ===
+  getProjectImportTasks(userId: string, page?: number, limit?: number): Promise<{ items: any[]; total: number; page: number; pages: number }>;
+  getProjectImportTask(userId: string, taskId: string): Promise<any | undefined>;
+  saveProjectImportTask(userId: string, taskId: string, data: any): Promise<void>;
+  deleteProjectImportTask(userId: string, taskId: string): Promise<void>;
+  claimNextProjectImportTask(workerId: string): Promise<any | null>;
+  heartbeatProjectImportTask(taskId: string): Promise<void>;
+  reapStaleProjectImportTasks(thresholdMinutes?: number): Promise<number>;
+
   // === Delivery Task CRUD + Queue ===
   saveDeliveryTask(userId: string, taskId: string, data: any): Promise<void>;
   getDeliveryTask(userId: string, taskId: string): Promise<any | undefined>;

@@ -8,6 +8,7 @@ import { IRepository } from '../db/repository';
 import { UserRepository } from '../auth/user-repository';
 import { getUserStorageUsage } from '../utils/storage-check';
 import { applyPostWatermark, type PostWatermarkConfig } from '../utils/watermark';
+import { PROJECT_BUNDLE_MANIFEST_ENTRY } from '../services/project-bundle';
 
 // TTL helpers (Unix seconds)
 const TTL_24H = () => Math.floor(Date.now() / 1000) + 86400;
@@ -26,6 +27,13 @@ const HEARTBEAT_INTERVAL_MS = 10_000;
 const REAPER_INTERVAL_MS = 60_000;
 
 type ExportAssetVersion = 'raw' | 'optimized';
+
+/**
+ * One archive entry. Album exports pass real AlbumItems; project-bundle
+ * exports pass synthetic ones whose `exportName` pins the path inside the zip
+ * so the manifest and the archive can never disagree.
+ */
+export type ExportItem = AlbumItem & { exportName?: string };
 
 export interface ExportTask {
   id: string;
@@ -100,7 +108,7 @@ export class ExportManager {
     userId: string,
     projectId: string | undefined,
     projectName: string,
-    items: AlbumItem[],
+    items: ExportItem[],
     packageName?: string,
     metadata: Record<string, unknown> = {}
   ): Promise<string> {
@@ -211,9 +219,12 @@ export class ExportManager {
 
   private async runExportTask(task: any): Promise<void> {
     const { id: taskId, userId, projectName, packageName } = task;
-    const items: AlbumItem[] = task.items ?? [];
+    const items: ExportItem[] = task.items ?? [];
     const exportVersion: ExportAssetVersion = task.exportVersion === 'optimized' ? 'optimized' : 'raw';
-    const watermarkSettings: PostWatermarkConfig | null = task.watermarkSettings ?? null;
+    // A project bundle carries a manifest alongside the media; watermarking it
+    // would corrupt files the importer expects to round-trip byte for byte.
+    const bundleManifest = task.bundleManifest ?? null;
+    const watermarkSettings: PostWatermarkConfig | null = bundleManifest ? null : (task.watermarkSettings ?? null);
     const watermarkEnabled = Boolean(watermarkSettings?.enabled && watermarkSettings.text.trim());
 
     console.log(`[ExportManager] Starting task ${taskId} (${items.length} items, version=${exportVersion}, watermark=${watermarkEnabled}, user=${userId})`);
@@ -227,7 +238,9 @@ export class ExportManager {
     }, HEARTBEAT_INTERVAL_MS);
 
     try {
-      if (items.length === 0) throw new Error('No items to export');
+      // A project bundle is still meaningful with zero media files — the
+      // manifest alone carries a text project's whole contents.
+      if (items.length === 0 && !bundleManifest) throw new Error('No items to export');
 
       // ── Pre-flight quota check ────────────────────────────────────────────
       const user = await this.userRepository.findById(userId);
@@ -274,6 +287,16 @@ export class ExportManager {
         }
       });
 
+      // The manifest goes in first so a streaming reader hits it before any
+      // media, and so a truncated archive is obviously incomplete.
+      if (bundleManifest) {
+        const manifestEntry = once(archive, 'entry');
+        archive.append(Buffer.from(JSON.stringify(bundleManifest, null, 2), 'utf-8'), {
+          name: PROJECT_BUNDLE_MANIFEST_ENTRY,
+        });
+        await manifestEntry;
+      }
+
       const seenNames = new Set<string>();
       let done = 0;
 
@@ -284,10 +307,13 @@ export class ExportManager {
 
         console.log(`[ExportManager] ${taskId}: stream ${i + 1}/${items.length} — ${key}`);
 
-        // Build a unique filename
-        let name = key.split('/').pop() || `file_${i + 1}.png`;
-        if (watermarkEnabled) name = forceJpegExtension(name);
-        if (seenNames.has(name)) name = `${i + 1}_${name}`;
+        // Bundles carry a path assigned by the manifest builder; album exports
+        // derive one from the key and de-duplicate it here.
+        let name = item.exportName || key.split('/').pop() || `file_${i + 1}.png`;
+        if (!item.exportName) {
+          if (watermarkEnabled) name = forceJpegExtension(name);
+          if (seenNames.has(name)) name = `${i + 1}_${name}`;
+        }
         seenNames.add(name);
 
         if (watermarkEnabled) {

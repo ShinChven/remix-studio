@@ -56,6 +56,31 @@
       "confirm": "刪除紀錄"
     }
   },
+  "projectImports": {
+    "title": "專案套件",
+    "description": "上傳專案套件即可將整個專案匯入回來。",
+    "selectFile": "匯入專案",
+    "uploading": "上傳中 {{percent}}%",
+    "untitled": "未命名專案",
+    "bundleBadge": "專案套件",
+    "deleteRecord": "刪除匯入紀錄",
+    "status": {
+      "queued": "排隊中",
+      "unpacking": "解壓中",
+      "imported": "已匯入",
+      "failed": "失敗"
+    },
+    "toast": {
+      "queued": "專案套件已上傳，正在解壓。",
+      "completed": "已匯入「{{name}}」。",
+      "failed": "專案匯入失敗"
+    },
+    "errors": {
+      "notZip": "請選擇 .zip 格式的專案套件。",
+      "uploadFailed": "上傳專案套件失敗",
+      "deleteFailed": "刪除匯入紀錄失敗"
+    }
+  },
   "trash": {
     "title": "回收站",
     "description": "查看已刪除的項目，還原您需要的項，或永久刪除它們。",

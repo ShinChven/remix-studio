@@ -56,6 +56,31 @@
       "confirm": "Supprimer l'enregistrement"
     }
   },
+  "projectImports": {
+    "title": "Packs de projet",
+    "description": "Téléversez un pack de projet pour réimporter un projet entier.",
+    "selectFile": "Importer un projet",
+    "uploading": "Envoi {{percent}} %",
+    "untitled": "Projet sans titre",
+    "bundleBadge": "Pack de projet",
+    "deleteRecord": "Supprimer l'entrée d'import",
+    "status": {
+      "queued": "En file d'attente",
+      "unpacking": "Décompression",
+      "imported": "Importé",
+      "failed": "Échec"
+    },
+    "toast": {
+      "queued": "Pack téléversé — décompression en cours.",
+      "completed": "« {{name}} » importé.",
+      "failed": "Échec de l'import du projet"
+    },
+    "errors": {
+      "notZip": "Choisissez un pack de projet .zip.",
+      "uploadFailed": "Échec du téléversement du pack de projet",
+      "deleteFailed": "Échec de la suppression de l'entrée d'import"
+    }
+  },
   "trash": {
     "title": "Corbeille",
     "description": "Examinez les éléments supprimés, restaurez ce dont vous avez besoin ou supprimez-les définitivement.",
