@@ -18,7 +18,7 @@ Available MCP capabilities include:
 - **Export** a project album as a .zip with `export_project_album`, or a whole project as a portable bundle with `export_project`.
 - **Create and update** workflow-backed projects.
 - **Stage and run generation**: `draft_jobs` builds draft jobs from a project's workflow, `start_jobs` queues all of them or a chosen number, and `get_project_job_counts` reports drafts, queue depth, completed runs, and album totals.
-- **Monitor the queue** across every project with `get_queue_status`, which returns the counts behind the [queue monitor](/concepts/queue) page — running, queued, failed, and provider slots — optionally broken down per project or per provider, and never the job list itself.
+- **Monitor the queue** across every project with `get_queue_status`, which returns the counts behind the [queue monitor](/concepts/queue) page — running, queued, failed, and provider slots — with `breakdown` reproducing either tab of that page (`providers` for each provider queue's slots, limit, and depth; `projects` for each project holding jobs), and never the job list itself.
 
 Write and destructive tools are **confirmation-gated**. Prompt deletion is scoped to one item in a text library and requires an explicit confirmed tool call.
 

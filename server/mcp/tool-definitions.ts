@@ -2161,12 +2161,17 @@ Also returns the project's "url" — show it when reporting progress so the user
 "totals" mirrors the page header:
 - "projects": projects with at least one job in the queue right now (not the total project count).
 - "providers": configured providers.
-- "running": jobs executing now, including detached ones the provider is still working on.
+- "running": jobs executing now, including the "detached" ones handed to the provider as a task and still being polled.
 - "queued" / "pending": jobs waiting for a free slot. Same set counted two ways, so they normally match.
 - "failed": failed jobs still sitting in the queue, waiting to be cleared.
 - "activeSlots" / "concurrency" / "availableSlots": provider slots in use, the combined limit, and what is left.
 
-Set "breakdown" to "projects" or "providers" for per-row counts (no job details either way); "none" returns just the totals. Use get_project_job_counts instead when the question is about one project, since that one also covers drafts, completed runs, and album items.
+Set "breakdown" for per-row counts (no job details in any mode):
+- "providers" mirrors the page's provider tab — every configured provider with its slots in use, concurrency limit, queue depth, and failures, busiest first.
+- "projects" mirrors the project tab — one row per project holding jobs, busiest first.
+- "none" (default) returns just the totals.
+
+Use get_project_job_counts instead when the question is about one project, since that one also covers drafts, completed runs, and album items.
 
 Returns "url" — the queue monitor page — so the user can open it.`,
     inputSchema: {
@@ -2190,13 +2195,14 @@ Returns "url" — the queue monitor page — so the user can open it.`,
       const { totals } = status;
 
       const response: Record<string, unknown> = {
-        url: appUrls.queue(),
+        url: appUrls.queue(breakdown === 'providers' ? 'providers' : undefined),
         updatedAt: new Date(status.updatedAt).toISOString(),
         breakdown,
         totals: {
           projects: totals.projects,
           providers: totals.providers,
           running: totals.runningJobs + totals.detachedJobs,
+          detached: totals.detachedJobs,
           queued: totals.queuedJobs + totals.waitingJobs,
           pending: totals.pendingJobs,
           failed: totals.failedJobs,
@@ -2215,6 +2221,7 @@ Returns "url" — the queue monitor page — so the user can open it.`,
           status: project.status,
           providerName: project.providerName,
           running: project.runningJobs + project.detachedJobs,
+          detached: project.detachedJobs,
           queued: project.queuedJobs + project.waitingJobs,
           failed: project.failedJobs,
           latestJobAt: project.latestJobAt ? new Date(project.latestJobAt).toISOString() : undefined,
@@ -2234,8 +2241,10 @@ Returns "url" — the queue monitor page — so the user can open it.`,
           concurrency: provider.concurrency,
           availableSlots: provider.availableSlots,
           running: provider.runningJobs + provider.detachedJobs,
+          detached: provider.detachedJobs,
           queued: provider.queuedJobs + provider.waitingJobs,
           failed: provider.failedJobs,
+          providerUrl: appUrls.provider(provider.id),
         }));
         response.totalRows = rows.length;
         response.hasMore = rows.length > limit;

@@ -22,8 +22,12 @@ export interface AppUrlBuilder {
   base: string;
   library(libraryId: string): string;
   project(projectId: string): string;
-  /** The queue monitor page, which shows the same numbers as get_queue_status. */
-  queue(): string;
+  provider(providerId: string): string;
+  /**
+   * The queue monitor page, which shows the same numbers as get_queue_status.
+   * Pass "providers" for the tab that groups them by provider queue.
+   */
+  queue(view?: 'projects' | 'providers'): string;
   campaign(campaignId: string): string;
   campaignPost(campaignId: string, postId: string): string;
 }
@@ -35,7 +39,8 @@ export function createAppUrlBuilder(requestOrigin?: string | null): AppUrlBuilde
     base,
     library: (libraryId) => `${base}/library/${seg(libraryId)}`,
     project: (projectId) => `${base}/project/${seg(projectId)}`,
-    queue: () => `${base}/projects/queues`,
+    provider: (providerId) => `${base}/provider/${seg(providerId)}`,
+    queue: (view) => `${base}/projects/queues${view === 'providers' ? '?view=providers' : ''}`,
     campaign: (campaignId) => `${base}/campaigns/${seg(campaignId)}`,
     campaignPost: (campaignId, postId) => `${base}/campaigns/${seg(campaignId)}/posts/${seg(postId)}`,
   };
