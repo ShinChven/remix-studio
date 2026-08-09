@@ -5,6 +5,7 @@ import { fetchProvider, createProvider, updateProvider } from '../api';
 import { ProviderType, PROVIDER_MODELS_MAP } from '../types';
 import { Save, Eye, EyeOff, Loader2, MessageSquare, Image as ImageIcon, Video, Music, Plus, Minus } from 'lucide-react';
 import { ProviderIcon } from '../components/ProviderIcon';
+import { NumberInput } from '../components/NumberInput';
 
 const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'Alibabacloud', 'Kimi', 'RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs'];
 
@@ -322,13 +323,13 @@ export function ProviderForm() {
                       <Minus className="w-4 h-4" />
                     </button>
                     
-                    <input
-                      type="number"
+                    <NumberInput
                       autoComplete="off"
-                      min="1"
-                      max="1000"
+                      min={1}
+                      max={1000}
+                      integer
                       value={concurrency}
-                      onChange={e => setConcurrency(Math.max(1, parseInt(e.target.value) || 1))}
+                      onValueChange={setConcurrency}
                       className="flex-1 bg-transparent border-none text-center text-lg font-black text-neutral-900 dark:text-white focus:outline-none focus:ring-0"
                     />
 
