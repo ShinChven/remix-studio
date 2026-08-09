@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, LibraryItem } from '../types';
-import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive, FileText, Stars, Filter, ArrowDownNarrowWide, Check } from 'lucide-react';
+import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive, FileText, Stars, Filter, ArrowDownNarrowWide, Check, Rows3 } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { PageNav } from './PageNav';
 import { TagModal } from './TagModal';
@@ -34,6 +34,9 @@ function getDefaultLibraryExportName(name: string): string {
   const compactBase = safeBase || 'Library';
   return `${compactBase}_Library.zip`;
 }
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
+const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
 
 function formatLibraryItemDateTime(value?: number): string {
   if (!value) return '';
@@ -84,8 +87,23 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [totalPages, setTotalPages] = useState(1);
   const [loadingItems, setLoadingItems] = useState(true);
 
-  const ITEMS_PER_PAGE = 25;
+  const requestedPageSize = parseInt(searchParams.get('size') || '', 10);
+  const itemsPerPage = PAGE_SIZE_OPTIONS.includes(requestedPageSize) ? requestedPageSize : DEFAULT_PAGE_SIZE;
   const selectedTagsKey = selectedFilterTags.join('\u0000');
+
+  const setItemsPerPage = useCallback((size: number) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (size === DEFAULT_PAGE_SIZE) {
+        next.delete('size');
+      } else {
+        next.set('size', String(size));
+      }
+      // A different page length invalidates the current offset.
+      next.set('page', '1');
+      return next;
+    });
+  }, [setSearchParams]);
 
   const setCurrentPage = useCallback((page: number | ((prev: number) => number)) => {
     setSearchParams(prev => {
@@ -130,8 +148,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     try {
       const result = await fetchLibraryItems(
         library.id, 
-        currentPage, 
-        ITEMS_PER_PAGE, 
+        currentPage,
+        itemsPerPage,
         searchTerm || undefined, 
         selectedFilterTags,
         sortBy,
@@ -145,7 +163,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     } finally {
       setLoadingItems(false);
     }
-  }, [library.id, currentPage, searchTerm, selectedTagsKey, sortBy, sortOrder]);
+  }, [library.id, currentPage, itemsPerPage, searchTerm, selectedTagsKey, sortBy, sortOrder]);
 
   useEffect(() => {
     loadItems();
@@ -650,6 +668,21 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 </select>
                 <ArrowDownNarrowWide className="w-3.5 h-3.5 text-neutral-400" />
               </div>
+
+              <div className="flex items-center gap-1.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1">
+                <select
+                  value={String(itemsPerPage)}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  aria-label={t('pagination.pageSize')}
+                  title={t('pagination.pageSize')}
+                  className="bg-transparent text-xs font-medium text-neutral-600 dark:text-neutral-400 focus:outline-none px-2 py-0.5 cursor-pointer appearance-none"
+                >
+                  {PAGE_SIZE_OPTIONS.map(size => (
+                    <option key={size} value={String(size)}>{size}</option>
+                  ))}
+                </select>
+                <Rows3 className="w-3.5 h-3.5 text-neutral-400" />
+              </div>
             </div>
 
             {selectedItemIds.size > 0 && (
@@ -761,8 +794,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                               title={t('libraryEditor.clickToRename', 'Click to rename')}
                             >
                               <span className="text-[10px] font-bold text-white/90 truncate flex-1">
-                                {item.title || (library.type === 'image' ? t('libraryEditor.imageLabel', { index: (currentPage - 1) * ITEMS_PER_PAGE + index + 1 }) :
-                                 library.type === 'video' ? 'Video ' + ((currentPage - 1) * ITEMS_PER_PAGE + index + 1) : 'Audio ' + ((currentPage - 1) * ITEMS_PER_PAGE + index + 1))}
+                                {item.title || (library.type === 'image' ? t('libraryEditor.imageLabel', { index: (currentPage - 1) * itemsPerPage + index + 1 }) :
+                                 library.type === 'video' ? 'Video ' + ((currentPage - 1) * itemsPerPage + index + 1) : 'Audio ' + ((currentPage - 1) * itemsPerPage + index + 1))}
                               </span>
                               <Edit3 className="w-3 h-3 text-white/40 group-hover/item:text-white/70 flex-shrink-0 transition-colors" />
                             </div>
