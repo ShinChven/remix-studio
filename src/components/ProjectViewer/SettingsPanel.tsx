@@ -11,6 +11,7 @@ import {
   resolveAudioGenerationKind,
   serializeAudioProjectConfig,
 } from '../../types';
+import { NumberInput } from '../NumberInput';
 
 const getRatioDimensions = (ratioStr: string) => {
   let w = 1, h = 1;
@@ -856,16 +857,11 @@ export function SettingsPanel({
           {t('projectViewer.settings.jobQuantity')}
         </label>
         <div className="flex items-center gap-2 bg-white/40 dark:bg-black/40 px-3 py-1.5 rounded-xl border border-neutral-200/50 dark:border-white/5 shadow-inner backdrop-blur-sm">
-          <input
-            type="number"
-            min="1"
+          <NumberInput
+            min={1}
+            integer
             value={queueCount}
-            onChange={(e) => {
-              const val = parseInt(e.target.value);
-              if (!isNaN(val)) {
-                setQueueCount(val);
-              }
-            }}
+            onValueChange={setQueueCount}
             className="w-10 bg-transparent text-xs text-blue-600 dark:text-blue-400 font-black focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
           />
           <button

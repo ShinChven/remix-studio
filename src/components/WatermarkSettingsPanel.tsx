@@ -6,6 +6,7 @@ import {
   PostWatermarkSettings,
 } from '../api';
 import { cn } from '../lib/utils';
+import { NumberInput } from './NumberInput';
 
 export const DEFAULT_WATERMARK_SETTINGS: PostWatermarkSettings = {
   enabled: false,
@@ -250,25 +251,25 @@ export function WatermarkSettingsPanel({
 
               <label>
                 <span className="text-xs font-black uppercase tracking-widest text-neutral-500">Padding</span>
-                <input
-                  type="number"
+                <NumberInput
                   min={0}
                   max={512}
+                  integer
                   className="mt-2 h-11 w-full rounded-xl border border-neutral-200/60 bg-white/70 px-3 text-sm outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-950 dark:text-white"
                   value={settings.padding}
-                  onChange={(event) => updateSetting('padding', Math.max(0, Math.min(512, Number(event.target.value) || 0)))}
+                  onValueChange={(next) => updateSetting('padding', next)}
                 />
               </label>
 
               <label>
                 <span className="text-xs font-black uppercase tracking-widest text-neutral-500">Font size</span>
-                <input
-                  type="number"
+                <NumberInput
                   min={8}
                   max={256}
+                  integer
                   className="mt-2 h-11 w-full rounded-xl border border-neutral-200/60 bg-white/70 px-3 text-sm outline-none transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-neutral-950 dark:text-white"
                   value={settings.fontSize}
-                  onChange={(event) => updateSetting('fontSize', Math.max(8, Math.min(256, Number(event.target.value) || 8)))}
+                  onValueChange={(next) => updateSetting('fontSize', next)}
                 />
               </label>
 

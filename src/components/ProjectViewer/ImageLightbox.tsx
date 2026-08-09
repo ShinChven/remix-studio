@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { X, ChevronLeft, ChevronRight, Trash2, Play, Pause, Maximize, Minimize, Wand2, RefreshCw } from 'lucide-react';
 import { useWakeLock } from '../../hooks/useWakeLock';
+import { NumberInput } from '../NumberInput';
 
 interface ImageLightboxProps {
   images: string[];
@@ -342,12 +343,6 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onReuse, 
     setSlideshowOn(prev => !prev);
   };
 
-  const handleIntervalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
-    if (Number.isNaN(value)) return;
-    applyInterval(value);
-  };
-
   const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentIndex(prev => prev > 0 ? prev - 1 : images.length - 1);
@@ -388,12 +383,12 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onReuse, 
                 onClick={(e) => e.stopPropagation()}
                 title={`${t('projectViewer.imageLightbox.slideshowInterval')} (↑ / ↓)`}
               >
-                <input
-                  type="number"
+                <NumberInput
                   min={MIN_INTERVAL}
                   max={MAX_INTERVAL}
+                  integer
                   value={intervalSec}
-                  onChange={handleIntervalChange}
+                  onValueChange={applyInterval}
                   className="w-9 bg-transparent text-center text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
                   aria-label={t('projectViewer.imageLightbox.slideshowInterval')}
                 />
