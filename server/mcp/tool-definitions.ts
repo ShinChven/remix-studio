@@ -2152,6 +2152,111 @@ Also returns the project's "url" — show it when reporting progress so the user
     },
   });
 
+  // ─── get_queue_status ───
+  tools.push({
+    name: 'get_queue_status',
+    title: 'Get Queue Status',
+    description: `Counts for the queue monitor page (/projects/queues) across every project and provider — numbers only, never the job list.
+
+"totals" mirrors the page header:
+- "projects": projects with at least one job in the queue right now (not the total project count).
+- "providers": configured providers.
+- "running": jobs executing now, including the "detached" ones handed to the provider as a task and still being polled.
+- "queued" / "pending": jobs waiting for a free slot. Same set counted two ways, so they normally match.
+- "failed": failed jobs still sitting in the queue, waiting to be cleared.
+- "activeSlots" / "concurrency" / "availableSlots": provider slots in use, the combined limit, and what is left.
+
+Set "breakdown" for per-row counts (no job details in any mode):
+- "providers" mirrors the page's provider tab — every configured provider with its slots in use, concurrency limit, queue depth, and failures, busiest first.
+- "projects" mirrors the project tab — one row per project holding jobs, busiest first.
+- "none" (default) returns just the totals.
+
+Use get_project_job_counts instead when the question is about one project, since that one also covers drafts, completed runs, and album items.
+
+Returns "url" — the queue monitor page — so the user can open it.`,
+    inputSchema: {
+      breakdown: z.enum(['none', 'projects', 'providers']).default('none')
+        .describe('Per-row counts to include besides the totals (default "none")'),
+      limit: z.number().int().min(1).max(200).default(25)
+        .describe('Maximum breakdown rows to return, most active first (default 25). Ignored when breakdown="none".'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { breakdown, limit } = input as {
+        breakdown: 'none' | 'projects' | 'providers';
+        limit: number;
+      };
+
+      const status = await queueManager.getMonitorStatus(
+        userId,
+        breakdown === 'providers' ? 'providers' : 'projects',
+      );
+      const { totals } = status;
+
+      const response: Record<string, unknown> = {
+        url: appUrls.queue(breakdown === 'providers' ? 'providers' : undefined),
+        updatedAt: new Date(status.updatedAt).toISOString(),
+        breakdown,
+        totals: {
+          projects: totals.projects,
+          providers: totals.providers,
+          running: totals.runningJobs + totals.detachedJobs,
+          detached: totals.detachedJobs,
+          queued: totals.queuedJobs + totals.waitingJobs,
+          pending: totals.pendingJobs,
+          failed: totals.failedJobs,
+          activeSlots: totals.activeSlots,
+          concurrency: totals.concurrency,
+          availableSlots: Math.max(0, totals.concurrency - totals.activeSlots),
+        },
+      };
+
+      if (breakdown === 'projects') {
+        const rows = status.projects || [];
+        response.projects = rows.slice(0, limit).map((project) => ({
+          id: project.id,
+          name: project.name,
+          type: project.type,
+          status: project.status,
+          providerName: project.providerName,
+          running: project.runningJobs + project.detachedJobs,
+          detached: project.detachedJobs,
+          queued: project.queuedJobs + project.waitingJobs,
+          failed: project.failedJobs,
+          latestJobAt: project.latestJobAt ? new Date(project.latestJobAt).toISOString() : undefined,
+          projectUrl: appUrls.project(project.id),
+        }));
+        response.totalRows = rows.length;
+        response.hasMore = rows.length > limit;
+      }
+
+      if (breakdown === 'providers') {
+        const rows = status.providers || [];
+        response.providers = rows.slice(0, limit).map((provider) => ({
+          id: provider.id,
+          name: provider.name,
+          type: provider.type,
+          activeSlots: provider.activeSlots,
+          concurrency: provider.concurrency,
+          availableSlots: provider.availableSlots,
+          running: provider.runningJobs + provider.detachedJobs,
+          detached: provider.detachedJobs,
+          queued: provider.queuedJobs + provider.waitingJobs,
+          failed: provider.failedJobs,
+          providerUrl: appUrls.provider(provider.id),
+        }));
+        response.totalRows = rows.length;
+        response.hasMore = rows.length > limit;
+      }
+
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
   // ─── draft_jobs ───
   tools.push({
     name: 'draft_jobs',

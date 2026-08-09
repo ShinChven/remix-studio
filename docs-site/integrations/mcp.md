@@ -18,6 +18,7 @@ Available MCP capabilities include:
 - **Export** a project album as a .zip with `export_project_album`, or a whole project as a portable bundle with `export_project`.
 - **Create and update** workflow-backed projects.
 - **Stage and run generation**: `draft_jobs` builds draft jobs from a project's workflow, `start_jobs` queues all of them or a chosen number, and `get_project_job_counts` reports drafts, queue depth, completed runs, and album totals.
+- **Monitor the queue** across every project with `get_queue_status`, which returns the counts behind the [queue monitor](/concepts/queue) page — running, queued, failed, and provider slots — with `breakdown` reproducing either tab of that page (`providers` for each provider queue's slots, limit, and depth; `projects` for each project holding jobs), and never the job list itself.
 
 Write and destructive tools are **confirmation-gated**. Prompt deletion is scoped to one item in a text library and requires an explicit confirmed tool call.
 
@@ -90,7 +91,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 | :--- | :--- | :--- |
 | Libraries | `list_libraries`, `get_library_items`, `search_library_items` | `create_library`, `update_library`, `create_prompt`, `batch_create_prompts`, `update_prompt`, `update_library_item`, `batch_update_library_items`, `delete_prompt` |
 | Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `export_project`, `export_project_album` |
-| Jobs | `get_project_job_counts` | `draft_jobs`, `start_jobs` |
+| Jobs | `get_project_job_counts`, `get_queue_status` | `draft_jobs`, `start_jobs` |
 | Files | `get_file_urls` | — |
 | Campaigns | `list_social_accounts`, `list_campaigns` | `create_campaign`, `update_campaign` |
 | Posts | `list_posts`, `get_post`, `get_post_text` | `create_post`, `update_post`, `update_post_text`, `add_media_to_post`, `schedule_post` |
