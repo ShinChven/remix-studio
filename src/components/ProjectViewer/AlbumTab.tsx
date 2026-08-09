@@ -670,8 +670,11 @@ export function AlbumTab({
         ) : (
           // Column count follows the pane's width, not the window's. Each step keeps
           // cards at ~200px or wider — below that the overlay controls and the
-          // metadata rows stop fitting.
-          <div className="grid grid-cols-1 @min-[26rem]/pane:grid-cols-2 @min-[44rem]/pane:grid-cols-3 @min-[60rem]/pane:grid-cols-4 @min-[76rem]/pane:grid-cols-5 @min-[92rem]/pane:grid-cols-6 gap-3 @xl/pane:gap-4 p-3 @xl/pane:p-4">
+          // metadata rows stop fitting. Every step is also gated on `sm:` so phones
+          // in portrait stay one card per row: there the pane spans the whole
+          // viewport, which is wide enough to trip the 26rem step but far too narrow
+          // to read two cards side by side.
+          <div className="grid grid-cols-1 sm:@min-[26rem]/pane:grid-cols-2 sm:@min-[44rem]/pane:grid-cols-3 sm:@min-[60rem]/pane:grid-cols-4 sm:@min-[76rem]/pane:grid-cols-5 sm:@min-[92rem]/pane:grid-cols-6 gap-3 @xl/pane:gap-4 p-3 @xl/pane:p-4">
             {displayItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = getCssAspectRatio(item.aspectRatio);
