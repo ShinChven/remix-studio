@@ -208,6 +208,23 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 | Name | Model ID | Category |
 |---|---|---|
 | nano banana 2 | `rhart-image-n-g31-flash` | image |
+| nano banana Pro | `rhart-image-n-pro` | image |
+| GPT Image 2 | `rhart-image-g-2` | image |
+| Qwen Image 2 Pro | `alibaba/qwen-image-2.0-pro` | image |
+| Grok Imagine Pro | `rhart-imagine-image-quality` | image |
+| Seedream 5.0 Pro | `dola-Seedream-5.0-pro` | image |
+| Seedream V5 Pro | `seedream-v5-pro` | image |
+| Wan 2.7 Pro | `alibaba/wan-2.7` | image |
+| Seedance 2.0 Global | `bytedance/seedance-2.0-global` | video |
+| Seedance 2.0 Global Multimodal Reference | `bytedance/seedance-2.0-global/multimodal-video` | video |
+| MiniMax Hailuo H3 | `minimax/hailuo-h3/image-to-video` | video |
+
+RunningHub model IDs may carry an endpoint suffix (`/text-to-video`,
+`/image-to-video`, `/multimodal-video`). When present it pins the request to
+that endpoint; otherwise the video generator picks `image-to-video` when the job
+has reference images and `text-to-video` when it does not. Models whose request
+body differs from the Seedance shape (Hailuo H3) get their own payload branch in
+`running-hub-video-generator.ts`.
 
 ---
 
