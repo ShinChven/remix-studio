@@ -131,6 +131,8 @@ const MAX_DRAFT_JOBS_PER_CALL = 200;
 const MAX_JOB_FILENAME_LENGTH = 200;
 /** Same rough per-job reservation the REST job routes use for quota checks. */
 const JOB_STORAGE_ESTIMATE_BYTES = 25 * 1024 * 1024;
+/** Fallback quota for users created before a limit was stored on the record. */
+const DEFAULT_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024;
 const MAX_SIGNED_KEYS_PER_CALL = 50;
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 3600;
 const MAX_SIGNED_URL_TTL_SECONDS = 86400;
@@ -580,6 +582,45 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
     };
   }
 
+  // ─── get_current_account ───
+  tools.push({
+    name: 'get_current_account',
+    title: 'Get Current Account',
+    description: 'Identify the Remix Studio account this session is acting as ("who am I?"). Returns the user id, email, role ("admin" or "user"), account status, storage limit, sign-in methods, and account timestamps. Every other tool operates on this account. Call it when the user asks who they are signed in as, when confirming that a token belongs to the expected account, or before an action whose availability depends on their role. For actual storage consumption, call get_storage_usage.',
+    inputSchema: {},
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId) => {
+      const user = await userRepository.findById(userId);
+      if (!user) {
+        return {
+          text: JSON.stringify({ error: 'The authenticated account no longer exists.' }),
+          isError: true,
+        };
+      }
+
+      const storageLimit = user.storageLimit || DEFAULT_STORAGE_LIMIT_BYTES;
+      const response = {
+        id: user.sk,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        storageLimit,
+        storageLimitFormatted: formatSize(storageLimit),
+        hasPassword: Boolean(user.passwordHash),
+        twoFactorEnabled: Boolean(user.twoFactorEnabled),
+        createdAt: new Date(user.createdAt).toISOString(),
+        updatedAt: user.updatedAt ? new Date(user.updatedAt).toISOString() : null,
+        lastLoginAt: user.lastLoginAt ? new Date(user.lastLoginAt).toISOString() : null,
+      };
+
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
   // ─── create_library ───
   tools.push({
     name: 'create_library',
@@ -909,7 +950,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         userRepository.findById(userId),
       ]);
 
-      const storageLimit = userRecord?.storageLimit || 5 * 1024 * 1024 * 1024;
+      const storageLimit = userRecord?.storageLimit || DEFAULT_STORAGE_LIMIT_BYTES;
       const totalSize = breakdown.projects + breakdown.campaigns + breakdown.libraries + breakdown.archives + breakdown.trash;
 
       return {
