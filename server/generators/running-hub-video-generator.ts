@@ -8,15 +8,32 @@ import {
 const DEFAULT_BASE_URL = 'https://www.runninghub.ai/openapi/v2';
 const API_ROOT_PATH = '/openapi/v2';
 const DEFAULT_MODEL = 'bytedance/seedance-2.0-global';
-type RunningHubVideoEndpoint = 'text-to-video' | 'image-to-video' | 'multimodal-video';
+// Seedance names its reference endpoint `multimodal-video`; Hailuo H3 names its
+// own `multimodal-to-video`. Both are model routes, so both are parsed off a
+// model ID.
+type RunningHubVideoEndpoint = 'text-to-video' | 'image-to-video' | 'multimodal-video' | 'multimodal-to-video';
+const VIDEO_ENDPOINTS: RunningHubVideoEndpoint[] = [
+  'text-to-video',
+  'image-to-video',
+  'multimodal-video',
+  'multimodal-to-video',
+];
+const MULTIMODAL_ENDPOINTS: RunningHubVideoEndpoint[] = ['multimodal-video', 'multimodal-to-video'];
 
-// MiniMax Hailuo H3 exposes only `image-to-video`, and that endpoint takes a far
-// smaller parameter set than Seedance: prompt, optional first/last frame,
-// resolution and duration. Anything else (ratio, audio, real-person mode) is
-// rejected, so it gets its own payload shape.
+// MiniMax Hailuo H3 takes a far smaller parameter set than Seedance:
+// `image-to-video` accepts a prompt, optional first/last frame, resolution and
+// duration, and `multimodal-to-video` swaps the frames for reference lists plus
+// a ratio. The Seedance extras (audio generation, real-person mode, conversion
+// slots) are not part of either, so Hailuo gets its own payload shape.
 const HAILUO_RESOLUTIONS = ['2K', '768P'];
+const HAILUO_RATIOS = ['adaptive', '21:9', '16:9', '4:3', '1:1', '3:4', '9:16'];
 const HAILUO_MIN_DURATION = 5;
 const HAILUO_MAX_DURATION = 15;
+
+// Seedance and Hailuo cap multimodal references identically.
+const MAX_REF_IMAGES = 9;
+const MAX_REF_VIDEOS = 3;
+const MAX_REF_AUDIOS = 3;
 
 type RunningHubTaskResponse = {
   taskId?: string;
@@ -140,7 +157,7 @@ export class RunningHubVideoGenerator extends VideoGenerator {
 
   private buildPayload(req: VideoGenerateRequest, endpoint: RunningHubVideoEndpoint, imageRefs: string[]): Record<string, unknown> {
     if (this.isHailuoH3(req.modelId)) {
-      return this.buildHailuoPayload(req, imageRefs);
+      return this.buildHailuoPayload(req, endpoint, imageRefs);
     }
 
     const payload: Record<string, unknown> = {
@@ -153,10 +170,10 @@ export class RunningHubVideoGenerator extends VideoGenerator {
     };
 
     if (endpoint === 'multimodal-video') {
-      const videoUrls = (req.refVideoUrls || []).slice(0, 3);
-      payload.imageUrls = imageRefs.slice(0, 9);
+      const videoUrls = (req.refVideoUrls || []).slice(0, MAX_REF_VIDEOS);
+      payload.imageUrls = imageRefs.slice(0, MAX_REF_IMAGES);
       payload.videoUrls = videoUrls;
-      payload.audioUrls = (req.refAudioUrls || []).slice(0, 3);
+      payload.audioUrls = (req.refAudioUrls || []).slice(0, MAX_REF_AUDIOS);
       if (imageRefs.length > 0 || videoUrls.length > 0) {
         payload.realPersonMode = true;
         payload.conversionSlots = ['all'];
@@ -176,14 +193,24 @@ export class RunningHubVideoGenerator extends VideoGenerator {
     return payload;
   }
 
-  private buildHailuoPayload(req: VideoGenerateRequest, imageRefs: string[]): Record<string, unknown> {
-    return {
+  private buildHailuoPayload(req: VideoGenerateRequest, endpoint: RunningHubVideoEndpoint, imageRefs: string[]): Record<string, unknown> {
+    const payload: Record<string, unknown> = {
       prompt: req.prompt || '',
-      firstFrameUrl: imageRefs[0] || null,
-      lastFrameUrl: imageRefs[1] || null,
       resolution: this.resolveHailuoResolution(req.resolution),
       duration: String(this.resolveHailuoDuration(req.duration)),
     };
+
+    if (endpoint === 'multimodal-to-video') {
+      payload.imageUrls = imageRefs.slice(0, MAX_REF_IMAGES);
+      payload.videoUrls = (req.refVideoUrls || []).slice(0, MAX_REF_VIDEOS);
+      payload.audioUrls = (req.refAudioUrls || []).slice(0, MAX_REF_AUDIOS);
+      payload.ratio = this.resolveHailuoRatio(req.aspectRatio);
+      return payload;
+    }
+
+    payload.firstFrameUrl = imageRefs[0] || null;
+    payload.lastFrameUrl = imageRefs[1] || null;
+    return payload;
   }
 
   /**
@@ -200,6 +227,12 @@ export class RunningHubVideoGenerator extends VideoGenerator {
     return Number.isFinite(height) && height >= 1080 ? '2K' : '768P';
   }
 
+  /** Only `multimodal-to-video` takes a ratio, and only from a fixed enum. */
+  private resolveHailuoRatio(aspectRatio?: string): string {
+    const value = (aspectRatio || '').trim().toLowerCase();
+    return HAILUO_RATIOS.includes(value) ? value : 'adaptive';
+  }
+
   private resolveHailuoDuration(duration?: number): number {
     const value = Math.round(Number(duration));
     if (!Number.isFinite(value)) return HAILUO_MIN_DURATION;
@@ -212,7 +245,7 @@ export class RunningHubVideoGenerator extends VideoGenerator {
 
   private resolveImageReferences(req: VideoGenerateRequest): string[] {
     const refs: string[] = [];
-    const maxImages = this.isMultimodalModel(req.modelId) ? 9 : 2;
+    const maxImages = this.isMultimodalModel(req.modelId) ? MAX_REF_IMAGES : 2;
 
     for (let i = 0; i < maxImages; i++) {
       const url = req.refImageUrls?.[i];
@@ -272,17 +305,18 @@ export class RunningHubVideoGenerator extends VideoGenerator {
 
   private resolveModelAndEndpoint(modelId?: string): { model: string; endpoint?: RunningHubVideoEndpoint } {
     const rawModel = modelId || DEFAULT_MODEL;
-    const endpointMatch = rawModel.match(/\/(text-to-video|image-to-video|multimodal-video)$/);
-    if (!endpointMatch) return { model: rawModel };
+    const endpoint = VIDEO_ENDPOINTS.find((candidate) => rawModel.endsWith(`/${candidate}`));
+    if (!endpoint) return { model: rawModel };
 
     return {
-      model: rawModel.slice(0, -endpointMatch[0].length),
-      endpoint: endpointMatch[1] as RunningHubVideoEndpoint,
+      model: rawModel.slice(0, -(endpoint.length + 1)),
+      endpoint,
     };
   }
 
   private isMultimodalModel(modelId?: string): boolean {
-    return this.resolveModelAndEndpoint(modelId).endpoint === 'multimodal-video';
+    const { endpoint } = this.resolveModelAndEndpoint(modelId);
+    return endpoint !== undefined && MULTIMODAL_ENDPOINTS.includes(endpoint);
   }
 
   private hasApiError(result: RunningHubTaskResponse): boolean {

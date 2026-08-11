@@ -751,6 +751,22 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         supportsReferenceImages: true,
       },
     },
+    {
+      id: 'runninghub-minimax-hailuo-h3-multimodal-reference-video',
+      name: 'MiniMax Hailuo H3 Multimodal Reference',
+      generatorId: 'RunningHub',
+      modelId: 'minimax/hailuo-h3/multimodal-to-video',
+      category: 'video',
+      promptLimit: { value: 20480, unit: 'characters' },
+      options: {
+        aspectRatios: ['adaptive', '21:9', '16:9', '4:3', '1:1', '3:4', '9:16'],
+        resolutions: ['2K', '768P'],
+        durations: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        supportsReferenceImages: true,
+        supportsReferenceVideo: true,
+        supportsReferenceAudio: true,
+      },
+    },
   ],
   KlingAI: [
     {
