@@ -27,9 +27,8 @@ function formatSize(bytes?: number): string | null {
 }
 
 /**
- * Upload a project bundle and watch it unpack. Lives on the Exports page so
- * archives created there can be brought back into the workspace from the same
- * screen.
+ * Upload a project bundle and watch it unpack. Lives on its own page under
+ * Projects, reached from the import button in the Projects header.
  */
 export function ProjectImportPanel() {
   const { t } = useTranslation();
@@ -137,10 +136,10 @@ export function ProjectImportPanel() {
             </div>
             <div className="min-w-0">
               <h3 className="text-[11px] font-black uppercase tracking-widest text-neutral-900 dark:text-white">
-                {t('projectImports.title')}
+                {t('projectImports.dropzone.title')}
               </h3>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500 leading-relaxed">
-                {t('projectImports.description')}
+                {t('projectImports.dropzone.hint')}
               </p>
             </div>
           </div>

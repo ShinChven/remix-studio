@@ -72,6 +72,11 @@
   "projectImports": {
     "title": "Project Bundles",
     "description": "Upload a project bundle to bring a whole project back in.",
+    "backToProjects": "Back to Projects",
+    "dropzone": {
+      "title": "Upload a bundle",
+      "hint": "Drag a .zip bundle here, or pick one from your computer."
+    },
     "selectFile": "Import Project",
     "uploading": "Uploading {{percent}}%",
     "untitled": "Untitled project",

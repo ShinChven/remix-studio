@@ -68,7 +68,7 @@ Bundles carry finished work, not generation history: queued and completed **job*
 
 ### Importing
 
-On the **Exports** page, use **Import Project** (or drop a `.zip` onto the panel). The archive is streamed straight into the export bucket, then a background worker unpacks it:
+On the **Projects** page, use the import button in the header (top right) to open **Project Bundles** at `/projects/import`, then pick a bundle (or drop a `.zip` onto the panel). The archive is streamed straight into the export bucket, then a background worker unpacks it:
 
 1. Reads and validates `project.json`, rejecting archives that are not project bundles or were written by a newer format version.
 2. Checks the unpacked media against the storage quota before writing anything.
@@ -76,7 +76,7 @@ On the **Exports** page, use **Import Project** (or drop a `.zip` onto the panel
 4. Uploads each referenced media file into the new project's storage prefix and rewrites every reference to the new key.
 5. Writes the workflow and album rows.
 
-Progress is shown per file on the Exports page, and the finished entry links straight to the imported project. Import tasks use the same claim/heartbeat/reap machinery as exports, so an interrupted worker's task is retried. The uploaded ZIP is deleted once the import finishes, whether it succeeded or failed.
+Progress is shown per file on the import page, and the finished entry links straight to the imported project. Import tasks use the same claim/heartbeat/reap machinery as exports, so an interrupted worker's task is retried. The uploaded ZIP is deleted once the import finishes, whether it succeeded or failed.
 
 Imported album items stand alone — they keep their prompt, settings, and media, but not a link back to the job that produced them.
 
@@ -90,7 +90,7 @@ The selected scope and raw/optimized choice are carried into the watermark scree
 
 ## Drive Releases
 
-Drives are connected on the **Releases** page — a sub-page of Exports at `/exports/releases`, reachable from the link in the Exports header. Google Drive and OneDrive are supported, and you can connect as many accounts as you like — several Google Drives side by side is fine.
+Drives are connected on the **Releases** page — a sub-page of Exports at `/exports/releases`, reachable from the link in the Exports header. Release history sits beside it at `/exports/history`. Google Drive and OneDrive are supported, and you can connect as many accounts as you like — several Google Drives side by side is fine.
 
 A completed export can then be released to any of them. When more than one drive is connected, the upload action asks which one to use; with a single drive it goes straight there.
 

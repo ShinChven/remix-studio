@@ -72,6 +72,11 @@
   "projectImports": {
     "title": "專案套件",
     "description": "上傳專案套件即可將整個專案匯入回來。",
+    "backToProjects": "返回專案",
+    "dropzone": {
+      "title": "上傳專案套件",
+      "hint": "將 .zip 專案套件拖曳至此，或從電腦中選擇。"
+    },
     "selectFile": "匯入專案",
     "uploading": "上傳中 {{percent}}%",
     "untitled": "未命名專案",

@@ -72,6 +72,11 @@
   "projectImports": {
     "title": "Packs de projet",
     "description": "Téléversez un pack de projet pour réimporter un projet entier.",
+    "backToProjects": "Retour aux projets",
+    "dropzone": {
+      "title": "Téléverser un pack",
+      "hint": "Glissez un pack .zip ici ou choisissez-en un sur votre ordinateur."
+    },
     "selectFile": "Importer un projet",
     "uploading": "Envoi {{percent}} %",
     "untitled": "Projet sans titre",
