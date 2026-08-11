@@ -351,10 +351,13 @@ export function CampaignDetail() {
         if (status.status === 'completed' || status.status === 'failed') {
           const ok = status.results.filter((result) => result.ok).length;
           const fail = status.results.length - ok;
+          const failureMessage = status.error || status.results.find((result) => !result.ok)?.error;
           if (status.status === 'failed') {
-            toast.error(status.error || `Generated ${ok}, failed ${fail}`);
+            toast.error(failureMessage || `Generated ${ok}, failed ${fail}`);
           } else if (fail > 0) {
-            toast.warning(`Generated ${ok}, failed ${fail}`);
+            toast.warning(`Generated ${ok}, failed ${fail}`, {
+              description: failureMessage,
+            });
           } else {
             toast.success(`Generated text for ${ok} post${ok === 1 ? '' : 's'}`);
           }

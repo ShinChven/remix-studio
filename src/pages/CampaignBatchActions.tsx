@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
+  AlertCircle,
   Clock,
   Loader2,
   MoreHorizontal,
@@ -184,10 +185,13 @@ export function CampaignBatchActions() {
         if (status.status === 'completed' || status.status === 'failed') {
           const ok = status.results.filter((result) => result.ok).length;
           const fail = status.results.length - ok;
+          const failureMessage = status.error || status.results.find((result) => !result.ok)?.error;
           if (status.status === 'failed') {
-            toast.error(status.error || `Generated ${ok}, failed ${fail}`);
+            toast.error(failureMessage || `Generated ${ok}, failed ${fail}`);
           } else if (fail > 0) {
-            toast.warning(`Generated ${ok}, failed ${fail}`);
+            toast.warning(`Generated ${ok}, failed ${fail}`, {
+              description: failureMessage,
+            });
           } else {
             toast.success(`Generated text for ${ok} post${ok === 1 ? '' : 's'}`);
           }
@@ -303,6 +307,9 @@ export function CampaignBatchActions() {
       setDeleting(false);
     }
   };
+
+  const aiFailedResults = aiTask?.results.filter((result) => !result.ok && result.status === 'failed') || [];
+  const aiFailureMessage = aiTask?.error || aiFailedResults[0]?.error;
 
   if (isLoading && !campaign) {
     return (
@@ -444,6 +451,19 @@ export function CampaignBatchActions() {
                   style={{ width: `${aiTask.total > 0 ? Math.round((aiTask.completed / aiTask.total) * 100) : 0}%` }}
                 />
               </div>
+              {aiFailureMessage && (
+                <div className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-red-700 dark:text-red-300">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold">
+                      {aiFailedResults.length} post{aiFailedResults.length === 1 ? '' : 's'} failed
+                    </p>
+                    <p className="mt-1 break-words text-xs font-medium" title={aiFailureMessage}>
+                      {aiFailureMessage}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
