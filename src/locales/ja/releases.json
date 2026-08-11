@@ -68,6 +68,12 @@
       },
       "openTarget": "プロバイダーで開く",
       "untitled": "無題のリリース",
+      "errorDetails": {
+        "title": "リリースエラー",
+        "description": "完全なエラーメッセージ",
+        "openAria": "完全なエラーメッセージを表示",
+        "close": "閉じる"
+      },
       "stats": {
         "total": "合計"
       }
