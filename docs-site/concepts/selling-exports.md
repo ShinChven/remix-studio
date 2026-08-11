@@ -74,7 +74,7 @@ Product status moves through `draft`, `publishing`, `published`, or `failed`. De
 
 Failures store both the product error and delivery-task error. Correct the store credentials, export availability, metadata, or remote Gumroad issue before trying again.
 
-**Releases → History** records successful and failed attempts — to storefronts and to drives alike — with the platform, title, remote ID/URL, and error at the time of upload. Disconnecting a destination or later deleting a local product does not erase the historical event automatically.
+**Exports → History** (`/exports/history`) records successful and failed attempts — to storefronts and to drives alike — with the platform, title, remote ID/URL, and error at the time of upload. Disconnecting a destination or later deleting a local product does not erase the historical event automatically.
 
 ::: warning
 Publishing is an external side effect. Deleting a Remix Studio record does not unpublish or refund a Gumroad product. Manage existing listings, customers, and refunds in Gumroad.

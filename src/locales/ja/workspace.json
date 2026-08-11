@@ -72,6 +72,11 @@
   "projectImports": {
     "title": "プロジェクトバンドル",
     "description": "プロジェクトバンドルをアップロードすると、プロジェクト全体を取り込めます。",
+    "backToProjects": "プロジェクトに戻る",
+    "dropzone": {
+      "title": "バンドルをアップロード",
+      "hint": ".zip バンドルをここにドラッグするか、パソコンから選択してください。"
+    },
     "selectFile": "プロジェクトを取り込む",
     "uploading": "アップロード中 {{percent}}%",
     "untitled": "名称未設定のプロジェクト",

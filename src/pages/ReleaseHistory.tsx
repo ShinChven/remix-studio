@@ -84,7 +84,7 @@ export function ReleaseHistory() {
       <PageHeader
         title={t('releases.history.title')}
         description={t('releases.history.description')}
-        backLink={{ to: '/exports/releases', label: t('releases.history.backToReleases') }}
+        backLink={{ to: '/exports', label: t('releases.backToExports') }}
         actions={(
           <div className="flex-shrink-0 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card flex items-center gap-2 shadow-sm backdrop-blur-md h-[42px]">
             <List className="h-4 w-4 text-neutral-500 dark:text-neutral-500 flex-shrink-0" />

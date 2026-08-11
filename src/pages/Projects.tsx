@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Project } from '../types';
-import { Activity, Plus, Play, Clock, Loader2, Search } from 'lucide-react';
+import { Activity, FileArchive, Plus, Play, Clock, Loader2, Search } from 'lucide-react';
 import { fetchProjects, updateProject, deleteProject, startProjectBundleExport } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { PageNav } from '../components/PageNav';
@@ -188,14 +188,24 @@ export function Projects() {
           title={t('projects.title')}
           description={t('projects.description')}
           actions={
-            <Link
-              to="/projects/queues"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-neutral-200/50 bg-white/40 text-neutral-600 shadow-sm backdrop-blur-3xl transition-ui hover:border-indigo-500/40 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:border-indigo-400/30 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
-              title={t('sidebar.queueMonitor')}
-              aria-label={t('sidebar.queueMonitor')}
-            >
-              <Activity className="h-4 w-4" />
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/projects/import"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-neutral-200/50 bg-white/40 text-neutral-600 shadow-sm backdrop-blur-3xl transition-ui hover:border-violet-500/40 hover:bg-violet-50 hover:text-violet-600 active:scale-95 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:border-violet-400/30 dark:hover:bg-violet-500/10 dark:hover:text-violet-300"
+                title={t('projectImports.selectFile')}
+                aria-label={t('projectImports.selectFile')}
+              >
+                <FileArchive className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/projects/queues"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-neutral-200/50 bg-white/40 text-neutral-600 shadow-sm backdrop-blur-3xl transition-ui hover:border-indigo-500/40 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:border-indigo-400/30 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
+                title={t('sidebar.queueMonitor')}
+                aria-label={t('sidebar.queueMonitor')}
+              >
+                <Activity className="h-4 w-4" />
+              </Link>
+            </div>
           }
         />
 

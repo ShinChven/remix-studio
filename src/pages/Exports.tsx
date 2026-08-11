@@ -8,7 +8,6 @@ import { PageHeader } from '../components/PageHeader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
 import { PageNav } from '../components/PageNav';
-import { ProjectImportPanel } from '../components/ProjectImportPanel';
 
 const EXPORTS_PAGE_SIZE = 15;
 
@@ -370,7 +369,7 @@ export function Exports() {
               </Link>
               <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-800" />
               <Link
-                to="/exports/releases/history"
+                to="/exports/history"
                 className="flex items-center gap-2 hover:opacity-80 transition"
               >
                 <HistoryIcon className="h-4 w-4 text-pink-600 dark:text-pink-400 flex-shrink-0" />
@@ -407,8 +406,6 @@ export function Exports() {
           </div>
         }
       />
-
-      <ProjectImportPanel />
 
       {!loading && exports.length === 0 ? (
         <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
