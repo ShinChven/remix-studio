@@ -109,6 +109,16 @@ export function summarizeToolEffect(
         ? `Start every draft job on project ${getLabel(objectArgs.projectId, 'project')}. This runs generation and spends provider credits.`
         : `Start ${count} draft job${count === 1 ? '' : 's'} on project ${getLabel(objectArgs.projectId, 'project')}. This runs generation and spends provider credits.`;
     }
+    case 'clear_failed_jobs': {
+      const suffix = 'Cleared failures are deleted for good and can no longer be retried.';
+      if (typeof objectArgs.projectId === 'string' && objectArgs.projectId) {
+        return `Delete every failed job on project ${getLabel(objectArgs.projectId, 'project')}. ${suffix}`;
+      }
+      if (typeof objectArgs.providerId === 'string' && objectArgs.providerId) {
+        return `Delete every failed job on provider queue ${getLabel(objectArgs.providerId, 'provider')}. ${suffix}`;
+      }
+      return `Delete every failed job in the queue, across all projects and providers. ${suffix}`;
+    }
     case 'export_project':
       return typeof objectArgs.task_id === 'string' && objectArgs.task_id
         ? `Check on export ${String(objectArgs.task_id)}.`

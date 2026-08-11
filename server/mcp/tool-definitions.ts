@@ -2298,6 +2298,109 @@ Returns "url" — the queue monitor page — so the user can open it.`,
     },
   });
 
+  // ─── clear_failed_jobs ───
+  tools.push({
+    name: 'clear_failed_jobs',
+    title: 'Clear Failed Jobs',
+    description: `Delete failed jobs from the queue, exactly like the "clear failed" buttons on the queue monitor (/projects/queues) and in a project's queue panel.
+
+Pick at most one scope — the two cannot be combined:
+- "projectId": only that project's failures.
+- "providerId": only failures on that provider's queue.
+- neither: every failed job in the account.
+
+Only jobs sitting in "failed" are removed. Drafts, queued, running, and completed jobs are untouched, and album items already saved by successful runs survive. A cleared failure is gone for good — it can no longer be retried — so read the counts with get_queue_status or get_project_job_counts and confirm the number with the user first.
+
+Clearing also unblocks a stalled project: any job still pending in an affected project is re-enqueued so generation resumes on its own, and "resumedProjects" reports how many projects restarted.
+
+Returns "url" — the project page when scoped to a project, otherwise the queue monitor.`,
+    inputSchema: {
+      projectId: z.string().optional().describe('Clear failures for this project only. Cannot be combined with providerId.'),
+      providerId: z.string().optional().describe("Clear failures on this provider's queue only. Cannot be combined with projectId."),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+    category: 'destructive',
+    handler: async (userId, input) => {
+      const { projectId: rawProjectId, providerId: rawProviderId } = input as {
+        projectId?: string;
+        providerId?: string;
+      };
+      const projectId = rawProjectId?.trim() || undefined;
+      const providerId = rawProviderId?.trim() || undefined;
+
+      if (projectId && providerId) {
+        return {
+          text: JSON.stringify({ error: 'Choose projectId or providerId, not both. Omit both to clear every failed job.' }),
+          isError: true,
+        };
+      }
+
+      let projectName: string | undefined;
+      if (projectId) {
+        const project = await repository.getProject(userId, projectId);
+        if (!project) {
+          return {
+            text: JSON.stringify({ error: `Project "${projectId}" not found.` }),
+            isError: true,
+          };
+        }
+        projectName = project.name;
+      }
+
+      let providerName: string | undefined;
+      if (providerId) {
+        const provider = await providerRepository.getPublicProvider(userId, providerId);
+        if (!provider) {
+          return {
+            text: JSON.stringify({ error: `providerId "${providerId}" not found for this user.` }),
+            isError: true,
+          };
+        }
+        providerName = provider.name;
+      }
+
+      const { cleared, resumedProjects } = await queueManager.clearFailedJobs(userId, { projectId, providerId });
+
+      const scope = projectId ? 'project' : providerId ? 'provider' : 'all';
+      const scopeLabel = projectId
+        ? ` from project "${projectName}"`
+        : providerId
+          ? ` from provider "${providerName}"`
+          : '';
+      const resumedNote = resumedProjects > 0
+        ? ` Generation resumed in ${resumedProjects} project${resumedProjects === 1 ? '' : 's'} that still had pending jobs.`
+        : '';
+
+      const response: Record<string, unknown> = {
+        scope,
+        cleared,
+        resumedProjects,
+        url: projectId
+          ? appUrls.project(projectId)
+          : appUrls.queue(providerId ? 'providers' : undefined),
+        message: cleared === 0
+          ? `No failed jobs to clear${scopeLabel}.`
+          : `Cleared ${cleared} failed job${cleared === 1 ? '' : 's'}${scopeLabel}.${resumedNote}`,
+      };
+
+      if (projectId) {
+        response.projectId = projectId;
+        response.name = projectName;
+        response.counts = await readProjectCounts(userId, projectId);
+      }
+
+      if (providerId) {
+        response.providerId = providerId;
+        response.providerName = providerName;
+      }
+
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
   // ─── draft_jobs ───
   tools.push({
     name: 'draft_jobs',

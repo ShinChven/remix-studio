@@ -19,8 +19,9 @@ Available MCP capabilities include:
 - **Create and update** workflow-backed projects.
 - **Stage and run generation**: `draft_jobs` builds draft jobs from a project's workflow, `start_jobs` queues all of them or a chosen number, and `get_project_job_counts` reports drafts, queue depth, completed runs, and album totals.
 - **Monitor the queue** across every project with `get_queue_status`, which returns the counts behind the [queue monitor](/concepts/queue) page — running, queued, failed, and provider slots — with `breakdown` reproducing either tab of that page (`providers` for each provider queue's slots, limit, and depth; `projects` for each project holding jobs), and never the job list itself.
+- **Clear failed jobs** with `clear_failed_jobs`, the same action as the queue monitor's clear buttons — scoped to one project (`projectId`), one provider queue (`providerId`), or the whole account when neither is given.
 
-Write and destructive tools are **confirmation-gated**. Prompt deletion is scoped to one item in a text library and requires an explicit confirmed tool call.
+Write and destructive tools are **confirmation-gated**. Prompt deletion is scoped to one item in a text library and requires an explicit confirmed tool call, and so does clearing failed jobs.
 
 ### Exports
 
@@ -94,7 +95,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 | Account | `get_current_account` | — |
 | Libraries | `list_libraries`, `get_library_items`, `search_library_items` | `create_library`, `update_library`, `create_prompt`, `batch_create_prompts`, `update_prompt`, `update_library_item`, `batch_update_library_items`, `delete_prompt` |
 | Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `export_project`, `export_project_album` |
-| Jobs | `get_project_job_counts`, `get_queue_status` | `draft_jobs`, `start_jobs` |
+| Jobs | `get_project_job_counts`, `get_queue_status` | `draft_jobs`, `start_jobs`, `clear_failed_jobs` |
 | Files | `get_file_urls` | — |
 | Campaigns | `list_social_accounts`, `list_campaigns` | `create_campaign`, `update_campaign` |
 | Posts | `list_posts`, `get_post`, `get_post_text` | `create_post`, `update_post`, `update_post_text`, `add_media_to_post`, `schedule_post` |
@@ -107,6 +108,7 @@ Important boundaries:
 - `update_project` replaces the entire workflow when `workflowItems` is supplied. Call `get_project` immediately beforehand and carry forward every step that should remain.
 - `draft_jobs` takes its prompts, provider, model, and generation settings from the project itself — set them with `update_project` first. It creates at most 200 drafts per call; call it again for larger batches.
 - `start_jobs` consumes drafts oldest first and runs generation against the user's provider, which costs credits. Omit `count` to start every draft.
+- `clear_failed_jobs` deletes failed job records only — drafts, queued, running, and completed jobs are untouched, and album items already saved survive. A cleared failure can no longer be retried. `projectId` and `providerId` are alternatives, not filters to combine; omitting both clears every failed job in the account. Pending jobs in an affected project are re-enqueued, so a project stalled behind failures resumes on its own.
 - Export tools are confirmation-gated writes because the archive they produce consumes the user's storage quota. Polling with `task_id` goes through the same protocol.
 - Media added to a post must be an internal storage key already owned by the authenticated user and valid for that campaign.
 - Scheduling requires a valid time, an active channel on the campaign, and ready media.
