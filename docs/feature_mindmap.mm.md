@@ -62,6 +62,7 @@
       - Black Forest Labs
       - Alibaba Cloud
       - Kimi (Moonshot AI)
+      - MiniMax
     - **Model Management**
       - Discover supported models from providers (Text, Image, Video, Audio)
       - Configure custom model aliases

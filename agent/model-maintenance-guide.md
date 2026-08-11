@@ -21,6 +21,7 @@ server/generators/                    -- One generator class per provider per ca
     +-- claude-text-generator.ts      -- Default model: claude-sonnet-4-6
     +-- openai-text-generator.ts      -- Default model: gpt-5.6
     +-- grok-text-generator.ts        -- Default model: grok-4.20-0309-non-reasoning
+    +-- minimax-text-generator.ts     -- Default model: MiniMax-M3
     +-- google-ai-text-generator.ts   -- Default model: gemini-3.6-flash
     +-- vertex-ai-text-generator.ts   -- Default model: gemini-3.6-flash
     +-- google-ai-generator.ts        -- Image gen (GoogleAI)
@@ -30,6 +31,9 @@ server/generators/                    -- One generator class per provider per ca
     +-- openai-generator.ts           -- Image gen (OpenAI)
     +-- grok-generator.ts             -- Image gen (Grok/xAI)
     +-- running-hub-generator.ts      -- Image gen (RunningHub)
+    +-- minimax-generator.ts          -- Image gen (MiniMax)
+    +-- minimax-video-generator.ts    -- Video gen (MiniMax H3)
+    +-- minimax-audio-generator.ts    -- Music gen (MiniMax)
     |
 server/queue/                         -- Category-specific output processors
     +-- image-processor.ts
@@ -151,6 +155,7 @@ Used by `server/services/provider-model-lister.ts` to fetch available models fro
 | OpenAI | `GET {base}/v1/models` | `Authorization: Bearer {apiKey}` |
 | Grok (xAI) | `GET {base}/v1/models` | `Authorization: Bearer {apiKey}` |
 | RunningHub | No listing API | N/A |
+| MiniMax | No listing API | N/A |
 
 The lister fetches all models, then filters to only those whose `id` matches a `modelId` in `PROVIDER_MODELS_MAP`.
 
@@ -239,6 +244,55 @@ new suffix has to be added to `VIDEO_ENDPOINTS` in
 request body differs from the Seedance shape (Hailuo H3) get their own payload
 branch in the same file.
 
+### MiniMax
+| Name | Model ID | Category | Notes |
+|---|---|---|---|
+| MiniMax M3 | `MiniMax-M3` | text | 1,000,000-token context |
+| MiniMax M2.7 | `MiniMax-M2.7` | text | 204,800-token context |
+| MiniMax M2.7 Highspeed | `MiniMax-M2.7-highspeed` | text | Same weights, ~100 tps |
+| MiniMax M2.5 | `MiniMax-M2.5` | text | |
+| MiniMax M2.5 Highspeed | `MiniMax-M2.5-highspeed` | text | |
+| MiniMax M2.1 | `MiniMax-M2.1` | text | |
+| MiniMax M2.1 Highspeed | `MiniMax-M2.1-highspeed` | text | |
+| MiniMax M2 | `MiniMax-M2` | text | |
+| MiniMax Image 01 | `image-01` | image | 1K / 2K tiers |
+| MiniMax Hailuo H3 | `MiniMax-H3` | video | 768P / 2K, 4-15s |
+| MiniMax Music 3.0 | `music-3.0` | audio | Music generation |
+
+Text runs on the OpenAI Chat Completions protocol (`https://api.minimax.io/v1`),
+so `minimax-text-generator.ts` and the assistant adapter both drive the OpenAI
+client. The M-series always reasons before answering: requests set
+`reasoning_split` so the reasoning lands in `reasoning_details` instead of
+`content`, and `stripThinkTags` in `server/utils/minimax.ts` covers a model that
+ignores the flag and inlines a `<think>` block anyway. That file also holds the
+base-URL normalizer — video is the one API served from `/v2`, everything else
+from `/v1`, and both roots are derived from whatever URL the provider carries.
+
+`image-01` takes either a named `aspect_ratio` or an explicit `width`/`height`
+pair, and the ratio wins when both are sent. Dimensions are the only way to
+reach the `2K` tier, so the generator resolves quality + ratio against its own
+size table (every value inside the documented [512, 2048] range and divisible by
+8) and omits the ratio field. Its reference input is a `character` subject
+reference — one front-facing portrait, JPG or PNG only, so other formats are
+re-encoded to PNG — not general image-to-image.
+
+`MiniMax-H3` has one endpoint for every mode, and image-to-video and
+reference-to-video are mutually exclusive: one or two images become
+`first_frame` / `last_frame`, while any reference video or audio (or a third
+image) switches every image to `reference_image`. Ratio handling follows the
+three modes — text-to-video rejects `adaptive` so a text-only job falls back to
+`16:9`, a framed job sends no ratio because the output follows the input image,
+and reference mode passes the project's choice through.
+
+`music-3.0` splits a song into a style `prompt` and `lyrics`, but a project
+carries one composed prompt. Instrumental mode sends the prompt as the style
+description with `is_instrumental`. Vocal mode looks for the documented
+structure tags (`[Verse]`, `[Chorus]`, …): a tagged prompt is split at the first
+tag into style + lyrics, and an untagged one is sent as a style description with
+`lyrics_optimizer` so the platform writes the lyrics. Speech synthesis (T2A) and
+voice cloning are deliberately not bundled — they require system voice IDs the
+API reference does not publish.
+
 ### BytePlus (image)
 | Name | Model ID | Category | Resolution tiers |
 |---|---|---|---|
@@ -289,6 +343,7 @@ whatever form of the URL was pasted back to the API root.
 | Google AI / Vertex AI | 2.0 | |
 | OpenAI | 2.0 | |
 | Grok (xAI) | 2.0 | |
+| MiniMax | 2.0 | |
 | Claude | 1.0 | Anthropic API hard limit. Fable 5, Opus 5, Opus 4.8 and Sonnet 5 reject any non-default value — list only `[1.0]` and skip the parameter in `claude-text-generator.ts` |
 
 ---
@@ -309,3 +364,4 @@ When updating models, verify against official docs:
 - Claude: https://docs.anthropic.com/en/docs/about-claude/models/overview
 - Gemini: https://ai.google.dev/gemini-api/docs/models
 - Grok: https://docs.x.ai/developers/models
+- MiniMax: https://platform.minimax.io/docs/api-reference/text-openai-api

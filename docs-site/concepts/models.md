@@ -17,6 +17,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Claude** | ✅ | - | - | - |
 | **Alibaba Cloud DashScope** | ✅ | - | - | - |
 | **Kimi (Moonshot AI)** | ✅ | - | - | - |
+| **MiniMax** | ✅ | ✅ | ✅ | ✅ |
 | **RunningHub** | - | ✅ | ✅ | - |
 | **BytePlus** | - | ✅ | ✅ | - |
 | **Kling AI** | - | ✅ | ✅ | - |
@@ -34,6 +35,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Claude** | `Claude Fable 5`, `Claude Opus 5`, `Claude Opus 4.8`, `Claude Sonnet 5`, `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` |
 | **Alibaba Cloud DashScope** | `Qwen3.6 Max`, `Qwen3.6 Plus`, `Qwen3.6 Flash`, `Qwen3.6 VL Max`, `Qwen3.6 VL Plus` |
 | **Kimi (Moonshot AI)** | `Kimi K3` |
+| **MiniMax** | `MiniMax M3`, `MiniMax M2.7`, `MiniMax M2.7 Highspeed`, `MiniMax M2.5`, `MiniMax M2.5 Highspeed`, `MiniMax M2.1`, `MiniMax M2.1 Highspeed`, `MiniMax M2` |
 
 ## 3. Image Generation
 
@@ -43,6 +45,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Vertex AI** | `nano banana 2`, `nano banana Pro`, `nano banana 2 Lite` |
 | **OpenAI** | `GPT Image 2`, `GPT Image 1.5`, `GPT Image 1 Mini` |
 | **Grok** | `Grok Imagine`, `Grok Imagine Pro` |
+| **MiniMax** | `MiniMax Image 01` |
 | **RunningHub** | `nano banana 2`, `nano banana Pro`, `GPT Image 2`, `GPT Image 2 Official`, `Qwen Image 2 Pro`, `Grok Imagine Pro`, `Seedream 5.0 Pro`, `Seedream V5 Pro`, `Wan 2.7 Pro` |
 | **BytePlus** | `Seedream 5.0 Pro`, `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I` |
 | **Kling AI** | `Kling Image O1`, `Kling V3 Omni`, `Kling V3 Standard`, `Kling V2.1 Standard`, `Kling V2 Standard`, `Kling V1.5 Standard`, `Kling V1 Standard` |
@@ -56,6 +59,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Google AI** | `Veo 3.1`, `Veo 3.1 Lite` |
 | **OpenAI** | `Sora 2`, `Sora 2 Pro` |
 | **Grok** | `Grok Imagine Video` |
+| **MiniMax** | `MiniMax Hailuo H3` |
 | **RunningHub** | `Seedance 2.0 Global`, `Seedance 2.0 Global Multimodal Reference`, `MiniMax Hailuo H3`, `MiniMax Hailuo H3 Multimodal Reference` |
 | **BytePlus** | `Seedance 2.5`, `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` |
 | **Kling AI** | `Kling Video O1`, `Kling V3 Omni Video` |
@@ -69,6 +73,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Google AI** | `Gemini 3.1 Flash TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS` | Text-to-Speech |
 | **Vertex AI** | `Lyria 3 Clip`, `Lyria 3 Pro` | Music Generation |
 | **Vertex AI** | `Gemini 3.1 Flash TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS` | Text-to-Speech |
+| **MiniMax** | `MiniMax Music 3.0` | Music Generation |
 
 ## 6. Chat Assistant Models
 
@@ -79,6 +84,7 @@ The in-app [Assistant](/concepts/assistant) can use text profiles belonging to p
 - **OpenAI**
 - **Alibaba Cloud**
 - **Kimi (Moonshot AI)**
+- **MiniMax**
 
 Vertex AI and Grok profiles can be used by generation projects where supported, but their provider types are not accepted by the current assistant chat adapter.
 

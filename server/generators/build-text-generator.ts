@@ -7,6 +7,7 @@ import { ClaudeTextGenerator } from './claude-text-generator';
 import { GrokTextGenerator } from './grok-text-generator';
 import { AlibabacloudTextGenerator } from './alibabacloud-text-generator';
 import { KimiTextGenerator } from './kimi-text-generator';
+import { MiniMaxTextGenerator } from './minimax-text-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -35,6 +36,8 @@ export function buildTextGenerator(
       return new AlibabacloudTextGenerator(apiKey, safeApiUrl);
     case 'Kimi':
       return new KimiTextGenerator(apiKey, safeApiUrl);
+    case 'MiniMax':
+      return new MiniMaxTextGenerator(apiKey, safeApiUrl);
     case 'RunningHub':
     case 'KlingAI':
     case 'BytePlus':
