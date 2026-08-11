@@ -868,10 +868,11 @@ export class AssistantRunner {
     const obj = args as Record<string, unknown>;
     const labels: Record<string, string> = {};
 
-    const idsToResolve: { id: string; type: 'project' | 'library' }[] = [];
+    const idsToResolve: { id: string; type: 'project' | 'library' | 'provider' }[] = [];
     if (typeof obj.library_id === 'string') idsToResolve.push({ id: obj.library_id, type: 'library' });
     if (typeof obj.libraryId === 'string') idsToResolve.push({ id: obj.libraryId, type: 'library' });
     if (typeof obj.projectId === 'string') idsToResolve.push({ id: obj.projectId, type: 'project' });
+    if (typeof obj.providerId === 'string') idsToResolve.push({ id: obj.providerId, type: 'provider' });
 
     // Also look into workflowItems if present
     if (Array.isArray(obj.workflowItems)) {
@@ -891,6 +892,12 @@ export class AssistantRunner {
              select: { name: true }
           });
           if (lib) labels[id] = lib.name;
+        } else if (type === 'provider') {
+          const provider = await (this.repo as any).prisma.provider.findFirst({
+            where: { id, userId },
+            select: { name: true }
+          });
+          if (provider) labels[id] = provider.name;
         } else {
           const proj = await (this.repo as any).prisma.project.findFirst({
             where: { id, userId },
