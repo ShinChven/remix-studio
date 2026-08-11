@@ -12,6 +12,21 @@
   "viewAllHistory": "View All History",
   "viewAllScheduled": "View All Scheduled",
   "openCalendar": "Open Calendar",
+  "postingTrend": {
+    "title": "Posting Trend",
+    "label": "Delivered",
+    "rangeSummary": "posts over the last {{days}} days",
+    "posted": "Posted",
+    "failed": "Failed",
+    "postedCount": "{{n}} posted",
+    "failedCount": "{{n}} failed",
+    "empty": "No posts delivered in this period",
+    "error": "Couldn't load the chart",
+    "ariaLabel": "Daily posting trend, {{n}} posts delivered in this period",
+    "listView": "List",
+    "chartView": "Chart",
+    "lastNDays": "Last {{days}} days"
+  },
   "status": {
     "active": "Active Campaign",
     "paused": "Paused",

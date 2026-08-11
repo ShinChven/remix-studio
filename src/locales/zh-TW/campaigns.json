@@ -12,6 +12,21 @@
   "viewAllHistory": "查看所有歷史",
   "viewAllScheduled": "查看所有定時",
   "openCalendar": "打開日曆",
+  "postingTrend": {
+    "title": "投送趨勢",
+    "label": "已投送",
+    "rangeSummary": "則 · 最近 {{days}} 天",
+    "posted": "成功",
+    "failed": "失敗",
+    "postedCount": "成功 {{n}} 則",
+    "failedCount": "失敗 {{n}} 則",
+    "empty": "該時間範圍內沒有投送紀錄",
+    "error": "圖表載入失敗",
+    "ariaLabel": "每日投送趨勢，此期間共投送 {{n}} 則",
+    "listView": "列表",
+    "chartView": "圖表",
+    "lastNDays": "最近 {{days}} 天"
+  },
   "status": {
     "active": "正在進行",
     "paused": "已暫停",

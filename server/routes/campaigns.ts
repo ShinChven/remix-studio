@@ -77,6 +77,59 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
     }
   });
 
+  // Daily delivery counts for the posting-trend chart.
+  // Buckets executions by the user's local date so the chart lines up with the
+  // day boundaries they see everywhere else in the UI.
+  campaignsRouter.get('/api/campaigns/posted-counts', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const from = c.req.query('from');
+    const to = c.req.query('to');
+    const timezoneOffsetMinutes = Number(c.req.query('timezoneOffsetMinutes') || 0);
+
+    if (!from || !to) {
+      return c.json({ error: 'Missing from or to parameters' }, 400);
+    }
+
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+      return c.json({ error: 'Invalid from or to parameters' }, 400);
+    }
+
+    try {
+      const executions = await prisma.postExecution.findMany({
+        where: {
+          post: { userId: user.userId },
+          OR: [
+            { status: 'posted', publishedAt: { gte: fromDate, lte: toDate } },
+            { status: 'failed', updatedAt: { gte: fromDate, lte: toDate } },
+          ],
+        },
+        select: { status: true, publishedAt: true, updatedAt: true },
+      });
+
+      const offsetMinutes = Number.isFinite(timezoneOffsetMinutes) ? timezoneOffsetMinutes : 0;
+      const counts: Record<string, { date: string; posted: number; failed: number }> = {};
+
+      executions.forEach((execution) => {
+        const at = execution.status === 'posted'
+          ? (execution.publishedAt ?? execution.updatedAt)
+          : execution.updatedAt;
+        if (!at) return;
+
+        const dateKey = new Date(at.getTime() - offsetMinutes * 60000).toISOString().split('T')[0];
+        if (!counts[dateKey]) counts[dateKey] = { date: dateKey, posted: 0, failed: 0 };
+        if (execution.status === 'posted') counts[dateKey].posted++;
+        else counts[dateKey].failed++;
+      });
+
+      return c.json(Object.values(counts).sort((a, b) => a.date.localeCompare(b.date)));
+    } catch (error) {
+      console.error('Failed to get posted counts:', error);
+      return c.json({ error: 'Failed to fetch posted counts' }, 500);
+    }
+  });
+
   campaignsRouter.get('/api/campaigns/history', authMiddleware, async (c) => {
     console.log('[DEBUG] GET /api/campaigns/history called');
     const user = c.get('user') as JwtPayload;

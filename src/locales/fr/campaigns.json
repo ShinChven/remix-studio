@@ -12,6 +12,21 @@
   "viewAllHistory": "Voir tout l'historique",
   "viewAllScheduled": "Voir tout ce qui est programmé",
   "openCalendar": "Ouvrir le calendrier",
+  "postingTrend": {
+    "title": "Tendance des publications",
+    "label": "Publiés",
+    "rangeSummary": "publications sur les {{days}} derniers jours",
+    "posted": "Publié",
+    "failed": "Échec",
+    "postedCount": "{{n}} publié(s)",
+    "failedCount": "{{n}} en échec",
+    "empty": "Aucune publication sur cette période",
+    "error": "Impossible de charger le graphique",
+    "ariaLabel": "Tendance quotidienne des publications, {{n}} publications sur cette période",
+    "listView": "Liste",
+    "chartView": "Graphique",
+    "lastNDays": "{{days}} derniers jours"
+  },
   "status": {
     "active": "Campagne active",
     "paused": "En pause",

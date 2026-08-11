@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowRight,
   Calendar,
@@ -8,6 +9,8 @@ import {
   ExternalLink,
   Filter,
   History,
+  LineChart,
+  List,
   Loader2,
   Megaphone,
   Search,
@@ -20,8 +23,12 @@ import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 import { getPlatformIcon, fallbackExternalUrl } from '../lib/platform';
 import { PageNav } from '../components/PageNav';
+import { PostingTrendChart, lastNDaysRange } from '../components/PostingTrendChart';
+
+const TREND_RANGE_OPTIONS = [7, 14, 30] as const;
 
 export function CampaignHistory() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [history, setHistory] = useState<any[]>([]);
@@ -39,6 +46,31 @@ export function CampaignHistory() {
   const [endDate, setEndDate] = useState(endDateParam);
   const [searchQuery, setSearchQuery] = useState(qParam);
 
+  const view = searchParams.get('view') === 'chart' ? 'chart' : 'list';
+  const [trendDays, setTrendDays] = useState<number>(30);
+
+  // The chart follows the page's date filter when one is set; otherwise it uses
+  // the quick range picker.
+  const explicitTrendRange = useMemo(() => {
+    if (!startDateParam || !endDateParam) return null;
+    const from = new Date(`${startDateParam}T00:00:00`);
+    const to = new Date(`${endDateParam}T23:59:59`);
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) return null;
+    return { from, to };
+  }, [startDateParam, endDateParam]);
+
+  const trendRange = useMemo(
+    () => explicitTrendRange ?? lastNDaysRange(trendDays),
+    [explicitTrendRange, trendDays],
+  );
+
+  const setView = (nextView: 'list' | 'chart') => {
+    const params = new URLSearchParams(searchParams);
+    if (nextView === 'chart') params.set('view', 'chart');
+    else params.delete('view');
+    setSearchParams(params, { replace: true });
+  };
+
   const loadHistory = async () => {
     setIsLoading(true);
     try {
@@ -55,11 +87,12 @@ export function CampaignHistory() {
   };
 
   useEffect(() => {
-    void loadHistory();
+    // The chart pulls its own aggregates, so skip the list request while it is shown.
+    if (view === 'list') void loadHistory();
     setStartDate(startDateParam);
     setEndDate(endDateParam);
     setSearchQuery(qParam);
-  }, [page, pageSize, startDateParam, endDateParam, qParam]);
+  }, [page, pageSize, startDateParam, endDateParam, qParam, view]);
 
   const applyFilters = () => {
     const params = new URLSearchParams(searchParams);
@@ -105,9 +138,39 @@ export function CampaignHistory() {
           className="mb-0 md:mb-4"
         />
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 mb-2">
+          {/* View switcher */}
+          <div className="flex w-full items-center gap-1 rounded-card border border-neutral-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-neutral-900 sm:w-auto">
+            <button
+              onClick={() => setView('list')}
+              className={cn(
+                'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[10px] px-3 text-xs font-bold transition-colors sm:flex-none',
+                view === 'list'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5',
+              )}
+              aria-pressed={view === 'list'}
+            >
+              <List className="h-3.5 w-3.5" />
+              {t('postingTrend.listView')}
+            </button>
+            <button
+              onClick={() => setView('chart')}
+              className={cn(
+                'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[10px] px-3 text-xs font-bold transition-colors sm:flex-none',
+                view === 'chart'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5',
+              )}
+              aria-pressed={view === 'chart'}
+            >
+              <LineChart className="h-3.5 w-3.5" />
+              {t('postingTrend.chartView')}
+            </button>
+          </div>
+
           {/* Search bar */}
-          <div className="relative w-full sm:w-80">
+          <div className={cn('relative w-full sm:w-80', view === 'chart' && 'hidden')}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
             <input
               type="text"
@@ -160,6 +223,31 @@ export function CampaignHistory() {
           </div>
         </div>
 
+        {view === 'chart' ? (
+          <div className="flex flex-col gap-3">
+            {!explicitTrendRange && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                {TREND_RANGE_OPTIONS.map((days) => (
+                  <button
+                    key={days}
+                    onClick={() => setTrendDays(days)}
+                    className={cn(
+                      'h-8 shrink-0 rounded-full border px-3.5 text-xs font-bold transition-colors',
+                      trendDays === days
+                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                        : 'border-neutral-200 bg-white text-neutral-500 hover:text-neutral-900 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:text-white',
+                    )}
+                    aria-pressed={trendDays === days}
+                  >
+                    {t('postingTrend.lastNDays', { days })}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <PostingTrendChart from={trendRange.from} to={trendRange.to} height={280} />
+          </div>
+        ) : (
         <div className="overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-sm dark:border-white/5 dark:bg-neutral-900/50">
           {/* Header Row */}
           <div className="hidden lg:grid lg:grid-cols-[240px_1fr_1fr_160px_100px] items-center gap-4 px-6 py-3 bg-neutral-50 dark:bg-white/5 border-b border-neutral-200/50 dark:border-white/5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
@@ -303,6 +391,7 @@ export function CampaignHistory() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

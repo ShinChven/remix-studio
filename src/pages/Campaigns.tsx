@@ -13,6 +13,7 @@ import {
   Plus,
   Search,
   Share2,
+  TrendingUp,
 } from 'lucide-react';
 // lucide-react 1.x dropped its brand icons; react-icons still carries them.
 import { FaInstagram, FaLinkedin, FaFacebook } from 'react-icons/fa6';
@@ -23,6 +24,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
+import { PostingTrendChart, lastNDaysRange } from '../components/PostingTrendChart';
 
 type CampaignStatus = 'Active' | 'Inactive';
 
@@ -137,6 +139,7 @@ export function Campaigns() {
   const [recentPostsLoading, setRecentPostsLoading] = useState(true);
   const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
   const [scheduledPostsLoading, setScheduledPostsLoading] = useState(true);
+  const trendRange = useMemo(() => lastNDaysRange(7), []);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -403,8 +406,19 @@ export function Campaigns() {
             )}
           </section>
 
-          {/* Right Column: Recently Posted & Scheduled */}
+          {/* Right Column: Posting Trend, Recently Posted & Scheduled */}
           <aside className="lg:col-span-1 space-y-8">
+            <div className="space-y-6">
+              <div className="flex h-10 items-center justify-between">
+                <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
+                  <TrendingUp className="h-5 w-5 text-indigo-500" />
+                  {t('postingTrend.title')}
+                </h3>
+              </div>
+
+              <PostingTrendChart from={trendRange.from} to={trendRange.to} />
+            </div>
+
             <div className="space-y-6">
               <div className="flex h-10 items-center justify-between">
                 <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
