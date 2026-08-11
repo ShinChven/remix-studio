@@ -89,6 +89,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 
 | Area | Read tools | Write/destructive tools |
 | :--- | :--- | :--- |
+| Account | `get_current_account` | — |
 | Libraries | `list_libraries`, `get_library_items`, `search_library_items` | `create_library`, `update_library`, `create_prompt`, `batch_create_prompts`, `update_prompt`, `update_library_item`, `batch_update_library_items`, `delete_prompt` |
 | Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `export_project`, `export_project_album` |
 | Jobs | `get_project_job_counts`, `get_queue_status` | `draft_jobs`, `start_jobs` |
@@ -98,6 +99,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 
 Important boundaries:
 
+- `get_current_account` reports the account the token resolves to — the same account every other tool reads and writes. It never exposes secrets (no password hash, no token material) and cannot look up other users.
 - Prompt creation/deletion is for **text libraries**.
 - `update_library_item` can update text content only for a text library; batch updates change titles/tags only and accept at most 100 items.
 - `update_project` replaces the entire workflow when `workflowItems` is supplied. Call `get_project` immediately beforehand and carry forward every step that should remain.

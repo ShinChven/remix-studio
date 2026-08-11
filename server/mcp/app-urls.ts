@@ -20,6 +20,8 @@ export function resolveAppBaseUrl(requestOrigin?: string | null): string {
 export interface AppUrlBuilder {
   /** Normalized public origin, without a trailing slash. */
   base: string;
+  /** The signed-in user's own account page. */
+  account(): string;
   library(libraryId: string): string;
   project(projectId: string): string;
   provider(providerId: string): string;
@@ -37,6 +39,7 @@ export function createAppUrlBuilder(requestOrigin?: string | null): AppUrlBuilde
   const seg = (value: string) => encodeURIComponent(value);
   return {
     base,
+    account: () => `${base}/account`,
     library: (libraryId) => `${base}/library/${seg(libraryId)}`,
     project: (projectId) => `${base}/project/${seg(projectId)}`,
     provider: (providerId) => `${base}/provider/${seg(providerId)}`,
