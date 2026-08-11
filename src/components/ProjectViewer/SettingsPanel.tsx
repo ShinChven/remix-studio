@@ -688,7 +688,7 @@ export function SettingsPanel({
                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-600 block px-1">
                   {t('projectViewer.settings.quality')}
                 </label>
-                <div className="flex bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1">
+                <div className="flex flex-wrap bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-1 rounded-xl gap-1">
                   {(selectedModel?.options.qualities || ['standard', 'hd']).map((q) => (
                     <button
                       key={q}
@@ -697,7 +697,7 @@ export function SettingsPanel({
                         setLocalProject(updated);
                         onUpdate(updated);
                       }}
-                      className={`flex-1 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
+                      className={`flex-1 min-w-[64px] py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase transition-all ${
                         (localProject.quality || (selectedModel?.options.qualities?.[0] || 'standard')) === q
                           ? 'bg-neutral-100 dark:bg-neutral-800 text-blue-700 dark:text-blue-400 shadow-sm border border-neutral-200 dark:border-neutral-700'
                           : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-400'
