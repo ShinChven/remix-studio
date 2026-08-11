@@ -34,15 +34,15 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
   if (items.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-[210] bg-black/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
+    <div className="fixed inset-0 z-[210] bg-black/60 dark:bg-black/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
       <div className="relative flex h-full w-full flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between gap-4 border-b border-white/10 bg-black/30 px-4 py-3 md:px-6">
+        <div className="flex items-center justify-between gap-4 border-b border-neutral-200 dark:border-white/10 bg-white dark:bg-black/30 px-4 py-3 md:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="rounded-xl bg-blue-600/10 p-2.5">
               <Columns3 className="w-5 h-5 text-blue-500" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-bold text-white tracking-tight">{t('projectViewer.compare.title')}</h3>
+              <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">{t('projectViewer.compare.title')}</h3>
               <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
                 {t('projectViewer.compare.subtitle', { count: items.length })}
               </p>
@@ -50,7 +50,7 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl p-2 text-neutral-500 dark:text-neutral-500 transition-all hover:bg-white/10 hover:text-white"
+            className="rounded-xl p-2 text-neutral-500 dark:text-neutral-500 transition-all hover:bg-neutral-100 dark:hover:bg-white/10 hover:text-neutral-900 dark:hover:text-white"
             aria-label={t('projectViewer.compare.closeAria')}
           >
             <X className="w-5 h-5" />
@@ -62,11 +62,11 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
             {items.map((item, index) => (
               <article
                 key={item.id}
-                className="flex h-full w-[min(40rem,calc(100vw-1.5rem))] sm:w-[min(40rem,calc(100vw-4rem))] shrink-0 flex-col overflow-hidden rounded-card sm:rounded-card border border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 shadow-2xl shadow-black/30 md:w-[min(42rem,calc(100vw-8rem))]"
+                className="flex h-full w-[min(40rem,calc(100vw-1.5rem))] sm:w-[min(40rem,calc(100vw-4rem))] shrink-0 flex-col overflow-hidden rounded-card sm:rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/90 shadow-2xl shadow-black/30 md:w-[min(42rem,calc(100vw-8rem))]"
               >
                 <header className="flex items-start sm:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/60 px-4 py-3">
                   <div className="min-w-0">
-                    <div className="text-[10px] font-mono text-neutral-600">#{(index + 1).toString().padStart(2, '0')}</div>
+                    <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-600">#{(index + 1).toString().padStart(2, '0')}</div>
                     <div className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-500">
                       {item.providerId || t('projectViewer.common.provider')} · {item.modelConfigId || t('projectViewer.common.model')}
                     </div>

@@ -184,7 +184,7 @@ export function TrashView() {
       </div>
 
       {!loading && items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-neutral-900/40 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-card text-center space-y-6 transition-colors hover:border-neutral-700 backdrop-blur-3xl shadow-sm">
+        <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-neutral-900/40 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-card text-center space-y-6 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700 backdrop-blur-3xl shadow-sm">
           <div className="p-6 bg-white/50 dark:bg-neutral-900/50 rounded-full border border-neutral-200 dark:border-neutral-800">
             <Trash2 className="w-12 h-12 text-neutral-800" />
           </div>

@@ -225,7 +225,7 @@ export function ProjectOrphans() {
             <div className="flex items-center justify-between">
               <button 
                 onClick={toggleSelectAll}
-                className="flex items-center gap-2 text-[10px] font-black text-neutral-600 dark:text-neutral-400 hover:text-white uppercase tracking-widest transition-colors"
+                className="flex items-center gap-2 text-[10px] font-black text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white uppercase tracking-widest transition-colors"
               >
                 {selectedKeys.size === orphans.length ? (
                   <CheckSquare className="w-4 h-4 text-blue-500" />
@@ -264,7 +264,7 @@ export function ProjectOrphans() {
                    <div 
                     key={file.key} 
                     onClick={(e) => toggleSelection(file.key, e.shiftKey)}
-                    className={`group relative aspect-square w-full rounded-xl overflow-hidden border transition-ui cursor-pointer hover:scale-[1.02] ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl text-neutral-500 dark:text-neutral-500 hover:border-neutral-700'}`}
+                    className={`group relative aspect-square w-full rounded-xl overflow-hidden border transition-ui cursor-pointer hover:scale-[1.02] ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl text-neutral-500 dark:text-neutral-500 hover:border-neutral-300 dark:hover:border-neutral-700'}`}
                    >
                      {/* Overlay Actions */}
                      <div className="absolute inset-0 bg-black/60 opacity-100 transition-opacity z-10 flex flex-col justify-between p-1.5">

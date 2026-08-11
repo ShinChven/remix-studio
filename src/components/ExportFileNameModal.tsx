@@ -35,11 +35,11 @@ export function ExportFileNameModal({
 
   return (
     <div
-      className="fixed inset-0 z-[350] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
+      className="fixed inset-0 z-[350] flex items-center justify-center p-4 sm:p-6 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
       onClick={() => !exporting && onClose()}
     >
       <div
-        className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl rounded-card shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain animate-in zoom-in-95 duration-300"
+        className="bg-white dark:bg-neutral-900/40 dark:backdrop-blur-3xl border border-neutral-200 dark:border-white/5 rounded-card shadow-2xl dark:shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5 sm:p-8">
@@ -87,7 +87,7 @@ export function ExportFileNameModal({
         <div className="px-5 py-4 sm:px-8 sm:py-6 pb-[max(1rem,env(safe-area-inset-bottom))] bg-neutral-50/40 dark:bg-neutral-950/40 flex flex-wrap items-center justify-end gap-3 sm:gap-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
           <button
             onClick={() => !exporting && onClose()}
-            className="px-4 sm:px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
+            className="px-4 sm:px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-300 dark:hover:border-neutral-800/80 active:scale-95"
             disabled={exporting}
           >
             {t('libraryEditor.exportModal.cancel', 'Cancel')}

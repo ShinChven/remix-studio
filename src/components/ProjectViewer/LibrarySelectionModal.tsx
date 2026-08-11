@@ -177,7 +177,7 @@ export function LibrarySelectionModal({
         <div className="p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 flex justify-end">
           <button 
             onClick={onClose}
-            className="px-6 py-2.5 text-neutral-600 dark:text-neutral-400 hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
+            className="px-6 py-2.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
           >
             {t('projectViewer.common.cancel')}
           </button>

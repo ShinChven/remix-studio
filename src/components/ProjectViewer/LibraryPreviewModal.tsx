@@ -184,7 +184,7 @@ export function LibraryPreviewModal({
                   className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all border ${
                     selectedTags.length === 0
                       ? 'bg-blue-600 text-white border-transparent'
-                      : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
+                      : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
                   }`}
                 >
                   {t('projectViewer.libraryPreview.allItems')}
@@ -197,7 +197,7 @@ export function LibraryPreviewModal({
                     className={`shrink-0 max-w-[60vw] md:max-w-80 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all border ${
                       isTagSelected(tag)
                         ? 'bg-blue-600/20 text-blue-500 dark:text-blue-400 border-blue-500/50'
-                        : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
+                        : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
                     }`}
                   >
                     <span className="block truncate">{tag}</span>

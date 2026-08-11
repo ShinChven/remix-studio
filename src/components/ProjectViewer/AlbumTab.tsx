@@ -606,7 +606,7 @@ export function AlbumTab({
                     <button
                       type="button"
                       onClick={() => toggleAudioExpand(item.id)}
-                      className="flex-shrink-0 p-1 text-neutral-500 dark:text-neutral-500 hover:text-white transition-colors"
+                      className="flex-shrink-0 p-1 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
                       title={isExpanded ? t('projectViewer.album.collapse') : t('projectViewer.album.expand')}
                       aria-label={isExpanded ? t('projectViewer.album.collapse') : t('projectViewer.album.expand')}
                     >
@@ -819,7 +819,7 @@ export function AlbumTab({
                       className="mb-3 @min-[16rem]/card:mb-4 block w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 h-10"
                       title={t('projectViewer.album.viewFullPrompt')}
                     >
-                      <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400 line-clamp-2 font-medium group-hover:text-neutral-200 transition-colors cursor-pointer hover:text-white">
+                      <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400 line-clamp-2 font-medium dark:group-hover:text-neutral-200 transition-colors cursor-pointer hover:text-neutral-900 dark:hover:text-white">
                         {item.prompt}
                       </p>
                     </button>

@@ -44,15 +44,15 @@ export function ModelSelectorModal({
 
   return (
     <div 
-      className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 dark:bg-black/90 backdrop-blur-xl animate-in fade-in duration-300"
       onClick={onClose}
     >
       <div
-        className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-3xl rounded-card md:rounded-[40px] shadow-[0_50px_100px_rgba(0,0,0,0.9)] max-w-4xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[85dvh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
+        className="bg-white dark:bg-neutral-900/40 dark:backdrop-blur-3xl border border-neutral-200 dark:border-white/5 rounded-card md:rounded-[40px] shadow-2xl dark:shadow-[0_50px_100px_rgba(0,0,0,0.9)] max-w-4xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[85dvh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:p-6 md:p-8 border-b border-neutral-200/50 dark:border-neutral-800/50 flex flex-col gap-4 sm:gap-5 bg-neutral-50/20 dark:bg-neutral-950/20 backdrop-blur-md">
+        <div className="p-4 sm:p-6 md:p-8 border-b border-neutral-200 dark:border-neutral-800/50 flex flex-col gap-4 sm:gap-5 bg-neutral-50 dark:bg-neutral-950/20 dark:backdrop-blur-md">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-neutral-900 dark:text-white tracking-tight leading-none mb-2">{t('projectViewer.modelSelector.title')}</h3>
@@ -60,7 +60,7 @@ export function ModelSelectorModal({
             </div>
             <button 
               onClick={onClose}
-              className="p-2.5 md:p-3 bg-neutral-200/50 dark:bg-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white rounded-xl md:rounded-card transition-all active:scale-90 border border-neutral-300/60 dark:border-neutral-700/30 shrink-0"
+              className="p-2.5 md:p-3 bg-white dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white rounded-xl md:rounded-card transition-all active:scale-90 border border-neutral-200 dark:border-neutral-700/30 shrink-0"
             >
               <X className="w-4 h-4 md:w-5 md:h-5" />
             </button>
@@ -76,7 +76,7 @@ export function ModelSelectorModal({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('projectViewer.modelSelector.searchPlaceholder')}
-              className="w-full bg-neutral-50/50 dark:bg-neutral-950/50 border border-neutral-200 dark:border-neutral-800 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 rounded-card py-3 pl-11 pr-4 text-sm text-neutral-900 dark:text-white placeholder-neutral-500 outline-none transition-all"
+              className="w-full bg-white dark:bg-neutral-950/50 border border-neutral-200 dark:border-neutral-800 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 rounded-card py-3 pl-11 pr-4 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 outline-none transition-all"
             />
           </div>
         </div>
@@ -84,10 +84,10 @@ export function ModelSelectorModal({
         {/* Content */}
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 custom-scrollbar">
           {providers.length === 0 ? (
-            <div className="text-center py-20 bg-neutral-50/30 dark:bg-neutral-950/30 rounded-card border border-dashed border-neutral-200 dark:border-neutral-800">
-              <AlertCircle className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
+            <div className="text-center py-20 bg-neutral-50 dark:bg-neutral-950/30 rounded-card border border-dashed border-neutral-200 dark:border-neutral-800">
+              <AlertCircle className="w-12 h-12 text-neutral-400 dark:text-neutral-600 mx-auto mb-4" />
               <p className="text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-widest text-xs">{t('projectViewer.modelSelector.noProviders')}</p>
-              <p className="text-neutral-600 text-sm mt-2">{t('projectViewer.modelSelector.noProvidersHint')}</p>
+              <p className="text-neutral-500 dark:text-neutral-600 text-sm mt-2">{t('projectViewer.modelSelector.noProvidersHint')}</p>
             </div>
           ) : filteredProviders.length === 0 ? (
             <div className="text-center py-16">
@@ -103,7 +103,7 @@ export function ModelSelectorModal({
                   <div>
                     <h4 className="text-xs font-black text-neutral-900 dark:text-white uppercase tracking-wider">{provider.name}</h4>
                     {provider.name.toLowerCase().replace(/\s/g, '') !== provider.type.toLowerCase().replace(/\s/g, '') && (
-                      <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">{provider.type}</span>
+                      <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-600 uppercase tracking-widest">{provider.type}</span>
                     )}
                   </div>
                 </div>
@@ -117,19 +117,19 @@ export function ModelSelectorModal({
                         onClick={() => onSelect(provider.id, model.id)}
                         className={`group relative p-3 rounded-xl text-left transition-ui border active:scale-[0.98] overflow-hidden ${
                           isSelected
-                            ? 'bg-blue-600/10 border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.15)] ring-1 ring-blue-500'
-                            : 'bg-white/70 dark:bg-neutral-900/70 border-neutral-200/50 dark:border-white/5 hover:border-neutral-700 hover:bg-white/80 dark:hover:bg-neutral-900/80 shadow-sm backdrop-blur-xl'
+                            ? 'bg-blue-50 dark:bg-blue-600/10 border-blue-500 dark:border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.15)] ring-1 ring-blue-500'
+                            : 'bg-white dark:bg-neutral-900/70 border-neutral-200 dark:border-white/5 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900/80 shadow-sm dark:backdrop-blur-xl'
                         }`}
                       >
                         <div className="relative z-10 flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className={`text-sm font-bold leading-5 line-clamp-2 break-words tracking-tight transition-colors ${isSelected ? 'text-blue-50' : 'text-neutral-700 dark:text-neutral-300'}`}>
+                            <div className={`text-sm font-bold leading-5 line-clamp-2 break-words tracking-tight transition-colors ${isSelected ? 'text-blue-700 dark:text-blue-50' : 'text-neutral-700 dark:text-neutral-300'}`}>
                               {model.name}
                             </div>
                           </div>
                           {isSelected && (
                             <div className="shrink-0 p-1 bg-blue-500 rounded-full shadow-lg">
-                              <CheckCircle2 className="w-3 h-3 text-neutral-900 dark:text-white" />
+                              <CheckCircle2 className="w-3 h-3 text-white" />
                             </div>
                           )}
                         </div>
@@ -137,7 +137,7 @@ export function ModelSelectorModal({
                         
                         {/* Hover/Selected decorators */}
                         <div className={`absolute inset-0 bg-gradient-to-br transition-all duration-500 pointer-events-none ${
-                          isSelected ? 'from-blue-500/5 to-transparent' : 'from-white/0 group-hover:from-white/[0.02]'
+                          isSelected ? 'from-blue-500/5 to-transparent' : 'from-transparent dark:group-hover:from-white/[0.02]'
                         }`} />
                       </button>
                     );
@@ -149,8 +149,8 @@ export function ModelSelectorModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-neutral-50/40 dark:bg-neutral-950/40 border-t border-neutral-200/50 dark:border-neutral-800/50 flex items-center justify-center">
-           <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+        <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-neutral-50 dark:bg-neutral-950/40 border-t border-neutral-200 dark:border-neutral-800/50 flex items-center justify-center">
+           <p className="text-[10px] font-bold text-neutral-500 dark:text-neutral-600 uppercase tracking-widest">
              {t('projectViewer.modelSelector.footer')}
            </p>
         </div>

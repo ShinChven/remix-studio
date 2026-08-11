@@ -117,7 +117,7 @@ export function PromptEditor() {
                 <div className="w-px h-3 bg-neutral-200 dark:bg-neutral-800 hidden sm:block"></div>
                 <button 
                   onClick={() => setShowTagModal(true)}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded transition-all text-[9px] font-bold tracking-widest uppercase truncate border border-transparent hover:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-blue-400 group/tagbtn"
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded transition-all text-[9px] font-bold tracking-widest uppercase truncate border border-transparent hover:border-neutral-300 dark:hover:border-neutral-800 text-neutral-500 dark:text-neutral-500 hover:text-blue-400 group/tagbtn"
                 >
                   <TagIcon className="w-3 h-3 transition-transform group-hover/tagbtn:scale-110" />
                   {tags.length > 0 ? t('promptEditor.tagsCount', { count: tags.length }) : t('promptEditor.addTags')}

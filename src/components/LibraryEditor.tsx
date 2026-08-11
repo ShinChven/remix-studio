@@ -510,7 +510,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
               <button
                 onClick={handleStartAssistantChat}
-                className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/80 dark:hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-neutral-700 active:scale-95"
+                className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/80 dark:hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-neutral-300 dark:hover:border-neutral-700 active:scale-95"
                 title={t('libraryEditor.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
                 aria-label={t('libraryEditor.startAssistantChat', { defaultValue: 'Start assistant chat for this library' })}
               >
@@ -527,7 +527,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
 
               <button
                 onClick={() => navigate(`/library/${library.id}/edit`)}
-                className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/80 dark:hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-neutral-700 active:scale-95"
+                className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/80 dark:hover:bg-neutral-800/80 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-neutral-300 dark:hover:border-neutral-700 active:scale-95"
                 title={t('libraryEditor.editLibrarySettings')}
               >
                 <Settings className="w-5 h-5" />
@@ -720,7 +720,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 <div className="w-px h-4 bg-neutral-200/60 dark:bg-neutral-800/60 mx-1"></div>
                 <button
                   onClick={() => setSelectedItemIds(new Set())}
-                  className="p-1 text-neutral-500 dark:text-neutral-500 hover:text-white transition-colors"
+                  className="p-1 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -976,7 +976,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
             <div className="px-8 py-6 bg-neutral-50/40 dark:bg-neutral-950/40 flex items-center justify-end gap-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
               <button
                 onClick={() => setShowReferencesModal(false)}
-                className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-800/80 active:scale-95"
+                className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-all border border-transparent hover:border-neutral-300 dark:hover:border-neutral-800/80 active:scale-95"
               >
                 {t('confirmModal.cancel')}
               </button>
