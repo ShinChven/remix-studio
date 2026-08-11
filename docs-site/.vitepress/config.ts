@@ -142,6 +142,10 @@ export default defineConfig({
           items: [
             { text: 'MCP Support', link: '/integrations/mcp' },
             {
+              text: 'Calling MCP Tools over HTTP',
+              link: '/integrations/mcp-http-client',
+            },
+            {
               text: 'Browser Extension',
               link: '/integrations/chrome-extension',
             },

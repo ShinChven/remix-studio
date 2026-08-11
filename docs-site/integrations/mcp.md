@@ -83,6 +83,8 @@ The related endpoints are `/register`, `/authorize`, and `/token`. Dynamically r
 
 Replace the origin with the public `APP_URL` of your deployment. Use HTTPS outside local development because the token grants access to your Remix Studio data.
 
+For clients without MCP support — scripts, `curl`, a language with no MCP SDK — the endpoint can be driven as plain JSON-RPC over HTTP. See [Calling MCP Tools over HTTP](/integrations/mcp-http-client).
+
 ## Tool Catalog
 
 The exact schemas are returned by MCP tool discovery. At the current source version, the catalog is:
