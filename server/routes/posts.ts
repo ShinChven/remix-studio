@@ -16,6 +16,7 @@ import { generateOptimized, generateThumbnail } from '../utils/image-utils';
 import { extractFirstFramePng } from '../utils/video-utils';
 import { checkStorageLimit } from '../utils/storage-check';
 import { collectPostMediaStorageKeys, deleteStorageKeys } from '../utils/post-media-cleanup';
+import { getTextModelsForProvider } from '../../src/types';
 import {
   applyPostWatermark,
   DEFAULT_POST_WATERMARK_SETTING,
@@ -354,7 +355,14 @@ export function createPostsRouter(
     task.updatedAt = Date.now();
 
     try {
-      const { provider } = await resolveChatProvider(providerRepository, task.userId, task.providerId);
+      const { provider, type: providerType } = await resolveChatProvider(providerRepository, task.userId, task.providerId);
+      // Older clients sent the local ModelConfig id rather than the model id
+      // understood by the upstream provider. Accept both so queued/restored
+      // selections do not turn into opaque upstream "model not found" errors.
+      const configuredModel = getTextModelsForProvider(providerType).find(
+        (model) => model.id === task.modelId || model.modelId === task.modelId,
+      );
+      const providerModelId = configuredModel?.modelId || task.modelId;
       const pendingPostIds = [...task.postIds];
 
       const runOne = async (postId: string) => {
@@ -372,6 +380,12 @@ export function createPostsRouter(
           if (!post) {
             result.status = 'failed';
             result.error = 'Not found';
+            console.error('[Campaign batch text generation] Post not found', {
+              batchId: task.id,
+              postId,
+              providerId: task.providerId,
+              modelId: providerModelId,
+            });
             return;
           }
 
@@ -395,7 +409,7 @@ export function createPostsRouter(
           }
 
           const response = await provider.chat({
-            modelId: task.modelId,
+            modelId: providerModelId,
             messages: [
               { role: 'system', content: 'You write short social media posts for an automated generation job. Reply with only the final post text. Do not include reasoning, analysis, <think> tags, quotes, prefaces, markdown, or explanations.' },
               userMessage,
@@ -409,6 +423,12 @@ export function createPostsRouter(
           if (!text) {
             result.status = 'failed';
             result.error = 'Empty response';
+            console.error('[Campaign batch text generation] Empty model response', {
+              batchId: task.id,
+              postId,
+              providerId: task.providerId,
+              modelId: providerModelId,
+            });
             return;
           }
 
@@ -422,6 +442,13 @@ export function createPostsRouter(
         } catch (err: any) {
           result.status = 'failed';
           result.error = err?.message || 'Generation failed';
+          console.error('[Campaign batch text generation] Post generation failed', {
+            batchId: task.id,
+            postId,
+            providerId: task.providerId,
+            modelId: providerModelId,
+            error: result.error,
+          }, err);
         } finally {
           task.completed = task.results.filter((item) => item.status === 'completed' || item.status === 'failed').length;
           task.updatedAt = Date.now();
@@ -439,12 +466,20 @@ export function createPostsRouter(
       const workerCount = Math.min(maxBatchGenerateTextItemConcurrency, pendingPostIds.length);
       await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
-      task.status = 'completed';
+      const failedResults = task.results.filter((result) => !result.ok);
+      task.status = failedResults.length === task.total ? 'failed' : 'completed';
+      task.error = failedResults[0]?.error;
       task.completed = task.total;
       task.updatedAt = Date.now();
     } catch (error: any) {
       task.status = 'failed';
       task.error = error?.message || 'Failed to batch-generate text';
+      console.error('[Campaign batch text generation] Batch failed', {
+        batchId: task.id,
+        providerId: task.providerId,
+        modelId: task.modelId,
+        error: task.error,
+      }, error);
       task.results = task.results.map((result) => (
         result.status === 'queued' || result.status === 'running'
           ? { ...result, status: 'failed', ok: false, error: task.error }

@@ -152,8 +152,13 @@ export function CampaignPostDetail() {
           if (cancelled) return;
           setAiTask(status);
           await loadPost(true);
-          if (status.status === 'completed') toast.success('Generated text for post');
-          if (status.status === 'failed') toast.error(status.error || 'Failed to generate text');
+          const failureMessage = status.error || status.results.find((result) => !result.ok)?.error;
+          if (status.status === 'completed' && failureMessage) {
+            toast.warning('Post text generation finished with an error', { description: failureMessage });
+          } else if (status.status === 'completed') {
+            toast.success('Generated text for post');
+          }
+          if (status.status === 'failed') toast.error(failureMessage || 'Failed to generate text');
         })
         .catch((error) => {
           if (!cancelled) toast.error(error?.message || 'Failed to refresh AI generation status');

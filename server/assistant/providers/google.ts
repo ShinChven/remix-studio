@@ -11,12 +11,14 @@ import {
 import type { ChatMessage } from './types';
 
 /**
- * Maps synthetic model IDs from the UI (like `gemini-3.1-flash-lite-preview`)
- * to ones that actually exist in the Google API (e.g., `gemini-2.5-flash`).
- * Resolves the 404 Not Found error using real internet knowledge.
+ * Maps local/synthetic model config IDs and retired preview aliases to the
+ * model IDs accepted by the current Google API.
  */
 export function resolveRealGeminiModelId(modelId: string): string {
-  if (modelId.includes('3.1-flash-lite')) return 'gemini-3-flash-preview';
+  if (modelId.includes('3.6-flash')) return 'gemini-3.6-flash';
+  if (modelId.includes('3.5-flash-lite')) return 'gemini-3.5-flash-lite';
+  if (modelId.includes('3.5-flash')) return 'gemini-3.5-flash';
+  if (modelId.includes('3.1-flash-lite')) return 'gemini-3.1-flash-lite';
   if (modelId.includes('3.1-pro')) return 'gemini-3.1-pro-preview';
   if (modelId.includes('3.1-flash')) return 'gemini-3-flash-preview';
   if (modelId.includes('3-flash')) return 'gemini-3-flash-preview';
@@ -29,6 +31,11 @@ export function resolveRealGeminiModelId(modelId: string): string {
 /** Gemini's low-latency tier — `gemini-3.5-flash-lite`, `…-flash-lite-preview`, etc. */
 function isFlashLite(modelId: string): boolean {
   return /flash-lite/.test(modelId);
+}
+
+/** Gemini 3.6 Flash and 3.5 Flash-Lite reject legacy sampling options. */
+function supportsSamplingParameters(modelId: string): boolean {
+  return modelId !== 'gemini-3.6-flash' && modelId !== 'gemini-3.5-flash-lite';
 }
 
 /**
@@ -56,7 +63,9 @@ export class GoogleAIChatProvider implements ChatProvider {
     const realModelId = resolveRealGeminiModelId(req.modelId);
 
     const config: any = {
-      ...(typeof req.temperature === 'number' ? { temperature: req.temperature } : {}),
+      ...(supportsSamplingParameters(realModelId) && typeof req.temperature === 'number'
+        ? { temperature: req.temperature }
+        : {}),
       ...(typeof req.maxTokens === 'number' ? { maxOutputTokens: req.maxTokens } : {}),
       ...(systemInstruction ? { systemInstruction } : {}),
       ...(tools ? { tools } : {}),

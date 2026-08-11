@@ -194,6 +194,12 @@ export function BatchAiGenerateModal({ postIds, onClose, onQueued }: Props) {
     [providerId, modelId],
   );
 
+  const selectedModel = useMemo(() => {
+    const provider = providers.find((item) => item.id === providerId);
+    if (!provider) return null;
+    return getTextModelsForProvider(provider.type).find((model) => model.id === modelId) || null;
+  }, [modelId, providerId, providers]);
+
   const filteredPromptItems = useMemo(() => {
     const q = promptQuery.trim().toLowerCase();
     if (!q) return promptItems;
@@ -209,7 +215,7 @@ export function BatchAiGenerateModal({ postIds, onClose, onQueued }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!providerId || !modelId) {
+    if (!providerId || !selectedModel) {
       toast.error('Select a model first');
       return;
     }
@@ -229,7 +235,9 @@ export function BatchAiGenerateModal({ postIds, onClose, onQueued }: Props) {
         promptText,
         includeImages,
         providerId,
-        modelId,
+        // The select value is the local ModelConfig id. Providers require the
+        // actual API model id (for example `gemini-3.5-flash-lite`).
+        modelId: selectedModel.modelId,
       });
       toast.success(`Queued text generation for ${task.total} post${task.total === 1 ? '' : 's'}`);
       onQueued(task);
