@@ -1,9 +1,19 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { fetchPostedCounts } from '../api';
+import { fetchPostedCounts, type PostedCountBucket } from '../api';
 import { cn } from '../lib/utils';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Long ranges collapse into wider buckets so the line stays readable. */
+const DAILY_MAX_DAYS = 120;
+const WEEKLY_MAX_DAYS = 500;
+/** Safety valve: an all-time range on an old account still has to render. */
+const MAX_DAY_BUCKETS = 8000;
+/** Fallback window for an all-time range that has no data at all. */
+const EMPTY_ALL_TIME_DAYS = 30;
+
+type Granularity = 'day' | 'week' | 'month';
 
 function startOfLocalDay(value: Date) {
   const date = new Date(value);
@@ -21,6 +31,11 @@ function localDateKey(value: Date) {
   const month = `${value.getMonth() + 1}`.padStart(2, '0');
   const day = `${value.getDate()}`.padStart(2, '0');
   return `${value.getFullYear()}-${month}-${day}`;
+}
+
+function parseLocalDateKey(key: string) {
+  const date = new Date(`${key}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 /** Local-day range covering the last `days` days, today included. */
@@ -41,15 +56,19 @@ function axisTicks(max: number) {
   return { top, ticks };
 }
 
-interface DayBucket {
-  date: Date;
+interface TrendBucket {
+  /** First local day covered by the bucket. */
+  start: Date;
+  /** Last local day covered by the bucket (same as `start` for daily buckets). */
+  end: Date;
   key: string;
   posted: number;
   failed: number;
 }
 
 interface PostingTrendChartProps {
-  from: Date;
+  /** Start of the range, or `null` for all time (starts at the first day with data). */
+  from: Date | null;
   to: Date;
   className?: string;
   /** Plot height in px. Defaults to a width-aware value so phones get a shorter chart. */
@@ -62,12 +81,13 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [width, setWidth] = useState(0);
-  const [buckets, setBuckets] = useState<DayBucket[]>([]);
+  const [counts, setCounts] = useState<PostedCountBucket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  const fromTime = startOfLocalDay(from).getTime();
+  const isAllTime = from == null;
+  const fromTime = from ? startOfLocalDay(from).getTime() : null;
   const toTime = endOfLocalDay(to).getTime();
 
   useEffect(() => {
@@ -84,36 +104,26 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
 
   useEffect(() => {
     let cancelled = false;
-    const rangeStart = new Date(fromTime);
+    // An all-time range asks the server for everything; the first day with data
+    // becomes the visible start once the response lands.
+    const rangeStart = new Date(fromTime ?? 0);
     const rangeEnd = new Date(toTime);
-
-    const emptyBuckets: DayBucket[] = [];
-    // Cap the bucket count so an extreme custom range can't blow up the render.
-    for (const cursor = new Date(rangeStart); cursor <= rangeEnd && emptyBuckets.length < 400; cursor.setDate(cursor.getDate() + 1)) {
-      const date = new Date(cursor);
-      emptyBuckets.push({ date, key: localDateKey(date), posted: 0, failed: 0 });
-    }
 
     const load = async () => {
       setIsLoading(true);
       setHasError(false);
       try {
-        const counts = await fetchPostedCounts(
+        const data = await fetchPostedCounts(
           rangeStart.toISOString(),
           rangeEnd.toISOString(),
           new Date().getTimezoneOffset(),
         );
         if (cancelled) return;
-        const byDate = new Map(counts.map((entry) => [entry.date, entry]));
-        setBuckets(emptyBuckets.map((bucket) => ({
-          ...bucket,
-          posted: byDate.get(bucket.key)?.posted ?? 0,
-          failed: byDate.get(bucket.key)?.failed ?? 0,
-        })));
+        setCounts(data);
       } catch (error) {
         if (cancelled) return;
         console.error('Failed to load posting trend', error);
-        setBuckets(emptyBuckets);
+        setCounts([]);
         setHasError(true);
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -125,6 +135,65 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
       cancelled = true;
     };
   }, [fromTime, toTime]);
+
+  /** Day-level buckets covering the effective range, zero-filled. */
+  const dayBuckets = useMemo(() => {
+    const rangeEnd = startOfLocalDay(new Date(toTime));
+    const firstWithData = counts.length > 0 ? parseLocalDateKey(counts[0].date) : null;
+    const rangeStart = fromTime != null
+      ? startOfLocalDay(new Date(fromTime))
+      : startOfLocalDay(firstWithData ?? new Date(toTime - (EMPTY_ALL_TIME_DAYS - 1) * DAY_MS));
+
+    const byDate = new Map(counts.map((entry) => [entry.date, entry]));
+    const buckets: TrendBucket[] = [];
+    for (
+      const cursor = new Date(Math.min(rangeStart.getTime(), rangeEnd.getTime()));
+      cursor <= rangeEnd && buckets.length < MAX_DAY_BUCKETS;
+      cursor.setDate(cursor.getDate() + 1)
+    ) {
+      const date = new Date(cursor);
+      const key = localDateKey(date);
+      buckets.push({
+        start: date,
+        end: date,
+        key,
+        posted: byDate.get(key)?.posted ?? 0,
+        failed: byDate.get(key)?.failed ?? 0,
+      });
+    }
+    return buckets;
+  }, [counts, fromTime, toTime]);
+
+  const granularity: Granularity = dayBuckets.length <= DAILY_MAX_DAYS
+    ? 'day'
+    : dayBuckets.length <= WEEKLY_MAX_DAYS
+      ? 'week'
+      : 'month';
+
+  /** Day buckets rolled up to the granularity the range calls for. */
+  const buckets = useMemo(() => {
+    if (granularity === 'day') return dayBuckets;
+
+    const groups: TrendBucket[] = [];
+    let currentKey = '';
+    dayBuckets.forEach((day, index) => {
+      // Weeks are chunked from the range start so the range is covered exactly;
+      // months follow the calendar.
+      const groupKey = granularity === 'week'
+        ? `w${Math.floor(index / 7)}`
+        : `${day.start.getFullYear()}-${day.start.getMonth()}`;
+
+      if (groupKey !== currentKey) {
+        currentKey = groupKey;
+        groups.push({ start: day.start, end: day.end, key: day.key, posted: 0, failed: 0 });
+      }
+      const group = groups[groups.length - 1];
+      group.end = day.end;
+      group.posted += day.posted;
+      group.failed += day.failed;
+    });
+    return groups;
+  }, [dayBuckets, granularity]);
 
   const totals = useMemo(() => buckets.reduce(
     (acc, bucket) => ({ posted: acc.posted + bucket.posted, failed: acc.failed + bucket.failed }),
@@ -150,7 +219,7 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
   };
   const pointY = (value: number) => padding.top + innerHeight - (value / axisTop) * innerHeight;
 
-  const linePath = (pick: (bucket: DayBucket) => number) =>
+  const linePath = (pick: (bucket: TrendBucket) => number) =>
     buckets.map((bucket, index) => `${index === 0 ? 'M' : 'L'}${pointX(index).toFixed(2)},${pointY(pick(bucket)).toFixed(2)}`).join(' ');
 
   const areaPath = () => {
@@ -159,15 +228,42 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
     return `${linePath((bucket) => bucket.posted)} L${pointX(buckets.length - 1).toFixed(2)},${baseline} L${pointX(0).toFixed(2)},${baseline} Z`;
   };
 
-  const spansWeekOrLess = buckets.length <= 7;
-  const dateFormatter = useMemo(() => new Intl.DateTimeFormat(i18n.language, spansWeekOrLess
-    ? { weekday: 'short' }
-    : { month: 'numeric', day: 'numeric' }), [i18n.language, spansWeekOrLess]);
-  const tooltipFormatter = useMemo(() => new Intl.DateTimeFormat(i18n.language, {
+  const spansWeekOrLess = granularity === 'day' && buckets.length <= 7;
+  const spansMultipleYears = buckets.length > 0
+    && buckets[0].start.getFullYear() !== buckets[buckets.length - 1].end.getFullYear();
+
+  const axisFormatter = useMemo(() => {
+    if (granularity === 'month') {
+      return new Intl.DateTimeFormat(i18n.language, spansMultipleYears
+        ? { month: 'short', year: '2-digit' }
+        : { month: 'short' });
+    }
+    return new Intl.DateTimeFormat(i18n.language, spansWeekOrLess
+      ? { weekday: 'short' }
+      : { month: 'numeric', day: 'numeric' });
+  }, [i18n.language, granularity, spansWeekOrLess, spansMultipleYears]);
+
+  const tooltipDayFormatter = useMemo(() => new Intl.DateTimeFormat(i18n.language, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   }), [i18n.language]);
+  const tooltipSpanFormatter = useMemo(() => new Intl.DateTimeFormat(i18n.language, {
+    month: 'short',
+    day: 'numeric',
+  }), [i18n.language]);
+  const tooltipMonthFormatter = useMemo(() => new Intl.DateTimeFormat(i18n.language, {
+    month: 'long',
+    year: 'numeric',
+  }), [i18n.language]);
+
+  const bucketLabel = (bucket: TrendBucket) => {
+    if (granularity === 'month') return tooltipMonthFormatter.format(bucket.start);
+    if (granularity === 'week') {
+      return `${tooltipSpanFormatter.format(bucket.start)} – ${tooltipSpanFormatter.format(bucket.end)}`;
+    }
+    return tooltipDayFormatter.format(bucket.start);
+  };
 
   const labelIndices = useMemo(() => {
     if (buckets.length === 0) return [];
@@ -176,7 +272,7 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
     const indices: number[] = [];
     for (let index = 0; index < buckets.length; index += step) indices.push(index);
 
-    // Always label the last day, but drop the one before it if they would collide.
+    // Always label the last bucket, but drop the one before it if they would collide.
     const last = buckets.length - 1;
     if (indices[indices.length - 1] !== last) {
       if (last - indices[indices.length - 1] < Math.ceil(step * 0.75)) indices.pop();
@@ -200,13 +296,17 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
   };
 
   const isEmpty = !isLoading && totals.posted === 0 && totals.failed === 0;
-  // Per-day dots turn into noise past a couple of weeks; the crosshair still
-  // exposes every day's exact value.
+  // Per-bucket dots turn into noise past a couple of weeks; the crosshair still
+  // exposes every bucket's exact value.
   const showMarkers = !isEmpty && buckets.length <= 14;
   const activeBucket = activeIndex != null ? buckets[activeIndex] : null;
   const tooltipLeft = activeIndex != null
     ? Math.min(Math.max(pointX(activeIndex), 72), Math.max(72, width - 72))
     : 0;
+
+  const summary = isAllTime
+    ? t('postingTrend.rangeSummaryAllTime')
+    : t('postingTrend.rangeSummary', { days: dayBuckets.length });
 
   return (
     <div
@@ -224,24 +324,29 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
             <span className="text-3xl font-semibold tabular-nums tracking-tight text-neutral-900 dark:text-white">
               {isLoading ? '—' : totals.posted}
             </span>
-            <span className="text-[13px] font-medium text-neutral-500">
-              {t('postingTrend.rangeSummary', { days: buckets.length })}
-            </span>
+            <span className="text-[13px] font-medium text-neutral-500">{summary}</span>
           </div>
         </div>
 
-        {showFailed && (
-          <div className="flex items-center gap-3 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-indigo-500" />
-              {t('postingTrend.posted')}
+        <div className="flex items-center gap-3 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400">
+          {granularity !== 'day' && (
+            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-500 dark:bg-white/10 dark:text-neutral-400">
+              {t(granularity === 'week' ? 'postingTrend.perWeek' : 'postingTrend.perMonth')}
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-red-500" />
-              {t('postingTrend.failed')}
-            </span>
-          </div>
-        )}
+          )}
+          {showFailed && (
+            <>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-indigo-500" />
+                {t('postingTrend.posted')}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-red-500" />
+                {t('postingTrend.failed')}
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
       <div ref={containerRef} className="relative mt-4 w-full">
@@ -293,7 +398,7 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
                 textAnchor={index === 0 ? 'start' : index === buckets.length - 1 ? 'end' : 'middle'}
                 className="fill-neutral-400 text-[9px] dark:fill-neutral-500"
               >
-                {dateFormatter.format(buckets[index].date)}
+                {axisFormatter.format(buckets[index].start)}
               </text>
             ))}
 
@@ -337,7 +442,7 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
                   />
                 ))}
 
-                {/* Dense ranges drop their dots, so the hovered day still gets one. */}
+                {/* Dense ranges drop their dots, so the hovered bucket still gets one. */}
                 {!showMarkers && !isEmpty && activeIndex != null && (
                   <circle
                     cx={pointX(activeIndex)}
@@ -349,7 +454,7 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
                   />
                 )}
 
-                {/* Selective direct label: the peak day only */}
+                {/* Selective direct label: the peak bucket only */}
                 {peakIndex >= 0 && activeIndex == null && (
                   <text
                     x={pointX(peakIndex)}
@@ -417,7 +522,7 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
             style={{ left: tooltipLeft }}
           >
             <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              {tooltipFormatter.format(activeBucket.date)}
+              {bucketLabel(activeBucket)}
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[12px] font-semibold text-neutral-900 dark:text-white">
               <span className="h-2 w-2 shrink-0 rounded-full bg-indigo-500" />

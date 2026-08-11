@@ -140,15 +140,29 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
     const startDateRaw = c.req.query('startDate');
     const endDateRaw = c.req.query('endDate');
     const q = c.req.query('q');
+    const timezoneOffsetMinutes = Number(c.req.query('timezoneOffsetMinutes') || 0);
+    const offsetMinutes = Number.isFinite(timezoneOffsetMinutes) ? timezoneOffsetMinutes : 0;
+
+    // A bare `YYYY-MM-DD` is a day on the caller's calendar, so shift it by their
+    // UTC offset instead of assuming the day starts at UTC midnight.
+    const dayBoundary = (raw: string, edge: 'start' | 'end') => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        const parsed = new Date(raw);
+        if (edge === 'end' && !Number.isNaN(parsed.getTime())) parsed.setUTCHours(23, 59, 59, 999);
+        return parsed;
+      }
+      const suffix = edge === 'start' ? 'T00:00:00.000Z' : 'T23:59:59.999Z';
+      return new Date(new Date(`${raw}${suffix}`).getTime() + offsetMinutes * 60000);
+    };
 
     const dateFilter: any = {};
     if (startDateRaw) {
-      dateFilter.gte = new Date(startDateRaw);
+      const start = dayBoundary(startDateRaw, 'start');
+      if (!Number.isNaN(start.getTime())) dateFilter.gte = start;
     }
     if (endDateRaw) {
-      const end = new Date(endDateRaw);
-      end.setUTCHours(23, 59, 59, 999);
-      dateFilter.lte = end;
+      const end = dayBoundary(endDateRaw, 'end');
+      if (!Number.isNaN(end.getTime())) dateFilter.lte = end;
     }
 
     const whereClause: any = {

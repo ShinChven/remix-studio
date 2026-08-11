@@ -25,7 +25,16 @@
     "ariaLabel": "Tendance quotidienne des publications, {{n}} publications sur cette période",
     "listView": "Liste",
     "chartView": "Graphique",
-    "lastNDays": "{{days}} derniers jours"
+    "lastNDays": "{{days}} derniers jours",
+    "rangeSummaryAllTime": "publications depuis le début",
+    "lastYear": "1 dernière année",
+    "allTime": "Tout",
+    "customRange": "Personnalisé",
+    "rangeStart": "Date de début",
+    "rangeEnd": "Date de fin",
+    "resetRange": "Réinitialiser",
+    "perWeek": "Par semaine",
+    "perMonth": "Par mois"
   },
   "status": {
     "active": "Campagne active",

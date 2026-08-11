@@ -25,7 +25,16 @@
     "ariaLabel": "日別の投稿トレンド、この期間に {{n}} 件配信",
     "listView": "リスト",
     "chartView": "グラフ",
-    "lastNDays": "直近 {{days}} 日間"
+    "lastNDays": "直近 {{days}} 日間",
+    "rangeSummaryAllTime": "件 · 全期間",
+    "lastYear": "直近 1 年",
+    "allTime": "全期間",
+    "customRange": "カスタム",
+    "rangeStart": "開始日",
+    "rangeEnd": "終了日",
+    "resetRange": "リセット",
+    "perWeek": "週単位",
+    "perMonth": "月単位"
   },
   "status": {
     "active": "実行中",

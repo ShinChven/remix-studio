@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
-  Filter,
   History,
   LineChart,
   List,
@@ -25,7 +24,41 @@ import { getPlatformIcon, fallbackExternalUrl } from '../lib/platform';
 import { PageNav } from '../components/PageNav';
 import { PostingTrendChart, lastNDaysRange } from '../components/PostingTrendChart';
 
-const TREND_RANGE_OPTIONS = [7, 14, 30] as const;
+/** Quick ranges, in URL-friendly ids. `null` days means "all time" (no lower bound). */
+const RANGE_PRESETS = [
+  { id: '7d', days: 7 },
+  { id: '14d', days: 14 },
+  { id: '30d', days: 30 },
+  { id: '90d', days: 90 },
+  { id: '180d', days: 180 },
+  { id: '1y', days: 365 },
+  { id: 'all', days: null },
+] as const;
+
+type RangePresetId = (typeof RANGE_PRESETS)[number]['id'];
+
+const DEFAULT_PRESET: RangePresetId = '30d';
+
+function isPresetId(value: string): value is RangePresetId {
+  return RANGE_PRESETS.some((preset) => preset.id === value);
+}
+
+function presetDays(id: RangePresetId) {
+  return RANGE_PRESETS.find((preset) => preset.id === id)?.days ?? null;
+}
+
+/** `YYYY-MM-DD` in the user's local timezone. */
+function toDateInput(value: Date) {
+  const month = `${value.getMonth() + 1}`.padStart(2, '0');
+  const day = `${value.getDate()}`.padStart(2, '0');
+  return `${value.getFullYear()}-${month}-${day}`;
+}
+
+function parseDateInput(value: string) {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
 export function CampaignHistory() {
   const { t } = useTranslation();
@@ -41,28 +74,46 @@ export function CampaignHistory() {
   const startDateParam = searchParams.get('startDate') || '';
   const endDateParam = searchParams.get('endDate') || '';
   const qParam = searchParams.get('q') || '';
+  const rangeParam = searchParams.get('range') || '';
 
-  const [startDate, setStartDate] = useState(startDateParam);
-  const [endDate, setEndDate] = useState(endDateParam);
   const [searchQuery, setSearchQuery] = useState(qParam);
 
   const view = searchParams.get('view') === 'chart' ? 'chart' : 'list';
-  const [trendDays, setTrendDays] = useState<number>(30);
 
-  // The chart follows the page's date filter when one is set; otherwise it uses
-  // the quick range picker.
-  const explicitTrendRange = useMemo(() => {
-    if (!startDateParam || !endDateParam) return null;
-    const from = new Date(`${startDateParam}T00:00:00`);
-    const to = new Date(`${endDateParam}T23:59:59`);
-    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) return null;
-    return { from, to };
-  }, [startDateParam, endDateParam]);
+  // One range drives both views. Explicit dates in the URL mean the custom
+  // range is in play; otherwise a quick preset is (30 days by default).
+  const hasCustomDates = Boolean(startDateParam || endDateParam);
+  const [customOpen, setCustomOpen] = useState(hasCustomDates);
+  const isCustomRange = hasCustomDates || customOpen;
+  const preset: RangePresetId = isPresetId(rangeParam) ? rangeParam : DEFAULT_PRESET;
+  const activeRangeId = isCustomRange ? 'custom' : preset;
 
-  const trendRange = useMemo(
-    () => explicitTrendRange ?? lastNDaysRange(trendDays),
-    [explicitTrendRange, trendDays],
-  );
+  /**
+   * The effective range, as dates for the chart and as `YYYY-MM-DD` bounds for
+   * the list request. A missing bound is genuinely unbounded on that side.
+   */
+  const range = useMemo(() => {
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    if (isCustomRange) {
+      const from = parseDateInput(startDateParam);
+      const to = parseDateInput(endDateParam);
+      const toEnd = to ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999) : todayEnd;
+      return {
+        from,
+        to: toEnd,
+        apiStart: from ? toDateInput(from) : '',
+        apiEnd: to ? toDateInput(to) : '',
+      };
+    }
+
+    const days = presetDays(preset);
+    if (days == null) return { from: null, to: todayEnd, apiStart: '', apiEnd: '' };
+
+    const { from, to } = lastNDaysRange(days);
+    return { from, to, apiStart: toDateInput(from), apiEnd: toDateInput(to) };
+  }, [isCustomRange, startDateParam, endDateParam, preset]);
 
   const setView = (nextView: 'list' | 'chart') => {
     const params = new URLSearchParams(searchParams);
@@ -71,10 +122,58 @@ export function CampaignHistory() {
     setSearchParams(params, { replace: true });
   };
 
+  const selectPreset = (id: RangePresetId) => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('startDate');
+    params.delete('endDate');
+    if (id === DEFAULT_PRESET) params.delete('range');
+    else params.set('range', id);
+    params.set('page', '1');
+    setCustomOpen(false);
+    setSearchParams(params);
+  };
+
+  const openCustomRange = () => {
+    setCustomOpen(true);
+    if (hasCustomDates) return;
+    // Seed the inputs with whatever is on screen so the switch isn't a reset.
+    const params = new URLSearchParams(searchParams);
+    const seed = range.from ?? lastNDaysRange(30).from;
+    params.set('startDate', toDateInput(seed));
+    params.set('endDate', toDateInput(range.to));
+    params.delete('range');
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  /** Applies a custom bound immediately; an inverted range is swapped, not rejected. */
+  const setCustomBound = (bound: 'start' | 'end', value: string) => {
+    let nextStart = bound === 'start' ? value : startDateParam;
+    let nextEnd = bound === 'end' ? value : endDateParam;
+    if (nextStart && nextEnd && nextStart > nextEnd) [nextStart, nextEnd] = [nextEnd, nextStart];
+
+    const params = new URLSearchParams(searchParams);
+    if (nextStart) params.set('startDate', nextStart);
+    else params.delete('startDate');
+    if (nextEnd) params.set('endDate', nextEnd);
+    else params.delete('endDate');
+    params.delete('range');
+    params.set('page', '1');
+    setCustomOpen(true);
+    setSearchParams(params);
+  };
+
   const loadHistory = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchCampaignHistory(page, pageSize, startDateParam, endDateParam, qParam);
+      const data = await fetchCampaignHistory(
+        page,
+        pageSize,
+        range.apiStart,
+        range.apiEnd,
+        qParam,
+        new Date().getTimezoneOffset(),
+      );
       setHistory(data.items);
       setTotal(data.total);
       setTotalPages(data.totalPages);
@@ -89,23 +188,14 @@ export function CampaignHistory() {
   useEffect(() => {
     // The chart pulls its own aggregates, so skip the list request while it is shown.
     if (view === 'list') void loadHistory();
-    setStartDate(startDateParam);
-    setEndDate(endDateParam);
     setSearchQuery(qParam);
-  }, [page, pageSize, startDateParam, endDateParam, qParam, view]);
+  }, [page, pageSize, range.apiStart, range.apiEnd, qParam, view]);
 
-  const applyFilters = () => {
+  const applySearch = () => {
     const params = new URLSearchParams(searchParams);
     params.set('page', '1');
-    if (startDate) params.set('startDate', startDate);
-    else params.delete('startDate');
-    
-    if (endDate) params.set('endDate', endDate);
-    else params.delete('endDate');
-
     if (searchQuery) params.set('q', searchQuery);
     else params.delete('q');
-    
     setSearchParams(params);
   };
 
@@ -113,18 +203,34 @@ export function CampaignHistory() {
     const params = new URLSearchParams(searchParams);
     params.delete('startDate');
     params.delete('endDate');
+    params.delete('range');
     params.delete('q');
     params.set('page', '1');
-    setStartDate('');
-    setEndDate('');
     setSearchQuery('');
+    setCustomOpen(false);
     setSearchParams(params);
   };
+
+  const hasActiveFilters = hasCustomDates
+    || Boolean(qParam)
+    || Boolean(rangeParam && rangeParam !== DEFAULT_PRESET);
 
   const updatePage = (newPage: number) => {
     const params = new URLSearchParams(searchParams);
     params.set('page', newPage.toString());
     setSearchParams(params);
+  };
+
+  // The chip row scrolls sideways on phones, so keep the active chip in view.
+  const activeChipRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    activeChipRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [activeRangeId]);
+
+  const rangeLabel = (id: RangePresetId) => {
+    if (id === 'all') return t('postingTrend.allTime');
+    if (id === '1y') return t('postingTrend.lastYear');
+    return t('postingTrend.lastNDays', { days: presetDays(id) });
   };
 
 
@@ -177,76 +283,88 @@ export function CampaignHistory() {
               placeholder="Search history..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onBlur={() => {
+                if (searchQuery !== qParam) applySearch();
+              }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') applyFilters();
+                if (e.key === 'Enter') applySearch();
               }}
               className="w-full h-10 pl-10 pr-3 rounded-card border border-neutral-200 bg-white text-sm text-neutral-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-white/10 dark:bg-neutral-900 dark:text-white transition-all shadow-sm"
             />
           </div>
 
-          {/* Date Range and Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-1">
-            <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex h-10 shrink-0 self-start items-center gap-1.5 rounded-card border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-500 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 transition-all shadow-sm"
+              title={t('postingTrend.resetRange')}
+            >
+              <XCircle className="h-4 w-4" />
+              {t('postingTrend.resetRange')}
+            </button>
+          )}
+        </div>
+
+        {/* Range picker — one range, shared by both views */}
+        <div className="flex flex-col gap-2 mb-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+            {RANGE_PRESETS.map(({ id }) => (
+              <button
+                key={id}
+                ref={activeRangeId === id ? activeChipRef : undefined}
+                onClick={() => selectPreset(id)}
+                className={cn(
+                  'h-8 shrink-0 rounded-full border px-3.5 text-xs font-bold transition-colors',
+                  activeRangeId === id
+                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                    : 'border-neutral-200 bg-white text-neutral-500 hover:text-neutral-900 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:text-white',
+                )}
+                aria-pressed={activeRangeId === id}
+              >
+                {rangeLabel(id)}
+              </button>
+            ))}
+            <button
+              ref={activeRangeId === 'custom' ? activeChipRef : undefined}
+              onClick={openCustomRange}
+              className={cn(
+                'flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-xs font-bold transition-colors',
+                activeRangeId === 'custom'
+                  ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                  : 'border-neutral-200 bg-white text-neutral-500 hover:text-neutral-900 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:text-white',
+              )}
+              aria-pressed={activeRangeId === 'custom'}
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              {t('postingTrend.customRange')}
+            </button>
+          </div>
+
+          {isCustomRange && (
+            <div className="flex items-center gap-1.5">
               <input
                 type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                value={startDateParam}
+                max={endDateParam || undefined}
+                onChange={(e) => setCustomBound('start', e.target.value)}
+                aria-label={t('postingTrend.rangeStart')}
                 className="w-full sm:w-40 h-10 rounded-card border border-neutral-200 bg-white px-3 text-xs text-neutral-900 focus:border-indigo-500 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-white shadow-sm"
               />
               <span className="text-neutral-400 text-[10px] font-bold">TO</span>
               <input
                 type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                value={endDateParam}
+                min={startDateParam || undefined}
+                onChange={(e) => setCustomBound('end', e.target.value)}
+                aria-label={t('postingTrend.rangeEnd')}
                 className="w-full sm:w-40 h-10 rounded-card border border-neutral-200 bg-white px-3 text-xs text-neutral-900 focus:border-indigo-500 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-white shadow-sm"
               />
             </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={applyFilters}
-                className="flex h-10 w-10 items-center justify-center rounded-card bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
-                title="Apply filters"
-              >
-                <Filter className="h-4 w-4" />
-              </button>
-              {(startDateParam || endDateParam || qParam) && (
-                <button
-                  onClick={clearFilters}
-                  className="flex h-10 w-10 items-center justify-center rounded-card border border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 transition-all shadow-sm"
-                  title="Clear filters"
-                >
-                  <XCircle className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
+          )}
         </div>
 
         {view === 'chart' ? (
-          <div className="flex flex-col gap-3">
-            {!explicitTrendRange && (
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-                {TREND_RANGE_OPTIONS.map((days) => (
-                  <button
-                    key={days}
-                    onClick={() => setTrendDays(days)}
-                    className={cn(
-                      'h-8 shrink-0 rounded-full border px-3.5 text-xs font-bold transition-colors',
-                      trendDays === days
-                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                        : 'border-neutral-200 bg-white text-neutral-500 hover:text-neutral-900 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:text-white',
-                    )}
-                    aria-pressed={trendDays === days}
-                  >
-                    {t('postingTrend.lastNDays', { days })}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <PostingTrendChart from={trendRange.from} to={trendRange.to} height={280} />
-          </div>
+          <PostingTrendChart from={range.from} to={range.to} height={280} />
         ) : (
         <div className="overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-sm dark:border-white/5 dark:bg-neutral-900/50">
           {/* Header Row */}

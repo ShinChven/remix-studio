@@ -1703,11 +1703,14 @@ export async function fetchPostedCounts(from: string, to: string, timezoneOffset
   return handleResponse<PostedCountBucket[]>(res, 'Failed to fetch posted counts');
 }
 
-export async function fetchCampaignHistory(page = 1, pageSize = 25, startDate?: string, endDate?: string, q?: string): Promise<{ items: any[], total: number, page: number, pageSize: number, totalPages: number }> {
+export async function fetchCampaignHistory(page = 1, pageSize = 25, startDate?: string, endDate?: string, q?: string, timezoneOffsetMinutes?: number): Promise<{ items: any[], total: number, page: number, pageSize: number, totalPages: number }> {
   const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
   if (startDate) params.set('startDate', startDate);
   if (endDate) params.set('endDate', endDate);
   if (q) params.set('q', q);
+  // Date bounds are picked in the user's local calendar, so the server needs the
+  // offset to turn them into the right instants.
+  if (timezoneOffsetMinutes != null) params.set('timezoneOffsetMinutes', timezoneOffsetMinutes.toString());
   const res = await apiFetch(`/api/campaigns/history?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<any>(res, 'Failed to fetch campaign history');
 }
