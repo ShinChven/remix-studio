@@ -1222,6 +1222,17 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   ],
   BytePlus: [
     {
+      id: 'byteplus-seedream-5-0-pro',
+      name: 'Seedream 5.0 Pro',
+      generatorId: 'BytePlus',
+      modelId: 'dola-seedream-5-0-pro-260628',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
+        qualities: ['1K', '1.5K', '2K'],
+      },
+    },
+    {
       id: 'byteplus-seedream-5-0-lite',
       name: 'Seedream 5.0 Lite',
       generatorId: 'BytePlus',
@@ -1229,7 +1240,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'image',
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
-        qualities: ['2K', '3K'],
+        qualities: ['2K', '3K', '4K'],
       },
     },
     {

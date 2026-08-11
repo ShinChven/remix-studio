@@ -239,6 +239,47 @@ new suffix has to be added to `VIDEO_ENDPOINTS` in
 request body differs from the Seedance shape (Hailuo H3) get their own payload
 branch in the same file.
 
+### BytePlus (image)
+| Name | Model ID | Category | Resolution tiers |
+|---|---|---|---|
+| Seedream 5.0 Pro | `dola-seedream-5-0-pro-260628` | image | 1K, 1.5K, 2K |
+| Seedream 5.0 Lite | `seedream-5-0-260128` | image | 2K, 3K, 4K |
+| Seedream 4.5 | `seedream-4-5-251128` | image | 2K, 4K |
+| Seedream 4.0 | `seedream-4-0-250828` | image | 1K, 2K, 4K |
+| Seedream 3.0 T2I | `seedream-3-0-t2i-250415` | image | 1K only |
+| Seededit 3.0 I2I | `seededit-3-0-i2i-250628` | image | adaptive |
+
+All six share one endpoint (`POST {base}/images/generations`), but they do not
+share one request body, and Ark rejects a request outright when it carries a
+field the model does not take. `resolveTraits` in `byteplus-generator.ts` holds
+that per-model contract in one place — resolution tiers, reference-image
+ceiling, and which of `output_format`, `sequential_image_generation`, `seed` and
+`guidance_scale` may be sent — and the rest of the generator reads it rather
+than testing model IDs inline. A new Seedream model needs a branch there next to
+its `PROVIDER_MODELS_MAP` entry.
+
+Two traits are easy to get wrong. Seedream 5.0 Pro is capped at 4,624,220 total
+pixels, so it has no 3K or 4K tier and its own pixel table (16:9 at 1K is
+`1424x800`, not the `1280x720` the other models use) — that is `SIZE_MAP_5_PRO`,
+separate from the shared `SIZE_MAP`. And it is the one model that rejects
+`sequential_image_generation` and `stream` instead of ignoring them, so those
+fields are gated on the trait rather than sent everywhere. Model IDs are matched
+by pattern, not equality, so a dated release, the `dola-` prefix BytePlus puts
+on its international listings, and a custom endpoint ID all resolve to the right
+traits; an ID that matches nothing falls back to the fields every Ark image
+model accepts.
+
+Batch output (`sequential_image_generation: auto`, up to 15 images from one
+request) is deliberately not wired up: a job carries exactly one image through
+`GenerateResult` and the image processor, so the generator pins the field to
+`disabled` on the models that accept it. Streaming and `optimize_prompt_options`
+are unused for the same reason — nothing downstream consumes a partial result,
+and the default `standard` prompt-optimization mode is the higher-quality one.
+
+The `eu-west-1` region needs no code: set the model's API URL to
+`https://ark.eu-west.bytepluses.com/api/v3` and `normalizeBaseUrl` trims
+whatever form of the URL was pasted back to the API root.
+
 ---
 
 ## Temperature Ranges by Provider
