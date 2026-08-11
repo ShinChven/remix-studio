@@ -12,6 +12,21 @@
   "viewAllHistory": "すべての履歴を表示",
   "viewAllScheduled": "すべての予約を表示",
   "openCalendar": "カレンダーを開く",
+  "postingTrend": {
+    "title": "投稿トレンド",
+    "label": "配信済み",
+    "rangeSummary": "件 · 直近 {{days}} 日間",
+    "posted": "成功",
+    "failed": "失敗",
+    "postedCount": "成功 {{n}} 件",
+    "failedCount": "失敗 {{n}} 件",
+    "empty": "この期間に配信された投稿はありません",
+    "error": "グラフを読み込めませんでした",
+    "ariaLabel": "日別の投稿トレンド、この期間に {{n}} 件配信",
+    "listView": "リスト",
+    "chartView": "グラフ",
+    "lastNDays": "直近 {{days}} 日間"
+  },
   "status": {
     "active": "実行中",
     "paused": "一時停止中",

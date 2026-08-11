@@ -1691,6 +1691,18 @@ export async function fetchRecentPosts(limit = 20): Promise<any[]> {
   return handleResponse<any[]>(res, 'Failed to fetch recent posts');
 }
 
+export interface PostedCountBucket {
+  date: string;
+  posted: number;
+  failed: number;
+}
+
+export async function fetchPostedCounts(from: string, to: string, timezoneOffsetMinutes: number): Promise<PostedCountBucket[]> {
+  const params = new URLSearchParams({ from, to, timezoneOffsetMinutes: timezoneOffsetMinutes.toString() });
+  const res = await apiFetch(`/api/campaigns/posted-counts?${params.toString()}`, { headers: getHeaders(false) });
+  return handleResponse<PostedCountBucket[]>(res, 'Failed to fetch posted counts');
+}
+
 export async function fetchCampaignHistory(page = 1, pageSize = 25, startDate?: string, endDate?: string, q?: string): Promise<{ items: any[], total: number, page: number, pageSize: number, totalPages: number }> {
   const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
   if (startDate) params.set('startDate', startDate);

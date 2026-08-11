@@ -12,6 +12,21 @@
   "viewAllHistory": "모든 기록 보기",
   "viewAllScheduled": "모든 예약 보기",
   "openCalendar": "캘린더 열기",
+  "postingTrend": {
+    "title": "게시 추이",
+    "label": "전송됨",
+    "rangeSummary": "건 · 최근 {{days}}일",
+    "posted": "성공",
+    "failed": "실패",
+    "postedCount": "성공 {{n}}건",
+    "failedCount": "실패 {{n}}건",
+    "empty": "이 기간에 전송된 게시물이 없습니다",
+    "error": "차트를 불러오지 못했습니다",
+    "ariaLabel": "일별 게시 추이, 이 기간에 {{n}}건 전송",
+    "listView": "목록",
+    "chartView": "차트",
+    "lastNDays": "최근 {{days}}일"
+  },
   "status": {
     "active": "활성 캠페인",
     "paused": "일시 정지됨",
