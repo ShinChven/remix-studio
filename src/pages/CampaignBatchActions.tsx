@@ -11,6 +11,7 @@ import {
   Sparkles,
   Trash2,
   Type,
+  Video as VideoIcon,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,6 +31,7 @@ import { BatchSetTextModal } from '../components/BatchSetTextModal';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { PageNav } from '../components/PageNav';
+import { PostMediaItem, PostMediaLightbox, postMediaThumbUrl } from '../components/PostMediaLightbox';
 
 interface BatchPost {
   id: string;
@@ -37,13 +39,7 @@ interface BatchPost {
   status: string;
   scheduledAt?: string | null;
   createdAt?: string;
-  media?: Array<{
-    id: string;
-    sourceUrl?: string | null;
-    processedUrl?: string | null;
-    thumbnailUrl?: string | null;
-    type?: string;
-  }>;
+  media?: PostMediaItem[];
 }
 
 type SortKey = 'scheduled_asc' | 'scheduled_desc' | 'created_desc' | 'created_asc';
@@ -69,13 +65,6 @@ function statusClass(status: string) {
   return 'bg-red-500/10 text-red-600 dark:text-red-400';
 }
 
-function mediaPreviewUrl(media: BatchPost['media'][number]) {
-  const value = media.thumbnailUrl || media.processedUrl || media.sourceUrl || '';
-  if (!value) return '';
-  if (/^https?:\/\//i.test(value) || value.startsWith('/')) return value;
-  return `/api/storage/${value}`;
-}
-
 export function CampaignBatchActions() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -94,7 +83,7 @@ export function CampaignBatchActions() {
   const [aiTask, setAiTask] = useState<BatchGenerateTextResult | null>(null);
   const [setTextOpen, setSetTextOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [previewMedia, setPreviewMedia] = useState<string[] | null>(null);
+  const [previewMedia, setPreviewMedia] = useState<{ media: PostMediaItem[]; index: number } | null>(null);
 
   const searchQuery = searchParams.get('q') || '';
   const statusFilter = searchParams.get('status') || 'all';
@@ -486,7 +475,8 @@ export function CampaignBatchActions() {
               <tbody className="divide-y divide-neutral-200 dark:divide-white/10">
                 {visiblePosts.map((post, index) => {
                   const selected = selectedPostIds.includes(post.id);
-                  const mediaUrls = (post.media || []).map(mediaPreviewUrl).filter(Boolean);
+                  const postMedia = post.media || [];
+                  const coverThumb = postMedia[0] ? postMediaThumbUrl(postMedia[0]) : '';
                   return (
                     <tr key={post.id} className={cn('transition-colors', selected && 'bg-neutral-950/5 dark:bg-white/5')}>
                       <td className="px-5 py-4">
@@ -504,17 +494,23 @@ export function CampaignBatchActions() {
                         {post.scheduledAt ? new Date(post.scheduledAt).toLocaleString() : 'Not scheduled'}
                       </td>
                       <td className="px-5 py-4">
-                        {mediaUrls.length > 0 ? (
+                        {postMedia.length > 0 ? (
                           <button
                             type="button"
-                            onClick={() => setPreviewMedia(mediaUrls)}
-                            title={`View ${mediaUrls.length} media item${mediaUrls.length === 1 ? '' : 's'}`}
+                            onClick={() => setPreviewMedia({ media: postMedia, index: 0 })}
+                            title={`View ${postMedia.length} media item${postMedia.length === 1 ? '' : 's'}`}
                             className="group/thumb relative h-14 w-14 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 shadow-sm transition hover:ring-2 hover:ring-indigo-500/50 dark:border-white/10 dark:bg-neutral-800"
                           >
-                            <img src={mediaUrls[0]} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover transition group-hover/thumb:scale-105" />
-                            {mediaUrls.length > 1 && (
+                            {coverThumb ? (
+                              <img src={coverThumb} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover transition group-hover/thumb:scale-105" />
+                            ) : (
+                              <span className="flex h-full w-full items-center justify-center text-neutral-400">
+                                <VideoIcon className="h-5 w-5" />
+                              </span>
+                            )}
+                            {postMedia.length > 1 && (
                               <span className="absolute bottom-0 right-0 rounded-tl-lg bg-neutral-950/75 px-1.5 text-[10px] font-bold leading-5 text-white">
-                                +{mediaUrls.length - 1}
+                                +{postMedia.length - 1}
                               </span>
                             )}
                           </button>
@@ -563,21 +559,12 @@ export function CampaignBatchActions() {
       </div>
 
       {previewMedia && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" onClick={() => setPreviewMedia(null)}>
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-card border border-neutral-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95" onClick={(event) => event.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-neutral-950 dark:text-white">Post Media</h2>
-              <button className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white" onClick={() => setPreviewMedia(null)}><X className="h-5 w-5" /></button>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-              {previewMedia.map((url, index) => (
-                <div key={`${url}-${index}`} className="aspect-square overflow-hidden rounded-card bg-neutral-900">
-                  <img src={url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <PostMediaLightbox
+          media={previewMedia.media}
+          index={previewMedia.index}
+          onIndexChange={(index) => setPreviewMedia((current) => (current ? { ...current, index } : current))}
+          onClose={() => setPreviewMedia(null)}
+        />
       )}
 
       {deleteOpen && (

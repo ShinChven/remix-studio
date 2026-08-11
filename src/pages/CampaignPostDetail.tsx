@@ -3,8 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   ExternalLink,
   Image as ImageIcon,
@@ -29,6 +27,7 @@ import {
 import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
+import { PostMediaLightbox, postMediaThumbUrl, postMediaUrl } from '../components/PostMediaLightbox';
 import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 import { getPlatformIcon } from '../lib/platform';
@@ -82,20 +81,6 @@ function toDatetimeLocal(date: Date): string {
 
 function displayAccountName(account: SocialAccount) {
   return account.profileName || account.accountId || account.platform;
-}
-
-function mediaUrl(media: PostMedia) {
-  const value = media.processedUrl || media.sourceUrl || media.thumbnailUrl || '';
-  if (!value) return '';
-  if (/^https?:\/\//i.test(value) || value.startsWith('/')) return value;
-  return `/api/storage/${value}`;
-}
-
-function mediaPosterUrl(media: PostMedia) {
-  const value = media.thumbnailUrl || '';
-  if (!value) return '';
-  if (/^https?:\/\//i.test(value) || value.startsWith('/')) return value;
-  return `/api/storage/${value}`;
 }
 
 function statusLabel(status: string) {
@@ -169,21 +154,6 @@ export function CampaignPostDetail() {
       window.clearInterval(timer);
     };
   }, [aiTask?.batchId, aiTask?.status]);
-
-  useEffect(() => {
-    if (!lightbox) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setLightbox(null);
-      if (event.key === 'ArrowRight') {
-        setLightbox((current) => current ? { ...current, index: (current.index + 1) % current.media.length } : current);
-      }
-      if (event.key === 'ArrowLeft') {
-        setLightbox((current) => current ? { ...current, index: (current.index - 1 + current.media.length) % current.media.length } : current);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightbox]);
 
   const connectedAccounts = post?.campaign?.socialAccounts || [];
   const active = post?.campaign?.status === 'active';
@@ -349,14 +319,12 @@ export function CampaignPostDetail() {
           {post.media && post.media.length > 0 && (
             <div className={cn('grid gap-1.5 overflow-hidden rounded-card border border-neutral-200 shadow-sm dark:border-white/10', post.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
               {post.media.map((media, index) => {
-                const url = mediaUrl(media);
-                const posterUrl = media.type === 'video' ? mediaPosterUrl(media) : '';
+                const url = postMediaUrl(media);
+                const thumbUrl = postMediaThumbUrl(media);
                 return (
                   <button key={media.id} type="button" className="group/media relative aspect-video overflow-hidden bg-neutral-100 text-left dark:bg-neutral-800" onClick={() => setLightbox({ media: post.media || [], index })} aria-label={`Open media ${index + 1}`}>
-                    {url && media.type !== 'video' ? (
-                      <img src={url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover object-top" />
-                    ) : posterUrl && media.type === 'video' ? (
-                      <img src={posterUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover object-top" />
+                    {thumbUrl ? (
+                      <img src={thumbUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover object-top" />
                     ) : url && media.type === 'video' ? (
                       <video src={url} className="h-full w-full object-cover object-top" muted playsInline preload="metadata" />
                     ) : (
@@ -455,36 +423,12 @@ export function CampaignPostDetail() {
       </article>
 
       {lightbox && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/95 p-4 backdrop-blur-md" onClick={() => setLightbox(null)}>
-          <button type="button" className="absolute right-5 top-5 z-[122] flex h-11 w-11 items-center justify-center rounded-full text-white transition hover:bg-white/10" onClick={() => setLightbox(null)} aria-label="Close media viewer">
-            <X className="h-6 w-6" />
-          </button>
-          {lightbox.media.length > 1 && (
-            <>
-              <button type="button" className="absolute left-4 top-1/2 z-[122] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full text-white transition hover:bg-white/10 md:flex" onClick={(event) => {
-                event.stopPropagation();
-                setLightbox((current) => current ? { ...current, index: (current.index - 1 + current.media.length) % current.media.length } : current);
-              }} aria-label="Previous media">
-                <ChevronLeft className="h-8 w-8" />
-              </button>
-              <button type="button" className="absolute right-4 top-1/2 z-[122] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full text-white transition hover:bg-white/10 md:flex" onClick={(event) => {
-                event.stopPropagation();
-                setLightbox((current) => current ? { ...current, index: (current.index + 1) % current.media.length } : current);
-              }} aria-label="Next media">
-                <ChevronRight className="h-8 w-8" />
-              </button>
-            </>
-          )}
-          <div className="flex h-full w-full items-center justify-center" onClick={(event) => event.stopPropagation()}>
-            {(() => {
-              const item = lightbox.media[lightbox.index];
-              const url = item ? mediaUrl(item) : '';
-              if (!url) return <div className="text-sm font-medium text-white/70">Media is not available</div>;
-              if (item.type === 'video') return <video src={url} className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" controls autoPlay playsInline />;
-              return <img src={url} alt="" referrerPolicy="no-referrer" className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" />;
-            })()}
-          </div>
-        </div>
+        <PostMediaLightbox
+          media={lightbox.media}
+          index={lightbox.index}
+          onIndexChange={(index) => setLightbox((current) => (current ? { ...current, index } : current))}
+          onClose={() => setLightbox(null)}
+        />
       )}
 
       {aiOpen && (
