@@ -265,7 +265,7 @@ export function CopyToLibraryDialog({
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 p-4 sm:p-6">
           <button
             onClick={onClose}
-            className="w-full sm:w-auto px-6 py-3 sm:py-2.5 text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-400 transition-all hover:text-white border border-neutral-200/80 dark:border-neutral-800/80 sm:border-transparent rounded-xl"
+            className="w-full sm:w-auto px-6 py-3 sm:py-2.5 text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-400 transition-all hover:text-neutral-900 dark:hover:text-white border border-neutral-200/80 dark:border-neutral-800/80 sm:border-transparent rounded-xl"
             disabled={isSubmitting}
           >
             {t('projectViewer.common.cancel')}

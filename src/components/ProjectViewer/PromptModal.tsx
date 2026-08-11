@@ -59,7 +59,7 @@ export function PromptModal({ item, onClose, onSave }: PromptModalProps) {
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2.5 sm:px-6 text-neutral-600 dark:text-neutral-400 hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
+              className="px-4 py-2.5 sm:px-6 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
             >
               {t('projectViewer.common.cancel')}
             </button>

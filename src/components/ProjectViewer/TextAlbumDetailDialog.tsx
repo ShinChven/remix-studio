@@ -65,7 +65,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] bg-black/60 dark:bg-black/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
       {hasMultipleItems && (
         <button
           onClick={showPrev}
@@ -83,7 +83,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
         aria-label={t('projectViewer.textDetail.dialogAria')}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-white/10 bg-black/30 px-4 py-3 md:px-6">
+        <div className="flex items-center justify-between border-b border-neutral-200 dark:border-white/10 bg-white dark:bg-black/30 px-4 py-3 md:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="p-2.5 bg-blue-600/10 rounded-xl">
               <FileText className="w-5 h-5 text-blue-500" />
@@ -102,14 +102,14 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
               <div className="flex items-center gap-1 md:gap-2">
                 <button
                   onClick={showPrev}
-                  className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                  className="p-2 text-neutral-500 dark:text-white/50 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-all"
                   aria-label={t('projectViewer.textDetail.previousItem')}
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button
                   onClick={showNext}
-                  className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                  className="p-2 text-neutral-500 dark:text-white/50 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-all"
                   aria-label={t('projectViewer.textDetail.nextItem')}
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -118,7 +118,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
             )}
             <button
               onClick={onClose}
-              className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+              className="p-2 text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-all"
               aria-label={t('projectViewer.textDetail.closeAria')}
             >
               <X className="w-5 h-5" />
@@ -127,7 +127,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
         </div>
 
         <div className="grid flex-1 min-h-0 grid-cols-1 lg:grid-cols-[minmax(280px,34vw)_1fr]">
-          <section className="min-h-0 border-b border-white/10 bg-neutral-50/60 dark:bg-neutral-950/60 lg:border-b-0 lg:border-r">
+          <section className="min-h-0 border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-neutral-950/60 lg:border-b-0 lg:border-r">
             <div className="flex h-full flex-col">
               <div className="px-4 md:px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
@@ -180,7 +180,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
             </div>
           </section>
 
-          <section className="min-h-0 bg-black/20">
+          <section className="min-h-0 bg-white dark:bg-black/20">
             <div className="flex h-full flex-col">
               <div className="px-4 md:px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
@@ -197,7 +197,7 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
-                <div className="mx-auto max-w-4xl whitespace-pre-wrap break-words text-base md:text-lg text-neutral-100 leading-relaxed">
+                <div className="mx-auto max-w-4xl whitespace-pre-wrap break-words text-base md:text-lg text-neutral-900 dark:text-neutral-100 leading-relaxed">
                   {item.textContent || t('projectViewer.textDetail.noGeneratedText')}
                 </div>
               </div>
@@ -205,11 +205,11 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
           </section>
         </div>
 
-        <div className="flex items-center justify-between gap-4 border-t border-white/10 bg-black/30 px-4 py-3 md:px-6">
-          <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+        <div className="flex items-center justify-between gap-4 border-t border-neutral-200 dark:border-white/10 bg-white dark:bg-black/30 px-4 py-3 md:px-6">
+          <div className="text-[10px] font-bold text-neutral-500 dark:text-neutral-600 uppercase tracking-widest">
             {t('projectViewer.textDetail.characterCount', { count: (item.textContent || '').length })}
           </div>
-          <div className="hidden md:block text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+          <div className="hidden md:block text-[10px] font-bold text-neutral-500 dark:text-neutral-600 uppercase tracking-widest">
             {t('projectViewer.textDetail.keyboardHint')}
           </div>
         </div>

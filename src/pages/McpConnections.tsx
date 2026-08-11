@@ -593,7 +593,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                   </div>
                   <button
                     onClick={handleCloseNewToken}
-                    className="text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-white transition-colors"
+                    className="text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
                   >
                     {t('mcpConnections.tokens.form.done')}
                   </button>
@@ -638,7 +638,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                     </button>
                     <button
                       onClick={() => { setShowCreatePat(false); setPatName(''); setPatExpiry(0); }}
-                      className="flex-1 sm:flex-none text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                      className="flex-1 sm:flex-none text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
                     >
                       {t('mcpConnections.tokens.form.cancel')}
                     </button>
@@ -774,7 +774,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                 </button>
                 <button
                   onClick={() => { setEditingClient(null); setEditingRedirectUrisText(''); }}
-                  className="flex-1 sm:flex-none text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                  className="flex-1 sm:flex-none text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
                 >
                   {t('mcpConnections.tokens.form.cancel')}
                 </button>
@@ -840,7 +840,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                   </div>
                   <button
                     onClick={handleCloseNewClient}
-                    className="text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-white transition-colors"
+                    className="text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
                   >
                     {t('mcpConnections.tokens.form.done')}
                   </button>
@@ -896,7 +896,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                     </button>
                     <button
                       onClick={handleCloseNewClient}
-                      className="flex-1 sm:flex-none text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                      className="flex-1 sm:flex-none text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white px-6 py-2.5 rounded-xl transition-colors bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
                     >
                       {t('mcpConnections.tokens.form.cancel')}
                     </button>

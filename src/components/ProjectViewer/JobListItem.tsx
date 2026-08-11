@@ -69,7 +69,7 @@ export function JobListItem({
     ? accentClasses[accentColor]
     : isExpanded
       ? expandedClasses[accentColor]
-      : `border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 ${borderClassName}`.trim();
+      : `border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 ${borderClassName}`.trim();
 
   return (
     <div className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300 border-b border-neutral-200/50 dark:border-neutral-800/50">
@@ -83,7 +83,7 @@ export function JobListItem({
               e.stopPropagation();
               onToggleSelect(job.id, e.shiftKey);
             }}
-            className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isSelected ? selectedTextClasses[accentColor] : 'text-neutral-500 dark:text-neutral-500 hover:text-white'}`}
+            className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isSelected ? selectedTextClasses[accentColor] : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-900 dark:hover:text-white'}`}
           >
             {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
           </button>

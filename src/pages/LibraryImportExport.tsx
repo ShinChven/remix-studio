@@ -380,7 +380,7 @@ export function LibraryImportExport() {
           <div className="flex items-start gap-3 md:gap-4">
             <button
               onClick={() => navigate(`/library/${id}`)}
-              className="mt-0.5 md:mt-1 rounded-card border border-neutral-200/80 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-950/70 p-2 md:p-3 text-neutral-500 dark:text-neutral-500 transition-all hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/80"
+              className="mt-0.5 md:mt-1 rounded-card border border-neutral-200/80 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-950/70 p-2 md:p-3 text-neutral-500 dark:text-neutral-500 transition-all hover:border-neutral-300 dark:hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/80"
             >
               <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
             </button>
@@ -473,7 +473,7 @@ export function LibraryImportExport() {
                   </button>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-blue-300 transition-all hover:bg-blue-500 hover:text-white"
+                    className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300 transition-all hover:bg-blue-500 hover:text-white"
                   >
                     <UploadCloud className="h-4 w-4" />
                     {t('libraryImportExport.importSource.uploadText')}
@@ -523,7 +523,7 @@ export function LibraryImportExport() {
               className={`relative mt-5 flex min-h-[320px] flex-1 flex-col rounded-card border-2 border-dashed p-4 transition-all md:p-5 ${
                 isDragOver
                   ? 'border-blue-500 bg-blue-500/8 shadow-[0_0_0_1px_rgba(59,130,246,0.25)]'
-                  : 'border-neutral-200/80 dark:border-neutral-800/80 bg-white/35 dark:bg-neutral-900/35 hover:border-neutral-700/90'
+                  : 'border-neutral-200/80 dark:border-neutral-800/80 bg-white/35 dark:bg-neutral-900/35 hover:border-neutral-300 dark:hover:border-neutral-700/90'
               }`}
               onDragOver={(event) => {
                 event.preventDefault();
@@ -754,7 +754,7 @@ export function LibraryImportExport() {
                 <button
                   onClick={handleCopyOutput}
                   disabled={!currentExportText}
-                  className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/90 dark:bg-neutral-950/90 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-neutral-700 dark:text-neutral-300 transition-all hover:border-neutral-700 hover:text-white disabled:opacity-35"
+                  className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/90 dark:bg-neutral-950/90 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-neutral-700 dark:text-neutral-300 transition-all hover:border-neutral-300 dark:hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-white disabled:opacity-35"
                 >
                   <Copy className="h-4 w-4" />
                   {t('libraryImportExport.output.copy')}
@@ -762,7 +762,7 @@ export function LibraryImportExport() {
                 <button
                   onClick={handleDownloadOutput}
                   disabled={!currentExportText}
-                  className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-blue-300 transition-all hover:bg-blue-500 hover:text-white disabled:opacity-35"
+                  className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300 transition-all hover:bg-blue-500 hover:text-white disabled:opacity-35"
                 >
                   <Download className="h-4 w-4" />
                   {t('libraryImportExport.output.download', { ext: exportFormat === 'json' ? 'json' : 'md' })}

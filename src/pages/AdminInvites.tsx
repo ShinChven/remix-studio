@@ -170,7 +170,7 @@ export function AdminInvites() {
                             <button
                               type="button"
                               onClick={() => void copyText(invite.code, t('adminInvites.codeCopied'))}
-                              className="text-neutral-500 dark:text-neutral-500 transition hover:text-white"
+                              className="text-neutral-500 dark:text-neutral-500 transition hover:text-neutral-900 dark:hover:text-white"
                               title={t('adminInvites.copyCode')}
                             >
                               <Copy className="h-4 w-4" />
