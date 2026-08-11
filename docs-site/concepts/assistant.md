@@ -13,6 +13,7 @@ The chat runtime currently supports provider records of these types:
 - **Claude (Anthropic)**
 - **Alibaba Cloud**
 - **Kimi (Moonshot AI)**
+- **MiniMax**
 
 Other provider families may generate project assets without being available as the assistant's chat model. A saved provider must belong to the user and contain a decryptable API key. API URL overrides are honored after the same URL-safety validation used elsewhere in the server.
 

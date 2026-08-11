@@ -50,7 +50,7 @@ See [Model Profiles](/concepts/models) for the bundled matrix.
 
 ## Assistant Compatibility
 
-Generation support and assistant-chat support are separate. The in-app assistant currently accepts provider records of type Google AI, OpenAI, Claude, Alibaba Cloud, and Kimi. Other provider families can still appear in project model selectors when their generators are implemented.
+Generation support and assistant-chat support are separate. The in-app assistant currently accepts provider records of type Google AI, OpenAI, Claude, Alibaba Cloud, Kimi, and MiniMax. Other provider families can still appear in project model selectors when their generators are implemented.
 
 See [The Assistant](/concepts/assistant).
 
@@ -73,7 +73,7 @@ URL validation rejects unsafe endpoint forms, including attempts to direct provi
 
 ## Supported Families
 
-The repository includes generation adapters and bundled profiles across Google AI, Vertex AI, OpenAI, Grok, Claude, Alibaba Cloud, Kimi, RunningHub, BytePlus, Kling AI, Black Forest Labs, and Replicate. Supported modalities differ by family and model; consult [Model Profiles](/concepts/models) rather than assuming every family supports text, image, video, and audio.
+The repository includes generation adapters and bundled profiles across Google AI, Vertex AI, OpenAI, Grok, Claude, Alibaba Cloud, Kimi, MiniMax, RunningHub, BytePlus, Kling AI, Black Forest Labs, and Replicate. Supported modalities differ by family and model; consult [Model Profiles](/concepts/models) rather than assuming every family supports text, image, video, and audio.
 
 ## Credential Encryption
 

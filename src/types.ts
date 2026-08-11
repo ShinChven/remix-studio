@@ -1482,6 +1482,148 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  MiniMax: [
+    {
+      id: 'minimax-m3-text',
+      name: 'MiniMax M3',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-M3',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
+    {
+      id: 'minimax-m2.7-text',
+      name: 'MiniMax M2.7',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-M2.7',
+      category: 'text',
+      promptLimit: { value: 204800, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'minimax-m2.7-highspeed-text',
+      name: 'MiniMax M2.7 Highspeed',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-M2.7-highspeed',
+      category: 'text',
+      promptLimit: { value: 204800, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'minimax-m2.5-text',
+      name: 'MiniMax M2.5',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-M2.5',
+      category: 'text',
+      promptLimit: { value: 204800, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'minimax-m2.5-highspeed-text',
+      name: 'MiniMax M2.5 Highspeed',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-M2.5-highspeed',
+      category: 'text',
+      promptLimit: { value: 204800, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'minimax-m2.1-text',
+      name: 'MiniMax M2.1',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-M2.1',
+      category: 'text',
+      promptLimit: { value: 204800, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'minimax-m2.1-highspeed-text',
+      name: 'MiniMax M2.1 Highspeed',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-M2.1-highspeed',
+      category: 'text',
+      promptLimit: { value: 204800, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'minimax-m2-text',
+      name: 'MiniMax M2',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-M2',
+      category: 'text',
+      promptLimit: { value: 204800, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'minimax-image-01',
+      name: 'MiniMax Image 01',
+      generatorId: 'MiniMax',
+      modelId: 'image-01',
+      category: 'image',
+      promptLimit: { value: 1500, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '16:9', '4:3', '3:2', '2:3', '3:4', '9:16', '21:9'],
+        // Tiers are rendered as explicit pixel dimensions by the generator;
+        // 2K is the [512, 2048] per-side ceiling the API accepts.
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'minimax-hailuo-h3-video',
+      name: 'MiniMax Hailuo H3',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-H3',
+      category: 'video',
+      promptLimit: { value: 7000, unit: 'characters' },
+      options: {
+        // Text-to-video rejects `adaptive`, so a concrete ratio leads. With a
+        // first/last frame the output always follows the input image.
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive'],
+        resolutions: ['768P', '2K'],
+        durations: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        supportsReferenceImages: true,
+        supportsReferenceVideo: true,
+        supportsReferenceAudio: true,
+      },
+    },
+    {
+      id: 'minimax-music-3.0-audio',
+      name: 'MiniMax Music 3.0',
+      generatorId: 'MiniMax',
+      modelId: 'music-3.0',
+      category: 'audio',
+      promptLimit: { value: 3500, unit: 'characters' },
+      options: {
+        audioFormats: ['mp3', 'wav'],
+        audioGenerationKind: 'music',
+      },
+    },
+  ],
   BlackForestLabs: [
     {
       id: 'bfl-flux-2-max',
@@ -1722,7 +1864,7 @@ export interface Project {
   showDisabledItems?: boolean;
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud' | 'Kimi';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud' | 'Kimi' | 'MiniMax';
 
 /**
  * A custom model variant that inherits all options from a built-in base model

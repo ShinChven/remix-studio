@@ -21,6 +21,7 @@ const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
   BlackForestLabs: { icon: 'bg-stone-500/10 text-stone-800 dark:text-stone-200', badge: 'bg-stone-600/10 text-stone-800 dark:text-stone-200 border-stone-600/20 dark:border-stone-600/30' },
   Alibabacloud: { icon: 'bg-violet-500/10 text-violet-600 dark:text-violet-400', badge: 'bg-violet-600/10 text-violet-700 dark:text-violet-400 border-violet-600/20 dark:border-violet-600/30' },
   Kimi:       { icon: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400', badge: 'bg-indigo-600/10 text-indigo-700 dark:text-indigo-400 border-indigo-600/20 dark:border-indigo-600/30' },
+  MiniMax:    { icon: 'bg-red-500/10 text-red-600 dark:text-red-400', badge: 'bg-red-600/10 text-red-700 dark:text-red-400 border-red-600/20 dark:border-red-600/30' },
 };
 const DEFAULT_TYPE_COLORS = {
   icon: 'bg-neutral-500/10 text-neutral-600 dark:text-neutral-300',

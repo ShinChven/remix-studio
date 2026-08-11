@@ -7,6 +7,7 @@ import { BytePlusVideoGenerator } from './byteplus-video-generator';
 import { KlingAIVideoGenerator } from './kling-ai-video-generator';
 import { RunningHubVideoGenerator } from './running-hub-video-generator';
 import { ReplicateVideoGenerator } from './replicate-video-generator';
+import { MiniMaxVideoGenerator } from './minimax-video-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -40,6 +41,8 @@ export function buildVideoGenerator(
       return new BytePlusVideoGenerator(apiKey, safeApiUrl);
     case 'Replicate':
       return new ReplicateVideoGenerator(apiKey, safeApiUrl);
+    case 'MiniMax':
+      return new MiniMaxVideoGenerator(apiKey, safeApiUrl);
     case 'BlackForestLabs':
       throw new Error(`Provider type 'BlackForestLabs' does not support video generation`);
     case 'Alibabacloud':

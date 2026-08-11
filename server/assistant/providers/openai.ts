@@ -29,6 +29,14 @@ function outputTokenParam(modelId: string, maxTokens: number): Record<string, nu
 export class OpenAIChatProvider implements ChatProvider {
   protected client: OpenAI;
 
+  /**
+   * Extra request-body fields for OpenAI-compatible endpoints that need one
+   * (MiniMax uses it to keep the model's reasoning out of `content`).
+   */
+  protected extraBody(): Record<string, unknown> {
+    return {};
+  }
+
   constructor(apiKey: string, apiUrl?: string) {
     let finalBaseUrl = apiUrl || undefined;
     if (finalBaseUrl && !finalBaseUrl.includes('/v1') && !finalBaseUrl.includes('openai.azure.com') && !finalBaseUrl.includes('localhost') && !finalBaseUrl.includes('127.0.0.1')) {
@@ -41,14 +49,16 @@ export class OpenAIChatProvider implements ChatProvider {
     const messages = mapMessages(req.messages);
     const tools = req.tools.length > 0 ? req.tools.map(mapTool) : undefined;
 
+    const params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
+      model: req.modelId,
+      messages,
+      ...(typeof req.temperature === 'number' ? { temperature: req.temperature } : {}),
+      ...(typeof req.maxTokens === 'number' ? outputTokenParam(req.modelId, req.maxTokens) : {}),
+      ...(tools ? { tools, tool_choice: 'auto' as const } : {}),
+    };
+
     const response = await this.client.chat.completions.create(
-      {
-        model: req.modelId,
-        messages,
-        ...(typeof req.temperature === 'number' ? { temperature: req.temperature } : {}),
-        ...(typeof req.maxTokens === 'number' ? outputTokenParam(req.modelId, req.maxTokens) : {}),
-        ...(tools ? { tools, tool_choice: 'auto' as const } : {}),
-      },
+      { ...params, ...this.extraBody() } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
       { signal: req.abortSignal },
     );
 

@@ -2,6 +2,7 @@ import type { ProviderType } from '../../src/types';
 import { AudioGenerator } from './audio-generator';
 import { GoogleAIAudioGenerator } from './google-ai-audio-generator';
 import { VertexAIAudioGenerator } from './vertex-ai-audio-generator';
+import { MiniMaxAudioGenerator } from './minimax-audio-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 export function buildAudioGenerator(
@@ -16,6 +17,8 @@ export function buildAudioGenerator(
       return new GoogleAIAudioGenerator(apiKey, safeApiUrl);
     case 'VertexAI':
       return new VertexAIAudioGenerator(apiKey, safeApiUrl);
+    case 'MiniMax':
+      return new MiniMaxAudioGenerator(apiKey, safeApiUrl);
     case 'RunningHub':
     case 'KlingAI':
     case 'OpenAI':

@@ -5,6 +5,7 @@ import { ClaudeChatProvider } from './providers/anthropic';
 import { GoogleAIChatProvider } from './providers/google';
 import { AlibabacloudChatProvider } from './providers/alibabacloud';
 import { KimiChatProvider } from './providers/kimi';
+import { MiniMaxChatProvider } from './providers/minimax';
 import type { ProviderRepository } from '../db/provider-repository';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
@@ -14,6 +15,7 @@ export const ASSISTANT_SUPPORTED_PROVIDER_TYPES: ProviderType[] = [
   'GoogleAI',
   'Alibabacloud',
   'Kimi',
+  'MiniMax',
 ];
 
 export function isAssistantCapableProviderType(type: ProviderType): boolean {
@@ -33,6 +35,8 @@ export function buildChatProvider(type: ProviderType, apiKey: string, apiUrl?: s
       return new AlibabacloudChatProvider(apiKey, safeApiUrl);
     case 'Kimi':
       return new KimiChatProvider(apiKey, safeApiUrl);
+    case 'MiniMax':
+      return new MiniMaxChatProvider(apiKey, safeApiUrl);
     default:
       throw new Error(`Provider type '${type}' is not supported by the assistant chat runtime`);
   }

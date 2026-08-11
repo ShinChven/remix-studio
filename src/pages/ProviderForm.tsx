@@ -7,7 +7,7 @@ import { Save, Eye, EyeOff, Loader2, MessageSquare, Image as ImageIcon, Video, M
 import { ProviderIcon } from '../components/ProviderIcon';
 import { NumberInput } from '../components/NumberInput';
 
-const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'Alibabacloud', 'Kimi', 'RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs'];
+const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'Alibabacloud', 'Kimi', 'MiniMax', 'RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs'];
 
 
 
