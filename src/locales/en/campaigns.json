@@ -25,7 +25,16 @@
     "ariaLabel": "Daily posting trend, {{n}} posts delivered in this period",
     "listView": "List",
     "chartView": "Chart",
-    "lastNDays": "Last {{days}} days"
+    "lastNDays": "Last {{days}} days",
+    "rangeSummaryAllTime": "posts all time",
+    "lastYear": "Last 1 year",
+    "allTime": "All time",
+    "customRange": "Custom",
+    "rangeStart": "Start date",
+    "rangeEnd": "End date",
+    "resetRange": "Reset",
+    "perWeek": "Weekly",
+    "perMonth": "Monthly"
   },
   "status": {
     "active": "Active Campaign",

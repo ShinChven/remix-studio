@@ -25,7 +25,16 @@
     "ariaLabel": "일별 게시 추이, 이 기간에 {{n}}건 전송",
     "listView": "목록",
     "chartView": "차트",
-    "lastNDays": "최근 {{days}}일"
+    "lastNDays": "최근 {{days}}일",
+    "rangeSummaryAllTime": "건 · 전체 기간",
+    "lastYear": "최근 1년",
+    "allTime": "전체 기간",
+    "customRange": "사용자 지정",
+    "rangeStart": "시작일",
+    "rangeEnd": "종료일",
+    "resetRange": "초기화",
+    "perWeek": "주 단위",
+    "perMonth": "월 단위"
   },
   "status": {
     "active": "활성 캠페인",

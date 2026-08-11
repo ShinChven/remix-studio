@@ -25,7 +25,16 @@
     "ariaLabel": "每日投送趋势，该时间段共投送 {{n}} 条",
     "listView": "列表",
     "chartView": "图表",
-    "lastNDays": "最近 {{days}} 天"
+    "lastNDays": "最近 {{days}} 天",
+    "rangeSummaryAllTime": "条 · 全部时间",
+    "lastYear": "最近 1 年",
+    "allTime": "全部时间",
+    "customRange": "自定义",
+    "rangeStart": "开始日期",
+    "rangeEnd": "结束日期",
+    "resetRange": "重置",
+    "perWeek": "按周",
+    "perMonth": "按月"
   },
   "status": {
     "active": "正在进行",

@@ -25,7 +25,16 @@
     "ariaLabel": "每日投送趨勢，此期間共投送 {{n}} 則",
     "listView": "列表",
     "chartView": "圖表",
-    "lastNDays": "最近 {{days}} 天"
+    "lastNDays": "最近 {{days}} 天",
+    "rangeSummaryAllTime": "則 · 全部時間",
+    "lastYear": "最近 1 年",
+    "allTime": "全部時間",
+    "customRange": "自訂",
+    "rangeStart": "開始日期",
+    "rangeEnd": "結束日期",
+    "resetRange": "重設",
+    "perWeek": "按週",
+    "perMonth": "按月"
   },
   "status": {
     "active": "正在進行",
