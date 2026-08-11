@@ -127,7 +127,7 @@ const MAX_CONTENT_PREVIEW_CHARS = 4096;
 // A page of posts carries many bodies at once, so previews stay short — callers
 // fetch the full copy with get_post_text once they know which post they want.
 const MAX_POST_PREVIEW_CHARS = 280;
-const MAX_DRAFT_JOBS_PER_CALL = 200;
+const MAX_DRAFT_JOBS_PER_CALL = 10000;
 const MAX_JOB_FILENAME_LENGTH = 200;
 /** Same rough per-job reservation the REST job routes use for quota checks. */
 const JOB_STORAGE_ESTIMATE_BYTES = 25 * 1024 * 1024;

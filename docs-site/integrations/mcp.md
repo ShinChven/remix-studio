@@ -105,7 +105,7 @@ Important boundaries:
 - Prompt creation/deletion is for **text libraries**.
 - `update_library_item` can update text content only for a text library; batch updates change titles/tags only and accept at most 100 items.
 - `update_project` replaces the entire workflow when `workflowItems` is supplied. Call `get_project` immediately beforehand and carry forward every step that should remain.
-- `draft_jobs` takes its prompts, provider, model, and generation settings from the project itself — set them with `update_project` first. It creates at most 200 drafts per call; call it again for larger batches.
+- `draft_jobs` takes its prompts, provider, model, and generation settings from the project itself — set them with `update_project` first. It creates at most 10000 drafts per call; call it again for larger batches.
 - `start_jobs` consumes drafts oldest first and runs generation against the user's provider, which costs credits. Omit `count` to start every draft.
 - Export tools are confirmation-gated writes because the archive they produce consumes the user's storage quota. Polling with `task_id` goes through the same protocol.
 - Media added to a post must be an internal storage key already owned by the authenticated user and valid for that campaign.
