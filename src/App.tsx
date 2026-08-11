@@ -18,6 +18,7 @@ import { AdminUsers } from './pages/AdminUsers';
 import { AdminInvites } from './pages/AdminInvites';
 import { Libraries } from './pages/Libraries';
 import { Projects } from './pages/Projects';
+import { ProjectImport } from './pages/ProjectImport';
 import { LibraryForm } from './pages/LibraryForm.tsx';
 import { ProjectForm } from './pages/ProjectForm.tsx';
 import { PromptEditor } from './pages/PromptEditor.tsx';
@@ -87,6 +88,7 @@ export default function App() {
               <Route path="library/new" element={<LibraryForm />} />
               <Route path="library/:id/edit" element={<LibraryForm />} />
               <Route path="projects" element={<Projects />} />
+              <Route path="projects/import" element={<ProjectImport />} />
               <Route path="projects/queues" element={<QueueMonitor />} />
               <Route path="queues" element={<Navigate to="/projects/queues" replace />} />
               <Route path="project/new" element={<ProjectForm />} />
@@ -123,14 +125,16 @@ export default function App() {
               <Route path="provider/:id/custom-models" element={<ProviderCustomModels />} />
               <Route path="exports" element={<Exports />} />
               <Route path="exports/releases" element={<Releases />} />
-              <Route path="exports/releases/history" element={<ReleaseHistory />} />
+              <Route path="exports/history" element={<ReleaseHistory />} />
               <Route path="exports/:exportId/sell" element={<SellExport />} />
               {/* Pre-rebrand paths */}
               <Route path="exports/stores" element={<LegacyRedirect to="/exports/releases" />} />
-              <Route path="exports/uploads" element={<LegacyRedirect to="/exports/releases/history" />} />
+              <Route path="exports/uploads" element={<LegacyRedirect to="/exports/history" />} />
+              {/* History before it moved out from under Releases */}
+              <Route path="exports/releases/history" element={<LegacyRedirect to="/exports/history" />} />
               {/* Releases before it moved under Exports */}
               <Route path="releases" element={<LegacyRedirect to="/exports/releases" />} />
-              <Route path="releases/history" element={<LegacyRedirect to="/exports/releases/history" />} />
+              <Route path="releases/history" element={<LegacyRedirect to="/exports/history" />} />
               <Route path="trash" element={<TrashView />} />
               <Route path="storage" element={<Navigate to="/account?tab=storage" replace />} />
               <Route path="account" element={<Account />} />

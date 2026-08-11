@@ -72,6 +72,11 @@
   "projectImports": {
     "title": "项目包",
     "description": "上传项目包即可将整个项目导入回来。",
+    "backToProjects": "返回项目",
+    "dropzone": {
+      "title": "上传项目包",
+      "hint": "将 .zip 项目包拖到此处，或从电脑中选择。"
+    },
     "selectFile": "导入项目",
     "uploading": "上传中 {{percent}}%",
     "untitled": "未命名项目",
