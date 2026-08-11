@@ -56,6 +56,25 @@ function isRhartImageNPro(modelId?: string, apiUrl?: string): boolean {
   return target.includes('rhart-image-n-pro');
 }
 
+// rhart-image-g-2-official shares the default rhart payload shape but requires
+// an explicit quality tier alongside the resolution. Both live in the model's
+// single quality picker as one value ("2K Medium"), so split it back apart.
+const GPT_IMAGE_2_RESOLUTIONS = ['1k', '2k', '4k'];
+const GPT_IMAGE_2_QUALITIES = ['low', 'medium', 'high'];
+
+function isGptImage2Official(modelId?: string, apiUrl?: string): boolean {
+  const target = `${modelId || ''} ${apiUrl || ''}`.toLowerCase();
+  return target.includes('rhart-image-g-2-official');
+}
+
+function resolveGptImage2OfficialSize(imageSize?: string): { resolution: string; quality: string } {
+  const parts = (imageSize || '').toLowerCase().split(/[\s_/-]+/).filter(Boolean);
+  return {
+    resolution: parts.find((p) => GPT_IMAGE_2_RESOLUTIONS.includes(p)) || '1k',
+    quality: parts.find((p) => GPT_IMAGE_2_QUALITIES.includes(p)) || 'medium',
+  };
+}
+
 // Seedream 5.0 Pro takes explicit width/height (240 - 8192). Its `resolution`
 // enum overrides width*height when present, so we only send width/height to
 // preserve the user's aspect-ratio choice.
@@ -176,6 +195,7 @@ export class RunningHubGenerator extends ImageGenerator {
     const isSeedream = isSeedream5Pro(modelId, reqApiUrl);
     const isWan = isWan27Pro(modelId, reqApiUrl);
     const isNanoPro = isRhartImageNPro(modelId, reqApiUrl);
+    const isGptOfficial = isGptImage2Official(modelId, reqApiUrl);
     // Qwen uses `/image-edit`, Grok Imagine Pro and rhart-image-n-pro use
     // `/edit`, Wan 2.7 uses `/image-edit-pro`, the rhart flash model uses
     // `/image-to-image`.
@@ -246,6 +266,11 @@ export class RunningHubGenerator extends ImageGenerator {
         prompt,
         resolution: imageSize.toLowerCase(), // API expects "1k", not "1K"
       };
+      if (isGptOfficial) {
+        const { resolution, quality } = resolveGptImage2OfficialSize(imageSize);
+        payload.resolution = resolution;
+        payload.quality = quality;
+      }
       // aspectRatio is optional; "auto" means letting the API decide, so omit the field.
       if (aspectRatio !== 'auto') {
         payload.aspectRatio = aspectRatio;

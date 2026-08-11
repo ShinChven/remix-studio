@@ -647,6 +647,25 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'runninghub-gpt-image-2-official',
+      name: 'GPT Image 2 Official',
+      generatorId: 'RunningHub',
+      modelId: 'rhart-image-g-2-official',
+      category: 'image',
+      promptLimit: { value: 20000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '1:2', '2:1', '1:3', '3:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', '9:21'],
+        // The official endpoint takes a resolution tier and a quality tier as
+        // two separate required fields; both are carried in this one picker
+        // value and split apart in running-hub-generator.ts.
+        qualities: [
+          '1K Low', '1K Medium', '1K High',
+          '2K Low', '2K Medium', '2K High',
+          '4K Low', '4K Medium', '4K High',
+        ],
+      },
+    },
+    {
       id: 'runninghub-qwen-image-2-pro',
       name: 'Qwen Image 2 Pro',
       generatorId: 'RunningHub',

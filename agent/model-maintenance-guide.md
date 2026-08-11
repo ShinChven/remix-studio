@@ -210,6 +210,7 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 | nano banana 2 | `rhart-image-n-g31-flash` | image |
 | nano banana Pro | `rhart-image-n-pro` | image |
 | GPT Image 2 | `rhart-image-g-2` | image |
+| GPT Image 2 Official | `rhart-image-g-2-official` | image |
 | Qwen Image 2 Pro | `alibaba/qwen-image-2.0-pro` | image |
 | Grok Imagine Pro | `rhart-imagine-image-quality` | image |
 | Seedream 5.0 Pro | `dola-Seedream-5.0-pro` | image |
@@ -219,6 +220,14 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 | Seedance 2.0 Global Multimodal Reference | `bytedance/seedance-2.0-global/multimodal-video` | video |
 | MiniMax Hailuo H3 | `minimax/hailuo-h3/image-to-video` | video |
 | MiniMax Hailuo H3 Multimodal Reference | `minimax/hailuo-h3/multimodal-to-video` | video |
+
+`rhart-image-g-2-official` is the official-tier sibling of the economy
+`rhart-image-g-2`. It uses the same endpoints and payload, except that the API
+requires a `quality` tier (`low`, `medium`, `high`) on top of the `resolution`
+tier. Image projects only have one quality picker, so the model's `qualities`
+list carries both in each value (`2K Medium`) and
+`resolveGptImage2OfficialSize` in `running-hub-generator.ts` splits it back into
+the two request fields.
 
 RunningHub model IDs may carry an endpoint suffix. When present it pins the
 request to that endpoint; otherwise the video generator picks `image-to-video`
