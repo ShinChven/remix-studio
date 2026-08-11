@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, HardDrive, Cloud, Upload, Rocket, Tag, History as HistoryIcon } from 'lucide-react';
+import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, List, HardDrive, Cloud, Upload, Rocket, Tag, History as HistoryIcon, Square, CheckSquare } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ExportTask, DeliveryStatus } from '../types';
@@ -27,7 +27,8 @@ export function Exports() {
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [taskIdsToDelete, setTaskIdsToDelete] = useState<string[]>([]);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(() => new Set());
   const [taskToUploadDrive, setTaskToUploadDrive] = useState<ExportTask | null>(null);
   const [selectedDriveId, setSelectedDriveId] = useState<string | null>(null);
 
@@ -182,6 +183,11 @@ export function Exports() {
       setExports(items);
       setTotal(nextTotal);
       setPages(nextPages);
+      setSelectedTaskIds(prev => {
+        const visibleIds = new Set(items.map(item => item.id));
+        const next = new Set([...prev].filter(id => visibleIds.has(id)));
+        return next.size === prev.size ? prev : next;
+      });
       setDeliveries(prev => {
         const next = { ...prev };
         for (const delivery of activeDeliveries) {
@@ -223,6 +229,7 @@ export function Exports() {
   }, [hasActiveExportTasks, loadExports, page]);
 
   const handlePageChange = (newPage: number) => {
+    setSelectedTaskIds(new Set());
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       next.set('page', newPage.toString());
@@ -244,26 +251,67 @@ export function Exports() {
     };
   };
 
-  const handleDelete = async (taskId: string) => {
-    setTaskToDelete(taskId);
+  const handleDelete = (taskId: string) => {
+    setTaskIdsToDelete([taskId]);
+    setShowDeleteConfirm(true);
+  };
+
+  const toggleTaskSelection = (taskId: string) => {
+    setSelectedTaskIds(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedTaskIds(prev => (
+      prev.size === exports.length
+        ? new Set()
+        : new Set(exports.map(task => task.id))
+    ));
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedTaskIds.size === 0) return;
+    setTaskIdsToDelete([...selectedTaskIds]);
     setShowDeleteConfirm(true);
   };
 
   const confirmDelete = async () => {
-    if (!taskToDelete) return;
-    try {
-      await deleteExport(taskToDelete);
-      if (exports.length <= 1 && page > 1) {
+    if (taskIdsToDelete.length === 0) return;
+
+    const results = await Promise.allSettled(taskIdsToDelete.map(taskId => deleteExport(taskId)));
+    const deletedIds = taskIdsToDelete.filter((_, index) => results[index].status === 'fulfilled');
+    const failedCount = taskIdsToDelete.length - deletedIds.length;
+
+    setSelectedTaskIds(prev => {
+      const next = new Set(prev);
+      deletedIds.forEach(taskId => next.delete(taskId));
+      return next.size === prev.size ? prev : next;
+    });
+
+    if (deletedIds.length > 0) {
+      if (taskIdsToDelete.length > 1) {
+        toast.success(t('exports.selection.deleteSuccess', { count: deletedIds.length }));
+      }
+      if (exports.length <= deletedIds.length && page > 1) {
         handlePageChange(page - 1);
       } else {
         await loadExports(page, { showLoading: false });
       }
-    } catch (err: any) {
-      toast.error(`Failed to delete export record: ${err.message}`);
-    } finally {
-      setTaskToDelete(null);
-      setShowDeleteConfirm(false);
     }
+
+    if (failedCount > 0) {
+      toast.error(t('exports.selection.deleteFailed', { count: failedCount }));
+    }
+
+    setTaskIdsToDelete([]);
+    setShowDeleteConfirm(false);
   };
 
   const handleUploadToDrive = (task: ExportTask) => {
@@ -373,8 +421,43 @@ export function Exports() {
         </div>
       ) : (
         <div className="space-y-3">
+          {exports.length > 0 && (
+            <div className="flex flex-col gap-3 rounded-card border border-neutral-200/50 bg-white/50 p-3 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/50 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
+                >
+                  {selectedTaskIds.size === exports.length ? (
+                    <CheckSquare className="h-4 w-4 text-blue-500" />
+                  ) : (
+                    <Square className="h-4 w-4" />
+                  )}
+                  {selectedTaskIds.size === exports.length
+                    ? t('exports.selection.deselectAll')
+                    : t('exports.selection.selectAll')}
+                </button>
+                {selectedTaskIds.size > 0 && (
+                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">
+                    {t('exports.selection.selected', { count: selectedTaskIds.size })}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleDeleteSelected}
+                disabled={selectedTaskIds.size === 0}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-red-600/20 transition hover:bg-red-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+              >
+                <Trash2 className="h-4 w-4" />
+                {t('exports.selection.deleteSelected')}
+              </button>
+            </div>
+          )}
           {exports.map((task) => {
             const taskTarget = getTaskTarget(task);
+            const isSelected = selectedTaskIds.has(task.id);
             const driveDelivery = getDriveDelivery(task.id);
             const isDriveUploading = driveDelivery && (driveDelivery.status === 'pending' || driveDelivery.status === 'processing');
             const driveProgress = driveDelivery && driveDelivery.totalBytes
@@ -389,9 +472,19 @@ export function Exports() {
             return (
               <div
                 key={task.id}
-                className={`bg-white/70 dark:bg-neutral-900/70 p-4 md:p-5 rounded-card border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-ui group/task shadow-sm hover:shadow-xl backdrop-blur-xl duration-300 hover:-translate-y-0.5 ${task.status === 'failed' ? 'border-red-500/30' : 'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/50'}`}
+                className={`bg-white/70 dark:bg-neutral-900/70 p-4 md:p-5 rounded-card border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-ui group/task shadow-sm hover:shadow-xl backdrop-blur-xl duration-300 hover:-translate-y-0.5 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : task.status === 'failed' ? 'border-red-500/30' : 'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/50'}`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => toggleTaskSelection(task.id)}
+                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border transition active:scale-90 ${isSelected ? 'border-blue-500 bg-blue-500 text-white shadow-sm shadow-blue-500/20' : 'border-neutral-200 bg-white/70 text-neutral-400 hover:border-blue-400 hover:text-blue-500 dark:border-white/10 dark:bg-neutral-950/50'}`}
+                    aria-label={isSelected ? t('exports.selection.deselectItem') : t('exports.selection.selectItem')}
+                    aria-pressed={isSelected}
+                    title={isSelected ? t('exports.selection.deselectItem') : t('exports.selection.selectItem')}
+                  >
+                    {isSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                  </button>
                   {/* Status Indicator Bar */}
                   <div className={`w-1 h-10 sm:h-8 rounded-full flex-shrink-0 ${
                     task.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
@@ -573,12 +666,14 @@ export function Exports() {
         isOpen={showDeleteConfirm}
         onClose={() => {
           setShowDeleteConfirm(false);
-          setTaskToDelete(null);
+          setTaskIdsToDelete([]);
         }}
         onConfirm={confirmDelete}
-        title={t('exports.deleteDialog.title')}
-        message={t('exports.deleteDialog.message')}
-        confirmText={t('exports.deleteDialog.confirm')}
+        title={taskIdsToDelete.length > 1 ? t('exports.deleteDialog.batchTitle') : t('exports.deleteDialog.title')}
+        message={taskIdsToDelete.length > 1
+          ? t('exports.deleteDialog.batchMessage', { count: taskIdsToDelete.length })
+          : t('exports.deleteDialog.message')}
+        confirmText={taskIdsToDelete.length > 1 ? t('exports.deleteDialog.batchConfirm') : t('exports.deleteDialog.confirm')}
         type="danger"
       />
 

@@ -50,10 +50,23 @@
     },
     "pagination": "{{total}}페이지 중 {{current}}페이지",
     "loadMore": "내보내기 더 불러오기",
+    "selection": {
+      "selectAll": "현재 페이지 선택",
+      "deselectAll": "선택 해제",
+      "selected": "{{count}}개 선택됨",
+      "selectItem": "내보내기 선택",
+      "deselectItem": "내보내기 선택 해제",
+      "deleteSelected": "선택 항목 삭제",
+      "deleteSuccess": "내보내기 {{count}}개를 삭제했습니다.",
+      "deleteFailed": "내보내기 {{count}}개를 삭제하지 못했습니다."
+    },
     "deleteDialog": {
       "title": "내보내기 기록 삭제",
       "message": "이 내보내기 기록을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
-      "confirm": "기록 삭제"
+      "confirm": "기록 삭제",
+      "batchTitle": "선택한 내보내기 삭제",
+      "batchMessage": "내보내기 기록 {{count}}개를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+      "batchConfirm": "내보내기 삭제"
     }
   },
   "projectImports": {

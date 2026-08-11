@@ -50,10 +50,23 @@
     },
     "pagination": "{{total}} ページ中 {{current}} ページ",
     "loadMore": "さらにエクスポートを読み込む",
+    "selection": {
+      "selectAll": "このページを選択",
+      "deselectAll": "選択を解除",
+      "selected": "{{count}} 件選択中",
+      "selectItem": "エクスポートを選択",
+      "deselectItem": "エクスポートの選択を解除",
+      "deleteSelected": "選択項目を削除",
+      "deleteSuccess": "{{count}} 件のエクスポートを削除しました。",
+      "deleteFailed": "{{count}} 件のエクスポートを削除できませんでした。"
+    },
     "deleteDialog": {
       "title": "エクスポートレコードの削除",
       "message": "このエクスポートレコードを削除してもよろしいですか？この操作は取り消せません。",
-      "confirm": "レコードを削除"
+      "confirm": "レコードを削除",
+      "batchTitle": "選択したエクスポートを削除",
+      "batchMessage": "{{count}} 件のエクスポートレコードを削除してもよろしいですか？この操作は取り消せません。",
+      "batchConfirm": "エクスポートを削除"
     }
   },
   "projectImports": {

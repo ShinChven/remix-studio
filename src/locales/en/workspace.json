@@ -50,10 +50,23 @@
     },
     "pagination": "Page {{current}} of {{total}}",
     "loadMore": "Load More Exports",
+    "selection": {
+      "selectAll": "Select page",
+      "deselectAll": "Clear selection",
+      "selected": "{{count}} selected",
+      "selectItem": "Select export",
+      "deselectItem": "Deselect export",
+      "deleteSelected": "Delete selected",
+      "deleteSuccess": "Deleted {{count}} exports.",
+      "deleteFailed": "Failed to delete {{count}} exports."
+    },
     "deleteDialog": {
       "title": "Delete Export Record",
       "message": "Are you sure you want to delete this export record? This action cannot be undone.",
-      "confirm": "Delete Record"
+      "confirm": "Delete Record",
+      "batchTitle": "Delete Selected Exports",
+      "batchMessage": "Are you sure you want to delete {{count}} export records? This action cannot be undone.",
+      "batchConfirm": "Delete Exports"
     }
   },
   "projectImports": {
