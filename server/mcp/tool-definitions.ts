@@ -586,7 +586,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'get_current_account',
     title: 'Get Current Account',
-    description: 'Identify the Remix Studio account this session is acting as ("who am I?"). Returns the user id, email, role ("admin" or "user"), account status, storage limit, sign-in methods, and account timestamps, plus the "url" of the account page. Every other tool operates on this account. Call it when the user asks who they are signed in as, when confirming that a token belongs to the expected account, or before an action whose availability depends on their role. For actual storage consumption, call get_storage_usage.',
+    description: 'Identify the Remix Studio account this session is acting as ("who am I?"). Returns the user id, email, role ("admin" or "user"), account status, storage limit, sign-in methods, and account timestamps. Every other tool operates on this account. Call it when the user asks who they are signed in as, when confirming that a token belongs to the expected account, or before an action whose availability depends on their role. For actual storage consumption, call get_storage_usage.',
     inputSchema: {},
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     category: 'read',
@@ -605,7 +605,6 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         email: user.email,
         role: user.role,
         status: user.status,
-        url: appUrls.account(),
         storageLimit,
         storageLimitFormatted: formatSize(storageLimit),
         hasPassword: Boolean(user.passwordHash),
