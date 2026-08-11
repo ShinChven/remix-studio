@@ -50,10 +50,23 @@
     },
     "pagination": "第 {{current}} / {{total}} 页",
     "loadMore": "加载更多导出",
+    "selection": {
+      "selectAll": "选择本页",
+      "deselectAll": "取消全选",
+      "selected": "已选择 {{count}} 项",
+      "selectItem": "选择导出",
+      "deselectItem": "取消选择导出",
+      "deleteSelected": "删除所选",
+      "deleteSuccess": "已删除 {{count}} 个导出。",
+      "deleteFailed": "{{count}} 个导出删除失败。"
+    },
     "deleteDialog": {
       "title": "删除导出记录",
       "message": "确定要删除此导出记录吗？此操作无法撤销。",
-      "confirm": "删除记录"
+      "confirm": "删除记录",
+      "batchTitle": "删除所选导出",
+      "batchMessage": "确定要删除所选的 {{count}} 条导出记录吗？此操作无法撤销。",
+      "batchConfirm": "删除导出"
     }
   },
   "projectImports": {

@@ -50,10 +50,23 @@
     },
     "pagination": "Page {{current}} sur {{total}}",
     "loadMore": "Charger plus d'exports",
+    "selection": {
+      "selectAll": "Sélectionner la page",
+      "deselectAll": "Effacer la sélection",
+      "selected": "{{count}} sélectionné(s)",
+      "selectItem": "Sélectionner l'export",
+      "deselectItem": "Désélectionner l'export",
+      "deleteSelected": "Supprimer la sélection",
+      "deleteSuccess": "{{count}} exports supprimés.",
+      "deleteFailed": "Échec de la suppression de {{count}} exports."
+    },
     "deleteDialog": {
       "title": "Supprimer l'enregistrement d'exportation",
       "message": "Êtes-vous sûr de vouloir supprimer cet enregistrement d'exportation ? Cette action ne peut pas être annulée.",
-      "confirm": "Supprimer l'enregistrement"
+      "confirm": "Supprimer l'enregistrement",
+      "batchTitle": "Supprimer les exports sélectionnés",
+      "batchMessage": "Voulez-vous vraiment supprimer {{count}} enregistrements d'exportation ? Cette action est irréversible.",
+      "batchConfirm": "Supprimer les exports"
     }
   },
   "projectImports": {

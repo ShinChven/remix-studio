@@ -50,10 +50,23 @@
     },
     "pagination": "第 {{current}} / {{total}} 頁",
     "loadMore": "載入更多匯出",
+    "selection": {
+      "selectAll": "選擇本頁",
+      "deselectAll": "取消全選",
+      "selected": "已選擇 {{count}} 項",
+      "selectItem": "選擇匯出",
+      "deselectItem": "取消選擇匯出",
+      "deleteSelected": "刪除所選",
+      "deleteSuccess": "已刪除 {{count}} 個匯出。",
+      "deleteFailed": "{{count}} 個匯出刪除失敗。"
+    },
     "deleteDialog": {
       "title": "刪除匯出紀錄",
       "message": "確定要刪除此匯出紀錄嗎？此操作無法撤銷。",
-      "confirm": "刪除紀錄"
+      "confirm": "刪除紀錄",
+      "batchTitle": "刪除所選匯出",
+      "batchMessage": "確定要刪除所選的 {{count}} 筆匯出紀錄嗎？此操作無法撤銷。",
+      "batchConfirm": "刪除匯出"
     }
   },
   "projectImports": {
