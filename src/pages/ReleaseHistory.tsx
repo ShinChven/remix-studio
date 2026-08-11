@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, Clock, Cloud, ExternalLink, HardDrive, History as HistoryIcon, List, Loader2, Store as StoreIcon, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock, Cloud, ExternalLink, HardDrive, History as HistoryIcon, List, Loader2, Store as StoreIcon, X, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { fetchReleaseHistory, ReleaseHistoryItem } from '../api';
 import { PageHeader } from '../components/PageHeader';
@@ -38,6 +38,7 @@ export function ReleaseHistory() {
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [selectedError, setSelectedError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +59,17 @@ export function ReleaseHistory() {
       });
     return () => { cancelled = true; };
   }, [page, t]);
+
+  useEffect(() => {
+    if (!selectedError) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedError(null);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedError]);
 
   const handlePageChange = (newPage: number) => {
     setSearchParams((prev) => {
@@ -156,9 +168,15 @@ export function ReleaseHistory() {
                     </div>
 
                     {!isSuccess && item.error ? (
-                      <div className="mt-2 text-[10px] font-medium text-red-600 dark:text-red-400 bg-red-500/5 border border-red-500/10 rounded px-2 py-1.5 break-words">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedError(item.error)}
+                        className="mt-2 block w-full truncate rounded border border-red-500/10 bg-red-500/5 px-2 py-1.5 text-left text-[10px] font-medium text-red-600 transition-colors hover:bg-red-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 dark:text-red-400"
+                        aria-haspopup="dialog"
+                        aria-label={t('releases.history.errorDetails.openAria')}
+                      >
                         {item.error}
-                      </div>
+                      </button>
                     ) : null}
                   </div>
                 </div>
@@ -204,6 +222,62 @@ export function ReleaseHistory() {
           )}
         </div>
       )}
+
+      {selectedError ? (
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm animate-in fade-in duration-300 sm:p-6"
+          onClick={() => setSelectedError(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="release-error-details-title"
+            className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-[0_50px_100px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-300 dark:border-white/5 dark:bg-neutral-900 dark:shadow-[0_50px_100px_rgba(0,0,0,0.8)] sm:max-h-[calc(100dvh-3rem)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-neutral-200/50 p-5 dark:border-white/5 sm:p-6">
+              <div className="flex min-w-0 items-start gap-4">
+                <div className="flex-shrink-0 rounded-xl border border-red-500/20 bg-red-500/10 p-2.5 text-red-500">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 id="release-error-details-title" className="text-lg font-black tracking-tight text-neutral-900 dark:text-white">
+                    {t('releases.history.errorDetails.title')}
+                  </h3>
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                    {t('releases.history.errorDetails.description')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedError(null)}
+                className="rounded-xl p-2 text-neutral-500 transition-colors hover:bg-neutral-200/70 hover:text-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 dark:hover:bg-neutral-800 dark:hover:text-white"
+                aria-label={t('releases.history.errorDetails.close')}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-5 sm:p-6">
+              <p className="whitespace-pre-wrap break-words rounded-card border border-red-500/10 bg-red-500/5 p-4 text-sm font-medium leading-relaxed text-red-700 dark:text-red-300">
+                {selectedError}
+              </p>
+            </div>
+
+            <div className="flex justify-end border-t border-neutral-200/50 bg-neutral-50/40 p-4 dark:border-white/5 dark:bg-neutral-950/40 sm:px-6">
+              <button
+                type="button"
+                onClick={() => setSelectedError(null)}
+                autoFocus
+                className="rounded-xl bg-neutral-900 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 active:scale-95 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+              >
+                {t('releases.history.errorDetails.close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -68,6 +68,12 @@
       },
       "openTarget": "Open in provider",
       "untitled": "Untitled release",
+      "errorDetails": {
+        "title": "Release error",
+        "description": "Full error message",
+        "openAria": "Show full error message",
+        "close": "Close"
+      },
       "stats": {
         "total": "Total"
       }

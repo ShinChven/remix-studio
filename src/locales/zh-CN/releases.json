@@ -68,6 +68,12 @@
       },
       "openTarget": "在服务商中打开",
       "untitled": "未命名发布",
+      "errorDetails": {
+        "title": "发布错误",
+        "description": "完整错误信息",
+        "openAria": "查看完整错误信息",
+        "close": "关闭"
+      },
       "stats": {
         "total": "总计"
       }

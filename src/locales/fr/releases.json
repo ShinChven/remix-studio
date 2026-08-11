@@ -68,6 +68,12 @@
       },
       "openTarget": "Ouvrir chez le fournisseur",
       "untitled": "Publication sans titre",
+      "errorDetails": {
+        "title": "Erreur de publication",
+        "description": "Message d’erreur complet",
+        "openAria": "Afficher le message d’erreur complet",
+        "close": "Fermer"
+      },
       "stats": {
         "total": "Total"
       }

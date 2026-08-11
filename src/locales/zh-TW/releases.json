@@ -68,6 +68,12 @@
       },
       "openTarget": "在服務商中開啟",
       "untitled": "未命名發佈",
+      "errorDetails": {
+        "title": "發佈錯誤",
+        "description": "完整錯誤訊息",
+        "openAria": "查看完整錯誤訊息",
+        "close": "關閉"
+      },
       "stats": {
         "total": "總計"
       }

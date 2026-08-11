@@ -68,6 +68,12 @@
       },
       "openTarget": "제공자에서 열기",
       "untitled": "제목 없는 릴리스",
+      "errorDetails": {
+        "title": "릴리스 오류",
+        "description": "전체 오류 메시지",
+        "openAria": "전체 오류 메시지 보기",
+        "close": "닫기"
+      },
       "stats": {
         "total": "전체"
       }
