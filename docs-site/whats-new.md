@@ -8,6 +8,38 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.21.0 — MiniMax, a posting trend chart, and assistants that can run your projects
+
+*A new provider across all four modalities, new image and video models, a chart that shows what actually went out, and an assistant that can draft, start, and clear generation jobs for you.*
+
+**Added**
+
+- **MiniMax** — MiniMax is now a provider of its own, covering all four modalities: eight M-series text models led by `MiniMax-M3` and its 1-million-token context, **Image 01** with an optional portrait reference for a consistent character, **Hailuo H3** video at 768P or 2K for 4 to 15 seconds, and **Music 3.0** for both instrumental and vocal tracks. The API URL can be pointed at the mainland China endpoint, and MiniMax works with the in-app assistant.
+- **More image and video models** — **Seedream 5.0 Pro** joins the BytePlus provider with its 1K, 1.5K, and 2K tiers and up to 10 reference images, and Seedream 5.0 Lite gains 4K. **GPT Image 2 Official** sits beside the economy tier on RunningHub, so the cheaper and the full-price route to the same model can be picked per project. **MiniMax Hailuo H3** arrives on RunningHub too, in a frame-to-video form and a multimodal reference form that takes images, videos, and audio clips.
+- **A chart of what actually went out** — A daily posting trend chart appears above Recently Posted on the Campaigns page and as a view on campaign history, with a red line that shows up only when the range contains failures. Ranges run from 7 days to all time; longer spans roll into weeks or months so a year stays readable, and the range you pick lives in the URL for linking and bookmarking.
+- **Assistants can run a project, not just build one** — New tools let the in-app assistant and connected agents draft jobs from a project's own workflow, start them, read the job counts, watch the queue across every project and provider, and clear failed jobs so a stalled project resumes. Agents can also export a whole project bundle or an album archive, list the posts in a campaign, and check which account they are signed in as. Every result now carries a link back into Remix Studio, so an assistant can point you at what it just touched instead of quoting an id.
+- **Set the same text on many posts** — A **Set Text** action beside AI Generate writes one block of text to every selected post in a single step, with no model involved.
+- **Bulk export cleanup and bigger library pages** — Exports can be selected and deleted in bulk, and the library item list offers 25, 50, 100, or 200 items a page, remembered in the URL. A failed release's full error message now opens in a dialog instead of being cut short.
+- **The media picker remembers where you were** — Picking a workflow image or campaign media reopens on the library or album you used last, per feature and across projects, rather than always starting at the first library.
+- **One-step sharing** — Sharing into the app from your phone now offers **Save to Library** and **Save to Project** directly, instead of asking a second time on the import page.
+
+**Improved**
+
+- **Batch text generation is a full-screen editor** — The prompt field is no longer pushed below the fold: configuration lives in a left rail and the editor fills the rest at full height, phones get Prompt and Options as tabs, and Cmd/Ctrl+Enter generates.
+- **Release history and project import moved** — Release history is now a sibling of Releases under Exports, and importing a project bundle has its own page reached from the Projects header. Old links redirect.
+- **Up-to-date dependencies** — Every dependency was upgraded to its latest release, clearing the outstanding high and moderate security advisories.
+- **Clearer documentation** — Added a guide for calling the MCP tools over plain HTTP, for clients without MCP support.
+
+**Fixed**
+
+- **Light mode is readable again** — The model selector and several other dialogs composited into a muddy grey in light mode, hover faded text to invisible in 14 places, and hover borders snapped to near-black in 12 more. Dark mode is unchanged.
+- **Campaign batch generation no longer fails on the model** — A batch could die against the provider with an unhelpful "model not found". Both the stored and the upstream model id are now accepted, the Gemini model map is current, and when a batch does fail the actual reason reaches you instead of just a count.
+- **A project's jobs pane fits its column** — On a narrow desktop window the pane's toolbar buttons overlapped and album cards shrank to about 95px. The pane now sizes its contents against its own width.
+- **One album card per row on phones** — Portrait phones were showing two cramped cards side by side.
+- **Number fields can be cleared** — The last digit in a number box can be deleted so a value can be retyped from scratch.
+- **Drawing on a workflow image keeps its size** — A draw-only edit was saved back upscaled to an arbitrary size instead of the image's own dimensions.
+- **The history date filter applies to both views** — The list and the chart now read one shared range, changes apply immediately, a single bound stays open on the other side, and days are cut in your own timezone.
+
 ## 1.20.0 — Portable projects, more places to release, and a phone-ready workspace
 
 *Pack a whole project into one file, send finished exports to any number of cloud drives, reuse a setup straight from the album, and work comfortably from a phone.*
