@@ -28,10 +28,10 @@ This matrix reflects the profiles shipped with the current release. Model availa
 
 | Provider | Supported Models |
 | :--- | :--- |
-| **Google AI** | `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`, `Gemma 4` |
-| **Vertex AI** | `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` |
+| **Google AI** | `Gemini 3.7 Flash`, `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`, `Gemma 4` |
+| **Vertex AI** | `Gemini 3.7 Flash`, `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` |
 | **OpenAI** | `GPT-5.6`, `GPT-5.6 Terra`, `GPT-5.6 Luna`, `GPT-5.5`, `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` |
-| **Grok** | `Grok 4.5`, `Grok 4.20`, `Grok 4.3`, `Grok 4.1 Fast` |
+| **Grok** | `Grok 4.6`, `Grok 4.5`, `Grok 4.20`, `Grok 4.3`, `Grok 4.1 Fast` |
 | **Claude** | `Claude Fable 5`, `Claude Opus 5`, `Claude Opus 4.8`, `Claude Sonnet 5`, `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` |
 | **Alibaba Cloud DashScope** | `Qwen3.6 Max`, `Qwen3.6 Plus`, `Qwen3.6 Flash`, `Qwen3.6 VL Max`, `Qwen3.6 VL Plus` |
 | **Kimi (Moonshot AI)** | `Kimi K3` |
@@ -44,7 +44,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Google AI** | `nano banana 2`, `nano banana Pro`, `nano banana 2 Lite` |
 | **Vertex AI** | `nano banana 2`, `nano banana Pro`, `nano banana 2 Lite` |
 | **OpenAI** | `GPT Image 2`, `GPT Image 1.5`, `GPT Image 1 Mini` |
-| **Grok** | `Grok Imagine`, `Grok Imagine Pro` |
+| **Grok** | `Grok Imagine`, `Grok Imagine Quality` |
 | **MiniMax** | `MiniMax Image 01` |
 | **RunningHub** | `nano banana 2`, `nano banana Pro`, `GPT Image 2`, `GPT Image 2 Official`, `Qwen Image 2 Pro`, `Grok Imagine Pro`, `Seedream 5.0 Pro`, `Seedream V5 Pro`, `Wan 2.7 Pro` |
 | **BytePlus** | `Seedream 5.0 Pro`, `Seedream 5.0 Lite`, `Seedream 4.5`, `Seedream 4.0`, `Seedream 3.0 T2I`, `Seededit 3.0 I2I` |

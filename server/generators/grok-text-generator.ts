@@ -15,7 +15,7 @@ export class GrokTextGenerator extends TextGenerator {
   async generate(req: TextGenerateRequest): Promise<TextGenerateResult> {
     try {
       const { prompt, systemPrompt, modelId, temperature = 0.7, maxTokens = 2048, refImagesBase64 } = req;
-      const model = modelId || 'grok-4.20-0309-non-reasoning';
+      const model = modelId || 'grok-4.6';
 
       const messages: Array<{ role: string; content: any }> = [];
 
