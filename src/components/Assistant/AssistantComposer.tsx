@@ -201,12 +201,14 @@ export function AssistantComposer({
   const [boundContexts, setBoundContexts] = useState<BoundContext[]>(initialBoundContexts);
   const [attachedImages, setAttachedImages] = useState<AttachedImage[]>(initialAttachedImages);
 
-  const _handleSend = () => {
-    onSend(inputText, boundContexts, attachedImages);
+  const sendWithText = useCallback((text: string) => {
+    onSend(text, boundContexts, attachedImages);
     setInputText('');
     setBoundContexts([]);
     setAttachedImages([]);
-  };
+  }, [onSend, boundContexts, attachedImages]);
+
+  const _handleSend = () => sendWithText(inputText);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -216,6 +218,8 @@ export function AssistantComposer({
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<number | null>(null);
   const recordingStartRef = useRef<number>(0);
+  // Set when the user hits Send mid-recording: the transcript is sent as soon as it arrives.
+  const sendAfterTranscribeRef = useRef(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -432,8 +436,15 @@ export function AssistantComposer({
   };
 
   const transcribeRecordedBlob = useCallback(async (blob: Blob, mimeType: string) => {
+    // Consume the flag up-front so a failure never leaves a stale auto-send armed.
+    const autoSend = sendAfterTranscribeRef.current;
+    sendAfterTranscribeRef.current = false;
+
     if (!micProvider) return;
-    if (blob.size === 0) return;
+    if (blob.size === 0) {
+      if (autoSend) toast.warning(t('assistant.micNoSpeechDetected'));
+      return;
+    }
 
     setIsTranscribing(true);
     try {
@@ -457,14 +468,27 @@ export function AssistantComposer({
         toast.warning(t('assistant.micNoSpeechDetected'));
         return;
       }
-      setInputText(inputText ? `${inputText}${inputText.endsWith(' ') ? '' : ' '}${trimmed}` : trimmed);
+      const nextText = inputText ? `${inputText}${inputText.endsWith(' ') ? '' : ' '}${trimmed}` : trimmed;
+      if (autoSend) {
+        sendWithText(nextText);
+      } else {
+        setInputText(nextText);
+      }
     } catch (err: any) {
       console.error('[transcribeRecordedBlob]', err);
       toast.error(err?.message || t('assistant.micTranscribeFailed'));
     } finally {
       setIsTranscribing(false);
     }
-  }, [micProvider, inputText, setInputText, t]);
+  }, [micProvider, inputText, setInputText, sendWithText, t]);
+
+  // `recorder.onstop` is registered once per recording, so it must reach the transcriber
+  // through a ref — otherwise it captures the input text and attachments as they were
+  // when recording started and discards anything added while the mic was live.
+  const transcribeRecordedBlobRef = useRef(transcribeRecordedBlob);
+  useEffect(() => {
+    transcribeRecordedBlobRef.current = transcribeRecordedBlob;
+  }, [transcribeRecordedBlob]);
 
   const startRecording = async () => {
     if (!micProvider) return;
@@ -495,12 +519,13 @@ export function AssistantComposer({
         const blob = new Blob(audioChunksRef.current, { type: chunkMime });
         audioChunksRef.current = [];
         mediaRecorderRef.current = null;
-        void transcribeRecordedBlob(blob, chunkMime);
+        void transcribeRecordedBlobRef.current(blob, chunkMime);
       };
 
       recorder.onerror = () => {
         clearRecordingTimer();
         stopRecordingTracks();
+        sendAfterTranscribeRef.current = false;
         setIsRecording(false);
         setRecordingSeconds(0);
         toast.error(t('assistant.micRecordFailed'));
@@ -536,6 +561,7 @@ export function AssistantComposer({
     } else {
       clearRecordingTimer();
       stopRecordingTracks();
+      sendAfterTranscribeRef.current = false;
       setIsRecording(false);
       setRecordingSeconds(0);
     }
@@ -543,8 +569,23 @@ export function AssistantComposer({
 
   const toggleRecording = () => {
     if (isTranscribing) return;
-    if (isRecording) stopRecording();
-    else void startRecording();
+    if (isRecording) {
+      sendAfterTranscribeRef.current = false;
+      stopRecording();
+    } else {
+      void startRecording();
+    }
+  };
+
+  // Send while recording: stop, transcribe, and send the transcript in one click.
+  const handleSendClick = () => {
+    if (isTranscribing) return;
+    if (isRecording) {
+      sendAfterTranscribeRef.current = true;
+      stopRecording();
+      return;
+    }
+    _handleSend();
   };
 
   useEffect(() => {
@@ -727,7 +768,7 @@ export function AssistantComposer({
       && (activePicker === null || activeOptions.length === 0)
     ) {
       event.preventDefault();
-      if (canSend) _handleSend();
+      if (canSend) handleSendClick();
       return;
     }
 
@@ -738,11 +779,13 @@ export function AssistantComposer({
       && !window.matchMedia(MOBILE_INPUT_QUERY).matches
     ) {
       event.preventDefault();
-      if (canSend) _handleSend();
+      if (canSend) handleSendClick();
     }
   };
 
-  const canSend = (inputText.trim().length > 0 || boundContexts.length > 0 || attachedImages.length > 0) && !isSending;
+  const hasComposerContent = inputText.trim().length > 0 || boundContexts.length > 0 || attachedImages.length > 0;
+  // While recording, Send stays enabled even with an empty composer — the transcript becomes the message.
+  const canSend = (hasComposerContent || isRecording) && !isSending && !isTranscribing;
 
   return (
     <div
@@ -1050,12 +1093,22 @@ export function AssistantComposer({
             ) : (
               <button
                 type="button"
-                onClick={() => _handleSend()}
+                onClick={handleSendClick}
                 disabled={!canSend}
                 className="group/btn inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-indigo-600 transition-all hover:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 active:scale-95 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-20"
-                title={t('assistant.send')}
+                title={
+                  isTranscribing
+                    ? t('assistant.micTranscribing')
+                    : isRecording
+                      ? t('assistant.sendWhileRecording')
+                      : t('assistant.send')
+                }
               >
-                <Send className="h-4 w-4" />
+                {isTranscribing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </button>
             )}
           </div>

@@ -410,6 +410,7 @@
       "8": "現実の砂漠へようこそ。",
       "9": "全くその通りです！"
     },
+    "sendWhileRecording": "録音を停止して送信",
     "micStart": "音声メッセージを録音",
     "micStop": "録音を停止",
     "micTranscribing": "文字起こし中...",

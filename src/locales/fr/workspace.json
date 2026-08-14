@@ -410,6 +410,7 @@
       "8": "Bienvenue dans le désert du réel.",
       "9": "Vous avez tout à fait raison !"
     },
+    "sendWhileRecording": "Arrêter l'enregistrement et envoyer",
     "micStart": "Enregistrer un message vocal",
     "micStop": "Arrêter l'enregistrement",
     "micTranscribing": "Transcription en cours...",

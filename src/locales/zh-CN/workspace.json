@@ -459,6 +459,7 @@
       "8": "欢迎来到真实世界的荒漠。",
       "9": "您完全正确！"
     },
+    "sendWhileRecording": "停止录制并发送",
     "micStart": "录制语音消息",
     "micStop": "停止录制",
     "micTranscribing": "正在转录...",

@@ -410,6 +410,7 @@
       "8": "歡迎來到真實世界的荒漠。",
       "9": "您完全正確！"
     },
+    "sendWhileRecording": "停止錄製並傳送",
     "micStart": "錄製語音消息",
     "micStop": "停止錄製",
     "micTranscribing": "正在轉錄...",
