@@ -57,7 +57,7 @@ export function SelectionToolbar({
     // Everything here wraps. Buttons keep their intrinsic width (flex-shrink-0), so a
     // no-wrap row would let the two groups slide over each other once the pane got
     // narrow; wrapping makes an overflow impossible at any width.
-    <div className="glass-opaque sticky top-0 z-20 flex flex-wrap items-center justify-between bg-white/40 dark:bg-black/40 backdrop-blur-2xl border border-neutral-200/50 dark:border-white/5 gap-x-2 gap-y-2 @min-[56rem]/pane:gap-x-3 shadow-lg shadow-black/5 dark:shadow-black/20 p-2 @min-[56rem]/pane:p-3 rounded-none border-x-0 border-t-0">
+    <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between bg-white/40 dark:bg-black/40 backdrop-blur-2xl border border-neutral-200/50 dark:border-white/5 gap-x-2 gap-y-2 @min-[56rem]/pane:gap-x-3 shadow-lg shadow-black/5 dark:shadow-black/20 p-2 @min-[56rem]/pane:p-3 rounded-none border-x-0 border-t-0">
       <div className="flex flex-wrap items-center min-w-0 gap-1.5 @min-[56rem]/pane:gap-x-3 @min-[56rem]/pane:gap-y-2">
         {prefix && (
           <div className="hidden @xl/pane:flex items-center gap-2 flex-shrink-0">

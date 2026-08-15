@@ -1629,7 +1629,7 @@ export function AssistantPage() {
         transition-ui duration-300 flex flex-col shadow-2xl lg:shadow-none
       `}>
         <div className={`flex h-full min-h-0 flex-col ${rightPanelOpen ? 'w-[85vw] sm:w-80 lg:w-64' : 'w-[85vw] sm:w-80 lg:w-16'}`}>
-          <div className="glass-opaque sticky top-0 z-10 h-16 flex-shrink-0 border-b border-neutral-200/50 bg-white/80 px-2 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/80 lg:bg-white/20 lg:dark:bg-black/20">
+          <div className="sticky top-0 z-10 h-16 flex-shrink-0 border-b border-neutral-200/50 bg-white/80 px-2 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/80 lg:bg-white/20 lg:dark:bg-black/20">
             <div className={`flex items-center h-full ${rightPanelOpen ? 'justify-between gap-2' : 'justify-center'}`}>
               {rightPanelOpen && (
                 <div className="min-w-0 px-3">

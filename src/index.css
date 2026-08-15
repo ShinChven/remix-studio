@@ -154,26 +154,6 @@ html[data-glass="off"] [class*="backdrop-blur"] {
 }
 
 /*
- * Most blurred surfaces sit directly on the body gradient, and blurring a
- * smooth gradient is visually a no-op — dropping the blur costs nothing there.
- * The exception is the sticky/fixed bars that page content scrolls underneath:
- * without the blur their translucency lets moving content show through. Mark
- * those with `glass-opaque` so they go solid when glass is off. Nothing here
- * applies while glass is on, so the default look is unchanged.
- */
-/* `:root` and the theme class both match <html>, so the dark override has to
- * out-specify `:root` — `:where(.dark)` contributes zero specificity and loses. */
-:root {
-  --glass-opaque-bg: #ffffff;
-}
-:root:is(.dark) {
-  --glass-opaque-bg: #0a0a0a;
-}
-html[data-glass="off"] .glass-opaque {
-  background-color: var(--glass-opaque-bg) !important;
-}
-
-/*
  * Hover-lift master switch — `<html data-motion="off">`.
  *
  * The other half of the same problem. 53 elements lift or scale on hover and 16
