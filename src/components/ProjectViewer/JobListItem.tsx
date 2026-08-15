@@ -72,9 +72,9 @@ export function JobListItem({
       : `border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 ${borderClassName}`.trim();
 
   return (
-    <div className="flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300 border-b border-neutral-200/50 dark:border-neutral-800/50">
+    <div className="bg-white dark:bg-neutral-950 flex flex-col gap-0 animate-in fade-in slide-in-from-top-2 duration-300 border-b border-neutral-200/50 dark:border-neutral-800/50">
       <div
-        className={`bg-white/10 dark:bg-black/10 backdrop-blur-sm flex flex-col gap-3 @lg/pane:flex-row @lg/pane:items-center @lg/pane:justify-between transition-ui cursor-pointer group/task p-3 @lg/pane:py-2.5 rounded-none border-0 ${headerClassName}`}
+        className={`flex flex-col gap-3 @lg/pane:flex-row @lg/pane:items-center @lg/pane:justify-between transition-ui cursor-pointer group/task p-3 @lg/pane:py-2.5 rounded-none border-0 ${headerClassName}`}
         onClick={() => onToggleExpand(job.id)}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -156,7 +156,7 @@ export function JobListItem({
       </div>
 
       {isExpanded && expandedContent && (
-        <div className={`bg-white/10 dark:bg-black/10 backdrop-blur-md border-b p-4 space-y-4 animate-in slide-in-from-top-1 duration-200 border-t border-neutral-200/50 dark:border-neutral-800/50 ${expandedBorderClasses[accentColor]}`}>
+        <div className={`border-b p-4 space-y-4 animate-in slide-in-from-top-1 duration-200 border-t border-neutral-200/50 dark:border-neutral-800/50 ${expandedBorderClasses[accentColor]}`}>
           {expandedContent}
         </div>
       )}

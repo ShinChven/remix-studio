@@ -113,7 +113,7 @@
       "dark": "Sombre",
       "system": "Paramètres système",
       "glass": "Effets de verre",
-      "glassDescription": "Floute l’arrière-plan des panneaux translucides et des fonds de dialogue. Désactivé par défaut : le navigateur doit refloutter de larges zones à chaque repaint, ce qui déchire l’interface sur certaines versions de Chrome.",
+      "glassDescription": "Floute l’arrière-plan des panneaux translucides et des fonds de dialogue. Désactivez si l’interface scintille ou se déchire au passage du pointeur ou lors du rafraîchissement des listes.",
       "motion": "Animations au survol",
       "motionDescription": "Les cartes se soulèvent et s’agrandissent au survol. Désactivez si l’interface scintille ou se déchire quand le pointeur traverse une grille."
     },

@@ -180,7 +180,7 @@ export function MainLayout() {
   return (
     <div className="flex h-screen w-screen bg-transparent text-neutral-900 dark:text-neutral-200 font-sans overflow-hidden">
       {/* Mobile Header */}
-      <header className="glass-opaque lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-black/40 backdrop-blur-3xl border-b border-neutral-200/50 dark:border-white/5 px-4 flex items-center gap-2 z-[100] shadow-sm">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-black/40 backdrop-blur-3xl border-b border-neutral-200/50 dark:border-white/5 px-4 flex items-center gap-2 z-[100] shadow-sm">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-white transition-all active:scale-95"
