@@ -122,7 +122,7 @@ export function ProviderForm() {
     <div className="min-h-full flex flex-col bg-white dark:bg-neutral-950">
       <div className="flex-1 w-full flex flex-col overflow-y-auto">
         {/* Header */}
-        <div className="px-4 py-3 md:px-6 md:py-6 border-b border-neutral-200/50 dark:border-white/5 bg-white/50 dark:bg-neutral-950/50 backdrop-blur-3xl sticky top-0 z-20">
+        <div className="px-4 py-3 md:px-6 md:py-6 border-b border-neutral-200/50 dark:border-white/5 glass-opaque bg-white/50 dark:bg-neutral-950/50 backdrop-blur-3xl sticky top-0 z-20">
           <div className="mx-auto w-full">
             <div className="flex flex-row items-center justify-between gap-3 md:gap-4">
               <div className="flex min-w-0 items-center gap-4">

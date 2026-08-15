@@ -111,7 +111,11 @@
       "selectTheme": "選擇主題",
       "light": "淺色",
       "dark": "深色",
-      "system": "跟隨系統"
+      "system": "跟隨系統",
+      "glass": "毛玻璃效果",
+      "glassDescription": "為半透明面板背後的內容加上模糊。若移動滑鼠或清單更新時介面閃爍、撕裂，請關閉此項。",
+      "motion": "懸停動效",
+      "motionDescription": "滑鼠經過時卡片會抬起、放大。若滑鼠劃過網格時介面閃爍、撕裂，請關閉此項。"
     },
     "confirm": {
       "signOutTitle": "登出",

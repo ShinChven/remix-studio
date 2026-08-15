@@ -111,7 +111,11 @@
       "selectTheme": "Select theme",
       "light": "Light",
       "dark": "Dark",
-      "system": "System Settings"
+      "system": "System Settings",
+      "glass": "Glass effects",
+      "glassDescription": "Blurs the background behind translucent panels. Turn it off if the interface flickers or tears while you move the pointer or when lists refresh.",
+      "motion": "Hover animations",
+      "motionDescription": "Cards lift and zoom when the pointer passes over them. Turn it off if the interface flickers or tears as you move the pointer across a grid."
     },
     "confirm": {
       "signOutTitle": "Sign out",
