@@ -8,8 +8,14 @@ const THEME_STORAGE_KEY = 'theme';
 const GLASS_STORAGE_KEY = 'glass';
 const MOTION_STORAGE_KEY = 'motion';
 
-function getStoredFlag(key: string): boolean {
-  return localStorage.getItem(key) !== 'off';
+/**
+ * Glass defaults to off: its `backdrop-filter` layers are what tear the UI apart
+ * on Chrome/macOS 27, and on all but a handful of surfaces the blur falls on the
+ * static body gradient, where it is visually a no-op anyway.
+ */
+function getStoredFlag(key: string, defaultOn: boolean): boolean {
+  const stored = localStorage.getItem(key);
+  return defaultOn ? stored !== 'off' : stored === 'on';
 }
 
 function applyFlag(key: 'glass' | 'motion', enabled: boolean) {
@@ -64,8 +70,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
     return resolveTheme(getStoredTheme());
   });
-  const [glass, setGlassState] = useState<boolean>(() => getStoredFlag(GLASS_STORAGE_KEY));
-  const [motion, setMotionState] = useState<boolean>(() => getStoredFlag(MOTION_STORAGE_KEY));
+  const [glass, setGlassState] = useState<boolean>(() => getStoredFlag(GLASS_STORAGE_KEY, false));
+  const [motion, setMotionState] = useState<boolean>(() => getStoredFlag(MOTION_STORAGE_KEY, true));
 
   const setGlass = useCallback((enabled: boolean) => {
     setGlassState(enabled);
