@@ -134,6 +134,84 @@ html, body {
   transition-duration: var(--tw-duration, var(--default-transition-duration));
 }
 
+/*
+ * Glass (backdrop-filter) master switch — `<html data-glass="off">`.
+ *
+ * The UI leans on `backdrop-blur-*` in ~330 places. Every one of those is a
+ * backdrop root: Chrome has to snapshot everything painted behind the element
+ * and re-blur it whenever that region is invalidated. Because the surfaces are
+ * translucent and stacked, a single invalidation — a `:hover` anywhere, one
+ * polled list update — cascades through the whole stack, and on some Chrome/
+ * macOS builds the tiles land out of sync and the page visibly tears.
+ *
+ * `[class*="backdrop-blur"]` is the hook: the Tailwind class name is still in
+ * the attribute even though we null the property out, so this reaches exactly
+ * the elements that opted into glass and nothing else.
+ */
+html[data-glass="off"] [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/*
+ * Most blurred surfaces sit directly on the body gradient, and blurring a
+ * smooth gradient is visually a no-op — dropping the blur costs nothing there.
+ * The exception is the sticky/fixed bars that page content scrolls underneath:
+ * without the blur their translucency lets moving content show through. Mark
+ * those with `glass-opaque` so they go solid when glass is off. Nothing here
+ * applies while glass is on, so the default look is unchanged.
+ */
+:root {
+  --glass-opaque-bg: #ffffff;
+}
+:where(.dark) {
+  --glass-opaque-bg: #0a0a0a;
+}
+html[data-glass="off"] .glass-opaque {
+  background-color: var(--glass-opaque-bg) !important;
+}
+
+/*
+ * Hover-lift master switch — `<html data-motion="off">`.
+ *
+ * The other half of the same problem. 53 elements lift or scale on hover and 16
+ * of those also carry a backdrop blur; four grid cards additionally take
+ * `hover:z-10`. Lifting a card re-sorts the stacking context and moves it over
+ * its neighbours, which invalidates their backdrop snapshots — so sweeping the
+ * pointer across a grid re-blurs the whole grid, card after card.
+ *
+ * Rather than blanket `transform: none` (which would also cancel base-state
+ * transforms like the off-canvas sidebar), this zeroes only the Tailwind
+ * transform components, and only on elements that opted into a hover-driven
+ * transform. No element in the app carries both a base and a hover transform,
+ * so the vars can be pinned unconditionally instead of under `:hover` — which
+ * is what lets the same rules cover the `group-hover:` variants, where the
+ * hovered element is the ancestor rather than the transformed one. The paired
+ * `[class*="hover/"]` selectors pick up the named variants (`group-hover/card:`).
+ * These rules are unlayered, so they win over `@layer utilities` without
+ * needing `!important`.
+ */
+html[data-motion="off"] :is(
+  [class*="hover:translate-"],
+  [class*="hover:-translate-"],
+  [class*="hover/"][class*=":translate-"],
+  [class*="hover/"][class*=":-translate-"]
+) {
+  --tw-translate-x: 0;
+  --tw-translate-y: 0;
+}
+html[data-motion="off"] :is(
+  [class*="hover:scale-"],
+  [class*="hover/"][class*=":scale-"]
+) {
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  --tw-scale-z: 1;
+}
+html[data-motion="off"] [class*="hover:z-"]:hover {
+  z-index: auto;
+}
+
 button:not(:disabled),
 [role="button"]:not([aria-disabled="true"]),
 [role="tab"]:not([aria-disabled="true"]),

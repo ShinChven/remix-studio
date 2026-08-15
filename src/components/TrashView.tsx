@@ -136,7 +136,7 @@ export function TrashView() {
         />
 
       {/* Stays on one row on phones — stacking made this pinned bar twice as tall as it needs to be. */}
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-2 md:gap-4 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 p-2.5 md:p-4 rounded-card shadow-lg shadow-black/5 dark:shadow-black/20">
+      <div className="glass-opaque sticky top-0 z-20 flex items-center justify-between gap-2 md:gap-4 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 p-2.5 md:p-4 rounded-card shadow-lg shadow-black/5 dark:shadow-black/20">
         {/* A phone cannot fit the totals next to the selection actions, and the count is already on the restore button. */}
         <div className={`min-w-0 items-center gap-1.5 md:gap-2 ${selectedIds.size > 0 ? 'hidden sm:flex' : 'flex'}`}>
           <span className="truncate text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">

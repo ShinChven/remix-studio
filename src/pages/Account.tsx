@@ -45,11 +45,37 @@ function formatBytes(bytes: number) {
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
+function SettingSwitch({ label, description, checked, onChange }: {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start justify-between gap-6">
+      <span className="min-w-0">
+        <span className="block text-sm font-bold text-neutral-900 dark:text-white">{label}</span>
+        <span className="mt-1 block text-sm text-neutral-600 dark:text-neutral-400">{description}</span>
+      </span>
+      <input
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only peer"
+      />
+      <span className="relative mt-0.5 h-6 w-11 flex-shrink-0 rounded-full bg-neutral-300 transition-colors peer-checked:bg-indigo-600 peer-checked:[&>span]:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-500/50 peer-focus-visible:ring-offset-2 dark:bg-neutral-700 dark:peer-focus-visible:ring-offset-neutral-900">
+        <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform" />
+      </span>
+    </label>
+  );
+}
+
 export function Account() {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { logout } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, glass, setGlass, motion, setMotion } = useTheme();
   const [user, setUser] = useState<User | null>(null);
   const [storage, setStorage] = useState<StorageAnalysis | null>(null);
   const [projectCount, setProjectCount] = useState<number | null>(null);
@@ -1076,6 +1102,21 @@ export function Account() {
                     );
                   })}
                 </div>
+              </div>
+
+              <div className="mt-8 space-y-6 border-t border-neutral-200/50 dark:border-white/5 pt-6">
+                <SettingSwitch
+                  label={t('account.preferences.glass')}
+                  description={t('account.preferences.glassDescription')}
+                  checked={glass}
+                  onChange={setGlass}
+                />
+                <SettingSwitch
+                  label={t('account.preferences.motion')}
+                  description={t('account.preferences.motionDescription')}
+                  checked={motion}
+                  onChange={setMotion}
+                />
               </div>
             </section>
           </div>

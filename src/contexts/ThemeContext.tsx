@@ -5,6 +5,16 @@ type ResolvedTheme = 'light' | 'dark';
 
 const DEFAULT_THEME: Theme = 'system';
 const THEME_STORAGE_KEY = 'theme';
+const GLASS_STORAGE_KEY = 'glass';
+const MOTION_STORAGE_KEY = 'motion';
+
+function getStoredFlag(key: string): boolean {
+  return localStorage.getItem(key) !== 'off';
+}
+
+function applyFlag(key: 'glass' | 'motion', enabled: boolean) {
+  window.document.documentElement.dataset[key] = enabled ? 'on' : 'off';
+}
 
 function getStoredTheme(): Theme {
   const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
@@ -37,6 +47,12 @@ interface ThemeContextType {
   theme: Theme;
   resolvedTheme: ResolvedTheme;
   setTheme: (theme: Theme, event?: React.MouseEvent | MouseEvent) => void;
+  /** Whether translucent surfaces render their backdrop blur. */
+  glass: boolean;
+  setGlass: (enabled: boolean) => void;
+  /** Whether cards lift and scale on hover. */
+  motion: boolean;
+  setMotion: (enabled: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -48,6 +64,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
     return resolveTheme(getStoredTheme());
   });
+  const [glass, setGlassState] = useState<boolean>(() => getStoredFlag(GLASS_STORAGE_KEY));
+  const [motion, setMotionState] = useState<boolean>(() => getStoredFlag(MOTION_STORAGE_KEY));
+
+  const setGlass = useCallback((enabled: boolean) => {
+    setGlassState(enabled);
+    localStorage.setItem(GLASS_STORAGE_KEY, enabled ? 'on' : 'off');
+    applyFlag('glass', enabled);
+  }, []);
+
+  const setMotion = useCallback((enabled: boolean) => {
+    setMotionState(enabled);
+    localStorage.setItem(MOTION_STORAGE_KEY, enabled ? 'on' : 'off');
+    applyFlag('motion', enabled);
+  }, []);
 
   const setTheme = useCallback((nextTheme: Theme, event?: React.MouseEvent | MouseEvent) => {
     const isAppearanceTransition =
@@ -123,8 +153,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     };
   }, [theme]);
 
+  useEffect(() => {
+    applyFlag('glass', glass);
+    applyFlag('motion', motion);
+  }, [glass, motion]);
+
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, glass, setGlass, motion, setMotion }}>
       {children}
     </ThemeContext.Provider>
   );
