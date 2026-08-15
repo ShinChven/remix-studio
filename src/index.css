@@ -161,10 +161,12 @@ html[data-glass="off"] [class*="backdrop-blur"] {
  * those with `glass-opaque` so they go solid when glass is off. Nothing here
  * applies while glass is on, so the default look is unchanged.
  */
+/* `:root` and the theme class both match <html>, so the dark override has to
+ * out-specify `:root` — `:where(.dark)` contributes zero specificity and loses. */
 :root {
   --glass-opaque-bg: #ffffff;
 }
-:where(.dark) {
+:root:is(.dark) {
   --glass-opaque-bg: #0a0a0a;
 }
 html[data-glass="off"] .glass-opaque {

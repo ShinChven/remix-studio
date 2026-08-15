@@ -113,7 +113,7 @@
       "dark": "Dark",
       "system": "System Settings",
       "glass": "Glass effects",
-      "glassDescription": "Blurs the background behind translucent panels. Turn it off if the interface flickers or tears while you move the pointer or when lists refresh.",
+      "glassDescription": "Blurs the background behind translucent panels and dialog overlays. Off by default: it forces the browser to re-blur large regions on every repaint, which tears the interface on some Chrome versions.",
       "motion": "Hover animations",
       "motionDescription": "Cards lift and zoom when the pointer passes over them. Turn it off if the interface flickers or tears as you move the pointer across a grid."
     },
