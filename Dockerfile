@@ -23,6 +23,10 @@ RUN npx prisma generate
 # Copy the rest of the application
 COPY . .
 
+# .git is excluded from the build context, so the commit is passed in explicitly.
+ARG GIT_COMMIT=""
+ENV VITE_GIT_COMMIT=$GIT_COMMIT
+
 # Build both frontend and backend
 RUN npm run build
 

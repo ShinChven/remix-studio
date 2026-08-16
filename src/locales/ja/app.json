@@ -30,7 +30,9 @@
     "storageUnavailable": "ストレージ利用不可",
     "toggleMenu": "メニュー切り替え",
     "expandSidebar": "サイドバーを展開",
-    "collapseSidebar": "サイドバーを折りたたむ"
+    "collapseSidebar": "サイドバーを折りたたむ",
+    "version": "バージョン",
+    "commit": "コミット"
   },
   "confirmModal": {
     "confirm": "確認",

@@ -30,7 +30,9 @@
     "storageUnavailable": "Storage unavailable",
     "toggleMenu": "Toggle Menu",
     "expandSidebar": "Expand Sidebar",
-    "collapseSidebar": "Collapse Sidebar"
+    "collapseSidebar": "Collapse Sidebar",
+    "version": "Version",
+    "commit": "Commit"
   },
   "confirmModal": {
     "confirm": "Confirm",

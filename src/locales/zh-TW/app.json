@@ -30,7 +30,9 @@
     "storageUnavailable": "存儲不可用",
     "toggleMenu": "切換選單",
     "expandSidebar": "展開側邊欄",
-    "collapseSidebar": "收起側邊欄"
+    "collapseSidebar": "收起側邊欄",
+    "version": "版本",
+    "commit": "提交"
   },
   "confirmModal": {
     "confirm": "確認",

@@ -30,7 +30,9 @@
     "storageUnavailable": "Stockage indisponible",
     "toggleMenu": "Basculer le menu",
     "expandSidebar": "Développer la barre latérale",
-    "collapseSidebar": "Réduire la barre latérale"
+    "collapseSidebar": "Réduire la barre latérale",
+    "version": "Version",
+    "commit": "Commit"
   },
   "confirmModal": {
     "confirm": "Confirmer",
