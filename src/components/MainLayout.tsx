@@ -10,6 +10,9 @@ import { CommandPalette } from './CommandPalette';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
+const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.12.1';
+const GIT_COMMIT = import.meta.env.VITE_GIT_COMMIT || '';
+
 function NavItem({ to, icon, label, isActive, isCollapsed, onClick }: {
   to: string;
   icon: React.ReactNode;
@@ -112,7 +115,7 @@ export function MainLayout() {
         if (res.ok) {
           const data = await res.json();
           const latestVersion = data.tag_name.replace(/^v/, '');
-          const currentVersion = import.meta.env.VITE_APP_VERSION || '1.12.1';
+          const currentVersion = APP_VERSION;
           
           if (latestVersion && latestVersion !== currentVersion) {
             const v1 = latestVersion.split('.').map(Number);
@@ -401,6 +404,25 @@ export function MainLayout() {
               )}
             </Link>
           )}
+
+          <div
+            className={`mt-3 flex flex-col items-center gap-0.5 text-[10px] leading-tight text-neutral-400 dark:text-neutral-600 ${isCollapsed ? 'lg:gap-0' : ''}`}
+          >
+            <span className="font-mono" title={`${t('mainLayout.version')} ${APP_VERSION}`}>
+              v{APP_VERSION}
+            </span>
+            {GIT_COMMIT && (
+              <a
+                href={`https://github.com/shinchven/remix-studio/commit/${GIT_COMMIT}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono transition-colors hover:text-neutral-600 dark:hover:text-neutral-400"
+                title={`${t('mainLayout.commit')} ${GIT_COMMIT}`}
+              >
+                {GIT_COMMIT}
+              </a>
+            )}
+          </div>
         </div>
       </div>
 
