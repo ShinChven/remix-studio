@@ -7,18 +7,7 @@ export function shouldShowYear(...dates: (Date | null | undefined)[]): boolean {
   return dates.some((date) => !!date && date.getFullYear() !== currentYear);
 }
 
-/** "Mar 3, 10:00 AM", or "Mar 3, 2027, 10:00 AM" when the year matters. */
-export function formatDateTime(date: Date, showYear = shouldShowYear(date)): string {
-  return date.toLocaleString(undefined, {
-    ...(showYear ? { year: 'numeric' as const } : {}),
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-/** "Mar 3", or "Mar 3, 2027" when the year matters. */
+/** "Mar 3", or "Mar 3, 2027" when the year matters. Pass `true` to always keep the year. */
 export function formatShortDate(date: Date, showYear = shouldShowYear(date)): string {
   return date.toLocaleDateString(undefined, {
     ...(showYear ? { year: 'numeric' as const } : {}),

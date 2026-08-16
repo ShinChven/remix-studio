@@ -24,7 +24,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
-import { formatDateTime, formatShortDate, formatTimeOrDate, shouldShowYear } from '../lib/date';
+import { formatShortDate, formatTimeOrDate } from '../lib/date';
 import { PostingTrendChart, lastNDaysRange } from '../components/PostingTrendChart';
 
 type CampaignStatus = 'Active' | 'Inactive';
@@ -81,10 +81,9 @@ function mapCampaign(raw: any): CampaignCardModel {
     end = new Date(Math.max(...scheduledTimes));
   }
 
-  // Both ends share one decision so a range never mixes a bare date with a dated one.
-  const showYear = shouldShowYear(start, end);
-  const startDate = start ? formatDateTime(start, showYear) : 'Not scheduled';
-  const endDate = end ? formatDateTime(end, showYear) : 'Not scheduled';
+  // Cards carry the date and year only; the campaign detail page has the time of day.
+  const startDate = start ? formatShortDate(start, true) : 'Not scheduled';
+  const endDate = end ? formatShortDate(end, true) : 'Not scheduled';
 
   let latestPostThumbnail = '';
   const postWithMedia = posts.find((p: any) => p.media && p.media.length > 0);
