@@ -8,6 +8,28 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.21.1 — New models, one-click voice send, and a calmer interface
+
+*Grok 4.6 and Gemini 3.7 Flash arrive, the mic and Send button finally work as one, and two new switches let you tame the interface if your browser struggles with it.*
+
+**Added**
+
+- **Grok 4.6 & Gemini 3.7 Flash** — Both new releases are available for text projects and the assistant. Grok 4.6 brings a 500K context; Gemini 3.7 Flash brings 1M tokens in and 64K out, on both Google AI and Vertex AI.
+- **Glass effects & Hover animations switches** — Two new appearance switches in Account preferences, both on by default. **Glass effects** controls the blur behind translucent panels and dialogs; **Hover animations** controls whether cards lift and zoom under your pointer. If the interface ever flickers or tears as you move the mouse across a grid, turning off Glass effects is the first thing to try.
+
+**Improved**
+
+- **Send while you're still talking** — Press Send while the mic is recording and it now stops, transcribes and sends in one go, instead of making you stop, wait, then press Send. Enter and Cmd/Ctrl+Enter do the same. If the transcript fails or picks up no speech, nothing is sent and your draft stays put.
+- **A calmer project pane** — The tab bar, the selection bar and the job rows used to sit at three slightly different shades. They now share one flat colour, top to bottom.
+
+**Fixed**
+
+- **White bars in dark mode** — Sticky bars turned white in dark mode when Glass effects were off. They now match their surroundings.
+
+**Changed**
+
+- **Grok Imagine Pro now points at Grok Imagine Quality** — xAI deactivated the Pro tier in May 2026, so projects pinned to it had no working model upstream. Existing selections keep working and need no changes on your side.
+
 ## 1.21.0 — MiniMax, a posting trend chart, and assistants that can run your projects
 
 *A new provider across all four modalities, new image and video models, a chart that shows what actually went out, and an assistant that can draft, start, and clear generation jobs for you.*
