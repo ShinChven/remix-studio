@@ -138,6 +138,7 @@ export function Campaigns() {
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
   const [recentPostsLoading, setRecentPostsLoading] = useState(true);
   const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
+  const [scheduledPostsTotal, setScheduledPostsTotal] = useState(0);
   const [scheduledPostsLoading, setScheduledPostsLoading] = useState(true);
   const trendRange = useMemo(() => lastNDaysRange(7), []);
 
@@ -170,6 +171,7 @@ export function Campaigns() {
     try {
       const data = await fetchScheduledPosts(1, 5);
       setScheduledPosts(data.items);
+      setScheduledPostsTotal(data.total);
     } catch (error) {
       console.error('Failed to load scheduled posts', error);
     } finally {
@@ -556,6 +558,9 @@ export function Campaigns() {
                 <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
                   <Calendar className="h-5 w-5 text-indigo-500" />
                   {t('scheduledPosts')}
+                  {scheduledPostsTotal > 0 && (
+                    <span className="text-sm font-normal text-neutral-500 dark:text-neutral-500">({scheduledPostsTotal})</span>
+                  )}
                 </h3>
               </div>
 
