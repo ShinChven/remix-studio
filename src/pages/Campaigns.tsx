@@ -24,6 +24,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
+import { formatShortDate, formatTimeOrDate } from '../lib/date';
 import { PostingTrendChart, lastNDaysRange } from '../components/PostingTrendChart';
 
 type CampaignStatus = 'Active' | 'Inactive';
@@ -57,15 +58,6 @@ function campaignThumbnail(id: string) {
   return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(id)}&backgroundColor=0f172a,1e293b,334155&shape1Color=6366f1,818cf8,4f46e5`;
 }
 
-function formatCampaignDateTime(value: Date) {
-  return value.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 function mapCampaign(raw: any): CampaignCardModel {
   const posts = Array.isArray(raw.posts) ? raw.posts : [];
   const totalPosts = raw._count?.posts ?? posts.length ?? 0;
@@ -73,20 +65,25 @@ function mapCampaign(raw: any): CampaignCardModel {
   const scheduledTimes = posts
     .map((post: any) => (post.scheduledAt ? new Date(post.scheduledAt).getTime() : Number.NaN))
     .filter(Number.isFinite);
-  let startDate = 'Not scheduled';
-  let endDate = 'Not scheduled';
+
+  let start: Date | null = null;
+  let end: Date | null = null;
 
   if (raw.scheduledStart) {
-    startDate = formatCampaignDateTime(new Date(raw.scheduledStart));
+    start = new Date(raw.scheduledStart);
   } else if (scheduledTimes.length > 0) {
-    startDate = formatCampaignDateTime(new Date(Math.min(...scheduledTimes)));
+    start = new Date(Math.min(...scheduledTimes));
   }
 
   if (raw.scheduledEnd) {
-    endDate = formatCampaignDateTime(new Date(raw.scheduledEnd));
+    end = new Date(raw.scheduledEnd);
   } else if (scheduledTimes.length > 0) {
-    endDate = formatCampaignDateTime(new Date(Math.max(...scheduledTimes)));
+    end = new Date(Math.max(...scheduledTimes));
   }
+
+  // Cards carry the date and year only; the campaign detail page has the time of day.
+  const startDate = start ? formatShortDate(start, true) : 'Not scheduled';
+  const endDate = end ? formatShortDate(end, true) : 'Not scheduled';
 
   let latestPostThumbnail = '';
   const postWithMedia = posts.find((p: any) => p.media && p.media.length > 0);
@@ -138,6 +135,7 @@ export function Campaigns() {
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
   const [recentPostsLoading, setRecentPostsLoading] = useState(true);
   const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
+  const [scheduledPostsTotal, setScheduledPostsTotal] = useState(0);
   const [scheduledPostsLoading, setScheduledPostsLoading] = useState(true);
   const trendRange = useMemo(() => lastNDaysRange(7), []);
 
@@ -170,6 +168,7 @@ export function Campaigns() {
     try {
       const data = await fetchScheduledPosts(1, 5);
       setScheduledPosts(data.items);
+      setScheduledPostsTotal(data.total);
     } catch (error) {
       console.error('Failed to load scheduled posts', error);
     } finally {
@@ -358,11 +357,11 @@ export function Campaigns() {
                         <div className="mb-4 grid grid-cols-2 gap-2">
                           <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-md">
                             <div className="mb-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white/45">Start</div>
-                            <div className="truncate text-[12px] font-bold text-white/90">{campaign.startDate}</div>
+                            <div className="text-[12px] font-bold leading-tight text-white/90">{campaign.startDate}</div>
                           </div>
                           <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-md">
                             <div className="mb-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white/45">End</div>
-                            <div className="truncate text-[12px] font-bold text-white/90">{campaign.endDate}</div>
+                            <div className="text-[12px] font-bold leading-tight text-white/90">{campaign.endDate}</div>
                           </div>
                         </div>
                         
@@ -516,7 +515,7 @@ export function Campaigns() {
                               <span className="shrink-0 text-neutral-300 dark:text-neutral-700">•</span>
                               <span className="shrink-0 flex items-center gap-1 opacity-80">
                                 <Clock className="h-3 w-3" />
-                                {new Date(post.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {formatTimeOrDate(new Date(post.updatedAt))}
                               </span>
                             </div>
                           </div>
@@ -556,6 +555,9 @@ export function Campaigns() {
                 <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
                   <Calendar className="h-5 w-5 text-indigo-500" />
                   {t('scheduledPosts')}
+                  {scheduledPostsTotal > 0 && (
+                    <span className="text-sm font-normal text-neutral-500 dark:text-neutral-500">({scheduledPostsTotal})</span>
+                  )}
                 </h3>
               </div>
 
@@ -606,7 +608,7 @@ export function Campaigns() {
                           <div className="flex items-center gap-2 text-[13px] font-medium text-neutral-500">
                             <span className="flex items-center gap-1.5 font-bold text-indigo-600 dark:text-indigo-400">
                               <Clock className="h-3.5 w-3.5" />
-                              {new Date(post.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              {formatShortDate(new Date(post.scheduledAt))}
                             </span>
                             <span className="shrink-0 text-neutral-300 dark:text-neutral-700">•</span>
                             <span className="truncate opacity-80">{post.campaign?.name}</span>

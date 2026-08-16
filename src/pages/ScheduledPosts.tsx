@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { fetchScheduledPosts, fetchScheduledPostCounts } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
+import { formatShortDate } from '../lib/date';
 import { PageNav } from '../components/PageNav';
 
 type ViewMode = 'list' | 'calendar';
@@ -64,6 +65,7 @@ export function ScheduledPosts() {
   const [counts, setCounts] = useState<PostCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  const [totalScheduled, setTotalScheduled] = useState<number | null>(null);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState(q);
 
@@ -78,6 +80,8 @@ export function ScheduledPosts() {
       setPosts(data.items);
       setTotal(data.total);
       setTotalPages(data.totalPages);
+      // Without a search filter the list total is already the overall total.
+      if (!q) setTotalScheduled(data.total);
     } catch (error: any) {
       console.error('[ScheduledPosts] loadPosts error:', error);
       toast.error(error.message || 'Failed to load scheduled posts');
@@ -115,6 +119,16 @@ export function ScheduledPosts() {
     }
   };
 
+  // Total across every scheduled post, independent of the search filter or the calendar month.
+  const loadTotalScheduled = async () => {
+    try {
+      const data = await fetchScheduledPosts(1, 1);
+      setTotalScheduled(data.total);
+    } catch (error: any) {
+      console.error('[ScheduledPosts] loadTotalScheduled error:', error);
+    }
+  };
+
   useEffect(() => {
     if (viewMode === 'list') {
       void loadPosts();
@@ -122,6 +136,12 @@ export function ScheduledPosts() {
       void loadCounts();
     }
   }, [viewMode, page, q, currentMonth]);
+
+  useEffect(() => {
+    // In list view without a search, loadPosts already reports the overall total.
+    if (viewMode === 'list' && !q) return;
+    void loadTotalScheduled();
+  }, [viewMode, q]);
 
   const toggleView = (mode: ViewMode) => {
     const params = new URLSearchParams(searchParams);
@@ -197,11 +217,31 @@ export function ScheduledPosts() {
     return countsByDate.get(formatLocalDateKey(date));
   }
 
+  // The fetched range covers full weeks, so only count days belonging to the displayed month.
+  const monthTotal = useMemo(
+    () =>
+      calendarDays.reduce(
+        (sum, day) =>
+          day.isCurrentMonth ? sum + (countsByDate.get(formatLocalDateKey(day.date))?.postCount || 0) : sum,
+        0,
+      ),
+    [calendarDays, countsByDate],
+  );
+
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       <div className="w-full flex flex-col gap-6 pb-20">
         <PageHeader
-          title="Scheduled Posts"
+          title={
+            <span className="inline-flex flex-wrap items-center gap-3">
+              Scheduled Posts
+              {totalScheduled !== null && (
+                <span className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-bold text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+                  {totalScheduled} total
+                </span>
+              )}
+            </span>
+          }
           description="View and manage your upcoming social media posts."
           backLink={{ to: '/campaigns', label: 'Back to Campaigns' }}
           actions={
@@ -254,6 +294,11 @@ export function ScheduledPosts() {
               >
                 Search
               </button>
+              {!isLoading && total > 0 && (
+                <span className="ml-auto hidden shrink-0 text-xs font-medium text-neutral-500 sm:block">
+                  {`Showing ${(page - 1) * 25 + 1}–${(page - 1) * 25 + posts.length} of ${total}${q ? ' matching' : ''} ${total === 1 ? 'post' : 'posts'}`}
+                </span>
+              )}
             </div>
 
             <div className="overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-sm dark:border-white/5 dark:bg-neutral-900/50">
@@ -306,7 +351,7 @@ export function ScheduledPosts() {
                       </div>
                       <div className="flex flex-col text-xs text-neutral-500">
                         <span className="font-bold text-neutral-700 dark:text-neutral-300">
-                          {new Date(post.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          {formatShortDate(new Date(post.scheduledAt))}
                         </span>
                         <span>{new Date(post.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
@@ -325,7 +370,9 @@ export function ScheduledPosts() {
 
               {totalPages > 1 && (
                 <div className="px-4 sm:px-6 py-4 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/30 flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <span className="text-xs text-neutral-500">Page {page} of {totalPages}</span>
+                  <span className="text-xs text-neutral-500">
+                    Page {page} of {totalPages} &middot; {total} {total === 1 ? 'post' : 'posts'}
+                  </span>
                   <PageNav page={page} pages={totalPages} onPageChange={updatePage} />
                 </div>
               )}
@@ -333,9 +380,9 @@ export function ScheduledPosts() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <h3 className="text-xl font-bold">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <h3 className="whitespace-nowrap text-lg font-bold sm:text-xl">
                   {currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
                 </h3>
                 <div className="flex items-center gap-1">
@@ -350,6 +397,12 @@ export function ScheduledPosts() {
                   </button>
                 </div>
               </div>
+              {!isLoading && (
+                <span className="text-xs font-medium text-neutral-500">
+                  {monthTotal} {monthTotal === 1 ? 'post' : 'posts'} this month
+                  {totalScheduled !== null && <> &middot; {totalScheduled} total</>}
+                </span>
+              )}
             </div>
 
             <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-white/10 rounded-card overflow-hidden border border-neutral-200 dark:border-white/10">
@@ -380,9 +433,10 @@ export function ScheduledPosts() {
                     </div>
                     {dayData && dayData.postCount > 0 && (
                       <div className="mt-2 space-y-1">
-                        <div className="px-2 py-1 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg border border-indigo-100 dark:border-indigo-500/20">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase">Posts</span>
+                        <div className="px-1.5 py-1 sm:px-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg border border-indigo-100 dark:border-indigo-500/20">
+                          {/* A day cell is only ~50px wide on a phone, so the label drops out and the count stays. */}
+                          <div className="flex items-center justify-center gap-1 sm:justify-between">
+                            <span className="hidden sm:inline text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase">Posts</span>
                             <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">{dayData.postCount}</span>
                           </div>
                         </div>
