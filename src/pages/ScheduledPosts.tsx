@@ -380,9 +380,9 @@ export function ScheduledPosts() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <h3 className="text-xl font-bold">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <h3 className="whitespace-nowrap text-lg font-bold sm:text-xl">
                   {currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
                 </h3>
                 <div className="flex items-center gap-1">
@@ -433,9 +433,10 @@ export function ScheduledPosts() {
                     </div>
                     {dayData && dayData.postCount > 0 && (
                       <div className="mt-2 space-y-1">
-                        <div className="px-2 py-1 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg border border-indigo-100 dark:border-indigo-500/20">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase">Posts</span>
+                        <div className="px-1.5 py-1 sm:px-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg border border-indigo-100 dark:border-indigo-500/20">
+                          {/* A day cell is only ~50px wide on a phone, so the label drops out and the count stays. */}
+                          <div className="flex items-center justify-center gap-1 sm:justify-between">
+                            <span className="hidden sm:inline text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase">Posts</span>
                             <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">{dayData.postCount}</span>
                           </div>
                         </div>

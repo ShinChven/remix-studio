@@ -358,11 +358,11 @@ export function Campaigns() {
                         <div className="mb-4 grid grid-cols-2 gap-2">
                           <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-md">
                             <div className="mb-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white/45">Start</div>
-                            <div className="truncate text-[12px] font-bold text-white/90">{campaign.startDate}</div>
+                            <div className="text-[12px] font-bold leading-tight text-white/90">{campaign.startDate}</div>
                           </div>
                           <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-md">
                             <div className="mb-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white/45">End</div>
-                            <div className="truncate text-[12px] font-bold text-white/90">{campaign.endDate}</div>
+                            <div className="text-[12px] font-bold leading-tight text-white/90">{campaign.endDate}</div>
                           </div>
                         </div>
                         
