@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { fetchScheduledPosts, fetchScheduledPostCounts } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
+import { formatShortDate } from '../lib/date';
 import { PageNav } from '../components/PageNav';
 
 type ViewMode = 'list' | 'calendar';
@@ -350,7 +351,7 @@ export function ScheduledPosts() {
                       </div>
                       <div className="flex flex-col text-xs text-neutral-500">
                         <span className="font-bold text-neutral-700 dark:text-neutral-300">
-                          {new Date(post.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          {formatShortDate(new Date(post.scheduledAt))}
                         </span>
                         <span>{new Date(post.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
