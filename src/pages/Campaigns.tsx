@@ -338,23 +338,55 @@ export function Campaigns() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
                       </div>
 
+                      {/* Actions Menu (top-right) */}
+                      <div className="absolute right-3 top-3 z-20" onClick={(event) => event.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => setOpenMenuId(openMenuId === campaign.id ? null : campaign.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-black/25 text-white/80 backdrop-blur-md transition hover:bg-black/40 hover:text-white"
+                        >
+                          <MoreHorizontal className="h-5 w-5" />
+                        </button>
+                        {openMenuId === campaign.id && (
+                          <div className="absolute right-0 top-full mt-2 z-30 w-44 overflow-hidden rounded-xl border border-white/10 bg-neutral-900/95 py-1 text-sm shadow-2xl backdrop-blur-xl">
+                            <button className="block w-full px-4 py-2 text-left text-white/80 hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)}>
+                              {t('menu.edit')}
+                            </button>
+                            <button className="block w-full px-4 py-2 text-left text-white/80 hover:bg-white/10" onClick={() => void toggleCampaignStatus(campaign)}>
+                              {campaign.status === 'Active' ? t('menu.pause') : t('menu.resume')}
+                            </button>
+                            <button className="block w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/10" onClick={() => { setOpenMenuId(null); setDeleteTarget(campaign); }}>
+                              {t('menu.delete')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="relative z-10 flex flex-col p-5 w-full">
                         {/* Status Label */}
                         <div className="text-[12px] font-bold tracking-widest text-white/80 mb-1 uppercase">
                           {campaign.status === 'Active' ? t('status.active') : t('status.paused')}
                         </div>
-                        
-                        {/* Title */}
-                        <h2 className="text-2xl font-medium tracking-tight text-white mb-2 line-clamp-1">
-                          {campaign.name}
-                        </h2>
+
+                        {/* Title + Progress */}
+                        <div className="mb-2 flex items-center gap-3">
+                          <h2 className="min-w-0 flex-1 text-2xl font-medium tracking-tight text-white line-clamp-1">
+                            {campaign.name}
+                          </h2>
+                          <div className="flex shrink-0 items-center gap-2 text-[15px] font-medium text-white/90">
+                            <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>{campaign.totalPosts > 0 ? `${completedPosts}/${campaign.totalPosts} posts` : t('status.setup')}</span>
+                          </div>
+                        </div>
                         
                         {/* Description */}
                         <p className="text-[15px] font-medium leading-relaxed text-white/70 line-clamp-2 mb-4">
                           {campaign.description}
                         </p>
 
-                        <div className="mb-4 grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-2">
                           <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-md">
                             <div className="mb-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white/45">Start</div>
                             <div className="text-[12px] font-bold leading-tight text-white/90">{campaign.startDate}</div>
@@ -362,39 +394,6 @@ export function Campaigns() {
                           <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-md">
                             <div className="mb-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white/45">End</div>
                             <div className="text-[12px] font-bold leading-tight text-white/90">{campaign.endDate}</div>
-                          </div>
-                        </div>
-                        
-                        {/* Bottom Row */}
-                        <div className="flex items-center justify-between text-white/90">
-                          <div className="flex items-center gap-2 font-medium text-[15px]">
-                            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            <span>{campaign.totalPosts > 0 ? `${completedPosts}/${campaign.totalPosts} posts` : t('status.setup')}</span>
-                          </div>
-
-                          <div className="relative" onClick={(event) => event.stopPropagation()}>
-                            <button
-                              type="button"
-                              onClick={() => setOpenMenuId(openMenuId === campaign.id ? null : campaign.id)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full text-white/80 transition hover:bg-white/20 hover:text-white"
-                            >
-                              <MoreHorizontal className="h-5 w-5" />
-                            </button>
-                            {openMenuId === campaign.id && (
-                              <div className="absolute bottom-full right-0 mb-2 z-30 w-44 overflow-hidden rounded-xl border border-white/10 bg-neutral-900/95 py-1 text-sm shadow-2xl backdrop-blur-xl">
-                                <button className="block w-full px-4 py-2 text-left text-white/80 hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)}>
-                                  {t('menu.edit')}
-                                </button>
-                                <button className="block w-full px-4 py-2 text-left text-white/80 hover:bg-white/10" onClick={() => void toggleCampaignStatus(campaign)}>
-                                  {campaign.status === 'Active' ? t('menu.pause') : t('menu.resume')}
-                                </button>
-                                <button className="block w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/10" onClick={() => { setOpenMenuId(null); setDeleteTarget(campaign); }}>
-                                  {t('menu.delete')}
-                                </button>
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>
