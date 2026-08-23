@@ -14,6 +14,8 @@ import {
   Provider,
   AlbumItem,
   AspectRatioCount,
+  AlbumTagCount,
+  AlbumTagMatch,
   estimatePromptLength,
   formatPromptLimit,
   isPromptOverLimit,
@@ -22,7 +24,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
@@ -86,6 +88,7 @@ const RIGHT_PANEL_REFRESH_EVENT_REASONS = new Set([
   'album.deleted',
   'album.renamed',
   'album.restored',
+  'album.tagged',
 ]);
 
 function buildJobFilename(filenameParts: string[], suffixId: string): string {
@@ -141,6 +144,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [albumPages, setAlbumPages] = useState<number>(1);
   const [albumTotalSize, setAlbumTotalSize] = useState<number>(0);
   const [albumAspectRatioCounts, setAlbumAspectRatioCounts] = useState<AspectRatioCount[]>([]);
+  const [albumTagCounts, setAlbumTagCounts] = useState<AlbumTagCount[]>([]);
   // Album view state is URL-driven (subscribes to the search params) so it is
   // shareable and survives back/forward, matching the `tab` param pattern.
   const albumPage = Math.max(1, Math.floor(Number(searchParams.get('albumPage')) || 1));
@@ -154,13 +158,32 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     () => (albumRatiosParam ? albumRatiosParam.split(',').filter(Boolean) : []),
     [albumRatiosParam],
   );
+  const albumTagsParam = searchParams.get('albumTags') || '';
+  const albumSelectedTags = React.useMemo(
+    () => (albumTagsParam ? albumTagsParam.split(',').filter(Boolean) : []),
+    [albumTagsParam],
+  );
+  const albumTagMatch: AlbumTagMatch = searchParams.get('albumTagMatch') === 'any' ? 'any' : 'all';
 
   const updateAlbumParams = useCallback(
-    (updates: { page?: number; pageSize?: number | 'all'; sort?: 'newest' | 'oldest'; ratios?: string[] }) => {
+    (updates: {
+      page?: number;
+      pageSize?: number | 'all';
+      sort?: 'newest' | 'oldest';
+      ratios?: string[];
+      tags?: string[];
+      tagMatch?: AlbumTagMatch;
+    }) => {
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         // Any change other than the page number itself returns to page 1.
-        if (updates.pageSize !== undefined || updates.sort !== undefined || updates.ratios !== undefined) {
+        if (
+          updates.pageSize !== undefined
+          || updates.sort !== undefined
+          || updates.ratios !== undefined
+          || updates.tags !== undefined
+          || updates.tagMatch !== undefined
+        ) {
           next.delete('albumPage');
         }
         if (updates.page !== undefined) {
@@ -178,6 +201,14 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         if (updates.ratios !== undefined) {
           if (updates.ratios.length > 0) next.set('albumRatios', updates.ratios.join(','));
           else next.delete('albumRatios');
+        }
+        if (updates.tags !== undefined) {
+          if (updates.tags.length > 0) next.set('albumTags', updates.tags.join(','));
+          else next.delete('albumTags');
+        }
+        if (updates.tagMatch !== undefined) {
+          if (updates.tagMatch === 'any') next.set('albumTagMatch', 'any');
+          else next.delete('albumTagMatch');
         }
         return next;
       });
@@ -305,6 +336,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setAlbumPages(1);
     setAlbumTotalSize(0);
     setAlbumAspectRatioCounts([]);
+    setAlbumTagCounts([]);
     // Reset the URL-driven album view when switching to a different project, but
     // preserve any deep-linked params on the initial mount.
     if (prevAlbumProjectIdRef.current !== null && prevAlbumProjectIdRef.current !== project.id) {
@@ -314,6 +346,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         next.delete('albumSize');
         next.delete('albumSort');
         next.delete('albumRatios');
+        next.delete('albumTags');
+        next.delete('albumTagMatch');
         return next;
       }, { replace: true });
     }
@@ -337,6 +371,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         setAlbumTotal(res.total);
         setAlbumTotalSize(res.totalSize);
         setAlbumAspectRatioCounts(res.aspectRatioCounts);
+        setAlbumTagCounts(res.tagCounts || []);
       }).catch(console.error),
       fetchProjectCompletedJobs(project.id, { page: 1, limit: 1 }).then(res => {
         setCompletedTotal(res.total);
@@ -354,7 +389,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     pageSize: albumPageSize,
     sort: albumSort,
     aspectRatios: albumSelectedRatios,
-  }), [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios]);
+    tags: albumSelectedTags,
+    tagMatch: albumTagMatch,
+  }), [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, albumSelectedTags, albumTagMatch]);
   const loadAlbumPage = useCallback(async (signalToken: number, showLoading = true) => {
     if (showLoading) setIsLoadingAlbum(true);
     try {
@@ -363,6 +400,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         limit: albumPageSize === 'all' ? 999999 : albumPageSize,
         sort: albumSort,
         aspectRatios: albumSelectedRatios.length > 0 ? albumSelectedRatios : undefined,
+        tags: albumSelectedTags.length > 0 ? albumSelectedTags : undefined,
+        tagMatch: albumTagMatch,
       });
       if (albumFetchTokenRef.current !== signalToken || isDeletingAlbumItemsRef.current) return;
       setLocalAlbum(res.items);
@@ -370,7 +409,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       setAlbumPages(res.pages);
       setAlbumTotalSize(res.totalSize);
       setAlbumAspectRatioCounts(res.aspectRatioCounts);
-      if (albumPage === 1 && albumSort === 'newest' && albumSelectedRatios.length === 0) {
+      setAlbumTagCounts(res.tagCounts || []);
+      if (albumPage === 1 && albumSort === 'newest' && albumSelectedRatios.length === 0 && albumSelectedTags.length === 0) {
         setAlbumPreviewItems(res.items.slice(0, 5));
       }
       albumLoadedKeyRef.current = albumQueryKey;
@@ -380,7 +420,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     } finally {
       if (albumFetchTokenRef.current === signalToken) setIsLoadingAlbum(false);
     }
-  }, [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, albumQueryKey]);
+  }, [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, albumSelectedTags, albumTagMatch, albumQueryKey]);
 
   useEffect(() => {
     if (activeTab !== 'album') return;
@@ -446,6 +486,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   }, [updateAlbumParams]);
   const handleAlbumSelectedRatiosChange = useCallback((ratios: string[]) => {
     updateAlbumParams({ ratios });
+  }, [updateAlbumParams]);
+  const handleAlbumSelectedTagsChange = useCallback((tags: string[]) => {
+    updateAlbumParams({ tags });
+  }, [updateAlbumParams]);
+  const handleAlbumTagMatchChange = useCallback((tagMatch: AlbumTagMatch) => {
+    updateAlbumParams({ tagMatch });
   }, [updateAlbumParams]);
 
   const handleCompletedPageChange = useCallback((p: number) => {
@@ -2081,6 +2127,25 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     return updatedItem;
   };
 
+  const updateAlbumItemTags = async (itemId: string, tags: string[]) => {
+    const updatedItem = await apiUpdateAlbumItemTags(localProject.id, itemId, tags);
+    setLocalAlbum((prev) => prev.map((item) => (item.id === itemId ? { ...item, ...updatedItem } : item)));
+    // The facet list is album-wide, so a single item's edit can add or retire a
+    // tag for the whole project — refresh it rather than recomputing locally.
+    void fetchAlbumTagCounts(localProject.id).then(setAlbumTagCounts).catch(console.error);
+    return updatedItem;
+  };
+
+  const batchUpdateAlbumItemTags = async (options: Parameters<typeof apiBatchUpdateAlbumTags>[1]) => {
+    const result = await apiBatchUpdateAlbumTags(localProject.id, options);
+    setAlbumTagCounts(result.tagCounts || []);
+    // A batch can move items in or out of an active tag filter, so reload the
+    // page rather than patching rows in place.
+    const token = ++albumFetchTokenRef.current;
+    await loadAlbumPage(token, false);
+    return result;
+  };
+
   const draftJobs = localJobs.filter(j => j.status === 'draft');
   const queueJobs = localJobs.filter(j => ['pending', 'processing', 'failed'].includes(j.status));
   const albumItems = localAlbum;
@@ -2403,10 +2468,17 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               aspectRatioCounts={albumAspectRatioCounts}
               sort={albumSort}
               selectedAspectRatios={albumSelectedRatios}
+              tagCounts={albumTagCounts}
+              selectedTags={albumSelectedTags}
+              tagMatch={albumTagMatch}
               onPageChange={handleAlbumPageChange}
               onPageSizeChange={handleAlbumPageSizeChange}
               onSortChange={handleAlbumSortChange}
               onSelectedAspectRatiosChange={handleAlbumSelectedRatiosChange}
+              onSelectedTagsChange={handleAlbumSelectedTagsChange}
+              onTagMatchChange={handleAlbumTagMatchChange}
+              onUpdateAlbumItemTags={updateAlbumItemTags}
+              onBatchUpdateAlbumTags={batchUpdateAlbumItemTags}
             />
           )}
         </div>

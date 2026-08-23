@@ -292,6 +292,7 @@ model AlbumItem {
   imageContexts Json? // String[]
   videoContexts Json? // String[]
   audioContexts Json? // String[]
+  tags          Json? // String[]
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?
@@ -325,6 +326,7 @@ model TrashItem {
   imageContexts Json? // String[]
   videoContexts Json? // String[]
   audioContexts Json? // String[]
+  tags          Json? // String[]
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?

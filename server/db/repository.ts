@@ -46,7 +46,14 @@ export interface IRepository {
   getProjectAlbum(
     userId: string,
     projectId: string,
-    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; aspectRatios?: string[] },
+    options?: {
+      page?: number;
+      limit?: number;
+      sort?: 'newest' | 'oldest';
+      aspectRatios?: string[];
+      tags?: string[];
+      tagMatch?: 'all' | 'any';
+    },
   ): Promise<{
     items: AlbumItem[];
     total: number;
@@ -54,6 +61,7 @@ export interface IRepository {
     pages: number;
     totalSize: number;
     aspectRatioCounts: { ratio: string; count: number }[];
+    tagCounts: { tag: string; count: number }[];
   }>;
   createProject(userId: string, project: Project): Promise<void>;
   updateProject(userId: string, projectId: string, updates: Partial<Project>): Promise<void>;
@@ -67,6 +75,22 @@ export interface IRepository {
   getAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
   addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void>;
   deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
+  getAlbumTagCounts(userId: string, projectId: string): Promise<{ tag: string; count: number }[]>;
+  setAlbumItemTags(userId: string, projectId: string, itemId: string, tags: string[]): Promise<AlbumItem | null>;
+  updateAlbumItemsTags(
+    userId: string,
+    projectId: string,
+    options: {
+      itemIds?: string[];
+      all?: boolean;
+      add?: string[];
+      remove?: string[];
+      replace?: string[];
+      aspectRatios?: string[];
+      tags?: string[];
+      tagMatch?: 'all' | 'any';
+    },
+  ): Promise<{ updated: number }>;
 
   // === Export CRUD ===
   getExportTasks(userId: string, projectId: string): Promise<any[]>;

@@ -1,8 +1,8 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List, RefreshCw, Loader2 } from 'lucide-react';
-import { AlbumItem, AspectRatioCount, ProjectType } from '../../types';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List, RefreshCw, Loader2, Tag as TagIcon } from 'lucide-react';
+import { AlbumItem, AlbumTagCount, AlbumTagMatch, AspectRatioCount, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import type { AlbumExportVersion } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
@@ -11,6 +11,8 @@ import { TextAlbumCompareDialog } from './TextAlbumCompareDialog';
 import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
 import { CopyToLibraryDialog } from './CopyToLibraryDialog';
 import { SelectionToolbar } from './SelectionToolbar';
+import { AlbumBatchTagModal, AlbumBatchTagMode } from './AlbumBatchTagModal';
+import { TagModal } from '../TagModal';
 import { EmptyState } from './EmptyState';
 import { PaginationBar, PAGE_SIZE_OPTIONS } from './PaginationBar';
 
@@ -43,10 +45,27 @@ interface AlbumTabProps {
   aspectRatioCounts: AspectRatioCount[];
   sort: 'newest' | 'oldest';
   selectedAspectRatios: string[];
+  /** Every tag used in the album, with per-tag item counts. */
+  tagCounts: AlbumTagCount[];
+  selectedTags: string[];
+  tagMatch: AlbumTagMatch;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number | 'all') => void;
   onSortChange: (sort: 'newest' | 'oldest') => void;
   onSelectedAspectRatiosChange: (ratios: string[]) => void;
+  onSelectedTagsChange: (tags: string[]) => void;
+  onTagMatchChange: (match: AlbumTagMatch) => void;
+  onUpdateAlbumItemTags: (itemId: string, tags: string[]) => Promise<AlbumItem>;
+  onBatchUpdateAlbumTags: (options: {
+    itemIds?: string[];
+    allAlbumItems?: boolean;
+    add?: string[];
+    remove?: string[];
+    replace?: string[];
+    aspectRatios?: string[];
+    filterTags?: string[];
+    tagMatch?: AlbumTagMatch;
+  }) => Promise<{ updated: number }>;
 }
 
 function getCssAspectRatio(value?: string) {
@@ -150,6 +169,153 @@ const AspectRatioFilterControl = memo(function AspectRatioFilterControl({
   );
 });
 
+interface TagFilterControlProps {
+  options: AlbumTagCount[];
+  selectedTags: string[];
+  tagMatch: AlbumTagMatch;
+  onToggle: (tag: string) => void;
+  onClear: () => void;
+  onMatchChange: (match: AlbumTagMatch) => void;
+}
+
+const TagFilterControl = memo(function TagFilterControl({
+  options,
+  selectedTags,
+  tagMatch,
+  onToggle,
+  onClear,
+  onMatchChange,
+}: TagFilterControlProps) {
+  const { t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const hasFilter = selectedTags.length > 0;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClick = () => setIsOpen(false);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [isOpen]);
+
+  return (
+    <div className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        title={t('projectViewer.album.tagFilter')}
+        aria-label={t('projectViewer.album.tagFilter')}
+        className={`flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg border transition-all ${
+          hasFilter
+            ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border-blue-500/30'
+            : 'bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 border-neutral-300 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 dark:border-neutral-700'
+        }`}
+      >
+        <TagIcon className="w-3 h-3" />
+        <span className="hidden @min-[56rem]/pane:inline">
+          {selectedTags.length === 0
+            ? t('projectViewer.album.tagFilter')
+            : t('projectViewer.album.tagFilterCount', { count: selectedTags.length })}
+        </span>
+        <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-card shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
+          <button
+            type="button"
+            onClick={onClear}
+            className={`w-full text-left px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors mb-1 ${
+              !hasFilter ? 'bg-blue-600 text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white'
+            }`}
+          >
+            {t('projectViewer.album.allTags')}
+          </button>
+
+          {/* Two selected tags can mean "carries both" or "carries either" —
+              which one is a per-view choice, not a global preference. */}
+          <div className="grid grid-cols-2 gap-1 p-1 mb-1 bg-neutral-100 dark:bg-neutral-950 rounded-xl border border-neutral-200 dark:border-neutral-800">
+            {(['all', 'any'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => onMatchChange(mode)}
+                className={`py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors ${
+                  tagMatch === mode
+                    ? 'bg-blue-600 text-white'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                {mode === 'all' ? t('projectViewer.album.tagMatchAll') : t('projectViewer.album.tagMatchAny')}
+              </button>
+            ))}
+          </div>
+
+          <div className="max-h-64 overflow-y-auto custom-scrollbar">
+            {options.map(({ tag, count }) => {
+              const isChecked = selectedTags.includes(tag);
+              return (
+                <label
+                  key={tag}
+                  className={`w-full px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-between gap-3 cursor-pointer ${
+                    isChecked ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span className="min-w-0 truncate normal-case tracking-normal text-[11px]">{tag}</span>
+                  <span className="ml-auto rounded-md bg-neutral-100 px-1.5 py-0.5 text-[9px] font-black text-neutral-500 dark:bg-neutral-950 dark:text-neutral-500">
+                    {count}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => onToggle(tag)}
+                    className="h-3.5 w-3.5 rounded border-neutral-400 bg-white dark:border-neutral-600 dark:bg-neutral-950 text-blue-500 focus:ring-blue-500"
+                  />
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
+/** The tag chips shown on an album card or row. */
+const AlbumTagChips = memo(function AlbumTagChips({
+  tags,
+  onTagClick,
+  limit,
+}: {
+  tags?: string[];
+  onTagClick?: (tag: string) => void;
+  limit?: number;
+}) {
+  if (!tags || tags.length === 0) return null;
+  const shown = limit ? tags.slice(0, limit) : tags;
+  const overflow = tags.length - shown.length;
+  return (
+    <div className="flex flex-wrap items-center gap-1 min-w-0">
+      {shown.map((tag) => (
+        <button
+          key={tag}
+          type="button"
+          onClick={onTagClick ? (e) => { e.stopPropagation(); onTagClick(tag); } : undefined}
+          disabled={!onTagClick}
+          title={tag}
+          className={`max-w-full truncate px-1.5 py-0.5 rounded-md border border-blue-500/20 bg-blue-500/10 text-[9px] font-bold tracking-wide text-blue-500 ${
+            onTagClick ? 'hover:bg-blue-500/20 transition-colors cursor-pointer' : 'cursor-default'
+          }`}
+        >
+          {tag}
+        </button>
+      ))}
+      {overflow > 0 && (
+        <span className="text-[9px] font-black text-neutral-500 dark:text-neutral-500">+{overflow}</span>
+      )}
+    </div>
+  );
+});
+
 export function AlbumTab({
   projectId,
   projectName,
@@ -175,10 +341,17 @@ export function AlbumTab({
   aspectRatioCounts,
   sort,
   selectedAspectRatios,
+  tagCounts,
+  selectedTags,
+  tagMatch,
   onPageChange,
   onPageSizeChange,
   onSortChange,
   onSelectedAspectRatiosChange,
+  onSelectedTagsChange,
+  onTagMatchChange,
+  onUpdateAlbumItemTags,
+  onBatchUpdateAlbumTags,
 }: AlbumTabProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -202,6 +375,8 @@ export function AlbumTab({
   const [renameItem, setRenameItem] = useState<AlbumItem | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
+  const [tagItem, setTagItem] = useState<AlbumItem | null>(null);
+  const [showBatchTagModal, setShowBatchTagModal] = useState(false);
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
   const getAlbumFilename = (item: AlbumItem) => {
@@ -261,6 +436,61 @@ export function AlbumTab({
     }
   };
 
+  const saveItemTags = async (tags: string[]) => {
+    if (!tagItem) return;
+    const item = tagItem;
+    setTagItem(null);
+    try {
+      await onUpdateAlbumItemTags(item.id, tags);
+      toast.success(t('projectViewer.album.tagsUpdated'));
+    } catch (err: any) {
+      toast.error(err.message || t('projectViewer.album.tagsUpdateFailed'));
+    }
+  };
+
+  const applyBatchTags = async (mode: AlbumBatchTagMode, tags: string[]) => {
+    try {
+      // "Everything" means everything the current filters select, so the
+      // filters travel with the request rather than being resolved to ids here
+      // — the selection on screen is only the current page.
+      const scope = hasVisibleSelection
+        ? { itemIds: selectedDisplayItemIds }
+        : {
+          allAlbumItems: true,
+          aspectRatios: hasAspectRatioFilter ? selectedAspectRatios : undefined,
+          filterTags: hasTagFilter ? selectedTags : undefined,
+          tagMatch,
+        };
+      const { updated } = await onBatchUpdateAlbumTags({
+        ...scope,
+        add: mode === 'add' ? tags : undefined,
+        remove: mode === 'remove' ? tags : undefined,
+        replace: mode === 'replace' ? tags : undefined,
+      });
+      toast.success(t('projectViewer.album.tagsBatchUpdated', { count: updated }));
+    } catch (err: any) {
+      toast.error(err.message || t('projectViewer.album.tagsUpdateFailed'));
+      throw err;
+    }
+  };
+
+  const renderTagButton = (item: AlbumItem, variant: 'title' | 'inline') => {
+    const iconClass = variant === 'title' ? 'w-[1em] h-[1em]' : 'w-3.5 h-3.5';
+    return (
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setTagItem(item); }}
+        className={variant === 'title'
+          ? 'flex-shrink-0 inline-flex items-center justify-center rounded-sm text-[13px] leading-none text-neutral-500 hover:text-blue-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60'
+          : 'flex-shrink-0 p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors'}
+        title={t('projectViewer.album.editTags')}
+        aria-label={t('projectViewer.album.editTags')}
+      >
+        <TagIcon className={iconClass} />
+      </button>
+    );
+  };
+
   const aspectRatioOptions = aspectRatioCounts;
   const hasAspectRatioFilter = selectedAspectRatios.length > 0;
   const showAspectRatioFilterControl = !isTextProject && !isAudioProject && aspectRatioOptions.length > 0;
@@ -276,6 +506,18 @@ export function AlbumTab({
     onSelectedAspectRatiosChange([]);
   }, [onSelectedAspectRatiosChange]);
 
+  const hasTagFilter = selectedTags.length > 0;
+  const toggleTagFilter = useCallback((tag: string) => {
+    const next = selectedTags.includes(tag)
+      ? selectedTags.filter((item) => item !== tag)
+      : [...selectedTags, tag];
+    onSelectedTagsChange(next);
+  }, [selectedTags, onSelectedTagsChange]);
+
+  const clearTagFilter = useCallback(() => {
+    onSelectedTagsChange([]);
+  }, [onSelectedTagsChange]);
+
   const displayItems = albumItems;
 
   const displayItemIds = useMemo(() => displayItems.map((item) => item.id), [displayItems]);
@@ -285,7 +527,7 @@ export function AlbumTab({
   );
   const hasVisibleSelection = selectedDisplayItemIds.length > 0;
   const bulkItemIds = hasVisibleSelection ? selectedDisplayItemIds : displayItemIds;
-  const useAllAlbumScope = !hasVisibleSelection && !hasAspectRatioFilter;
+  const useAllAlbumScope = !hasVisibleSelection && !hasAspectRatioFilter && !hasTagFilter;
 
   const toggleAudioExpand = (id: string) => {
     setExpandedAudioIds((prev) => {
@@ -392,6 +634,17 @@ export function AlbumTab({
                   </span>
                 </button>
                 <button
+                  onClick={() => setShowBatchTagModal(true)}
+                  title={hasVisibleSelection ? t('projectViewer.album.tagSelected') : t('projectViewer.album.tagAll')}
+                  aria-label={hasVisibleSelection ? t('projectViewer.album.tagSelected') : t('projectViewer.album.tagAll')}
+                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
+                >
+                  <TagIcon className="w-3 h-3" />
+                  <span className="hidden @min-[56rem]/pane:inline">
+                    {hasVisibleSelection ? t('projectViewer.album.tagSelected') : t('projectViewer.album.tagAll')}
+                  </span>
+                </button>
+                <button
                   onClick={() => setShowCopyDialog(true)}
                   title={hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
                   aria-label={hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
@@ -437,6 +690,16 @@ export function AlbumTab({
                     onClear={clearAspectRatioFilter}
                   />
                 )}
+                {tagCounts.length > 0 && (
+                  <TagFilterControl
+                    options={tagCounts}
+                    selectedTags={selectedTags}
+                    tagMatch={tagMatch}
+                    onToggle={toggleTagFilter}
+                    onClear={clearTagFilter}
+                    onMatchChange={onTagMatchChange}
+                  />
+                )}
                 <label
                   title={t('pagination.pageSize')}
                   className="flex items-center gap-1.5 min-h-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all cursor-pointer"
@@ -479,7 +742,7 @@ export function AlbumTab({
           />
         )}
 
-        {total === 0 && !hasAspectRatioFilter ? (
+        {total === 0 && !hasAspectRatioFilter && !hasTagFilter ? (
           <EmptyState
             Icon={isTextProject ? FileText : isVideoProject ? VideoIcon : isAudioProject ? Music : ImageIcon}
             title={isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : isAudioProject ? t('projectViewer.album.noAudios') : t('projectViewer.album.galleryEmpty')}
@@ -489,8 +752,8 @@ export function AlbumTab({
         ) : displayItems.length === 0 ? (
           <EmptyState
             Icon={Filter}
-            title={t('projectViewer.album.noAspectRatioMatches')}
-            description={t('projectViewer.album.noAspectRatioMatchesDescription')}
+            title={hasTagFilter && !hasAspectRatioFilter ? t('projectViewer.album.noTagMatches') : t('projectViewer.album.noAspectRatioMatches')}
+            description={hasTagFilter && !hasAspectRatioFilter ? t('projectViewer.album.noTagMatchesDescription') : t('projectViewer.album.noAspectRatioMatchesDescription')}
             animateIcon={false}
           />
         ) : isTextProject ? (
@@ -527,6 +790,11 @@ export function AlbumTab({
                     <span className="hidden @min-[56rem]/pane:block flex-shrink-0 text-[9px] font-black uppercase tracking-[0.18em] text-blue-400/80">{t('projectViewer.album.view')}</span>
                   </button>
 
+                  <div className="hidden @min-[44rem]/pane:flex flex-shrink-0 max-w-[9rem]">
+                    <AlbumTagChips tags={item.tags} onTagClick={toggleTagFilter} limit={2} />
+                  </div>
+
+                  {renderTagButton(item, 'inline')}
                   {renderReuseButton(item, 'inline')}
 
                   <button
@@ -589,6 +857,7 @@ export function AlbumTab({
                       {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
                     </button>
 
+                    {renderTagButton(item, 'inline')}
                     {renderReuseButton(item, 'inline')}
 
                     <button
@@ -615,6 +884,9 @@ export function AlbumTab({
                   </div>
 
                   <div className={isExpanded ? 'mt-3 space-y-3' : 'hidden'}>
+                    {(item.tags?.length || 0) > 0 && (
+                      <AlbumTagChips tags={item.tags} onTagClick={toggleTagFilter} />
+                    )}
                     <p className="text-sm text-neutral-900 dark:text-white whitespace-pre-wrap">{item.prompt}</p>
                     {item.textContent && (
                       <div className="space-y-2">
@@ -811,8 +1083,17 @@ export function AlbumTab({
                       >
                         <Pencil className="w-[1em] h-[1em]" />
                       </button>
+                      {renderTagButton(item, 'title')}
                       {renderReuseButton(item, 'title')}
                     </div>
+                    {/* Once anything in the album is tagged the row is kept even
+                        on untagged cards, so the metadata below stays aligned
+                        across a row of cards. */}
+                    {tagCounts.length > 0 && (
+                      <div className="mb-2 @min-[16rem]/card:mb-3 min-h-[1.125rem]">
+                        <AlbumTagChips tags={item.tags} onTagClick={toggleTagFilter} limit={4} />
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => setPromptItem(item)}
@@ -988,6 +1269,22 @@ export function AlbumTab({
         allAlbumItemCount={total}
         onClose={() => setShowCopyDialog(false)}
         onSuccess={() => {}}
+      />
+      <TagModal
+        isOpen={tagItem !== null}
+        initialTags={tagItem?.tags || []}
+        title={t('projectViewer.album.editTags')}
+        description={tagItem ? getAlbumFilename(tagItem) : undefined}
+        onClose={() => setTagItem(null)}
+        onSave={saveItemTags}
+      />
+      <AlbumBatchTagModal
+        isOpen={showBatchTagModal}
+        targetCount={hasVisibleSelection ? selectedDisplayItemIds.length : total}
+        isAllScope={!hasVisibleSelection}
+        suggestions={tagCounts}
+        onClose={() => setShowBatchTagModal(false)}
+        onApply={applyBatchTags}
       />
     </section>
   );

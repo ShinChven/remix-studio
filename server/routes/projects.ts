@@ -146,6 +146,27 @@ export async function signJobs(jobs: Job[], storage: S3Storage): Promise<Job[]> 
   );
 }
 
+/**
+ * Read the album tag filter from a request — a comma-separated `tags` query
+ * param on reads, or a `filterTags` array on the batch write body — plus how
+ * multiple tags combine. Defaults to `all` (an item must carry every tag).
+ */
+function readAlbumTagFilter(
+  c: { req: { query: (name: string) => string | undefined } },
+  body?: any,
+): { tags?: string[]; tagMatch: 'all' | 'any' } {
+  const raw = body ? body.filterTags : c.req.query('tags');
+  const parsed = typeof raw === 'string'
+    ? raw.split(',')
+    : Array.isArray(raw) ? raw : [];
+  const tags = parsed
+    .filter((tag: unknown): tag is string => typeof tag === 'string')
+    .map((tag: string) => tag.trim())
+    .filter(Boolean);
+  const matchRaw = body ? body.tagMatch : c.req.query('tagMatch');
+  return { tags: tags.length > 0 ? tags : undefined, tagMatch: matchRaw === 'any' ? 'any' : 'all' };
+}
+
 export async function signAlbumItems(album: AlbumItem[], storage: S3Storage): Promise<AlbumItem[]> {
   return Promise.all(
     album.map(async (item) => {
@@ -547,8 +568,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const aspectRatios = aspectRatiosRaw
         ? aspectRatiosRaw.split(',').map((s) => s.trim()).filter(Boolean)
         : undefined;
+      const { tags, tagMatch } = readAlbumTagFilter(c);
       if (!projectId) return c.json({ error: 'Project id is required' }, 400);
-      const result = await repository.getProjectAlbum(user.userId, projectId, { page, limit, sort, aspectRatios });
+      const result = await repository.getProjectAlbum(user.userId, projectId, { page, limit, sort, aspectRatios, tags, tagMatch });
       return c.json({
         ...result,
         items: await signAlbumItems(result.items, storage)
@@ -849,6 +871,119 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   });
 
   /**
+   * GET /api/projects/:id/album/tags
+   *
+   * Every tag used in the project's album, with how many items carry it.
+   */
+  router.get('/api/projects/:id/album/tags', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+      const tagCounts = await repository.getAlbumTagCounts(user.userId, projectId);
+      return c.json({ tagCounts });
+    } catch (e) {
+      console.error('[GET /api/projects/:id/album/tags]', e);
+      return c.json({ error: 'Failed to get album tags' }, 500);
+    }
+  });
+
+  /**
+   * PATCH /api/projects/:id/album/:itemId/tags
+   *
+   * Replace one album item's tag list.
+   */
+  router.patch('/api/projects/:id/album/:itemId/tags', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const itemId = c.req.param('itemId');
+      const body = await c.req.json().catch(() => ({}));
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+      if (!itemId) return c.json({ error: 'Item id is required' }, 400);
+      if (!Array.isArray(body?.tags)) return c.json({ error: 'tags must be an array of strings' }, 400);
+
+      const updated = await repository.setAlbumItemTags(user.userId, projectId, itemId, body.tags);
+      if (!updated) return c.json({ error: 'Album item not found' }, 404);
+
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        itemId,
+        reason: 'album.tagged',
+      });
+      const [signed] = await signAlbumItems([updated], storage);
+      return c.json(signed);
+    } catch (e) {
+      console.error('[PATCH /api/projects/:id/album/:itemId/tags]', e);
+      return c.json({ error: 'Failed to update album item tags' }, 500);
+    }
+  });
+
+  /**
+   * POST /api/projects/:id/album/tags-batch
+   *
+   * Add, remove or replace tags across many album items. Scope is either an
+   * explicit `itemIds` list or `allAlbumItems: true`, which applies to every
+   * item the current filters select.
+   */
+  router.post('/api/projects/:id/album/tags-batch', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const body = await c.req.json().catch(() => ({}));
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+
+      const allAlbumItems = body?.allAlbumItems === true;
+      const itemIds: string[] = Array.isArray(body?.itemIds)
+        ? body.itemIds.filter((id: unknown) => typeof id === 'string' && id)
+        : [];
+      if (!allAlbumItems && itemIds.length === 0) {
+        return c.json({ error: 'itemIds is required unless allAlbumItems is true' }, 400);
+      }
+
+      const asTagList = (value: unknown) => (Array.isArray(value) ? value : undefined);
+      const add = asTagList(body?.add);
+      const remove = asTagList(body?.remove);
+      const replace = asTagList(body?.replace);
+      if (!add && !remove && !replace) {
+        return c.json({ error: 'Provide at least one of: add, remove, replace' }, 400);
+      }
+
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Project not found' }, 404);
+
+      const aspectRatios = typeof body?.aspectRatios === 'string'
+        ? body.aspectRatios.split(',').map((r: string) => r.trim()).filter(Boolean)
+        : Array.isArray(body?.aspectRatios)
+          ? body.aspectRatios.filter((r: unknown): r is string => typeof r === 'string')
+          : undefined;
+      const { tags: filterTags, tagMatch } = readAlbumTagFilter(c, body);
+      const { updated } = await repository.updateAlbumItemsTags(user.userId, projectId, {
+        itemIds: allAlbumItems ? undefined : itemIds,
+        all: allAlbumItems,
+        add,
+        remove,
+        replace,
+        aspectRatios,
+        tags: filterTags,
+        tagMatch,
+      });
+
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        reason: 'album.tagged',
+      });
+      const tagCounts = await repository.getAlbumTagCounts(user.userId, projectId);
+      return c.json({ success: true, updated, tagCounts });
+    } catch (e) {
+      console.error('[POST /api/projects/:id/album/tags-batch]', e);
+      return c.json({ error: 'Failed to update album tags' }, 500);
+    }
+  });
+
+  /**
    * POST /api/projects/:id/album/copy-to-library
    *
    * Copy selected album items to a matching library.
@@ -960,6 +1095,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
             id: randomUUID(),
             title: jobFilename || undefined,
             content: item.textContent || item.prompt || '',
+            tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
           });
         }
       } else {
@@ -1006,6 +1142,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
             id: randomUUID(),
             title: basename || jobFilename || undefined,
             content: destMainKey || '',
+            tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
             thumbnailUrl: destThumbKey,
             optimizedUrl: targetLibraryType === 'audio' ? undefined : (version === 'raw' ? destMainKey : undefined),
             size: targetLibraryType === 'audio' ? item.size : (version === 'raw' ? item.size : (item.optimizedSize || item.size))
