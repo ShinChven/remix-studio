@@ -13,7 +13,8 @@ Available MCP capabilities include:
 - **Update** a single text prompt's content, title, or tags with `update_prompt`.
 - **Delete** a single text prompt from a text library with `delete_prompt`.
 - **Inspect** storage usage, albums, libraries, library items, and usable model/provider pairings.
-- **Browse** the items inside a project album with `get_album_items`, including each item's prompt, format, aspect ratio, size, and storage keys.
+- **Browse** the items inside a project album with `get_album_items`, including each item's prompt, tags, format, aspect ratio, size, and storage keys, plus a `tagCounts` roll-up of every tag in the album. Filter with `tags` and `tag_match`.
+- **Tag album items** with `tag_album_items` — `add`, `remove`, or `replace` tags on the ids given in `item_ids`, or on every item in the album with `all_items`, optionally narrowed by `filter_tags` and `aspect_ratios`.
 - **Download** stored files with `get_file_urls`, which converts internal storage keys into temporary presigned URLs (optionally as save-as download links).
 - **Export** a project album as a .zip with `export_project_album`, or a whole project as a portable bundle with `export_project`.
 - **Create and update** workflow-backed projects.
@@ -94,7 +95,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 | :--- | :--- | :--- |
 | Account | `get_current_account` | — |
 | Libraries | `list_libraries`, `get_library_items`, `search_library_items` | `create_library`, `update_library`, `create_prompt`, `batch_create_prompts`, `update_prompt`, `update_library_item`, `batch_update_library_items`, `delete_prompt` |
-| Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `export_project`, `export_project_album` |
+| Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `tag_album_items`, `export_project`, `export_project_album` |
 | Jobs | `get_project_job_counts`, `get_queue_status` | `draft_jobs`, `start_jobs`, `clear_failed_jobs` |
 | Files | `get_file_urls` | — |
 | Campaigns | `list_social_accounts`, `list_campaigns` | `create_campaign`, `update_campaign` |
@@ -109,6 +110,7 @@ Important boundaries:
 - `draft_jobs` takes its prompts, provider, model, and generation settings from the project itself — set them with `update_project` first. It creates at most 10000 drafts per call; call it again for larger batches.
 - `start_jobs` consumes drafts oldest first and runs generation against the user's provider, which costs credits. Omit `count` to start every draft.
 - `clear_failed_jobs` deletes failed job records only — drafts, queued, running, and completed jobs are untouched, and album items already saved survive. A cleared failure can no longer be retried. `projectId` and `providerId` are alternatives, not filters to combine; omitting both clears every failed job in the account. Pending jobs in an affected project are re-enqueued, so a project stalled behind failures resumes on its own.
+- `tag_album_items` takes exactly one of `add`, `remove`, or `replace` per call. `replace` discards whatever other tags the items carried, and `replace: []` clears them entirely. Tags are normalised on write — trimmed, de-duplicated case-insensitively, capped at 64 characters each and 30 per item.
 - Export tools are confirmation-gated writes because the archive they produce consumes the user's storage quota. Polling with `task_id` goes through the same protocol.
 - Media added to a post must be an internal storage key already owned by the authenticated user and valid for that campaign.
 - Scheduling requires a valid time, an active channel on the campaign, and ready media.

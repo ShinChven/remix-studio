@@ -1844,6 +1844,7 @@ export interface AlbumItem {
   imageContexts?: string[];
   videoContexts?: string[];
   audioContexts?: string[];
+  tags?: string[];
   imageUrl: string; // S3 key (presigned on read) — for video projects this is the .mp4 key
   thumbnailUrl?: string; // S3 key
   optimizedUrl?: string; // S3 key
@@ -2194,9 +2195,19 @@ export interface AspectRatioCount {
   count: number;
 }
 
+export interface AlbumTagCount {
+  tag: string;
+  count: number;
+}
+
+/** How a multi-tag album filter combines its tags. */
+export type AlbumTagMatch = 'all' | 'any';
+
 export interface AlbumPageResult extends PaginatedResult<AlbumItem> {
   totalSize: number;
   aspectRatioCounts: AspectRatioCount[];
+  /** Every tag used in the project's album, with how many items carry it. */
+  tagCounts: AlbumTagCount[];
 }
 
 declare global {

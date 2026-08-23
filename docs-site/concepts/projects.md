@@ -48,7 +48,25 @@ The final tab is named for the project modality. It contains durable `AlbumItem`
 - Text projects show generated text and its prompt/context; multiple text results can be compared.
 - Audio projects provide audio result controls.
 
-The collection supports selection, page-size choices, filename changes, export, copy-to-library, workflow reuse, and recycle-bin deletion. The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view.
+The collection supports selection, page-size choices, filename changes, tagging, export, copy-to-library, workflow reuse, and recycle-bin deletion. The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view.
+
+## Tagging Album Items
+
+Every album item carries a free-form list of tags, the same shape libraries use on their items. Tags are how a finished album is organised after the fact — by campaign, round, subject, or whatever the work needs — without moving anything between projects.
+
+Tag a single item with the tag control beside its filename (media cards) or in its row (text and audio lists). To tag many at once, use **Tag Selected** / **Tag All** in the toolbar; that dialog offers three operations:
+
+- **Add** — the given tags are added, existing tags are kept.
+- **Remove** — only the given tags are taken away.
+- **Replace** — the items end up with exactly the given tags; an empty list clears them.
+
+With nothing selected, a batch applies to every item the current filters select, not just the page on screen — so filtering to one tag and adding another retags that whole slice in one action.
+
+The toolbar's tag filter lists every tag in the album with how many items carry it. Selecting more than one tag can mean either **Match All** (an item must carry every selected tag, the default) or **Match Any** (at least one), switchable in the same dropdown. The selection lives in the `albumTags` and `albumTagMatch` search parameters, so a filtered view can be linked or bookmarked. Clicking a tag chip on an item filters to that tag.
+
+Tags follow the item: they survive a move to the recycle bin and a restore, they are written into project bundles and read back on import, and they are copied onto the resulting library items when album items are copied to a library.
+
+Tags are normalised on write — trimmed, de-duplicated case-insensitively, capped at 64 characters each and 30 per item — so a stray space or a difference in capitalisation cannot split one tag into two entries in the filter list.
 
 ## Copying Results to a Library
 

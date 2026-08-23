@@ -123,6 +123,29 @@ export function summarizeToolEffect(
       return typeof objectArgs.task_id === 'string' && objectArgs.task_id
         ? `Check on export ${String(objectArgs.task_id)}.`
         : `Export project ${getLabel(objectArgs.project_id, 'project')} as a portable .zip bundle.`;
+    case 'tag_album_items': {
+      const asTags = (value: unknown) => (Array.isArray(value) ? value.map(String) : null);
+      const add = asTags(objectArgs.add);
+      const remove = asTags(objectArgs.remove);
+      const replace = asTags(objectArgs.replace);
+      const itemIds = Array.isArray(objectArgs.item_ids) ? objectArgs.item_ids : null;
+      const filterTags = asTags(objectArgs.filter_tags);
+      const scope = objectArgs.all_items === true
+        ? filterTags && filterTags.length > 0
+          ? `every album item tagged ${filterTags.map((tag) => `"${tag}"`).join(', ')}`
+          : 'every album item'
+        : `${itemIds?.length ?? 0} album item${itemIds?.length === 1 ? '' : 's'}`;
+      const project = `project ${getLabel(objectArgs.project_id, 'project')}`;
+      if (replace) {
+        return replace.length === 0
+          ? `Clear all tags from ${scope} on ${project}.`
+          : `Replace the tags on ${scope} on ${project} with ${replace.map((tag) => `"${tag}"`).join(', ')}. Any other tags on those items are removed.`;
+      }
+      if (remove) {
+        return `Remove the tags ${remove.map((tag) => `"${tag}"`).join(', ')} from ${scope} on ${project}.`;
+      }
+      return `Add the tags ${(add ?? []).map((tag) => `"${tag}"`).join(', ')} to ${scope} on ${project}.`;
+    }
     case 'export_project_album': {
       if (typeof objectArgs.task_id === 'string' && objectArgs.task_id) {
         return `Check on export ${String(objectArgs.task_id)}.`;

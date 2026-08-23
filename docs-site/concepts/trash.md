@@ -9,6 +9,7 @@ Deleting one or several album items from a project moves them to Trash. A trash 
 - Original project ID and name.
 - Prompt or generated text.
 - Image, video, and audio context references.
+- The item's tags, so they come back with it on restore.
 - Original, optimized, and thumbnail storage keys.
 - Provider/model and output metadata.
 - Size, duration, and resolution where applicable.

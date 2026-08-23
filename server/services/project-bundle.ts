@@ -291,7 +291,10 @@ export function parseProjectBundleManifest(raw: unknown): ProjectBundleManifest 
       ...item,
       selectedTags: asStringArray(item.selectedTags),
     })) as WorkflowItem[],
-    album,
+    album: album.map((item: any) => ({
+      ...item,
+      tags: asStringArray(item.tags),
+    })) as AlbumItem[],
     media,
   };
 }

@@ -1024,23 +1024,27 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'get_album_items',
     title: 'Get Album Items',
-    description: `Browse the generated items saved in one project's album. Returns each item's id, prompt, format, size, aspect ratio, and its storage keys (storageKey for the full-size file, plus thumbnail/optimized variants when present).
+    description: `Browse the generated items saved in one project's album. Returns each item's id, prompt, tags, format, size, aspect ratio, and its storage keys (storageKey for the full-size file, plus thumbnail/optimized variants when present). The response also carries "tagCounts": every tag used anywhere in the album with how many items carry it, which is how to discover what a project is tagged with before filtering.
 
 Storage keys are internal references, not fetchable URLs — pass them to get_file_urls to obtain a temporary download URL.`,
     inputSchema: {
       project_id: z.string().min(1).describe('The project ID whose album to browse (from list_albums)'),
       sort: z.enum(['newest', 'oldest']).default('newest').describe('Sort order by creation time (default "newest")'),
       aspect_ratios: z.array(z.string()).optional().describe('Optional: only return items matching these aspect ratios (e.g. ["1:1", "16:9"])'),
+      tags: z.array(z.string()).optional().describe('Optional: only return items carrying these tags'),
+      tag_match: z.enum(['all', 'any']).default('all').describe('How multiple tags combine: "all" (default) requires every tag, "any" requires at least one'),
       page: z.number().int().min(1).default(1).describe('Page number (default 1)'),
       limit: z.number().int().min(1).max(100).default(25).describe('Items per page (default 25)'),
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     category: 'read',
     handler: async (userId, input) => {
-      const { project_id, sort, aspect_ratios, page, limit } = input as {
+      const { project_id, sort, aspect_ratios, tags, tag_match, page, limit } = input as {
         project_id: string;
         sort: 'newest' | 'oldest';
         aspect_ratios?: string[];
+        tags?: string[];
+        tag_match: 'all' | 'any';
         page: number;
         limit: number;
       };
@@ -1058,6 +1062,8 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
         limit,
         sort,
         aspectRatios: aspect_ratios,
+        tags,
+        tagMatch: tag_match,
       });
 
       const items = album.items.map((item) => {
@@ -1067,6 +1073,7 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
           jobId: item.jobId ?? null,
           prompt: preview.text,
           promptTruncated: preview.truncated,
+          tags: item.tags ?? [],
           storageKey: item.imageUrl || null,
           thumbnailKey: item.thumbnailUrl ?? null,
           optimizedKey: item.optimizedUrl ?? null,
@@ -1090,6 +1097,7 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
         totalSize: album.totalSize,
         totalSizeFormatted: formatSize(album.totalSize),
         aspectRatioCounts: album.aspectRatioCounts,
+        tagCounts: album.tagCounts,
         ...paginationHints(album.page, album.pages),
         hint: 'Pass storageKey / thumbnailKey / optimizedKey to get_file_urls to download or view a file.',
       };
@@ -1098,6 +1106,83 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
         text: JSON.stringify(response, null, 2),
         structuredContent: response,
       };
+    },
+  });
+
+  // ─── tag_album_items ───
+  tools.push({
+    name: 'tag_album_items',
+    title: 'Tag Album Items',
+    description: `Add, remove or replace tags on a project's album items. Tags are how an album is organised after generation: they drive the album view's filter, they travel with an item into the trash and back, and they are copied onto library items when the album is copied to a library.
+
+Scope the call one of two ways. Pass "item_ids" (from get_album_items) to change a specific set of items. Pass "all_items": true instead to change every item in the album, optionally narrowed by "filter_tags" and/or "aspect_ratios" — that is how to retag a whole slice, such as adding "approved" to everything already tagged "final".
+
+Exactly one operation per call: "add" leaves existing tags alone, "remove" takes only the named tags away, and "replace" makes the tag list exactly what is given (pass [] to clear all tags).`,
+    inputSchema: {
+      project_id: z.string().min(1).describe('The project whose album items to tag (from list_albums)'),
+      item_ids: z.array(z.string().min(1)).max(1000).optional().describe('The album items to change (from get_album_items). Omit only when all_items is true.'),
+      all_items: z.boolean().optional().describe('Apply to every album item instead of a fixed id list, narrowed by filter_tags / aspect_ratios when given'),
+      add: z.array(z.string()).max(30).optional().describe('Tags to add, leaving existing tags in place'),
+      remove: z.array(z.string()).max(30).optional().describe('Tags to remove, leaving other tags in place'),
+      replace: z.array(z.string()).max(30).optional().describe('Replacement tag list — the items end up with exactly these tags (pass [] to clear all tags)'),
+      filter_tags: z.array(z.string()).optional().describe('With all_items: only touch items already carrying these tags'),
+      tag_match: z.enum(['all', 'any']).default('all').describe('How filter_tags combine: "all" (default) requires every tag, "any" requires at least one'),
+      aspect_ratios: z.array(z.string()).optional().describe('With all_items: only touch items with these aspect ratios'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'mutate',
+    requiresConfirmation: true,
+    handler: async (userId, input) => {
+      const { project_id, item_ids, all_items, add, remove, replace, filter_tags, tag_match, aspect_ratios } = input as {
+        project_id: string;
+        item_ids?: string[];
+        all_items?: boolean;
+        add?: string[];
+        remove?: string[];
+        replace?: string[];
+        filter_tags?: string[];
+        tag_match: 'all' | 'any';
+        aspect_ratios?: string[];
+      };
+
+      const project = await repository.getProject(userId, project_id);
+      if (!project) {
+        return { text: JSON.stringify({ error: `Project "${project_id}" not found.` }), isError: true };
+      }
+
+      const operations = [add, remove, replace].filter((value) => value !== undefined);
+      if (operations.length === 0) {
+        return { text: JSON.stringify({ error: 'Provide exactly one of: add, remove, replace.' }), isError: true };
+      }
+      if (operations.length > 1) {
+        return { text: JSON.stringify({ error: 'Provide only one of add, remove or replace per call.' }), isError: true };
+      }
+      if (!all_items && (!item_ids || item_ids.length === 0)) {
+        return { text: JSON.stringify({ error: 'Provide item_ids, or set all_items to true.' }), isError: true };
+      }
+
+      const { updated } = await repository.updateAlbumItemsTags(userId, project_id, {
+        itemIds: all_items ? undefined : item_ids,
+        all: all_items === true,
+        add,
+        remove,
+        replace,
+        tags: filter_tags,
+        tagMatch: tag_match,
+        aspectRatios: aspect_ratios,
+      });
+      const tagCounts = await repository.getAlbumTagCounts(userId, project_id);
+
+      const response = {
+        projectId: project.id,
+        projectUrl: appUrls.project(project.id),
+        projectName: project.name,
+        operation: add !== undefined ? 'add' : remove !== undefined ? 'remove' : 'replace',
+        updated,
+        tagCounts,
+        message: `Tags updated on ${updated} album item${updated === 1 ? '' : 's'}.`,
+      };
+      return { text: JSON.stringify(response, null, 2), structuredContent: response };
     },
   });
 

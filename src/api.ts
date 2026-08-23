@@ -580,7 +580,14 @@ export async function deleteProjectJobs(id: string, jobIds: string[]): Promise<{
 
 export async function fetchProjectAlbum(
   id: string,
-  options: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; aspectRatios?: string[] } = {},
+  options: {
+    page?: number;
+    limit?: number;
+    sort?: 'newest' | 'oldest';
+    aspectRatios?: string[];
+    tags?: string[];
+    tagMatch?: import('./types').AlbumTagMatch;
+  } = {},
 ): Promise<import('./types').AlbumPageResult> {
   const params = new URLSearchParams({
     page: (options.page ?? 1).toString(),
@@ -589,6 +596,10 @@ export async function fetchProjectAlbum(
   });
   if (options.aspectRatios && options.aspectRatios.length > 0) {
     params.set('aspectRatios', options.aspectRatios.join(','));
+  }
+  if (options.tags && options.tags.length > 0) {
+    params.set('tags', options.tags.join(','));
+    if (options.tagMatch === 'any') params.set('tagMatch', 'any');
   }
   const res = await apiFetch(`/api/projects/${id}/album?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').AlbumPageResult>(res, 'Failed to get project album');
@@ -1025,6 +1036,51 @@ export async function moveToTrashBatch(projectId: string, ids: string[]): Promis
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.error || 'Failed to move items to trash');
   }
+}
+
+/** Every tag used in one project's album, with per-tag item counts. */
+export async function fetchAlbumTagCounts(projectId: string): Promise<import('./types').AlbumTagCount[]> {
+  const res = await apiFetch(`/api/projects/${projectId}/album/tags`, { headers: getHeaders(false) });
+  const data = await handleResponse<{ tagCounts: import('./types').AlbumTagCount[] }>(res, 'Failed to get album tags');
+  return data.tagCounts || [];
+}
+
+/** Replace one album item's tags. */
+export async function updateAlbumItemTags(projectId: string, itemId: string, tags: string[]): Promise<AlbumItem> {
+  const res = await apiFetch(`/api/projects/${projectId}/album/${itemId}/tags`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify({ tags }),
+  });
+  return handleResponse<AlbumItem>(res, 'Failed to update tags');
+}
+
+/**
+ * Add, remove or replace tags across many album items. Pass `allAlbumItems` to
+ * apply to everything the given filters select rather than a fixed id list.
+ */
+export async function batchUpdateAlbumTags(
+  projectId: string,
+  options: {
+    itemIds?: string[];
+    allAlbumItems?: boolean;
+    add?: string[];
+    remove?: string[];
+    replace?: string[];
+    aspectRatios?: string[];
+    filterTags?: string[];
+    tagMatch?: import('./types').AlbumTagMatch;
+  },
+): Promise<{ updated: number; tagCounts: import('./types').AlbumTagCount[] }> {
+  const res = await apiFetch(`/api/projects/${projectId}/album/tags-batch`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(options),
+  });
+  return handleResponse<{ success: boolean; updated: number; tagCounts: import('./types').AlbumTagCount[] }>(
+    res,
+    'Failed to update tags',
+  );
 }
 
 export async function renameAlbumItem(projectId: string, itemId: string, filename: string): Promise<AlbumItem> {

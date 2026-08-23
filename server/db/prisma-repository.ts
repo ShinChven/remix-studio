@@ -78,7 +78,14 @@ export class PrismaRepository implements IRepository {
   getProjectAlbum(
     userId: string,
     projectId: string,
-    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; aspectRatios?: string[] },
+    options?: {
+      page?: number;
+      limit?: number;
+      sort?: 'newest' | 'oldest';
+      aspectRatios?: string[];
+      tags?: string[];
+      tagMatch?: 'all' | 'any';
+    },
   ) {
     return this.projects.getProjectAlbum(userId, projectId, options);
   }
@@ -96,6 +103,24 @@ export class PrismaRepository implements IRepository {
   getAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.getAlbumItem(userId, projectId, itemId); }
   addAlbumItem(userId: string, projectId: string, item: AlbumItem) { return this.projects.addAlbumItem(userId, projectId, item); }
   deleteAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.deleteAlbumItem(userId, projectId, itemId); }
+  getAlbumTagCounts(userId: string, projectId: string) { return this.projects.getAlbumTagCounts(userId, projectId); }
+  setAlbumItemTags(userId: string, projectId: string, itemId: string, tags: string[]) { return this.projects.setAlbumItemTags(userId, projectId, itemId, tags); }
+  updateAlbumItemsTags(
+    userId: string,
+    projectId: string,
+    options: {
+      itemIds?: string[];
+      all?: boolean;
+      add?: string[];
+      remove?: string[];
+      replace?: string[];
+      aspectRatios?: string[];
+      tags?: string[];
+      tagMatch?: 'all' | 'any';
+    },
+  ) {
+    return this.projects.updateAlbumItemsTags(userId, projectId, options);
+  }
 
   // === Trash CRUD ===
   getTrashItems(userId: string) { return this.projects.getTrashItems(userId); }

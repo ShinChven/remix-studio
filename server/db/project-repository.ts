@@ -15,6 +15,33 @@ function normalizeAspectRatio(value: string | null | undefined): string {
   return `${width / divisor}:${height / divisor}`;
 }
 
+/** An album item carries at most this many tags, each at most this long. */
+export const ALBUM_TAG_MAX_COUNT = 30;
+export const ALBUM_TAG_MAX_LENGTH = 64;
+
+/**
+ * Trim, drop empties, cap length, de-duplicate case-insensitively (keeping the
+ * first spelling seen) and cap the count. Album tags are compared and filtered
+ * as exact strings, so normalising on write is what keeps "Hero" and "hero "
+ * from becoming two facets of the same thing.
+ */
+export function normalizeAlbumTags(values: unknown): string[] {
+  if (!Array.isArray(values)) return [];
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const value of values) {
+    if (typeof value !== 'string') continue;
+    const tag = value.trim().slice(0, ALBUM_TAG_MAX_LENGTH);
+    if (!tag) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    tags.push(tag);
+    if (tags.length >= ALBUM_TAG_MAX_COUNT) break;
+  }
+  return tags;
+}
+
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -318,7 +345,14 @@ export class ProjectRepository {
   async getProjectAlbum(
     userId: string,
     projectId: string,
-    options: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; aspectRatios?: string[] } = {},
+    options: {
+      page?: number;
+      limit?: number;
+      sort?: 'newest' | 'oldest';
+      aspectRatios?: string[];
+      tags?: string[];
+      tagMatch?: 'all' | 'any';
+    } = {},
   ): Promise<{
     items: AlbumItem[];
     total: number;
@@ -326,12 +360,13 @@ export class ProjectRepository {
     pages: number;
     totalSize: number;
     aspectRatioCounts: { ratio: string; count: number }[];
+    tagCounts: { tag: string; count: number }[];
   }> {
     const page = options.page ?? 1;
     const limit = options.limit ?? 500;
     const sort = options.sort ?? 'newest';
 
-    const [ratioRows, sizeAgg] = await Promise.all([
+    const [ratioRows, sizeAgg, tagCounts] = await Promise.all([
       this.prisma.albumItem.groupBy({
         by: ['aspectRatio'],
         where: { projectId, userId },
@@ -341,6 +376,7 @@ export class ProjectRepository {
         where: { projectId, userId },
         _sum: { size: true },
       }),
+      this.getAlbumTagCounts(userId, projectId),
     ]);
 
     const normalizedCounts = new Map<string, number>();
@@ -375,6 +411,17 @@ export class ProjectRepository {
       }
       where.aspectRatio = { in: Array.from(rawValues) };
     }
+    // Tags are stored as a JSON array, so "carries this tag" is a containment
+    // test. `all` asks for one array containing every tag at once; `any` is a
+    // containment test per tag, OR-ed together.
+    const filterTags = normalizeAlbumTags(options.tags);
+    if (filterTags.length > 0) {
+      if ((options.tagMatch ?? 'all') === 'any') {
+        where.OR = filterTags.map((tag) => ({ tags: { array_contains: [tag] } }));
+      } else {
+        where.tags = { array_contains: filterTags };
+      }
+    }
 
     const skip = (page - 1) * limit;
     const orderBy = sort === 'oldest'
@@ -393,7 +440,28 @@ export class ProjectRepository {
       pages: Math.max(1, Math.ceil(total / limit)),
       totalSize: Number(sizeAgg._sum.size || 0),
       aspectRatioCounts,
+      tagCounts,
     };
+  }
+
+  /**
+   * Every tag used anywhere in one project's album, with how many items carry
+   * it. Counted in SQL by unnesting the JSON array — Prisma cannot group by a
+   * value inside a JSON column. The counts describe the whole album, not the
+   * filtered page, so the facet list stays stable as filters are applied.
+   */
+  async getAlbumTagCounts(userId: string, projectId: string): Promise<{ tag: string; count: number }[]> {
+    const rows = await this.prisma.$queryRaw<{ tag: string; count: number }[]>`
+      SELECT tag, COUNT(*)::int AS count
+      FROM "AlbumItem",
+        LATERAL jsonb_array_elements_text(
+          CASE WHEN jsonb_typeof("tags") = 'array' THEN "tags" ELSE '[]'::jsonb END
+        ) AS tag
+      WHERE "projectId" = ${projectId} AND "userId" = ${userId}
+      GROUP BY tag
+      ORDER BY count DESC, tag ASC
+    `;
+    return rows.map((row) => ({ tag: row.tag, count: Number(row.count) }));
   }
 
   async getProjectCompletedJobs(
@@ -561,6 +629,7 @@ export class ProjectRepository {
       imageContexts: this.toNullableJsonArray(item.imageContexts),
       videoContexts: this.toNullableJsonArray(item.videoContexts),
       audioContexts: this.toNullableJsonArray(item.audioContexts),
+      tags: item.tags != null ? normalizeAlbumTags(item.tags) : Prisma.DbNull,
       imageUrl: item.imageUrl ?? null,
       thumbnailUrl: item.thumbnailUrl ?? null,
       optimizedUrl: item.optimizedUrl ?? null,
@@ -605,6 +674,96 @@ export class ProjectRepository {
     return this.mapAlbumItem(item);
   }
 
+  /** Replace one album item's tag list. Returns the item as it now stands. */
+  async setAlbumItemTags(userId: string, projectId: string, itemId: string, tags: string[]): Promise<AlbumItem | null> {
+    const normalized = normalizeAlbumTags(tags);
+    const updated = await this.prisma.albumItem.updateMany({
+      where: { id: itemId, projectId, userId },
+      data: { tags: normalized },
+    });
+    if (updated.count === 0) return null;
+    return this.getAlbumItem(userId, projectId, itemId);
+  }
+
+  /**
+   * Add, remove or replace tags across many album items at once. Scope is
+   * either an explicit id list or, with `all`, every item in the project
+   * (optionally narrowed by the same filters the album view uses).
+   *
+   * Items are re-grouped by the tag list they end up with, so a batch that
+   * gives 500 items the same tag issues one UPDATE rather than 500.
+   */
+  async updateAlbumItemsTags(
+    userId: string,
+    projectId: string,
+    options: {
+      itemIds?: string[];
+      all?: boolean;
+      add?: string[];
+      remove?: string[];
+      replace?: string[];
+      aspectRatios?: string[];
+      tags?: string[];
+      tagMatch?: 'all' | 'any';
+    },
+  ): Promise<{ updated: number }> {
+    await this.assertOwnedProject(userId, projectId);
+
+    const add = normalizeAlbumTags(options.add);
+    const remove = normalizeAlbumTags(options.remove);
+    const replace = options.replace != null ? normalizeAlbumTags(options.replace) : null;
+    if (replace == null && add.length === 0 && remove.length === 0) return { updated: 0 };
+
+    let targets: { id: string; tags: unknown }[];
+    if (options.all) {
+      // Reuse the album query so "apply to everything" honours the filters the
+      // view is showing, rather than silently reaching past them.
+      const scoped = await this.getProjectAlbum(userId, projectId, {
+        limit: 999999,
+        aspectRatios: options.aspectRatios,
+        tags: options.tags,
+        tagMatch: options.tagMatch,
+      });
+      targets = scoped.items.map((item) => ({ id: item.id, tags: item.tags ?? [] }));
+    } else {
+      const itemIds = (options.itemIds ?? []).filter((id) => typeof id === 'string' && id);
+      if (itemIds.length === 0) return { updated: 0 };
+      targets = await this.prisma.albumItem.findMany({
+        where: { id: { in: itemIds }, projectId, userId },
+        select: { id: true, tags: true },
+      });
+    }
+    if (targets.length === 0) return { updated: 0 };
+
+    const removeKeys = new Set(remove.map((tag) => tag.toLowerCase()));
+    const groups = new Map<string, { tags: string[]; ids: string[] }>();
+    for (const target of targets) {
+      const current = Array.isArray(target.tags) ? (target.tags as unknown[]) : [];
+      const next = replace != null
+        ? replace
+        : normalizeAlbumTags([
+          ...normalizeAlbumTags(current).filter((tag) => !removeKeys.has(tag.toLowerCase())),
+          ...add,
+        ]);
+      const key = JSON.stringify(next);
+      const group = groups.get(key);
+      if (group) group.ids.push(target.id);
+      else groups.set(key, { tags: next, ids: [target.id] });
+    }
+
+    let updated = 0;
+    for (const group of groups.values()) {
+      for (let i = 0; i < group.ids.length; i += 500) {
+        const result = await this.prisma.albumItem.updateMany({
+          where: { id: { in: group.ids.slice(i, i + 500) }, projectId, userId },
+          data: { tags: group.tags },
+        });
+        updated += result.count;
+      }
+    }
+    return { updated };
+  }
+
   async deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null> {
     const item = await this.prisma.albumItem.findFirst({ where: { id: itemId, projectId, userId } });
     if (!item) return null;
@@ -631,6 +790,7 @@ export class ProjectRepository {
         imageContexts: this.toNullableJsonArray(item.imageContexts as string[] | null | undefined),
         videoContexts: this.toNullableJsonArray((item as any).videoContexts as string[] | null | undefined),
         audioContexts: this.toNullableJsonArray((item as any).audioContexts as string[] | null | undefined),
+        tags: this.toNullableJsonArray((item as any).tags as string[] | null | undefined),
         imageUrl: item.imageUrl ?? null,
         thumbnailUrl: item.thumbnailUrl ?? null,
         optimizedUrl: item.optimizedUrl ?? null,
@@ -673,6 +833,7 @@ export class ProjectRepository {
         imageContexts: this.toNullableJsonArray(trashItem.imageContexts as string[] | null | undefined),
         videoContexts: this.toNullableJsonArray((trashItem as any).videoContexts as string[] | null | undefined),
         audioContexts: this.toNullableJsonArray((trashItem as any).audioContexts as string[] | null | undefined),
+        tags: this.toNullableJsonArray((trashItem as any).tags as string[] | null | undefined),
         imageUrl: trashItem.imageUrl ?? null,
         thumbnailUrl: trashItem.thumbnailUrl ?? null,
         optimizedUrl: trashItem.optimizedUrl ?? null,
@@ -1205,6 +1366,7 @@ export class ProjectRepository {
       imageContexts: (t.imageContexts as string[]) ?? [],
       videoContexts: (t.videoContexts as string[]) ?? [],
       audioContexts: (t.audioContexts as string[]) ?? [],
+      tags: (t.tags as string[]) ?? [],
       imageUrl: t.imageUrl ?? '',
       thumbnailUrl: t.thumbnailUrl ?? undefined,
       optimizedUrl: t.optimizedUrl ?? undefined,
@@ -1523,6 +1685,7 @@ export class ProjectRepository {
       imageContexts: (a.imageContexts as string[]) ?? [],
       videoContexts: (a.videoContexts as string[]) ?? [],
       audioContexts: (a.audioContexts as string[]) ?? [],
+      tags: (a.tags as string[]) ?? [],
       imageUrl: a.imageUrl ?? '',
       thumbnailUrl: a.thumbnailUrl ?? undefined,
       optimizedUrl: a.optimizedUrl ?? undefined,
