@@ -43,7 +43,11 @@ function isQwenImage2Pro(modelId?: string, apiUrl?: string): boolean {
   return target.includes('qwen-image-2.0-pro');
 }
 
-function isGrokImaginePro(modelId?: string, apiUrl?: string): boolean {
+// Grok Imagine Quality's reference endpoint is `/edit`, which takes one
+// `imageUrl` rather than a list.
+const GROK_MAX_REF_IMAGES = 1;
+
+function isGrokImagineQuality(modelId?: string, apiUrl?: string): boolean {
   const target = `${modelId || ''} ${apiUrl || ''}`;
   return target.includes('rhart-imagine-image-quality');
 }
@@ -177,26 +181,30 @@ export class RunningHubGenerator extends ImageGenerator {
   async generate(req: GenerateRequest): Promise<GenerateResult> {
     const { prompt, aspectRatio = '2:3', imageSize = '1K', format, refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
 
-    // --- Step 1: optional image upload ---
-    const imageUrls: string[] = [];
-    if (refImagesBase64 && refImagesBase64.length > 0) {
-      for (const base64 of refImagesBase64) {
-        const up = await this.uploadImage(base64);
-        if (up.ok === false) {
-          return { ok: false, error: up.error };
-        }
-        imageUrls.push(up.url);
-      }
-    }
-
-    const isTextToImage = imageUrls.length === 0;
     const isQwen = isQwenImage2Pro(modelId, reqApiUrl);
-    const isGrok = isGrokImaginePro(modelId, reqApiUrl);
+    const isGrok = isGrokImagineQuality(modelId, reqApiUrl);
     const isSeedream = isSeedream5Pro(modelId, reqApiUrl);
     const isWan = isWan27Pro(modelId, reqApiUrl);
     const isNanoPro = isRhartImageNPro(modelId, reqApiUrl);
     const isGptOfficial = isGptImage2Official(modelId, reqApiUrl);
-    // Qwen uses `/image-edit`, Grok Imagine Pro and rhart-image-n-pro use
+
+    // --- Step 1: optional image upload ---
+    // Grok Imagine Quality's /edit carries a single imageUrl, so uploading the
+    // rest costs a round trip each for bytes the request cannot hold.
+    const refImages = isGrok
+      ? (refImagesBase64 || []).slice(0, GROK_MAX_REF_IMAGES)
+      : (refImagesBase64 || []);
+    const imageUrls: string[] = [];
+    for (const base64 of refImages) {
+      const up = await this.uploadImage(base64);
+      if (up.ok === false) {
+        return { ok: false, error: up.error };
+      }
+      imageUrls.push(up.url);
+    }
+
+    const isTextToImage = imageUrls.length === 0;
+    // Qwen uses `/image-edit`, Grok Imagine Quality and rhart-image-n-pro use
     // `/edit`, Wan 2.7 uses `/image-edit-pro`, the rhart flash model uses
     // `/image-to-image`.
     const refEndpointType = isQwen ? 'image-edit' : (isGrok || isNanoPro) ? 'edit' : isWan ? 'image-edit-pro' : 'image-to-image';
@@ -231,15 +239,22 @@ export class RunningHubGenerator extends ImageGenerator {
     } else if (isGrok) {
       payload = {
         prompt,
-        aspectRatio: isTextToImage ? aspectRatio : (aspectRatio || 'auto'),
         resolution: imageSize.toLowerCase(), // API expects "1k", not "1K"
         numImages: '1',
       };
+      // aspectRatio is optional on both endpoints. `/edit` also takes `auto`
+      // to keep the source framing; `/text-to-image` has no such value, so
+      // the field is omitted there and the API picks the framing.
+      if (!isTextToImage) {
+        payload.aspectRatio = aspectRatio || 'auto';
+      } else if (aspectRatio !== 'auto') {
+        payload.aspectRatio = aspectRatio;
+      }
       if (format) {
         payload.outputFormat = format.toLowerCase() === 'jpg' ? 'jpeg' : format.toLowerCase();
       }
       if (!isTextToImage) {
-        // Grok Imagine Pro /edit accepts a single imageUrl (max 1 image).
+        // Grok Imagine Quality /edit accepts a single imageUrl (max 1 image).
         payload.imageUrl = imageUrls[0];
       }
     } else if (isSeedream || isWan) {

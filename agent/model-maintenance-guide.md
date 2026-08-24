@@ -245,7 +245,7 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 | GPT Image 2 | `rhart-image-g-2` | image |
 | GPT Image 2 Official | `rhart-image-g-2-official` | image |
 | Qwen Image 2 Pro | `alibaba/qwen-image-2.0-pro` | image |
-| Grok Imagine Pro | `rhart-imagine-image-quality` | image |
+| Grok Imagine Quality | `rhart-imagine-image-quality` | image |
 | Seedream 5.0 Pro | `dola-Seedream-5.0-pro` | image |
 | Seedream V5 Pro | `seedream-v5-pro` | image |
 | Wan 2.7 Pro | `alibaba/wan-2.7` | image |
@@ -261,6 +261,14 @@ tier. Image projects only have one quality picker, so the model's `qualities`
 list carries both in each value (`2K Medium`) and
 `resolveGptImage2OfficialSize` in `running-hub-generator.ts` splits it back into
 the two request fields.
+
+`rhart-imagine-image-quality` caps prompts at 4,000 characters and rejects a
+longer one outright (error 1007) instead of truncating, so the entry carries a
+`promptLimit` and the shared draft validation catches it before submission. Its
+reference endpoint is `/edit`, which takes a single `imageUrl` rather than a
+list — extra reference images are dropped before upload, not after. `auto` is
+an `/edit`-only aspect ratio: the `/text-to-image` enum has no such value, so
+the generator omits the optional field there rather than sending it.
 
 RunningHub model IDs may carry an endpoint suffix. When present it pins the
 request to that endpoint; otherwise the video generator picks `image-to-video`
