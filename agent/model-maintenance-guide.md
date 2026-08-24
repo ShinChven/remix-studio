@@ -262,6 +262,14 @@ list carries both in each value (`2K Medium`) and
 `resolveGptImage2OfficialSize` in `running-hub-generator.ts` splits it back into
 the two request fields.
 
+`rhart-imagine-image-quality` caps prompts at 4,000 characters and rejects a
+longer one outright (error 1007) instead of truncating, so the entry carries a
+`promptLimit` and the shared draft validation catches it before submission. Its
+reference endpoint is `/edit`, which takes a single `imageUrl` rather than a
+list — extra reference images are dropped before upload, not after. `auto` is
+an `/edit`-only aspect ratio: the `/text-to-image` enum has no such value, so
+the generator omits the optional field there rather than sending it.
+
 RunningHub model IDs may carry an endpoint suffix. When present it pins the
 request to that endpoint; otherwise the video generator picks `image-to-video`
 when the job has reference images and `text-to-video` when it does not. The

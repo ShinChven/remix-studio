@@ -711,8 +711,14 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'RunningHub',
       modelId: 'rhart-imagine-image-quality',
       category: 'image',
+      // The API rejects a longer prompt outright (error 1007), rather than
+      // truncating it itself.
+      promptLimit: { value: 4000, unit: 'characters' },
       options: {
-        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3'],
+        // `auto` keeps the source framing and is accepted by `/edit` only —
+        // the text-to-image endpoint has no such value, so the generator omits
+        // the field there instead of sending it.
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', 'auto'],
         qualities: ['1K', '2K'],
       },
     },
