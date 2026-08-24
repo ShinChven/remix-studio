@@ -702,8 +702,12 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      // `id` stays on the old name so saved projects keep their selection.
+      // The display name follows the model RunningHub actually serves here,
+      // `rhart-imagine-image-quality`, which is the quality tier rather than
+      // the retired Pro one.
       id: 'runninghub-grok-imagine-pro',
-      name: 'Grok Imagine Pro',
+      name: 'Grok Imagine Quality',
       generatorId: 'RunningHub',
       modelId: 'rhart-imagine-image-quality',
       category: 'image',

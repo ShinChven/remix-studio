@@ -43,7 +43,7 @@ function isQwenImage2Pro(modelId?: string, apiUrl?: string): boolean {
   return target.includes('qwen-image-2.0-pro');
 }
 
-function isGrokImaginePro(modelId?: string, apiUrl?: string): boolean {
+function isGrokImagineQuality(modelId?: string, apiUrl?: string): boolean {
   const target = `${modelId || ''} ${apiUrl || ''}`;
   return target.includes('rhart-imagine-image-quality');
 }
@@ -191,12 +191,12 @@ export class RunningHubGenerator extends ImageGenerator {
 
     const isTextToImage = imageUrls.length === 0;
     const isQwen = isQwenImage2Pro(modelId, reqApiUrl);
-    const isGrok = isGrokImaginePro(modelId, reqApiUrl);
+    const isGrok = isGrokImagineQuality(modelId, reqApiUrl);
     const isSeedream = isSeedream5Pro(modelId, reqApiUrl);
     const isWan = isWan27Pro(modelId, reqApiUrl);
     const isNanoPro = isRhartImageNPro(modelId, reqApiUrl);
     const isGptOfficial = isGptImage2Official(modelId, reqApiUrl);
-    // Qwen uses `/image-edit`, Grok Imagine Pro and rhart-image-n-pro use
+    // Qwen uses `/image-edit`, Grok Imagine Quality and rhart-image-n-pro use
     // `/edit`, Wan 2.7 uses `/image-edit-pro`, the rhart flash model uses
     // `/image-to-image`.
     const refEndpointType = isQwen ? 'image-edit' : (isGrok || isNanoPro) ? 'edit' : isWan ? 'image-edit-pro' : 'image-to-image';
@@ -239,7 +239,7 @@ export class RunningHubGenerator extends ImageGenerator {
         payload.outputFormat = format.toLowerCase() === 'jpg' ? 'jpeg' : format.toLowerCase();
       }
       if (!isTextToImage) {
-        // Grok Imagine Pro /edit accepts a single imageUrl (max 1 image).
+        // Grok Imagine Quality /edit accepts a single imageUrl (max 1 image).
         payload.imageUrl = imageUrls[0];
       }
     } else if (isSeedream || isWan) {

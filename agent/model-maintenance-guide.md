@@ -245,7 +245,7 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 | GPT Image 2 | `rhart-image-g-2` | image |
 | GPT Image 2 Official | `rhart-image-g-2-official` | image |
 | Qwen Image 2 Pro | `alibaba/qwen-image-2.0-pro` | image |
-| Grok Imagine Pro | `rhart-imagine-image-quality` | image |
+| Grok Imagine Quality | `rhart-imagine-image-quality` | image |
 | Seedream 5.0 Pro | `dola-Seedream-5.0-pro` | image |
 | Seedream V5 Pro | `seedream-v5-pro` | image |
 | Wan 2.7 Pro | `alibaba/wan-2.7` | image |
