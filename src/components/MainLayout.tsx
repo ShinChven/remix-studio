@@ -405,22 +405,23 @@ export function MainLayout() {
             </Link>
           )}
 
-          <div
-            className={`mt-3 flex flex-col items-center gap-0.5 text-[10px] leading-tight text-neutral-400 dark:text-neutral-600 ${isCollapsed ? 'lg:gap-0' : ''}`}
-          >
+          <div className="mt-3 flex flex-row flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-[10px] leading-tight text-neutral-400 dark:text-neutral-600">
             <span className="font-mono" title={`${t('mainLayout.version')} ${APP_VERSION}`}>
               v{APP_VERSION}
             </span>
             {GIT_COMMIT && (
-              <a
-                href={`https://github.com/shinchven/remix-studio/commit/${GIT_COMMIT}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono transition-colors hover:text-neutral-600 dark:hover:text-neutral-400"
-                title={`${t('mainLayout.commit')} ${GIT_COMMIT}`}
-              >
-                {GIT_COMMIT}
-              </a>
+              <>
+                <span aria-hidden="true">·</span>
+                <a
+                  href={`https://github.com/shinchven/remix-studio/commit/${GIT_COMMIT}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono transition-colors hover:text-neutral-600 dark:hover:text-neutral-400"
+                  title={`${t('mainLayout.commit')} ${GIT_COMMIT}`}
+                >
+                  {GIT_COMMIT}
+                </a>
+              </>
             )}
           </div>
         </div>
