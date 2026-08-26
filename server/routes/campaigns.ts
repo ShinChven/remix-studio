@@ -234,42 +234,84 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
     }
   });
 
+  // Paginated campaign list. The page carries a card per campaign — each with a
+  // thumbnail pulled from its posts — so the whole set is never fetched at once.
   campaignsRouter.get('/api/campaigns', authMiddleware, async (c) => {
     const user = c.get('user') as JwtPayload;
+
+    const pageRaw = Number(c.req.query('page') ?? 1);
+    const page = Math.max(1, Number.isFinite(pageRaw) ? Math.floor(pageRaw) : 1);
+    const pageSizeRaw = Number(c.req.query('pageSize') ?? 25);
+    const pageSize = Math.max(1, Math.min(100, Number.isFinite(pageSizeRaw) ? Math.floor(pageSizeRaw) : 25));
+    const skip = (page - 1) * pageSize;
+
+    const q = c.req.query('q')?.trim();
+    const status = c.req.query('status')?.trim();
+
+    const whereClause: any = { userId: user.userId };
+    if (status) whereClause.status = status;
+    if (q) {
+      whereClause.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
     try {
-      const [campaigns, completedCounts, postDates] = await Promise.all([
+      const [total, campaigns] = await Promise.all([
+        prisma.campaign.count({ where: whereClause }),
         prisma.campaign.findMany({
-          where: { userId: user.userId },
+          where: whereClause,
           include: {
             socialAccounts: true,
-            posts: { 
-              include: { media: true },
+            // Only the fields the card needs: a thumbnail and the schedule fallback.
+            posts: {
+              select: {
+                id: true,
+                status: true,
+                scheduledAt: true,
+                createdAt: true,
+                media: {
+                  select: { id: true, type: true, thumbnailUrl: true, processedUrl: true, sourceUrl: true, size: true },
+                },
+              },
               orderBy: { createdAt: 'desc' },
               take: 20
             },
             _count: { select: { posts: true } },
           },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: pageSize,
         }),
-        // Get completed posts count per campaign for accurate status display
-        prisma.post.groupBy({
-          by: ['campaignId'],
-          where: {
-            userId: user.userId,
-            status: { in: ['completed', 'posted'] }
-          },
-          _count: { id: true }
-        }),
-        prisma.post.groupBy({
-          by: ['campaignId'],
-          where: {
-            userId: user.userId,
-            scheduledAt: { not: null }
-          },
-          _min: { scheduledAt: true },
-          _max: { scheduledAt: true }
-        })
       ]);
+
+      // The aggregates only have to cover the campaigns on this page.
+      const campaignIds = campaigns.map((campaign) => campaign.id);
+      const [completedCounts, postDates] = campaignIds.length === 0
+        ? [[], []]
+        : await Promise.all([
+          // Get completed posts count per campaign for accurate status display
+          prisma.post.groupBy({
+            by: ['campaignId'],
+            where: {
+              userId: user.userId,
+              campaignId: { in: campaignIds },
+              status: { in: ['completed', 'posted'] }
+            },
+            _count: { id: true }
+          }),
+          prisma.post.groupBy({
+            by: ['campaignId'],
+            where: {
+              userId: user.userId,
+              campaignId: { in: campaignIds },
+              scheduledAt: { not: null }
+            },
+            _min: { scheduledAt: true },
+            _max: { scheduledAt: true }
+          })
+        ]);
 
       const countMap = new Map(completedCounts.map(item => [item.campaignId, item._count.id]));
       const dateMap = new Map(postDates.map(item => [item.campaignId, { min: item._min.scheduledAt, max: item._max.scheduledAt }]));
@@ -301,7 +343,13 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
         })
       );
 
-      return c.json(signedCampaigns);
+      return c.json({
+        items: signedCampaigns,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      });
     } catch (error) {
       console.error('Failed to get campaigns:', error);
       return c.json({ error: 'Failed to list campaigns' }, 500);

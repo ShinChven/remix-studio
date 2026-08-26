@@ -71,15 +71,11 @@ export function CommandPalette() {
         const [projectsRes, librariesRes, campaignsRes] = await Promise.all([
           fetchProjects(1, limit, query, undefined, true),
           fetchLibraries(1, limit, query, false, true),
-          fetchCampaigns() // backend does not support query yet, we will filter locally
+          fetchCampaigns({ page: 1, pageSize: limit, q: query || undefined })
         ]);
         setProjects(projectsRes.items || []);
         setLibraries(librariesRes.items || []);
-        
-        const allCampaigns = campaignsRes || [];
-        setCampaigns(query 
-          ? allCampaigns.filter((c: any) => c.name?.toLowerCase().includes(query.toLowerCase())) 
-          : allCampaigns.slice(0, 10));
+        setCampaigns(campaignsRes || []);
       } catch (err) {
         console.error('Failed to load command palette data', err);
       } finally {
