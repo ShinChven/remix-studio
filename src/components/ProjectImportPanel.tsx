@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { ProjectImportTask } from '../types';
 import { deleteProjectImport, fetchProjectImports, uploadProjectBundle } from '../api';
+import { ConfirmModal } from './ConfirmModal';
 
 const IMPORTS_PAGE_SIZE = 5;
 const POLL_INTERVAL_MS = 3000;
@@ -35,6 +36,7 @@ export function ProjectImportPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imports, setImports] = useState<ProjectImportTask[]>([]);
   const [uploadPercent, setUploadPercent] = useState<number | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   // Import ids already announced, so overlapping polls can't toast twice.
   const announcedRef = useRef<Set<string>>(new Set());
@@ -103,12 +105,16 @@ export function ProjectImportPanel() {
     }
   };
 
-  const handleDelete = async (taskId: string) => {
+  const confirmDelete = async () => {
+    const taskId = taskToDelete;
+    if (!taskId) return;
     try {
       await deleteProjectImport(taskId);
       setImports((prev) => prev.filter((task) => task.id !== taskId));
     } catch (err: any) {
       toast.error(err?.message || t('projectImports.errors.deleteFailed'));
+    } finally {
+      setTaskToDelete(null);
     }
   };
 
@@ -278,7 +284,7 @@ export function ProjectImportPanel() {
 
               <button
                 type="button"
-                onClick={() => void handleDelete(task.id)}
+                onClick={() => setTaskToDelete(task.id)}
                 disabled={task.status === 'processing'}
                 className="rounded-card border border-transparent p-2 text-neutral-400 transition-all hover:border-red-100 hover:bg-red-50 hover:text-red-500 active:scale-90 disabled:cursor-not-allowed disabled:opacity-40 sm:p-2.5 dark:hover:bg-red-500/10"
                 title={t('projectImports.deleteRecord')}
@@ -289,6 +295,16 @@ export function ProjectImportPanel() {
           </div>
         );
       })}
+
+      <ConfirmModal
+        isOpen={taskToDelete !== null}
+        onClose={() => setTaskToDelete(null)}
+        onConfirm={confirmDelete}
+        title={t('projectImports.confirmDelete.title')}
+        message={t('projectImports.confirmDelete.message')}
+        confirmText={t('projectImports.confirmDelete.confirm')}
+        type="danger"
+      />
     </section>
   );
 }

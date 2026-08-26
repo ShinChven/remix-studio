@@ -97,6 +97,11 @@
       "notZip": "Choisissez un pack de projet .zip.",
       "uploadFailed": "Échec du téléversement du pack de projet",
       "deleteFailed": "Échec de la suppression de l'entrée d'import"
+    },
+    "confirmDelete": {
+      "title": "Supprimer l'enregistrement d'import",
+      "message": "Supprimer cet enregistrement d'import ? L'archive téléversée sera supprimée. Les projets déjà importés ne sont pas affectés.",
+      "confirm": "Supprimer"
     }
   },
   "trash": {

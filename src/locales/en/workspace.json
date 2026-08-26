@@ -97,6 +97,11 @@
       "notZip": "Pick a .zip project bundle.",
       "uploadFailed": "Failed to upload the project bundle",
       "deleteFailed": "Failed to delete the import record"
+    },
+    "confirmDelete": {
+      "title": "Delete import record",
+      "message": "Delete this import record? The uploaded bundle is removed. Projects already imported from it are not affected.",
+      "confirm": "Delete Record"
     }
   },
   "sell": {

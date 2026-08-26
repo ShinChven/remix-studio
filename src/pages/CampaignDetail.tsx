@@ -218,6 +218,9 @@ export function CampaignDetail() {
   const [quickDate, setQuickDate] = useState('');
   const [quickSavingId, setQuickSavingId] = useState<string | null>(null);
   const [sendingPostId, setSendingPostId] = useState<string | null>(null);
+  const [sendTarget, setSendTarget] = useState<CampaignPost | null>(null);
+  const [mediaToRemove, setMediaToRemove] = useState<string | null>(null);
+  const [removingMedia, setRemovingMedia] = useState(false);
   const [deletePostTarget, setDeletePostTarget] = useState<CampaignPost | null>(null);
   const [deletingPost, setDeletingPost] = useState(false);
   const [deleteCampaignOpen, setDeleteCampaignOpen] = useState(false);
@@ -394,6 +397,7 @@ export function CampaignDetail() {
 
   const connectedAccounts: SocialAccount[] = campaign?.socialAccounts || [];
   const active = campaign?.status === 'active';
+  const targetAccountCount = connectedAccounts.length;
   const counts = statusCounts;
 
   useEffect(() => {
@@ -484,12 +488,17 @@ export function CampaignDetail() {
     }
   };
 
-  const handleRemoveMedia = async (mediaId: string) => {
+  const confirmRemoveMedia = async () => {
+    if (!mediaToRemove) return;
+    setRemovingMedia(true);
     try {
-      await removePostMedia(mediaId);
+      await removePostMedia(mediaToRemove);
+      setMediaToRemove(null);
       await loadPosts(true);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to remove media');
+    } finally {
+      setRemovingMedia(false);
     }
   };
 
@@ -526,11 +535,17 @@ export function CampaignDetail() {
     }
   };
 
-  const handleSendNow = async (postId: string) => {
+  const handleSendNow = (post: CampaignPost) => {
     if (!active) {
       toast.error('Campaign is inactive', { description: 'Activate the campaign before sending posts.' });
       return;
     }
+    setSendTarget(post);
+  };
+
+  const confirmSendNow = async () => {
+    if (!sendTarget) return;
+    const postId = sendTarget.id;
     try {
       setSendingPostId(postId);
       const result = await sendPostNow(postId);
@@ -547,6 +562,7 @@ export function CampaignDetail() {
       await loadPosts(true);
     } finally {
       setSendingPostId(null);
+      setSendTarget(null);
     }
   };
 
@@ -899,7 +915,7 @@ export function CampaignDetail() {
                           </div>
                         ) : (
                           <>
-                            <button className="flex h-10 w-full items-center justify-center gap-2 rounded-card bg-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-50 sm:w-auto" onClick={() => void handleSendNow(post.id)} disabled={!active || sendingPostId === post.id}>
+                            <button className="flex h-10 w-full items-center justify-center gap-2 rounded-card bg-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-50 sm:w-auto" onClick={() => handleSendNow(post)} disabled={!active || sendingPostId === post.id}>
                               {sendingPostId === post.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                               {post.status === 'completed' ? 'Send Again' : 'Send Now'}
                             </button>
@@ -1092,7 +1108,7 @@ export function CampaignDetail() {
                           ) : (
                             <ImageIcon className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 text-neutral-400" />
                           )}
-                          <button className="absolute right-2 top-2 z-20 rounded-lg bg-black/50 p-1.5 text-white opacity-0 transition-all hover:bg-red-500 group-hover:opacity-100" onClick={() => void handleRemoveMedia(media.id)}>
+                          <button className="absolute right-2 top-2 z-20 rounded-lg bg-black/50 p-1.5 text-white opacity-0 transition-all hover:bg-red-500 group-hover:opacity-100" onClick={() => setMediaToRemove(media.id)}>
                             <X className="h-3 w-3" />
                           </button>
                         </div>
@@ -1177,6 +1193,38 @@ export function CampaignDetail() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={sendTarget !== null}
+        title={sendTarget?.status === 'completed' ? 'Send This Post Again?' : 'Publish This Post Now?'}
+        description={
+          sendTarget?.status === 'completed'
+            ? `This post was already published${targetAccountCount > 0 ? ` to ${targetAccountCount} channel${targetAccountCount === 1 ? '' : 's'}` : ''}. Sending it again posts a duplicate that cannot be unsent.`
+            : `Publish this post${targetAccountCount > 0 ? ` to ${targetAccountCount} connected channel${targetAccountCount === 1 ? '' : 's'}` : ''} right now? It goes live immediately and cannot be unsent.`
+        }
+        confirmLabel={sendingPostId ? 'Sending...' : sendTarget?.status === 'completed' ? 'Send Again' : 'Send Now'}
+        cancelLabel="Cancel"
+        confirmDisabled={sendingPostId !== null}
+        onConfirm={() => void confirmSendNow()}
+        onCancel={() => {
+          if (!sendingPostId) setSendTarget(null);
+        }}
+        variant="primary"
+      />
+
+      <ConfirmDialog
+        isOpen={mediaToRemove !== null}
+        title="Remove Media"
+        description="Remove this media item from the post? The attachment is deleted and cannot be restored from here."
+        confirmLabel={removingMedia ? 'Removing...' : 'Remove Media'}
+        cancelLabel="Cancel"
+        confirmDisabled={removingMedia}
+        onConfirm={() => void confirmRemoveMedia()}
+        onCancel={() => {
+          if (!removingMedia) setMediaToRemove(null);
+        }}
+        variant="danger"
+      />
 
       <ConfirmDialog
         isOpen={deleteCampaignOpen}

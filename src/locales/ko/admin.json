@@ -123,7 +123,10 @@
       "signOutConfirm": "로그아웃",
       "removePasswordTitle": "비밀번호 제거",
       "removePasswordMessage": "비밀번호를 제거하면 이후에는 패스키로만 로그인할 수 있습니다. 확인을 위해 현재 비밀번호를 입력하세요.",
-      "removePasswordPlaceholder": "현재 비밀번호"
+      "removePasswordPlaceholder": "현재 비밀번호",
+      "removePasskeyTitle": "패스키 제거",
+      "removePasskeyMessage": "패스키 \"{{name}}\"을(를) 제거하시겠습니까? 이 패스키로는 더 이상 로그인할 수 없으며, 마지막 로그인 수단을 제거하면 계정에 접근하지 못할 수 있습니다.",
+      "removePasskeyConfirm": "패스키 제거"
     }
   },
   "accountTwoFactorSetup": {
@@ -243,7 +246,11 @@
       "enableTitle": "사용자 활성화",
       "disableTitle": "사용자 비활성화",
       "enableMessage": "{{email}}님을 활성화하시겠습니까?",
-      "disableMessage": "{{email}}님을 비활성화하시겠습니까?"
+      "disableMessage": "{{email}}님을 비활성화하시겠습니까?",
+      "promoteTitle": "관리자로 지정",
+      "demoteTitle": "관리자 권한 해제",
+      "promoteMessage": "{{email}}에게 전체 관리자 권한을 부여할까요? 관리자는 모든 사용자, 프로젝트, 설정을 관리할 수 있습니다.",
+      "demoteMessage": "{{email}}의 관리자 권한을 해제할까요? 계정은 유지되지만 모든 관리 기능을 사용할 수 없게 됩니다."
     },
     "toasts": {
       "roleUpdated": "역할이 업데이트됨",

@@ -121,6 +121,7 @@ export function CampaignPostDetail() {
   const [quickScheduling, setQuickScheduling] = useState(false);
   const [quickSaving, setQuickSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
@@ -187,6 +188,7 @@ export function CampaignPostDetail() {
 
   const connectedAccounts = post?.campaign?.socialAccounts || [];
   const active = post?.campaign?.status === 'active';
+  const targetAccountCount = post?.campaign?.socialAccounts?.length || 0;
   const backCampaignId = campaignId || post?.campaignId || post?.campaign?.id;
 
   const handleQuickScheduleSave = async () => {
@@ -223,12 +225,17 @@ export function CampaignPostDetail() {
     }
   };
 
-  const handleSendNow = async () => {
+  const handleSendNow = () => {
     if (!post) return;
     if (!active) {
       toast.error('Campaign is inactive', { description: 'Activate the campaign before sending posts.' });
       return;
     }
+    setSendOpen(true);
+  };
+
+  const confirmSendNow = async () => {
+    if (!post) return;
     try {
       setSending(true);
       const result = await sendPostNow(post.id);
@@ -241,6 +248,7 @@ export function CampaignPostDetail() {
       await loadPost(true);
     } finally {
       setSending(false);
+      setSendOpen(false);
     }
   };
 
@@ -384,7 +392,7 @@ export function CampaignPostDetail() {
                 </div>
               ) : (
                 <>
-                  <button className="flex h-10 w-full items-center justify-center gap-2 rounded-card bg-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-50 sm:w-auto" onClick={() => void handleSendNow()} disabled={!active || sending}>
+                  <button className="flex h-10 w-full items-center justify-center gap-2 rounded-card bg-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 disabled:opacity-50 sm:w-auto" onClick={handleSendNow} disabled={!active || sending}>
                     {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                     {post.status === 'completed' ? 'Send Again' : 'Send Now'}
                   </button>
@@ -498,6 +506,24 @@ export function CampaignPostDetail() {
           }}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={sendOpen}
+        title={post?.status === 'completed' ? 'Send This Post Again?' : 'Publish This Post Now?'}
+        description={
+          post?.status === 'completed'
+            ? `This post was already published${targetAccountCount > 0 ? ` to ${targetAccountCount} channel${targetAccountCount === 1 ? '' : 's'}` : ''}. Sending it again posts a duplicate that cannot be unsent.`
+            : `Publish this post${targetAccountCount > 0 ? ` to ${targetAccountCount} connected channel${targetAccountCount === 1 ? '' : 's'}` : ''} right now? It goes live immediately and cannot be unsent.`
+        }
+        confirmLabel={sending ? 'Sending...' : post?.status === 'completed' ? 'Send Again' : 'Send Now'}
+        cancelLabel="Cancel"
+        confirmDisabled={sending}
+        onConfirm={() => void confirmSendNow()}
+        onCancel={() => {
+          if (!sending) setSendOpen(false);
+        }}
+        variant="primary"
+      />
 
       <ConfirmDialog
         isOpen={deleteOpen}
