@@ -47,7 +47,7 @@ export function Home() {
           fetchProjects(1, 8, undefined, 'active'),
           fetchLibraries(1, 8),
           fetchAssistantProviders(),
-          fetchCampaigns().catch(() => []), // Fallback to empty if fails
+          fetchCampaigns({ pageSize: 8 }).catch(() => []), // Fallback to empty if fails
         ]);
         if (mounted) {
           const enabledProviders = filterEnabledAssistantProviders(provRes.providers);

@@ -19,9 +19,10 @@ import {
 import { FaInstagram, FaLinkedin, FaFacebook } from 'react-icons/fa6';
 import { XIcon } from '../components/XIcon';
 import { toast } from 'sonner';
-import { deleteCampaign, fetchCampaigns, fetchRecentPosts, fetchScheduledPosts, updateCampaign, refreshSocialAccountProfile } from '../api';
+import { deleteCampaign, fetchCampaignsPage, fetchRecentPosts, fetchScheduledPosts, updateCampaign, refreshSocialAccountProfile } from '../api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
+import { PageNav } from '../components/PageNav';
 import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 import { formatShortDate, formatTimeOrDate } from '../lib/date';
@@ -127,11 +128,19 @@ export function Campaigns() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [campaigns, setCampaigns] = useState<CampaignCardModel[]>([]);
 
+  // Paging and the search term live in the URL so a page of campaigns is shareable
+  // and survives a refresh; both are read by the server, not filtered client-side.
+  const queryParam = searchParams.get('q')?.trim() || '';
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+  const pageSize = Math.max(1, Math.min(100, parseInt(searchParams.get('pageSize') || '12', 10) || 12));
+
   const [isLoading, setIsLoading] = useState(true);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CampaignCardModel | null>(null);
   const [deletingCampaignId, setDeletingCampaignId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
   const [recentPostsLoading, setRecentPostsLoading] = useState(true);
   const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
@@ -142,8 +151,10 @@ export function Campaigns() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const campaignData = await fetchCampaigns();
-      setCampaigns(campaignData.map(mapCampaign));
+      const data = await fetchCampaignsPage({ page, pageSize, q: queryParam || undefined });
+      setCampaigns(data.items.map(mapCampaign));
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
     } catch (error) {
       toast.error('Failed to load campaigns');
     } finally {
@@ -177,29 +188,36 @@ export function Campaigns() {
   };
 
   useEffect(() => {
-    void loadData();
     void loadRecentPosts();
     void loadScheduledPosts();
   }, []);
 
   useEffect(() => {
+    void loadData();
+  }, [page, pageSize, queryParam]);
+
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed === queryParam) return;
+
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams(searchParams);
-      if (searchQuery.trim()) params.set('q', searchQuery.trim());
+      if (trimmed) params.set('q', trimmed);
       else params.delete('q');
+      // A new search starts over: page 3 of the old results means nothing here.
+      params.delete('page');
       setSearchParams(params, { replace: true });
     }, 350);
 
     return () => window.clearTimeout(timer);
-  }, [searchQuery, searchParams, setSearchParams]);
+  }, [searchQuery, queryParam, searchParams, setSearchParams]);
 
-  const filteredCampaigns = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return campaigns;
-    return campaigns.filter((campaign) =>
-      `${campaign.name} ${campaign.description}`.toLowerCase().includes(q),
-    );
-  }, [campaigns, searchQuery]);
+  const updatePage = (nextPage: number) => {
+    const params = new URLSearchParams(searchParams);
+    if (nextPage <= 1) params.delete('page');
+    else params.set('page', String(nextPage));
+    setSearchParams(params);
+  };
 
   const toggleCampaignStatus = async (campaign: CampaignCardModel) => {
     const nextStatus = campaign.status === 'Active' ? 'archived' : 'active';
@@ -223,9 +241,11 @@ export function Campaigns() {
     try {
       setDeletingCampaignId(deleteTarget.id);
       await deleteCampaign(deleteTarget.id);
-      setCampaigns((prev) => prev.filter((campaign) => campaign.id !== deleteTarget.id));
       setDeleteTarget(null);
       toast.success('Campaign deleted');
+      // Deleting the only card on the last page would leave it empty — step back instead.
+      if (campaigns.length === 1 && page > 1) updatePage(page - 1);
+      else await loadData();
     } catch (error: any) {
       toast.error(error?.message || 'Failed to delete campaign');
     } finally {
@@ -256,7 +276,7 @@ export function Campaigns() {
             <div className="flex flex-col gap-4 sm:flex-row sm:h-10 sm:items-center sm:justify-between">
               <h3 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 dark:text-white">
                 <Megaphone className="h-5 w-5 text-indigo-500" />
-                {t('allCampaigns')} {filteredCampaigns.length > 0 && <span className="text-sm font-normal text-neutral-500 dark:text-neutral-500">({filteredCampaigns.length})</span>}
+                {t('allCampaigns')} {total > 0 && <span className="text-sm font-normal text-neutral-500 dark:text-neutral-500">({total})</span>}
               </h3>
 
               <div className="flex items-center gap-3">
@@ -310,15 +330,17 @@ export function Campaigns() {
                   </div>
                 ))}
               </div>
-            ) : filteredCampaigns.length === 0 ? (
+            ) : campaigns.length === 0 ? (
               <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-card border-2 border-dashed border-neutral-200 bg-white/40 p-12 text-center text-neutral-500 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
                 <Megaphone className="h-8 w-8 opacity-20" />
                 <h3 className="text-xl font-bold text-neutral-950 dark:text-white">{t('noCampaigns')}</h3>
-                <button onClick={() => navigate('/campaigns/new')} className="text-indigo-600 font-bold hover:underline">{t('createOne')}</button>
+                {!queryParam && (
+                  <button onClick={() => navigate('/campaigns/new')} className="text-indigo-600 font-bold hover:underline">{t('createOne')}</button>
+                )}
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2">
-                {filteredCampaigns.map((campaign) => {
+                {campaigns.map((campaign) => {
                   const completedPosts = Math.min(campaign.postedPosts, campaign.totalPosts);
                   const progress = campaign.totalPosts > 0 ? Math.round((completedPosts / campaign.totalPosts) * 100) : 0;
 
@@ -400,6 +422,15 @@ export function Campaigns() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {!isLoading && totalPages > 1 && (
+              <div className="flex flex-col items-center gap-3 rounded-card border border-neutral-200/50 bg-white/40 px-4 py-3 shadow-sm backdrop-blur-3xl dark:border-white/5 dark:bg-neutral-900/40 sm:flex-row sm:justify-between">
+                <span className="text-[11px] font-medium text-neutral-500">
+                  {t('pagination.range', { start: (page - 1) * pageSize + 1, end: Math.min(page * pageSize, total), total })}
+                </span>
+                <PageNav page={page} pages={totalPages} onPageChange={updatePage} />
               </div>
             )}
           </section>

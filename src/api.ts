@@ -1736,9 +1736,36 @@ export async function summarizeAssistantConversationTitle(id: string): Promise<{
 
 // ========== Campaigns ==========
 
-export async function fetchCampaigns(): Promise<any[]> {
-  const res = await apiFetch('/api/campaigns', { headers: getHeaders() });
-  return handleResponse<any[]>(res, 'Failed to list campaigns');
+export interface CampaignListParams {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+  status?: string;
+}
+
+export interface CampaignListPage {
+  items: any[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export async function fetchCampaignsPage(params: CampaignListParams = {}): Promise<CampaignListPage> {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', String(params.page));
+  if (params.pageSize != null) search.set('pageSize', String(params.pageSize));
+  if (params.q) search.set('q', params.q);
+  if (params.status) search.set('status', params.status);
+  const query = search.toString();
+  const res = await apiFetch(`/api/campaigns${query ? `?${query}` : ''}`, { headers: getHeaders() });
+  return handleResponse<CampaignListPage>(res, 'Failed to list campaigns');
+}
+
+/** Convenience wrapper for callers that only want a single page of campaigns. */
+export async function fetchCampaigns(params: CampaignListParams = {}): Promise<any[]> {
+  const data = await fetchCampaignsPage(params);
+  return data.items ?? [];
 }
 
 export async function fetchRecentPosts(limit = 20): Promise<any[]> {
