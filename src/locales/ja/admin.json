@@ -123,7 +123,10 @@
       "signOutConfirm": "サインアウト",
       "removePasswordTitle": "パスワードを削除",
       "removePasswordMessage": "パスワードを削除すると、今後はパスキーのみでサインインできます。確認のため現在のパスワードを入力してください。",
-      "removePasswordPlaceholder": "現在のパスワード"
+      "removePasswordPlaceholder": "現在のパスワード",
+      "removePasskeyTitle": "パスキーを削除",
+      "removePasskeyMessage": "パスキー「{{name}}」を削除しますか？このパスキーではサインインできなくなります。最後のサインイン方法を削除すると、アカウントにアクセスできなくなる場合があります。",
+      "removePasskeyConfirm": "パスキーを削除"
     }
   },
   "accountTwoFactorSetup": {
@@ -243,7 +246,11 @@
       "enableTitle": "ユーザーを有効化",
       "disableTitle": "ユーザーを無効化",
       "enableMessage": "{{email}} を有効にしてもよろしいですか？",
-      "disableMessage": "{{email}} を無効にしてもよろしいですか？"
+      "disableMessage": "{{email}} を無効にしてもよろしいですか？",
+      "promoteTitle": "管理者にする",
+      "demoteTitle": "管理者権限を解除",
+      "promoteMessage": "{{email}} に管理者権限を付与しますか？管理者はすべてのユーザー・プロジェクト・設定を管理できます。",
+      "demoteMessage": "{{email}} の管理者権限を解除しますか？アカウントは残りますが、管理機能は使用できなくなります。"
     },
     "toasts": {
       "roleUpdated": "ロールを更新しました",

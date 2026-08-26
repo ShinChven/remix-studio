@@ -123,7 +123,10 @@
       "signOutConfirm": "Sign Out",
       "removePasswordTitle": "Remove password",
       "removePasswordMessage": "This will remove your password. You will only be able to sign in using passkeys. Enter your current password to confirm.",
-      "removePasswordPlaceholder": "Current password"
+      "removePasswordPlaceholder": "Current password",
+      "removePasskeyTitle": "Remove passkey",
+      "removePasskeyMessage": "Remove the passkey \"{{name}}\"? You will no longer be able to sign in with it, and removing your last sign-in method can lock you out of your account.",
+      "removePasskeyConfirm": "Remove Passkey"
     }
   },
   "accountTwoFactorSetup": {
@@ -243,7 +246,11 @@
       "enableTitle": "Enable User",
       "disableTitle": "Disable User",
       "enableMessage": "Are you sure you want to enable {{email}}?",
-      "disableMessage": "Are you sure you want to disable {{email}}?"
+      "disableMessage": "Are you sure you want to disable {{email}}?",
+      "promoteTitle": "Make Admin",
+      "demoteTitle": "Remove Admin",
+      "promoteMessage": "Grant {{email}} full admin access? Admins can manage every user, project and setting.",
+      "demoteMessage": "Remove admin access from {{email}}? They keep their account but lose all admin controls."
     },
     "toasts": {
       "roleUpdated": "Role updated",

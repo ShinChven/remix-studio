@@ -123,7 +123,10 @@
       "signOutConfirm": "Se déconnecter",
       "removePasswordTitle": "Supprimer le mot de passe",
       "removePasswordMessage": "Cette action supprimera votre mot de passe. Vous ne pourrez vous connecter qu'avec des passkeys. Saisissez votre mot de passe actuel pour confirmer.",
-      "removePasswordPlaceholder": "Mot de passe actuel"
+      "removePasswordPlaceholder": "Mot de passe actuel",
+      "removePasskeyTitle": "Supprimer le passkey",
+      "removePasskeyMessage": "Supprimer le passkey « {{name}} » ? Vous ne pourrez plus l'utiliser pour vous connecter, et supprimer votre dernière méthode de connexion peut vous bloquer l'accès à votre compte.",
+      "removePasskeyConfirm": "Supprimer le passkey"
     }
   },
   "accountTwoFactorSetup": {
@@ -243,7 +246,11 @@
       "enableTitle": "Activer l'utilisateur",
       "disableTitle": "Désactiver l'utilisateur",
       "enableMessage": "Êtes-vous sûr de vouloir activer {{email}} ?",
-      "disableMessage": "Êtes-vous sûr de vouloir désactiver {{email}} ?"
+      "disableMessage": "Êtes-vous sûr de vouloir désactiver {{email}} ?",
+      "promoteTitle": "Nommer administrateur",
+      "demoteTitle": "Retirer le rôle d'administrateur",
+      "promoteMessage": "Accorder un accès administrateur complet à {{email}} ? Les administrateurs peuvent gérer tous les utilisateurs, projets et paramètres.",
+      "demoteMessage": "Retirer l'accès administrateur à {{email}} ? Le compte est conservé mais perd tous les contrôles d'administration."
     },
     "toasts": {
       "roleUpdated": "Rôle mis à jour",

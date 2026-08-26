@@ -97,6 +97,11 @@
       "notZip": "請選擇 .zip 格式的專案套件。",
       "uploadFailed": "上傳專案套件失敗",
       "deleteFailed": "刪除匯入紀錄失敗"
+    },
+    "confirmDelete": {
+      "title": "刪除匯入記錄",
+      "message": "確定要刪除此匯入記錄嗎？上傳的封存檔將被移除。已匯入的專案不受影響。",
+      "confirm": "刪除記錄"
     }
   },
   "trash": {

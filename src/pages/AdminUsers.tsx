@@ -79,6 +79,7 @@ export function AdminUsers() {
   const [resetPassword, setResetPassword] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<{ userId: string; status: UserStatus; email: string } | null>(null);
+  const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: string; role: UserRole; email: string } | null>(null);
 
   const formatDate = (value?: number) => {
     if (!value) return t('adminUsers.never');
@@ -165,7 +166,9 @@ export function AdminUsers() {
   };
 
 
-  const handleRoleChange = async (userId: string, newRole: UserRole) => {
+  const handleRoleChange = async () => {
+    if (!pendingRoleChange) return;
+    const { userId, role: newRole } = pendingRoleChange;
     try {
       await updateUserRole(userId, newRole);
       toast.success(t('adminUsers.toasts.roleUpdated'));
@@ -173,6 +176,8 @@ export function AdminUsers() {
     } catch (err: any) {
       setError(err.message || t('adminUsers.errors.updateRole'));
       toast.error(err.message || t('adminUsers.errors.updateRole'));
+    } finally {
+      setPendingRoleChange(null);
     }
   };
 
@@ -382,7 +387,7 @@ export function AdminUsers() {
                       <select
                         value={user.role}
                         disabled={user.id === currentUser?.id}
-                        onChange={(e) => void handleRoleChange(user.id, e.target.value as UserRole)}
+                        onChange={(e) => setPendingRoleChange({ userId: user.id, role: e.target.value as UserRole, email: user.email })}
                         className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-3 py-2 text-xs text-neutral-900 dark:text-neutral-200 font-bold outline-none disabled:opacity-50 transition-all focus:ring-2 focus:ring-blue-500/20"
                       >
                         <option value="user">{t('adminUsers.user')}</option>
@@ -588,7 +593,7 @@ export function AdminUsers() {
                         <select
                           value={activeUser.role}
                           disabled={activeUser.id === currentUser?.id}
-                          onChange={(e) => void handleRoleChange(activeUser.id, e.target.value as UserRole)}
+                          onChange={(e) => setPendingRoleChange({ userId: activeUser.id, role: e.target.value as UserRole, email: activeUser.email })}
                           className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none disabled:opacity-50"
                         >
                           <option value="user">{t('adminUsers.user')}</option>
@@ -667,6 +672,16 @@ export function AdminUsers() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={pendingRoleChange !== null}
+        onClose={() => setPendingRoleChange(null)}
+        onConfirm={handleRoleChange}
+        title={pendingRoleChange?.role === 'admin' ? t('adminUsers.confirm.promoteTitle') : t('adminUsers.confirm.demoteTitle')}
+        message={pendingRoleChange ? (pendingRoleChange.role === 'admin' ? t('adminUsers.confirm.promoteMessage', { email: pendingRoleChange.email }) : t('adminUsers.confirm.demoteMessage', { email: pendingRoleChange.email })) : ''}
+        confirmText={pendingRoleChange?.role === 'admin' ? t('adminUsers.confirm.promoteTitle') : t('adminUsers.confirm.demoteTitle')}
+        type="danger"
+      />
 
       <ConfirmModal
         isOpen={pendingStatusChange !== null}

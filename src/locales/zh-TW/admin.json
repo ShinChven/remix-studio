@@ -123,7 +123,10 @@
       "signOutConfirm": "登出",
       "removePasswordTitle": "移除密碼",
       "removePasswordMessage": "這將移除您的密碼。之後您只能使用通行密鑰登入。請輸入目前密碼以確認。",
-      "removePasswordPlaceholder": "目前密碼"
+      "removePasswordPlaceholder": "目前密碼",
+      "removePasskeyTitle": "移除通行密鑰",
+      "removePasskeyMessage": "確定要移除通行密鑰「{{name}}」嗎？之後將無法用它登入；若這是最後一種登入方式，您可能會被鎖在帳戶之外。",
+      "removePasskeyConfirm": "移除通行密鑰"
     }
   },
   "accountTwoFactorSetup": {
@@ -243,7 +246,11 @@
       "enableTitle": "啟用用戶",
       "disableTitle": "禁用用戶",
       "enableMessage": "確定要啟用 {{email}} 嗎？",
-      "disableMessage": "確定要禁用 {{email}} 嗎？"
+      "disableMessage": "確定要禁用 {{email}} 嗎？",
+      "promoteTitle": "設為管理員",
+      "demoteTitle": "撤銷管理員",
+      "promoteMessage": "確定要授予 {{email}} 完整的管理員權限嗎？管理員可以管理所有使用者、專案與設定。",
+      "demoteMessage": "確定要撤銷 {{email}} 的管理員權限嗎？帳戶會保留，但將失去所有管理功能。"
     },
     "toasts": {
       "roleUpdated": "角色已更新",

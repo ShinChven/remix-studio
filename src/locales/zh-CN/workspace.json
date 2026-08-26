@@ -97,6 +97,11 @@
       "notZip": "请选择 .zip 格式的项目包。",
       "uploadFailed": "上传项目包失败",
       "deleteFailed": "删除导入记录失败"
+    },
+    "confirmDelete": {
+      "title": "删除导入记录",
+      "message": "确定要删除此导入记录吗？上传的压缩包将被移除。已导入的项目不受影响。",
+      "confirm": "删除记录"
     }
   },
   "sell": {

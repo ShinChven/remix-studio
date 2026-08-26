@@ -123,7 +123,10 @@
       "signOutConfirm": "退出登录",
       "removePasswordTitle": "移除密码",
       "removePasswordMessage": "这将移除您的密码。您将只能使用通行密钥登录。请输入当前密码以确认。",
-      "removePasswordPlaceholder": "当前密码"
+      "removePasswordPlaceholder": "当前密码",
+      "removePasskeyTitle": "移除通行密钥",
+      "removePasskeyMessage": "确定要移除通行密钥“{{name}}”吗？之后将无法用它登录；如果这是最后一种登录方式，您可能会被锁定在账户之外。",
+      "removePasskeyConfirm": "移除通行密钥"
     }
   },
   "accountTwoFactorSetup": {
@@ -243,7 +246,11 @@
       "enableTitle": "启用用户",
       "disableTitle": "禁用用户",
       "enableMessage": "确定要启用 {{email}} 吗？",
-      "disableMessage": "确定要禁用 {{email}} 吗？"
+      "disableMessage": "确定要禁用 {{email}} 吗？",
+      "promoteTitle": "设为管理员",
+      "demoteTitle": "撤销管理员",
+      "promoteMessage": "确定要授予 {{email}} 完整的管理员权限吗？管理员可以管理所有用户、项目和设置。",
+      "demoteMessage": "确定要撤销 {{email}} 的管理员权限吗？账户会保留，但将失去所有管理功能。"
     },
     "toasts": {
       "roleUpdated": "角色已更新",

@@ -108,6 +108,7 @@ export function Account() {
   const [passkeySuccess, setPasskeySuccess] = useState('');
   const [savingPasskey, setSavingPasskey] = useState(false);
   const [removingPasskeyId, setRemovingPasskeyId] = useState<string | null>(null);
+  const [passkeyToRemove, setPasskeyToRemove] = useState<{ id: string; name: string } | null>(null);
   const [twoFactorDisablePassword, setTwoFactorDisablePassword] = useState('');
   const [twoFactorDisableCode, setTwoFactorDisableCode] = useState('');
   const [twoFactorError, setTwoFactorError] = useState('');
@@ -361,7 +362,9 @@ export function Account() {
     }
   };
 
-  const handlePasskeyRemoval = async (passkeyId: string) => {
+  const handlePasskeyRemoval = async () => {
+    if (!passkeyToRemove) return;
+    const passkeyId = passkeyToRemove.id;
     setPasskeyError('');
     setPasskeySuccess('');
     setRemovingPasskeyId(passkeyId);
@@ -369,9 +372,11 @@ export function Account() {
     try {
       await removePasskey(passkeyId);
       setPasskeySuccess(t('account.security.success.passkeyRemoved'));
+      setPasskeyToRemove(null);
       await refreshSecurity();
     } catch (error: any) {
       setPasskeyError(error.message || t('account.security.errors.passkeyRemoveFailed'));
+      setPasskeyToRemove(null);
     } finally {
       setRemovingPasskeyId(null);
     }
@@ -921,7 +926,7 @@ export function Account() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => void handlePasskeyRemoval(passkey.id)}
+                            onClick={() => setPasskeyToRemove({ id: passkey.id, name: passkey.name })}
                             disabled={removingPasskeyId === passkey.id}
                             className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-60 active:scale-95 shadow-sm"
                           >
@@ -1121,6 +1126,16 @@ export function Account() {
             </section>
           </div>
         )}
+
+        <ConfirmModal
+          isOpen={passkeyToRemove !== null}
+          onClose={() => setPasskeyToRemove(null)}
+          onConfirm={handlePasskeyRemoval}
+          title={t('account.confirm.removePasskeyTitle')}
+          message={t('account.confirm.removePasskeyMessage', { name: passkeyToRemove?.name || '' })}
+          confirmText={t('account.confirm.removePasskeyConfirm')}
+          type="danger"
+        />
 
         <ConfirmModal
           isOpen={showSignOutConfirm}
