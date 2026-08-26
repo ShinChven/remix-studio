@@ -90,6 +90,9 @@ export function CampaignBatchActions() {
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendProgress, setSendProgress] = useState(0);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiTask, setAiTask] = useState<BatchGenerateTextResult | null>(null);
   const [setTextOpen, setSetTextOpen] = useState(false);
@@ -256,25 +259,38 @@ export function CampaignBatchActions() {
     }
   };
 
-  const handleBatchSend = async () => {
+  const handleBatchSend = () => {
     if (selectedPostIds.length === 0) return;
     if (campaign?.status !== 'active') {
       toast.error('Campaign is inactive', { description: 'Activate the campaign before sending posts.' });
       return;
     }
+    setSendProgress(0);
+    setSendOpen(true);
+  };
+
+  const confirmBatchSend = async () => {
+    if (selectedPostIds.length === 0) return;
+    setSending(true);
     let ok = 0;
     let fail = 0;
-    for (const postId of selectedPostIds) {
-      try {
-        await sendPostNow(postId);
-        ok++;
-      } catch {
-        fail++;
+    try {
+      for (const postId of selectedPostIds) {
+        try {
+          await sendPostNow(postId);
+          ok++;
+        } catch {
+          fail++;
+        }
+        setSendProgress(ok + fail);
       }
+      if (fail > 0) toast.warning(`Sent ${ok}, failed ${fail}`);
+      else toast.success(`Sent ${ok} post${ok === 1 ? '' : 's'}`);
+      setSendOpen(false);
+      await loadData(true, false);
+    } finally {
+      setSending(false);
     }
-    if (fail > 0) toast.warning(`Sent ${ok}, failed ${fail}`);
-    else toast.success(`Sent ${ok} post${ok === 1 ? '' : 's'}`);
-    await loadData(true, false);
   };
 
   const handleBatchUnschedule = async () => {
@@ -382,7 +398,7 @@ export function CampaignBatchActions() {
             <button disabled={selectedPostIds.length === 0} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 px-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => void handleBatchUnschedule()}>
               <X className="h-4 w-4" /> Unschedule
             </button>
-            <button disabled={selectedPostIds.length === 0 || campaign?.status !== 'active'} className="inline-flex h-9 items-center gap-2 rounded-xl bg-indigo-600 px-3 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-40" onClick={() => void handleBatchSend()}>
+            <button disabled={selectedPostIds.length === 0 || campaign?.status !== 'active' || sending} className="inline-flex h-9 items-center gap-2 rounded-xl bg-indigo-600 px-3 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-40" onClick={handleBatchSend}>
               <Send className="h-4 w-4" /> Send Now
             </button>
             <button disabled={selectedPostIds.length === 0} className="inline-flex h-9 items-center gap-2 rounded-xl bg-red-500/10 px-3 text-sm font-bold text-red-600 transition hover:bg-red-500/20 disabled:opacity-40" onClick={() => setDeleteOpen(true)}>
@@ -575,6 +591,28 @@ export function CampaignBatchActions() {
                   <img src={url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sendOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md" onClick={() => { if (!sending) setSendOpen(false); }}>
+          <div className="w-full max-w-md rounded-card border border-neutral-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
+            <h2 className="flex items-center gap-2 text-xl font-bold text-neutral-950 dark:text-white"><AlertCircle className="h-5 w-5 text-amber-500" /> Confirm Batch Send</h2>
+            <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">
+              Publish <strong>{selectedPostIds.length}</strong> selected post{selectedPostIds.length === 1 ? '' : 's'} to <strong>{campaign?.name}</strong> right now? Posts go live on the connected channels immediately and cannot be unsent.
+            </p>
+            {sending && (
+              <p className="mt-4 text-sm font-bold text-neutral-700 dark:text-neutral-200">
+                Sending {sendProgress} / {selectedPostIds.length}...
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <button className="rounded-lg px-4 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10 disabled:opacity-50" onClick={() => setSendOpen(false)} disabled={sending}>Cancel</button>
+              <button className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50" onClick={() => void confirmBatchSend()} disabled={sending}>
+                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Send Now
+              </button>
             </div>
           </div>
         </div>
