@@ -76,6 +76,16 @@
       },
       "stats": {
         "total": "總計"
+      },
+      "exportDialog": {
+        "open": "上傳歷史",
+        "title": "上傳歷史",
+        "retry": "重試",
+        "count": "{{count}} 筆紀錄",
+        "empty": {
+          "title": "還沒有上傳紀錄",
+          "description": "此匯出發佈到商店或雲端硬碟後，紀錄會顯示在這裡。"
+        }
       }
     }
   }

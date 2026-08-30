@@ -2278,10 +2278,12 @@ export interface ReleaseHistoryItem {
 export async function fetchReleaseHistory(
   page: number = 1,
   pageSize: number = 20,
+  options: { exportTaskId?: string } = {},
 ): Promise<{ items: ReleaseHistoryItem[]; total: number; page: number; pages: number }> {
   const url = new URL('/api/store-uploads', window.location.origin);
   url.searchParams.set('page', page.toString());
   url.searchParams.set('pageSize', pageSize.toString());
+  if (options.exportTaskId) url.searchParams.set('exportTaskId', options.exportTaskId);
   const res = await apiFetch(url.toString(), { headers: getHeaders(false) });
   return handleResponse<{ items: ReleaseHistoryItem[]; total: number; page: number; pages: number }>(
     res,

@@ -324,11 +324,14 @@ export function createReleaseRouter(prisma: PrismaClient) {
     const pageSizeRaw = Number(c.req.query('pageSize') ?? '20');
     const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? Math.floor(pageRaw) : 1;
     const pageSize = Number.isFinite(pageSizeRaw) ? Math.min(Math.max(Math.floor(pageSizeRaw), 1), 100) : 20;
+    // Optional filter so a single export can show only its own releases.
+    const exportTaskId = c.req.query('exportTaskId')?.trim() || undefined;
+    const where = { userId: user.userId, ...(exportTaskId ? { exportTaskId } : {}) };
 
     try {
       const [items, total] = await Promise.all([
         prisma.storeUploadHistory.findMany({
-          where: { userId: user.userId },
+          where,
           orderBy: { createdAt: 'desc' },
           skip: (page - 1) * pageSize,
           take: pageSize,
@@ -344,7 +347,7 @@ export function createReleaseRouter(prisma: PrismaClient) {
             },
           },
         }),
-        prisma.storeUploadHistory.count({ where: { userId: user.userId } }),
+        prisma.storeUploadHistory.count({ where }),
       ]);
 
       return c.json({

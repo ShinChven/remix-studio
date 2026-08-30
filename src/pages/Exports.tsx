@@ -3,13 +3,16 @@ import { Download, Loader2, CheckCircle2, XCircle, Trash2, Clock, ArrowRight, Li
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ExportTask, DeliveryStatus } from '../types';
-import { fetchAllExports, deleteExport, uploadExportToDrive, fetchDeliveryStatus, fetchActiveDeliveries, fetchReleaseConnections, ReleaseConnection, ReleaseProvider } from '../api';
+import { fetchAllExports, deleteExport, uploadExportToDrive, fetchDeliveryStatus, fetchActiveDeliveries, fetchReleaseConnections, fetchReleaseHistory, ReleaseConnection, ReleaseHistoryItem, ReleaseProvider } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { ExportReleaseHistoryDialog } from '../components/ExportReleaseHistoryDialog';
 import { toast } from 'sonner';
 import { PageNav } from '../components/PageNav';
 
 const EXPORTS_PAGE_SIZE = 15;
+/** Upper bound on the release rows pulled for one export's history dialog. */
+const EXPORT_HISTORY_PAGE_SIZE = 50;
 
 /** Icon per drive provider, mirroring the Releases page. */
 const DRIVE_ICON: Record<string, typeof Cloud> = {
@@ -30,6 +33,12 @@ export function Exports() {
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(() => new Set());
   const [taskToUploadDrive, setTaskToUploadDrive] = useState<ExportTask | null>(null);
   const [selectedDriveId, setSelectedDriveId] = useState<string | null>(null);
+  // Release history is fetched only when its dialog is opened; exportTaskId → rows
+  // keeps an already-viewed export from hitting the API again.
+  const [historyTask, setHistoryTask] = useState<ExportTask | null>(null);
+  const [historyCache, setHistoryCache] = useState<Record<string, ReleaseHistoryItem[]>>({});
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   // deliveryId → DeliveryStatus for in-progress uploads (drive + gumroad)
   const [deliveries, setDeliveries] = useState<Record<string, DeliveryStatus>>({});
@@ -46,6 +55,8 @@ export function Exports() {
   const [providers, setProviders] = useState<ReleaseProvider[]>([]);
   const deliveryPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exportsLoadSeqRef = useRef(0);
+  const historyLoadSeqRef = useRef(0);
+  const historyInflightRef = useRef<string | null>(null);
   const activeExportCount = exports.filter(t => t.status === 'pending' || t.status === 'processing').length;
   const hasActiveExportTasks = activeExportCount > 0;
 
@@ -80,6 +91,17 @@ export function Exports() {
         if (!exportId) return prev;
         const next = { ...prev };
         delete next[exportId];
+        return next;
+      });
+    };
+
+    // A finished upload adds a row to that export's history, so drop the cached
+    // copy and let the next dialog open refetch it.
+    const invalidateHistory = (exportTaskId: string) => {
+      setHistoryCache(prev => {
+        if (!(exportTaskId in prev)) return prev;
+        const next = { ...prev };
+        delete next[exportTaskId];
         return next;
       });
     };
@@ -122,11 +144,13 @@ export function Exports() {
                 </span>
               );
             }
+            invalidateHistory(status.exportTaskId);
             removeFromPending(dId, status.destination);
           } else if (status.status === 'failed' && !toastedRef.current.has(dId)) {
             toastedRef.current.add(dId);
             const fallback = status.destination === 'gumroad' ? t('sell.publishFailed') : t('releases.drive.uploadFailed');
             toast.error(status.error || fallback);
+            invalidateHistory(status.exportTaskId);
             removeFromPending(dId, status.destination);
           }
         } catch {
@@ -349,6 +373,41 @@ export function Exports() {
     return dId ? (deliveries[dId] ?? null) : null;
   };
 
+  const loadReleaseHistory = useCallback(async (exportTaskId: string) => {
+    const requestId = ++historyLoadSeqRef.current;
+    historyInflightRef.current = exportTaskId;
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const { items } = await fetchReleaseHistory(1, EXPORT_HISTORY_PAGE_SIZE, { exportTaskId });
+      if (requestId !== historyLoadSeqRef.current) return;
+      setHistoryCache(prev => ({ ...prev, [exportTaskId]: items }));
+    } catch (err: any) {
+      if (requestId !== historyLoadSeqRef.current) return;
+      setHistoryError(err?.message || t('releases.history.loadError'));
+    } finally {
+      if (requestId === historyLoadSeqRef.current) {
+        historyInflightRef.current = null;
+        setHistoryLoading(false);
+      }
+    }
+  }, [t]);
+
+  // Nothing is fetched until a dialog is open, and a cached export renders straight
+  // from state. An entry dropped by invalidateHistory (an upload just finished)
+  // refetches here while the dialog stays open.
+  useEffect(() => {
+    if (!historyTask || historyError) return;
+    if (historyCache[historyTask.id]) return;
+    if (historyInflightRef.current === historyTask.id) return;
+    void loadReleaseHistory(historyTask.id);
+  }, [historyTask, historyCache, historyError, loadReleaseHistory]);
+
+  const handleOpenHistory = (task: ExportTask) => {
+    setHistoryError(null);
+    setHistoryTask(task);
+  };
+
   return (
     <div className="p-4 md:p-8 w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <PageHeader
@@ -469,7 +528,7 @@ export function Exports() {
             return (
               <div
                 key={task.id}
-                className={`bg-white/70 dark:bg-neutral-900/70 p-4 md:p-5 rounded-card border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-ui group/task shadow-sm hover:shadow-xl backdrop-blur-xl duration-300 hover:-translate-y-0.5 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : task.status === 'failed' ? 'border-red-500/30' : 'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/50'}`}
+                className={`bg-white/70 dark:bg-neutral-900/70 p-4 md:p-5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-ui group/task shadow-sm hover:shadow-xl backdrop-blur-xl duration-300 hover:-translate-y-0.5 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : task.status === 'failed' ? 'border-red-500/30' : 'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/50'}`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <button
@@ -632,6 +691,16 @@ export function Exports() {
                         {isGumroadPublishing ? <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 animate-spin" /> : <Tag className="w-5 h-5 sm:w-4 sm:h-4" />}
                       </Link>
                     )}
+                    {task.status === 'completed' && (drives.length > 0 || hasStores) && (
+                      <button
+                        onClick={() => handleOpenHistory(task)}
+                        className="p-2 sm:p-1.5 text-violet-500 hover:bg-violet-500/10 rounded-lg transition-all active:scale-90 bg-violet-500/5 sm:bg-transparent"
+                        title={t('releases.history.exportDialog.open')}
+                        aria-haspopup="dialog"
+                      >
+                        <HistoryIcon className="w-5 h-5 sm:w-4 sm:h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDelete(task.id)}
                       className="p-2 sm:p-2.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-card transition-all active:scale-90 border border-transparent hover:border-red-100"
@@ -738,6 +807,20 @@ export function Exports() {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {historyTask ? (
+        <ExportReleaseHistoryDialog
+          exportName={historyTask.packageName || `Archive #${historyTask.id.slice(0, 8)}`}
+          items={historyCache[historyTask.id] ?? null}
+          loading={historyLoading}
+          error={historyError}
+          onClose={() => setHistoryTask(null)}
+          onRetry={() => {
+            setHistoryError(null);
+            void loadReleaseHistory(historyTask.id);
+          }}
+        />
       ) : null}
     </div>
   );

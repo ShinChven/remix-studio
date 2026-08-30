@@ -76,6 +76,16 @@
       },
       "stats": {
         "total": "Total"
+      },
+      "exportDialog": {
+        "open": "Historique des envois",
+        "title": "Historique des envois",
+        "retry": "Réessayer",
+        "count": "{{count}} publications",
+        "empty": {
+          "title": "Aucun envoi pour l'instant",
+          "description": "Les publications de cette exportation vers une boutique ou un disque apparaîtront ici."
+        }
       }
     }
   }

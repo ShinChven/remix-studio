@@ -76,6 +76,16 @@
       },
       "stats": {
         "total": "전체"
+      },
+      "exportDialog": {
+        "open": "업로드 기록",
+        "title": "업로드 기록",
+        "retry": "다시 시도",
+        "count": "{{count}}건",
+        "empty": {
+          "title": "아직 업로드 기록이 없습니다",
+          "description": "이 내보내기를 스토어나 드라이브로 릴리스하면 여기에 표시됩니다."
+        }
       }
     }
   }

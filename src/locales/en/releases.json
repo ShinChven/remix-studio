@@ -76,6 +76,16 @@
       },
       "stats": {
         "total": "Total"
+      },
+      "exportDialog": {
+        "open": "Upload history",
+        "title": "Upload history",
+        "retry": "Try again",
+        "count": "{{count}} releases",
+        "empty": {
+          "title": "No uploads yet",
+          "description": "Releases of this export to a store or a drive will appear here."
+        }
       }
     }
   }
