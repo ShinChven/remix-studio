@@ -76,6 +76,16 @@
       },
       "stats": {
         "total": "总计"
+      },
+      "exportDialog": {
+        "open": "上传历史",
+        "title": "上传历史",
+        "retry": "重试",
+        "count": "{{count}} 条记录",
+        "empty": {
+          "title": "还没有上传记录",
+          "description": "该导出发布到店铺或网盘后，记录会显示在这里。"
+        }
       }
     }
   }
