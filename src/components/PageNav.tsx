@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
 import { useIsCompactViewport } from '../hooks/useMediaQuery';
+import { scrollListToTop } from '../lib/scroll';
 
 const ELLIPSIS_JUMP = 5;
 
@@ -35,6 +36,8 @@ interface PageNavProps {
   size?: 'sm' | 'lg';
   /** Page numbers shown on each side of the current page. */
   siblings?: number;
+  /** Set false where the list is short enough that jumping to the top is jarring. */
+  scrollToTop?: boolean;
   className?: string;
 }
 
@@ -44,9 +47,11 @@ export function PageNav({
   onPageChange,
   size = 'sm',
   siblings = 1,
+  scrollToTop = true,
   className = '',
 }: PageNavProps) {
   const { t } = useTranslation();
+  const rootRef = useRef<HTMLDivElement | null>(null);
   // Phones cannot fit the full window: drop the siblings and the first/last jumps,
   // which the always-visible "1" and last-page buttons already cover.
   const isCompact = useIsCompactViewport();
@@ -60,6 +65,8 @@ export function PageNav({
     const next = Math.min(Math.max(1, p), effectivePages);
     if (next === safePage) return;
     onPageChange(next);
+    // The new page starts at the top of the list, not where the pager was clicked.
+    if (scrollToTop) scrollListToTop(rootRef.current);
   };
 
   // Touch targets stay at least 36px wide on phones, where the desktop 'sm' size is too small to tap.
@@ -76,7 +83,7 @@ export function PageNav({
   const items = buildPageItems(safePage, effectivePages, isCompact ? 0 : siblings);
 
   return (
-    <div className={`flex items-center justify-center gap-1 ${className}`}>
+    <div ref={rootRef} className={`flex items-center justify-center gap-1 ${className}`}>
       {!isCompact && (
         <button
           type="button"
