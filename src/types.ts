@@ -2254,6 +2254,9 @@ export interface AlbumTagCount {
 /** How a multi-tag album filter combines its tags. */
 export type AlbumTagMatch = 'all' | 'any';
 
+/** Ordering for album item listings. The `name-*` values sort on the prompt. */
+export type AlbumItemSort = 'newest' | 'oldest' | 'name-asc' | 'name-desc';
+
 export interface AlbumPageResult extends PaginatedResult<AlbumItem> {
   totalSize: number;
   aspectRatioCounts: AspectRatioCount[];

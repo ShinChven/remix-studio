@@ -583,10 +583,11 @@ export async function fetchProjectAlbum(
   options: {
     page?: number;
     limit?: number;
-    sort?: 'newest' | 'oldest';
+    sort?: import('./types').AlbumItemSort;
     aspectRatios?: string[];
     tags?: string[];
     tagMatch?: import('./types').AlbumTagMatch;
+    q?: string;
   } = {},
 ): Promise<import('./types').AlbumPageResult> {
   const params = new URLSearchParams({
@@ -601,6 +602,7 @@ export async function fetchProjectAlbum(
     params.set('tags', options.tags.join(','));
     if (options.tagMatch === 'any') params.set('tagMatch', 'any');
   }
+  if (options.q) params.set('q', options.q);
   const res = await apiFetch(`/api/projects/${id}/album?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').AlbumPageResult>(res, 'Failed to get project album');
 }

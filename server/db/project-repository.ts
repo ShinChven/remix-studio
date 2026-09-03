@@ -1,6 +1,19 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/types';
+import type { AlbumItemSort } from '../../src/types';
+
+/**
+ * Album items carry no title, so `name-*` orders on the prompt — the same
+ * field the UI shows as an item's label. Ties fall back to newest-first.
+ */
+function albumOrderBy(sort: AlbumItemSort) {
+  const newestFirst = [{ createdAt: 'desc' as const }, { id: 'desc' as const }];
+  if (sort === 'oldest') return [{ createdAt: 'asc' as const }, { id: 'asc' as const }];
+  if (sort === 'name-asc') return [{ prompt: 'asc' as const }, ...newestFirst];
+  if (sort === 'name-desc') return [{ prompt: 'desc' as const }, ...newestFirst];
+  return newestFirst;
+}
 
 function normalizeAspectRatio(value: string | null | undefined): string {
   const ratio = value?.trim();
@@ -348,10 +361,11 @@ export class ProjectRepository {
     options: {
       page?: number;
       limit?: number;
-      sort?: 'newest' | 'oldest';
+      sort?: AlbumItemSort;
       aspectRatios?: string[];
       tags?: string[];
       tagMatch?: 'all' | 'any';
+      q?: string;
     } = {},
   ): Promise<{
     items: AlbumItem[];
@@ -364,7 +378,7 @@ export class ProjectRepository {
   }> {
     const page = options.page ?? 1;
     const limit = options.limit ?? 500;
-    const sort = options.sort ?? 'newest';
+    const sort: AlbumItemSort = options.sort ?? 'newest';
 
     const [ratioRows, sizeAgg, tagCounts] = await Promise.all([
       this.prisma.albumItem.groupBy({
@@ -423,10 +437,23 @@ export class ProjectRepository {
       }
     }
 
+    // Album items have no title column, so free-text search looks at the two
+    // fields the UI renders as an item's label: its prompt and its text output.
+    const search = options.q?.trim();
+    if (search) {
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          OR: [
+            { prompt: { contains: search, mode: 'insensitive' } },
+            { textContent: { contains: search, mode: 'insensitive' } },
+          ],
+        },
+      ];
+    }
+
     const skip = (page - 1) * limit;
-    const orderBy = sort === 'oldest'
-      ? [{ createdAt: 'asc' as const }, { id: 'asc' as const }]
-      : [{ createdAt: 'desc' as const }, { id: 'desc' as const }];
+    const orderBy = albumOrderBy(sort);
 
     const [total, items] = await Promise.all([
       this.prisma.albumItem.count({ where }),

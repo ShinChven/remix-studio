@@ -1,4 +1,5 @@
 import { AppData, Library, LibraryItem, LibraryType, Project, ProjectStatus, AlbumItem, TrashItem, Job } from '../../src/types';
+import type { AlbumItemSort } from '../../src/types';
 
 export interface IRepository {
   // === Library CRUD ===
@@ -49,10 +50,11 @@ export interface IRepository {
     options?: {
       page?: number;
       limit?: number;
-      sort?: 'newest' | 'oldest';
+      sort?: AlbumItemSort;
       aspectRatios?: string[];
       tags?: string[];
       tagMatch?: 'all' | 'any';
+      q?: string;
     },
   ): Promise<{
     items: AlbumItem[];
