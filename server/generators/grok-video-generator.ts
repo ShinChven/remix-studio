@@ -6,7 +6,7 @@ import {
 } from './video-generator';
 
 const DEFAULT_BASE_URL = 'https://api.x.ai/v1';
-const DEFAULT_MODEL = 'grok-imagine-video';
+const DEFAULT_MODEL = 'grok-imagine-video-1.5';
 const PRIVATE_HOSTNAME_SUFFIXES = ['.local', '.internal', '.localhost'];
 
 /**

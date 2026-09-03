@@ -1,7 +1,7 @@
 import { ImageGenerator, GenerateRequest, GenerateResult } from './image-generator';
 
 const DEFAULT_API_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent';
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent';
 
 export class GoogleAIGenerator extends ImageGenerator {
   private apiKey: string;
@@ -15,7 +15,7 @@ export class GoogleAIGenerator extends ImageGenerator {
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
     const { prompt, aspectRatio = '2:3', imageSize = '1K', refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
-    const model = modelId || 'gemini-3.1-flash-image-preview';
+    const model = modelId || 'gemini-3.1-flash-image';
     let actualApiUrl = reqApiUrl;
 
     if (!actualApiUrl) {

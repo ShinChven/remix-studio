@@ -311,7 +311,7 @@ export class AssistantRunner {
     let modelId: string;
     switch (providerType) {
       case 'GoogleAI':
-        modelId = 'gemini-3.1-flash-lite-preview';
+        modelId = 'gemini-3.1-flash-lite';
         break;
       case 'Claude':
         modelId = 'claude-haiku-4-5-20251001';

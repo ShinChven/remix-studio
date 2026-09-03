@@ -46,7 +46,7 @@ export interface ModelConfig {
   id: string; // Local UUID
   name: string; // Display name e.g. "nano banana 2"
   generatorId: ProviderType; // Which generator type to use
-  modelId: string; // The actual API model string (e.g. 'gemini-3.1-flash-image-preview')
+  modelId: string; // The actual API model string (e.g. 'gemini-3.1-flash-image')
   category: ProjectType; // 'image' | 'text' | 'video' | 'audio'
   apiUrl?: string; // Optional override
   promptLimit?: PromptLimitMeta;
@@ -249,7 +249,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       id: 'google-nano-banana-2',
       name: 'nano banana 2',
       generatorId: 'GoogleAI',
-      modelId: 'gemini-3.1-flash-image-preview',
+      modelId: 'gemini-3.1-flash-image',
       category: 'image',
       promptLimit: { value: 131072, unit: 'tokens' },
       options: {
@@ -279,6 +279,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '4:5', '5:4', '21:9'],
         qualities: ['1K'],
+      },
+    },
+    {
+      id: 'google-gemini-3.8-flash-text',
+      name: 'Gemini 3.8 Flash',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-3.8-flash',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
     {
@@ -345,7 +357,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       id: 'google-gemini-3.1-flash-lite-text',
       name: 'Gemini 3.1 Flash Lite',
       generatorId: 'GoogleAI',
-      modelId: 'gemini-3.1-flash-lite-preview',
+      modelId: 'gemini-3.1-flash-lite',
       category: 'text',
       promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
@@ -463,7 +475,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       id: 'vertex-nano-banana-2',
       name: 'nano banana 2',
       generatorId: 'VertexAI',
-      modelId: 'gemini-3.1-flash-image-preview',
+      modelId: 'gemini-3.1-flash-image',
       category: 'image',
       promptLimit: { value: 131072, unit: 'tokens' },
       options: {
@@ -493,6 +505,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '4:5', '5:4', '21:9'],
         qualities: ['1K'],
+      },
+    },
+    {
+      id: 'vertex-gemini-3.8-flash-text',
+      name: 'Gemini 3.8 Flash',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-3.8-flash',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
     {
@@ -559,7 +583,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       id: 'vertex-gemini-3.1-flash-lite-text',
       name: 'Gemini 3.1 Flash Lite',
       generatorId: 'VertexAI',
-      modelId: 'gemini-3.1-flash-lite-preview',
+      modelId: 'gemini-3.1-flash-lite',
       category: 'text',
       promptLimit: { value: 1048576, unit: 'tokens' },
       options: {
@@ -1054,32 +1078,21 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
       },
     },
-    {
-      id: 'openai-sora-2-video',
-      name: 'Sora 2',
-      generatorId: 'OpenAI',
-      modelId: 'sora-2',
-      category: 'video',
-      options: {
-        aspectRatios: ['16:9', '9:16', '1:1'],
-        resolutions: ['720p', '1080p'],
-        durations: [8, 16, 20],
-      },
-    },
-    {
-      id: 'openai-sora-2-pro-video',
-      name: 'Sora 2 Pro',
-      generatorId: 'OpenAI',
-      modelId: 'sora-2-pro',
-      category: 'video',
-      options: {
-        aspectRatios: ['16:9', '9:16', '1:1'],
-        resolutions: ['720p', '1080p'],
-        durations: [8, 16, 20],
-      },
-    },
   ],
   Grok: [
+    {
+      id: 'grok-imagine-image-2.0',
+      name: 'Grok Imagine Image 2.0',
+      generatorId: 'Grok',
+      modelId: 'grok-imagine-image-2.0',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '3:4', '4:3', '9:16', '16:9', '2:3', '3:2', '9:19.5', '19.5:9', '9:20', '20:9', '1:2', '2:1', 'auto'],
+        // Same quality + resolution pair as the 1.x tiers, which `parseQualityPreset`
+        // splits back out of the project's single quality picker.
+        qualities: ['low/1k', 'low/2k', 'medium/1k', 'medium/2k', 'high/1k', 'high/2k'],
+      },
+    },
     {
       id: 'grok-imagine-image',
       name: 'Grok Imagine',
@@ -1167,19 +1180,35 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      // `id` stays on the unversioned name so saved projects keep their selection.
+      // Imagine Video 1.5 supersedes `grok-imagine-video` and takes the same
+      // aspect_ratio / resolution / duration payload, so only the model ID moves.
       id: 'grok-imagine-video',
-      name: 'Grok Imagine Video',
+      name: 'Grok Imagine Video 1.5',
       generatorId: 'Grok',
-      modelId: 'grok-imagine-video',
+      modelId: 'grok-imagine-video-1.5',
       category: 'video',
       options: {
         aspectRatios: ['16:9', '9:16'],
-        resolutions: ['720p'],
-        durations: [6, 10],
+        resolutions: ['720p', '1080p'],
+        durations: [4, 6, 8, 10, 15],
       },
     },
   ],
   Claude: [
+    {
+      id: 'claude-fable-5-1-text',
+      name: 'Claude Fable 5.1',
+      generatorId: 'Claude',
+      modelId: 'claude-fable-5-1',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        // Fable 5.1 uses always-on adaptive thinking and rejects disabled/manual thinking controls.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
     {
       id: 'claude-fable-5-text',
       name: 'Claude Fable 5',
@@ -1457,6 +1486,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
   ],
   Alibabacloud: [
+    {
+      id: 'alibabacloud-qwen3.8-max-text',
+      name: 'Qwen3.8 Max',
+      generatorId: 'Alibabacloud',
+      modelId: 'qwen3.8-max',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        temperatures: [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
+      },
+    },
     {
       id: 'alibabacloud-qwen3.6-max-text',
       name: 'Qwen3.6 Max',

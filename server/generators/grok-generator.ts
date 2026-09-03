@@ -13,7 +13,7 @@ type GrokImageResponse = {
 };
 
 const DEFAULT_BASE_URL = 'https://api.x.ai/v1';
-const DEFAULT_MODEL = 'grok-imagine-image';
+const DEFAULT_MODEL = 'grok-imagine-image-2.0';
 const PRIVATE_HOSTNAME_SUFFIXES = ['.local', '.internal', '.localhost'];
 
 export class GrokGenerator extends ImageGenerator {
