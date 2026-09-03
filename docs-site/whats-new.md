@@ -8,6 +8,39 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.22.0 — Album tags, upload history per export, and a faster Campaigns page
+
+*Tag anything in a project album and filter by it, see every release a finished export has been through, and page through campaigns instead of waiting for all of them to load.*
+
+**Added**
+
+- **Album tags** — Album items can now carry tags. Tag a single item from the control beside its filename, or many at once from the toolbar, where one dialog offers **Add**, **Remove** and **Replace**. With nothing selected, a batch applies to everything the current filters match rather than just the page on screen, so you can filter to one tag and add another across the whole slice in a single step. The toolbar's tag filter lists every tag in the album with a count beside it and a **Match All** / **Match Any** switch, and the filters live in the URL so a filtered album can be linked. Tags survive a delete and restore, travel inside project bundles, and are copied along when album items are copied to a library.
+- **Album tags in the assistant and over MCP** — The assistant can list what a project is tagged with, ask for a slice by tag, and tag items for you — either a set you name or a whole filtered slice. Writing tags always asks for your confirmation first, and the prompt spells out whether it is adding, removing, or replacing.
+- **Upload history per export** — Each finished export now has a history button beside its download and release actions, opening a dialog with just that archive's releases: where it went, which account, when, the resulting link, and the full error text if it failed. Previously the only record was the account-wide history page, where one archive's release had to be found among everyone else's.
+- **New models** — **Claude Fable 5.1**, **Gemini 3.8 Flash** (on both Google AI and Vertex AI), **Qwen3.8 Max**, and **Grok Imagine Image 2.0** join the catalog. The models they succeed stay listed, so pinned projects keep working.
+- **Scheduled post totals** — The Scheduled Posts page now shows how many posts match, in the header, next to the search box as **Showing X-Y of N**, and in the pagination footer; the calendar view also reports how many fall in the month on screen. The Campaigns page shows the same total beside its **Scheduled Posts** heading.
+- **Version and commit in the sidebar** — The bottom of the sidebar shows which version and which build you are running, with the commit linking to GitHub.
+
+**Improved**
+
+- **The Campaigns page loads a page at a time** — An account with dozens of campaigns used to load all of them, and every thumbnail in each, before the page could paint. Campaigns now arrive 12 at a time with a pager beneath the grid, and the page number lives in the URL so a page can be linked or survive a refresh. Search is now handled by the server: the box matches campaign names and descriptions across your whole account rather than filtering whichever campaigns had already loaded, and the command palette searches the same way.
+- **Confirmation before every destructive action** — Batch **Send Now** published every selected post the instant it was clicked; it now confirms first, naming the campaign and the number of posts, and shows progress as the batch runs. The remaining gaps closed with it: sending or re-sending a single post, removing media from a post, batch unschedule, removing a passkey, deleting a project import, and granting or revoking admin.
+- **Tidier campaign cards** — The overflow menu moved to the top-right corner and the post progress sits beside the title, which now gets the full width of the card. The dates lost the time of day, so they fit on one line even on a narrow phone; the campaign detail page still shows the time.
+- **Pages open at the top** — Changing page in any list used to leave you wherever the pager was, partway down the new results. Every paginated list now returns to the top.
+
+**Fixed**
+
+- **Campaign dates that cross a year** — A campaign running December 2026 to February 2027 read as though it ended two months before it started, because the year was missing. Campaign, scheduled-post, and Recently Posted dates now show the year whenever it matters.
+- **Campaign dates and calendar counts on phones** — The dates on campaign cards were clipped mid-value, the calendar's month summary collided with the next-month button, and the per-day post count was hidden entirely on a small screen. All three are fixed, and the desktop layout is unchanged.
+- **Long prompts on Grok Imagine Quality (RunningHub)** — A prompt over 4,000 characters was rejected only after the job had been submitted. The limit is now known up front, so you get the same truncate/keep/cancel choice every other limited model offers. Projects set to the `auto` aspect ratio also work on text-only jobs, and `auto` is now actually offered in the ratio list.
+
+**Changed**
+
+- **Sora 2 and Sora 2 Pro are gone** — OpenAI is discontinuing the Sora API on September 24, 2026 and has published no successor, so both models have been removed and OpenAI no longer appears under video generation. A project pinned to Sora needs another provider's video model. OpenAI's text and image models are unaffected.
+- **Grok Imagine video moved to 1.5** — Existing projects keep working and gain 1080p alongside 720p, and durations from 4 to 15 seconds rather than just 6 and 10.
+- **Gemini preview models now use their final names** — Three Gemini IDs still pointed at preview endpoints that Google has since moved or shut down. Saved project selections still resolve; nothing to change on your side.
+- **Grok Imagine Pro on RunningHub is now called Grok Imagine Quality** — Only the display name changed; it always called the quality tier, which is what the Grok provider lists under that name too.
+
 ## 1.21.1 — New models, one-click voice send, and a calmer interface
 
 *Grok 4.6 and Gemini 3.7 Flash arrive, the mic and Send button finally work as one, and two new switches let you tame the interface if your browser struggles with it.*
