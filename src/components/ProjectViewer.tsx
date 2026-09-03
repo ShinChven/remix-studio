@@ -1097,10 +1097,6 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       setShowLibrarySelector(false);
       return;
     }
-    if ((localProject.workflow || []).some(item => item.type === 'library' && item.value === libraryId)) {
-      setShowLibrarySelector(false);
-      return;
-    }
     const newItem: WorkflowItemType = { id: crypto.randomUUID(), type: 'library', value: libraryId };
     const updated = { ...localProject, workflow: [...(localProject.workflow || []), newItem] };
     setLocalProject(updated);
@@ -1144,7 +1140,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       return;
     }
 
-    if (targetItem.value === libraryId || workflow.some((item) => item.id !== workflowItemId && item.type === 'library' && item.value === libraryId)) {
+    if (targetItem.value === libraryId) {
       setChangingLibraryItemId(null);
       return;
     }

@@ -12,6 +12,8 @@ Workflow steps can be:
 
 Direct steps contribute one fixed choice. A library step contributes all of its non-empty, tag-matching items. Disabled steps are skipped entirely without being deleted.
 
+The same library can be referenced by more than one step. Each reference is an independent choice group with its own tag filter, so a library of 12 subjects added twice yields 12 × 12 combinations and, in shuffle mode, two independently drawn items per draft.
+
 Text choices are joined in workflow order with a blank line between them. Media choices are collected into the corresponding image, video, and audio context arrays. This means workflow order is significant for composed text even though a library's own items are sorted only for browsing.
 
 ## Filtering a Library Step
