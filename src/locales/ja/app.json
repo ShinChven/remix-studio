@@ -105,5 +105,20 @@
       "passkeyFailed": "パスキーによるログインに失敗しました",
       "registrationFailed": "登録に失敗しました"
     }
+  },
+  "tagFilter": {
+    "allItems": "すべて",
+    "allTags": "すべてのタグ ({{count}})",
+    "searchPlaceholder": "タグを検索…",
+    "sortByCount": "使用頻度",
+    "sortByName": "五十音",
+    "selected": "選択中",
+    "selectedCount": "{{count}} 件選択中",
+    "clear": "クリア",
+    "done": "完了",
+    "noMatches": "一致するタグがありません",
+    "matchMode": "条件",
+    "matchAny": "いずれか",
+    "matchAll": "すべて"
   }
 }

@@ -105,5 +105,20 @@
       "passkeyFailed": "Échec de la connexion par clé d'accès",
       "registrationFailed": "Échec de l'inscription"
     }
+  },
+  "tagFilter": {
+    "allItems": "Tout",
+    "allTags": "Tous les tags ({{count}})",
+    "searchPlaceholder": "Rechercher un tag…",
+    "sortByCount": "Fréquents",
+    "sortByName": "A-Z",
+    "selected": "Sélection",
+    "selectedCount": "{{count}} sélectionné(s)",
+    "clear": "Effacer",
+    "done": "Terminé",
+    "noMatches": "Aucun tag correspondant",
+    "matchMode": "Filtre",
+    "matchAny": "Au moins un",
+    "matchAll": "Tous"
   }
 }
