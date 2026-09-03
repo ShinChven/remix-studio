@@ -17,7 +17,7 @@ import {
 import { checkStorageLimit } from '../utils/storage-check';
 import { normalizeWorkflowForStorage, stripToKey } from '../utils/storage-keys';
 import { UserRepository } from '../auth/user-repository';
-import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem } from '../../src/types';
+import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem, AlbumItemSort } from '../../src/types';
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
 import { normalizePostWatermarkPayload, postWatermarkSettingSchema } from '../utils/watermark';
 
@@ -145,6 +145,8 @@ export async function signJobs(jobs: Job[], storage: S3Storage): Promise<Job[]> 
     })
   );
 }
+
+const ALBUM_ITEM_SORTS: AlbumItemSort[] = ['newest', 'oldest', 'name-asc', 'name-desc'];
 
 /**
  * Read the album tag filter from a request — a comma-separated `tags` query
@@ -563,14 +565,17 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const page = parseInt(c.req.query('page') || '1', 10);
       const limit = parseInt(c.req.query('limit') || '500', 10);
       const sortRaw = c.req.query('sort');
-      const sort: 'newest' | 'oldest' = sortRaw === 'oldest' ? 'oldest' : 'newest';
+      const sort: AlbumItemSort = ALBUM_ITEM_SORTS.includes(sortRaw as AlbumItemSort)
+        ? (sortRaw as AlbumItemSort)
+        : 'newest';
       const aspectRatiosRaw = c.req.query('aspectRatios');
       const aspectRatios = aspectRatiosRaw
         ? aspectRatiosRaw.split(',').map((s) => s.trim()).filter(Boolean)
         : undefined;
+      const q = c.req.query('q')?.trim() || undefined;
       const { tags, tagMatch } = readAlbumTagFilter(c);
       if (!projectId) return c.json({ error: 'Project id is required' }, 400);
-      const result = await repository.getProjectAlbum(user.userId, projectId, { page, limit, sort, aspectRatios, tags, tagMatch });
+      const result = await repository.getProjectAlbum(user.userId, projectId, { page, limit, sort, aspectRatios, tags, tagMatch, q });
       return c.json({
         ...result,
         items: await signAlbumItems(result.items, storage)

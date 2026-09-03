@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { AppData, Library, LibraryItem, LibraryType, Project, ProjectStatus, AlbumItem, TrashItem, Job } from '../../src/types';
+import type { AlbumItemSort } from '../../src/types';
 import { IRepository } from './repository';
 import { LibraryRepository } from './library-repository';
 import { ProjectRepository } from './project-repository';
@@ -81,10 +82,11 @@ export class PrismaRepository implements IRepository {
     options?: {
       page?: number;
       limit?: number;
-      sort?: 'newest' | 'oldest';
+      sort?: AlbumItemSort;
       aspectRatios?: string[];
       tags?: string[];
       tagMatch?: 'all' | 'any';
+      q?: string;
     },
   ) {
     return this.projects.getProjectAlbum(userId, projectId, options);

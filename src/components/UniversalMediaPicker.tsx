@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   Images,
   Layers,
+  List,
   Loader2,
   Music,
   Search,
@@ -21,11 +22,19 @@ import {
 } from 'lucide-react';
 import { fetchLibraries, fetchLibrary, fetchLibraryItems, fetchProject, fetchProjectAlbum, fetchProjects, imageDisplayUrl } from '../api';
 import { AlbumItem, AspectRatioCount, Library, LibraryItem, LibraryType, Project } from '../types';
+import type { AlbumItemSort } from '../types';
 import { cn } from '../lib/utils';
+import { PaginationBar, PAGE_SIZE_OPTIONS } from './ProjectViewer/PaginationBar';
 import { getLastMediaPickerSource, setLastMediaPickerSource } from '../lib/media-picker-memory';
 
 export type PickerSourceKind = 'library' | 'album';
-export type UniversalPickerSort = 'newest' | 'oldest' | 'name-asc' | 'name-desc';
+export type UniversalPickerSort = AlbumItemSort;
+
+/**
+ * Items are fetched a page at a time, so the grid stays light for libraries
+ * and albums that hold thousands of entries. Sources are still loaded flat.
+ */
+const DEFAULT_ITEM_PAGE_SIZE = 100;
 
 export interface UniversalPickedItem {
   sourceKind: PickerSourceKind;
@@ -129,6 +138,14 @@ function sortByChoice<T extends { id: string; name?: string; title?: string; raw
   });
 }
 
+/** Maps the picker's sort choice onto the library items endpoint's params. */
+function librarySortParams(sort: UniversalPickerSort): ['time' | 'name', 'asc' | 'desc'] {
+  if (sort === 'oldest') return ['time', 'asc'];
+  if (sort === 'name-asc') return ['name', 'asc'];
+  if (sort === 'name-desc') return ['name', 'desc'];
+  return ['time', 'desc'];
+}
+
 function libraryItemToPickerItem(item: LibraryItem, source: PickerSource): PickerItem {
   return {
     sourceKind: 'library',
@@ -209,6 +226,9 @@ export function UniversalMediaPicker({
   const [selectedTypes, setSelectedTypes] = useState<Set<LibraryType>>(() => new Set(allowedTypes));
   const [sourceQuery, setSourceQuery] = useState('');
   const [itemQuery, setItemQuery] = useState('');
+  // The item search now runs on the server, so it is debounced to keep typing
+  // from firing a request per keystroke.
+  const [debouncedItemQuery, setDebouncedItemQuery] = useState('');
   const [sourceSort, setSourceSort] = useState<UniversalPickerSort>('newest');
   const [itemSort, setItemSort] = useState<UniversalPickerSort>('newest');
   const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
@@ -221,6 +241,10 @@ export function UniversalMediaPicker({
   const [selectedItemMap, setSelectedItemMap] = useState<Record<string, PickerItem>>({});
   const [loadingSources, setLoadingSources] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
+  const [itemPage, setItemPage] = useState(1);
+  const [itemPageSize, setItemPageSize] = useState<number | 'all'>(DEFAULT_ITEM_PAGE_SIZE);
+  const [itemTotal, setItemTotal] = useState(0);
+  const [itemPages, setItemPages] = useState(1);
   const [lastSelectedKey, setLastSelectedKey] = useState<string | null>(null);
   const [imageVersion, setImageVersion] = useState<'raw' | 'optimized'>('optimized');
 
@@ -230,6 +254,7 @@ export function UniversalMediaPicker({
     setSelectedTypes(new Set(allowedTypes));
     setSourceQuery('');
     setItemQuery('');
+    setDebouncedItemQuery('');
     setActiveSourceId(initialSourceId);
     setSelectedKeys(new Set());
     setSelectedItemMap({});
@@ -237,6 +262,9 @@ export function UniversalMediaPicker({
     setAspectRatioCounts([]);
     setSelectedAspectRatios([]);
     setImageVersion('optimized');
+    setItemPage(1);
+    setItemTotal(0);
+    setItemPages(1);
   }, [allowedTypeKey, initialKind, initialSourceId, isOpen, fixedSourceId]);
 
   useEffect(() => {
@@ -341,7 +369,9 @@ export function UniversalMediaPicker({
   }, [filteredSources, loadingSources]);
 
   useEffect(() => {
-    setSelectedAspectRatios([]);
+    // Keep the existing array when it is already empty: a new [] would be a new
+    // identity, and the item effect depends on it, so it would refetch twice.
+    setSelectedAspectRatios((current) => (current.length === 0 ? current : []));
     setAspectRatioCounts([]);
   }, [activeSource?.id, activeSource?.kind]);
 
@@ -351,9 +381,26 @@ export function UniversalMediaPicker({
   }, [isOpen, memoryEnabled, memoryKey, activeSource?.id, activeSource?.kind]);
 
   useEffect(() => {
-    if (!isOpen || !activeSource) {
+    const handle = window.setTimeout(() => setDebouncedItemQuery(itemQuery.trim()), 250);
+    return () => window.clearTimeout(handle);
+  }, [itemQuery]);
+
+  // Paging is server-side, so anything that changes *which* items match has to
+  // send the grid back to page 1 — otherwise page 5 of the old result set is
+  // requested against a shorter new one.
+  useEffect(() => {
+    setItemPage(1);
+  }, [activeSource?.id, activeSource?.kind, debouncedItemQuery, itemSort, itemPageSize, selectedAspectRatios]);
+
+  const itemTypeAllowed = !!activeSource && selectedTypes.has(activeSource.type);
+  const itemLimit = itemPageSize === 'all' ? 999999 : itemPageSize;
+
+  useEffect(() => {
+    if (!isOpen || !activeSource || !itemTypeAllowed) {
       setItems([]);
-      setAspectRatioCounts([]);
+      setItemTotal(0);
+      setItemPages(1);
+      if (!activeSource) setAspectRatioCounts([]);
       return;
     }
 
@@ -362,17 +409,36 @@ export function UniversalMediaPicker({
       setLoadingItems(true);
       try {
         if (activeSource.kind === 'library') {
-          const result = await fetchLibraryItems(activeSource.id, 1, 500);
+          const [sortBy, sortOrder] = librarySortParams(itemSort);
+          const result = await fetchLibraryItems(
+            activeSource.id,
+            itemPage,
+            itemLimit,
+            debouncedItemQuery || undefined,
+            [],
+            sortBy,
+            sortOrder,
+          );
           if (!cancelled) {
             setItems((result.items || []).map((item) => libraryItemToPickerItem(item, activeSource)));
+            setItemTotal(result.total ?? 0);
+            setItemPages(Math.max(1, result.pages ?? 1));
             setAspectRatioCounts([]);
           }
         } else {
-          const albumResult = await fetchProjectAlbum(activeSource.id, { aspectRatios: selectedAspectRatios });
+          const albumResult = await fetchProjectAlbum(activeSource.id, {
+            page: itemPage,
+            limit: itemLimit,
+            sort: itemSort,
+            aspectRatios: selectedAspectRatios.length > 0 ? selectedAspectRatios : undefined,
+            q: debouncedItemQuery || undefined,
+          });
           if (!cancelled) {
             setItems((albumResult.items || [])
               .filter((item) => activeSource.type === 'text' ? (item.textContent || item.prompt) : item.imageUrl)
               .map((item) => albumItemToPickerItem(item, activeSource)));
+            setItemTotal(albumResult.total ?? 0);
+            setItemPages(Math.max(1, albumResult.pages ?? 1));
             setAspectRatioCounts(albumResult.aspectRatioCounts || []);
           }
         }
@@ -385,21 +451,22 @@ export function UniversalMediaPicker({
     return () => {
       cancelled = true;
     };
-  }, [activeSource?.id, activeSource?.kind, activeSource?.type, isOpen, selectedAspectRatios]);
+  }, [
+    activeSource?.id,
+    activeSource?.kind,
+    activeSource?.type,
+    isOpen,
+    itemTypeAllowed,
+    itemPage,
+    itemLimit,
+    itemSort,
+    debouncedItemQuery,
+    selectedAspectRatios,
+  ]);
 
-  const filteredItems = useMemo(() => {
-    const q = itemQuery.trim().toLowerCase();
-    const visibleItems = items.filter((item) => {
-      if (!selectedTypes.has(item.type)) return false;
-      return !q || (
-        item.title?.toLowerCase().includes(q) ||
-        item.sourceLabel.toLowerCase().includes(q) ||
-        item.rawUrl?.toLowerCase().includes(q) ||
-        item.value.toLowerCase().includes(q)
-      );
-    });
-    return sortByChoice(visibleItems, itemSort);
-  }, [itemQuery, itemSort, items, selectedTypes]);
+  // Search, sort and paging are all resolved by the server, so the grid renders
+  // exactly the page it was handed.
+  const filteredItems = items;
 
   const filteredKeys = useMemo(
     () => filteredItems.map((item) => `${item.sourceKind}:${item.sourceId}:${item.itemId}`),
@@ -411,6 +478,21 @@ export function UniversalMediaPicker({
   );
 
   const selectedItems = useMemo(() => Object.values(selectedItemMap), [selectedItemMap]);
+
+  // Paging swaps the grid's contents under a scroll position that no longer
+  // means anything, so each page change returns to the top — as the album does.
+  const itemScrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollItemsTop = useCallback(() => {
+    itemScrollRef.current?.scrollTo({ top: 0 });
+  }, []);
+  const handleItemPageChange = useCallback((nextPage: number) => {
+    setItemPage(nextPage);
+    scrollItemsTop();
+  }, [scrollItemsTop]);
+  const handleItemPageSizeChange = useCallback((size: number | 'all') => {
+    setItemPageSize(size);
+    scrollItemsTop();
+  }, [scrollItemsTop]);
 
   const allFilteredSelected = filteredKeys.length > 0 && filteredKeys.every((key) => selectedKeys.has(key));
   const showImageVersionSelection = enableImageVersionSelection
@@ -757,6 +839,7 @@ export function UniversalMediaPicker({
               />
             )}
             <SortSelect value={itemSort} onChange={setItemSort} ariaLabel="Sort items" className="w-[7.5rem] shrink-0 md:w-auto" />
+            <PageSizeSelect value={itemPageSize} onChange={handleItemPageSizeChange} ariaLabel="Items per page" />
             {multiple && (
               <button
                 onClick={toggleSelectAll}
@@ -773,7 +856,7 @@ export function UniversalMediaPicker({
             )}
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-3 md:p-5">
+          <div ref={itemScrollRef} className="min-h-0 flex-1 overflow-y-auto p-3 md:p-5">
             {!activeSource ? (
               <EmptyPickerState icon={Layers} title="No source selected" description="Choose a library or album first." />
             ) : loadingItems ? (
@@ -852,6 +935,17 @@ export function UniversalMediaPicker({
               </div>
             )}
           </div>
+
+          {activeSource && (
+            <PaginationBar
+              page={itemPage}
+              pageSize={itemPageSize}
+              total={itemTotal}
+              pages={itemPages}
+              onPageChange={handleItemPageChange}
+              onPageSizeChange={handleItemPageSizeChange}
+            />
+          )}
 
           <div className="flex items-center justify-between gap-3 border-t border-neutral-200 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-white/10 md:p-5">
             {multiple ? (
@@ -973,6 +1067,43 @@ function AspectRatioFilter({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * The page-size choice lives up in the toolbar, not only in the PaginationBar:
+ * the bar hides itself on "All", so this is what lets a viewer switch back.
+ */
+function PageSizeSelect({
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  value: number | 'all';
+  onChange: (value: number | 'all') => void;
+  ariaLabel: string;
+}) {
+  return (
+    <div className="relative shrink-0">
+      <select
+        className="h-10 w-[5.5rem] appearance-none rounded-xl border border-neutral-200 bg-white pl-3 pr-8 text-xs font-semibold dark:border-white/10 dark:bg-neutral-900 dark:text-white md:h-11 md:text-sm"
+        value={value === 'all' ? 'all' : String(value)}
+        onChange={(event) => {
+          const next = event.target.value;
+          onChange(next === 'all' ? 'all' : Number(next));
+        }}
+        aria-label={ariaLabel}
+      >
+        {PAGE_SIZE_OPTIONS.map((option) => (
+          <option key={String(option)} value={String(option)}>
+            {option === 'all' ? 'All' : option}
+          </option>
+        ))}
+      </select>
+      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500">
+        <List className="h-3.5 w-3.5" />
+      </div>
     </div>
   );
 }
