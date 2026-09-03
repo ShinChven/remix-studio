@@ -16,16 +16,19 @@ import { geminiSupportsSamplingParameters } from '../../utils/gemini';
  * model IDs accepted by the current Google API.
  */
 export function resolveRealGeminiModelId(modelId: string): string {
+  if (modelId.includes('3.8-flash')) return 'gemini-3.8-flash';
   if (modelId.includes('3.7-flash')) return 'gemini-3.7-flash';
   if (modelId.includes('3.6-flash')) return 'gemini-3.6-flash';
   if (modelId.includes('3.5-flash-lite')) return 'gemini-3.5-flash-lite';
   if (modelId.includes('3.5-flash')) return 'gemini-3.5-flash';
   if (modelId.includes('3.1-flash-lite')) return 'gemini-3.1-flash-lite';
   if (modelId.includes('3.1-pro')) return 'gemini-3.1-pro-preview';
-  if (modelId.includes('3.1-flash')) return 'gemini-3-flash-preview';
-  if (modelId.includes('3-flash')) return 'gemini-3-flash-preview';
+  // `gemini-3-flash-preview` was shut down, so the aliases that used to resolve
+  // to it land on the current GA flash instead.
+  if (modelId.includes('3.1-flash')) return 'gemini-3.5-flash';
+  if (modelId.includes('3-flash')) return 'gemini-3.5-flash';
   // Fallbacks:
-  if (modelId.includes('flash') && !modelId.includes('3.')) return 'gemini-3-flash-preview';
+  if (modelId.includes('flash') && !modelId.includes('3.')) return 'gemini-3.5-flash';
   if (modelId.includes('pro') && !modelId.includes('3.')) return 'gemini-3.1-pro-preview';
   return modelId;
 }
@@ -257,7 +260,7 @@ export async function transcribeAudioWithGemini(
   apiUrl: string | undefined | null,
   audioBase64: string,
   mimeType: string,
-  modelId = 'gemini-3.1-flash-lite-preview',
+  modelId = 'gemini-3.1-flash-lite',
 ): Promise<string> {
   const ai = new GoogleGenAI({
     apiKey,

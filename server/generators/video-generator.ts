@@ -1,6 +1,6 @@
 export interface VideoGenerateRequest {
   prompt: string;
-  modelId?: string;         // The actual API model string (e.g. 'veo-3.1-generate-preview', 'sora-2')
+  modelId?: string;         // The actual API model string (e.g. 'veo-3.1-generate-preview', 'grok-imagine-video-1.5')
   apiUrl?: string;          // Optional override URL
   aspectRatio?: string;     // e.g. '16:9', '9:16', '1:1'
   resolution?: string;      // e.g. '720p', '1080p', '4k'

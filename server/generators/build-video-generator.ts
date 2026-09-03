@@ -1,7 +1,6 @@
 import type { ProviderType } from '../../src/types';
 import { VideoGenerator } from './video-generator';
 import { GoogleAIVideoGenerator } from './google-ai-video-generator';
-import { OpenAIVideoGenerator } from './openai-video-generator';
 import { GrokVideoGenerator } from './grok-video-generator';
 import { BytePlusVideoGenerator } from './byteplus-video-generator';
 import { KlingAIVideoGenerator } from './kling-ai-video-generator';
@@ -12,7 +11,7 @@ import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
  * Instantiate the correct video generator for a given provider type and credentials.
- * Only GoogleAI, OpenAI, and Grok support first-party video generation.
+ * Sora was retired with the OpenAI video API, so OpenAI no longer generates video.
  */
 export function buildVideoGenerator(
   type: ProviderType,
@@ -28,7 +27,7 @@ export function buildVideoGenerator(
     case 'VertexAI':
       throw new Error(`Provider type 'VertexAI' does not support video generation`);
     case 'OpenAI':
-      return new OpenAIVideoGenerator(apiKey, safeApiUrl);
+      throw new Error(`Provider type 'OpenAI' does not support video generation`);
     case 'Grok':
       return new GrokVideoGenerator(apiKey, safeApiUrl);
     case 'RunningHub':

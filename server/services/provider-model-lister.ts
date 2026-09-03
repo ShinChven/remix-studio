@@ -257,7 +257,7 @@ async function listOpenAIModels(
 function categorizeOpenAIModel(id: string): 'text' | 'image' | 'video' | 'audio' {
   const lower = id.toLowerCase();
   if (lower.includes('dall-e') || lower.includes('image') || lower.includes('imagen')) return 'image';
-  if (lower.includes('sora') || lower.includes('video')) return 'video';
+  if (lower.includes('video')) return 'video';
   if (lower.includes('tts') || lower.includes('whisper') || lower.includes('transcribe') || lower.includes('realtime')) return 'audio';
   return 'text';
 }

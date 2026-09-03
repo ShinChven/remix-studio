@@ -22,8 +22,8 @@ server/generators/                    -- One generator class per provider per ca
     +-- openai-text-generator.ts      -- Default model: gpt-5.6
     +-- grok-text-generator.ts        -- Default model: grok-4.6
     +-- minimax-text-generator.ts     -- Default model: MiniMax-M3
-    +-- google-ai-text-generator.ts   -- Default model: gemini-3.7-flash
-    +-- vertex-ai-text-generator.ts   -- Default model: gemini-3.7-flash
+    +-- google-ai-text-generator.ts   -- Default model: gemini-3.8-flash
+    +-- vertex-ai-text-generator.ts   -- Default model: gemini-3.8-flash
     +-- google-ai-generator.ts        -- Image gen (GoogleAI)
     +-- vertex-ai-generator.ts        -- Image gen (VertexAI)
     +-- google-ai-audio-generator.ts  -- Gemini TTS (GoogleAI)
@@ -161,20 +161,21 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 
 ---
 
-## Current Model Inventory (August 2026)
+## Current Model Inventory (September 2026)
 
 ### Google AI / Vertex AI
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
 | nano banana Pro | `gemini-3-pro-image` | image | 32,768 |
-| nano banana 2 | `gemini-3.1-flash-image-preview` | image | 32,768 |
+| nano banana 2 | `gemini-3.1-flash-image` | image | 32,768 |
 | nano banana 2 Lite | `gemini-3.1-flash-lite-image` | image | 32,768 |
+| Gemini 3.8 Flash | `gemini-3.8-flash` | text | 65,536 |
 | Gemini 3.7 Flash | `gemini-3.7-flash` | text | 65,536 |
 | Gemini 3.6 Flash | `gemini-3.6-flash` | text | 65,536 |
 | Gemini 3.5 Flash | `gemini-3.5-flash` | text | 65,536 |
 | Gemini 3.5 Flash Lite | `gemini-3.5-flash-lite` | text | 65,536 |
 | Gemini 3.1 Pro | `gemini-3.1-pro-preview` | text | 65,536 |
-| Gemini 3.1 Flash Lite | `gemini-3.1-flash-lite-preview` | text | 65,536 |
+| Gemini 3.1 Flash Lite | `gemini-3.1-flash-lite` | text | 65,536 |
 | Gemma 4 | `gemma-4-31b-it` | text | 65,536 |
 | Veo 3.1 | `veo-3.1-generate-preview` | video | 720p/1080p/4k, 4-8s |
 | Veo 3.1 Lite | `veo-3.1-lite-generate-preview` | video | 720p/1080p, 4-8s |
@@ -185,13 +186,24 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 | Gemini 2.5 Pro Preview TTS | `gemini-2.5-pro-preview-tts` | audio | 32k context window |
 
 Gemini 3.x is progressively dropping the legacy sampling knobs (`temperature`,
-`topP`, `topK`) — the newer models are tuned for their defaults and reject the
-fields rather than ignoring them. `geminiSupportsSamplingParameters` in
+`topP`, `topK`) — the newer models are tuned for their defaults and either reject
+the fields (3.7 Flash) or accept and ignore them (3.8 Flash), so a request that
+sends them is at best misleading about what it asked for. `geminiSupportsSamplingParameters` in
 `server/utils/gemini.ts` holds that list, and the assistant chat adapter plus
 both REST text generators read it before putting `temperature` on a request. A
 new Gemini release that drops the knobs gets added there, not to a per-caller
 check. The Veo rows are video-only and the Lyria rows are music, so neither
 takes the text sampling fields at all.
+
+Google drops the `-preview` suffix rather than aliasing it when a model reaches
+GA, and the preview endpoint stops serving some time after — `gemini-3.1-flash-image`
+(May 28, 2026) and `gemini-3.1-flash-lite` (May 8, 2026) both went that way, and
+the retired `gemini-3-flash-preview` is why `resolveRealGeminiModelId` in the
+assistant's Google adapter maps its stale aliases onto a live GA flash. A preview
+ID in this catalog is a thing to re-check, not a stable pin. The Veo and Lyria
+rows are still preview-only on the Gemini API this app calls, so they keep the
+suffix; the `-001` GA IDs published for Veo 3.1 belong to Vertex's own endpoint,
+not this one.
 
 ### OpenAI
 | Name | Model ID | Category | Max Output |
@@ -207,9 +219,15 @@ takes the text sampling fields at all.
 | GPT-5.4 Mini | `gpt-5.4-mini` | text | 128,000 |
 | GPT-5.4 Nano | `gpt-5.4-nano` | text | 128,000 |
 
+OpenAI has no video row: Sora 2 and Sora 2 Pro were dropped when OpenAI set the
+Sora API's shutdown for September 24, 2026 with no successor model, so
+`buildVideoGenerator` now throws for `OpenAI` the way it does for the other
+providers that generate no video, and `openai-video-generator.ts` is gone.
+
 ### Grok (xAI)
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
+| Grok Imagine Image 2.0 | `grok-imagine-image-2.0` | image | - |
 | Grok Imagine | `grok-imagine-image` | image | - |
 | Grok Imagine Quality | `grok-imagine-image-quality` | image | - |
 | Grok 4.6 | `grok-4.6` | text | 500K context |
@@ -217,7 +235,15 @@ takes the text sampling fields at all.
 | Grok 4.20 | `grok-4.20-0309-non-reasoning` | text | 2M context |
 | Grok 4.3 | `grok-4.3` | text | 2M context |
 | Grok 4.1 Fast | `grok-4-1-fast-non-reasoning` | text | 2M context |
-| Grok Imagine Video | `grok-imagine-video` | video | 720p, 6-10s |
+| Grok Imagine Video 1.5 | `grok-imagine-video-1.5` | video | 720p/1080p, 4-15s |
+
+`grok-imagine-image-2.0` is the current Imagine image generation (API since
+August 8, 2026) and the generator's fallback. It keeps the request shape of the
+1.x tiers — the same `quality` plus `resolution` pair — so it is a plain extra
+entry rather than a migration, and the 1.x tiers stay listed for projects pinned
+to them. Imagine Video 1.5 did supersede the unversioned `grok-imagine-video`,
+which is why that entry's `modelId` moved to `grok-imagine-video-1.5` (720p and
+1080p, 1-15s, `duration` defaulting to 8 upstream) while its `id` stayed put.
 
 xAI retired `grok-imagine-image-pro` in May 2026 and points it at the quality
 tier. Both take the same `quality` (`low`/`medium`/`high`) plus `resolution`
@@ -229,6 +255,7 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 ### Claude (Anthropic)
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
+| Claude Fable 5.1 | `claude-fable-5-1` | text | 128,000 |
 | Claude Fable 5 | `claude-fable-5` | text | 128,000 |
 | Claude Opus 5 | `claude-opus-5` | text | 128,000 |
 | Claude Opus 4.8 | `claude-opus-4-8` | text | 128,000 |
@@ -380,7 +407,7 @@ whatever form of the URL was pasted back to the API root.
 | OpenAI | 2.0 | |
 | Grok (xAI) | 2.0 | |
 | MiniMax | 2.0 | |
-| Claude | 1.0 | Anthropic API hard limit. Fable 5, Opus 5, Opus 4.8 and Sonnet 5 reject any non-default value — list only `[1.0]` and skip the parameter in `claude-text-generator.ts` |
+| Claude | 1.0 | Anthropic API hard limit. Fable 5.1, Fable 5, Opus 5, Opus 4.8 and Sonnet 5 reject any non-default value — list only `[1.0]` and skip the parameter in `claude-text-generator.ts`, whose guard matches on model-ID prefix so a point release is covered by its family |
 
 ---
 
