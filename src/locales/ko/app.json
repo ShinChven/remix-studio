@@ -105,5 +105,20 @@
       "passkeyFailed": "패스키 로그인 실패",
       "registrationFailed": "등록에 실패했습니다"
     }
+  },
+  "tagFilter": {
+    "allItems": "전체",
+    "allTags": "전체 태그 ({{count}})",
+    "searchPlaceholder": "태그 검색…",
+    "sortByCount": "많이 사용",
+    "sortByName": "가나다",
+    "selected": "선택됨",
+    "selectedCount": "{{count}}개 선택됨",
+    "clear": "지우기",
+    "done": "완료",
+    "noMatches": "일치하는 태그 없음",
+    "matchMode": "조건",
+    "matchAny": "하나라도",
+    "matchAll": "모두"
   }
 }

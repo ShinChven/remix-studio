@@ -105,5 +105,20 @@
       "passkeyFailed": "通行密鑰登入失敗",
       "registrationFailed": "註冊失敗"
     }
+  },
+  "tagFilter": {
+    "allItems": "全部",
+    "allTags": "全部標籤 ({{count}})",
+    "searchPlaceholder": "搜尋標籤…",
+    "sortByCount": "常用",
+    "sortByName": "字母",
+    "selected": "已選",
+    "selectedCount": "已選 {{count}} 個",
+    "clear": "清除",
+    "done": "完成",
+    "noMatches": "沒有符合的標籤",
+    "matchMode": "符合",
+    "matchAny": "任一",
+    "matchAll": "全部"
   }
 }

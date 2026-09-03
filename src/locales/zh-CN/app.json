@@ -105,5 +105,20 @@
       "passkeyFailed": "通行密钥登录失败",
       "registrationFailed": "注册失败"
     }
+  },
+  "tagFilter": {
+    "allItems": "全部",
+    "allTags": "全部标签 ({{count}})",
+    "searchPlaceholder": "搜索标签…",
+    "sortByCount": "常用",
+    "sortByName": "字母",
+    "selected": "已选",
+    "selectedCount": "已选 {{count}} 个",
+    "clear": "清空",
+    "done": "完成",
+    "noMatches": "没有匹配的标签",
+    "matchMode": "匹配",
+    "matchAny": "任一",
+    "matchAll": "全部"
   }
 }

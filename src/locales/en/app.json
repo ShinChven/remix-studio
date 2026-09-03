@@ -105,5 +105,20 @@
       "passkeyFailed": "Passkey login failed",
       "registrationFailed": "Registration failed"
     }
+  },
+  "tagFilter": {
+    "allItems": "All items",
+    "allTags": "All tags ({{count}})",
+    "searchPlaceholder": "Search tags...",
+    "sortByCount": "Most used",
+    "sortByName": "A-Z",
+    "selected": "Selected",
+    "selectedCount": "{{count}} selected",
+    "clear": "Clear",
+    "done": "Done",
+    "noMatches": "No tags match",
+    "matchMode": "Match",
+    "matchAny": "Any",
+    "matchAll": "All"
   }
 }

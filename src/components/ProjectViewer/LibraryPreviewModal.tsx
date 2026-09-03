@@ -6,6 +6,7 @@ import { X, ChevronDown, Library as LibraryIcon, Video as VideoIcon, Volume2, Se
 import { Library, LibraryItem } from '../../types';
 import { imageDisplayUrl } from '../../api';
 import { filterItemsByTags } from '../../lib/remixEngine';
+import { TagFilterBar, tagFacetsFromItems } from '../TagFilterBar';
 import { ImageLightbox } from './ImageLightbox';
 
 function TextLibraryItem({ 
@@ -95,17 +96,10 @@ export function LibraryPreviewModal({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  const availableTags = React.useMemo(() => {
-    if (!library) return [];
-    const tagMap = new Map<string, string>();
-    library.items.forEach(i => {
-      if (i.tags) i.tags.forEach(t => {
-        const key = t.toLowerCase();
-        if (!tagMap.has(key)) tagMap.set(key, t);
-      });
-    });
-    return Array.from(tagMap.values()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  }, [library]);
+  const tagFacets = React.useMemo(
+    () => (library ? tagFacetsFromItems(library.items) : []),
+    [library]
+  );
 
   const filteredItems = React.useMemo(() => {
     if (!library) return [];
@@ -121,15 +115,6 @@ export function LibraryPreviewModal({
     });
   }, [library, selectedTags, query, tagMatchMode]);
 
-  const isTagSelected = (tag: string) => selectedTags.some(t => t.toLowerCase() === tag.toLowerCase());
-
-  const toggleTag = (tag: string) => {
-    const next = isTagSelected(tag)
-      ? selectedTags.filter(t => t.toLowerCase() !== tag.toLowerCase())
-      : [...selectedTags, tag];
-    onUpdateTags(next);
-  };
-  
   if (!library) return null;
 
   return createPortal(
@@ -162,7 +147,7 @@ export function LibraryPreviewModal({
           </button>
         </div>
 
-        {(library.items.length > 0 || availableTags.length > 0) && (
+        {(library.items.length > 0 || tagFacets.length > 0) && (
           <div className="px-4 md:px-5 py-2.5 space-y-2 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
             {library.items.length > 0 && (
               <div className="relative">
@@ -177,56 +162,14 @@ export function LibraryPreviewModal({
                 />
               </div>
             )}
-            {availableTags.length > 0 && (
-              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-y-auto md:max-h-24">
-                <button
-                  onClick={() => onUpdateTags([])}
-                  className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all border ${
-                    selectedTags.length === 0
-                      ? 'bg-blue-600 text-white border-transparent'
-                      : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
-                  }`}
-                >
-                  {t('projectViewer.libraryPreview.allItems')}
-                </button>
-                {availableTags.map(tag => (
-                  <button
-                    key={tag}
-                    onClick={() => toggleTag(tag)}
-                    title={tag}
-                    className={`shrink-0 max-w-[60vw] md:max-w-80 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all border ${
-                      isTagSelected(tag)
-                        ? 'bg-blue-600/20 text-blue-500 dark:text-blue-400 border-blue-500/50'
-                        : 'bg-neutral-50 dark:bg-neutral-950 text-neutral-500 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
-                    }`}
-                  >
-                    <span className="block truncate">{tag}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            {onUpdateTagMatchMode && selectedTags.length >= 2 && (
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
-                  {t('projectViewer.libraryPreview.matchMode')}
-                </span>
-                <div className="inline-flex p-0.5 rounded-full bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800">
-                  {(['or', 'and'] as const).map(mode => (
-                    <button
-                      key={mode}
-                      onClick={() => onUpdateTagMatchMode(mode)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
-                        tagMatchMode === mode
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-neutral-500 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-                      }`}
-                    >
-                      {t(mode === 'and' ? 'projectViewer.libraryPreview.matchAll' : 'projectViewer.libraryPreview.matchAny')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <TagFilterBar
+              tags={tagFacets}
+              selected={selectedTags}
+              onChange={onUpdateTags}
+              matchMode={tagMatchMode}
+              onMatchModeChange={onUpdateTagMatchMode}
+              storageKey={`library-preview:${library.id}`}
+            />
           </div>
         )}
 
