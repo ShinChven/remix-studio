@@ -579,19 +579,19 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800'}
           `}>
              <div className="flex items-center gap-2 flex-1 min-w-0">
-               <div className="flex items-center gap-2 px-1">
+               <div className="flex items-center gap-2">
                  <div
                    onClick={toggleSelectAll}
                    className="p-1 hover:bg-white/5 transition-colors cursor-pointer"
                  >
                    {selectedItemIds.size === items.length && items.length > 0 ? (
-                     <CheckSquare className="w-5 h-5 text-blue-500" />
+                     <CheckSquare className="w-4 h-4 text-blue-500" />
                    ) : selectedItemIds.size > 0 ? (
-                     <div className="w-5 h-5 flex items-center justify-center">
+                     <div className="w-4 h-4 flex items-center justify-center">
                        <div className="w-2.5 h-0.5 bg-blue-500" />
                      </div>
                    ) : (
-                     <Square className="w-5 h-5 text-neutral-600" />
+                     <Square className="w-4 h-4 text-neutral-600" />
                    )}
                  </div>
                  <span className={`text-xs font-medium hidden sm:inline ${selectedItemIds.size > 0 ? 'text-white' : 'text-neutral-500 dark:text-neutral-500'}`}>

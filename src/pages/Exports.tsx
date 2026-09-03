@@ -483,7 +483,7 @@ export function Exports() {
                 <button
                   type="button"
                   onClick={toggleSelectAll}
-                  className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
+                  className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 md:px-4 text-[10px] font-black uppercase tracking-widest text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
                 >
                   {selectedTaskIds.size === exports.length ? (
                     <CheckSquare className="h-4 w-4 text-blue-500" />
