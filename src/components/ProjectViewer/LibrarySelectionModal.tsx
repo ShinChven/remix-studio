@@ -9,6 +9,7 @@ interface LibrarySelectionModalProps {
   onClose: () => void;
   onSelect: (id: string) => void;
   libraries: Library[];
+  /** Library ids already placed in the workflow. The same id may appear more than once. */
   selectedLibraryIds: string[];
   isLoading?: boolean;
   error?: string | null;
@@ -39,6 +40,14 @@ export function LibrarySelectionModal({
     if (!q) return libraries;
     return libraries.filter((lib) => lib.name.toLowerCase().includes(q));
   }, [libraries, query]);
+
+  const usageCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const id of selectedLibraryIds) {
+      counts.set(id, (counts.get(id) || 0) + 1);
+    }
+    return counts;
+  }, [selectedLibraryIds]);
 
   if (!isOpen) return null;
 
@@ -110,21 +119,16 @@ export function LibrarySelectionModal({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {filteredLibraries.map(lib => {
-                const isSelected = selectedLibraryIds.includes(lib.id);
+                const usageCount = usageCounts.get(lib.id) || 0;
                 return (
                   <button
                     key={lib.id}
-                    onClick={() => !isSelected && onSelect(lib.id)}
-                    disabled={isSelected}
-                    className={`group flex items-start gap-3 p-4 sm:gap-4 sm:p-5 border rounded-card text-left transition-all ${
-                      isSelected 
-                        ? 'bg-white/20 dark:bg-neutral-900/20 border-neutral-200 dark:border-neutral-800 opacity-50 cursor-not-allowed' 
-                        : 'bg-neutral-50/40 dark:bg-neutral-950/40 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:border-emerald-500/30 hover:scale-[1.02] active:scale-100'
-                    }`}
+                    onClick={() => onSelect(lib.id)}
+                    className="group flex items-start gap-3 p-4 sm:gap-4 sm:p-5 border rounded-card text-left transition-all bg-neutral-50/40 dark:bg-neutral-950/40 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:border-emerald-500/30 hover:scale-[1.02] active:scale-100"
                   >
                     <div className="flex-shrink-0">
                       {(lib.type === 'image' || lib.type === 'video') && lib.items[0] ? (
-                        <div className={`w-12 h-12 rounded-xl overflow-hidden border shadow-md ${isSelected ? 'border-neutral-200 dark:border-neutral-800 grayscale' : 'border-neutral-200 dark:border-neutral-800'}`}>
+                        <div className="w-12 h-12 rounded-xl overflow-hidden border shadow-md border-neutral-200 dark:border-neutral-800">
                           <img 
                             src={lib.type === 'image' 
                               ? (lib.items[0].thumbnailUrl || lib.items[0].content)
@@ -134,35 +138,31 @@ export function LibrarySelectionModal({
                           />
                         </div>
                       ) : (
-                        <div className={`p-3 bg-white dark:bg-neutral-900 rounded-xl border transition-all ${isSelected ? 'border-neutral-200 dark:border-neutral-800' : 'border-neutral-200 dark:border-neutral-800 group-hover:bg-neutral-100 dark:group-hover:bg-neutral-950 group-hover:border-emerald-500/20'}`}>
-                          <LibraryIcon className={`w-6 h-6 ${isSelected ? 'text-neutral-600' : 'text-emerald-500'}`} />
+                        <div className="p-3 bg-white dark:bg-neutral-900 rounded-xl border transition-all border-neutral-200 dark:border-neutral-800 group-hover:bg-neutral-100 dark:group-hover:bg-neutral-950 group-hover:border-emerald-500/20">
+                          <LibraryIcon className="w-6 h-6 text-emerald-500" />
                         </div>
                       )}
                     </div>
                     <div className="flex-1 pt-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <div className={`text-sm font-bold truncate transition-colors ${isSelected ? 'text-neutral-500 dark:text-neutral-500' : 'text-neutral-900 dark:text-neutral-100 dark:group-hover:text-white'}`}>
+                        <div className="text-sm font-bold truncate transition-colors text-neutral-900 dark:text-neutral-100 dark:group-hover:text-white">
                           {lib.name}
                         </div>
-                        {isSelected && (
-                          <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                            {t('projectViewer.librarySelection.added')}
+                        {usageCount > 0 && (
+                          <span className="shrink-0 text-[8px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                            {t('projectViewer.librarySelection.added')}{usageCount > 1 ? ` ×${usageCount}` : ''}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${
-                          isSelected 
-                            ? 'bg-white/50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800 text-neutral-600' 
-                            : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 group-hover:border-neutral-300 dark:group-hover:border-neutral-700'
-                        }`}>
+                        <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-500 group-hover:border-neutral-300 dark:group-hover:border-neutral-700">
                           {lib.type === 'text' ? t('projectViewer.common.text') :
                            lib.type === 'image' ? t('projectViewer.common.imageShort') :
                            lib.type === 'video' ? t('projectViewer.common.video') :
                            lib.type === 'audio' ? t('projectViewer.common.audio') :
                            lib.type}
                         </span>
-                        <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-neutral-700' : 'text-neutral-600'}`}>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">
                           {t('projectViewer.workflow.itemsCount', { count: lib.items.length })}
                         </span>
                       </div>
