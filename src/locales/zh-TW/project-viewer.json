@@ -304,6 +304,7 @@
     },
     "moveToProject": {
       "moveSelected": "移動到專案",
+      "moveShort": "移動",
       "title": "移動到其他專案",
       "description": "確認將從 {{name}} 移出的內容，然後選擇目標專案。",
       "back": "返回相簿",
@@ -342,9 +343,13 @@
       "exportFailed": "匯出失敗：{{message}}",
       "itemsCount": "{{count}} 項",
       "exportSelected": "匯出所選",
+      "exportShort": "匯出",
       "compareSelected": "比較所選",
+      "compareShort": "比較",
       "exportAll": "全部匯出",
       "copyAllToLibrary": "全部複製到資料庫",
+      "toLibraryShort": "到資料庫",
+      "allToLibraryShort": "全部到資料庫",
       "noTexts": "尚無文字",
       "noVideos": "尚無影片",
       "noAudios": "尚無音訊",
@@ -393,6 +398,7 @@
       "tagsUpdateFailed": "更新標籤失敗",
       "tagsBatchUpdated": "已更新 {{count}} 個項目的標籤",
       "tagSelected": "標記所選",
+      "tagShort": "標記",
       "tagAll": "標記全部",
       "tagRemove": "移除標籤 {{tag}}",
       "tagSuggestions": "本作品集已用標籤",
@@ -406,7 +412,8 @@
       "tagBatchHintRemove": "這些標籤會從範圍內的每一項上移除，其他標籤維持不變。",
       "tagBatchHintReplace": "範圍內每一項最終只保留這些標籤。留空則清除全部標籤。",
       "tagBatchClearAll": "未填寫標籤 —— 範圍內每一項的標籤都會被清空",
-      "tagBatchApply": "套用"
+      "tagBatchApply": "套用",
+      "deleteShort": "刪除"
     },
     "compare": {
       "title": "比較文字",

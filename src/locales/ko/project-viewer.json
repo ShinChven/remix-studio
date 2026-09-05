@@ -304,6 +304,7 @@
     },
     "moveToProject": {
       "moveSelected": "프로젝트로 이동",
+      "moveShort": "이동",
       "title": "다른 프로젝트로 이동",
       "description": "{{name}}에서 이동할 항목을 확인한 뒤 대상 프로젝트를 선택하세요.",
       "back": "앨범으로 돌아가기",
@@ -342,9 +343,13 @@
       "exportFailed": "내보내기 실패: {{message}}",
       "itemsCount": "{{count}}개 항목",
       "exportSelected": "선택 항목 내보내기",
+      "exportShort": "내보내기",
       "compareSelected": "선택 항목 비교",
+      "compareShort": "비교",
       "exportAll": "전체 내보내기",
       "copyAllToLibrary": "모두 라이브러리로 복사",
+      "toLibraryShort": "라이브러리로",
+      "allToLibraryShort": "모두 라이브러리로",
       "noTexts": "아직 텍스트가 없습니다",
       "noVideos": "아직 비디오가 없습니다",
       "noAudios": "아직 오디오가 없습니다",
@@ -393,6 +398,7 @@
       "tagsUpdateFailed": "태그 업데이트 실패",
       "tagsBatchUpdated": "{{count}}개 항목의 태그를 업데이트했습니다",
       "tagSelected": "선택 항목 태그",
+      "tagShort": "태그",
       "tagAll": "전체 태그",
       "tagRemove": "{{tag}} 태그 제거",
       "tagSuggestions": "이 앨범에서 사용 중인 태그",
@@ -406,7 +412,8 @@
       "tagBatchHintRemove": "대상 항목마다 이 태그들을 제거합니다. 다른 태그는 그대로 유지됩니다.",
       "tagBatchHintReplace": "대상 항목의 태그가 정확히 이 목록으로 바뀝니다. 비워 두면 모든 태그가 삭제됩니다.",
       "tagBatchClearAll": "태그 없음 — 대상 항목의 모든 태그가 삭제됩니다",
-      "tagBatchApply": "적용"
+      "tagBatchApply": "적용",
+      "deleteShort": "삭제"
     },
     "compare": {
       "title": "텍스트 비교",

@@ -639,6 +639,11 @@ export function AlbumTab({
               </div>
             )}
             rightActions={
+              // The visible label on each action is the short form; `title` and
+              // `aria-label` keep the full name, which is what a hover tooltip
+              // and a screen reader read out. Nine controls share this row once
+              // items are selected, and the long forms pushed it onto a second
+              // sticky line on every pane narrower than ~1200px.
               <>
                 <button
                   onClick={() => openExportDialog(!hasVisibleSelection)}
@@ -648,7 +653,7 @@ export function AlbumTab({
                 >
                   <FileArchive className="w-3 h-3" />
                   <span className="hidden @min-[56rem]/pane:inline">
-                    {hasVisibleSelection ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
+                    {hasVisibleSelection ? t('projectViewer.album.exportShort') : t('projectViewer.album.exportAll')}
                   </span>
                 </button>
                 <button
@@ -659,7 +664,7 @@ export function AlbumTab({
                 >
                   <TagIcon className="w-3 h-3" />
                   <span className="hidden @min-[56rem]/pane:inline">
-                    {hasVisibleSelection ? t('projectViewer.album.tagSelected') : t('projectViewer.album.tagAll')}
+                    {hasVisibleSelection ? t('projectViewer.album.tagShort') : t('projectViewer.album.tagAll')}
                   </span>
                 </button>
                 <button
@@ -670,7 +675,7 @@ export function AlbumTab({
                 >
                   <Copy className="w-3 h-3" />
                   <span className="hidden @min-[56rem]/pane:inline">
-                    {hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
+                    {hasVisibleSelection ? t('projectViewer.album.toLibraryShort') : t('projectViewer.album.allToLibraryShort')}
                   </span>
                 </button>
                 {isTextProject && selectedDisplayItemIds.length > 1 && (
@@ -681,7 +686,7 @@ export function AlbumTab({
                     className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all"
                   >
                     <Layers className="w-3 h-3" />
-                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.album.compareSelected')}</span>
+                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.album.compareShort')}</span>
                   </button>
                 )}
                 {hasVisibleSelection && (
@@ -692,7 +697,7 @@ export function AlbumTab({
                     className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-amber-500/20 transition-all"
                   >
                     <FolderInput className="w-3 h-3" />
-                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.moveToProject.moveSelected')}</span>
+                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.moveToProject.moveShort')}</span>
                   </button>
                 )}
                 {hasVisibleSelection && (
@@ -707,7 +712,7 @@ export function AlbumTab({
                     className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
                   >
                     <Trash2 className="w-3 h-3" />
-                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.common.deleteSelected')}</span>
+                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.album.deleteShort')}</span>
                   </button>
                 )}
                 {showAspectRatioFilterControl && (

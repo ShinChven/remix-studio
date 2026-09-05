@@ -304,6 +304,7 @@
     },
     "moveToProject": {
       "moveSelected": "Move to Project",
+      "moveShort": "Move",
       "title": "Move to Another Project",
       "description": "Review what moves out of {{name}}, then choose where it lands.",
       "back": "Back to album",
@@ -342,9 +343,13 @@
       "exportFailed": "Export failed: {{message}}",
       "itemsCount": "{{count}} Items",
       "exportSelected": "Export Selected",
+      "exportShort": "Export",
       "compareSelected": "Compare Selected",
+      "compareShort": "Compare",
       "exportAll": "Export All",
       "copyAllToLibrary": "Copy All to Library",
+      "toLibraryShort": "To Library",
+      "allToLibraryShort": "All to Library",
       "noTexts": "No texts yet",
       "noVideos": "No videos yet",
       "noAudios": "No audios yet",
@@ -393,6 +398,7 @@
       "tagsUpdateFailed": "Failed to update tags",
       "tagsBatchUpdated": "Tags updated on {{count}} items",
       "tagSelected": "Tag Selected",
+      "tagShort": "Tag",
       "tagAll": "Tag All",
       "tagRemove": "Remove tag {{tag}}",
       "tagSuggestions": "Tags used in this album",
@@ -406,7 +412,8 @@
       "tagBatchHintRemove": "These tags are removed from every item in scope. Other tags are left alone.",
       "tagBatchHintReplace": "Every item in scope ends up with exactly these tags. Leave the list empty to clear all tags.",
       "tagBatchClearAll": "No tags — every item in scope will be cleared",
-      "tagBatchApply": "Apply"
+      "tagBatchApply": "Apply",
+      "deleteShort": "Delete"
     },
     "compare": {
       "title": "Compare Texts",
