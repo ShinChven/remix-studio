@@ -81,7 +81,7 @@ export interface IRepository {
     userId: string,
     sourceProjectId: string,
     destinationProjectId: string,
-    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string> },
+    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string>; bucket?: string },
   ): Promise<{ movedItems: number; movedJobs: number }>;
   getAlbumTagCounts(userId: string, projectId: string): Promise<{ tag: string; count: number }[]>;
   setAlbumItemTags(userId: string, projectId: string, itemId: string, tags: string[]): Promise<AlbumItem | null>;

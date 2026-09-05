@@ -260,6 +260,18 @@ async function mapWithConcurrency<T, R>(
 }
 
 /**
+ * Whether a storage error means the object is not there, as opposed to the
+ * request being refused or failing in transit. `S3Storage.exists` cannot tell
+ * the two apart — it answers false for any error — and treating a throttled
+ * HeadObject as "missing" would strand a file in the source folder.
+ */
+function isMissingObjectError(error: unknown): boolean {
+  const err = error as { name?: string; Code?: string; $metadata?: { httpStatusCode?: number } };
+  const name = err?.name || err?.Code;
+  return name === 'NoSuchKey' || name === 'NotFound' || err?.$metadata?.httpStatusCode === 404;
+}
+
+/**
  * Plan where each storage object behind a moved album item lands in the
  * destination project's folder.
  *
@@ -1297,6 +1309,21 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (!sourceProject) return c.json({ error: 'Project not found' }, 404);
       const sourceType = sourceProject.type || 'image';
 
+      const bucket = storage.getBucketName();
+      const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
+      const itemsToMove = albumPage.items.filter((item) => itemIds.includes(item.id));
+      if (itemsToMove.length === 0) return c.json({ error: 'No matching items found' }, 400);
+
+      // The jobs behind the moved items travel with them; one still running
+      // does not, since its worker would write the result back into a project
+      // the job had left.
+      const jobIds = Array.from(new Set(itemsToMove.map((item) => item.jobId).filter((id): id is string => Boolean(id))));
+      const jobsToMove = jobIds.length
+        ? (await repository.getProjectJobsByIds(user.userId, projectId, jobIds, { includeWorkflowSnapshot: true }))
+          .filter((job) => job.status !== 'processing')
+        : [];
+      const movableJobIds = new Set(jobsToMove.map((job) => job.id));
+
       let targetProjectId = destinationProjectId;
       let createdProject = false;
 
@@ -1355,21 +1382,6 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         createdProjectId = targetProjectId;
       }
 
-      const bucket = storage.getBucketName();
-      const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
-      const itemsToMove = albumPage.items.filter((item) => itemIds.includes(item.id));
-      if (itemsToMove.length === 0) return c.json({ error: 'No matching items found' }, 400);
-
-      // The jobs behind the moved items travel with them; one still running
-      // does not, since its worker would write the result back into a project
-      // the job had left.
-      const jobIds = Array.from(new Set(itemsToMove.map((item) => item.jobId).filter((id): id is string => Boolean(id))));
-      const jobsToMove = jobIds.length
-        ? (await repository.getProjectJobsByIds(user.userId, projectId, jobIds, { includeWorkflowSnapshot: true }))
-          .filter((job) => job.status !== 'processing')
-        : [];
-      const movableJobIds = new Set(jobsToMove.map((job) => job.id));
-
       const safeSourceId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const safeTargetId = targetProjectId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const sourcePrefix = `${user.userId}/${safeSourceId}/`;
@@ -1405,36 +1417,45 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         }
       }
 
-      // A row can reference a file that is no longer in the bucket — a reference
-      // image replaced in the workflow, a step deleted, a result cleaned up by
-      // the orphan tool. Copying one of those throws, so the keys are checked
-      // first and the missing ones are simply not moved: the row keeps the key
-      // it had (already broken either way) and the move carries on rather than
-      // failing outright over a file that no longer exists.
-      const collectedKeys = Array.from(movingKeys);
-      const presence = await mapWithConcurrency(collectedKeys, STORAGE_CONCURRENCY, (key) => storage.exists(key));
-      const presentKeys = collectedKeys.filter((_, index) => presence[index]);
-      const missingFiles = collectedKeys.length - presentKeys.length;
-      if (missingFiles > 0) {
-        console.warn(`[album move] ${missingFiles} referenced file(s) are missing from storage and were left behind`);
-      }
-
       // Two project ids can sanitize to the same folder name, in which case
       // the files are already where they need to be and nothing is copied.
       const keyMap = sourcePrefix === destinationPrefix
         ? {}
-        : await planAlbumStorageMoves(presentKeys, sourcePrefix, destinationPrefix, storage);
-      await mapWithConcurrency(
+        : await planAlbumStorageMoves(Array.from(movingKeys), sourcePrefix, destinationPrefix, storage);
+
+      // A row can reference a file that is no longer in the bucket — a reference
+      // image replaced in the workflow, a step deleted, a result cleaned up by
+      // the orphan tool — and copying one of those throws. Only that specific
+      // error is tolerated, and the key then drops out of the map so the row
+      // keeps the key it had and the sweep below leaves the source alone.
+      // Anything else (refused, throttled, a broken connection) still fails the
+      // request, because silently skipping it would strand a live file.
+      const missing = await mapWithConcurrency(
         Object.entries(keyMap),
         STORAGE_CONCURRENCY,
-        ([sourceKey, destinationKey]) => storage.copy(sourceKey, destinationKey),
+        async ([sourceKey, destinationKey]) => {
+          try {
+            await storage.copy(sourceKey, destinationKey);
+            return null;
+          } catch (e) {
+            if (!isMissingObjectError(e)) throw e;
+            return sourceKey;
+          }
+        },
       );
+      const missingFiles = missing.filter((key): key is string => key !== null).length;
+      for (const sourceKey of missing) {
+        if (sourceKey) delete keyMap[sourceKey];
+      }
+      if (missingFiles > 0) {
+        console.warn(`[album move] ${missingFiles} referenced file(s) are missing from storage and were left behind`);
+      }
 
       const { movedItems, movedJobs } = await repository.moveAlbumItemsToProject(
         user.userId,
         projectId,
         targetProjectId,
-        { itemIds: itemsToMove.map((item) => item.id), jobIds: Array.from(movableJobIds), keyMap },
+        { itemIds: itemsToMove.map((item) => item.id), jobIds: Array.from(movableJobIds), keyMap, bucket },
       );
 
       // The items have moved as of the call above — that is the point of no
@@ -1510,7 +1531,14 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
           }
         });
         removedFiles = deleted.filter(Boolean).length;
+      } catch (cleanupError) {
+        console.warn('[album move] Source cleanup failed after a completed move:', cleanupError);
+      }
 
+      // Published outside the sweep above: an open viewer on either side is
+      // stale until this lands, so a failure to clean up files must not also
+      // cost both projects their refresh.
+      try {
         projectEvents?.notifyProjectChanged({
           userId: user.userId,
           projectId,
@@ -1521,8 +1549,8 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
           projectId: targetProjectId,
           reason: createdProject ? 'project.created' : 'album.moved',
         });
-      } catch (cleanupError) {
-        console.warn('[album move] Housekeeping failed after a completed move:', cleanupError);
+      } catch (notifyError) {
+        console.warn('[album move] Failed to publish move events:', notifyError);
       }
 
       return c.json({
@@ -1550,8 +1578,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         }
       }
 
-      const message = e instanceof Error ? e.message : String(e);
-      return c.json({ error: `Failed to move album items: ${message}` }, 500);
+      // The reason stays in the server log: an exception here carries bucket
+      // names, object keys and table names, which do not belong in a toast.
+      return c.json({ error: 'Failed to move album items' }, 500);
     }
   });
 

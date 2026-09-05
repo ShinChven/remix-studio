@@ -109,7 +109,7 @@ export class PrismaRepository implements IRepository {
     userId: string,
     sourceProjectId: string,
     destinationProjectId: string,
-    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string> },
+    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string>; bucket?: string },
   ) {
     return this.projects.moveAlbumItemsToProject(userId, sourceProjectId, destinationProjectId, options);
   }

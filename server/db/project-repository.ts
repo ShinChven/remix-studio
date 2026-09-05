@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/types';
+import { stripToKey } from '../utils/storage-keys';
 import type { AlbumItemSort } from '../../src/types';
 
 /**
@@ -807,7 +808,7 @@ export class ProjectRepository {
     userId: string,
     sourceProjectId: string,
     destinationProjectId: string,
-    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string> },
+    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string>; bucket?: string },
   ): Promise<{ movedItems: number; movedJobs: number }> {
     await this.assertOwnedProject(userId, sourceProjectId);
     await this.assertOwnedProject(userId, destinationProjectId);
@@ -817,13 +818,25 @@ export class ProjectRepository {
     if (itemIds.length === 0) return { movedItems: 0, movedJobs: 0 };
 
     const keyMap = options.keyMap ?? {};
+    const bucket = options.bucket;
+    // The map is keyed by bare storage keys, but a row can hold a full
+    // presigned URL for the same object — `presignIfKey` exists because that
+    // happens. Normalising first means such a row is rewritten like any other
+    // instead of keeping a URL whose file the caller is about to delete.
+    const lookup = (value: string): string | undefined => {
+      const direct = keyMap[value];
+      if (direct) return direct;
+      if (!bucket) return undefined;
+      const key = stripToKey(value, bucket);
+      return key ? keyMap[key] : undefined;
+    };
     const remapKey = (value: unknown): string | null => {
       if (typeof value !== 'string' || !value) return (value as string) ?? null;
-      return keyMap[value] ?? value;
+      return lookup(value) ?? value;
     };
     const remapKeyList = (values: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
       if (!Array.isArray(values)) return Prisma.DbNull;
-      return values.map((value) => (typeof value === 'string' ? (keyMap[value] ?? value) : value)) as Prisma.InputJsonValue;
+      return values.map((value) => (typeof value === 'string' ? (lookup(value) ?? value) : value)) as Prisma.InputJsonValue;
     };
     const remapSnapshot = (snapshot: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
       if (!Array.isArray(snapshot)) return Prisma.DbNull;
