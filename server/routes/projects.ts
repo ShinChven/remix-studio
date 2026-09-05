@@ -23,6 +23,9 @@ import { normalizePostWatermarkPayload, postWatermarkSettingSchema } from '../ut
 
 type Variables = { user: JwtPayload };
 
+/** Storage round trips kept in flight at once by the album move. */
+const STORAGE_CONCURRENCY = 16;
+
 /** Presign an S3 key if it looks like one (not already a URL), or re-sign an expired presigned URL */
 async function presignIfKey(value: string, storage: S3Storage): Promise<string> {
   if (!value || value.startsWith('data:')) return value;
@@ -231,6 +234,29 @@ export async function signWorkflowItems(workflow: WorkflowItem[], storage: S3Sto
       return item;
     })
   );
+}
+
+/**
+ * Run an async job over every entry with a bounded number in flight. The album
+ * move touches three storage objects per item, so a selection of a few hundred
+ * is thousands of round trips — sequentially that is minutes, and unbounded
+ * `Promise.all` opens thousands of sockets at once.
+ */
+async function mapWithConcurrency<T, R>(
+  values: T[],
+  limit: number,
+  run: (value: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(values.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, values.length) }, async () => {
+    while (cursor < values.length) {
+      const index = cursor++;
+      results[index] = await run(values[index]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
 }
 
 /**
@@ -1243,8 +1269,11 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
    * working on both sides.
    */
   router.post('/api/projects/:id/album/move-to-project', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    // Set once this request creates the destination project, so a failure
+    // further down can take it back out again rather than leaving it behind.
+    let createdProjectId: string | null = null;
     try {
-      const user = c.get('user') as JwtPayload;
       const projectId = c.req.param('id');
       if (!projectId) return c.json({ error: 'Project id is required' }, 400);
 
@@ -1323,6 +1352,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
           await repository.createProject(user.userId, newProject);
         }
         createdProject = true;
+        createdProjectId = targetProjectId;
       }
 
       const bucket = storage.getBucketName();
@@ -1375,14 +1405,30 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         }
       }
 
+      // A row can reference a file that is no longer in the bucket — a reference
+      // image replaced in the workflow, a step deleted, a result cleaned up by
+      // the orphan tool. Copying one of those throws, so the keys are checked
+      // first and the missing ones are simply not moved: the row keeps the key
+      // it had (already broken either way) and the move carries on rather than
+      // failing outright over a file that no longer exists.
+      const collectedKeys = Array.from(movingKeys);
+      const presence = await mapWithConcurrency(collectedKeys, STORAGE_CONCURRENCY, (key) => storage.exists(key));
+      const presentKeys = collectedKeys.filter((_, index) => presence[index]);
+      const missingFiles = collectedKeys.length - presentKeys.length;
+      if (missingFiles > 0) {
+        console.warn(`[album move] ${missingFiles} referenced file(s) are missing from storage and were left behind`);
+      }
+
       // Two project ids can sanitize to the same folder name, in which case
       // the files are already where they need to be and nothing is copied.
       const keyMap = sourcePrefix === destinationPrefix
         ? {}
-        : await planAlbumStorageMoves(Array.from(movingKeys), sourcePrefix, destinationPrefix, storage);
-      for (const [sourceKey, destinationKey] of Object.entries(keyMap)) {
-        await storage.copy(sourceKey, destinationKey);
-      }
+        : await planAlbumStorageMoves(presentKeys, sourcePrefix, destinationPrefix, storage);
+      await mapWithConcurrency(
+        Object.entries(keyMap),
+        STORAGE_CONCURRENCY,
+        ([sourceKey, destinationKey]) => storage.copy(sourceKey, destinationKey),
+      );
 
       const { movedItems, movedJobs } = await repository.moveAlbumItemsToProject(
         user.userId,
@@ -1391,83 +1437,93 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         { itemIds: itemsToMove.map((item) => item.id), jobIds: Array.from(movableJobIds), keyMap },
       );
 
-      // Whatever the source project still points at stays where it is; the
-      // rest of what was copied is cleaned up so the move leaves nothing over.
-      const [remainingWorkflow, remainingJobs, remainingAlbum, trashItems] = await Promise.all([
-        repository.getProjectWorkflow(user.userId, projectId),
-        repository.getProjectJobs(user.userId, projectId, { includeWorkflowSnapshot: true }),
-        repository.getProjectAlbum(user.userId, projectId, { limit: 999999 }),
-        repository.getTrashItems(user.userId),
-      ]);
-
-      const stillReferenced = new Set<string>();
-      const keepKey = (value?: string) => {
-        const key = stripToKey(value, bucket);
-        if (key) stillReferenced.add(key);
-      };
-      const keepKeys = (values?: string[]) => (values || []).forEach(keepKey);
-
-      remainingWorkflow.forEach((item) => {
-        keepKey(item.value);
-        keepKey(item.thumbnailUrl);
-        keepKey(item.optimizedUrl);
-      });
-      remainingJobs.forEach((job) => {
-        keepKey(job.imageUrl);
-        keepKey(job.thumbnailUrl);
-        keepKey(job.optimizedUrl);
-        keepKeys(job.imageContexts);
-        keepKeys(job.videoContexts);
-        keepKeys(job.audioContexts);
-      });
-      remainingAlbum.items.forEach((item) => {
-        keepKey(item.imageUrl);
-        keepKey(item.thumbnailUrl);
-        keepKey(item.optimizedUrl);
-        keepKeys(item.imageContexts);
-        keepKeys(item.videoContexts);
-        keepKeys(item.audioContexts);
-      });
-      trashItems.forEach((item) => {
-        if (item.projectId !== projectId) return;
-        keepKey(item.imageUrl);
-        keepKey(item.thumbnailUrl);
-        keepKey(item.optimizedUrl);
-      });
-
-      // A job left behind keeps the media inside its workflow snapshot, which
-      // is the only place a reference from a since-deleted workflow step
-      // survives — so those keys count as referenced too.
-      for (const job of remainingJobs) {
-        for (const step of job.workflowSnapshot || []) {
-          if (step.type !== 'image' && step.type !== 'video' && step.type !== 'audio') continue;
-          keepKey(step.value);
-          keepKey(step.thumbnailUrl);
-          keepKey(step.optimizedUrl);
-        }
-      }
-
+      // The items have moved as of the call above — that is the point of no
+      // return. Everything below is housekeeping: sweeping up the source copies
+      // and telling open viewers to refresh. A failure in any of it is logged
+      // and swallowed, because reporting a move that happened as one that
+      // failed is worse than leaving a few files to the orphan tool.
+      createdProjectId = null;
       let removedFiles = 0;
-      for (const sourceKey of Object.keys(keyMap)) {
-        if (stillReferenced.has(sourceKey)) continue;
-        try {
-          await storage.delete(sourceKey);
-          removedFiles += 1;
-        } catch (e) {
-          console.warn(`[album move] Failed to delete source file ${sourceKey}:`, e);
-        }
-      }
+      try {
+        const [remainingWorkflow, remainingJobs, remainingAlbum, trashItems] = await Promise.all([
+          repository.getProjectWorkflow(user.userId, projectId),
+          repository.getProjectJobs(user.userId, projectId, { includeWorkflowSnapshot: true }),
+          repository.getProjectAlbum(user.userId, projectId, { limit: 999999 }),
+          repository.getTrashItems(user.userId),
+        ]);
 
-      projectEvents?.notifyProjectChanged({
-        userId: user.userId,
-        projectId,
-        reason: 'album.moved',
-      });
-      projectEvents?.notifyProjectChanged({
-        userId: user.userId,
-        projectId: targetProjectId,
-        reason: createdProject ? 'project.created' : 'album.moved',
-      });
+        const stillReferenced = new Set<string>();
+        const keepKey = (value?: string) => {
+          const key = stripToKey(value, bucket);
+          if (key) stillReferenced.add(key);
+        };
+        const keepKeys = (values?: string[]) => (values || []).forEach(keepKey);
+
+        remainingWorkflow.forEach((item) => {
+          keepKey(item.value);
+          keepKey(item.thumbnailUrl);
+          keepKey(item.optimizedUrl);
+        });
+        remainingJobs.forEach((job) => {
+          keepKey(job.imageUrl);
+          keepKey(job.thumbnailUrl);
+          keepKey(job.optimizedUrl);
+          keepKeys(job.imageContexts);
+          keepKeys(job.videoContexts);
+          keepKeys(job.audioContexts);
+        });
+        remainingAlbum.items.forEach((item) => {
+          keepKey(item.imageUrl);
+          keepKey(item.thumbnailUrl);
+          keepKey(item.optimizedUrl);
+          keepKeys(item.imageContexts);
+          keepKeys(item.videoContexts);
+          keepKeys(item.audioContexts);
+        });
+        trashItems.forEach((item) => {
+          if (item.projectId !== projectId) return;
+          keepKey(item.imageUrl);
+          keepKey(item.thumbnailUrl);
+          keepKey(item.optimizedUrl);
+        });
+
+        // A job left behind keeps the media inside its workflow snapshot, which
+        // is the only place a reference from a since-deleted workflow step
+        // survives — so those keys count as referenced too.
+        for (const job of remainingJobs) {
+          for (const step of job.workflowSnapshot || []) {
+            if (step.type !== 'image' && step.type !== 'video' && step.type !== 'audio') continue;
+            keepKey(step.value);
+            keepKey(step.thumbnailUrl);
+            keepKey(step.optimizedUrl);
+          }
+        }
+
+        const deletable = Object.keys(keyMap).filter((sourceKey) => !stillReferenced.has(sourceKey));
+        const deleted = await mapWithConcurrency(deletable, STORAGE_CONCURRENCY, async (sourceKey) => {
+          try {
+            await storage.delete(sourceKey);
+            return true;
+          } catch (e) {
+            console.warn(`[album move] Failed to delete source file ${sourceKey}:`, e);
+            return false;
+          }
+        });
+        removedFiles = deleted.filter(Boolean).length;
+
+        projectEvents?.notifyProjectChanged({
+          userId: user.userId,
+          projectId,
+          reason: 'album.moved',
+        });
+        projectEvents?.notifyProjectChanged({
+          userId: user.userId,
+          projectId: targetProjectId,
+          reason: createdProject ? 'project.created' : 'album.moved',
+        });
+      } catch (cleanupError) {
+        console.warn('[album move] Housekeeping failed after a completed move:', cleanupError);
+      }
 
       return c.json({
         success: true,
@@ -1476,11 +1532,26 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         movedItems,
         movedJobs,
         movedFiles: Object.keys(keyMap).length,
+        missingFiles,
         removedFiles,
       });
     } catch (e) {
       console.error('[POST /api/projects/:id/album/move-to-project]', e);
-      return c.json({ error: 'Failed to move album items' }, 500);
+
+      // Roll back a destination project this request created, so a failed move
+      // does not leave an empty project in the list. Only when it is still
+      // empty — if anything did land there, the project is the record of it.
+      if (createdProjectId) {
+        try {
+          const album = await repository.getProjectAlbum(user.userId, createdProjectId, { limit: 1 });
+          if (album.total === 0) await repository.deleteProject(user.userId, createdProjectId);
+        } catch (cleanupError) {
+          console.warn(`[album move] Failed to clean up project ${createdProjectId}:`, cleanupError);
+        }
+      }
+
+      const message = e instanceof Error ? e.message : String(e);
+      return c.json({ error: `Failed to move album items: ${message}` }, 500);
     }
   });
 
