@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List, RefreshCw, Loader2, Tag as TagIcon } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, FolderInput, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List, RefreshCw, Loader2, Tag as TagIcon } from 'lucide-react';
 import { AlbumItem, AlbumTagCount, AlbumTagMatch, AspectRatioCount, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import type { AlbumExportVersion } from '../../api';
@@ -604,6 +604,24 @@ export function AlbumTab({
     navigate(`/project/${projectId}/export-watermark?${params.toString()}`, { state });
   };
 
+  /**
+   * Hand the selection to the move confirmation page. The ids go through
+   * sessionStorage rather than the query string so a selection of any size
+   * survives the navigation and a reload of that page.
+   */
+  const openMoveToProject = () => {
+    if (selectedDisplayItemIds.length === 0) return;
+    const scopeKey = `album-move:${projectId}:${Date.now()}`;
+    try {
+      sessionStorage.setItem(scopeKey, JSON.stringify(selectedDisplayItemIds));
+    } catch {
+      // A full or disabled store just means the page falls back to the state below.
+    }
+    navigate(`/project/${projectId}/album/move?scopeKey=${encodeURIComponent(scopeKey)}`, {
+      state: { itemIds: selectedDisplayItemIds },
+    });
+  };
+
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-0">
@@ -664,6 +682,17 @@ export function AlbumTab({
                   >
                     <Layers className="w-3 h-3" />
                     <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.album.compareSelected')}</span>
+                  </button>
+                )}
+                {hasVisibleSelection && (
+                  <button
+                    onClick={openMoveToProject}
+                    title={t('projectViewer.moveToProject.moveSelected')}
+                    aria-label={t('projectViewer.moveToProject.moveSelected')}
+                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-amber-500/20 transition-all"
+                  >
+                    <FolderInput className="w-3 h-3" />
+                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.moveToProject.moveSelected')}</span>
                   </button>
                 )}
                 {hasVisibleSelection && (

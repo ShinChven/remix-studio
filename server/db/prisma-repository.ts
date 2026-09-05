@@ -47,11 +47,11 @@ export class PrismaRepository implements IRepository {
   }
   getProject(userId: string, projectId: string) { return this.projects.getProject(userId, projectId); }
   getProjectWorkflow(userId: string, projectId: string) { return this.projects.getProjectWorkflow(userId, projectId); }
-  getProjectJobs(userId: string, projectId: string, options?: { excludeStatus?: string[] }) {
+  getProjectJobs(userId: string, projectId: string, options?: { excludeStatus?: string[]; includeWorkflowSnapshot?: boolean }) {
     return this.projects.getProjectJobs(userId, projectId, options);
   }
-  getProjectJobsByIds(userId: string, projectId: string, jobIds: string[]) {
-    return this.projects.getProjectJobsByIds(userId, projectId, jobIds);
+  getProjectJobsByIds(userId: string, projectId: string, jobIds: string[], options?: { includeWorkflowSnapshot?: boolean }) {
+    return this.projects.getProjectJobsByIds(userId, projectId, jobIds, options);
   }
   findProjectJobsForStart(userId: string, projectId: string, options: { mode: 'allDrafts' | 'selected'; jobIds?: string[] }) {
     return this.projects.findProjectJobsForStart(userId, projectId, options);
@@ -105,6 +105,14 @@ export class PrismaRepository implements IRepository {
   getAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.getAlbumItem(userId, projectId, itemId); }
   addAlbumItem(userId: string, projectId: string, item: AlbumItem) { return this.projects.addAlbumItem(userId, projectId, item); }
   deleteAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.deleteAlbumItem(userId, projectId, itemId); }
+  moveAlbumItemsToProject(
+    userId: string,
+    sourceProjectId: string,
+    destinationProjectId: string,
+    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string> },
+  ) {
+    return this.projects.moveAlbumItemsToProject(userId, sourceProjectId, destinationProjectId, options);
+  }
   getAlbumTagCounts(userId: string, projectId: string) { return this.projects.getAlbumTagCounts(userId, projectId); }
   setAlbumItemTags(userId: string, projectId: string, itemId: string, tags: string[]) { return this.projects.setAlbumItemTags(userId, projectId, itemId, tags); }
   updateAlbumItemsTags(

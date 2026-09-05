@@ -88,6 +88,7 @@ const RIGHT_PANEL_REFRESH_EVENT_REASONS = new Set([
   'album.deleted',
   'album.renamed',
   'album.restored',
+  'album.moved',
   'album.tagged',
 ]);
 

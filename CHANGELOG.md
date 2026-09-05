@@ -2,6 +2,12 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [Unreleased]
+
+### Added
+
+- **Move Album Items to Another Project**: Results could be copied out of an album into a library, but there was no way to move them into another project — a batch generated in the wrong project, or a slice of an album that had grown into two separate bodies of work, could only be exported and re-imported, which left the originals behind and lost the history behind each result. Selecting album items now offers **Move to Project**, which hands the items to another project of the same type and takes everything that hangs off them: the album rows and their files (generated asset, thumbnail and optimized version), the job record that produced each one, and the workflow snapshot on that job together with the reference media it points at — so **Reuse workflow** keeps working from the destination project rather than falling back to a reconstruction. The action opens a confirmation page rather than a dialog, at `project/:id/album/move`: it shows the selected items, their combined size, a plain list of what travels with them, and the destination picker, all in one column on a phone and in two from a large screen. The destination is either an existing project of the same type — searchable by name, with each candidate's album count beside it — or a new project created on the spot, which inherits this project's type and generation settings since the results were generated under them. The selection reaches the page through `sessionStorage` rather than the query string, so a batch of any size survives the navigation. Server-side, `POST /api/projects/:id/album/move-to-project` copies each file into the destination project's storage folder before the records move, grouping a result's asset, thumbnail and optimized keys by stem so a name already taken in the destination renames the three together and the filename endpoint keeps finding them. Source files are deleted only once nothing left in the project still references them — a reference shared with a workflow step, a job that stayed behind, or a protected trash record keeps its copy on both sides — and a job still `processing` is left where it is, since its worker would otherwise write the result into a project the job had left. Both projects get an `album.moved` live event so an open viewer refreshes on either side. Translated into all six locales.
+
 ## [1.22.0] - 2026-09-03
 
 ### Added

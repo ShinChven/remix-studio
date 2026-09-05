@@ -1186,6 +1186,41 @@ export async function copyAlbumToLibrary(
   return handleResponse<{ libraryId: string }>(res, 'Failed to copy to library');
 }
 
+/**
+ * Move album items to another project, taking the job records behind them —
+ * and the files and reusable workflow those jobs reference — along with them.
+ * Pass `destinationProjectId` for an existing project or `newProjectName` to
+ * create one of the same type.
+ */
+export async function moveAlbumItemsToProject(
+  projectId: string,
+  params: {
+    itemIds: string[];
+    destinationProjectId?: string;
+    newProjectName?: string;
+    newProjectId?: string;
+  }
+): Promise<{
+  projectId: string;
+  createdProject: boolean;
+  movedItems: number;
+  movedJobs: number;
+  movedFiles: number;
+}> {
+  const res = await apiFetch(`/api/projects/${projectId}/album/move-to-project`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(params),
+  });
+  return handleResponse<{
+    projectId: string;
+    createdProject: boolean;
+    movedItems: number;
+    movedJobs: number;
+    movedFiles: number;
+  }>(res, 'Failed to move album items');
+}
+
 export async function fetchExportStatus(projectId: string, taskId: string): Promise<ExportTask> {
   const res = await apiFetch(`/api/projects/${projectId}/export/${taskId}`, { headers: getHeaders(false) });
   return handleResponse<ExportTask>(res, 'Failed to get export status');

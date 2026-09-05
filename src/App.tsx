@@ -31,6 +31,7 @@ import { ProviderCustomModels } from './pages/ProviderCustomModels.tsx';
 import { TrashView } from './components/TrashView.tsx';
 import { ProjectOrphans } from './pages/ProjectOrphans.tsx';
 import { ExportWatermark } from './pages/ExportWatermark.tsx';
+import { AlbumMoveToProject } from './pages/AlbumMoveToProject.tsx';
 import { Exports } from './pages/Exports.tsx';
 import { Releases } from './pages/Releases.tsx';
 import { ReleaseHistory } from './pages/ReleaseHistory.tsx';
@@ -93,6 +94,7 @@ export default function App() {
               <Route path="queues" element={<Navigate to="/projects/queues" replace />} />
               <Route path="project/new" element={<ProjectForm />} />
               <Route path="project/:id/export-watermark" element={<ExportWatermark />} />
+              <Route path="project/:id/album/move" element={<AlbumMoveToProject />} />
               <Route path="project/:id" element={<ProjectRoute />} />
               <Route path="project/:id/edit" element={<ProjectForm />} />
               <Route path="project/:id/orphans" element={<ProjectOrphans />} />
