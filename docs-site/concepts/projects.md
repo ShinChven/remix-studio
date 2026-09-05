@@ -48,7 +48,7 @@ The final tab is named for the project modality. It contains durable `AlbumItem`
 - Text projects show generated text and its prompt/context; multiple text results can be compared.
 - Audio projects provide audio result controls.
 
-The collection supports selection, page-size choices, filename changes, tagging, export, copy-to-library, workflow reuse, and recycle-bin deletion. The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view.
+The collection supports selection, page-size choices, filename changes, tagging, export, copy-to-library, move-to-project, workflow reuse, and recycle-bin deletion. The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view.
 
 ## Tagging Album Items
 
@@ -67,6 +67,20 @@ The toolbar's tag filter lists every tag in the album with how many items carry 
 Tags follow the item: they survive a move to the recycle bin and a restore, they are written into project bundles and read back on import, and they are copied onto the resulting library items when album items are copied to a library.
 
 Tags are normalised on write — trimmed, de-duplicated case-insensitively, capped at 64 characters each and 30 per item — so a stray space or a difference in capitalisation cannot split one tag into two entries in the filter list.
+
+## Moving Results to Another Project
+
+Select album items and choose **Move to Project** to hand them to a different project of the same type. Unlike copying to a library, this is a move: the items leave the album they came from.
+
+The action opens a confirmation page rather than a dialog, so what is about to happen is visible in full on any screen size. It lists the selected items, their combined size, and what travels with them:
+
+- The album items and their generated files, thumbnails and optimized versions.
+- The job record behind each item, so the Done history follows the result.
+- The reusable workflow snapshot on that job and the reference media it points at, so **Reuse workflow** keeps working in the destination project.
+
+Pick the destination on the same page — an existing project of the same type, searchable by name, or a new project created on the spot. A new project inherits this project's type and generation settings, since the results were produced under them.
+
+Files are copied into the destination project's storage folder before the records move, and a name already taken there is given a numbered variant so nothing is overwritten. A file the source project still points at — a reference shared with a workflow step or with a job that stayed behind — is left in place, so both sides keep working. A job that is still running does not move; its album item does, and the job stays with the project its worker is writing into.
 
 ## Copying Results to a Library
 

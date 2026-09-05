@@ -27,8 +27,8 @@ export interface IRepository {
   getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all', nameOnly?: boolean): Promise<{ items: Project[], total: number, page: number, pages: number }>;
   getProject(userId: string, projectId: string): Promise<Project | null>;
   getProjectWorkflow(userId: string, projectId: string): Promise<import('../../src/types').WorkflowItem[]>;
-  getProjectJobs(userId: string, projectId: string, options?: { excludeStatus?: string[] }): Promise<Job[]>;
-  getProjectJobsByIds(userId: string, projectId: string, jobIds: string[]): Promise<Job[]>;
+  getProjectJobs(userId: string, projectId: string, options?: { excludeStatus?: string[]; includeWorkflowSnapshot?: boolean }): Promise<Job[]>;
+  getProjectJobsByIds(userId: string, projectId: string, jobIds: string[], options?: { includeWorkflowSnapshot?: boolean }): Promise<Job[]>;
   findProjectJobsForStart(
     userId: string,
     projectId: string,
@@ -77,6 +77,12 @@ export interface IRepository {
   getAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
   addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void>;
   deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
+  moveAlbumItemsToProject(
+    userId: string,
+    sourceProjectId: string,
+    destinationProjectId: string,
+    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string> },
+  ): Promise<{ movedItems: number; movedJobs: number }>;
   getAlbumTagCounts(userId: string, projectId: string): Promise<{ tag: string; count: number }[]>;
   setAlbumItemTags(userId: string, projectId: string, itemId: string, tags: string[]): Promise<AlbumItem | null>;
   updateAlbumItemsTags(

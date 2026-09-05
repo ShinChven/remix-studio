@@ -25,6 +25,7 @@ export type ProjectLiveEventReason =
   | 'album.deleted'
   | 'album.renamed'
   | 'album.restored'
+  | 'album.moved'
   | 'album.tagged';
 
 export interface ProjectLiveEvent {

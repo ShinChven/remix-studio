@@ -217,7 +217,7 @@ export class ProjectRepository {
     return items.map((w) => this.mapWorkflow(w));
   }
 
-  async getProjectJobs(userId: string, projectId: string, options: { excludeStatus?: string[] } = {}): Promise<Job[]> {
+  async getProjectJobs(userId: string, projectId: string, options: { excludeStatus?: string[]; includeWorkflowSnapshot?: boolean } = {}): Promise<Job[]> {
     const where: any = { projectId, userId };
     if (options.excludeStatus && options.excludeStatus.length > 0) {
       where.status = { notIn: options.excludeStatus };
@@ -226,10 +226,10 @@ export class ProjectRepository {
       where,
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
-    return jobs.map((j) => this.mapJob(j));
+    return jobs.map((j) => this.mapJob(j, { includeWorkflowSnapshot: options.includeWorkflowSnapshot }));
   }
 
-  async getProjectJobsByIds(userId: string, projectId: string, jobIds: string[]): Promise<Job[]> {
+  async getProjectJobsByIds(userId: string, projectId: string, jobIds: string[], options: { includeWorkflowSnapshot?: boolean } = {}): Promise<Job[]> {
     const ids = Array.from(new Set(jobIds.map((id) => id.trim()).filter(Boolean)));
     if (ids.length === 0) return [];
 
@@ -237,7 +237,7 @@ export class ProjectRepository {
       where: { projectId, userId, id: { in: ids } },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
-    return jobs.map((j) => this.mapJob(j));
+    return jobs.map((j) => this.mapJob(j, { includeWorkflowSnapshot: options.includeWorkflowSnapshot }));
   }
 
   async findProjectJobsForStart(
@@ -789,6 +789,102 @@ export class ProjectRepository {
       }
     }
     return { updated };
+  }
+
+  /**
+   * Move album items — and the job rows that produced them — into another
+   * project of the same user.
+   *
+   * The caller copies the storage objects first and hands over the resulting
+   * old-key → new-key map; every key field on the moved rows is rewritten
+   * through it, the media inside a job's `workflowSnapshot` included, so
+   * "Reuse workflow" keeps working from the destination project. A job still
+   * `processing` is left where it is — its worker would otherwise write the
+   * result back into a project the job no longer belongs to — and the album
+   * item moves without it.
+   */
+  async moveAlbumItemsToProject(
+    userId: string,
+    sourceProjectId: string,
+    destinationProjectId: string,
+    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string> },
+  ): Promise<{ movedItems: number; movedJobs: number }> {
+    await this.assertOwnedProject(userId, sourceProjectId);
+    await this.assertOwnedProject(userId, destinationProjectId);
+
+    const itemIds = Array.from(new Set(options.itemIds.map((id) => id.trim()).filter(Boolean)));
+    const jobIds = Array.from(new Set((options.jobIds ?? []).map((id) => id.trim()).filter(Boolean)));
+    if (itemIds.length === 0) return { movedItems: 0, movedJobs: 0 };
+
+    const keyMap = options.keyMap ?? {};
+    const remapKey = (value: unknown): string | null => {
+      if (typeof value !== 'string' || !value) return (value as string) ?? null;
+      return keyMap[value] ?? value;
+    };
+    const remapKeyList = (values: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
+      if (!Array.isArray(values)) return Prisma.DbNull;
+      return values.map((value) => (typeof value === 'string' ? (keyMap[value] ?? value) : value)) as Prisma.InputJsonValue;
+    };
+    const remapSnapshot = (snapshot: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
+      if (!Array.isArray(snapshot)) return Prisma.DbNull;
+      return snapshot.map((entry) => {
+        if (!entry || typeof entry !== 'object') return entry;
+        const item = entry as Record<string, unknown>;
+        return {
+          ...item,
+          value: remapKey(item.value),
+          thumbnailUrl: remapKey(item.thumbnailUrl),
+          optimizedUrl: remapKey(item.optimizedUrl),
+        };
+      }) as Prisma.InputJsonValue;
+    };
+
+    return this.prisma.$transaction(async (tx) => {
+      let movedJobs = 0;
+      if (jobIds.length > 0) {
+        const jobs = await tx.job.findMany({
+          where: { id: { in: jobIds }, projectId: sourceProjectId, userId, status: { not: 'processing' } },
+        });
+        for (const job of jobs) {
+          await tx.job.updateMany({
+            where: { id: job.id, projectId: sourceProjectId, userId },
+            data: {
+              projectId: destinationProjectId,
+              imageUrl: remapKey(job.imageUrl),
+              thumbnailUrl: remapKey(job.thumbnailUrl),
+              optimizedUrl: remapKey(job.optimizedUrl),
+              imageContexts: remapKeyList(job.imageContexts),
+              videoContexts: remapKeyList(job.videoContexts),
+              audioContexts: remapKeyList(job.audioContexts),
+              workflowSnapshot: remapSnapshot(job.workflowSnapshot),
+            },
+          });
+          movedJobs += 1;
+        }
+      }
+
+      const items = await tx.albumItem.findMany({
+        where: { id: { in: itemIds }, projectId: sourceProjectId, userId },
+      });
+      let movedItems = 0;
+      for (const item of items) {
+        await tx.albumItem.updateMany({
+          where: { id: item.id, projectId: sourceProjectId, userId },
+          data: {
+            projectId: destinationProjectId,
+            imageUrl: remapKey(item.imageUrl),
+            thumbnailUrl: remapKey(item.thumbnailUrl),
+            optimizedUrl: remapKey(item.optimizedUrl),
+            imageContexts: remapKeyList(item.imageContexts),
+            videoContexts: remapKeyList(item.videoContexts),
+            audioContexts: remapKeyList(item.audioContexts),
+          },
+        });
+        movedItems += 1;
+      }
+
+      return { movedItems, movedJobs };
+    });
   }
 
   async deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null> {

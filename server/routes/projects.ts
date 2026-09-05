@@ -233,6 +233,68 @@ export async function signWorkflowItems(workflow: WorkflowItem[], storage: S3Sto
   );
 }
 
+/**
+ * Plan where each storage object behind a moved album item lands in the
+ * destination project's folder.
+ *
+ * Keys are grouped by stem — `name.png`, `name.thumb.jpg` and `name.opt.jpg`
+ * are one group — so a name already taken in the destination folder renames
+ * the whole group together. The filename endpoint derives an item's thumbnail
+ * and optimized keys from its main one, and would stop finding them if the
+ * three drifted apart.
+ */
+async function planAlbumStorageMoves(
+  keys: string[],
+  sourcePrefix: string,
+  destinationPrefix: string,
+  storage: S3Storage,
+): Promise<Record<string, string>> {
+  type MoveGroup = { dir: string; stem: string; members: { key: string; suffix: string }[] };
+  const groups = new Map<string, MoveGroup>();
+
+  for (const key of keys) {
+    if (!key.startsWith(sourcePrefix)) continue;
+    const rest = key.slice(sourcePrefix.length);
+    if (!rest) continue;
+    const slash = rest.lastIndexOf('/');
+    const dir = slash >= 0 ? rest.slice(0, slash + 1) : '';
+    const base = slash >= 0 ? rest.slice(slash + 1) : rest;
+    const dot = base.indexOf('.');
+    const stem = dot > 0 ? base.slice(0, dot) : base;
+    const suffix = dot > 0 ? base.slice(dot) : '';
+    const groupKey = `${dir}${stem}`;
+    const group = groups.get(groupKey) ?? { dir, stem, members: [] };
+    if (!group.members.some((member) => member.key === key)) group.members.push({ key, suffix });
+    groups.set(groupKey, group);
+  }
+
+  const keyMap: Record<string, string> = {};
+  const claimed = new Set<string>();
+
+  for (const group of groups.values()) {
+    let chosenStem: string | null = null;
+    for (let attempt = 1; attempt <= 50; attempt++) {
+      const candidate = attempt === 1 ? group.stem : `${group.stem}_${attempt}`;
+      const paths = group.members.map((member) => `${destinationPrefix}${group.dir}${candidate}${member.suffix}`);
+      if (paths.some((path) => claimed.has(path))) continue;
+      const existing = await Promise.all(paths.map((path) => storage.exists(path)));
+      if (existing.some(Boolean)) continue;
+      chosenStem = candidate;
+      break;
+    }
+    // Fifty taken names in one folder is not a case worth another round trip.
+    if (!chosenStem) chosenStem = `${group.stem}_${randomUUID().slice(0, 8)}`;
+
+    for (const member of group.members) {
+      const destination = `${destinationPrefix}${group.dir}${chosenStem}${member.suffix}`;
+      claimed.add(destination);
+      keyMap[member.key] = destination;
+    }
+  }
+
+  return keyMap;
+}
+
 export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectImportManager: ProjectImportManager, prisma: PrismaClient, projectEvents?: ProjectEventPublisher) {
   const router = new Hono<{ Variables: Variables }>();
 
@@ -1163,6 +1225,262 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     } catch (e) {
       console.error('[POST /api/projects/:id/album/copy-to-library]', e);
       return c.json({ error: 'Failed to copy to library' }, 500);
+    }
+  });
+
+  /**
+   * POST /api/projects/:id/album/move-to-project
+   *
+   * Move selected album items into another project of the same type, taking
+   * everything that hangs off each item with it: the job row that produced it
+   * — including the workflow snapshot that makes the result reusable — and
+   * every file the item or that job references from inside this project's
+   * storage folder, references and context media included.
+   *
+   * Files are copied into the destination folder and the source copy is
+   * deleted only once nothing left in this project still points at it, so a
+   * reference shared with a workflow step or a job that stayed behind keeps
+   * working on both sides.
+   */
+  router.post('/api/projects/:id/album/move-to-project', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+
+      const body = await c.req.json().catch(() => ({}));
+      const itemIds: string[] = Array.from(new Set(
+        (Array.isArray(body?.itemIds) ? body.itemIds : [])
+          .filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
+          .map((id: string) => id.trim()),
+      ));
+      const destinationProjectId = typeof body?.destinationProjectId === 'string' ? body.destinationProjectId.trim() : '';
+      const newProjectName = typeof body?.newProjectName === 'string' ? body.newProjectName.trim() : '';
+      const requestedNewProjectId = typeof body?.newProjectId === 'string' ? body.newProjectId.trim() : '';
+
+      if (itemIds.length === 0) return c.json({ error: 'No items selected' }, 400);
+      if (!destinationProjectId && !newProjectName) {
+        return c.json({ error: 'destinationProjectId or newProjectName is required' }, 400);
+      }
+      if (newProjectName.length > 256) return c.json({ error: 'Field too long' }, 400);
+
+      const sourceProject = await repository.getProject(user.userId, projectId);
+      if (!sourceProject) return c.json({ error: 'Project not found' }, 404);
+      const sourceType = sourceProject.type || 'image';
+
+      let targetProjectId = destinationProjectId;
+      let createdProject = false;
+
+      if (targetProjectId) {
+        if (targetProjectId === projectId) {
+          return c.json({ error: 'Destination must be a different project' }, 400);
+        }
+        const destination = await repository.getProject(user.userId, targetProjectId);
+        if (!destination) return c.json({ error: 'Destination project not found' }, 404);
+        if ((destination.type || 'image') !== sourceType) {
+          return c.json({ error: `Destination must be a ${sourceType} project` }, 400);
+        }
+      } else {
+        targetProjectId = (requestedNewProjectId || newProjectName).replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 128)
+          || `project-${Date.now()}`;
+        if (targetProjectId === projectId || await repository.getProject(user.userId, targetProjectId)) {
+          targetProjectId = `${targetProjectId}-${randomUUID().slice(0, 8)}`.slice(0, 128);
+        }
+        // The items were generated under this project's settings, so the new
+        // project starts from them — a move is not a reason to re-pick a model.
+        const newProject: Project = {
+          id: targetProjectId,
+          name: newProjectName,
+          description: sourceProject.description,
+          type: sourceType,
+          status: 'active',
+          createdAt: Date.now(),
+          workflow: [],
+          jobs: [],
+          album: [],
+          providerId: sourceProject.providerId,
+          modelConfigId: sourceProject.modelConfigId,
+          aspectRatio: sourceProject.aspectRatio,
+          quality: sourceProject.quality,
+          background: sourceProject.background,
+          format: sourceProject.format,
+          shuffle: sourceProject.shuffle,
+          prefix: sourceProject.prefix,
+          systemPrompt: sourceProject.systemPrompt,
+          temperature: sourceProject.temperature,
+          maxTokens: sourceProject.maxTokens,
+          duration: sourceProject.duration,
+          resolution: sourceProject.resolution,
+          sound: sourceProject.sound,
+        };
+        try {
+          await repository.createProject(user.userId, newProject);
+        } catch {
+          // Project ids are unique across accounts, so a name-derived id can
+          // collide with a project this user cannot see.
+          newProject.id = `${targetProjectId}-${randomUUID().slice(0, 8)}`.slice(0, 128);
+          targetProjectId = newProject.id;
+          await repository.createProject(user.userId, newProject);
+        }
+        createdProject = true;
+      }
+
+      const bucket = storage.getBucketName();
+      const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
+      const itemsToMove = albumPage.items.filter((item) => itemIds.includes(item.id));
+      if (itemsToMove.length === 0) return c.json({ error: 'No matching items found' }, 400);
+
+      // The jobs behind the moved items travel with them; one still running
+      // does not, since its worker would write the result back into a project
+      // the job had left.
+      const jobIds = Array.from(new Set(itemsToMove.map((item) => item.jobId).filter((id): id is string => Boolean(id))));
+      const jobsToMove = jobIds.length
+        ? (await repository.getProjectJobsByIds(user.userId, projectId, jobIds, { includeWorkflowSnapshot: true }))
+          .filter((job) => job.status !== 'processing')
+        : [];
+      const movableJobIds = new Set(jobsToMove.map((job) => job.id));
+
+      const safeSourceId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const safeTargetId = targetProjectId.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const sourcePrefix = `${user.userId}/${safeSourceId}/`;
+      const destinationPrefix = `${user.userId}/${safeTargetId}/`;
+
+      const movingKeys = new Set<string>();
+      const collectKey = (value?: string) => {
+        const key = stripToKey(value, bucket);
+        if (key && key.startsWith(sourcePrefix)) movingKeys.add(key);
+      };
+      const collectKeys = (values?: string[]) => (values || []).forEach(collectKey);
+
+      for (const item of itemsToMove) {
+        collectKey(item.imageUrl);
+        collectKey(item.thumbnailUrl);
+        collectKey(item.optimizedUrl);
+        collectKeys(item.imageContexts);
+        collectKeys(item.videoContexts);
+        collectKeys(item.audioContexts);
+      }
+      for (const job of jobsToMove) {
+        collectKey(job.imageUrl);
+        collectKey(job.thumbnailUrl);
+        collectKey(job.optimizedUrl);
+        collectKeys(job.imageContexts);
+        collectKeys(job.videoContexts);
+        collectKeys(job.audioContexts);
+        for (const step of job.workflowSnapshot || []) {
+          if (step.type !== 'image' && step.type !== 'video' && step.type !== 'audio') continue;
+          collectKey(step.value);
+          collectKey(step.thumbnailUrl);
+          collectKey(step.optimizedUrl);
+        }
+      }
+
+      // Two project ids can sanitize to the same folder name, in which case
+      // the files are already where they need to be and nothing is copied.
+      const keyMap = sourcePrefix === destinationPrefix
+        ? {}
+        : await planAlbumStorageMoves(Array.from(movingKeys), sourcePrefix, destinationPrefix, storage);
+      for (const [sourceKey, destinationKey] of Object.entries(keyMap)) {
+        await storage.copy(sourceKey, destinationKey);
+      }
+
+      const { movedItems, movedJobs } = await repository.moveAlbumItemsToProject(
+        user.userId,
+        projectId,
+        targetProjectId,
+        { itemIds: itemsToMove.map((item) => item.id), jobIds: Array.from(movableJobIds), keyMap },
+      );
+
+      // Whatever the source project still points at stays where it is; the
+      // rest of what was copied is cleaned up so the move leaves nothing over.
+      const [remainingWorkflow, remainingJobs, remainingAlbum, trashItems] = await Promise.all([
+        repository.getProjectWorkflow(user.userId, projectId),
+        repository.getProjectJobs(user.userId, projectId, { includeWorkflowSnapshot: true }),
+        repository.getProjectAlbum(user.userId, projectId, { limit: 999999 }),
+        repository.getTrashItems(user.userId),
+      ]);
+
+      const stillReferenced = new Set<string>();
+      const keepKey = (value?: string) => {
+        const key = stripToKey(value, bucket);
+        if (key) stillReferenced.add(key);
+      };
+      const keepKeys = (values?: string[]) => (values || []).forEach(keepKey);
+
+      remainingWorkflow.forEach((item) => {
+        keepKey(item.value);
+        keepKey(item.thumbnailUrl);
+        keepKey(item.optimizedUrl);
+      });
+      remainingJobs.forEach((job) => {
+        keepKey(job.imageUrl);
+        keepKey(job.thumbnailUrl);
+        keepKey(job.optimizedUrl);
+        keepKeys(job.imageContexts);
+        keepKeys(job.videoContexts);
+        keepKeys(job.audioContexts);
+      });
+      remainingAlbum.items.forEach((item) => {
+        keepKey(item.imageUrl);
+        keepKey(item.thumbnailUrl);
+        keepKey(item.optimizedUrl);
+        keepKeys(item.imageContexts);
+        keepKeys(item.videoContexts);
+        keepKeys(item.audioContexts);
+      });
+      trashItems.forEach((item) => {
+        if (item.projectId !== projectId) return;
+        keepKey(item.imageUrl);
+        keepKey(item.thumbnailUrl);
+        keepKey(item.optimizedUrl);
+      });
+
+      // A job left behind keeps the media inside its workflow snapshot, which
+      // is the only place a reference from a since-deleted workflow step
+      // survives — so those keys count as referenced too.
+      for (const job of remainingJobs) {
+        for (const step of job.workflowSnapshot || []) {
+          if (step.type !== 'image' && step.type !== 'video' && step.type !== 'audio') continue;
+          keepKey(step.value);
+          keepKey(step.thumbnailUrl);
+          keepKey(step.optimizedUrl);
+        }
+      }
+
+      let removedFiles = 0;
+      for (const sourceKey of Object.keys(keyMap)) {
+        if (stillReferenced.has(sourceKey)) continue;
+        try {
+          await storage.delete(sourceKey);
+          removedFiles += 1;
+        } catch (e) {
+          console.warn(`[album move] Failed to delete source file ${sourceKey}:`, e);
+        }
+      }
+
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        reason: 'album.moved',
+      });
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId: targetProjectId,
+        reason: createdProject ? 'project.created' : 'album.moved',
+      });
+
+      return c.json({
+        success: true,
+        projectId: targetProjectId,
+        createdProject,
+        movedItems,
+        movedJobs,
+        movedFiles: Object.keys(keyMap).length,
+        removedFiles,
+      });
+    } catch (e) {
+      console.error('[POST /api/projects/:id/album/move-to-project]', e);
+      return c.json({ error: 'Failed to move album items' }, 500);
     }
   });
 
