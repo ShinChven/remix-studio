@@ -304,6 +304,7 @@
     },
     "moveToProject": {
       "moveSelected": "プロジェクトへ移動",
+      "moveShort": "移動",
       "title": "別のプロジェクトへ移動",
       "description": "{{name}} から移動する内容を確認し、移動先を選択します。",
       "back": "アルバムに戻る",
@@ -342,9 +343,13 @@
       "exportFailed": "エクスポート失敗: {{message}}",
       "itemsCount": "{{count}} 件",
       "exportSelected": "選択をエクスポート",
+      "exportShort": "エクスポート",
       "compareSelected": "選択を比較",
+      "compareShort": "比較",
       "exportAll": "すべてエクスポート",
       "copyAllToLibrary": "すべてライブラリにコピー",
+      "toLibraryShort": "ライブラリへ",
+      "allToLibraryShort": "すべてライブラリへ",
       "noTexts": "まだテキストがありません",
       "noVideos": "まだ動画がありません",
       "noAudios": "まだ音声がありません",
@@ -393,6 +398,7 @@
       "tagsUpdateFailed": "タグの更新に失敗しました",
       "tagsBatchUpdated": "{{count}} 件のアイテムのタグを更新しました",
       "tagSelected": "選択項目にタグ付け",
+      "tagShort": "タグ",
       "tagAll": "すべてにタグ付け",
       "tagRemove": "タグ {{tag}} を削除",
       "tagSuggestions": "このアルバムで使用中のタグ",
@@ -406,7 +412,8 @@
       "tagBatchHintRemove": "対象のすべてのアイテムからこれらのタグを削除します。他のタグはそのまま残ります。",
       "tagBatchHintReplace": "対象のすべてのアイテムのタグをこの内容に置き換えます。空のままにするとすべてのタグが消去されます。",
       "tagBatchClearAll": "タグなし — 対象のすべてのアイテムのタグが消去されます",
-      "tagBatchApply": "適用"
+      "tagBatchApply": "適用",
+      "deleteShort": "削除"
     },
     "compare": {
       "title": "テキストを比較",

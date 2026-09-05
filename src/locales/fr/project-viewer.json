@@ -304,6 +304,7 @@
     },
     "moveToProject": {
       "moveSelected": "Déplacer vers un projet",
+      "moveShort": "Déplacer",
       "title": "Déplacer vers un autre projet",
       "description": "Vérifiez ce qui quitte {{name}}, puis choisissez la destination.",
       "back": "Retour à l'album",
@@ -342,9 +343,13 @@
       "exportFailed": "Échec de l'export : {{message}}",
       "itemsCount": "{{count}} éléments",
       "exportSelected": "Exporter la sélection",
+      "exportShort": "Exporter",
       "compareSelected": "Comparer la sélection",
+      "compareShort": "Comparer",
       "exportAll": "Tout exporter",
       "copyAllToLibrary": "Tout copier vers la bibliothèque",
+      "toLibraryShort": "Vers biblio.",
+      "allToLibraryShort": "Tout vers biblio.",
       "noTexts": "Aucun texte pour le moment",
       "noVideos": "Aucune vidéo pour le moment",
       "noAudios": "Aucun audio pour le moment",
@@ -393,6 +398,7 @@
       "tagsUpdateFailed": "Échec de la mise à jour des étiquettes",
       "tagsBatchUpdated": "Étiquettes mises à jour sur {{count}} éléments",
       "tagSelected": "Étiqueter la sélection",
+      "tagShort": "Étiqueter",
       "tagAll": "Tout étiqueter",
       "tagRemove": "Retirer l'étiquette {{tag}}",
       "tagSuggestions": "Étiquettes utilisées dans cet album",
@@ -406,7 +412,8 @@
       "tagBatchHintRemove": "Ces étiquettes sont retirées de chaque élément concerné. Les autres étiquettes sont conservées.",
       "tagBatchHintReplace": "Chaque élément concerné se retrouve avec exactement ces étiquettes. Laissez la liste vide pour tout effacer.",
       "tagBatchClearAll": "Aucune étiquette — toutes celles des éléments concernés seront effacées",
-      "tagBatchApply": "Appliquer"
+      "tagBatchApply": "Appliquer",
+      "deleteShort": "Supprimer"
     },
     "compare": {
       "title": "Comparer les textes",

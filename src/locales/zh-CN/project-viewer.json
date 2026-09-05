@@ -304,6 +304,7 @@
     },
     "moveToProject": {
       "moveSelected": "移动到项目",
+      "moveShort": "移动",
       "title": "移动到其他项目",
       "description": "确认将从 {{name}} 移出的内容，然后选择目标项目。",
       "back": "返回相册",
@@ -342,9 +343,13 @@
       "exportFailed": "导出失败：{{message}}",
       "itemsCount": "{{count}} 项",
       "exportSelected": "导出所选",
+      "exportShort": "导出",
       "compareSelected": "比较所选",
+      "compareShort": "比较",
       "exportAll": "全部导出",
       "copyAllToLibrary": "全部复制到资料库",
+      "toLibraryShort": "到资料库",
+      "allToLibraryShort": "全部到资料库",
       "noTexts": "还没有文本",
       "noVideos": "还没有视频",
       "noAudios": "还没有音频",
@@ -393,6 +398,7 @@
       "tagsUpdateFailed": "更新标签失败",
       "tagsBatchUpdated": "已更新 {{count}} 个项目的标签",
       "tagSelected": "标记所选",
+      "tagShort": "标记",
       "tagAll": "标记全部",
       "tagRemove": "移除标签 {{tag}}",
       "tagSuggestions": "本作品集已用标签",
@@ -406,7 +412,8 @@
       "tagBatchHintRemove": "这些标签会从范围内的每一项上移除，其他标签保持不变。",
       "tagBatchHintReplace": "范围内每一项最终只保留这些标签。留空则清除全部标签。",
       "tagBatchClearAll": "未填写标签 —— 范围内每一项的标签都会被清空",
-      "tagBatchApply": "应用"
+      "tagBatchApply": "应用",
+      "deleteShort": "删除"
     },
     "compare": {
       "title": "比较文本",
