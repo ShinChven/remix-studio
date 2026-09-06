@@ -955,7 +955,13 @@ export function AlbumTab({
           // in portrait stay one card per row: there the pane spans the whole
           // viewport, which is wide enough to trip the 26rem step but far too narrow
           // to read two cards side by side.
-          <div className="grid grid-cols-1 sm:@min-[26rem]/pane:grid-cols-2 sm:@min-[44rem]/pane:grid-cols-3 sm:@min-[60rem]/pane:grid-cols-4 sm:@min-[76rem]/pane:grid-cols-5 sm:@min-[92rem]/pane:grid-cols-6 gap-3 @xl/pane:gap-4 p-3 @xl/pane:p-4">
+          //
+          // `isolate` keeps the cards in their own stacking context: the overlay
+          // buttons on a card sit at z-20, and without it they escape and paint over
+          // the sticky selection toolbar as a row scrolls under it. Cards only form a
+          // stacking context of their own where `backdrop-filter` takes effect, so the
+          // grid has to guarantee it instead.
+          <div className="isolate grid grid-cols-1 sm:@min-[26rem]/pane:grid-cols-2 sm:@min-[44rem]/pane:grid-cols-3 sm:@min-[60rem]/pane:grid-cols-4 sm:@min-[76rem]/pane:grid-cols-5 sm:@min-[92rem]/pane:grid-cols-6 gap-3 @xl/pane:gap-4 p-3 @xl/pane:p-4">
             {displayItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = getCssAspectRatio(item.aspectRatio);
