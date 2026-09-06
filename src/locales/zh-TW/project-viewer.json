@@ -338,6 +338,14 @@
       "moveFailed": "移動失敗"
     },
     "album": {
+      "actions": "操作",
+      "searchPlaceholder": "搜尋名稱或提示詞…",
+      "clearSearch": "清除搜尋",
+      "noFilterMatches": "沒有符合的項目",
+      "noFilterMatchesDescription": "請嘗試其他搜尋詞或調整篩選條件。",
+      "exportPage": "匯出本頁",
+      "tagResults": "標記符合的項目",
+      "copyPageToLibrary": "將本頁複製到素材庫",
       "exportQueued": "匯出已加入佇列！",
       "viewArchiveProgress": "前往封存查看進度 →",
       "exportFailed": "匯出失敗：{{message}}",

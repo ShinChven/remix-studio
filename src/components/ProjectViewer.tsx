@@ -153,6 +153,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const albumPageSize: number | 'all' = albumSizeParam === 'all'
     ? 'all'
     : (Number(albumSizeParam) > 0 ? Math.floor(Number(albumSizeParam)) : 500);
+  const albumSearch = searchParams.get('albumSearch') || '';
   const albumSort: 'newest' | 'oldest' = searchParams.get('albumSort') === 'oldest' ? 'oldest' : 'newest';
   const albumRatiosParam = searchParams.get('albumRatios') || '';
   const albumSelectedRatios = React.useMemo(
@@ -174,6 +175,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       ratios?: string[];
       tags?: string[];
       tagMatch?: AlbumTagMatch;
+      search?: string;
     }) => {
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
@@ -184,6 +186,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           || updates.ratios !== undefined
           || updates.tags !== undefined
           || updates.tagMatch !== undefined
+          || updates.search !== undefined
         ) {
           next.delete('albumPage');
         }
@@ -210,6 +213,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         if (updates.tagMatch !== undefined) {
           if (updates.tagMatch === 'any') next.set('albumTagMatch', 'any');
           else next.delete('albumTagMatch');
+        }
+        if (updates.search !== undefined) {
+          if (updates.search) next.set('albumSearch', updates.search);
+          else next.delete('albumSearch');
         }
         return next;
       });
@@ -346,6 +353,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         next.delete('albumPage');
         next.delete('albumSize');
         next.delete('albumSort');
+        next.delete('albumSearch');
         next.delete('albumRatios');
         next.delete('albumTags');
         next.delete('albumTagMatch');
@@ -392,7 +400,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     aspectRatios: albumSelectedRatios,
     tags: albumSelectedTags,
     tagMatch: albumTagMatch,
-  }), [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, albumSelectedTags, albumTagMatch]);
+    q: albumSearch,
+  }), [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, albumSelectedTags, albumTagMatch, albumSearch]);
   const loadAlbumPage = useCallback(async (signalToken: number, showLoading = true) => {
     if (showLoading) setIsLoadingAlbum(true);
     try {
@@ -403,6 +412,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         aspectRatios: albumSelectedRatios.length > 0 ? albumSelectedRatios : undefined,
         tags: albumSelectedTags.length > 0 ? albumSelectedTags : undefined,
         tagMatch: albumTagMatch,
+        q: albumSearch,
       });
       if (albumFetchTokenRef.current !== signalToken || isDeletingAlbumItemsRef.current) return;
       setLocalAlbum(res.items);
@@ -411,7 +421,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       setAlbumTotalSize(res.totalSize);
       setAlbumAspectRatioCounts(res.aspectRatioCounts);
       setAlbumTagCounts(res.tagCounts || []);
-      if (albumPage === 1 && albumSort === 'newest' && albumSelectedRatios.length === 0 && albumSelectedTags.length === 0) {
+      if (albumPage === 1 && albumSort === 'newest' && albumSelectedRatios.length === 0 && albumSelectedTags.length === 0 && !albumSearch.trim()) {
         setAlbumPreviewItems(res.items.slice(0, 5));
       }
       albumLoadedKeyRef.current = albumQueryKey;
@@ -421,7 +431,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     } finally {
       if (albumFetchTokenRef.current === signalToken) setIsLoadingAlbum(false);
     }
-  }, [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, albumSelectedTags, albumTagMatch, albumQueryKey]);
+  }, [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, albumSelectedTags, albumTagMatch, albumSearch, albumQueryKey]);
 
   useEffect(() => {
     if (activeTab !== 'album') return;
@@ -490,6 +500,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   }, [updateAlbumParams]);
   const handleAlbumSelectedTagsChange = useCallback((tags: string[]) => {
     updateAlbumParams({ tags });
+  }, [updateAlbumParams]);
+  const handleAlbumSearchChange = useCallback((search: string) => {
+    updateAlbumParams({ search });
   }, [updateAlbumParams]);
   const handleAlbumTagMatchChange = useCallback((tagMatch: AlbumTagMatch) => {
     updateAlbumParams({ tagMatch });
@@ -587,6 +600,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     albumPageSize,
     albumSort,
     albumSelectedRatios,
+    albumSelectedTags,
+    albumTagMatch,
+    albumSearch,
     albumQueryKey,
     completedPage,
     completedPageSize,
@@ -614,6 +630,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       albumPageSize,
       albumSort,
       albumSelectedRatios,
+      albumSelectedTags,
+      albumTagMatch,
+      albumSearch,
       albumQueryKey,
       completedPage,
       completedPageSize,
@@ -625,6 +644,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     albumPageSize,
     albumSort,
     albumSelectedRatios,
+    albumSelectedTags,
+    albumTagMatch,
+    albumSearch,
     albumQueryKey,
     completedPage,
     completedPageSize,
@@ -748,6 +770,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               limit: query.albumPageSize === 'all' ? 999999 : query.albumPageSize,
               sort: query.albumSort,
               aspectRatios: query.albumSelectedRatios.length > 0 ? query.albumSelectedRatios : undefined,
+              tags: query.albumSelectedTags,
+              tagMatch: query.albumTagMatch,
+              q: query.albumSearch,
             }).catch(() => null)
           : fetchProjectAlbum(localProject.id, {
               page: 1,
@@ -783,11 +808,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         setAlbumTotal(updatedAlbumRes.total);
         setAlbumTotalSize(updatedAlbumRes.totalSize);
         setAlbumAspectRatioCounts(updatedAlbumRes.aspectRatioCounts);
+        setAlbumTagCounts(updatedAlbumRes.tagCounts || []);
         if (tab === 'album') {
           if (JSON.stringify(updatedAlbumRes.items) !== JSON.stringify(localAlbumRef.current)) {
             setLocalAlbum(updatedAlbumRes.items);
           }
-          if (query.albumPage === 1 && query.albumSort === 'newest' && query.albumSelectedRatios.length === 0) {
+          if (query.albumPage === 1 && query.albumSort === 'newest' && query.albumSelectedRatios.length === 0 && query.albumSelectedTags.length === 0 && !query.albumSearch.trim()) {
             setAlbumPreviewItems(updatedAlbumRes.items.slice(0, 5));
           }
           setAlbumPages(updatedAlbumRes.pages);
@@ -2440,11 +2466,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
             />
           )}
           {activeTab === 'album' && isLoadingAlbum && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20">
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20 pointer-events-none">
               <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
             </div>
           )}
-          {activeTab === 'album' && !isLoadingAlbum && (
+          {activeTab === 'album' && (
             <AlbumTab
               projectId={localProject.id}
               projectName={localProject.name}
@@ -2468,6 +2494,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               tagCounts={albumTagCounts}
               selectedTags={albumSelectedTags}
               tagMatch={albumTagMatch}
+              search={albumSearch}
+              isLoading={isLoadingAlbum}
+              onSearchChange={handleAlbumSearchChange}
               onPageChange={handleAlbumPageChange}
               onPageSizeChange={handleAlbumPageSizeChange}
               onSortChange={handleAlbumSortChange}

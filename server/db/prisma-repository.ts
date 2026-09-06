@@ -127,6 +127,7 @@ export class PrismaRepository implements IRepository {
       aspectRatios?: string[];
       tags?: string[];
       tagMatch?: 'all' | 'any';
+      q?: string;
     },
   ) {
     return this.projects.updateAlbumItemsTags(userId, projectId, options);

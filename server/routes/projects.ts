@@ -1073,6 +1073,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         aspectRatios,
         tags: filterTags,
         tagMatch,
+        q: typeof body?.q === 'string' ? body.q : undefined,
       });
 
       projectEvents?.notifyProjectChanged({

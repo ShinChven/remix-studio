@@ -338,6 +338,14 @@
       "moveFailed": "이동하지 못했습니다"
     },
     "album": {
+      "actions": "작업",
+      "searchPlaceholder": "이름 또는 프롬프트 검색…",
+      "clearSearch": "검색 지우기",
+      "noFilterMatches": "일치하는 항목이 없습니다",
+      "noFilterMatchesDescription": "다른 검색어를 입력하거나 필터를 조정하세요.",
+      "exportPage": "현재 페이지 내보내기",
+      "tagResults": "일치하는 항목에 태그 지정",
+      "copyPageToLibrary": "현재 페이지를 라이브러리에 복사",
       "exportQueued": "내보내기가 대기열에 추가되었습니다!",
       "viewArchiveProgress": "Archive에서 진행 상황 보기 →",
       "exportFailed": "내보내기 실패: {{message}}",
