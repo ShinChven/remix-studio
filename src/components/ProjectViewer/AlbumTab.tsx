@@ -10,6 +10,7 @@ import { ExportPackageDialog } from './ExportPackageDialog';
 import { TextAlbumCompareDialog } from './TextAlbumCompareDialog';
 import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
 import { CopyToLibraryDialog } from './CopyToLibraryDialog';
+import { AlbumActionsMenu, AlbumSearch, type AlbumAction } from './AlbumToolbarControls';
 import { SelectionToolbar } from './SelectionToolbar';
 import { AlbumBatchTagModal, AlbumBatchTagMode } from './AlbumBatchTagModal';
 import { TagModal } from '../TagModal';
@@ -49,6 +50,9 @@ interface AlbumTabProps {
   tagCounts: AlbumTagCount[];
   selectedTags: string[];
   tagMatch: AlbumTagMatch;
+  search: string;
+  isLoading: boolean;
+  onSearchChange: (search: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number | 'all') => void;
   onSortChange: (sort: 'newest' | 'oldest') => void;
@@ -65,6 +69,7 @@ interface AlbumTabProps {
     aspectRatios?: string[];
     filterTags?: string[];
     tagMatch?: AlbumTagMatch;
+    q?: string;
   }) => Promise<{ updated: number }>;
 }
 
@@ -193,8 +198,10 @@ const TagFilterControl = memo(function TagFilterControl({
   useEffect(() => {
     if (!isOpen) return;
     const handleClick = () => setIsOpen(false);
+    const handleKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setIsOpen(false); };
+    window.addEventListener('keydown', handleKey);
     window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
+    return () => { window.removeEventListener('click', handleClick); window.removeEventListener('keydown', handleKey); };
   }, [isOpen]);
 
   return (
@@ -204,6 +211,7 @@ const TagFilterControl = memo(function TagFilterControl({
         onClick={() => setIsOpen((open) => !open)}
         title={t('projectViewer.album.tagFilter')}
         aria-label={t('projectViewer.album.tagFilter')}
+        aria-expanded={isOpen}
         className={`flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg border transition-all ${
           hasFilter
             ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border-blue-500/30'
@@ -211,7 +219,7 @@ const TagFilterControl = memo(function TagFilterControl({
         }`}
       >
         <TagIcon className="w-3 h-3" />
-        <span className="hidden @min-[56rem]/pane:inline">
+        <span className="whitespace-nowrap">
           {selectedTags.length === 0
             ? t('projectViewer.album.tagFilter')
             : t('projectViewer.album.tagFilterCount', { count: selectedTags.length })}
@@ -344,6 +352,9 @@ export function AlbumTab({
   tagCounts,
   selectedTags,
   tagMatch,
+  search,
+  isLoading,
+  onSearchChange,
   onPageChange,
   onPageSizeChange,
   onSortChange,
@@ -460,6 +471,7 @@ export function AlbumTab({
           aspectRatios: hasAspectRatioFilter ? selectedAspectRatios : undefined,
           filterTags: hasTagFilter ? selectedTags : undefined,
           tagMatch,
+          q: search,
         };
       const { updated } = await onBatchUpdateAlbumTags({
         ...scope,
@@ -507,6 +519,7 @@ export function AlbumTab({
   }, [onSelectedAspectRatiosChange]);
 
   const hasTagFilter = selectedTags.length > 0;
+  const hasSearchFilter = search.trim().length > 0;
   const toggleTagFilter = useCallback((tag: string) => {
     const next = selectedTags.includes(tag)
       ? selectedTags.filter((item) => item !== tag)
@@ -527,7 +540,7 @@ export function AlbumTab({
   );
   const hasVisibleSelection = selectedDisplayItemIds.length > 0;
   const bulkItemIds = hasVisibleSelection ? selectedDisplayItemIds : displayItemIds;
-  const useAllAlbumScope = !hasVisibleSelection && !hasAspectRatioFilter && !hasTagFilter;
+  const useAllAlbumScope = !hasVisibleSelection && !hasAspectRatioFilter && !hasTagFilter && !hasSearchFilter;
 
   const toggleAudioExpand = (id: string) => {
     setExpandedAudioIds((prev) => {
@@ -622,11 +635,46 @@ export function AlbumTab({
     });
   };
 
+  const albumActions: AlbumAction[] = [
+    {
+      label: hasVisibleSelection ? t('projectViewer.album.exportSelected') : useAllAlbumScope ? t('projectViewer.album.exportAll') : t('projectViewer.album.exportPage'),
+      icon: <FileArchive className="w-4 h-4 shrink-0" />,
+      onClick: () => openExportDialog(!hasVisibleSelection),
+    },
+    {
+      label: hasVisibleSelection ? t('projectViewer.album.tagSelected') : useAllAlbumScope ? t('projectViewer.album.tagAll') : t('projectViewer.album.tagResults'),
+      icon: <TagIcon className="w-4 h-4 shrink-0" />,
+      onClick: () => setShowBatchTagModal(true),
+    },
+    {
+      label: hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : useAllAlbumScope ? t('projectViewer.album.copyAllToLibrary') : t('projectViewer.album.copyPageToLibrary'),
+      icon: <Copy className="w-4 h-4 shrink-0" />,
+      onClick: () => setShowCopyDialog(true),
+    },
+    ...(isTextProject && selectedDisplayItemIds.length > 1 ? [{
+      label: t('projectViewer.album.compareSelected'),
+      icon: <Layers className="w-4 h-4 shrink-0" />,
+      onClick: () => setShowCompareDialog(true),
+    }] : []),
+    ...(hasVisibleSelection ? [{
+      label: t('projectViewer.moveToProject.moveSelected'),
+      icon: <FolderInput className="w-4 h-4 shrink-0" />,
+      onClick: openMoveToProject,
+    }, {
+      label: t('projectViewer.common.deleteSelected'),
+      icon: <Trash2 className="w-4 h-4 shrink-0" />,
+      destructive: true,
+      onClick: () => {
+        setAlbumItemsToDelete(displayItems.filter(item => selectedAlbumIds.has(item.id)));
+        setShowDeleteAlbumModal(true);
+      },
+    }] : []),
+  ];
+
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-0">
-        {total > 0 && (
-          <SelectionToolbar
+        <SelectionToolbar
             totalCount={displayItems.length}
             selectedCount={selectedDisplayItemIds.length}
             onToggleSelectAll={() => toggleSelectAllAlbum(displayItemIds)}
@@ -638,83 +686,11 @@ export function AlbumTab({
                 </span>
               </div>
             )}
+            selectionActions={<AlbumActionsMenu actions={albumActions} disabled={isLoading} />}
+            zeroSelectionActions={<AlbumActionsMenu actions={albumActions} disabled={isLoading || total === 0} />}
             rightActions={
-              // The visible label on each action is the short form; `title` and
-              // `aria-label` keep the full name, which is what a hover tooltip
-              // and a screen reader read out. Nine controls share this row once
-              // items are selected, and the long forms pushed it onto a second
-              // sticky line on every pane narrower than ~1200px.
               <>
-                <button
-                  onClick={() => openExportDialog(!hasVisibleSelection)}
-                  title={hasVisibleSelection ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
-                  aria-label={hasVisibleSelection ? t('projectViewer.album.exportSelected') : t('projectViewer.album.exportAll')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all disabled:opacity-50"
-                >
-                  <FileArchive className="w-3 h-3" />
-                  <span className="hidden @min-[56rem]/pane:inline">
-                    {hasVisibleSelection ? t('projectViewer.album.exportShort') : t('projectViewer.album.exportAll')}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setShowBatchTagModal(true)}
-                  title={hasVisibleSelection ? t('projectViewer.album.tagSelected') : t('projectViewer.album.tagAll')}
-                  aria-label={hasVisibleSelection ? t('projectViewer.album.tagSelected') : t('projectViewer.album.tagAll')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-blue-500/20 transition-all"
-                >
-                  <TagIcon className="w-3 h-3" />
-                  <span className="hidden @min-[56rem]/pane:inline">
-                    {hasVisibleSelection ? t('projectViewer.album.tagShort') : t('projectViewer.album.tagAll')}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setShowCopyDialog(true)}
-                  title={hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
-                  aria-label={hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : t('projectViewer.album.copyAllToLibrary')}
-                  className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20 transition-all"
-                >
-                  <Copy className="w-3 h-3" />
-                  <span className="hidden @min-[56rem]/pane:inline">
-                    {hasVisibleSelection ? t('projectViewer.album.toLibraryShort') : t('projectViewer.album.allToLibraryShort')}
-                  </span>
-                </button>
-                {isTextProject && selectedDisplayItemIds.length > 1 && (
-                  <button
-                    onClick={() => setShowCompareDialog(true)}
-                    title={t('projectViewer.album.compareSelected')}
-                    aria-label={t('projectViewer.album.compareSelected')}
-                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-neutral-900/5 hover:bg-neutral-900/10 text-neutral-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 text-[9px] font-black uppercase tracking-widest rounded-lg border border-neutral-300 dark:border-neutral-700 transition-all"
-                  >
-                    <Layers className="w-3 h-3" />
-                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.album.compareShort')}</span>
-                  </button>
-                )}
-                {hasVisibleSelection && (
-                  <button
-                    onClick={openMoveToProject}
-                    title={t('projectViewer.moveToProject.moveSelected')}
-                    aria-label={t('projectViewer.moveToProject.moveSelected')}
-                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-amber-500/20 transition-all"
-                  >
-                    <FolderInput className="w-3 h-3" />
-                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.moveToProject.moveShort')}</span>
-                  </button>
-                )}
-                {hasVisibleSelection && (
-                  <button
-                    onClick={() => {
-                      const itemsToDelete = displayItems.filter(item => selectedAlbumIds.has(item.id));
-                      setAlbumItemsToDelete(itemsToDelete);
-                      setShowDeleteAlbumModal(true);
-                    }}
-                    title={t('projectViewer.common.deleteSelected')}
-                    aria-label={t('projectViewer.common.deleteSelected')}
-                    className="flex items-center justify-center gap-1.5 min-h-8 min-w-8 px-2 @min-[56rem]/pane:px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    <span className="hidden @min-[56rem]/pane:inline">{t('projectViewer.album.deleteShort')}</span>
-                  </button>
-                )}
+                <AlbumSearch value={search} onChange={onSearchChange} />
                 {showAspectRatioFilterControl && (
                   <AspectRatioFilterControl
                     options={aspectRatioOptions}
@@ -724,7 +700,7 @@ export function AlbumTab({
                     onClear={clearAspectRatioFilter}
                   />
                 )}
-                {tagCounts.length > 0 && (
+                {(tagCounts.length > 0 || hasTagFilter) && (
                   <TagFilterControl
                     options={tagCounts}
                     selectedTags={selectedTags}
@@ -774,9 +750,8 @@ export function AlbumTab({
               </>
             }
           />
-        )}
 
-        {total === 0 && !hasAspectRatioFilter && !hasTagFilter ? (
+        {total === 0 && !hasAspectRatioFilter && !hasTagFilter && !hasSearchFilter ? (
           <EmptyState
             Icon={isTextProject ? FileText : isVideoProject ? VideoIcon : isAudioProject ? Music : ImageIcon}
             title={isTextProject ? t('projectViewer.album.noTexts') : isVideoProject ? t('projectViewer.album.noVideos') : isAudioProject ? t('projectViewer.album.noAudios') : t('projectViewer.album.galleryEmpty')}
@@ -786,8 +761,8 @@ export function AlbumTab({
         ) : displayItems.length === 0 ? (
           <EmptyState
             Icon={Filter}
-            title={hasTagFilter && !hasAspectRatioFilter ? t('projectViewer.album.noTagMatches') : t('projectViewer.album.noAspectRatioMatches')}
-            description={hasTagFilter && !hasAspectRatioFilter ? t('projectViewer.album.noTagMatchesDescription') : t('projectViewer.album.noAspectRatioMatchesDescription')}
+            title={t('projectViewer.album.noFilterMatches')}
+            description={t('projectViewer.album.noFilterMatchesDescription')}
             animateIcon={false}
           />
         ) : isTextProject ? (

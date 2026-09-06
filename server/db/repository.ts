@@ -97,6 +97,7 @@ export interface IRepository {
       aspectRatios?: string[];
       tags?: string[];
       tagMatch?: 'all' | 'any';
+      q?: string;
     },
   ): Promise<{ updated: number }>;
 

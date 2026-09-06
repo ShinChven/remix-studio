@@ -338,6 +338,14 @@
       "moveFailed": "Échec du déplacement"
     },
     "album": {
+      "actions": "Actions",
+      "searchPlaceholder": "Rechercher un nom ou un prompt…",
+      "clearSearch": "Effacer la recherche",
+      "noFilterMatches": "Aucun élément correspondant",
+      "noFilterMatchesDescription": "Essayez une autre recherche ou ajustez les filtres.",
+      "exportPage": "Exporter cette page",
+      "tagResults": "Étiqueter les résultats",
+      "copyPageToLibrary": "Copier cette page dans la bibliothèque",
       "exportQueued": "Export mis en file !",
       "viewArchiveProgress": "Voir la progression dans Archive →",
       "exportFailed": "Échec de l'export : {{message}}",

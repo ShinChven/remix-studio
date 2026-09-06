@@ -338,6 +338,14 @@
       "moveFailed": "移动失败"
     },
     "album": {
+      "actions": "操作",
+      "searchPlaceholder": "搜索名称或提示词…",
+      "clearSearch": "清除搜索",
+      "noFilterMatches": "没有匹配的项目",
+      "noFilterMatchesDescription": "请尝试其他搜索词或调整筛选条件。",
+      "exportPage": "导出本页",
+      "tagResults": "标记匹配项目",
+      "copyPageToLibrary": "将本页复制到素材库",
       "exportQueued": "导出已加入队列！",
       "viewArchiveProgress": "在归档中查看进度 →",
       "exportFailed": "导出失败：{{message}}",

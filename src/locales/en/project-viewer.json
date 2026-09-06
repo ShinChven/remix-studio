@@ -338,6 +338,14 @@
       "moveFailed": "Move failed"
     },
     "album": {
+      "actions": "Actions",
+      "searchPlaceholder": "Search name or prompt…",
+      "clearSearch": "Clear search",
+      "noFilterMatches": "No matching items",
+      "noFilterMatchesDescription": "Try another search or adjust your filters.",
+      "exportPage": "Export this page",
+      "tagResults": "Tag matching items",
+      "copyPageToLibrary": "Copy this page to library",
       "exportQueued": "Export queued!",
       "viewArchiveProgress": "View progress in Archive →",
       "exportFailed": "Export failed: {{message}}",

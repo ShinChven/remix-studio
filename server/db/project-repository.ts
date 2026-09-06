@@ -438,14 +438,15 @@ export class ProjectRepository {
       }
     }
 
-    // Album items have no title column, so free-text search looks at the two
-    // fields the UI renders as an item's label: its prompt and its text output.
+    // Media names are stored in the imageUrl storage key; text albums also
+    // expose their generated content as a searchable label.
     const search = options.q?.trim();
     if (search) {
       where.AND = [
         ...(Array.isArray(where.AND) ? where.AND : []),
         {
           OR: [
+            { imageUrl: { contains: search, mode: 'insensitive' } },
             { prompt: { contains: search, mode: 'insensitive' } },
             { textContent: { contains: search, mode: 'insensitive' } },
           ],
@@ -733,6 +734,7 @@ export class ProjectRepository {
       aspectRatios?: string[];
       tags?: string[];
       tagMatch?: 'all' | 'any';
+      q?: string;
     },
   ): Promise<{ updated: number }> {
     await this.assertOwnedProject(userId, projectId);
@@ -751,6 +753,7 @@ export class ProjectRepository {
         aspectRatios: options.aspectRatios,
         tags: options.tags,
         tagMatch: options.tagMatch,
+        q: options.q,
       });
       targets = scoped.items.map((item) => ({ id: item.id, tags: item.tags ?? [] }));
     } else {

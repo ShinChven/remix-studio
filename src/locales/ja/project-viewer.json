@@ -338,6 +338,14 @@
       "moveFailed": "移動に失敗しました"
     },
     "album": {
+      "actions": "操作",
+      "searchPlaceholder": "名前やプロンプトで検索…",
+      "clearSearch": "検索をクリア",
+      "noFilterMatches": "一致する項目がありません",
+      "noFilterMatchesDescription": "別のキーワードを試すか、フィルターを調整してください。",
+      "exportPage": "このページをエクスポート",
+      "tagResults": "一致する項目にタグを付ける",
+      "copyPageToLibrary": "このページをライブラリにコピー",
       "exportQueued": "エクスポートをキューに追加しました！",
       "viewArchiveProgress": "Archive で進行状況を見る →",
       "exportFailed": "エクスポート失敗: {{message}}",

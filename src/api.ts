@@ -1072,6 +1072,7 @@ export async function batchUpdateAlbumTags(
     aspectRatios?: string[];
     filterTags?: string[];
     tagMatch?: import('./types').AlbumTagMatch;
+    q?: string;
   },
 ): Promise<{ updated: number; tagCounts: import('./types').AlbumTagCount[] }> {
   const res = await apiFetch(`/api/projects/${projectId}/album/tags-batch`, {
