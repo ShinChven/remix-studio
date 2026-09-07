@@ -1580,6 +1580,9 @@ export interface AssistantConversationResource {
   subType: string | null;
   href: string;
   summary: string | null;
+  /** The tool behind the most recent mention — shown on the row as the reason. */
+  toolName: string | null;
+  toolTitle: string | null;
   mentionCount: number;
   lastMentionedAt: number;
   createdAt: number;

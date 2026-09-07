@@ -71,6 +71,8 @@ export interface AssistantConversationResourceRecord {
   subType: string | null;
   href: string;
   summary: string | null;
+  toolName: string | null;
+  toolTitle: string | null;
   mentionCount: number;
   lastMentionedAt: number;
   createdAt: number;
@@ -84,6 +86,8 @@ export interface RecordConversationResourceInput {
   subType?: string | null;
   href: string;
   summary?: string | null;
+  toolName?: string | null;
+  toolTitle?: string | null;
 }
 
 export type AssistantPendingConfirmationStatus = 'pending' | 'confirmed' | 'cancelled' | 'expired';
@@ -225,6 +229,8 @@ function toConversationResource(record: any): AssistantConversationResourceRecor
     subType: record.subType ?? null,
     href: record.href,
     summary: record.summary ?? null,
+    toolName: record.toolName ?? null,
+    toolTitle: record.toolTitle ?? null,
     mentionCount: record.mentionCount ?? 1,
     lastMentionedAt: toDateMs(record.lastMentionedAt),
     createdAt: toDateMs(record.createdAt),
@@ -542,6 +548,8 @@ export class AssistantRepository {
         subType: input.subType ?? null,
         href: input.href,
         summary: input.summary ?? null,
+        toolName: input.toolName ?? null,
+        toolTitle: input.toolTitle ?? null,
       },
       update: {
         // A later mention may carry a better name/summary; keep the old value
@@ -550,6 +558,9 @@ export class AssistantRepository {
         subType: input.subType ?? undefined,
         href: input.href,
         summary: input.summary ?? undefined,
+        // The row shows why it is listed, so the newest mention wins.
+        toolName: input.toolName ?? undefined,
+        toolTitle: input.toolTitle ?? undefined,
         mentionCount: { increment: 1 },
         lastMentionedAt: new Date(),
       },

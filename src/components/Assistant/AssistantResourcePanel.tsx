@@ -79,15 +79,22 @@ export const AssistantResourcePanel: React.FC<AssistantResourcePanelProps> = ({
                 to={resource.href}
                 onClick={onNavigate}
                 className="min-w-0 flex-1"
-                title={resource.summary || label}
+                title={resource.summary || `${typeLabel(resource.entityType)}: ${label}`}
               >
                 <span className="flex items-center gap-1 truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">
                   <span className="truncate">{label}</span>
                   <ChevronRight className="h-3 w-3 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-60" />
                 </span>
+                {/* Why the row is here: the tool behind its latest mention.
+                    It gets the whole line — the icon carries the entity kind
+                    and the tooltip names it, so prefixing the type here only
+                    truncated the reason. Tool titles are shown untranslated,
+                    as they are in the tool approvals dialog; rows recorded
+                    before tools were tracked fall back to the type. */}
                 <span className="block truncate text-[11px] text-neutral-500 dark:text-neutral-400">
-                  {typeLabel(resource.entityType)}
-                  {resource.subType ? ` • ${resource.subType}` : ''}
+                  {resource.toolTitle
+                    || resource.toolName
+                    || `${typeLabel(resource.entityType)}${resource.subType ? ` • ${resource.subType}` : ''}`}
                 </span>
               </Link>
 

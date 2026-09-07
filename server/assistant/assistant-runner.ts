@@ -689,7 +689,12 @@ export class AssistantRunner {
     try {
       const target = extractAssistantResourceTarget(call.name, call.arguments, toolResultPayload(result));
       if (!target) return;
-      await this.repo.recordConversationResource({ conversationId, ...target });
+      await this.repo.recordConversationResource({
+        conversationId,
+        ...target,
+        toolName: tool.name,
+        toolTitle: tool.title,
+      });
     } catch (e: any) {
       console.warn(`[Assistant] Failed to record resource for ${call.name}: ${e?.message ?? e}`);
     }
