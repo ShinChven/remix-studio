@@ -76,6 +76,7 @@
       - Chain of Thought rendering (`<think>` blocks support)
       - Audio transcription support
       - Auto-summarize conversation titles
+      - Conversation Resources sidebar (entities the assistant touched, persisted and re-mentionable)
     - **Assistant Settings**
       - Manage Enabled Providers for the assistant
       - Manage Assistant Skills (create/edit custom instructions stored as library items)

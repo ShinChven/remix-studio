@@ -357,6 +357,15 @@
     "newChat": "新建對話",
     "conversations": "對話列表",
     "noConversations": "尚無對話",
+    "resourcesTitle": "資源",
+    "mentionResource": "在對話中引用",
+    "removeResource": "從列表中移除",
+    "resourceType": {
+      "library": "素材庫",
+      "project": "專案",
+      "campaign": "行銷活動",
+      "post": "貼文"
+    },
     "selectProvider": "選擇供應商",
     "selectModel": "選擇模型",
     "typePlaceholder": "輸入訊息...",

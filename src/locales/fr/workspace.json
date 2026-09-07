@@ -357,6 +357,15 @@
     "newChat": "Nouvelle discussion",
     "conversations": "Discussions",
     "noConversations": "Aucune discussion pour le moment",
+    "resourcesTitle": "Ressources",
+    "mentionResource": "Mentionner dans le chat",
+    "removeResource": "Retirer de la liste",
+    "resourceType": {
+      "library": "Bibliothèque",
+      "project": "Projet",
+      "campaign": "Campagne",
+      "post": "Publication"
+    },
     "selectProvider": "Sélectionner un fournisseur",
     "selectModel": "Sélectionner un modèle",
     "typePlaceholder": "Saisissez un message...",

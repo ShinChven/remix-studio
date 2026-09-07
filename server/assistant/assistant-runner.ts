@@ -23,6 +23,7 @@ import type {
 } from './providers/types';
 import { toolParametersJsonSchema } from './providers/types';
 import { ASSISTANT_SYSTEM_PROMPT, wrapToolResult } from './system-prompt';
+import { extractAssistantResourceTarget } from './resource-target';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 
 /**
@@ -657,6 +658,24 @@ export class AssistantRunner {
     return !isError;
   }
 
+  /**
+   * Record the workspace entity a successful tool call touched so the assistant
+   * sidebar can list it. Best-effort: never fail a turn over bookkeeping.
+   */
+  private async recordResourceTarget(
+    conversationId: string,
+    call: ToolCall,
+    structuredContent: unknown,
+  ): Promise<void> {
+    try {
+      const target = extractAssistantResourceTarget(call.name, call.arguments, structuredContent);
+      if (!target) return;
+      await this.repo.recordConversationResource({ conversationId, ...target });
+    } catch (e: any) {
+      console.warn(`[Assistant] Failed to record resource for ${call.name}: ${e?.message ?? e}`);
+    }
+  }
+
   private async executeToolCallInner(
     userId: string,
     conversationId: string,
@@ -679,6 +698,9 @@ export class AssistantRunner {
         toolResultJson: result.structuredContent,
         status: result.isError ? 'error' : 'completed',
       });
+      if (!result.isError) {
+        await this.recordResourceTarget(conversationId, call, result.structuredContent);
+      }
       return result.isError === true;
     } catch (e: any) {
       await this.repo.appendMessage({

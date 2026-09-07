@@ -406,6 +406,15 @@
     "newChat": "新建对话",
     "conversations": "对话列表",
     "noConversations": "暂无对话",
+    "resourcesTitle": "资源",
+    "mentionResource": "在对话中引用",
+    "removeResource": "从列表中移除",
+    "resourceType": {
+      "library": "素材库",
+      "project": "项目",
+      "campaign": "营销活动",
+      "post": "帖子"
+    },
     "selectProvider": "选择服务商",
     "selectModel": "选择模型",
     "typePlaceholder": "输入消息...",

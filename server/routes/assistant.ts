@@ -99,8 +99,11 @@ export function createAssistantRouter(
       const conversationId = c.req.param('id');
       const conversation = await repo.getConversation(user.userId, conversationId);
       if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
-      const messages = await repo.listMessages(conversationId);
-      return c.json({ conversation, messages });
+      const [messages, resources] = await Promise.all([
+        repo.listMessages(conversationId),
+        repo.listConversationResources(conversationId),
+      ]);
+      return c.json({ conversation, messages, resources });
     } catch (e) {
       console.error('[GET /api/assistant/conversations/:id]', e);
       return c.json({ error: 'Failed to get conversation' }, 500);
@@ -356,6 +359,36 @@ export function createAssistantRouter(
       if (e?.message === 'Conversation not found') return c.json({ error: 'Conversation not found' }, 404);
       console.error('[PUT /api/assistant/conversations/:id/approved-tools]', e);
       return c.json({ error: 'Failed to update approved tools' }, 500);
+    }
+  });
+
+  // ─── Resources referenced by a conversation ───
+  router.get('/api/assistant/conversations/:id/resources', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const conversationId = c.req.param('id');
+      const conversation = await repo.getConversation(user.userId, conversationId);
+      if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
+      const resources = await repo.listConversationResources(conversationId);
+      return c.json({ resources });
+    } catch (e) {
+      console.error('[GET /api/assistant/conversations/:id/resources]', e);
+      return c.json({ error: 'Failed to list conversation resources' }, 500);
+    }
+  });
+
+  router.delete('/api/assistant/conversations/:id/resources/:resourceId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const conversationId = c.req.param('id');
+      const conversation = await repo.getConversation(user.userId, conversationId);
+      if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
+      await repo.deleteConversationResource(conversationId, c.req.param('resourceId'));
+      return c.json({ success: true });
+    } catch (e: any) {
+      if (e?.message === 'Resource not found') return c.json({ error: 'Resource not found' }, 404);
+      console.error('[DELETE /api/assistant/conversations/:id/resources/:resourceId]', e);
+      return c.json({ error: 'Failed to remove conversation resource' }, 500);
     }
   });
 

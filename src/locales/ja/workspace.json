@@ -357,6 +357,15 @@
     "newChat": "新しいチャット",
     "conversations": "会話一覧",
     "noConversations": "会話はまだありません",
+    "resourcesTitle": "リソース",
+    "mentionResource": "チャットで参照",
+    "removeResource": "リストから削除",
+    "resourceType": {
+      "library": "ライブラリ",
+      "project": "プロジェクト",
+      "campaign": "キャンペーン",
+      "post": "投稿"
+    },
     "selectProvider": "プロバイダーを選択",
     "selectModel": "モデルを選択",
     "typePlaceholder": "メッセージを入力...",

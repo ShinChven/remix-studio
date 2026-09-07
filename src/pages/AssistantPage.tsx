@@ -22,7 +22,10 @@ import {
   fetchProject,
   fetchProjectWorkflow,
   fetchLibrary,
+  fetchAssistantConversationResources,
+  deleteAssistantConversationResource,
   AssistantConversation,
+  AssistantConversationResource,
   AssistantMessage,
   AssistantPendingConfirmation,
 } from '../api';
@@ -32,7 +35,8 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { JsonView } from '../components/JsonView';
 import { ProjectPreviewModal } from '../components/ProjectViewer/ProjectPreviewModal';
 import { LibraryPreviewModal } from '../components/ProjectViewer/LibraryPreviewModal';
-import { AssistantComposer, BoundContext, AttachedImage } from '../components/Assistant/AssistantComposer';
+import { AssistantComposer, AssistantComposerHandle, BoundContext, AttachedImage } from '../components/Assistant/AssistantComposer';
+import { AssistantResourcePanel } from '../components/Assistant/AssistantResourcePanel';
 import {
   filterEnabledAssistantProviders,
   normalizeAssistantProviderSelection,
@@ -52,6 +56,30 @@ type AssistantNavigationState = {
   draftBoundContexts?: BoundContext[];
   draftAttachedImages?: AttachedImage[];
 };
+
+const BOUND_CONTEXT_LABELS: Record<BoundContext['type'], string> = {
+  project: 'Project',
+  library: 'Library',
+  campaign: 'Campaign',
+  post: 'Post',
+};
+
+type BoundContextLabel = (typeof BOUND_CONTEXT_LABELS)[BoundContext['type']];
+
+const BOUND_CONTEXT_CHIP_ICONS: Record<BoundContextLabel, React.ComponentType<{ className?: string }>> = {
+  Project: Sparkles,
+  Library: FolderOpen,
+  Campaign: Megaphone,
+  Post: FileText,
+};
+
+/** A post's route needs its campaign, which the bound-context line does not carry. */
+function boundContextHref(type: BoundContextLabel, id: string): string | null {
+  if (type === 'Project') return `/project/${id}`;
+  if (type === 'Library') return `/library/${id}`;
+  if (type === 'Campaign') return `/campaigns/${id}`;
+  return null;
+}
 
 const MaterialSpinner = ({ className }: { className?: string }) => (
   <svg className={`animate-material-spinner ${className}`} viewBox="0 0 50 50">
@@ -181,154 +209,6 @@ function prettyToolData(value: unknown) {
   }
 }
 
-type AssistantMutationTarget = {
-  entityType: 'library' | 'project' | 'campaign' | 'post';
-  id: string;
-  name: string | null;
-  href: string;
-  summary: string;
-};
-
-function getToolResultPayload(message: AssistantMessage) {
-  if (message.toolResultJson && typeof message.toolResultJson === 'object') {
-    return message.toolResultJson as Record<string, unknown>;
-  }
-
-  const raw = unwrapToolResult(message.content);
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : null;
-  } catch {
-    return null;
-  }
-}
-
-function getStringField(record: Record<string, unknown> | null, key: string) {
-  const value = record?.[key];
-  return typeof value === 'string' && value.trim() ? value : null;
-}
-
-function extractMutationTarget(
-  toolName: string | null | undefined,
-  toolArgsJson: unknown,
-  toolResultJson: unknown,
-): AssistantMutationTarget | null {
-  const args = toolArgsJson && typeof toolArgsJson === 'object'
-    ? toolArgsJson as Record<string, unknown>
-    : null;
-  const result = toolResultJson && typeof toolResultJson === 'object'
-    ? toolResultJson as Record<string, unknown>
-    : null;
-  const normalizedToolName = String(toolName || '');
-
-  const postToolNames = new Set([
-    'create_post',
-    'get_post',
-    'get_post_text',
-    'update_post',
-    'update_post_text',
-    'add_media_to_post',
-    'schedule_post',
-  ]);
-  const postId = getStringField(result, 'postId')
-    ?? (postToolNames.has(normalizedToolName) ? getStringField(result, 'id') : null)
-    ?? getStringField(args, 'postId');
-  const postCampaignId = getStringField(result, 'campaignId') ?? getStringField(args, 'campaignId');
-  if (postId && postCampaignId) {
-    return {
-      entityType: 'post',
-      id: postId,
-      name: `Post ${postId.slice(0, 8)}`,
-      href: `/campaigns/${postCampaignId}/posts/edit/${postId}`,
-      summary: normalizedToolName.includes('update') || normalizedToolName === 'schedule_post' || normalizedToolName === 'add_media_to_post'
-        ? 'Post was updated.'
-        : 'Post is ready.',
-    };
-  }
-
-  const campaignToolNames = new Set(['create_campaign', 'list_campaigns', 'update_campaign']);
-  const campaignId = getStringField(result, 'campaignId')
-    ?? getStringField(args, 'campaignId')
-    ?? (campaignToolNames.has(normalizedToolName) ? getStringField(result, 'id') : null);
-  if (campaignId) {
-    const name = getStringField(result, 'name') ?? getStringField(args, 'name');
-    return {
-      entityType: 'campaign',
-      id: campaignId,
-      name,
-      href: `/campaigns/${campaignId}`,
-      summary: normalizedToolName === 'update_campaign'
-        ? (name ? `Campaign "${name}" was updated.` : 'Campaign was updated.')
-        : (name ? `Campaign "${name}" is ready.` : 'Campaign is ready.'),
-    };
-  }
-
-  const projectId = getStringField(result, 'projectId') ?? getStringField(args, 'projectId');
-  if (projectId) {
-    const name = getStringField(result, 'name') ?? getStringField(args, 'name');
-    return {
-      entityType: 'project',
-      id: projectId,
-      name,
-      href: `/project/${projectId}`,
-      summary: name ? `Project "${name}" is ready.` : 'Project is ready.',
-    };
-  }
-
-  const libraryId = getStringField(result, 'library_id')
-    ?? getStringField(result, 'libraryId')
-    ?? getStringField(args, 'library_id')
-    ?? getStringField(args, 'libraryId');
-  const libraryName = getStringField(result, 'name')
-    ?? getStringField(result, 'libraryName')
-    ?? getStringField(args, 'name')
-    ?? getStringField(args, 'libraryName');
-
-  if (normalizedToolName === 'create_library' && getStringField(result, 'id')) {
-    const id = getStringField(result, 'id')!;
-    return {
-      entityType: 'library',
-      id,
-      name: libraryName,
-      href: `/library/${id}`,
-      summary: libraryName ? `Library "${libraryName}" is ready.` : 'Library is ready.',
-    };
-  }
-
-  if (libraryId && ['create_prompt', 'batch_create_prompts', 'update_prompt', 'delete_prompt'].includes(normalizedToolName)) {
-    return {
-      entityType: 'library',
-      id: libraryId,
-      name: libraryName,
-      href: `/library/${libraryId}`,
-      summary: libraryName ? `Library "${libraryName}" was updated.` : 'Library was updated.',
-    };
-  }
-
-  if (libraryId && normalizedToolName === 'update_library') {
-    return {
-      entityType: 'library',
-      id: libraryId,
-      name: libraryName,
-      href: `/library/${libraryId}`,
-      summary: libraryName ? `Library "${libraryName}" was updated.` : 'Library was updated.',
-    };
-  }
-
-  if (libraryId && normalizedToolName.includes('library')) {
-    return {
-      entityType: 'library',
-      id: libraryId,
-      name: libraryName,
-      href: `/library/${libraryId}`,
-      summary: libraryName ? `Library "${libraryName}" is ready.` : 'Library is ready.',
-    };
-  }
-
-  return null;
-}
 
 function summarizePendingConfirmation(
   pendingConfirmation: AssistantPendingConfirmation | null,
@@ -412,6 +292,7 @@ export function AssistantPage() {
   const [conversations, setConversations] = useState<AssistantConversation[]>([]);
   const activeConversationId = routeId || null;
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
+  const [resources, setResources] = useState<AssistantConversationResource[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = useState<AssistantPendingConfirmation | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(() => localStorage.getItem('assistant_last_provider') || '');
@@ -461,6 +342,7 @@ export function AssistantPage() {
 
   const justCreatedIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const composerHandleRef = useRef<AssistantComposerHandle | null>(null);
 
   // ─── Load providers ───
   useEffect(() => {
@@ -557,6 +439,7 @@ export function AssistantPage() {
       }
 
       setMessages(data.messages);
+      setResources(data.resources);
       if (conversation.providerId) setSelectedProviderId(conversation.providerId);
       if (conversation.modelConfigId) setSelectedModelId(conversation.modelConfigId);
       // Check for pending confirmation in last assistant message
@@ -726,6 +609,7 @@ export function AssistantPage() {
       loadConversation(activeConversationId);
     } else {
       setMessages([]);
+      setResources([]);
       setPendingConfirmation(null);
     }
   }, [activeConversationId, loadConversation]);
@@ -764,7 +648,7 @@ export function AssistantPage() {
       finalContent = imageBlock + (finalContent ? `\n${finalContent}` : '');
     }
     if (contexts.length > 0) {
-      const contextStr = contexts.map(b => `- ${b.type === 'project' ? 'Project' : 'Library'}: "${b.name}" (ID: ${b.id}${b.subType ? `, Type: ${b.subType}` : ''})`).join('\n');
+      const contextStr = contexts.map(b => `- ${BOUND_CONTEXT_LABELS[b.type] ?? 'Library'}: "${b.name}" (ID: ${b.id}${b.subType ? `, Type: ${b.subType}` : ''})`).join('\n');
       finalContent = finalContent ? `${finalContent}\n\n<bound_context>\n${contextStr}\n</bound_context>` : `<bound_context>\n${contextStr}\n</bound_context>`;
     }
 
@@ -840,6 +724,7 @@ export function AssistantPage() {
       // Reload full message list for consistency
       const data = await fetchAssistantConversation(currentConversationId);
       setMessages(data.messages);
+      setResources(data.resources);
 
       if (result.kind === 'awaiting_confirmation' && 'confirmation' in result) {
         setPendingConfirmation(result.confirmation);
@@ -866,6 +751,8 @@ export function AssistantPage() {
       toast.error(e?.message || 'Failed to send message');
       // Remove optimistic message on error
       setMessages((prev) => prev.filter((m) => m.id !== optimisticUserMsg.id));
+      // A tool may have landed before the turn failed — keep the sidebar honest.
+      if (currentConversationId) refreshResources(currentConversationId);
     } finally {
       setIsSending(false);
       setCurrentThinkingTitle('');
@@ -902,6 +789,7 @@ export function AssistantPage() {
       );
       const data = await fetchAssistantConversation(activeConversationId);
       setMessages(data.messages);
+      setResources(data.resources);
 
       if (result.kind === 'awaiting_confirmation' && 'confirmation' in result) {
         setPendingConfirmation(result.confirmation);
@@ -918,10 +806,45 @@ export function AssistantPage() {
     } catch (e: any) {
       toast.error(e?.message || 'Failed to process confirmation');
       setPendingConfirmation(activeConfirmation);
+      if (activeConversationId) refreshResources(activeConversationId);
     } finally {
       setIsSending(false);
       setCurrentThinkingTitle('');
       setCurrentToolTitle('');
+    }
+  };
+
+  // ─── Conversation resources ───
+  const refreshResources = useCallback(async (conversationId: string) => {
+    try {
+      const data = await fetchAssistantConversationResources(conversationId);
+      setResources(data.resources);
+    } catch {
+      // Non-critical: the sidebar keeps whatever it already has.
+    }
+  }, []);
+
+  /** Drop a resource into the composer as a bound context, same as typing `@`. */
+  const handleMentionResource = (resource: AssistantConversationResource) => {
+    const contextType = resource.entityType as BoundContext['type'];
+    composerHandleRef.current?.addBoundContext({
+      id: resource.entityId,
+      name: resource.name || resource.entityId,
+      type: contextType,
+      subType: resource.subType || undefined,
+    });
+    if (window.innerWidth < 1024) setRightPanelOpen(false);
+  };
+
+  const handleRemoveResource = async (resource: AssistantConversationResource) => {
+    if (!activeConversationId) return;
+    const previous = resources;
+    setResources((current) => current.filter((entry) => entry.id !== resource.id));
+    try {
+      await deleteAssistantConversationResource(activeConversationId, resource.id);
+    } catch (e: any) {
+      setResources(previous);
+      toast.error(e?.message || 'Failed to remove resource');
     }
   };
 
@@ -933,6 +856,7 @@ export function AssistantPage() {
       if (activeConversationId === id) {
         navigate('/assistant');
         setMessages([]);
+        setResources([]);
         setPendingConfirmation(null);
       }
       toast.success('Conversation deleted');
@@ -994,6 +918,7 @@ export function AssistantPage() {
       });
       const data = await fetchAssistantConversation(activeConversationId);
       setMessages(data.messages);
+      setResources(data.resources);
 
       if (result.kind === 'awaiting_confirmation' && 'confirmation' in result) {
         setPendingConfirmation(result.confirmation);
@@ -1002,6 +927,7 @@ export function AssistantPage() {
       loadConversations();
     } catch (e: any) {
       toast.error(e?.message || 'Failed to edit message');
+      if (activeConversationId) refreshResources(activeConversationId);
     } finally {
       setIsSending(false);
       setCurrentThinkingTitle('');
@@ -1029,13 +955,9 @@ export function AssistantPage() {
           const isError = toolMessage.status === 'error';
           const toolTitle = formatToolTitle(tc.name);
           const argsText = prettyToolData(toolMessage.toolArgsJson);
-          const toolResultPayload = getToolResultPayload(toolMessage);
           const resultText = toolMessage.toolResultJson != null
             ? prettyToolData(toolMessage.toolResultJson)
             : prettyToolData(unwrapToolResult(toolMessage.content));
-          const target = !isError && toolMessage.status !== 'cancelled'
-            ? extractMutationTarget(tc.name, toolMessage.toolArgsJson, toolResultPayload)
-            : null;
 
           return (
             <div key={tc.id} className="space-y-2">
@@ -1079,57 +1001,6 @@ export function AssistantPage() {
                   )}
                 </div>
               </details>
-              {target && (
-                <div className="rounded-card border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/20">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 rounded-xl bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400">
-                      {target.entityType === 'project' && <Sparkles className="w-4 h-4" />}
-                      {target.entityType === 'library' && <FolderOpen className="w-4 h-4" />}
-                      {target.entityType === 'campaign' && <Megaphone className="w-4 h-4" />}
-                      {target.entityType === 'post' && <FileText className="w-4 h-4" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-700/80 dark:text-emerald-300/80">
-                        {target.entityType === 'project'
-                          ? t('assistant.targetProject', 'Project target')
-                          : target.entityType === 'library'
-                            ? t('assistant.targetLibrary', 'Library target')
-                            : target.entityType === 'campaign'
-                              ? t('assistant.targetCampaign', 'Campaign target')
-                              : t('assistant.targetPost', 'Post target')}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-neutral-900 dark:text-white">
-                        {target.name || target.id}
-                      </p>
-                      <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-300">
-                        {target.summary}
-                      </p>
-                      <Link
-                        to={target.href}
-                        className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
-                      >
-                        {t(
-                          target.entityType === 'project'
-                            ? 'assistant.openProject'
-                            : target.entityType === 'library'
-                              ? 'assistant.openLibrary'
-                              : target.entityType === 'campaign'
-                                ? 'assistant.openCampaign'
-                                : 'assistant.openPost',
-                          target.entityType === 'project'
-                            ? 'Open project'
-                            : target.entityType === 'library'
-                              ? 'Open library'
-                              : target.entityType === 'campaign'
-                                ? 'Open campaign'
-                                : 'Open post',
-                        )}
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}
@@ -1413,31 +1284,39 @@ export function AssistantPage() {
                                    {contextLines.length > 0 && (
                                      <div className="flex flex-wrap gap-1.5 pt-1">
                                        {contextLines.map((line, i) => {
-                                          const lineMatch = line.match(/- (Project|Library): "([^"]+)"/);
-                                          if (lineMatch) {
-                                            const type = lineMatch[1];
-                                            const name = lineMatch[2];
-                                            const id = line.match(/ID: ([a-f0-9\-]+)/)?.[1] || '';
-                                            return (
-                                              <div key={i} className="flex items-center gap-1">
-                                                <button 
-                                                  onClick={() => handleOpenPreview(type.toLowerCase() as any, id)}
-                                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-l-full bg-white/20 border border-white/30 border-r-0 text-[11px] font-medium text-white shadow-sm hover:bg-white/30 active:bg-white/40 transition-all"
-                                                >
-                                                  {type === 'Project' ? <Sparkles className="w-3.5 h-3.5" /> : <FolderOpen className="w-3.5 h-3.5" />}
-                                                  {name}
-                                                </button>
+                                          const lineMatch = line.match(/- (Project|Library|Campaign|Post): "([^"]+)"/);
+                                          if (!lineMatch) return null;
+
+                                          const type = lineMatch[1] as BoundContextLabel;
+                                          const name = lineMatch[2];
+                                          const id = line.match(/ID: ([a-f0-9\-]+)/)?.[1] || '';
+                                          const Icon = BOUND_CONTEXT_CHIP_ICONS[type];
+                                          const href = boundContextHref(type, id);
+                                          const previewable = type === 'Project' || type === 'Library';
+
+                                          return (
+                                            <div key={i} className="flex items-center gap-1">
+                                              <button
+                                                onClick={() => previewable && handleOpenPreview(type.toLowerCase() as 'project' | 'library', id)}
+                                                disabled={!previewable}
+                                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 border border-white/30 text-[11px] font-medium text-white shadow-sm transition-all ${
+                                                  href ? 'rounded-l-full border-r-0' : 'rounded-full'
+                                                } ${previewable ? 'hover:bg-white/30 active:bg-white/40' : 'cursor-default'}`}
+                                              >
+                                                <Icon className="w-3.5 h-3.5" />
+                                                {name}
+                                              </button>
+                                              {href && (
                                                 <Link
-                                                  to={type === 'Project' ? `/project/${id}` : `/library/${id}`}
+                                                  to={href}
                                                   className="inline-flex items-center justify-center w-8 h-[26px] rounded-r-full bg-white/10 border border-white/30 text-white/60 hover:text-white hover:bg-white/30 transition-all"
                                                   title={`Open ${type}`}
                                                 >
                                                   <ExternalLink className="w-3 h-3" />
                                                 </Link>
-                                              </div>
-                                            );
-                                          }
-                                          return null;
+                                              )}
+                                            </div>
+                                          );
                                        })}
                                      </div>
                                    )}
@@ -1598,6 +1477,7 @@ export function AssistantPage() {
           <div className="flex-shrink-0 p-4 pt-2">
             <div className="max-w-3xl mx-auto">
               <AssistantComposer
+                composerRef={composerHandleRef}
                 selectedProviderId={selectedProviderId}
                 setSelectedProviderId={setSelectedProviderId}
                 selectedModelId={selectedModelId}
@@ -1671,66 +1551,79 @@ export function AssistantPage() {
           </div>
 
           {rightPanelOpen && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
-              {conversations.length === 0 ? (
-                <p className="px-2 py-4 text-xs text-neutral-400 dark:text-neutral-500 text-center">
-                  {t('assistant.noConversations')}
-                </p>
-              ) : (
-                conversations.map((conv) => (
-                  <div
-                    key={conv.id}
-                    className={`group flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all text-sm ${
-                      conv.id === activeConversationId
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/10'
-                        : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
-                    }`}
-                    onClick={() => {
-                      if (conv.id !== activeConversationId) navigate(`/assistant/${conv.id}`);
-                    }}
-                  >
-                    <MessageCircle className="w-4 h-4 flex-shrink-0 opacity-60" />
-                    {editingTitle === conv.id ? (
-                      <input
-                        autoFocus
-                        value={editingTitleValue}
-                        onChange={(e) => setEditingTitleValue(e.target.value)}
-                        onBlur={() => handleRenameSubmit(conv.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleRenameSubmit(conv.id);
-                          if (e.key === 'Escape') setEditingTitle(null);
-                        }}
-                        className="flex-1 min-w-0 text-sm bg-transparent border-b border-current outline-none"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      <span
-                        className="flex-1 truncate"
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          setEditingTitle(conv.id);
-                          setEditingTitleValue(conv.title);
-                        }}
-                      >
-                        {conv.title}
-                      </span>
-                    )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteTarget(conv.id);
-                      }}
-                      className={`flex-shrink-0 p-1 rounded transition-opacity ${
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                {conversations.length === 0 ? (
+                  <p className="px-2 py-4 text-xs text-neutral-400 dark:text-neutral-500 text-center">
+                    {t('assistant.noConversations')}
+                  </p>
+                ) : (
+                  conversations.map((conv) => (
+                    <div
+                      key={conv.id}
+                      className={`group flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all text-sm ${
                         conv.id === activeConversationId
-                          ? 'opacity-60 hover:opacity-100 text-white'
-                          : 'opacity-0 group-hover:opacity-60 hover:!opacity-100 text-neutral-500 hover:text-red-500'
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/10'
+                          : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
                       }`}
-                      title={t('assistant.deleteConversation')}
+                      onClick={() => {
+                        if (conv.id !== activeConversationId) navigate(`/assistant/${conv.id}`);
+                      }}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))
+                      <MessageCircle className="w-4 h-4 flex-shrink-0 opacity-60" />
+                      {editingTitle === conv.id ? (
+                        <input
+                          autoFocus
+                          value={editingTitleValue}
+                          onChange={(e) => setEditingTitleValue(e.target.value)}
+                          onBlur={() => handleRenameSubmit(conv.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleRenameSubmit(conv.id);
+                            if (e.key === 'Escape') setEditingTitle(null);
+                          }}
+                          className="flex-1 min-w-0 text-sm bg-transparent border-b border-current outline-none"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : (
+                        <span
+                          className="flex-1 truncate"
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            setEditingTitle(conv.id);
+                            setEditingTitleValue(conv.title);
+                          }}
+                        >
+                          {conv.title}
+                        </span>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(conv.id);
+                        }}
+                        className={`flex-shrink-0 p-1 rounded transition-opacity ${
+                          conv.id === activeConversationId
+                            ? 'opacity-60 hover:opacity-100 text-white'
+                            : 'opacity-0 group-hover:opacity-60 hover:!opacity-100 text-neutral-500 hover:text-red-500'
+                        }`}
+                        title={t('assistant.deleteConversation')}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {activeConversationId && resources.length > 0 && (
+                <AssistantResourcePanel
+                  resources={resources}
+                  onMention={handleMentionResource}
+                  onRemove={handleRemoveResource}
+                  onNavigate={() => {
+                    if (window.innerWidth < 1024) setRightPanelOpen(false);
+                  }}
+                />
               )}
             </div>
           )}

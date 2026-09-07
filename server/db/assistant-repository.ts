@@ -59,6 +59,33 @@ export interface AssistantMessageRecord {
   createdAt: number;
 }
 
+export type AssistantResourceEntityType = 'library' | 'project' | 'campaign' | 'post';
+
+/** A workspace entity a conversation has touched, listed in the assistant sidebar. */
+export interface AssistantConversationResourceRecord {
+  id: string;
+  conversationId: string;
+  entityType: AssistantResourceEntityType;
+  entityId: string;
+  name: string | null;
+  subType: string | null;
+  href: string;
+  summary: string | null;
+  mentionCount: number;
+  lastMentionedAt: number;
+  createdAt: number;
+}
+
+export interface RecordConversationResourceInput {
+  conversationId: string;
+  entityType: AssistantResourceEntityType;
+  entityId: string;
+  name?: string | null;
+  subType?: string | null;
+  href: string;
+  summary?: string | null;
+}
+
 export type AssistantPendingConfirmationStatus = 'pending' | 'confirmed' | 'cancelled' | 'expired';
 
 export interface AssistantPendingConfirmationRecord {
@@ -184,6 +211,22 @@ function toPendingConfirmation(record: any): AssistantPendingConfirmationRecord 
     summary: record.summary ?? null,
     status: record.status as AssistantPendingConfirmationStatus,
     expiresAt: toDateMs(record.expiresAt),
+    createdAt: toDateMs(record.createdAt),
+  };
+}
+
+function toConversationResource(record: any): AssistantConversationResourceRecord {
+  return {
+    id: record.id,
+    conversationId: record.conversationId,
+    entityType: record.entityType as AssistantResourceEntityType,
+    entityId: record.entityId,
+    name: record.name ?? null,
+    subType: record.subType ?? null,
+    href: record.href,
+    summary: record.summary ?? null,
+    mentionCount: record.mentionCount ?? 1,
+    lastMentionedAt: toDateMs(record.lastMentionedAt),
     createdAt: toDateMs(record.createdAt),
   };
 }
@@ -472,5 +515,67 @@ export class AssistantRepository {
       data: { status: 'expired' },
     });
     return result.count;
+  }
+
+  // ─── Conversation resources ───
+
+  /**
+   * Upsert the entity a tool call touched. Re-mentioning an entity bumps it to
+   * the top of the sidebar rather than creating a duplicate row.
+   */
+  async recordConversationResource(
+    input: RecordConversationResourceInput,
+  ): Promise<AssistantConversationResourceRecord> {
+    const record = await this.prisma.assistantConversationResource.upsert({
+      where: {
+        conversationId_entityType_entityId: {
+          conversationId: input.conversationId,
+          entityType: input.entityType,
+          entityId: input.entityId,
+        },
+      },
+      create: {
+        conversationId: input.conversationId,
+        entityType: input.entityType,
+        entityId: input.entityId,
+        name: input.name ?? null,
+        subType: input.subType ?? null,
+        href: input.href,
+        summary: input.summary ?? null,
+      },
+      update: {
+        // A later mention may carry a better name/summary; keep the old value
+        // when the new call did not resolve one.
+        name: input.name ?? undefined,
+        subType: input.subType ?? undefined,
+        href: input.href,
+        summary: input.summary ?? undefined,
+        mentionCount: { increment: 1 },
+        lastMentionedAt: new Date(),
+      },
+    });
+    return toConversationResource(record);
+  }
+
+  /** Most recently mentioned first. */
+  async listConversationResources(
+    conversationId: string,
+    limit = 50,
+  ): Promise<AssistantConversationResourceRecord[]> {
+    const records = await this.prisma.assistantConversationResource.findMany({
+      where: { conversationId },
+      orderBy: { lastMentionedAt: 'desc' },
+      take: Math.min(Math.max(limit, 1), 200),
+    });
+    return records.map(toConversationResource);
+  }
+
+  async deleteConversationResource(conversationId: string, resourceId: string): Promise<void> {
+    const result = await this.prisma.assistantConversationResource.deleteMany({
+      where: { id: resourceId, conversationId },
+    });
+    if (result.count === 0) {
+      throw new Error('Resource not found');
+    }
   }
 }
