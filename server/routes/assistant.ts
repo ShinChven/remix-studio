@@ -1,10 +1,12 @@
 import { Hono } from 'hono';
+import type { Context } from 'hono';
 import { stream } from 'hono/streaming';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { AssistantRepository } from '../db/assistant-repository';
 import { AssistantRunner, AssistantStatusEvent, TurnResult } from '../assistant/assistant-runner';
 import { ProviderRepository } from '../db/provider-repository';
 import { ASSISTANT_SUPPORTED_PROVIDER_TYPES } from '../assistant/chat-provider-factory';
+import { AssistantTurnHub, TurnAlreadyRunningError, TurnKind } from '../assistant/assistant-turn-hub';
 import { transcribeAudioWithGemini } from '../assistant/providers/google';
 
 type Variables = { user: JwtPayload };
@@ -39,6 +41,114 @@ export function createAssistantRouter(
   providerRepo: ProviderRepository,
 ) {
   const router = new Hono<{ Variables: Variables }>();
+
+  /**
+   * Turns run detached from the request that started them, so a refresh or a
+   * dropped connection never abandons an agentic loop mid-flight. Requests
+   * only subscribe to the frames a turn produces.
+   */
+  const turnHub = new AssistantTurnHub();
+
+  /** Parse `?since=` — the last frame sequence number a client already has. */
+  function parseSince(raw: string | undefined): number {
+    const value = Number(raw ?? '0');
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+  }
+
+  /**
+   * Stream a conversation's turn frames as NDJSON, replaying whatever the
+   * client missed since `sinceSeq` and then following the turn to its result.
+   * Writing `idle` rather than an empty body tells a reconnecting client the
+   * turn is over and it should just reload the transcript.
+   */
+  function streamTurnFrames(c: Context, conversationId: string, sinceSeq: number) {
+    c.header('Content-Type', 'application/x-ndjson');
+    c.header('Transfer-Encoding', 'chunked');
+
+    return stream(c, async (s) => {
+      let wroteAny = false;
+      const write = (frame: unknown) => {
+        if (s.aborted || s.closed) return;
+        // Hono swallows write failures; a client that went away mid-turn just
+        // stops receiving frames, and the turn itself carries on regardless.
+        void s.write(JSON.stringify(frame) + '\n');
+        wroteAny = true;
+      };
+
+      const attached = turnHub.attach(conversationId, sinceSeq, write);
+      if (!attached) {
+        write({ type: 'idle' });
+        return;
+      }
+      // Whichever comes first: the turn finishes, or the client hangs up. The
+      // turn is never waited on beyond the connection that is watching it.
+      let releaseOnAbort: () => void = () => {};
+      const aborted = new Promise<void>((resolve) => { releaseOnAbort = resolve; });
+      s.onAbort(() => {
+        attached.unsubscribe();
+        releaseOnAbort();
+      });
+      try {
+        await Promise.race([attached.waitForFinish(), aborted]);
+      } finally {
+        attached.unsubscribe();
+        releaseOnAbort();
+      }
+      if (!wroteAny && !s.aborted) write({ type: 'idle' });
+    });
+  }
+
+  /**
+   * Start a detached turn and stream it. A conversation already running one
+   * answers 409 with its live state so the client attaches instead of racing.
+   */
+  async function startTurn(
+    c: Context,
+    input: {
+      userId: string;
+      conversationId: string;
+      kind: TurnKind;
+      logLabel: string;
+      fallbackError: string;
+      run: (onStatusEvent: (event: AssistantStatusEvent) => void) => Promise<TurnResult>;
+    },
+  ) {
+    // Ownership is checked before the turn is registered: the hub's slot is
+    // keyed by conversation, so an unauthorized caller must not be able to
+    // occupy someone else's.
+    const conversation = await repo.getConversation(input.userId, input.conversationId);
+    if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
+
+    try {
+      turnHub.start({
+        userId: input.userId,
+        conversationId: input.conversationId,
+        kind: input.kind,
+        execute: async (emit) => {
+          try {
+            const result = await input.run(emit);
+            return { type: 'result', ...turnResultToJson(result, []) };
+          } catch (e: any) {
+            console.error(input.logLabel, e);
+            const message = e?.message?.includes('concurrent') ? e.message : input.fallbackError;
+            return { type: 'error', error: message };
+          }
+        },
+      });
+    } catch (e) {
+      if (e instanceof TurnAlreadyRunningError) {
+        return c.json(
+          {
+            error: 'A turn is already running in this conversation',
+            activeTurn: turnHub.getActive(input.conversationId),
+          },
+          409,
+        );
+      }
+      throw e;
+    }
+    return streamTurnFrames(c, input.conversationId, 0);
+  }
 
   // ─── List conversations ───
   router.get('/api/assistant/conversations', authMiddleware, async (c) => {
@@ -99,11 +209,21 @@ export function createAssistantRouter(
       const conversationId = c.req.param('id');
       const conversation = await repo.getConversation(user.userId, conversationId);
       if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
-      const [messages, resources] = await Promise.all([
+      const [messages, resources, pendingConfirmation] = await Promise.all([
         repo.listMessages(conversationId),
         repo.listConversationResources(conversationId),
+        repo.findActivePendingConfirmation(conversationId),
       ]);
-      return c.json({ conversation, messages, resources });
+      // `activeTurn` and `pendingConfirmation` are what a reloaded tab needs to
+      // pick a conversation back up: one says a loop is still running and where
+      // to resume its event stream, the other restores the confirm/cancel card.
+      return c.json({
+        conversation,
+        messages,
+        resources,
+        pendingConfirmation,
+        activeTurn: turnHub.getActive(conversationId),
+      });
     } catch (e) {
       console.error('[GET /api/assistant/conversations/:id]', e);
       return c.json({ error: 'Failed to get conversation' }, 500);
@@ -158,6 +278,7 @@ export function createAssistantRouter(
       const conversationId = c.req.param('id');
       await repo.deleteConversation(user.userId, conversationId);
       runner.clearConversationSessionApproval(conversationId);
+      turnHub.discard(conversationId);
       return c.json({ success: true });
     } catch (e: any) {
       if (e?.message === 'Conversation not found') return c.json({ error: 'Conversation not found' }, 404);
@@ -174,27 +295,18 @@ export function createAssistantRouter(
     const content = typeof body?.content === 'string' ? body.content.trim() : '';
     if (!content) return c.json({ error: 'Message content is required' }, 400);
 
-    c.header('Content-Type', 'application/x-ndjson');
-    c.header('Transfer-Encoding', 'chunked');
-
-    return stream(c, async (stream) => {
-      try {
-        const result = await runner.sendUserMessage({
-          userId: user.userId,
-          conversationId,
-          content,
-          onStatusEvent: (event) => {
-            stream.write(JSON.stringify({ type: 'status', event }) + '\n');
-          },
-        });
-        stream.write(JSON.stringify({ type: 'result', ...turnResultToJson(result, []) }) + '\n');
-      } catch (e: any) {
-        console.error('[POST /api/assistant/conversations/:id/messages]', e);
-        const message = e?.message?.includes('concurrent')
-          ? e.message
-          : 'Failed to process message';
-        stream.write(JSON.stringify({ type: 'error', error: message }) + '\n');
-      }
+    return await startTurn(c, {
+      userId: user.userId,
+      conversationId,
+      kind: 'message',
+      logLabel: '[POST /api/assistant/conversations/:id/messages]',
+      fallbackError: 'Failed to process message',
+      run: (onStatusEvent) => runner.sendUserMessage({
+        userId: user.userId,
+        conversationId,
+        content,
+        onStatusEvent,
+      }),
     });
   });
 
@@ -207,29 +319,21 @@ export function createAssistantRouter(
     const content = typeof body?.content === 'string' ? body.content.trim() : '';
     if (!content) return c.json({ error: 'Message content is required' }, 400);
 
-    c.header('Content-Type', 'application/x-ndjson');
-    c.header('Transfer-Encoding', 'chunked');
-
-    return stream(c, async (stream) => {
-      try {
+    return await startTurn(c, {
+      userId: user.userId,
+      conversationId,
+      kind: 'edit',
+      logLabel: '[POST /api/assistant/conversations/:id/messages/:messageId/edit]',
+      fallbackError: 'Failed to process message edit',
+      run: async (onStatusEvent) => {
         await repo.deleteMessagesFrom(conversationId, messageId);
-
-        const result = await runner.sendUserMessage({
+        return runner.sendUserMessage({
           userId: user.userId,
           conversationId,
           content,
-          onStatusEvent: (event) => {
-            stream.write(JSON.stringify({ type: 'status', event }) + '\n');
-          },
+          onStatusEvent,
         });
-        stream.write(JSON.stringify({ type: 'result', ...turnResultToJson(result, []) }) + '\n');
-      } catch (e: any) {
-        console.error('[POST /api/assistant/conversations/:id/messages/:messageId/edit]', e);
-        const message = e?.message?.includes('concurrent')
-          ? e.message
-          : 'Failed to process message edit';
-        stream.write(JSON.stringify({ type: 'error', error: message }) + '\n');
-      }
+      },
     });
   });
 
@@ -248,29 +352,32 @@ export function createAssistantRouter(
         : 'confirm' as const;
     if (!confirmationId) return c.json({ error: 'confirmationId is required' }, 400);
 
-    c.header('Content-Type', 'application/x-ndjson');
-    c.header('Transfer-Encoding', 'chunked');
-
-    return stream(c, async (stream) => {
-      try {
-        const result = await runner.resumeAfterConfirmation({
-          userId: user.userId,
-          conversationId,
-          confirmationId,
-          decision,
-          onStatusEvent: (event) => {
-            stream.write(JSON.stringify({ type: 'status', event }) + '\n');
-          },
-        });
-        stream.write(JSON.stringify({ type: 'result', ...turnResultToJson(result, []) }) + '\n');
-      } catch (e: any) {
-        console.error('[POST /api/assistant/conversations/:id/confirm]', e);
-        const message = e?.message?.includes('concurrent')
-          ? e.message
-          : 'Failed to process confirmation';
-        stream.write(JSON.stringify({ type: 'error', error: message }) + '\n');
-      }
+    return await startTurn(c, {
+      userId: user.userId,
+      conversationId,
+      kind: 'confirm',
+      logLabel: '[POST /api/assistant/conversations/:id/confirm]',
+      fallbackError: 'Failed to process confirmation',
+      run: (onStatusEvent) => runner.resumeAfterConfirmation({
+        userId: user.userId,
+        conversationId,
+        confirmationId,
+        decision,
+        onStatusEvent,
+      }),
     });
+  });
+
+  // ─── Reattach to an in-flight turn ───
+  // A reloaded page (or one whose connection dropped) resumes the running turn
+  // here: everything after `since` is replayed, then the stream follows the
+  // turn live to its result. `{"type":"idle"}` means there is nothing running.
+  router.get('/api/assistant/conversations/:id/turn', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const conversationId = c.req.param('id');
+    const conversation = await repo.getConversation(user.userId, conversationId);
+    if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
+    return streamTurnFrames(c, conversationId, parseSince(c.req.query('since')));
   });
 
   // ─── Transcribe recorded audio to text (Gemini Flash Lite) ───

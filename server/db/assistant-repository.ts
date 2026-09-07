@@ -493,6 +493,23 @@ export class AssistantRepository {
     return record ? toPendingConfirmation(record) : null;
   }
 
+  /**
+   * The confirmation a conversation is currently waiting on, if any. Used to
+   * restore the confirm/cancel card after a reload — the prompt lives in the
+   * database, so it outlives the request that produced it. Expired rows are
+   * never returned; `resumeAfterConfirmation` retires them on decision.
+   */
+  async findActivePendingConfirmation(
+    conversationId: string,
+    now: Date = new Date(),
+  ): Promise<AssistantPendingConfirmationRecord | null> {
+    const record = await this.prisma.assistantPendingConfirmation.findFirst({
+      where: { conversationId, status: 'pending', expiresAt: { gt: now } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return record ? toPendingConfirmation(record) : null;
+  }
+
   async findPendingConfirmationForCall(
     conversationId: string,
     toolCallId: string,

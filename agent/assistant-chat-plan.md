@@ -572,10 +572,37 @@ New authenticated routes under `/api/assistant`:
 - `POST /api/assistant/conversations`
 - `GET /api/assistant/conversations/:id`
 - `POST /api/assistant/conversations/:id/messages`
+- `POST /api/assistant/conversations/:id/messages/:messageId/edit`
 - `POST /api/assistant/conversations/:id/confirm`
+- `GET /api/assistant/conversations/:id/turn`
 - `PATCH /api/assistant/conversations/:id`
 
 All routes use normal in-app session auth, not MCP auth and not OAuth bearer flows.
+
+### Turn lifecycle and reconnection
+
+A turn does not belong to the request that started it. `POST .../messages`,
+`.../edit` and `.../confirm` register the turn with the in-process
+`AssistantTurnHub` (`server/assistant/assistant-turn-hub.ts`) and then only
+*subscribe* to it, so a refresh, a sleeping phone or a dropped connection never
+abandons a running loop.
+
+- Every NDJSON frame carries a monotonic `seq`: `{seq, type:'status'|'result'|'error'}`.
+- `GET .../turn?since=<seq>` reattaches: it replays the frames after `since`
+  (a bounded buffer of the most recent ones), then follows the turn live to its
+  terminal frame. `{"type":"idle"}` means there is nothing to follow — the
+  persisted transcript is the answer.
+- A finished turn's frames stay readable for five minutes, so a client that
+  reconnects just after the loop ended still collects its result.
+- Starting a second turn in a conversation that is already running one answers
+  `409` with the live `activeTurn`, so the client attaches instead of stacking
+  turns.
+- `GET /api/assistant/conversations/:id` reports `activeTurn` (kind, startedAt,
+  lastSeq, lastEvent) and `pendingConfirmation`, which together let a reloaded
+  page restore the confirm/cancel card and pick the loop back up.
+
+State lives in one process. A server restart loses in-flight turns; clients then
+see `idle` and fall back to the transcript in the database.
 
 ---
 
