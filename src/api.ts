@@ -111,12 +111,56 @@ async function handleResponse<T>(res: Response, defaultError: string): Promise<T
   return res.json();
 }
 
-async function handleNdjsonResponse<T>(
+/**
+ * The assistant's turn stream. Turns run server-side detached from the request
+ * that started them, so every frame carries a sequence number: a client that
+ * loses the connection (a reload, a phone sleeping, a flaky network) reattaches
+ * with the last number it saw and picks the same turn back up.
+ */
+
+/** Raised when the connection drops before the turn reported a result. */
+export class AssistantTurnDisconnectedError extends Error {
+  readonly disconnected = true;
+  constructor(readonly lastSeq: number, message = 'Lost connection to the assistant') {
+    super(message);
+    this.name = 'AssistantTurnDisconnectedError';
+  }
+}
+
+/** Raised when the turn itself reported a failure (not a transport problem). */
+export class AssistantTurnFailedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AssistantTurnFailedError';
+  }
+}
+
+/** Raised when a turn is already running in the conversation — attach instead. */
+export class AssistantTurnBusyError extends Error {
+  readonly busy = true;
+  constructor(readonly activeTurn: AssistantActiveTurn | null, message = 'A turn is already running in this conversation') {
+    super(message);
+    this.name = 'AssistantTurnBusyError';
+  }
+}
+
+export type AssistantTurnStatusHandler = (event: AssistantStatusEvent, seq: number) => void;
+
+/**
+ * Read a turn's NDJSON frames. Resolves with the turn result, or null when the
+ * server reports there is no turn to follow (`idle`).
+ */
+async function handleAssistantTurnStream(
   res: Response,
-  onUpdate: (data: any) => void,
-): Promise<T> {
+  onStatusEvent?: AssistantTurnStatusHandler,
+  startSeq = 0,
+): Promise<AssistantTurnResult | null> {
+  if (res.status === 409) {
+    const data = await res.json().catch(() => ({} as any));
+    throw new AssistantTurnBusyError(data?.activeTurn ?? null, data?.error);
+  }
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
+    const errorData = await res.json().catch(() => ({} as any));
     throw new Error(errorData.error || 'Request failed');
   }
 
@@ -125,36 +169,51 @@ async function handleNdjsonResponse<T>(
 
   const decoder = new TextDecoder();
   let buffer = '';
-  let finalResult: T | null = null;
+  let finalResult: AssistantTurnResult | null = null;
+  let idle = false;
+  let lastSeq = startSeq;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        const data = JSON.parse(line);
-        if (data.type === 'status') {
-          onUpdate(data.event);
-        } else if (data.type === 'result') {
-          finalResult = data as T;
-        } else if (data.type === 'error') {
-          throw new Error(data.error);
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        let data: any;
+        try {
+          data = JSON.parse(line);
+        } catch (e) {
+          console.error('Failed to parse NDJSON line', line, e);
+          continue;
         }
-      } catch (e: any) {
-        console.error('Failed to parse NDJSON line', line, e);
-        if (e.message) throw e;
+        if (typeof data.seq === 'number') lastSeq = data.seq;
+        if (data.type === 'status') {
+          onStatusEvent?.(data.event, lastSeq);
+        } else if (data.type === 'result') {
+          finalResult = data as AssistantTurnResult;
+        } else if (data.type === 'idle') {
+          idle = true;
+        } else if (data.type === 'error') {
+          throw new AssistantTurnFailedError(data.error);
+        }
       }
     }
+  } catch (e: any) {
+    if (e instanceof AssistantTurnFailedError) throw e;
+    // Anything else that interrupts the read is the connection, not the turn:
+    // the loop is still running server-side and can be picked back up.
+    throw new AssistantTurnDisconnectedError(lastSeq, e?.message || 'Lost connection to the assistant');
   }
 
-  if (!finalResult) throw new Error('Incomplete response');
-  return finalResult;
+  if (finalResult) return finalResult;
+  if (idle) return null;
+  // The body ended without a verdict — same story, the turn outlived the pipe.
+  throw new AssistantTurnDisconnectedError(lastSeq);
 }
 
 // ========== Auth / Account ==========
@@ -1601,6 +1660,15 @@ export interface AssistantPendingConfirmation {
   createdAt: number;
 }
 
+/** A turn still running server-side, as reported when a conversation loads. */
+export interface AssistantActiveTurn {
+  kind: 'message' | 'edit' | 'confirm';
+  startedAt: number;
+  /** Sequence number of the last frame the turn has emitted so far. */
+  lastSeq: number;
+  lastEvent: AssistantStatusEvent | null;
+}
+
 export interface AssistantToolMetadata {
   name: string;
   title: string;
@@ -1661,14 +1729,25 @@ export async function fetchAssistantConversation(id: string): Promise<{
   conversation: AssistantConversation;
   messages: AssistantMessage[];
   resources: AssistantConversationResource[];
+  /** The confirmation this conversation is waiting on, if any. */
+  pendingConfirmation: AssistantPendingConfirmation | null;
+  /** Set when a turn is still running server-side and can be reattached to. */
+  activeTurn: AssistantActiveTurn | null;
 }> {
   const res = await apiFetch(`/api/assistant/conversations/${id}`, { headers: getHeaders(false) });
   const data = await handleResponse<{
     conversation: AssistantConversation;
     messages: AssistantMessage[];
     resources?: AssistantConversationResource[];
+    pendingConfirmation?: AssistantPendingConfirmation | null;
+    activeTurn?: AssistantActiveTurn | null;
   }>(res, 'Failed to get conversation');
-  return { ...data, resources: data.resources ?? [] };
+  return {
+    ...data,
+    resources: data.resources ?? [],
+    pendingConfirmation: data.pendingConfirmation ?? null,
+    activeTurn: data.activeTurn ?? null,
+  };
 }
 
 export async function fetchAssistantConversationResources(
@@ -1716,54 +1795,75 @@ export async function deleteAssistantConversation(id: string): Promise<void> {
   }
 }
 
+/**
+ * A turn always answers with the NDJSON frame stream, whether or not the caller
+ * wants progress events: the frames carry the sequence numbers a reattach needs.
+ * A null result means the server had nothing running to report — treat the
+ * transcript on disk as the truth.
+ */
 export async function sendAssistantMessage(
   conversationId: string,
   content: string,
-  onStatusEvent?: (event: AssistantStatusEvent) => void,
-): Promise<AssistantTurnResult> {
+  onStatusEvent?: AssistantTurnStatusHandler,
+  signal?: AbortSignal,
+): Promise<AssistantTurnResult | null> {
   const res = await apiFetch(`/api/assistant/conversations/${conversationId}/messages`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ content }),
+    signal,
   });
-  if (onStatusEvent) {
-    return handleNdjsonResponse<AssistantTurnResult>(res, onStatusEvent);
-  }
-  return handleResponse<AssistantTurnResult>(res, 'Failed to send message');
+  return handleAssistantTurnStream(res, onStatusEvent);
 }
 
 export async function editAssistantMessage(
   conversationId: string,
   messageId: string,
   content: string,
-  onStatusEvent?: (event: AssistantStatusEvent) => void,
-): Promise<AssistantTurnResult> {
+  onStatusEvent?: AssistantTurnStatusHandler,
+  signal?: AbortSignal,
+): Promise<AssistantTurnResult | null> {
   const res = await apiFetch(`/api/assistant/conversations/${conversationId}/messages/${messageId}/edit`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ content }),
+    signal,
   });
-  if (onStatusEvent) {
-    return handleNdjsonResponse<AssistantTurnResult>(res, onStatusEvent);
-  }
-  return handleResponse<AssistantTurnResult>(res, 'Failed to edit message');
+  return handleAssistantTurnStream(res, onStatusEvent);
 }
 
 export async function confirmAssistantTool(
   conversationId: string,
   confirmationId: string,
   decision: 'confirm' | 'confirm_tool' | 'cancel',
-  onStatusEvent?: (event: AssistantStatusEvent) => void,
-): Promise<AssistantTurnResult> {
+  onStatusEvent?: AssistantTurnStatusHandler,
+  signal?: AbortSignal,
+): Promise<AssistantTurnResult | null> {
   const res = await apiFetch(`/api/assistant/conversations/${conversationId}/confirm`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ confirmationId, decision }),
+    signal,
   });
-  if (onStatusEvent) {
-    return handleNdjsonResponse<AssistantTurnResult>(res, onStatusEvent);
-  }
-  return handleResponse<AssistantTurnResult>(res, 'Failed to process confirmation');
+  return handleAssistantTurnStream(res, onStatusEvent);
+}
+
+/**
+ * Reattach to a turn already running in a conversation, replaying the frames
+ * emitted after `since`. Resolves with the turn's result, or null when nothing
+ * is running any more.
+ */
+export async function streamAssistantTurn(
+  conversationId: string,
+  since = 0,
+  onStatusEvent?: AssistantTurnStatusHandler,
+  signal?: AbortSignal,
+): Promise<AssistantTurnResult | null> {
+  const res = await apiFetch(
+    `/api/assistant/conversations/${conversationId}/turn?since=${encodeURIComponent(String(since))}`,
+    { headers: getHeaders(false), signal },
+  );
+  return handleAssistantTurnStream(res, onStatusEvent, since);
 }
 
 export async function fetchAssistantProviders(): Promise<{ providers: Provider[] }> {

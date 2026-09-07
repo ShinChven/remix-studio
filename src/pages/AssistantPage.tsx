@@ -16,6 +16,9 @@ import {
   sendAssistantMessage,
   editAssistantMessage,
   confirmAssistantTool,
+  streamAssistantTurn,
+  AssistantTurnBusyError,
+  AssistantTurnDisconnectedError,
   fetchAssistantProviders,
   fetchProjects,
   fetchLibraries,
@@ -24,10 +27,13 @@ import {
   fetchLibrary,
   fetchAssistantConversationResources,
   deleteAssistantConversationResource,
+  AssistantActiveTurn,
   AssistantConversation,
   AssistantConversationResource,
   AssistantMessage,
   AssistantPendingConfirmation,
+  AssistantStatusEvent,
+  AssistantTurnResult,
 } from '../api';
 import type { Provider, ProviderType, ModelConfig, Project, Library } from '../types';
 import { PROVIDER_MODELS_MAP, getTextModelsForProvider } from '../types';
@@ -80,6 +86,40 @@ function boundContextHref(type: BoundContextLabel, id: string): string | null {
   if (type === 'Campaign') return `/campaigns/${id}`;
   return null;
 }
+
+/**
+ * A turn outlives the request that started it, so a dropped connection is only
+ * ever a reason to reattach. Six tries with a growing gap covers a tab waking
+ * up or a network handing over; past that the transcript on disk is the answer.
+ */
+const TURN_REATTACH_ATTEMPTS = 6;
+const TURN_REATTACH_BASE_DELAY_MS = 500;
+const TURN_REATTACH_MAX_DELAY_MS = 8_000;
+
+/**
+ * A finished tool call means new rows in the transcript. Pulling them in while
+ * the loop is still running is what makes a reattached page show the work as it
+ * happens rather than a spinner; the delay keeps a burst of parallel calls to
+ * one fetch.
+ */
+const TRANSCRIPT_REFRESH_DEBOUNCE_MS = 800;
+
+/** Sleep that gives up as soon as the turn stream is abandoned. */
+function waitFor(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(finish, ms);
+    function finish() {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', finish);
+      resolve();
+    }
+    signal.addEventListener('abort', finish);
+  });
+}
+
+type TurnOutcome =
+  | { status: 'done'; result: AssistantTurnResult | null }
+  | { status: 'abandoned' };
 
 const MaterialSpinner = ({ className }: { className?: string }) => (
   <svg className={`animate-material-spinner ${className}`} viewBox="0 0 50 50">
@@ -340,9 +380,155 @@ export function AssistantPage() {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessageContent, setEditingMessageContent] = useState('');
 
+  const [isReconnecting, setIsReconnecting] = useState(false);
+
   const justCreatedIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const composerHandleRef = useRef<AssistantComposerHandle | null>(null);
+
+  // ─── Live turn plumbing ───
+  // The turn runs on the server, not in this tab. These three refs are all it
+  // takes to leave one and come back to it: where we got to in its event
+  // stream, which conversation we are following, and the handle that lets us
+  // let go of the stream (never the turn) when the user moves on.
+  const turnSeqRef = useRef(0);
+  const streamingConversationRef = useRef<string | null>(null);
+  const turnAbortRef = useRef<AbortController | null>(null);
+  const activeConversationIdRef = useRef<string | null>(activeConversationId);
+  activeConversationIdRef.current = activeConversationId;
+  const isSendingRef = useRef(false);
+  isSendingRef.current = isSending;
+
+  const transcriptRefreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /**
+   * Pull the transcript rows a running turn has already written — the assistant
+   * messages and tool results behind the progress line — so the conversation
+   * fills in as the loop works instead of all at once when it ends.
+   */
+  const scheduleTranscriptRefresh = useCallback(() => {
+    const conversationId = streamingConversationRef.current;
+    if (!conversationId || transcriptRefreshRef.current) return;
+    transcriptRefreshRef.current = setTimeout(async () => {
+      transcriptRefreshRef.current = null;
+      if (streamingConversationRef.current !== conversationId) return;
+      try {
+        const data = await fetchAssistantConversation(conversationId);
+        // The turn may have ended (and been settled) while this was in flight.
+        if (streamingConversationRef.current !== conversationId) return;
+        if (activeConversationIdRef.current !== conversationId) return;
+        setMessages(data.messages);
+        setResources(data.resources);
+      } catch {
+        // Mid-turn nicety — the settle at the end of the turn is the real one.
+      }
+    }, TRANSCRIPT_REFRESH_DEBOUNCE_MS);
+  }, []);
+
+  useEffect(() => () => {
+    if (transcriptRefreshRef.current) clearTimeout(transcriptRefreshRef.current);
+  }, []);
+
+  /** Progress line updates, shared by every path that reads a turn stream. */
+  const handleTurnStatusEvent = useCallback((event: AssistantStatusEvent, seq: number) => {
+    turnSeqRef.current = seq;
+    setIsReconnecting(false);
+    if (event.type === 'provider_thinking' && typeof event.title === 'string') {
+      setCurrentThinkingTitle(event.title);
+      setCurrentToolTitle('');
+    }
+    if (
+      event.type === 'tool_call_started' ||
+      event.type === 'tool_call_finished' ||
+      event.type === 'confirmation_required'
+    ) {
+      setCurrentToolTitle(formatToolTitle((event as any).call?.name));
+    }
+    if (event.type === 'tool_call_finished') scheduleTranscriptRefresh();
+  }, [scheduleTranscriptRefresh]);
+
+  /**
+   * Read one turn to its verdict, reconnecting to the server-side loop whenever
+   * the pipe breaks. `start` receives the abort signal so leaving the page (or
+   * switching chats) drops the stream without touching the turn behind it.
+   */
+  const consumeTurn = useCallback(async (
+    conversationId: string,
+    start: (signal: AbortSignal) => Promise<AssistantTurnResult | null>,
+  ): Promise<TurnOutcome> => {
+    turnAbortRef.current?.abort();
+    const controller = new AbortController();
+    turnAbortRef.current = controller;
+    streamingConversationRef.current = conversationId;
+
+    let attempt = 0;
+    let next = () => start(controller.signal);
+    try {
+      while (true) {
+        try {
+          const result = await next();
+          setIsReconnecting(false);
+          return { status: 'done', result };
+        } catch (e: any) {
+          if (controller.signal.aborted) return { status: 'abandoned' };
+          const recoverable = e instanceof AssistantTurnDisconnectedError;
+          if (!recoverable || attempt >= TURN_REATTACH_ATTEMPTS) throw e;
+          attempt += 1;
+          setIsReconnecting(true);
+          await waitFor(
+            Math.min(TURN_REATTACH_BASE_DELAY_MS * 2 ** (attempt - 1), TURN_REATTACH_MAX_DELAY_MS),
+            controller.signal,
+          );
+          if (controller.signal.aborted) return { status: 'abandoned' };
+          next = () => streamAssistantTurn(
+            conversationId,
+            turnSeqRef.current,
+            handleTurnStatusEvent,
+            controller.signal,
+          );
+        }
+      }
+    } finally {
+      setIsReconnecting(false);
+      if (turnAbortRef.current === controller) turnAbortRef.current = null;
+      if (streamingConversationRef.current === conversationId) streamingConversationRef.current = null;
+    }
+  }, [handleTurnStatusEvent]);
+
+  /** Settle the view on the persisted transcript once a turn ends. */
+  const settleAfterTurn = useCallback(async (
+    conversationId: string,
+    result: AssistantTurnResult | null,
+  ) => {
+    const data = await fetchAssistantConversation(conversationId);
+    if (activeConversationIdRef.current !== conversationId) return data;
+    setMessages(data.messages);
+    setResources(data.resources);
+    if (result && result.kind === 'awaiting_confirmation' && 'confirmation' in result) {
+      setPendingConfirmation(result.confirmation);
+    } else {
+      setPendingConfirmation(data.pendingConfirmation);
+    }
+    return data;
+  }, []);
+
+  /** Clear the sending state, unless another turn stream has already taken over. */
+  const releaseTurnIndicator = useCallback(() => {
+    if (streamingConversationRef.current) return;
+    setIsSending(false);
+    setCurrentThinkingTitle('');
+    setCurrentToolTitle('');
+  }, []);
+
+  /**
+   * A turn we gave up following is not a turn that failed — the work carries on
+   * server-side. Say so, and show the transcript as the server has it rather
+   * than rolling anything back.
+   */
+  const handleLostTurn = useCallback(async (conversationId: string) => {
+    toast.error(t('assistant.reconnectFailed', 'Lost track of the assistant — reloading the chat.'));
+    await settleAfterTurn(conversationId, null).catch(() => {});
+  }, [settleAfterTurn, t]);
 
   // ─── Load providers ───
   useEffect(() => {
@@ -380,6 +566,45 @@ export function AssistantPage() {
       setIsLoading(false);
     }
   }, []);
+
+  /**
+   * Follow a turn that is already running server-side — after a reload, after
+   * a sleeping tab wakes, or when a send lands on a conversation that is still
+   * busy. Replaying from sequence 0 catches the progress line up to whatever
+   * the turn is doing right now.
+   */
+  const attachToActiveTurn = useCallback(async (
+    conversationId: string,
+    activeTurn?: AssistantActiveTurn | null,
+  ) => {
+    if (streamingConversationRef.current === conversationId) return;
+    turnSeqRef.current = 0;
+    setIsSending(true);
+    setPendingConfirmation(null);
+    setCurrentThinkingTitle('');
+    setCurrentToolTitle('');
+    // The snapshot that came with the conversation gives the progress line
+    // something to say before the first live frame arrives.
+    if (activeTurn?.lastEvent) handleTurnStatusEvent(activeTurn.lastEvent, 0);
+
+    try {
+      const outcome = await consumeTurn(conversationId, (signal) =>
+        streamAssistantTurn(conversationId, 0, handleTurnStatusEvent, signal));
+      if (outcome.status === 'abandoned') return;
+      await settleAfterTurn(conversationId, outcome.result);
+      loadConversations();
+    } catch (e: any) {
+      if (activeConversationIdRef.current !== conversationId) return;
+      if (e instanceof AssistantTurnDisconnectedError) {
+        await handleLostTurn(conversationId);
+      } else {
+        toast.error(e?.message || 'Failed to follow the assistant');
+        await settleAfterTurn(conversationId, null).catch(() => {});
+      }
+    } finally {
+      releaseTurnIndicator();
+    }
+  }, [consumeTurn, handleTurnStatusEvent, settleAfterTurn, releaseTurnIndicator, handleLostTurn, loadConversations]);
 
   const handleOpenPreview = async (type: 'project' | 'library', id: string) => {
     if (isFetchingPreview) return;
@@ -442,19 +667,20 @@ export function AssistantPage() {
       setResources(data.resources);
       if (conversation.providerId) setSelectedProviderId(conversation.providerId);
       if (conversation.modelConfigId) setSelectedModelId(conversation.modelConfigId);
-      // Check for pending confirmation in last assistant message
-      const lastAssistant = [...data.messages].reverse().find(
-        (m) => m.role === 'assistant' && m.status === 'awaiting_confirmation',
-      );
-      if (lastAssistant) {
-        setPendingConfirmation(null);
-      } else {
-        setPendingConfirmation(null);
+      // A confirmation the conversation is still waiting on lives in the
+      // database, so the card comes back with the transcript rather than being
+      // lost with the request that raised it.
+      setPendingConfirmation(data.pendingConfirmation);
+      // A turn still running is picked back up here: the loop kept going while
+      // the page was away, and its event stream resumes where this tab can see
+      // it — thinking, tool calls and all.
+      if (data.activeTurn) {
+        void attachToActiveTurn(id, data.activeTurn);
       }
     } catch {
       toast.error('Failed to load conversation');
     }
-  }, [providers]);
+  }, [providers, attachToActiveTurn]);
 
   // ─── Image Lightbox ESC handler ───
   useEffect(() => {
@@ -598,6 +824,53 @@ export function AssistantPage() {
     }
   }, [conversations, activeConversationId, navigate, location.state]);
 
+  // Letting go of a conversation lets go of its stream, never of its turn: the
+  // loop carries on server-side and is picked back up on the next visit.
+  // A stream started for the conversation we just moved *to* is kept — sending
+  // the first message of a new chat navigates to it while the turn is opening.
+  useEffect(() => () => {
+    const streaming = streamingConversationRef.current;
+    if (streaming && streaming !== activeConversationIdRef.current) {
+      turnAbortRef.current?.abort();
+    }
+  }, [activeConversationId]);
+
+  /**
+   * Ask the server what this conversation is doing and fall back in step with
+   * it. Used when the tab comes back from the background or the network
+   * returns — a streaming fetch dies there without an error we ever see.
+   */
+  const resyncConversation = useCallback(async (conversationId: string) => {
+    if (streamingConversationRef.current || isSendingRef.current) return;
+    try {
+      const data = await fetchAssistantConversation(conversationId);
+      if (activeConversationIdRef.current !== conversationId) return;
+      if (streamingConversationRef.current || isSendingRef.current) return;
+      setMessages(data.messages);
+      setResources(data.resources);
+      setPendingConfirmation(data.pendingConfirmation);
+      if (data.activeTurn) void attachToActiveTurn(conversationId, data.activeTurn);
+    } catch {
+      // Offline or a hiccup — keep what is on screen and try again on the next wake.
+    }
+  }, [attachToActiveTurn]);
+
+  useEffect(() => {
+    if (!activeConversationId) return;
+    const resync = () => {
+      if (document.visibilityState !== 'visible') return;
+      void resyncConversation(activeConversationId);
+    };
+    window.addEventListener('focus', resync);
+    window.addEventListener('online', resync);
+    document.addEventListener('visibilitychange', resync);
+    return () => {
+      window.removeEventListener('focus', resync);
+      window.removeEventListener('online', resync);
+      document.removeEventListener('visibilitychange', resync);
+    };
+  }, [activeConversationId, resyncConversation]);
+
   useEffect(() => {
     if (activeConversationId) {
       localStorage.setItem('assistant_last_conversation', activeConversationId);
@@ -707,28 +980,14 @@ export function AssistantPage() {
     };
     setMessages((prev) => [...prev, optimisticUserMsg]);
 
-    try {
-      const result = await sendAssistantMessage(currentConversationId, finalContent, (event) => {
-        if (event.type === 'provider_thinking' && typeof event.title === 'string') {
-          setCurrentThinkingTitle(event.title);
-          setCurrentToolTitle('');
-        }
-        if (
-          event.type === 'tool_call_started' ||
-          event.type === 'tool_call_finished' ||
-          event.type === 'confirmation_required'
-        ) {
-          setCurrentToolTitle(formatToolTitle((event as any).call?.name));
-        }
-      });
-      // Reload full message list for consistency
-      const data = await fetchAssistantConversation(currentConversationId);
-      setMessages(data.messages);
-      setResources(data.resources);
+    turnSeqRef.current = 0;
 
-      if (result.kind === 'awaiting_confirmation' && 'confirmation' in result) {
-        setPendingConfirmation(result.confirmation);
-      }
+    try {
+      const outcome = await consumeTurn(currentConversationId, (signal) =>
+        sendAssistantMessage(currentConversationId!, finalContent, handleTurnStatusEvent, signal));
+      if (outcome.status === 'abandoned') return;
+      // Reload full message list for consistency
+      await settleAfterTurn(currentConversationId, outcome.result);
 
       // AI-Title: if this was the first user message, summarize title using LLM
       // Do this asynchronously to avoid blocking the isSending state (which would keep the Thinking indicator visible)
@@ -748,15 +1007,27 @@ export function AssistantPage() {
       // Bump conversation to top
       loadConversations();
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to send message');
+      if (e instanceof AssistantTurnDisconnectedError) {
+        // The message was accepted and the turn is still running — the only
+        // thing lost is our view of it, so show what the server has.
+        await handleLostTurn(currentConversationId!);
+        return;
+      }
       // Remove optimistic message on error
       setMessages((prev) => prev.filter((m) => m.id !== optimisticUserMsg.id));
+      if (e instanceof AssistantTurnBusyError) {
+        // Another tab (or this one before a reload) is still driving a turn in
+        // this conversation. Nothing was sent — follow that turn instead of
+        // stacking a second one on top of it.
+        toast.error(t('assistant.turnBusy', 'The assistant is still working in this chat — nothing was sent.'));
+        void attachToActiveTurn(currentConversationId!, e.activeTurn);
+        return;
+      }
+      toast.error(e?.message || 'Failed to send message');
       // A tool may have landed before the turn failed — keep the sidebar honest.
       if (currentConversationId) refreshResources(currentConversationId);
     } finally {
-      setIsSending(false);
-      setCurrentThinkingTitle('');
-      setCurrentToolTitle('');
+      releaseTurnIndicator();
     }
   };
 
@@ -768,32 +1039,20 @@ export function AssistantPage() {
     setIsSending(true);
     setCurrentThinkingTitle('');
     setCurrentToolTitle('');
-    try {
-      const result = await confirmAssistantTool(
-        activeConversationId,
-        activeConfirmation.id,
-        decision,
-        (event) => {
-          if (event.type === 'provider_thinking' && typeof event.title === 'string') {
-            setCurrentThinkingTitle(event.title);
-            setCurrentToolTitle('');
-          }
-          if (
-            event.type === 'tool_call_started' ||
-            event.type === 'tool_call_finished' ||
-            event.type === 'confirmation_required'
-          ) {
-            setCurrentToolTitle(formatToolTitle((event as any).call?.name));
-          }
-        },
-      );
-      const data = await fetchAssistantConversation(activeConversationId);
-      setMessages(data.messages);
-      setResources(data.resources);
+    turnSeqRef.current = 0;
 
-      if (result.kind === 'awaiting_confirmation' && 'confirmation' in result) {
-        setPendingConfirmation(result.confirmation);
-      }
+    try {
+      const outcome = await consumeTurn(activeConversationId, (signal) =>
+        confirmAssistantTool(
+          activeConversationId,
+          activeConfirmation.id,
+          decision,
+          handleTurnStatusEvent,
+          signal,
+        ));
+      if (outcome.status === 'abandoned') return;
+      await settleAfterTurn(activeConversationId, outcome.result);
+
       if (decision === 'confirm_tool') {
         toast.success(
           t('assistant.toolApprovalEnabled', {
@@ -804,13 +1063,20 @@ export function AssistantPage() {
       }
       loadConversations();
     } catch (e: any) {
+      if (e instanceof AssistantTurnDisconnectedError) {
+        await handleLostTurn(activeConversationId);
+        return;
+      }
+      if (e instanceof AssistantTurnBusyError) {
+        toast.error(t('assistant.turnBusy', 'The assistant is still working in this chat — nothing was sent.'));
+        void attachToActiveTurn(activeConversationId, e.activeTurn);
+        return;
+      }
       toast.error(e?.message || 'Failed to process confirmation');
       setPendingConfirmation(activeConfirmation);
       if (activeConversationId) refreshResources(activeConversationId);
     } finally {
-      setIsSending(false);
-      setCurrentThinkingTitle('');
-      setCurrentToolTitle('');
+      releaseTurnIndicator();
     }
   };
 
@@ -902,36 +1168,29 @@ export function AssistantPage() {
        setMessages([...priorMessages, optimisticMsg]);
     }
 
-    try {
-      const result = await editAssistantMessage(activeConversationId, messageId, text, (event) => {
-        if (event.type === 'provider_thinking' && typeof event.title === 'string') {
-          setCurrentThinkingTitle(event.title);
-          setCurrentToolTitle('');
-        }
-        if (
-          event.type === 'tool_call_started' ||
-          event.type === 'tool_call_finished' ||
-          event.type === 'confirmation_required'
-        ) {
-          setCurrentToolTitle(formatToolTitle((event as any).call?.name));
-        }
-      });
-      const data = await fetchAssistantConversation(activeConversationId);
-      setMessages(data.messages);
-      setResources(data.resources);
+    turnSeqRef.current = 0;
 
-      if (result.kind === 'awaiting_confirmation' && 'confirmation' in result) {
-        setPendingConfirmation(result.confirmation);
-      }
-      
+    try {
+      const outcome = await consumeTurn(activeConversationId, (signal) =>
+        editAssistantMessage(activeConversationId, messageId, text, handleTurnStatusEvent, signal));
+      if (outcome.status === 'abandoned') return;
+      await settleAfterTurn(activeConversationId, outcome.result);
+
       loadConversations();
     } catch (e: any) {
+      if (e instanceof AssistantTurnDisconnectedError) {
+        await handleLostTurn(activeConversationId);
+        return;
+      }
+      if (e instanceof AssistantTurnBusyError) {
+        toast.error(t('assistant.turnBusy', 'The assistant is still working in this chat — nothing was sent.'));
+        void attachToActiveTurn(activeConversationId, e.activeTurn);
+        return;
+      }
       toast.error(e?.message || 'Failed to edit message');
       if (activeConversationId) refreshResources(activeConversationId);
     } finally {
-      setIsSending(false);
-      setCurrentThinkingTitle('');
-      setCurrentToolTitle('');
+      releaseTurnIndicator();
     }
   };
 
@@ -1440,7 +1699,9 @@ export function AssistantPage() {
                   </div>
                   <div className="flex items-center gap-2 py-1.5 text-sm">
                     <span className="font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
-                      {currentToolTitle || currentThinkingTitle || t('assistant.thinking', 'Thinking...')}
+                      {isReconnecting
+                        ? t('assistant.reconnecting', 'Reconnecting to the assistant...')
+                        : currentToolTitle || currentThinkingTitle || t('assistant.thinking', 'Thinking...')}
                     </span>
                   </div>
                 </div>
