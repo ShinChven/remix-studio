@@ -10,6 +10,7 @@ import type { ProviderRepository } from '../db/provider-repository';
 import {
   AssistantToolDefinition,
   ToolDependencies,
+  ToolResult,
   createAssistantToolDefinitions,
 } from '../mcp/tool-definitions';
 import { summarizeToolEffect, toolRequiresConfirmation } from '../mcp/tool-confirmation';
@@ -114,6 +115,19 @@ export interface ResumeInput {
 /** Simple in-memory per-user turn counter. Multi-process deployments would
  *  need a distributed lock; v1 runs in a single process. */
 const activeTurnsByUser = new Map<string, number>();
+
+/**
+ * The payload a tool actually produced. Most tools skip `structuredContent`
+ * and put their JSON in `text`, so both have to be read to see a result.
+ */
+function toolResultPayload(result: ToolResult): unknown {
+  if (result.structuredContent != null) return result.structuredContent;
+  try {
+    return JSON.parse(result.text);
+  } catch {
+    return null;
+  }
+}
 
 export class AssistantRunner {
   private tools: AssistantToolDefinition[];
@@ -659,16 +673,21 @@ export class AssistantRunner {
   }
 
   /**
-   * Record the workspace entity a successful tool call touched so the assistant
-   * sidebar can list it. Best-effort: never fail a turn over bookkeeping.
+   * Record the workspace entity a successful tool call changed, so the
+   * assistant sidebar can list it. Read-only tools are skipped: the list is
+   * what the conversation changed, not everything it looked at.
+   *
+   * Best-effort — never fail a turn over bookkeeping.
    */
   private async recordResourceTarget(
     conversationId: string,
+    tool: AssistantToolDefinition,
     call: ToolCall,
-    structuredContent: unknown,
+    result: ToolResult,
   ): Promise<void> {
+    if (tool.category === 'read') return;
     try {
-      const target = extractAssistantResourceTarget(call.name, call.arguments, structuredContent);
+      const target = extractAssistantResourceTarget(call.name, call.arguments, toolResultPayload(result));
       if (!target) return;
       await this.repo.recordConversationResource({ conversationId, ...target });
     } catch (e: any) {
@@ -699,7 +718,7 @@ export class AssistantRunner {
         status: result.isError ? 'error' : 'completed',
       });
       if (!result.isError) {
-        await this.recordResourceTarget(conversationId, call, result.structuredContent);
+        await this.recordResourceTarget(conversationId, tool, call, result);
       }
       return result.isError === true;
     } catch (e: any) {

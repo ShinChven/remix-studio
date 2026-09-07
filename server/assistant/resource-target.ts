@@ -1,9 +1,13 @@
 /**
- * Resolves an assistant tool call into the workspace entity it touched.
+ * Resolves an assistant tool call into the workspace entity it changed.
  *
- * The assistant sidebar lists these as "resources used in this conversation",
+ * The assistant sidebar lists these as "resources this conversation changed",
  * so detection runs server-side (right after a tool succeeds) and the result is
  * persisted — the UI never has to re-derive it from raw tool payloads.
+ *
+ * Only tools that write are passed in: the runner skips `category: 'read'`, so
+ * merely looking a library up does not put it in the list. Every call reaching
+ * this module therefore either created its entity or changed an existing one.
  */
 
 export type AssistantResourceEntityType = 'library' | 'project' | 'campaign' | 'post';
@@ -28,26 +32,25 @@ function getStringField(record: Record<string, unknown> | null, key: string): st
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+/**
+ * `created` is the tool that brings the entity into existence, not any tool
+ * whose name starts with "create" — `create_prompt` creates a prompt, but what
+ * it does to the library it lands in is an update.
+ */
+function summarize(kind: string, name: string | null, created: boolean): string {
+  const subject = name ? `${kind} "${name}"` : kind;
+  return created ? `${subject} is ready.` : `${subject} was updated.`;
+}
+
 const POST_TOOL_NAMES = new Set([
   'create_post',
-  'get_post',
-  'get_post_text',
   'update_post',
   'update_post_text',
   'add_media_to_post',
   'schedule_post',
 ]);
 
-const CAMPAIGN_TOOL_NAMES = new Set(['create_campaign', 'list_campaigns', 'update_campaign']);
-
-const LIBRARY_ITEM_TOOL_NAMES = [
-  'create_prompt',
-  'batch_create_prompts',
-  'update_prompt',
-  'delete_prompt',
-  'batch_update_library_items',
-  'update_library_item',
-];
+const CAMPAIGN_TOOL_NAMES = new Set(['create_campaign', 'update_campaign']);
 
 export function extractAssistantResourceTarget(
   toolName: string | null | undefined,
@@ -66,12 +69,12 @@ export function extractAssistantResourceTarget(
     return {
       entityType: 'post',
       entityId: postId,
+      // A post has no name of its own unless it carries a title, and the id
+      // slice is a display label rather than something to quote in a sentence.
       name: getStringField(result, 'title') ?? `Post ${postId.slice(0, 8)}`,
       subType: null,
       href: `/campaigns/${postCampaignId}/posts/edit/${postId}`,
-      summary: name.includes('update') || name === 'schedule_post' || name === 'add_media_to_post'
-        ? 'Post was updated.'
-        : 'Post is ready.',
+      summary: summarize('Post', null, name === 'create_post'),
     };
   }
 
@@ -79,29 +82,54 @@ export function extractAssistantResourceTarget(
     ?? getStringField(args, 'campaignId')
     ?? (CAMPAIGN_TOOL_NAMES.has(name) ? getStringField(result, 'id') : null);
   if (campaignId) {
-    const campaignName = getStringField(result, 'name') ?? getStringField(args, 'name');
+    const campaignName = getStringField(result, 'name')
+      ?? getStringField(result, 'campaignName')
+      ?? getStringField(args, 'name');
     return {
       entityType: 'campaign',
       entityId: campaignId,
       name: campaignName,
       subType: null,
       href: `/campaigns/${campaignId}`,
-      summary: name === 'update_campaign'
-        ? (campaignName ? `Campaign "${campaignName}" was updated.` : 'Campaign was updated.')
-        : (campaignName ? `Campaign "${campaignName}" is ready.` : 'Campaign is ready.'),
+      summary: summarize('Campaign', campaignName, name === 'create_campaign'),
     };
   }
 
+  // Checked before libraries: the job and project tools carry both ids, and it
+  // is the project they change — the library is only the source they read from.
   const projectId = getStringField(result, 'projectId') ?? getStringField(args, 'projectId');
   if (projectId) {
-    const projectName = getStringField(result, 'name') ?? getStringField(args, 'name');
+    // Tools that act on a project rather than rename it report it as
+    // `projectName`, since `name` in their payload means something else.
+    const projectName = getStringField(result, 'name')
+      ?? getStringField(result, 'projectName')
+      ?? getStringField(args, 'name');
     return {
       entityType: 'project',
       entityId: projectId,
       name: projectName,
       subType: getStringField(result, 'type') ?? getStringField(args, 'type'),
       href: `/project/${projectId}`,
-      summary: projectName ? `Project "${projectName}" is ready.` : 'Project is ready.',
+      summary: summarize('Project', projectName, name === 'create_project_with_workflow'),
+    };
+  }
+
+  const libraryName = getStringField(result, 'name')
+    ?? getStringField(result, 'libraryName')
+    ?? getStringField(args, 'name')
+    ?? getStringField(args, 'libraryName');
+  const librarySubType = getStringField(result, 'type') ?? getStringField(args, 'type');
+
+  if (name === 'create_library') {
+    const id = getStringField(result, 'id');
+    if (!id) return null;
+    return {
+      entityType: 'library',
+      entityId: id,
+      name: libraryName,
+      subType: librarySubType,
+      href: `/library/${id}`,
+      summary: summarize('Library', libraryName, true),
     };
   }
 
@@ -109,37 +137,14 @@ export function extractAssistantResourceTarget(
     ?? getStringField(result, 'libraryId')
     ?? getStringField(args, 'library_id')
     ?? getStringField(args, 'libraryId');
-  const libraryName = getStringField(result, 'name')
-    ?? getStringField(result, 'libraryName')
-    ?? getStringField(args, 'name')
-    ?? getStringField(args, 'libraryName');
-  const librarySubType = getStringField(result, 'type') ?? getStringField(args, 'type');
-
-  if (name === 'create_library' && getStringField(result, 'id')) {
-    const id = getStringField(result, 'id')!;
-    return {
-      entityType: 'library',
-      entityId: id,
-      name: libraryName,
-      subType: librarySubType,
-      href: `/library/${id}`,
-      summary: libraryName ? `Library "${libraryName}" is ready.` : 'Library is ready.',
-    };
-  }
-
-  if (!libraryId) return null;
-
-  const updated = name === 'update_library' || LIBRARY_ITEM_TOOL_NAMES.includes(name);
-  if (updated || name.includes('library')) {
+  if (libraryId) {
     return {
       entityType: 'library',
       entityId: libraryId,
       name: libraryName,
       subType: librarySubType,
       href: `/library/${libraryId}`,
-      summary: updated
-        ? (libraryName ? `Library "${libraryName}" was updated.` : 'Library was updated.')
-        : (libraryName ? `Library "${libraryName}" is ready.` : 'Library is ready.'),
+      summary: summarize('Library', libraryName, false),
     };
   }
 
