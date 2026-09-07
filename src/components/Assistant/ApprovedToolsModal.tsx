@@ -77,7 +77,7 @@ export function ApprovedToolsModal({ isOpen, conversationId, onClose }: Approved
       onClick={onClose}
     >
       <div
-        className="bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-2xl rounded-card shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-2xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(720px,calc(100dvh-3rem))] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
+        className="bg-white dark:bg-neutral-900/70 border border-neutral-200 dark:border-white/5 dark:backdrop-blur-2xl rounded-card shadow-2xl dark:shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-2xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(720px,calc(100dvh-3rem))] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5 sm:p-8 flex items-start gap-4 sm:gap-6 border-b border-neutral-200/50 dark:border-white/5">
