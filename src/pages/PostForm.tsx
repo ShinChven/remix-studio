@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Calendar,
-  GripVertical,
+  ChevronLeft,
+  ChevronRight,
   ImagePlus,
   Loader2,
   Send,
@@ -101,6 +102,75 @@ function NewFilePreview({ file }: { file: File }) {
     return <video src={preview} className="h-full w-full object-cover" muted playsInline />;
   }
   return <img src={preview} alt="" className="h-full w-full object-cover" />;
+}
+
+function MediaTileOverlay({
+  position,
+  label,
+  labelClassName,
+  canMoveLeft,
+  canMoveRight,
+  disabled,
+  onMove,
+  onRemove,
+}: {
+  position: number;
+  label?: string | null;
+  labelClassName?: string;
+  canMoveLeft: boolean;
+  canMoveRight: boolean;
+  disabled?: boolean;
+  onMove: (direction: -1 | 1) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <>
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-1 bg-gradient-to-b from-black/50 to-transparent p-1.5">
+        <span className="pointer-events-auto flex h-6 min-w-6 items-center justify-center rounded-full bg-black/60 px-1.5 text-xs font-bold text-white">
+          {position}
+        </span>
+        <button
+          type="button"
+          aria-label="Remove media"
+          className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-red-600"
+          onClick={onRemove}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/60 to-transparent p-1.5">
+        {label ? (
+          <span className={cn('pointer-events-auto rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold uppercase text-white', labelClassName)}>
+            {label}
+          </span>
+        ) : (
+          <span />
+        )}
+        {(canMoveLeft || canMoveRight) && (
+          <div className="pointer-events-auto flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              aria-label="Move earlier"
+              disabled={disabled || !canMoveLeft}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80 disabled:opacity-30"
+              onClick={() => onMove(-1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label="Move later"
+              disabled={disabled || !canMoveRight}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80 disabled:opacity-30"
+              onClick={() => onMove(1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
 }
 
 export function PostForm() {
@@ -205,14 +275,10 @@ export function PostForm() {
     setDragOverReorderIndex(null);
   };
 
-  const handleMediaDrop = async (event: React.DragEvent, dropIndex: number) => {
-    event.preventDefault();
-    event.stopPropagation();
+  const moveMedia = async (fromIndex: number, dropIndex: number) => {
     if (isReorderingMedia) return;
-    const fromIndex = draggedReorderIndex;
-    setDraggedReorderIndex(null);
-    setDragOverReorderIndex(null);
-    if (fromIndex === null || fromIndex === dropIndex) return;
+    if (fromIndex === dropIndex) return;
+    if (fromIndex < 0 || dropIndex < 0) return;
 
     const visibleMediaCount = visibleExistingMedia.length;
     type Slot =
@@ -253,6 +319,16 @@ export function PostForm() {
     const removed = existingMedia.filter((media) => removedMediaIds.has(media.id));
     setExistingMedia([...nextVisibleExisting, ...removed]);
     setNewFiles(nextNewFiles);
+  };
+
+  const handleMediaDrop = async (event: React.DragEvent, dropIndex: number) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const fromIndex = draggedReorderIndex;
+    setDraggedReorderIndex(null);
+    setDragOverReorderIndex(null);
+    if (fromIndex === null) return;
+    await moveMedia(fromIndex, dropIndex);
   };
 
   const handleSave = async () => {
@@ -343,9 +419,9 @@ export function PostForm() {
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
                 >
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                     <label className="font-semibold text-neutral-950 dark:text-white">Media</label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       {isReorderingMedia && (
                         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-500">
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -380,79 +456,84 @@ export function PostForm() {
                           <p className="font-bold text-neutral-950 dark:text-white">Drop files to add</p>
                         </div>
                       ) : null}
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Drag files onto this area or use Add Files.</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        <span className="hidden sm:inline">Drag files onto this area or use Add Files. Drag a tile to reorder.</span>
+                        <span className="sm:hidden">Tap Add Files to upload. Use the arrows to reorder.</span>
+                      </p>
 
-                      {visibleExistingMedia.map((media, index) => {
-                        const preview = mediaPreviewUrl(media);
-                        const combinedIndex = index;
-                        const isBeingDragged = draggedReorderIndex === combinedIndex;
-                        const isDragTarget = dragOverReorderIndex === combinedIndex && draggedReorderIndex !== null && draggedReorderIndex !== combinedIndex;
-                        return (
-                          <div
-                            key={media.id}
-                            draggable={!isReorderingMedia}
-                            onDragStart={(e) => handleMediaDragStart(e, combinedIndex)}
-                            onDragOver={(e) => handleMediaDragOver(e, combinedIndex)}
-                            onDrop={(e) => handleMediaDrop(e, combinedIndex)}
-                            onDragEnd={handleMediaDragEnd}
-                            className={cn(
-                              'flex min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100/40 p-3 shadow-sm transition dark:border-white/10 dark:bg-white/5',
-                              isBeingDragged && 'opacity-50',
-                              isDragTarget && 'border-indigo-500/60 ring-2 ring-indigo-500/30',
-                            )}
-                          >
-                            <div className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-full text-neutral-400 active:cursor-grabbing">
-                              <GripVertical className="h-4 w-4" />
-                            </div>
-                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800">
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                        {visibleExistingMedia.map((media, index) => {
+                          const preview = mediaPreviewUrl(media);
+                          const combinedIndex = index;
+                          const isBeingDragged = draggedReorderIndex === combinedIndex;
+                          const isDragTarget = dragOverReorderIndex === combinedIndex && draggedReorderIndex !== null && draggedReorderIndex !== combinedIndex;
+                          return (
+                            <div
+                              key={media.id}
+                              draggable={!isReorderingMedia}
+                              onDragStart={(e) => handleMediaDragStart(e, combinedIndex)}
+                              onDragOver={(e) => handleMediaDragOver(e, combinedIndex)}
+                              onDrop={(e) => handleMediaDrop(e, combinedIndex)}
+                              onDragEnd={handleMediaDragEnd}
+                              title={prettyMediaName(media.sourceUrl)}
+                              className={cn(
+                                'group relative aspect-square cursor-grab overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 shadow-sm transition active:cursor-grabbing dark:border-white/10 dark:bg-neutral-800',
+                                isBeingDragged && 'opacity-50',
+                                isDragTarget && 'border-indigo-500/60 ring-2 ring-indigo-500/30',
+                              )}
+                            >
                               {preview && media.type !== 'video' ? (
                                 <img src={preview} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                               ) : (
-                                <div className="flex h-full w-full items-center justify-center text-xs font-bold text-neutral-400">{media.type || 'media'}</div>
+                                <div className="flex h-full w-full items-center justify-center text-xs font-bold uppercase text-neutral-400">{media.type || 'media'}</div>
                               )}
+                              <MediaTileOverlay
+                                position={combinedIndex + 1}
+                                label={media.type === 'image' ? null : (media.type || 'media')}
+                                canMoveLeft={combinedIndex > 0}
+                                canMoveRight={combinedIndex < totalMediaCount - 1}
+                                disabled={isReorderingMedia}
+                                onMove={(direction) => void moveMedia(combinedIndex, combinedIndex + direction)}
+                                onRemove={() => setMediaToRemove(media.id)}
+                              />
                             </div>
-                            <div className="min-w-0 flex-1 truncate font-mono text-xs text-neutral-500 dark:text-neutral-400" title={prettyMediaName(media.sourceUrl)}>{prettyMediaName(media.sourceUrl)}</div>
-                            <span className="shrink-0 rounded-full border border-neutral-200 px-2 py-0.5 text-xs font-bold uppercase text-neutral-500 dark:border-white/10">Existing</span>
-                            <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-red-500/10 hover:text-red-600" onClick={() => setMediaToRemove(media.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
 
-                      {newFiles.map((file, index) => {
-                        const combinedIndex = visibleExistingMedia.length + index;
-                        const isBeingDragged = draggedReorderIndex === combinedIndex;
-                        const isDragTarget = dragOverReorderIndex === combinedIndex && draggedReorderIndex !== null && draggedReorderIndex !== combinedIndex;
-                        return (
-                          <div
-                            key={`${file.name}-${index}`}
-                            draggable={!isReorderingMedia}
-                            onDragStart={(e) => handleMediaDragStart(e, combinedIndex)}
-                            onDragOver={(e) => handleMediaDragOver(e, combinedIndex)}
-                            onDrop={(e) => handleMediaDrop(e, combinedIndex)}
-                            onDragEnd={handleMediaDragEnd}
-                            className={cn(
-                              'flex min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 shadow-sm transition',
-                              isBeingDragged && 'opacity-50',
-                              isDragTarget && 'border-indigo-500/60 ring-2 ring-indigo-500/30',
-                            )}
-                          >
-                            <div className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-full text-neutral-400 active:cursor-grabbing">
-                              <GripVertical className="h-4 w-4" />
-                            </div>
-                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-neutral-800">
+                        {newFiles.map((file, index) => {
+                          const combinedIndex = visibleExistingMedia.length + index;
+                          const isBeingDragged = draggedReorderIndex === combinedIndex;
+                          const isDragTarget = dragOverReorderIndex === combinedIndex && draggedReorderIndex !== null && draggedReorderIndex !== combinedIndex;
+                          return (
+                            <div
+                              key={`${file.name}-${index}`}
+                              draggable={!isReorderingMedia}
+                              onDragStart={(e) => handleMediaDragStart(e, combinedIndex)}
+                              onDragOver={(e) => handleMediaDragOver(e, combinedIndex)}
+                              onDrop={(e) => handleMediaDrop(e, combinedIndex)}
+                              onDragEnd={handleMediaDragEnd}
+                              title={file.name}
+                              className={cn(
+                                'group relative aspect-square cursor-grab overflow-hidden rounded-xl border border-indigo-500/30 bg-indigo-500/5 shadow-sm transition active:cursor-grabbing',
+                                isBeingDragged && 'opacity-50',
+                                isDragTarget && 'border-indigo-500/60 ring-2 ring-indigo-500/30',
+                              )}
+                            >
                               <NewFilePreview file={file} />
+                              <MediaTileOverlay
+                                position={combinedIndex + 1}
+                                label="New"
+                                labelClassName="bg-indigo-600 text-white"
+                                canMoveLeft={combinedIndex > 0}
+                                canMoveRight={combinedIndex < totalMediaCount - 1}
+                                disabled={isReorderingMedia}
+                                onMove={(direction) => void moveMedia(combinedIndex, combinedIndex + direction)}
+                                onRemove={() => setNewFiles((prev) => prev.filter((_, i) => i !== index))}
+                              />
                             </div>
-                            <div className="min-w-0 flex-1 truncate text-xs font-medium text-neutral-950 dark:text-white" title={file.name}>{file.name}</div>
-                            <span className="shrink-0 rounded-full border border-neutral-200 px-2 py-0.5 text-xs font-bold uppercase text-neutral-500 dark:border-white/10">{getFileMediaType(file)}</span>
-                            <span className="shrink-0 rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-bold uppercase text-white">New</span>
-                            <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-red-500/10 hover:text-red-600" onClick={() => setNewFiles((prev) => prev.filter((_, i) => i !== index))}>
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : (
                     <div
