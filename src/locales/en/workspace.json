@@ -413,6 +413,15 @@
     "newChat": "New Chat",
     "conversations": "Chats",
     "noConversations": "No conversations yet",
+    "resourcesTitle": "Resources",
+    "mentionResource": "Mention in chat",
+    "removeResource": "Remove from list",
+    "resourceType": {
+      "library": "Library",
+      "project": "Project",
+      "campaign": "Campaign",
+      "post": "Post"
+    },
     "selectProvider": "Select Provider",
     "selectModel": "Select Model",
     "typePlaceholder": "Type a message...",

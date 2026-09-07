@@ -357,6 +357,15 @@
     "newChat": "새 대화",
     "conversations": "대화 목록",
     "noConversations": "대화가 없습니다",
+    "resourcesTitle": "리소스",
+    "mentionResource": "채팅에서 언급",
+    "removeResource": "목록에서 제거",
+    "resourceType": {
+      "library": "라이브러리",
+      "project": "프로젝트",
+      "campaign": "캠페인",
+      "post": "게시물"
+    },
     "selectProvider": "제공업체 선택",
     "selectModel": "모델 선택",
     "typePlaceholder": "메시지를 입력하세요...",

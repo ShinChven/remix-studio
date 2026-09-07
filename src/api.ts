@@ -1568,6 +1568,26 @@ export interface AssistantMessage {
   createdAt: number;
 }
 
+export type AssistantResourceEntityType = 'library' | 'project' | 'campaign' | 'post';
+
+/** A workspace entity the assistant touched during a conversation. */
+export interface AssistantConversationResource {
+  id: string;
+  conversationId: string;
+  entityType: AssistantResourceEntityType;
+  entityId: string;
+  name: string | null;
+  subType: string | null;
+  href: string;
+  summary: string | null;
+  /** The tool behind the most recent mention — shown on the row as the reason. */
+  toolName: string | null;
+  toolTitle: string | null;
+  mentionCount: number;
+  lastMentionedAt: number;
+  createdAt: number;
+}
+
 export interface AssistantPendingConfirmation {
   id: string;
   conversationId: string;
@@ -1640,9 +1660,35 @@ export async function createAssistantConversation(data: {
 export async function fetchAssistantConversation(id: string): Promise<{
   conversation: AssistantConversation;
   messages: AssistantMessage[];
+  resources: AssistantConversationResource[];
 }> {
   const res = await apiFetch(`/api/assistant/conversations/${id}`, { headers: getHeaders(false) });
-  return handleResponse<{ conversation: AssistantConversation; messages: AssistantMessage[] }>(res, 'Failed to get conversation');
+  const data = await handleResponse<{
+    conversation: AssistantConversation;
+    messages: AssistantMessage[];
+    resources?: AssistantConversationResource[];
+  }>(res, 'Failed to get conversation');
+  return { ...data, resources: data.resources ?? [] };
+}
+
+export async function fetchAssistantConversationResources(
+  conversationId: string,
+): Promise<{ resources: AssistantConversationResource[] }> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/resources`, {
+    headers: getHeaders(false),
+  });
+  return handleResponse<{ resources: AssistantConversationResource[] }>(res, 'Failed to load conversation resources');
+}
+
+export async function deleteAssistantConversationResource(
+  conversationId: string,
+  resourceId: string,
+): Promise<void> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/resources/${resourceId}`, {
+    method: 'DELETE',
+    headers: getHeaders(false),
+  });
+  await handleResponse<{ success: boolean }>(res, 'Failed to remove conversation resource');
 }
 
 export async function updateAssistantConversation(id: string, updates: {

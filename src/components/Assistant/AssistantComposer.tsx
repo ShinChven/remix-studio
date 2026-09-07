@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useImperativeHandle, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bot, Sparkles, FolderOpen, X, Send, Square, ImagePlus, Mic, Loader2 } from 'lucide-react';
+import { Bot, Sparkles, FolderOpen, X, Send, Square, ImagePlus, Mic, Loader2, Megaphone, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { fetchLibraries, fetchLibraryItems, fetchProjects, transcribeAssistantAudio } from '../../api';
@@ -8,11 +8,26 @@ import { resolveAssistantSkillsLibraryId } from '../../lib/assistant-skills';
 import { getTextModelsForProvider, Provider } from '../../types';
 import { ProviderIcon } from '../ProviderIcon';
 
+export type BoundContextType = 'project' | 'library' | 'campaign' | 'post';
+
 export type BoundContext = {
   id: string;
   name: string;
-  type: 'project' | 'library';
+  type: BoundContextType;
   subType?: string;
+};
+
+/** Imperative surface used by the resource sidebar to mention an entity. */
+export interface AssistantComposerHandle {
+  addBoundContext: (context: BoundContext) => void;
+  focus: () => void;
+}
+
+const BOUND_CONTEXT_ICONS: Record<BoundContextType, React.ComponentType<{ className?: string }>> = {
+  project: Sparkles,
+  library: FolderOpen,
+  campaign: Megaphone,
+  post: FileText,
 };
 
 export type AttachedImage = {
@@ -47,6 +62,7 @@ export interface AssistantComposerProps {
   onSend: (text: string, boundContexts: BoundContext[], attachedImages: AttachedImage[]) => void;
   onStop?: () => void;
   placeholder?: string;
+  composerRef?: React.Ref<AssistantComposerHandle>;
 }
 
 const MAX_IMAGES = 5;
@@ -194,6 +210,7 @@ export function AssistantComposer({
   onSend,
   onStop,
   placeholder,
+  composerRef,
 }: AssistantComposerProps) {
   const { t } = useTranslation();
   
@@ -640,6 +657,20 @@ export function AssistantComposer({
     setAttachedImages((prev) => prev.filter((img) => img.id !== id));
   };
 
+  // Lets the resource sidebar drop an entity into the composer the same way
+  // typing `@` does, without duplicating an already-bound entity.
+  useImperativeHandle(composerRef, () => ({
+    addBoundContext: (context: BoundContext) => {
+      setBoundContexts((current) => (
+        current.some((entry) => entry.id === context.id && entry.type === context.type)
+          ? current
+          : [...current, context]
+      ));
+      textareaRef.current?.focus();
+    },
+    focus: () => textareaRef.current?.focus(),
+  }), []);
+
   // ─── Mention / skill pickers ───
 
   const selectResource = (option: BoundContext) => {
@@ -1010,7 +1041,7 @@ export function AssistantComposer({
                     key={context.id}
                     className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300"
                   >
-                    {context.type === 'project' ? <Sparkles className="h-3 w-3" /> : <FolderOpen className="h-3 w-3" />}
+                    {React.createElement(BOUND_CONTEXT_ICONS[context.type] ?? FolderOpen, { className: 'h-3 w-3' })}
                     {context.name}
                     <button
                       type="button"

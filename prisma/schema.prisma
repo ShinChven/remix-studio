@@ -608,9 +608,41 @@ model AssistantConversation {
   user                 User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages             AssistantMessage[]
   pendingConfirmations AssistantPendingConfirmation[]
+  resources            AssistantConversationResource[]
 
   @@index([userId])
   @@index([userId, updatedAt])
+}
+
+/// Workspace entities (libraries, projects, campaigns, posts) a conversation
+/// has touched. Recorded whenever a tool call resolves to one so the assistant
+/// sidebar can list them across reloads, most recently mentioned first.
+model AssistantConversationResource {
+  id              String   @id @default(uuid())
+  conversationId  String
+  /// 'library' | 'project' | 'campaign' | 'post'
+  entityType      String
+  entityId        String
+  name            String?
+  /// Sub-classification shown next to the name (e.g. library/project type).
+  subType         String?
+  /// In-app route the sidebar row links to.
+  href            String
+  /// Short human-readable note about the last thing that happened to it.
+  summary         String?
+  /// The tool behind the most recent mention, and its human-readable title
+  /// (e.g. "create_prompt" / "Create Prompt") — shown on the row as the reason
+  /// it is listed. Null on rows written before this was recorded.
+  toolName        String?
+  toolTitle       String?
+  mentionCount    Int      @default(1)
+  lastMentionedAt DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, entityType, entityId], map: "AssistantConversationResource_entity_key")
+  @@index([conversationId, lastMentionedAt], map: "AssistantConversationResource_recent_idx")
 }
 
 model AssistantMessage {

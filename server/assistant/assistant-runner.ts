@@ -10,6 +10,7 @@ import type { ProviderRepository } from '../db/provider-repository';
 import {
   AssistantToolDefinition,
   ToolDependencies,
+  ToolResult,
   createAssistantToolDefinitions,
 } from '../mcp/tool-definitions';
 import { summarizeToolEffect, toolRequiresConfirmation } from '../mcp/tool-confirmation';
@@ -23,6 +24,7 @@ import type {
 } from './providers/types';
 import { toolParametersJsonSchema } from './providers/types';
 import { ASSISTANT_SYSTEM_PROMPT, wrapToolResult } from './system-prompt';
+import { extractAssistantResourceTarget } from './resource-target';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 
 /**
@@ -113,6 +115,19 @@ export interface ResumeInput {
 /** Simple in-memory per-user turn counter. Multi-process deployments would
  *  need a distributed lock; v1 runs in a single process. */
 const activeTurnsByUser = new Map<string, number>();
+
+/**
+ * The payload a tool actually produced. Most tools skip `structuredContent`
+ * and put their JSON in `text`, so both have to be read to see a result.
+ */
+function toolResultPayload(result: ToolResult): unknown {
+  if (result.structuredContent != null) return result.structuredContent;
+  try {
+    return JSON.parse(result.text);
+  } catch {
+    return null;
+  }
+}
 
 export class AssistantRunner {
   private tools: AssistantToolDefinition[];
@@ -657,6 +672,34 @@ export class AssistantRunner {
     return !isError;
   }
 
+  /**
+   * Record the workspace entity a successful tool call changed, so the
+   * assistant sidebar can list it. Read-only tools are skipped: the list is
+   * what the conversation changed, not everything it looked at.
+   *
+   * Best-effort — never fail a turn over bookkeeping.
+   */
+  private async recordResourceTarget(
+    conversationId: string,
+    tool: AssistantToolDefinition,
+    call: ToolCall,
+    result: ToolResult,
+  ): Promise<void> {
+    if (tool.category === 'read') return;
+    try {
+      const target = extractAssistantResourceTarget(call.name, call.arguments, toolResultPayload(result));
+      if (!target) return;
+      await this.repo.recordConversationResource({
+        conversationId,
+        ...target,
+        toolName: tool.name,
+        toolTitle: tool.title,
+      });
+    } catch (e: any) {
+      console.warn(`[Assistant] Failed to record resource for ${call.name}: ${e?.message ?? e}`);
+    }
+  }
+
   private async executeToolCallInner(
     userId: string,
     conversationId: string,
@@ -679,6 +722,9 @@ export class AssistantRunner {
         toolResultJson: result.structuredContent,
         status: result.isError ? 'error' : 'completed',
       });
+      if (!result.isError) {
+        await this.recordResourceTarget(conversationId, tool, call, result);
+      }
       return result.isError === true;
     } catch (e: any) {
       await this.repo.appendMessage({
