@@ -19,10 +19,12 @@ export class OpenAIGenerator extends ImageGenerator {
   private apiKey: string;
   private client: OpenAI;
   private baseURL?: string;
-  // Fallback for a request that carries no modelId (the legacy POST /api/generate
-  // route). gpt-image-2 is OpenAI's own migration target for the retiring
-  // gpt-image-1.5, so a project orphaned by that removal lands somewhere sane.
-  private defaultModel = 'gpt-image-2';
+  // Fallback for a request that carries no modelId: the legacy POST /api/generate
+  // route, and any project pinned to a modelConfigId that no longer resolves.
+  // Tracks the current generation. Flare rather than Sunburst because this is a
+  // silent fallback -- it is the everyday tier, and the projects that land here
+  // came off cheaper models than Sunburst.
+  private defaultModel = 'gpt-image-2.5-flare';
 
   constructor(apiKey: string, apiUrl?: string) {
     super();

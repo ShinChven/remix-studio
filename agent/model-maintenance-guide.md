@@ -241,8 +241,8 @@ they were raised for, since three model families now share that code path.
 shutdown. `gpt-image-1-mini` retires on the same date and is still listed, so it
 is the next entry to drop. OpenAI names `gpt-image-2` as the replacement for all
 three retiring image models (`gpt-image-1.5`, `gpt-image-1-mini` and
-`chatgpt-image-latest`), which is also why the generator's `defaultModel` moved
-from `gpt-image-1.5` to `gpt-image-2` rather than to a 2.5 tier.
+`chatgpt-image-latest`), but the generator's `defaultModel` tracks the current
+generation instead and is `gpt-image-2.5-flare`.
 
 That default matters more than a fallback usually would. It covers a request
 that carries no `modelId` — the legacy `POST /api/generate` route, whose
@@ -252,6 +252,13 @@ entry does not fail such a project: `getAllModels(...).find(...)` returns
 `undefined`, the queue sends no `modelId`, and the generator quietly falls back.
 So the default is what orphaned projects generate with, and dropping an entry
 means checking that the fallback is still a model those projects should land on.
+
+Between the two 2.5 tiers the default is Flare, not Sunburst, precisely because
+it is reached silently: Flare is the everyday tier, and a project that lands
+here got there by losing a pin to a cheaper model. Keep this on the newest
+everyday tier as the catalog moves — the legacy route's `1K`/`2K`/`4K` parameter
+only takes effect on a model that uses the gpt-image-2 geometry path, which the
+retired `gpt-image-1.5` did not.
 
 OpenAI has no video row: Sora 2 and Sora 2 Pro were dropped when OpenAI set the
 Sora API's shutdown for September 24, 2026 with no successor model, so
