@@ -995,18 +995,6 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
-      id: 'openai-gpt-image-1-5',
-      name: 'GPT Image 1.5',
-      generatorId: 'OpenAI',
-      modelId: 'gpt-image-1.5',
-      category: 'image',
-      options: {
-        aspectRatios: ['1024x1024', '1024x1536', '1536x1024', 'auto'],
-        qualities: ['low', 'medium', 'high', 'auto'],
-        backgrounds: ['transparent', 'opaque', 'auto'],
-      },
-    },
-    {
       id: 'openai-gpt-image-1-mini',
       name: 'GPT Image 1 Mini',
       generatorId: 'OpenAI',

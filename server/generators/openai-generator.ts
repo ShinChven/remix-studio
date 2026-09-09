@@ -19,7 +19,10 @@ export class OpenAIGenerator extends ImageGenerator {
   private apiKey: string;
   private client: OpenAI;
   private baseURL?: string;
-  private defaultModel = 'gpt-image-1.5';
+  // Fallback for a request that carries no modelId (the legacy POST /api/generate
+  // route). gpt-image-2 is OpenAI's own migration target for the retiring
+  // gpt-image-1.5, so a project orphaned by that removal lands somewhere sane.
+  private defaultModel = 'gpt-image-2';
 
   constructor(apiKey: string, apiUrl?: string) {
     super();
