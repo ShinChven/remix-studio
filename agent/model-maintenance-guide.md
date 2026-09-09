@@ -208,8 +208,9 @@ not this one.
 ### OpenAI
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
+| GPT Image 2.5 Sunburst | `gpt-image-2.5-sunburst` | image | - |
+| GPT Image 2.5 Flare | `gpt-image-2.5-flare` | image | - |
 | GPT Image 2 | `gpt-image-2` | image | - |
-| GPT Image 1.5 | `gpt-image-1.5` | image | - |
 | GPT Image 1 Mini | `gpt-image-1-mini` | image | - |
 | GPT-5.6 | `gpt-5.6` | text | 131,072 |
 | GPT-5.6 Terra | `gpt-5.6-terra` | text | 131,072 |
@@ -218,6 +219,46 @@ not this one.
 | GPT-5.4 | `gpt-5.4` | text | 131,072 |
 | GPT-5.4 Mini | `gpt-5.4-mini` | text | 128,000 |
 | GPT-5.4 Nano | `gpt-5.4-nano` | text | 128,000 |
+
+GPT Image 2.5 ships as two model IDs rather than one — `gpt-image-2.5-flare` is
+the small, speed-tuned tier (quality comparable to GPT Image 2) and
+`gpt-image-2.5-sunburst` the base, quality-tuned one — so both are listed and a
+project picks the tier it wants. They inherit GPT Image 2's size contract
+exactly (edges a multiple of 16px, max edge 3840px, 655,360-8,294,400 total
+pixels, ratios up to 3:1), which is why `usesGptImage2Geometry` in
+`openai-generator.ts` matches on the `gpt-image-2` prefix and covers all three.
+Two traits do not carry over. GPT Image 2.5 restores the transparent background
+that GPT Image 2 dropped, so the transparency guard is
+`supportsTransparentBackground` — the narrower `isGptImage25Model` check — and
+not the geometry predicate it used to share; the png-or-webp requirement for a
+transparent output still applies. And 2.5 adds two quality tiers above `high`,
+`xhigh` and `max`, which the older models reject, so `resolveQuality` takes the
+model and degrades both to `high` for anything that is not 2.5 rather than
+sending a value the API refuses. The size and geometry errors name the model
+they were raised for, since three model families now share that code path.
+
+`gpt-image-1.5` was removed from the catalog ahead of its December 1, 2026
+shutdown. `gpt-image-1-mini` retires on the same date and is still listed, so it
+is the next entry to drop. OpenAI names `gpt-image-2` as the replacement for all
+three retiring image models (`gpt-image-1.5`, `gpt-image-1-mini` and
+`chatgpt-image-latest`), but the generator's `defaultModel` tracks the current
+generation instead and is `gpt-image-2.5-flare`.
+
+That default matters more than a fallback usually would. It covers a request
+that carries no `modelId` — the legacy `POST /api/generate` route, whose
+contract is a `1K`/`2K`/`4K` tier and a plain aspect ratio — but it also covers
+a project pinned to a `modelConfigId` that no longer resolves. Removing a model
+entry does not fail such a project: `getAllModels(...).find(...)` returns
+`undefined`, the queue sends no `modelId`, and the generator quietly falls back.
+So the default is what orphaned projects generate with, and dropping an entry
+means checking that the fallback is still a model those projects should land on.
+
+Between the two 2.5 tiers the default is Flare, not Sunburst, precisely because
+it is reached silently: Flare is the everyday tier, and a project that lands
+here got there by losing a pin to a cheaper model. Keep this on the newest
+everyday tier as the catalog moves — the legacy route's `1K`/`2K`/`4K` parameter
+only takes effect on a model that uses the gpt-image-2 geometry path, which the
+retired `gpt-image-1.5` did not.
 
 OpenAI has no video row: Sora 2 and Sora 2 Pro were dropped when OpenAI set the
 Sora API's shutdown for September 24, 2026 with no successor model, so

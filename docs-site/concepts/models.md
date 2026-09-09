@@ -43,7 +43,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | :--- | :--- |
 | **Google AI** | `nano banana 2`, `nano banana Pro`, `nano banana 2 Lite` |
 | **Vertex AI** | `nano banana 2`, `nano banana Pro`, `nano banana 2 Lite` |
-| **OpenAI** | `GPT Image 2`, `GPT Image 1.5`, `GPT Image 1 Mini` |
+| **OpenAI** | `GPT Image 2.5 Sunburst`, `GPT Image 2.5 Flare`, `GPT Image 2`, `GPT Image 1 Mini` |
 | **Grok** | `Grok Imagine Image 2.0`, `Grok Imagine`, `Grok Imagine Quality` |
 | **MiniMax** | `MiniMax Image 01` |
 | **RunningHub** | `nano banana 2`, `nano banana Pro`, `GPT Image 2`, `GPT Image 2 Official`, `Qwen Image 2 Pro`, `Grok Imagine Quality`, `Seedream 5.0 Pro`, `Seedream V5 Pro`, `Wan 2.7 Pro` |
