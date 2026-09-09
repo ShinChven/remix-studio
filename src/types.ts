@@ -959,6 +959,30 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   ],
   OpenAI: [
     {
+      id: 'openai-gpt-image-2-5-sunburst',
+      name: 'GPT Image 2.5 Sunburst',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-image-2.5-sunburst',
+      category: 'image',
+      options: {
+        aspectRatios: ['1024x1024', '1536x1024', '1024x1536', '2048x2048', '2048x1152', '1152x2048', '3840x2160', '2160x3840', 'auto'],
+        qualities: ['low', 'medium', 'high', 'xhigh', 'max', 'auto'],
+        backgrounds: ['transparent', 'opaque', 'auto'],
+      },
+    },
+    {
+      id: 'openai-gpt-image-2-5-flare',
+      name: 'GPT Image 2.5 Flare',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-image-2.5-flare',
+      category: 'image',
+      options: {
+        aspectRatios: ['1024x1024', '1536x1024', '1024x1536', '2048x2048', '2048x1152', '1152x2048', '3840x2160', '2160x3840', 'auto'],
+        qualities: ['low', 'medium', 'high', 'xhigh', 'max', 'auto'],
+        backgrounds: ['transparent', 'opaque', 'auto'],
+      },
+    },
+    {
       id: 'openai-gpt-image-2',
       name: 'GPT Image 2',
       generatorId: 'OpenAI',

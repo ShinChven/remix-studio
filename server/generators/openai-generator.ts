@@ -3,7 +3,7 @@ import { ImageGenerator, GenerateRequest, GenerateResult } from './image-generat
 
 type OpenAIBackground = 'transparent' | 'opaque' | 'auto';
 type OpenAIOutputFormat = 'png' | 'jpeg' | 'webp';
-type OpenAIQuality = 'low' | 'medium' | 'high' | 'auto';
+type OpenAIQuality = 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'auto';
 
 const LEGACY_OPENAI_IMAGE_SIZES = new Set(['1024x1024', '1024x1536', '1536x1024', 'auto']);
 const GPT_IMAGE_2_TARGET_PIXELS: Record<'1K' | '2K' | '4K', number> = {
@@ -102,7 +102,7 @@ export class OpenAIGenerator extends ImageGenerator {
     const outputFormat = this.resolveOutputFormat(req.format);
     const background = this.resolveBackground(model, req.background, outputFormat);
     const size = this.resolveSize(model, req.aspectRatio, req.imageSize);
-    const quality = this.resolveQuality(req.imageSize);
+    const quality = this.resolveQuality(model, req.imageSize);
 
     const params: Record<string, unknown> = {};
     if (size) params.size = size;
@@ -123,7 +123,7 @@ export class OpenAIGenerator extends ImageGenerator {
     }
   }
 
-  private resolveQuality(value?: string): OpenAIQuality {
+  private resolveQuality(model: string, value?: string): OpenAIQuality {
     switch ((value || '').toLowerCase()) {
       case 'low':
         return 'low';
@@ -133,6 +133,10 @@ export class OpenAIGenerator extends ImageGenerator {
       case 'high':
       case 'hd':
         return 'high';
+      case 'xhigh':
+        return this.isGptImage25Model(model) ? 'xhigh' : 'high';
+      case 'max':
+        return this.isGptImage25Model(model) ? 'max' : 'high';
       case 'auto':
         return 'auto';
       default:
@@ -153,8 +157,8 @@ export class OpenAIGenerator extends ImageGenerator {
       case 'opaque':
         return 'opaque';
       case 'transparent':
-        if (this.isGptImage2Model(model)) {
-          throw new Error('gpt-image-2 does not support transparent backgrounds');
+        if (!this.supportsTransparentBackground(model)) {
+          throw new Error(`${model} does not support transparent backgrounds`);
         }
         if (outputFormat === 'jpeg') {
           throw new Error('Transparent background requires png or webp output format');
@@ -168,15 +172,15 @@ export class OpenAIGenerator extends ImageGenerator {
   private resolveSize(model: string, aspectRatio?: string, imageSize?: string): string {
     const normalizedAspectRatio = (aspectRatio || '').trim();
     if (!normalizedAspectRatio) {
-      return this.isGptImage2Model(model) ? 'auto' : '1024x1024';
+      return this.usesGptImage2Geometry(model) ? 'auto' : '1024x1024';
     }
 
     if (normalizedAspectRatio === 'auto') {
       return 'auto';
     }
 
-    if (this.isGptImage2Model(model)) {
-      return this.resolveGptImage2Size(normalizedAspectRatio, imageSize);
+    if (this.usesGptImage2Geometry(model)) {
+      return this.resolveGptImage2Size(model, normalizedAspectRatio, imageSize);
     }
 
     return this.resolveLegacySize(normalizedAspectRatio);
@@ -202,10 +206,10 @@ export class OpenAIGenerator extends ImageGenerator {
     return ratio > 1 ? '1536x1024' : '1024x1536';
   }
 
-  private resolveGptImage2Size(aspectRatio: string, imageSize?: string): string {
+  private resolveGptImage2Size(model: string, aspectRatio: string, imageSize?: string): string {
     const exactSize = this.parseExactSize(aspectRatio);
     if (exactSize) {
-      this.assertValidGptImage2Size(exactSize.width, exactSize.height);
+      this.assertValidGptImage2Size(model, exactSize.width, exactSize.height);
       return `${exactSize.width}x${exactSize.height}`;
     }
 
@@ -216,7 +220,7 @@ export class OpenAIGenerator extends ImageGenerator {
 
     const longToShort = Math.max(ratio, 1 / ratio);
     if (longToShort > 3) {
-      throw new Error('gpt-image-2 supports aspect ratios up to 3:1');
+      throw new Error(`${model} supports aspect ratios up to 3:1`);
     }
 
     const tier = this.normalizeResolutionTier(imageSize) || '1K';
@@ -250,7 +254,7 @@ export class OpenAIGenerator extends ImageGenerator {
       finalHeight = this.ceilToMultipleOf16(Math.min(finalHeight * scaleUp, GPT_IMAGE_2_MAX_EDGE));
     }
 
-    this.assertValidGptImage2Size(finalWidth, finalHeight);
+    this.assertValidGptImage2Size(model, finalWidth, finalHeight);
     return `${finalWidth}x${finalHeight}`;
   }
 
@@ -301,27 +305,39 @@ export class OpenAIGenerator extends ImageGenerator {
     return Math.max(16, Math.ceil(value / 16) * 16);
   }
 
-  private assertValidGptImage2Size(width: number, height: number): void {
+  private assertValidGptImage2Size(model: string, width: number, height: number): void {
     if (width > GPT_IMAGE_2_MAX_EDGE || height > GPT_IMAGE_2_MAX_EDGE) {
-      throw new Error('gpt-image-2 max edge length is 3840px');
+      throw new Error(`${model} max edge length is 3840px`);
     }
     if (width % 16 !== 0 || height % 16 !== 0) {
-      throw new Error('gpt-image-2 image sizes must use multiples of 16px');
+      throw new Error(`${model} image sizes must use multiples of 16px`);
     }
 
     const pixels = width * height;
     if (pixels < GPT_IMAGE_2_MIN_PIXELS || pixels > GPT_IMAGE_2_MAX_PIXELS) {
-      throw new Error('gpt-image-2 total pixels must be between 655,360 and 8,294,400');
+      throw new Error(`${model} total pixels must be between 655,360 and 8,294,400`);
     }
 
     const longToShort = Math.max(width, height) / Math.min(width, height);
     if (longToShort > 3) {
-      throw new Error('gpt-image-2 supports aspect ratios up to 3:1');
+      throw new Error(`${model} supports aspect ratios up to 3:1`);
     }
   }
 
-  private isGptImage2Model(model: string): boolean {
+  // gpt-image-2 and gpt-image-2.5 share one size contract: multiples of 16px, a
+  // 3840px max edge, 655,360-8,294,400 total pixels and ratios up to 3:1.
+  private usesGptImage2Geometry(model: string): boolean {
     return model.toLowerCase().startsWith('gpt-image-2');
+  }
+
+  private isGptImage25Model(model: string): boolean {
+    return model.toLowerCase().startsWith('gpt-image-2.5');
+  }
+
+  // gpt-image-2 is the one model in the family that dropped transparency;
+  // gpt-image-2.5 brought it back.
+  private supportsTransparentBackground(model: string): boolean {
+    return !this.usesGptImage2Geometry(model) || this.isGptImage25Model(model);
   }
 
   private async bufferToFile(buffer: Buffer, filename: string): Promise<any> {
