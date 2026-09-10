@@ -683,6 +683,71 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'runninghub-gpt-image-2-5-sunburst',
+      name: 'GPT Image 2.5 Sunburst',
+      generatorId: 'RunningHub',
+      // RunningHub serves the 2.5 tiers under a two-segment path rather than a
+      // flat model slug, so the endpoint suffix is appended to `<model>/<tier>`.
+      modelId: 'rhart-image-g-2.5/sunburst',
+      category: 'image',
+      promptLimit: { value: 20000, unit: 'characters' },
+      options: {
+        // The documented enum has no `auto` value on either endpoint.
+        aspectRatios: ['1:1', '1:2', '2:1', '1:3', '3:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', '9:21'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'runninghub-gpt-image-2-5-flare',
+      name: 'GPT Image 2.5 Flare',
+      generatorId: 'RunningHub',
+      modelId: 'rhart-image-g-2.5/flare',
+      category: 'image',
+      promptLimit: { value: 20000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '1:2', '2:1', '1:3', '3:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', '9:21'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'runninghub-gpt-image-2-5-official-token-sunburst',
+      name: 'GPT Image 2.5 Sunburst Official',
+      generatorId: 'RunningHub',
+      modelId: 'rhart-image-g-2.5-official-token/sunburst',
+      category: 'image',
+      promptLimit: { value: 32000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '1:2', '2:1', '1:3', '3:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', '9:21'],
+        // The official-token endpoints require a resolution tier and take an
+        // optional quality tier; both are carried in this one picker value and
+        // split apart in running-hub-generator.ts. `XHigh` is spelled without a
+        // separator so the splitter reads it as one tier rather than `high`.
+        qualities: [
+          '1K Auto', '1K Low', '1K Medium', '1K High', '1K XHigh', '1K Max',
+          '2K Auto', '2K Low', '2K Medium', '2K High', '2K XHigh', '2K Max',
+          '4K Auto', '4K Low', '4K Medium', '4K High', '4K XHigh', '4K Max',
+        ],
+        backgrounds: ['auto', 'transparent', 'opaque'],
+      },
+    },
+    {
+      id: 'runninghub-gpt-image-2-5-official-token-flare',
+      name: 'GPT Image 2.5 Flare Official',
+      generatorId: 'RunningHub',
+      modelId: 'rhart-image-g-2.5-official-token/flare',
+      category: 'image',
+      promptLimit: { value: 32000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '1:2', '2:1', '1:3', '3:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', '9:21'],
+        qualities: [
+          '1K Auto', '1K Low', '1K Medium', '1K High', '1K XHigh', '1K Max',
+          '2K Auto', '2K Low', '2K Medium', '2K High', '2K XHigh', '2K Max',
+          '4K Auto', '4K Low', '4K Medium', '4K High', '4K XHigh', '4K Max',
+        ],
+        backgrounds: ['auto', 'transparent', 'opaque'],
+      },
+    },
+    {
       id: 'runninghub-gpt-image-2',
       name: 'GPT Image 2',
       generatorId: 'RunningHub',

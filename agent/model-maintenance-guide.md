@@ -310,6 +310,10 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 |---|---|---|
 | nano banana 2 | `rhart-image-n-g31-flash` | image |
 | nano banana Pro | `rhart-image-n-pro` | image |
+| GPT Image 2.5 Sunburst | `rhart-image-g-2.5/sunburst` | image |
+| GPT Image 2.5 Flare | `rhart-image-g-2.5/flare` | image |
+| GPT Image 2.5 Sunburst Official | `rhart-image-g-2.5-official-token/sunburst` | image |
+| GPT Image 2.5 Flare Official | `rhart-image-g-2.5-official-token/flare` | image |
 | GPT Image 2 | `rhart-image-g-2` | image |
 | GPT Image 2 Official | `rhart-image-g-2-official` | image |
 | Qwen Image 2 Pro | `alibaba/qwen-image-2.0-pro` | image |
@@ -321,6 +325,48 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 | Seedance 2.0 Global Multimodal Reference | `bytedance/seedance-2.0-global/multimodal-video` | video |
 | MiniMax Hailuo H3 | `minimax/hailuo-h3/image-to-video` | video |
 | MiniMax Hailuo H3 Multimodal Reference | `minimax/hailuo-h3/multimodal-to-video` | video |
+
+RunningHub serves GPT Image 2.5 under a two-segment path — a model plus a
+`sunburst` or `flare` tier — rather than the flat slug the older rhart models
+use, so each entry carries its tier in the `modelId` and the generator appends
+the endpoint suffix to it unchanged
+(`.../rhart-image-g-2.5/sunburst/text-to-image`). It comes in two billing
+tiers, and they are *not* the same API: `rhart-image-g-2.5` is the economy one
+and `rhart-image-g-2.5-official-token` the official-token one, each with both
+model tiers, so four entries in all. Watch the prefixes when adding a
+predicate — `rhart-image-g-2-official` (the GPT Image 2 official tier) is not a
+substring of `rhart-image-g-2.5-official-token`, and the economy
+`rhart-image-g-2.5` is not a substring of it either, which is what keeps
+`isGptImage2Official` and `isGptImage25OfficialToken` from matching each
+other's models.
+
+The economy tier needed no generator code: its request body is the default
+rhart shape (`prompt`, `resolution`, optional `aspectRatio`, `imageUrls` on the
+reference endpoint) and its reference endpoint is the default
+`/image-to-image`. The official-token tier differs in four ways and has its own
+branch. It edits through `/edit` rather than `/image-to-image`; it takes
+`background` (`auto`/`transparent`/`opaque`) and `outputFormat`
+(`jpeg`/`png`/`webp`) on top; `resolution` is required rather than optional;
+and its `quality` enum adds the two tiers 2.5 puts above `high` (`xhigh`,
+`max`) plus `auto`. Quality and resolution share the project's single quality
+picker the same way `rhart-image-g-2-official` does — 18 combined values rather
+than 9 — and `resolveTieredSize` splits a value back into the two fields for
+both tiers, parameterised by the quality list. That splitter tokenises on
+whitespace, `_`, `/` and `-`, so a multi-word tier has to be spelled without a
+separator: the picker says `XHigh`, because `X-High` would tokenise to `high`.
+It also accepts 32,000-character prompts against the economy tier's 20,000.
+
+The documented aspect-ratio enum has no `auto` value on any of the four, so no
+entry offers it — the generator's `auto` handling omits the field, which would
+silently drop the user's choice rather than fail. All four take the same 15
+ratios and the same `1k`/`2k`/`4k` tiers.
+
+Neither tier is guarded against a transparent background on a `jpeg` output,
+which cannot hold an alpha channel — RunningHub documents the two fields as
+independent optionals and its coercion behaviour is unknown, so the request is
+sent as configured rather than rejected client-side the way
+`openai-generator.ts` rejects its own. If it turns out to fail upstream, that
+guard is the fix.
 
 `rhart-image-g-2-official` is the official-tier sibling of the economy
 `rhart-image-g-2`. It uses the same endpoints and payload, except that the API
