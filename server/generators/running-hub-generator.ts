@@ -71,12 +71,30 @@ function isGptImage2Official(modelId?: string, apiUrl?: string): boolean {
   return target.includes('rhart-image-g-2-official');
 }
 
-function resolveGptImage2OfficialSize(imageSize?: string): { resolution: string; quality: string } {
+// Split a combined picker value ("2K Medium") back into the two request fields.
+// `-` is one of the separators, so a multi-word tier has to be spelled without
+// one ("XHigh"): "X-High" would tokenise to `high` and pick the wrong tier.
+function resolveTieredSize(
+  imageSize: string | undefined,
+  qualities: string[],
+  defaultQuality: string,
+): { resolution: string; quality: string } {
   const parts = (imageSize || '').toLowerCase().split(/[\s_/-]+/).filter(Boolean);
   return {
     resolution: parts.find((p) => GPT_IMAGE_2_RESOLUTIONS.includes(p)) || '1k',
-    quality: parts.find((p) => GPT_IMAGE_2_QUALITIES.includes(p)) || 'medium',
+    quality: parts.find((p) => qualities.includes(p)) || defaultQuality,
   };
+}
+
+// rhart-image-g-2.5-official-token is the official-token tier of GPT Image 2.5.
+// It shares the combined resolution + quality picker with rhart-image-g-2-official
+// but adds the two tiers 2.5 puts above `high`, takes `background` and
+// `outputFormat` on top, and edits through `/edit` rather than `/image-to-image`.
+const GPT_IMAGE_25_QUALITIES = ['auto', 'low', 'medium', 'high', 'xhigh', 'max'];
+
+function isGptImage25OfficialToken(modelId?: string, apiUrl?: string): boolean {
+  const target = `${modelId || ''} ${apiUrl || ''}`.toLowerCase();
+  return target.includes('rhart-image-g-2.5-official-token');
 }
 
 // Seedream 5.0 Pro takes explicit width/height (240 - 8192). Its `resolution`
@@ -179,7 +197,7 @@ export class RunningHubGenerator extends ImageGenerator {
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
-    const { prompt, aspectRatio = '2:3', imageSize = '1K', format, refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
+    const { prompt, aspectRatio = '2:3', imageSize = '1K', format, background, refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
 
     const isQwen = isQwenImage2Pro(modelId, reqApiUrl);
     const isGrok = isGrokImagineQuality(modelId, reqApiUrl);
@@ -187,6 +205,7 @@ export class RunningHubGenerator extends ImageGenerator {
     const isWan = isWan27Pro(modelId, reqApiUrl);
     const isNanoPro = isRhartImageNPro(modelId, reqApiUrl);
     const isGptOfficial = isGptImage2Official(modelId, reqApiUrl);
+    const isGpt25Token = isGptImage25OfficialToken(modelId, reqApiUrl);
 
     // --- Step 1: optional image upload ---
     // Grok Imagine Quality's /edit carries a single imageUrl, so uploading the
@@ -204,10 +223,10 @@ export class RunningHubGenerator extends ImageGenerator {
     }
 
     const isTextToImage = imageUrls.length === 0;
-    // Qwen uses `/image-edit`, Grok Imagine Quality and rhart-image-n-pro use
-    // `/edit`, Wan 2.7 uses `/image-edit-pro`, the rhart flash model uses
-    // `/image-to-image`.
-    const refEndpointType = isQwen ? 'image-edit' : (isGrok || isNanoPro) ? 'edit' : isWan ? 'image-edit-pro' : 'image-to-image';
+    // Qwen uses `/image-edit`, Grok Imagine Quality, rhart-image-n-pro and the
+    // GPT Image 2.5 official-token tier use `/edit`, Wan 2.7 uses
+    // `/image-edit-pro`, the rhart flash model uses `/image-to-image`.
+    const refEndpointType = isQwen ? 'image-edit' : (isGrok || isNanoPro || isGpt25Token) ? 'edit' : isWan ? 'image-edit-pro' : 'image-to-image';
     const endpointType = isTextToImage ? (isWan ? 'text-to-image-pro' : 'text-to-image') : refEndpointType;
 
     let actualSubmitUrl = reqApiUrl;
@@ -282,9 +301,20 @@ export class RunningHubGenerator extends ImageGenerator {
         resolution: imageSize.toLowerCase(), // API expects "1k", not "1K"
       };
       if (isGptOfficial) {
-        const { resolution, quality } = resolveGptImage2OfficialSize(imageSize);
+        const { resolution, quality } = resolveTieredSize(imageSize, GPT_IMAGE_2_QUALITIES, 'medium');
         payload.resolution = resolution;
         payload.quality = quality;
+      }
+      if (isGpt25Token) {
+        const { resolution, quality } = resolveTieredSize(imageSize, GPT_IMAGE_25_QUALITIES, 'auto');
+        payload.resolution = resolution;
+        payload.quality = quality;
+        if (background) {
+          payload.background = background;
+        }
+        if (format) {
+          payload.outputFormat = format.toLowerCase() === 'jpg' ? 'jpeg' : format.toLowerCase();
+        }
       }
       // aspectRatio is optional; "auto" means letting the API decide, so omit the field.
       if (aspectRatio !== 'auto') {
