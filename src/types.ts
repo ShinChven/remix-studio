@@ -683,6 +683,33 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'runninghub-gpt-image-2-5-sunburst',
+      name: 'GPT Image 2.5 Sunburst',
+      generatorId: 'RunningHub',
+      // RunningHub serves the 2.5 tiers under a two-segment path rather than a
+      // flat model slug, so the endpoint suffix is appended to `<model>/<tier>`.
+      modelId: 'rhart-image-g-2.5/sunburst',
+      category: 'image',
+      promptLimit: { value: 20000, unit: 'characters' },
+      options: {
+        // The documented enum has no `auto` value on either endpoint.
+        aspectRatios: ['1:1', '1:2', '2:1', '1:3', '3:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', '9:21'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'runninghub-gpt-image-2-5-flare',
+      name: 'GPT Image 2.5 Flare',
+      generatorId: 'RunningHub',
+      modelId: 'rhart-image-g-2.5/flare',
+      category: 'image',
+      promptLimit: { value: 20000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '1:2', '2:1', '1:3', '3:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', '9:21'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
       id: 'runninghub-gpt-image-2',
       name: 'GPT Image 2',
       generatorId: 'RunningHub',

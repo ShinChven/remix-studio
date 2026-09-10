@@ -310,6 +310,8 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 |---|---|---|
 | nano banana 2 | `rhart-image-n-g31-flash` | image |
 | nano banana Pro | `rhart-image-n-pro` | image |
+| GPT Image 2.5 Sunburst | `rhart-image-g-2.5/sunburst` | image |
+| GPT Image 2.5 Flare | `rhart-image-g-2.5/flare` | image |
 | GPT Image 2 | `rhart-image-g-2` | image |
 | GPT Image 2 Official | `rhart-image-g-2-official` | image |
 | Qwen Image 2 Pro | `alibaba/qwen-image-2.0-pro` | image |
@@ -321,6 +323,19 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 | Seedance 2.0 Global Multimodal Reference | `bytedance/seedance-2.0-global/multimodal-video` | video |
 | MiniMax Hailuo H3 | `minimax/hailuo-h3/image-to-video` | video |
 | MiniMax Hailuo H3 Multimodal Reference | `minimax/hailuo-h3/multimodal-to-video` | video |
+
+RunningHub serves GPT Image 2.5 under a two-segment path — `rhart-image-g-2.5`
+plus a `sunburst` or `flare` tier — rather than the flat slug the older rhart
+models use, so both entries carry the tier in their `modelId` and the generator
+appends the endpoint suffix to it unchanged (`.../rhart-image-g-2.5/sunburst/text-to-image`).
+Neither tier needed generator code: their request body is the default rhart
+shape (`prompt`, `resolution`, optional `aspectRatio`, `imageUrls` on the
+reference endpoint) and their reference endpoint is the default
+`/image-to-image`. The documented aspect-ratio enum has no `auto` value on
+either endpoint, so neither entry offers it — the generator's `auto` handling
+omits the field, which would silently drop the user's choice rather than fail.
+Both take the same 15 ratios and the same `1k`/`2k`/`4k` tiers, and both cap
+prompts at 20,000 characters.
 
 `rhart-image-g-2-official` is the official-tier sibling of the economy
 `rhart-image-g-2`. It uses the same endpoints and payload, except that the API
