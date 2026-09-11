@@ -11,6 +11,7 @@ import { TextAlbumCompareDialog } from './TextAlbumCompareDialog';
 import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
 import { CopyToLibraryDialog } from './CopyToLibraryDialog';
 import { AlbumActionsMenu, AlbumSearch, type AlbumAction } from './AlbumToolbarControls';
+import { AlbumMoveToProjectDialog } from './AlbumMoveToProjectDialog';
 import { SelectionToolbar } from './SelectionToolbar';
 import { AlbumBatchTagModal, AlbumBatchTagMode } from './AlbumBatchTagModal';
 import { TagModal } from '../TagModal';
@@ -384,6 +385,7 @@ export function AlbumTab({
   const [expandedAudioIds, setExpandedAudioIds] = useState<Set<string>>(new Set());
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [renameItem, setRenameItem] = useState<AlbumItem | null>(null);
+  const [moveItems, setMoveItems] = useState<AlbumItem[] | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
   const [tagItem, setTagItem] = useState<AlbumItem | null>(null);
@@ -617,22 +619,9 @@ export function AlbumTab({
     navigate(`/project/${projectId}/export-watermark?${params.toString()}`, { state });
   };
 
-  /**
-   * Hand the selection to the move confirmation page. The ids go through
-   * sessionStorage rather than the query string so a selection of any size
-   * survives the navigation and a reload of that page.
-   */
   const openMoveToProject = () => {
     if (selectedDisplayItemIds.length === 0) return;
-    const scopeKey = `album-move:${projectId}:${Date.now()}`;
-    try {
-      sessionStorage.setItem(scopeKey, JSON.stringify(selectedDisplayItemIds));
-    } catch {
-      // A full or disabled store just means the page falls back to the state below.
-    }
-    navigate(`/project/${projectId}/album/move?scopeKey=${encodeURIComponent(scopeKey)}`, {
-      state: { itemIds: selectedDisplayItemIds },
-    });
+    setMoveItems(displayItems.filter((item) => selectedAlbumIds.has(item.id)));
   };
 
   const albumActions: AlbumAction[] = [
@@ -1302,6 +1291,19 @@ export function AlbumTab({
         onClose={() => setShowBatchTagModal(false)}
         onApply={applyBatchTags}
       />
+      {moveItems && moveItems.length > 0 && (
+        <AlbumMoveToProjectDialog
+          projectId={projectId}
+          projectName={projectName}
+          projectType={projectType}
+          items={moveItems}
+          onClose={() => setMoveItems(null)}
+          onMoved={(destinationProjectId) => {
+            setMoveItems(null);
+            navigate(`/project/${destinationProjectId}?tab=album`);
+          }}
+        />
+      )}
     </section>
   );
 }
