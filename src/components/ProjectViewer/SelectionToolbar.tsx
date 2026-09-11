@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckSquare, Square } from 'lucide-react';
+import { CheckSquare, Square, Loader2 } from 'lucide-react';
 
 interface SelectionToolbarProps {
   /** Total number of items in the list. */
@@ -31,6 +31,11 @@ interface SelectionToolbarProps {
    * separated by a vertical divider (e.g. AlbumTab's item count + MB display).
    */
   prefix?: React.ReactNode;
+  /**
+   * Shows a small spinner inside the bar while the list behind it is refreshing.
+   * The bar is always on screen, so the spinner never covers a row.
+   */
+  isLoading?: boolean;
 }
 
 /** A thin vertical divider — only shown once the pane is wide enough for labelled buttons. */
@@ -47,6 +52,7 @@ export function SelectionToolbar({
   zeroSelectionActions,
   rightActions,
   prefix,
+  isLoading = false,
 }: SelectionToolbarProps) {
   const { t } = useTranslation();
 
@@ -88,6 +94,17 @@ export function SelectionToolbar({
         <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest whitespace-nowrap flex-shrink-0 @min-[56rem]/pane:hidden">
           {selectedCount > 0 ? `${selectedCount}/${totalCount}` : `${totalCount}`}
         </span>
+
+        {isLoading && (
+          <span
+            role="status"
+            title={t('projectViewer.common.loading')}
+            aria-label={t('projectViewer.common.loading')}
+            className="flex items-center flex-shrink-0"
+          >
+            <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+          </span>
+        )}
 
         {selectedCount > 0 && (
           <>
