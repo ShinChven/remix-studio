@@ -2465,7 +2465,15 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               onSortChange={handleCompletedSortChange}
             />
           )}
-          {activeTab === 'album' && isLoadingAlbum && (
+          {/*
+            The album list stays mounted while it reloads, so a full-surface overlay would
+            sit on top of the rows the user is still looking at. It is absolutely positioned
+            inside this scroller too, which anchors it to the top of the scrolled content
+            rather than to the viewport — once the list was scrolled, the dimmed panel and
+            its spinner landed in the middle of the grid. Show it only when there is nothing
+            underneath; otherwise the album toolbar carries the spinner.
+          */}
+          {activeTab === 'album' && isLoadingAlbum && albumItems.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20 pointer-events-none">
               <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
             </div>

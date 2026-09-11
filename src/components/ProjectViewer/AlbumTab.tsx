@@ -677,6 +677,7 @@ export function AlbumTab({
         <SelectionToolbar
             totalCount={displayItems.length}
             selectedCount={selectedDisplayItemIds.length}
+            isLoading={isLoading}
             onToggleSelectAll={() => toggleSelectAllAlbum(displayItemIds)}
             prefix={!isTextProject && (
               <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest">
