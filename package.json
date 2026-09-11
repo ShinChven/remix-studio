@@ -1,7 +1,7 @@
 {
   "name": "remix-studio",
   "private": true,
-  "version": "1.22.0",
+  "version": "1.23.0",
   "type": "module",
   "scripts": {
     "dev": "tsx watch --exclude \"agent/**\" --exclude \"data/**\" --exclude \"dist/**\" --exclude \"dist-server/**\" --exclude \"docs/**\" --exclude \"docs-site/**\" server.ts",
@@ -15,7 +15,8 @@
     "docs:install": "npm --prefix docs-site install",
     "docs:dev": "npm --prefix docs-site run dev",
     "docs:build": "npm --prefix docs-site run build",
-    "docs:preview": "npm --prefix docs-site run preview"
+    "docs:preview": "npm --prefix docs-site run preview",
+    "db:migrate": "npx prisma migrate deploy"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
