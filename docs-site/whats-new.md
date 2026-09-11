@@ -8,6 +8,39 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.23.0 — GPT Image 2.5, an assistant that survives a refresh, and a searchable album
+
+*OpenAI's newest image models arrive on both OpenAI and RunningHub, a chat no longer loses its turn when you reload the page, and the album gains search, a tidier toolbar and a way to move results into another project.*
+
+**Added**
+
+- **GPT Image 2.5** — OpenAI's newest image models are selectable on any OpenAI provider. They ship as two models rather than one: **Sunburst** is the base model tuned for quality, for work where editing precision and subject preservation matter, and **Flare** is the small, speed-tuned one, at roughly GPT Image 2's quality with up to half the latency. Both take the same sizes and aspect ratios as GPT Image 2, from 1024x1024 up to 3840x2160. Transparent backgrounds are back — GPT Image 2 had dropped them — and two quality tiers, **xhigh** and **max**, sit above **high** on the 2.5 models only.
+- **GPT Image 2.5 on RunningHub** — The same two models are available through RunningHub's wallet instead of an OpenAI key, in an economy tier and an official-token tier. The official tier is not just a price difference: it takes 32,000-character prompts rather than 20,000, up to sixteen reference images rather than ten, the full quality range including **xhigh** and **max**, and a **Background** picker — the first RunningHub image model to offer one.
+- **The assistant survives a refresh** — A chat turn used to live and die with the page that started it, so reloading, locking your phone, or a proxy timing out a long run left work still going server-side with nothing watching it — and a confirmation card that vanished left the conversation stuck waiting on a question it no longer asked. Turns now run independently of the page. Come back to a working conversation and it reattaches, replays what you missed, and follows the run to its result; a pending confirmation is still there waiting for you.
+- **Conversation resources in the assistant sidebar** — What a conversation had worked on was announced with a big card in the message stream, repeated per tool call and lost as soon as you scrolled past it. The sidebar now lists them: one compact row per library, project, campaign or post, with the reason it is listed underneath (**Create Prompt**, **Tag Album Items**, **Update Post Text**), most recently touched at the top, each linking into the app. The list survives a reload.
+- **Move album items to another project** — Results could be copied into a library but never moved into another project, so a batch generated in the wrong place could only be exported and re-imported, leaving the originals behind and losing their history. **Move to Project** now takes the items and everything behind them — the files, the job that produced each one, and its workflow snapshot with the reference media — so **Reuse workflow** still works from the destination. It opens a confirmation page showing what is selected, its size, what travels with it, and a picker for an existing project or a new one created on the spot.
+- **Album search** — The album toolbar has a search box that matches an item's name and its prompt, across the whole album rather than the page on screen.
+- **A paged media picker** — The picker loaded a flat 500 items per source and filtered them in the browser, so anything past the 500th was silently unreachable and every open pulled the whole slice down. It pages now, with the same pager the album uses, and searching and sorting cover the whole set.
+- **A searchable tag filter in the library preview** — In a library with more than about three rows of tags, the rest were scrollable but invisible and read as missing. The filter now leads with your selection and the most-used tags, and **All tags (N)** opens a panel with search, a most-used / A-Z sort, counts, and a real scrollbar — a bottom sheet on a phone.
+- **The same library in several workflow steps** — A library a step already used was greyed out, so a project could never draw two independent items from one library: two subjects from one subject library, or a foreground and a background from one image library. Every library is selectable now, and the **Added** badge counts the references (**Added ×2**) instead of blocking them.
+
+**Improved**
+
+- **A tidier album toolbar** — With items selected the toolbar carried nine controls. Export, copy to library, move to project, tag and delete now sit behind one **Actions** menu, which is what makes room for the search box.
+- **The post editor on phones** — Attached media was a list of full-width rows that overflowed a narrow screen and left the thumbnails tiny. It is a grid of square tiles now — two columns on a phone, four on a large screen — with the controls as overlays, and left/right buttons so reordering works by touch. Dragging to reorder on the desktop is unchanged.
+
+**Fixed**
+
+- **Moving album items reported a failure after it had worked** — The move finished, then its cleanup step failed and the whole operation reported an error, so it looked as though nothing had happened when everything had.
+- **The album loading overlay covered the grid** — While the album reloaded, a dimmed panel and a spinner were drawn over the results you were still looking at, and once the list had been scrolled they drifted into the middle of the grid. Refreshing now shows a small spinner in the toolbar instead.
+- **Album card overlays painted over the selection toolbar** — A row scrolling under the toolbar left its checkbox and delete button drawn on top of the bar.
+- **Select-all checkboxes sat left of the row checkboxes** — The header checkbox was a few pixels out of line with the column below it in the project viewer, on Exports, and in the text-library editor.
+- **The Rename and Tool approvals dialogs were muddy in light mode** — Both resolved to grey instead of white. Dark mode is unchanged.
+
+**Removed**
+
+- **GPT Image 1.5** — OpenAI shuts `gpt-image-1.5` down on December 1, 2026, and it is retired from the catalog ahead of that date. GPT Image 2.5 Sunburst and Flare, GPT Image 2 and GPT Image 1 Mini are unaffected.
+
 ## 1.22.0 — Album tags, upload history per export, and a faster Campaigns page
 
 *Tag anything in a project album and filter by it, see every release a finished export has been through, and page through campaigns instead of waiting for all of them to load.*
