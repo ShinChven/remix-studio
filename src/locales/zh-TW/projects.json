@@ -75,7 +75,9 @@
     "descriptionPlaceholder": "說明這個專案的用途、會產生什麼，或應如何使用。",
     "descriptionHelp": "選填。會顯示在卡片、設定檔和 MCP 工具中。",
     "identityTitle": "身分",
-    "identityDescription": "命名與輸出檔案設定。"
+    "identityDescription": "命名與輸出檔案設定。",
+    "saveFailed": "保存專案失敗",
+    "loadFailed": "載入專案失敗"
   },
   "projectOrphans": {
     "title": "孤立檔案管理",

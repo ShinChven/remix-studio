@@ -75,7 +75,9 @@
     "customIdDescription": "Leave blank for automatic ID generation",
     "cancel": "Cancel",
     "submitCreate": "Start Project",
-    "submitSave": "Save Changes"
+    "submitSave": "Save Changes",
+    "saveFailed": "Failed to save the project",
+    "loadFailed": "Failed to load the project"
   },
   "projectOrphans": {
     "title": "Orphan Files Management",

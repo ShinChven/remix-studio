@@ -10,6 +10,7 @@ import { PageNav } from '../components/PageNav';
 import type { BoundContext } from '../components/Assistant/AssistantComposer';
 import { ProjectCard } from '../components/EntityCards';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { ProjectFormDialog } from '../components/ProjectFormDialog';
 
 type StatusFilter = 'active' | 'archived' | 'all';
 
@@ -33,6 +34,8 @@ export function Projects() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [exportingId, setExportingId] = useState<string | null>(null);
+  /** The open project form, and the project it duplicates when there is one. */
+  const [projectForm, setProjectForm] = useState<{ copyFromId?: string } | null>(null);
 
   const navigate = useNavigate();
 
@@ -71,7 +74,7 @@ export function Projects() {
     return () => { mounted = false; };
   }, [page, q, status]);
 
-  const addProject = () => navigate('/project/new');
+  const addProject = () => setProjectForm({});
 
   const handlePageChange = (newPage: number) => {
     setSearchParams(prev => {
@@ -274,7 +277,7 @@ export function Projects() {
                     isExporting={exportingId === project.id}
                     onStartAssistantChat={handleStartAssistantChat}
                     onToggleArchive={handleToggleArchive}
-                    onDuplicate={(item) => navigate('/project/new', { state: { copyFrom: item.id } })}
+                    onDuplicate={(item) => setProjectForm({ copyFromId: item.id })}
                     onExportBundle={handleExportBundle}
                     onDelete={setDeleteTarget}
                   />
@@ -310,6 +313,17 @@ export function Projects() {
       >
         <Plus className="w-8 h-8" />
       </button>
+
+      {projectForm && (
+        <ProjectFormDialog
+          copyFromId={projectForm.copyFromId}
+          onClose={() => setProjectForm(null)}
+          onSaved={(saved) => {
+            setProjectForm(null);
+            navigate(`/project/${saved.id}`);
+          }}
+        />
+      )}
 
       <ConfirmDialog
         isOpen={!!deleteTarget}

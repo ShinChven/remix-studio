@@ -75,7 +75,9 @@
     "descriptionPlaceholder": "이 프로젝트가 수행하는 작업, 생성하는 결과물 또는 사용 방법을 설명하세요.",
     "descriptionHelp": "선택 사항입니다. 카드, 프로필, MCP 도구에 표시됩니다.",
     "identityTitle": "ID",
-    "identityDescription": "이름 및 파일 출력 설정."
+    "identityDescription": "이름 및 파일 출력 설정.",
+    "saveFailed": "프로젝트를 저장하지 못했습니다",
+    "loadFailed": "프로젝트를 불러오지 못했습니다"
   },
   "projectOrphans": {
     "title": "고립된 파일 관리",

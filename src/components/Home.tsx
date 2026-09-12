@@ -13,6 +13,7 @@ import {
 } from '../lib/assistant-provider-settings';
 import { AssistantHero } from './Assistant/AssistantHero';
 import { ConfirmDialog } from './ConfirmDialog';
+import { ProjectFormDialog } from './ProjectFormDialog';
 
 export function Home() {
   const { t } = useTranslation();
@@ -24,6 +25,8 @@ export function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [isDeletingProject, setIsDeletingProject] = useState(false);
+  /** The open project form, and the project it duplicates when there is one. */
+  const [projectForm, setProjectForm] = useState<{ copyFromId?: string } | null>(null);
 
   // AI Chat State
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -97,7 +100,7 @@ export function Home() {
     }
   };
 
-  const addProject = () => navigate('/project/new');
+  const addProject = () => setProjectForm({});
   const addLibrary = () => navigate('/library/new');
 
   const handleStartProjectChat = (project: Project) => {
@@ -228,7 +231,7 @@ export function Home() {
                     <ProjectCard
                       project={project}
                       onStartAssistantChat={handleStartProjectChat}
-                      onDuplicate={(item) => navigate('/project/new', { state: { copyFrom: item.id } })}
+                      onDuplicate={(item) => setProjectForm({ copyFromId: item.id })}
                       onDelete={setDeleteTarget}
                     />
                   </div>
@@ -352,6 +355,17 @@ export function Home() {
             </>
         )}
       </div>
+      {projectForm && (
+        <ProjectFormDialog
+          copyFromId={projectForm.copyFromId}
+          onClose={() => setProjectForm(null)}
+          onSaved={(saved) => {
+            setProjectForm(null);
+            navigate(`/project/${saved.id}`);
+          }}
+        />
+      )}
+
       <ConfirmDialog
         isOpen={!!deleteTarget}
         title={t('projects.deleteTitle', { defaultValue: 'Delete Project' })}

@@ -44,6 +44,7 @@ import { QueueTab } from './ProjectViewer/QueueTab';
 import { CompletedTab } from './ProjectViewer/CompletedTab';
 import { AlbumTab } from './ProjectViewer/AlbumTab';
 import { WorkflowPanel } from './ProjectViewer/WorkflowPanel';
+import { ProjectFormDialog } from './ProjectFormDialog';
 import type { BoundContext } from './Assistant/AssistantComposer';
 
 interface Props {
@@ -234,6 +235,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
+  /** Which project form is open: the one editing this project, or the one duplicating it. */
+  const [projectFormMode, setProjectFormMode] = useState<'edit' | 'duplicate' | null>(null);
   const [itemToRemoveId, setItemToRemoveId] = useState<string | null>(null);
   const [jobToDeleteId, setJobToDeleteId] = useState<string | null>(null);
   const [configToReuse, setConfigToReuse] = useState<JobConfiguration | null>(null);
@@ -2320,9 +2323,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         isAddingDrafts={isAddingDrafts}
         draftsProgress={draftsProgress}
         combinationsCount={combinationsCount}
-        onNavigateToEdit={() => navigate(`/project/${project.id}/edit`)}
+        onNavigateToEdit={() => setProjectFormMode('edit')}
         onNavigateToOrphans={() => navigate(`/project/${project.id}/orphans`)}
-        onNavigateToDuplicate={() => navigate(`/project/new`, { state: { copyFrom: project.id } })}
+        onNavigateToDuplicate={() => setProjectFormMode('duplicate')}
         onStartAssistantChat={handleStartAssistantChat}
         onShowDeleteProject={() => setShowDeleteProjectModal(true)}
         onToggleArchive={handleToggleArchive}
@@ -2569,6 +2572,21 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       />
       <ConfirmModal isOpen={showDeleteSelectedModal} onClose={() => setShowDeleteSelectedModal(false)} onConfirm={deleteSelectedDrafts} title={t('projectViewer.confirm.deleteSelectedDrafts.title')} message={t('projectViewer.confirm.deleteSelectedDrafts.message', { count: selectedDraftIds.size })} confirmText={t('projectViewer.confirm.deleteSelectedDrafts.confirm')} type="danger" />
       <ConfirmModal isOpen={showDeleteAllDraftsModal} onClose={() => setShowDeleteAllDraftsModal(false)} onConfirm={deleteAllDrafts} title={t('projectViewer.confirm.deleteAllDrafts.title')} message={t('projectViewer.confirm.deleteAllDrafts.message', { count: draftJobs.length })} confirmText={t('projectViewer.confirm.deleteAllDrafts.confirm')} type="danger" />
+      {projectFormMode && (
+        <ProjectFormDialog
+          projectId={projectFormMode === 'edit' ? localProject.id : undefined}
+          copyFromId={projectFormMode === 'duplicate' ? localProject.id : undefined}
+          onClose={() => setProjectFormMode(null)}
+          onSaved={(saved) => {
+            setProjectFormMode(null);
+            if (saved.isNew) {
+              navigate(`/project/${saved.id}`);
+              return;
+            }
+            setLocalProject(prev => ({ ...prev, name: saved.name, description: saved.description, prefix: saved.prefix }));
+          }}
+        />
+      )}
       <ConfirmModal isOpen={showDeleteProjectModal} onClose={() => setShowDeleteProjectModal(false)} onConfirm={onDelete} title={t('projectViewer.confirm.deleteProject.title')} message={t('projectViewer.confirm.deleteProject.message', { name: localProject.name })} confirmText={t('projectViewer.confirm.deleteProject.confirm')} type="danger" />
       <ConfirmModal isOpen={jobToDeleteId !== null} onClose={() => setJobToDeleteId(null)} onConfirm={async () => { if (jobToDeleteId) { await deleteJob(jobToDeleteId); setJobToDeleteId(null); } }} title={t('projectViewer.confirm.deleteJob.title')} message={t('projectViewer.confirm.deleteJob.message')} confirmText={t('projectViewer.confirm.deleteJob.confirm')} type="danger" />
       <LibrarySelectionModal
