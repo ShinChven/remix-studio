@@ -206,12 +206,14 @@ export default function ExtensionImport() {
 
     window.addEventListener('message', handleMessage);
 
-    const shared = consumePwaShareHandoff();
-    if (shared) {
+    let released = false;
+    void consumePwaShareHandoff().then((shared) => {
+      if (released || !shared) return;
       applyPayload({ type: shared.type, data: shared.data, name: shared.name });
-    }
+    });
 
     return () => {
+      released = true;
       window.removeEventListener('message', handleMessage);
       clearTimeout(timer);
     };

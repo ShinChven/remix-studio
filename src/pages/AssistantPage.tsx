@@ -794,10 +794,9 @@ export function AssistantPage() {
   }, [navigate, applyToComposer]);
 
   useEffect(() => {
-    const shared = consumePwaShareHandoff();
-    if (shared) {
-      applyToComposer(shared);
-    }
+    void consumePwaShareHandoff().then((shared) => {
+      if (shared) applyToComposer(shared);
+    });
   }, [applyToComposer]);
 
   useEffect(() => {
