@@ -75,7 +75,9 @@
     "customIdDescription": "留空则自动生成 ID",
     "cancel": "取消",
     "submitCreate": "开始项目",
-    "submitSave": "保存更改"
+    "submitSave": "保存更改",
+    "saveFailed": "保存项目失败",
+    "loadFailed": "加载项目失败"
   },
   "projectOrphans": {
     "title": "孤立文件管理",

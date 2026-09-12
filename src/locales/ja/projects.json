@@ -75,7 +75,9 @@
     "descriptionPlaceholder": "このプロジェクトの目的、生成するもの、使用方法を説明してください。",
     "descriptionHelp": "任意。カード、プロフィール、MCPツールに表示されます。",
     "identityTitle": "アイデンティティ",
-    "identityDescription": "名前と出力ファイルの設定。"
+    "identityDescription": "名前と出力ファイルの設定。",
+    "saveFailed": "プロジェクトを保存できませんでした",
+    "loadFailed": "プロジェクトを読み込めませんでした"
   },
   "projectOrphans": {
     "title": "孤立ファイルの管理",

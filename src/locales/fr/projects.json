@@ -75,7 +75,9 @@
     "descriptionPlaceholder": "Expliquez ce que ce projet fait, ce qu’il génère ou comment il doit être utilisé.",
     "descriptionHelp": "Facultatif. Affiché sur les cartes, le profil et les outils MCP.",
     "identityTitle": "Identité",
-    "identityDescription": "Paramètres de nommage et de fichiers de sortie."
+    "identityDescription": "Paramètres de nommage et de fichiers de sortie.",
+    "saveFailed": "Échec de l'enregistrement du projet",
+    "loadFailed": "Échec du chargement du projet"
   },
   "projectOrphans": {
     "title": "Gestion des fichiers orphelins",

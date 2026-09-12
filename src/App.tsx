@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { ApiKeyCheck } from './components/ApiKeyCheck';
 import { MainLayout } from './components/MainLayout';
@@ -20,7 +20,6 @@ import { Libraries } from './pages/Libraries';
 import { Projects } from './pages/Projects';
 import { ProjectImport } from './pages/ProjectImport';
 import { LibraryForm } from './pages/LibraryForm.tsx';
-import { ProjectForm } from './pages/ProjectForm.tsx';
 import { PromptEditor } from './pages/PromptEditor.tsx';
 import { LibraryCleanup } from './pages/LibraryCleanup.tsx';
 import { LibraryImportExport } from './pages/LibraryImportExport.tsx';
@@ -63,6 +62,15 @@ function LegacyRedirect({ to }: { to: string }) {
   return <Navigate to={`${to}${search}${hash}`} replace />;
 }
 
+/**
+ * The project form used to be a page of its own; it is a dialog now. Links and
+ * bookmarks to the edit route land on the project the dialog is raised from.
+ */
+function ProjectEditRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/project/${id}`} replace />;
+}
+
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
   
@@ -91,10 +99,10 @@ export default function App() {
               <Route path="projects/import" element={<ProjectImport />} />
               <Route path="projects/queues" element={<QueueMonitor />} />
               <Route path="queues" element={<Navigate to="/projects/queues" replace />} />
-              <Route path="project/new" element={<ProjectForm />} />
+              <Route path="project/new" element={<LegacyRedirect to="/projects" />} />
               <Route path="project/:id/export-watermark" element={<ExportWatermark />} />
               <Route path="project/:id" element={<ProjectRoute />} />
-              <Route path="project/:id/edit" element={<ProjectForm />} />
+              <Route path="project/:id/edit" element={<ProjectEditRedirect />} />
               <Route path="project/:id/orphans" element={<ProjectOrphans />} />
               <Route path="library/:id" element={<LibraryRoute />} />
               <Route path="library/:id/import-export" element={<LibraryImportExport />} />
