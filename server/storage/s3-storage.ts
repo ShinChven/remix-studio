@@ -4,9 +4,10 @@ import {
   GetObjectCommand,
   HeadObjectCommand,
   DeleteObjectCommand,
-  ListObjectsV2Command,
   CopyObjectCommand,
+  paginateListObjectsV2,
 } from '@aws-sdk/client-s3';
+import type { _Object } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Upload } from '@aws-sdk/lib-storage';
 import type { Readable } from 'node:stream';
@@ -163,27 +164,37 @@ export class S3Storage implements IStorage {
     );
   }
 
-  async listObjects(prefix: string): Promise<string[]> {
-    const result = await this.client.send(
-      new ListObjectsV2Command({
-        Bucket: this.bucket,
-        Prefix: prefix,
-      })
+  /**
+   * Yield every object under a prefix, following continuation tokens.
+   * A single S3/MinIO list response is capped at 1000 keys, so callers that
+   * need the whole prefix must page through it.
+   */
+  private async *iterateObjects(prefix: string): AsyncGenerator<_Object> {
+    const pages = paginateListObjectsV2(
+      { client: this.client },
+      { Bucket: this.bucket, Prefix: prefix }
     );
-    return (result.Contents || []).map((obj) => obj.Key!).filter(Boolean);
+    for await (const page of pages) {
+      for (const obj of page.Contents || []) {
+        yield obj;
+      }
+    }
   }
-  
+
+  async listObjects(prefix: string): Promise<string[]> {
+    const keys: string[] = [];
+    for await (const obj of this.iterateObjects(prefix)) {
+      if (obj.Key) keys.push(obj.Key);
+    }
+    return keys;
+  }
+
   async listObjectsWithMetadata(prefix: string): Promise<{ key: string; size: number | undefined }[]> {
-    const result = await this.client.send(
-      new ListObjectsV2Command({
-        Bucket: this.bucket,
-        Prefix: prefix,
-      })
-    );
-    return (result.Contents || []).map((obj) => ({
-      key: obj.Key!,
-      size: obj.Size
-    })).filter((obj) => Boolean(obj.key));
+    const objects: { key: string; size: number | undefined }[] = [];
+    for await (const obj of this.iterateObjects(prefix)) {
+      if (obj.Key) objects.push({ key: obj.Key, size: obj.Size });
+    }
+    return objects;
   }
 
   async getPresignedUrl(
@@ -211,24 +222,21 @@ export class S3Storage implements IStorage {
   }
 
   async rename(oldPrefix: string, newPrefix: string): Promise<void> {
-    const listed = await this.client.send(
-      new ListObjectsV2Command({
-        Bucket: this.bucket,
-        Prefix: oldPrefix,
-      })
-    );
+    // Collect the full listing before mutating, so copies and deletes never
+    // interleave with the pagination that produced the keys.
+    const keys = await this.listObjects(oldPrefix);
 
-    for (const obj of listed.Contents || []) {
-      const newKey = obj.Key!.replace(oldPrefix, newPrefix);
+    for (const key of keys) {
+      const newKey = newPrefix + key.slice(oldPrefix.length);
       await this.client.send(
         new CopyObjectCommand({
           Bucket: this.bucket,
-          CopySource: `${this.bucket}/${obj.Key}`,
+          CopySource: `${this.bucket}/${key}`,
           Key: newKey,
         })
       );
       await this.client.send(
-        new DeleteObjectCommand({ Bucket: this.bucket, Key: obj.Key! })
+        new DeleteObjectCommand({ Bucket: this.bucket, Key: key })
       );
     }
   }
