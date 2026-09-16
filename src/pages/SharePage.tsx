@@ -27,6 +27,10 @@ type ShareDiagnostics = {
   contentType?: string;
   method?: string;
   parseError?: string;
+  /** Bytes in the request body, or -1 when it was never read. */
+  bodyBytes?: number;
+  /** Set when the platform parser found nothing and the body was parsed by hand. */
+  recoveredBy?: string;
 };
 
 type ShareMeta = {
@@ -167,10 +171,17 @@ function describeDiagnostics(share: LoadedShare): string {
   if (fieldNames && fieldNames.length > 0) {
     return `The share arrived with no content in it (fields received: ${fieldNames.join(', ')}).`;
   }
-  // Nothing at all came through. What the request looked like is the only
-  // thing that tells these apart when someone reports it.
+  // Nothing at all came through, and the body was read back to be sure of it:
+  // an empty body is the sending app's doing, while a body with bytes in it
+  // that still parses to nothing is ours. Saying which is which is the only
+  // thing that makes the next report of this actionable.
+  const { bodyBytes } = share.diagnostics;
+  if (bodyBytes === 0) {
+    return 'The other app started a share but sent no content with it. Try sharing from the gallery rather than the preview, or save the image first and share the saved copy.';
+  }
   const seen = [
     method ? `method ${method}` : '',
+    typeof bodyBytes === 'number' && bodyBytes > 0 ? `${bodyBytes} bytes` : '',
     contentType ? `content type ${contentType}` : '',
     parseError ? `parse error: ${parseError}` : '',
   ].filter(Boolean);
