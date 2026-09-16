@@ -25,6 +25,8 @@ type ShareDiagnostics = {
   fileCount?: number;
   unreadableFiles?: number;
   contentType?: string;
+  method?: string;
+  parseError?: string;
 };
 
 type ShareMeta = {
@@ -53,6 +55,34 @@ type LoadedShare = {
   /** Files the worker recorded that were no longer readable from the cache. */
   missingFiles: number;
 };
+
+const IMAGE_TYPE_BY_EXTENSION: Record<string, string> = {
+  avif: 'image/avif',
+  bmp: 'image/bmp',
+  gif: 'image/gif',
+  heic: 'image/heic',
+  heif: 'image/heif',
+  jpe: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  jpg: 'image/jpeg',
+  png: 'image/png',
+  svg: 'image/svg+xml',
+  webp: 'image/webp',
+};
+
+/**
+ * Android hands over gallery photos with an empty or generic MIME type often
+ * enough to matter: a blob typed application/octet-stream neither renders in
+ * an <img> nor survives the hand-off to /import as a usable data URL, so the
+ * name decides the type when the platform would not.
+ */
+function resolveImageType(declared: string, name: string): string {
+  const type = (declared || '').toLowerCase();
+  if (type.startsWith('image/')) return type;
+  const match = /\.([a-z0-9]+)$/i.exec(name || '');
+  const guessed = match ? IMAGE_TYPE_BY_EXTENSION[match[1].toLowerCase()] : '';
+  return guessed || type || 'application/octet-stream';
+}
 
 async function openShareCache(): Promise<Cache | null> {
   if (!('caches' in window)) return null;
@@ -92,10 +122,12 @@ async function loadShare(): Promise<LoadedShare | null> {
       missingFiles += 1;
       continue;
     }
-    const blob = await fileRes.blob();
+    const raw = await fileRes.blob();
+    const type = resolveImageType(file.type || raw.type, file.name || '');
+    const blob = type === raw.type ? raw : new Blob([raw], { type });
     images.push({
       name: file.name || '',
-      type: file.type || blob.type,
+      type,
       blob,
       objectUrl: URL.createObjectURL(blob),
     });
@@ -125,7 +157,7 @@ async function clearShare(): Promise<void> {
 }
 
 function describeDiagnostics(share: LoadedShare): string {
-  const { unreadableFiles, fieldNames } = share.diagnostics;
+  const { unreadableFiles, fieldNames, method, contentType, parseError } = share.diagnostics;
   if (share.missingFiles > 0) {
     return `The shared ${share.missingFiles === 1 ? 'file' : 'files'} could not be read back from storage. Sharing again usually works.`;
   }
@@ -135,7 +167,16 @@ function describeDiagnostics(share: LoadedShare): string {
   if (fieldNames && fieldNames.length > 0) {
     return `The share arrived with no content in it (fields received: ${fieldNames.join(', ')}).`;
   }
-  return 'The share arrived with nothing in it.';
+  // Nothing at all came through. What the request looked like is the only
+  // thing that tells these apart when someone reports it.
+  const seen = [
+    method ? `method ${method}` : '',
+    contentType ? `content type ${contentType}` : '',
+    parseError ? `parse error: ${parseError}` : '',
+  ].filter(Boolean);
+  return seen.length > 0
+    ? `The share arrived with nothing in it (${seen.join(', ')}). Try sharing again.`
+    : 'The share arrived with nothing in it.';
 }
 
 export default function SharePage() {
