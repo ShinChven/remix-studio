@@ -62,6 +62,103 @@ function resolveFileType(file) {
   return guessed || declared || 'application/octet-stream';
 }
 
+// ---------------------------------------------------------------------------
+// Manual multipart parsing
+//
+// Chrome on Android can hand the worker a share whose body is a well-formed
+// multipart POST — the right content type, Blink's own boundary — that
+// request.formData() then resolves to a FormData with no entries at all. No
+// error is raised; the parse simply yields nothing, and the share reads as
+// empty when the image is sitting right there in the body.
+//
+// So when the platform parser comes back with nothing, the bytes are parsed
+// here instead. This is the only path that touches the raw body, and it only
+// runs on that failure, so the usual share still costs one parse.
+// ---------------------------------------------------------------------------
+
+function boundaryOf(contentType) {
+  const match = /;\s*boundary=(?:"([^"]*)"|([^;]*))/i.exec(contentType || '');
+  if (!match) return '';
+  return (match[1] || match[2] || '').trim();
+}
+
+function indexOfBytes(haystack, needle, from) {
+  outer: for (let i = from; i <= haystack.length - needle.length; i++) {
+    for (let j = 0; j < needle.length; j++) {
+      if (haystack[i + j] !== needle[j]) continue outer;
+    }
+    return i;
+  }
+  return -1;
+}
+
+function encodeAscii(text) {
+  const out = new Uint8Array(text.length);
+  for (let i = 0; i < text.length; i++) out[i] = text.charCodeAt(i) & 0xff;
+  return out;
+}
+
+// name="x"; filename="y" — quoted, with backslash escapes, or bare.
+function dispositionValue(disposition, key) {
+  const quoted = new RegExp(`;\\s*${key}\\s*=\\s*"((?:[^"\\\\]|\\\\.)*)"`, 'i').exec(disposition);
+  if (quoted) return quoted[1].replace(/\\(.)/g, '$1');
+  const bare = new RegExp(`;\\s*${key}\\s*=\\s*([^;]*)`, 'i').exec(disposition);
+  return bare ? bare[1].trim() : null;
+}
+
+function parseMultipart(bytes, contentType) {
+  const boundary = boundaryOf(contentType);
+  if (!boundary || !bytes.length) return [];
+
+  const delimiter = encodeAscii(`--${boundary}`);
+  const entries = [];
+  const decoder = new TextDecoder();
+
+  let cursor = indexOfBytes(bytes, delimiter, 0);
+  if (cursor < 0) return [];
+  cursor += delimiter.length;
+
+  while (cursor < bytes.length) {
+    // "--" straight after a delimiter closes the body.
+    if (bytes[cursor] === 0x2d && bytes[cursor + 1] === 0x2d) break;
+    if (bytes[cursor] === 0x0d && bytes[cursor + 1] === 0x0a) cursor += 2;
+
+    const next = indexOfBytes(bytes, delimiter, cursor);
+    const partEnd = next < 0 ? bytes.length : next;
+
+    const headerEnd = indexOfBytes(bytes.subarray(0, partEnd), encodeAscii('\r\n\r\n'), cursor);
+    if (headerEnd < 0) break;
+
+    const headers = decoder.decode(bytes.subarray(cursor, headerEnd));
+    // The part's own trailing CRLF belongs to the delimiter, not the content.
+    let contentEnd = partEnd;
+    if (next >= 0 && contentEnd >= 2 && bytes[contentEnd - 2] === 0x0d && bytes[contentEnd - 1] === 0x0a) {
+      contentEnd -= 2;
+    }
+    const content = bytes.slice(headerEnd + 4, contentEnd);
+
+    const disposition = /^content-disposition:\s*(.*)$/im.exec(headers);
+    const partType = /^content-type:\s*(.*)$/im.exec(headers);
+    if (disposition) {
+      const name = dispositionValue(disposition[1], 'name');
+      const filename = dispositionValue(disposition[1], 'filename');
+      if (name !== null) {
+        if (filename !== null) {
+          const type = partType ? partType[1].trim() : '';
+          entries.push([name, new File([content], filename, { type })]);
+        } else {
+          entries.push([name, decoder.decode(content)]);
+        }
+      }
+    }
+
+    if (next < 0) break;
+    cursor = next + delimiter.length;
+  }
+
+  return entries;
+}
+
 // Reads whatever the platform posted without assuming the field names, and
 // reports what it saw so the landing page can explain an empty share instead
 // of rendering a blank preview.
@@ -72,6 +169,8 @@ async function readSharedPayload(request) {
   const files = [];
   let unreadableFiles = 0;
   let parseError = '';
+  let bodyBytes = -1;
+  let recoveredBy = '';
 
   // Cloned before the body is touched: once formData() has started reading,
   // the body is disturbed and clone() throws, which used to turn a recoverable
@@ -89,20 +188,31 @@ async function readSharedPayload(request) {
     entries = Array.from(formData.entries());
   } catch (e) {
     parseError = String((e && e.message) || e || 'form parse failed');
-    // Not a form body after all — take the raw body as the shared text rather
-    // than losing the share.
-    let body = '';
+  }
+
+  // The platform parser found nothing, either by failing or by resolving empty.
+  // The body itself is the authority on whether the share carried anything, so
+  // it is read and parsed here before the share is written off as empty.
+  if (entries.length === 0 && fallback) {
     try {
-      body = fallback ? await fallback.text() : '';
-    } catch {
-      body = '';
-    }
-    if (body) {
-      try {
-        entries = Array.from(new URLSearchParams(body).entries());
-      } catch {
-        entries = [['text', body]];
+      const raw = new Uint8Array(await fallback.arrayBuffer());
+      bodyBytes = raw.length;
+      if (raw.length > 0) {
+        if (/multipart\/form-data/i.test(contentType)) {
+          entries = parseMultipart(raw, contentType);
+          if (entries.length > 0) recoveredBy = 'multipart';
+        } else {
+          const body = new TextDecoder().decode(raw);
+          try {
+            entries = Array.from(new URLSearchParams(body).entries());
+          } catch {
+            entries = [['text', body]];
+          }
+          if (entries.length > 0) recoveredBy = 'raw-body';
+        }
       }
+    } catch (e) {
+      if (!parseError) parseError = String((e && e.message) || e || 'body read failed');
     }
   }
 
@@ -129,10 +239,12 @@ async function readSharedPayload(request) {
     contentType,
     method: request.method,
     parseError,
+    bodyBytes,
+    recoveredBy,
   });
 }
 
-function buildMeta({ fields, fieldNames, files, unreadableFiles, contentType, method, parseError }) {
+function buildMeta({ fields, fieldNames, files, unreadableFiles, contentType, method, parseError, bodyBytes, recoveredBy }) {
   const text = fields.text || '';
   const title = fields.title || '';
   const url = fields.url || '';
@@ -157,6 +269,8 @@ function buildMeta({ fields, fieldNames, files, unreadableFiles, contentType, me
         contentType,
         method: method || '',
         parseError: parseError || '',
+        bodyBytes: typeof bodyBytes === 'number' ? bodyBytes : -1,
+        recoveredBy: recoveredBy || '',
       },
       receivedAt: Date.now(),
     },
@@ -304,6 +418,8 @@ async function handleShareGet(url) {
       contentType: 'query-string',
       method: 'GET',
       parseError: '',
+      bodyBytes: -1,
+      recoveredBy: '',
     });
     await writeShare(payload);
     return shareLanding();
