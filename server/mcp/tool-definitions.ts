@@ -21,6 +21,8 @@ import {
   DEFAULT_AUDIO_PROJECT_CONFIG,
   parseAudioProjectConfig,
   PROVIDER_MODELS_MAP,
+  resolveSupportedAspectRatio,
+  resolveSupportedOption,
 } from '../../src/types';
 import type { Job, Library, ModelConfig, Project } from '../../src/types';
 
@@ -408,10 +410,43 @@ function buildJobFilename(filenameParts: string[], suffixId: string): string {
   return `${readableName.substring(0, maxReadableLength)}${separator}${safeSuffixId}`;
 }
 
+/** Look a catalog model up by its config id, across every provider type. */
+function findCatalogModel(modelConfigId: string): ModelConfig | undefined {
+  for (const models of Object.values(PROVIDER_MODELS_MAP)) {
+    const match = models.find((m) => m.id === modelConfigId);
+    if (match) return match;
+  }
+  return undefined;
+}
+
+/**
+ * The first generation setting the model does not offer, phrased for the
+ * caller. The option enums differ per model — pixel sizes on OpenAI's GPT
+ * Image entries, ratios on RunningHub's — so a value carried over from another
+ * model is a job the provider rejects at submit time.
+ */
+function unsupportedOptionError(
+  model: ModelConfig | undefined,
+  settings: { aspectRatio?: string; quality?: string; resolution?: string },
+): string | undefined {
+  if (!model) return undefined;
+  const checks: [string, string | undefined, string[] | undefined][] = [
+    ['aspectRatio', settings.aspectRatio, model.options.aspectRatios],
+    ['quality', settings.quality, model.options.qualities],
+    ['resolution', settings.resolution, model.options.resolutions],
+  ];
+  for (const [field, value, allowed] of checks) {
+    if (!value || !allowed || allowed.length === 0 || allowed.includes(value)) continue;
+    return `${field} "${value}" is not offered by model "${model.name}". Supported values: ${allowed.join(', ')}.`;
+  }
+  return undefined;
+}
+
 /**
  * Per-job generation settings, resolved from the project and — where the
- * project leaves a field unset — from the first option the model advertises.
- * Matches what the project viewer writes onto drafts it creates.
+ * project leaves a field unset, or holds a value this model does not offer —
+ * from the options the model advertises. Matches what the project viewer
+ * writes onto drafts it creates.
  */
 function buildJobSettings(project: Project, model: ModelConfig | undefined): Partial<Job> {
   const type = project.type ?? 'image';
@@ -435,16 +470,17 @@ function buildJobSettings(project: Project, model: ModelConfig | undefined): Par
   }
 
   const common: Partial<Job> = {
-    aspectRatio: project.aspectRatio || model?.options.aspectRatios?.[0] || '1024x1024',
-    quality: project.quality || model?.options.qualities?.[0] || 'standard',
-    background: project.background || model?.options.backgrounds?.[0],
+    aspectRatio: resolveSupportedAspectRatio(project.aspectRatio, model?.options.aspectRatios)
+      || '1024x1024',
+    quality: resolveSupportedOption(project.quality, model?.options.qualities) || 'standard',
+    background: resolveSupportedOption(project.background, model?.options.backgrounds),
   };
 
   if (type === 'video') {
     return {
       ...common,
       duration: project.duration || model?.options.durations?.[0] || 4,
-      resolution: project.resolution || model?.options.resolutions?.[0] || '720p',
+      resolution: resolveSupportedOption(project.resolution, model?.options.resolutions) || '720p',
       sound: project.sound || 'on',
       format: 'mp4',
     };
@@ -1876,6 +1912,14 @@ Recommended workflow:
         };
       }
 
+      const optionError = unsupportedOptionError(
+        modelConfigId ? findCatalogModel(modelConfigId) : undefined,
+        { aspectRatio, quality, resolution },
+      );
+      if (optionError) {
+        return { text: JSON.stringify({ error: optionError }), isError: true };
+      }
+
       // ─── Validate *_library items supply a libraryId ───
       for (let i = 0; i < workflowItems.length; i++) {
         const item = workflowItems[i];
@@ -2143,6 +2187,37 @@ Important workflow behavior:
             }),
             isError: true,
           };
+        }
+      }
+
+      // A model switch leaves the project's stored settings behind: the option
+      // enums differ per model, so a ratio or quality tier the new model does
+      // not offer would reach its API unchanged. Reject what the caller passed
+      // and carry the rest over only where the new model offers it — the same
+      // reconciliation the project viewer does on a model change.
+      const effectiveModel = effectiveModelConfigId ? findCatalogModel(effectiveModelConfigId) : undefined;
+      const optionError = unsupportedOptionError(effectiveModel, { aspectRatio, quality, resolution });
+      if (optionError) {
+        return { text: JSON.stringify({ error: optionError }), isError: true };
+      }
+
+      if (effectiveModel && modelConfigId && modelConfigId !== existingProject.modelConfigId) {
+        const carried = {
+          aspectRatio: resolveSupportedAspectRatio(
+            updates.aspectRatio ?? existingProject.aspectRatio,
+            effectiveModel.options.aspectRatios,
+          ),
+          quality: resolveSupportedOption(
+            updates.quality ?? existingProject.quality,
+            effectiveModel.options.qualities,
+          ),
+          resolution: resolveSupportedOption(
+            updates.resolution ?? existingProject.resolution,
+            effectiveModel.options.resolutions,
+          ),
+        };
+        for (const [field, value] of Object.entries(carried)) {
+          if (value !== undefined && value !== (existingProject as any)[field]) updates[field] = value;
         }
       }
 

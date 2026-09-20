@@ -1913,6 +1913,67 @@ export function resolveCustomModels(
     .filter((m): m is ModelConfig => m !== null);
 }
 
+/**
+ * Pick a value the selected model actually accepts.
+ *
+ * A project carries one `aspectRatio` / `quality` / `background` across model
+ * switches, but the option enums differ wildly between models: OpenAI's GPT
+ * Image entries spell sizes in pixels (`1024x1536`) where RunningHub's spell
+ * the same framing as a ratio (`2:3`), and quality is `1K`/`2K`/`4K` on one
+ * provider and `low`/`medium`/`high` on the next. A value the model's API does
+ * not know gets the job rejected — RunningHub answers a pixel size with
+ * `error 1007: the 'size' parameter only supports 'auto' or ... ratios` — so a
+ * stored value is resolved against the model's own list before it is sent.
+ *
+ * Returns `value` unchanged when the model publishes no enum (custom models)
+ * or already allows it, and otherwise the first allowed value.
+ */
+export function resolveSupportedOption(value: string | undefined, allowed?: string[]): string | undefined {
+  if (!allowed || allowed.length === 0) return value;
+  if (!value) return allowed[0];
+  if (allowed.includes(value)) return value;
+  return allowed.find((option) => option.toLowerCase() === value.toLowerCase()) || allowed[0];
+}
+
+/** `3:2` and `1536x1024` both parse to 1.5; `auto` (and anything else) to undefined. */
+function parseAspectValue(value: string): number | undefined {
+  const match = value.trim().match(/^(\d+(?:\.\d+)?)\s*[:x*×]\s*(\d+(?:\.\d+)?)$/i);
+  if (!match) return undefined;
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (!width || !height) return undefined;
+  return width / height;
+}
+
+/**
+ * `resolveSupportedOption` for aspect ratios, which keeps the framing when two
+ * models spell sizes differently: an unsupported `1024x1536` resolves to the
+ * allowed entry closest in shape (`2:3`) rather than to whatever heads the list.
+ */
+export function resolveSupportedAspectRatio(value: string | undefined, allowed?: string[]): string | undefined {
+  if (!allowed || allowed.length === 0) return value;
+  if (!value || allowed.includes(value)) return value || allowed[0];
+
+  const caseMatch = allowed.find((option) => option.toLowerCase() === value.toLowerCase());
+  if (caseMatch) return caseMatch;
+
+  const target = parseAspectValue(value);
+  if (target === undefined) return allowed[0];
+
+  let closest: string | undefined;
+  let closestDistance = Infinity;
+  for (const option of allowed) {
+    const candidate = parseAspectValue(option); // skips `auto` and other non-shapes
+    if (candidate === undefined) continue;
+    const distance = Math.abs(Math.log(candidate / target));
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closest = option;
+    }
+  }
+  return closest || allowed[0];
+}
+
 export interface Job {
   id: string;
   prompt: string;

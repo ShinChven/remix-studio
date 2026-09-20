@@ -14,6 +14,8 @@ import {
   PROVIDER_MODELS_MAP,
   parseAudioProjectConfig,
   resolveCustomModels,
+  resolveSupportedAspectRatio,
+  resolveSupportedOption,
   QueueMonitorJob,
   QueueMonitorProject,
   QueueMonitorProvider,
@@ -1130,13 +1132,14 @@ export class QueueManager {
     }
 
     const modelConfig = getAllModels(providerRecord).find((m) => m.id === job.modelConfigId);
+    const options = modelConfig?.options;
 
     return {
       prompt: job.prompt,
       modelId: modelConfig?.modelId,
       apiUrl: modelConfig?.apiUrl,
-      aspectRatio: queued.aspectRatio || job.aspectRatio || '16:9',
-      resolution: queued.resolution || job.resolution || '720p',
+      aspectRatio: resolveSupportedAspectRatio(queued.aspectRatio || job.aspectRatio, options?.aspectRatios) || '16:9',
+      resolution: resolveSupportedOption(queued.resolution || job.resolution, options?.resolutions) || '720p',
       duration: queued.duration ?? job.duration,
       sound: queued.sound || job.sound || 'on',
       refImagesBase64: refImages,
@@ -1176,15 +1179,23 @@ export class QueueManager {
     }
 
     const modelConfig = getAllModels(providerRecord).find((m) => m.id === job.modelConfigId);
+    const options = modelConfig?.options;
+    // A job can carry settings drafted for another model — a project keeps its
+    // aspect ratio and quality across a model switch, and only the viewer
+    // reconciles them — so resolve both against what this model accepts rather
+    // than letting the provider reject the request.
+    const background = queued.background || job.background;
 
     return {
       prompt: job.prompt,
       modelId: modelConfig?.modelId,
       apiUrl: modelConfig?.apiUrl,
-      aspectRatio: job.aspectRatio || '1:1',
-      imageSize: job.quality || '1K',
+      aspectRatio: resolveSupportedAspectRatio(job.aspectRatio, options?.aspectRatios) || '1:1',
+      imageSize: resolveSupportedOption(job.quality, options?.qualities) || '1K',
       format: job.format,
-      background: queued.background || job.background,
+      // Left untouched when unset: several models list `transparent` first, and
+      // a project that never asked for it should not get it by default.
+      background: background ? resolveSupportedOption(background, options?.backgrounds) : undefined,
       refImagesBase64: refImages,
       refImageUrls
     };
