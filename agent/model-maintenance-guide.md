@@ -98,6 +98,37 @@ This is the single source of truth. Each entry is a `ModelConfig`:
 
 ---
 
+## Option Enums Are Enforced, Not Just Displayed
+
+A project stores one `aspectRatio`, `quality`, `background` and `resolution`,
+and keeps them across a model switch, but the enums differ per model: OpenAI's
+GPT Image entries spell sizes in pixels (`1024x1536`) where RunningHub's spell
+the same framing as a ratio (`2:3`), and quality is `1K`/`2K`/`4K` on one
+provider and `low`/`medium`/`high` on the next. A leftover value reaches the
+provider verbatim and the job fails at submit — RunningHub answers a pixel size
+with `error 1007: the 'size' parameter only supports 'auto' or ... ratios`.
+
+So the enums declared on a model entry are also what gets sent:
+
+- `resolveSupportedOption` / `resolveSupportedAspectRatio` in `src/types.ts`
+  resolve a stored value against a model's list. The aspect-ratio one keeps the
+  framing across spellings (`1024x1536` resolves to `2:3`, not to whatever heads
+  the list); both leave a value untouched when the model publishes no enum, as
+  custom model aliases may not.
+- `prepareGenerateRequest` / the video request builder in
+  `server/queue/queue-manager.ts` apply them to every job before it reaches a
+  generator. That is the backstop: whatever a job was drafted with, the request
+  carries a value this model offers.
+- `buildJobSettings` in `server/mcp/tool-definitions.ts` drafts jobs the same
+  way, and `create_project_with_workflow` / `update_project` reject a setting
+  the model does not offer and reconcile the project's stored ones when its
+  model changes — the reconciliation `ProjectViewer.tsx` already does in the UI.
+
+Declaring an enum a model's API does not accept is therefore a real bug, not a
+cosmetic one: the picker offers the value and the request sends it.
+
+---
+
 ## Prompt Limit Rule
 
 When a model has an input-length limit, declare it in `src/types.ts` as `promptLimit` on the model entry.
@@ -356,10 +387,25 @@ whitespace, `_`, `/` and `-`, so a multi-word tier has to be spelled without a
 separator: the picker says `XHigh`, because `X-High` would tokenise to `high`.
 It also accepts 32,000-character prompts against the economy tier's 20,000.
 
-The documented aspect-ratio enum has no `auto` value on any of the four, so no
-entry offers it — the generator's `auto` handling omits the field, which would
-silently drop the user's choice rather than fail. All four take the same 15
-ratios and the same `1k`/`2k`/`4k` tiers.
+The aspect ratios come from the API rather than from RunningHub's docs. The
+docs list 15 and no `auto`; a submitted job answered with
+
+```
+Query API error 1007: Parameter validation failed. The 'size' parameter only
+supports 'auto' or the following ratios: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3,
+5:4, 4:5, 21:9. Pixel sizes are not supported.
+```
+
+so all four entries offer exactly those ten plus `auto`, and the five the docs
+add — `1:2`, `2:1`, `1:3`, `3:1`, `9:21` — are not offered. `auto` is a value
+these endpoints take rather than a field to leave off, so `isGptImage25` makes
+the generator send it instead of dropping it the way the other rhart models do.
+That error also named the field as `size`: RunningHub takes `aspectRatio` and
+reports the upstream name, which is worth remembering when reading its
+validation errors. All four take the same `1k`/`2k`/`4k` tiers. The GPT Image 2
+entries were left as they are — this error says nothing about a different
+model — so if `rhart-image-g-2-official` rejects one of those five ratios too,
+this is the precedent for trimming it.
 
 Neither tier is guarded against a transparent background on a `jpeg` output,
 which cannot hold an alpha channel — RunningHub documents the two fields as
