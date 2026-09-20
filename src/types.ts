@@ -692,8 +692,11 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'image',
       promptLimit: { value: 20000, unit: 'characters' },
       options: {
-        // The documented enum has no `auto` value on either endpoint.
-        aspectRatios: ['1:1', '1:2', '2:1', '1:3', '3:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', '9:21'],
+        // The ratios RunningHub's own error names as the ones its size
+        // parameter accepts, `auto` included. The docs list five more — 1:2,
+        // 2:1, 1:3, 3:1 and 9:21 — that the endpoint rejects, so they are not
+        // offered on any of the four 2.5 entries.
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
         qualities: ['1K', '2K', '4K'],
       },
     },
@@ -705,7 +708,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'image',
       promptLimit: { value: 20000, unit: 'characters' },
       options: {
-        aspectRatios: ['1:1', '1:2', '2:1', '1:3', '3:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', '9:21'],
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
         qualities: ['1K', '2K', '4K'],
       },
     },
@@ -717,7 +720,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'image',
       promptLimit: { value: 32000, unit: 'characters' },
       options: {
-        aspectRatios: ['1:1', '1:2', '2:1', '1:3', '3:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', '9:21'],
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
         // The official-token endpoints require a resolution tier and take an
         // optional quality tier; both are carried in this one picker value and
         // split apart in running-hub-generator.ts. `XHigh` is spelled without a
@@ -738,7 +741,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'image',
       promptLimit: { value: 32000, unit: 'characters' },
       options: {
-        aspectRatios: ['1:1', '1:2', '2:1', '1:3', '3:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9', '9:21'],
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
         qualities: [
           '1K Auto', '1K Low', '1K Medium', '1K High', '1K XHigh', '1K Max',
           '2K Auto', '2K Low', '2K Medium', '2K High', '2K XHigh', '2K Max',

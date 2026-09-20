@@ -86,6 +86,15 @@ function resolveTieredSize(
   };
 }
 
+// Both GPT Image 2.5 billing tiers. Their aspect-ratio field takes `auto` as a
+// value of its own — RunningHub names it alongside the ratios its size
+// parameter accepts — rather than meaning "leave the field off" the way it
+// does on the other rhart models.
+function isGptImage25(modelId?: string, apiUrl?: string): boolean {
+  const target = `${modelId || ''} ${apiUrl || ''}`.toLowerCase();
+  return target.includes('rhart-image-g-2.5');
+}
+
 // rhart-image-g-2.5-official-token is the official-token tier of GPT Image 2.5.
 // It shares the combined resolution + quality picker with rhart-image-g-2-official
 // but adds the two tiers 2.5 puts above `high`, takes `background` and
@@ -206,6 +215,7 @@ export class RunningHubGenerator extends ImageGenerator {
     const isNanoPro = isRhartImageNPro(modelId, reqApiUrl);
     const isGptOfficial = isGptImage2Official(modelId, reqApiUrl);
     const isGpt25Token = isGptImage25OfficialToken(modelId, reqApiUrl);
+    const isGpt25 = isGptImage25(modelId, reqApiUrl);
 
     // --- Step 1: optional image upload ---
     // Grok Imagine Quality's /edit carries a single imageUrl, so uploading the
@@ -316,8 +326,10 @@ export class RunningHubGenerator extends ImageGenerator {
           payload.outputFormat = format.toLowerCase() === 'jpg' ? 'jpeg' : format.toLowerCase();
         }
       }
-      // aspectRatio is optional; "auto" means letting the API decide, so omit the field.
-      if (aspectRatio !== 'auto') {
+      // aspectRatio is optional, and on most rhart models "auto" has no value
+      // to send — it means leaving the field off. GPT Image 2.5 does take it,
+      // so there it is sent as asked rather than dropped.
+      if (aspectRatio !== 'auto' || isGpt25) {
         payload.aspectRatio = aspectRatio;
       }
       if (!isTextToImage) {

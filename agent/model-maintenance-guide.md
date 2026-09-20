@@ -387,10 +387,25 @@ whitespace, `_`, `/` and `-`, so a multi-word tier has to be spelled without a
 separator: the picker says `XHigh`, because `X-High` would tokenise to `high`.
 It also accepts 32,000-character prompts against the economy tier's 20,000.
 
-The documented aspect-ratio enum has no `auto` value on any of the four, so no
-entry offers it — the generator's `auto` handling omits the field, which would
-silently drop the user's choice rather than fail. All four take the same 15
-ratios and the same `1k`/`2k`/`4k` tiers.
+The aspect ratios come from the API rather than from RunningHub's docs. The
+docs list 15 and no `auto`; a submitted job answered with
+
+```
+Query API error 1007: Parameter validation failed. The 'size' parameter only
+supports 'auto' or the following ratios: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3,
+5:4, 4:5, 21:9. Pixel sizes are not supported.
+```
+
+so all four entries offer exactly those ten plus `auto`, and the five the docs
+add — `1:2`, `2:1`, `1:3`, `3:1`, `9:21` — are not offered. `auto` is a value
+these endpoints take rather than a field to leave off, so `isGptImage25` makes
+the generator send it instead of dropping it the way the other rhart models do.
+That error also named the field as `size`: RunningHub takes `aspectRatio` and
+reports the upstream name, which is worth remembering when reading its
+validation errors. All four take the same `1k`/`2k`/`4k` tiers. The GPT Image 2
+entries were left as they are — this error says nothing about a different
+model — so if `rhart-image-g-2-official` rejects one of those five ratios too,
+this is the precedent for trimming it.
 
 Neither tier is guarded against a transparent background on a `jpeg` output,
 which cannot hold an alpha channel — RunningHub documents the two fields as
