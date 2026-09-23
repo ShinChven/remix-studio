@@ -115,7 +115,23 @@
       "glass": "毛玻璃效果",
       "glassDescription": "為半透明面板與彈窗遮罩的背景加上模糊。若移動滑鼠或清單更新時介面閃爍、撕裂，請關閉此項。",
       "motion": "懸停動效",
-      "motionDescription": "滑鼠經過時卡片會抬起、放大。若滑鼠劃過網格時介面閃爍、撕裂，請關閉此項。"
+      "motionDescription": "滑鼠經過時卡片會抬起、放大。若滑鼠劃過網格時介面閃爍、撕裂，請關閉此項。",
+      "notifications": {
+        "title": "通知",
+        "description": "即使沒有開啟 Remix Studio，工作完成時也會在此裝置上收到瀏覽器通知。",
+        "projectQueueDone": "專案佇列完成",
+        "projectQueueDoneDescription": "專案佇列中的所有工作完成後通知我。",
+        "sendTest": "傳送測試通知",
+        "enabled": "已在此裝置上開啟通知。",
+        "disabled": "已在此裝置上關閉通知。",
+        "error": "無法更新通知設定。",
+        "permissionDenied": "未取得通知權限。",
+        "blocked": "此網站的通知已被封鎖。請在瀏覽器的網站設定中允許通知後再試一次。",
+        "unsupported": "此瀏覽器不支援推播通知。",
+        "needsInstall": "在 iPhone 和 iPad 上，請先將 Remix Studio 加入主畫面（分享 → 加入主畫面），並從主畫面開啟後再開啟通知。",
+        "testSent": "測試通知已傳送。",
+        "testFailed": "沒有裝置收到測試通知。"
+      }
     },
     "confirm": {
       "signOutTitle": "登出",
