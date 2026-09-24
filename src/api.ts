@@ -282,6 +282,50 @@ export async function removePasskey(passkeyId: string): Promise<void> {
   }
 }
 
+// ─── Web Push ─────────────────────────────────────────────────────────────────
+
+export interface PushSubscriptionPayload {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
+export async function fetchPushConfig(): Promise<{ enabled: boolean; publicKey: string | null }> {
+  const res = await apiFetch('/api/push/config', { headers: getHeaders() });
+  return handleResponse(res, 'Failed to load notification settings');
+}
+
+export async function fetchPushSubscriptionStatus(endpoint: string): Promise<{ subscribed: boolean }> {
+  const res = await apiFetch('/api/push/subscriptions/status', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ endpoint }),
+  });
+  return handleResponse(res, 'Failed to check notification status');
+}
+
+export async function savePushSubscription(subscription: PushSubscriptionPayload): Promise<void> {
+  const res = await apiFetch('/api/push/subscriptions', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(subscription),
+  });
+  await handleResponse(res, 'Failed to enable notifications');
+}
+
+export async function deletePushSubscription(endpoint: string): Promise<void> {
+  const res = await apiFetch('/api/push/subscriptions', {
+    method: 'DELETE',
+    headers: getHeaders(),
+    body: JSON.stringify({ endpoint }),
+  });
+  await handleResponse(res, 'Failed to disable notifications');
+}
+
+export async function sendTestPushNotification(): Promise<{ delivered: number }> {
+  const res = await apiFetch('/api/push/test', { method: 'POST', headers: getHeaders() });
+  return handleResponse(res, 'Failed to send test notification');
+}
+
 export async function beginPasskeyLogin(email?: string): Promise<{ options: any; flowToken: string }> {
   const res = await fetch('/api/auth/passkeys/login/options', {
     method: 'POST',

@@ -428,3 +428,54 @@ async function handleShareGet(url) {
     return shareLanding(`?error=${message}`);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Web Push
+//
+// The server sends { title, body, url, tag }. Clicking focuses a tab already
+// open in the app (navigating it to the url) or opens a new one.
+// ---------------------------------------------------------------------------
+
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+
+  const title = data.title || 'Remix Studio';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      icon: '/icons/android-chrome-192x192.png',
+      tag: data.tag || undefined,
+      renotify: Boolean(data.tag),
+      data: { url: data.url || '/' },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
+  // Only ever navigate within this app.
+  if (target.origin !== self.location.origin) return;
+
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const sameOrigin = windows.filter((client) => new URL(client.url).origin === self.location.origin);
+    const exact = sameOrigin.find((client) => client.url === target.href);
+    if (exact) return exact.focus();
+    const existing = sameOrigin[0];
+    if (existing) {
+      try {
+        await existing.focus();
+        if ('navigate' in existing) return await existing.navigate(target.href);
+      } catch {
+        // Fall through to opening a new window.
+      }
+    }
+    return self.clients.openWindow(target.href);
+  })());
+});

@@ -48,6 +48,7 @@ model User {
   driveConnections        DriveConnection[]
   products                Product[]
   storeUploadHistory      StoreUploadHistory[]
+  pushSubscriptions       PushSubscription[]
   createdByUser           User?                    @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdUsers            User[]                   @relation("UserCreation")
   createdInviteCodes      InviteCode[]             @relation("InviteCodeCreator")
@@ -872,4 +873,29 @@ model PostExecution {
 
   // Critical index for the execution worker loop
   @@index([status, nextAttemptAt])
+}
+
+// A browser's Web Push subscription. One user can have several (one per
+// browser/device); the endpoint is issued by the browser vendor's push service.
+model PushSubscription {
+  id         String    @id @default(uuid())
+  userId     String
+  endpoint   String    @unique @db.Text
+  p256dh     String
+  auth       String
+  userAgent  String?   @db.Text
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Server-wide key/value settings that must survive restarts, such as the
+// generated VAPID key pair when none is configured through the environment.
+model SystemSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
 }

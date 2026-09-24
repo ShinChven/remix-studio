@@ -48,6 +48,9 @@ import { VideoProcessor } from './server/queue/video-processor';
 import { AudioProcessor } from './server/queue/audio-processor';
 import { DetachedPoller } from './server/queue/detached-poller';
 import { ProjectLiveHub } from './server/live/project-live-hub';
+import { ProjectCompletionNotifier } from './server/live/project-completion-notifier';
+import { PushService } from './server/services/push/push-service';
+import { createPushRouter } from './server/routes/push';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
@@ -93,6 +96,10 @@ async function startServer() {
   const providerRepository = new ProviderRepository(prisma);
   const projectRepository = new ProjectRepository(prisma);
   const projectLiveHub = new ProjectLiveHub(repository, userRepository);
+  const pushService = new PushService(prisma);
+  // Forwards every event to the live hub and pushes a notification when a
+  // project's queue drains.
+  const projectEvents = new ProjectCompletionNotifier(projectLiveHub, prisma, pushService);
 
   const storage = new S3Storage({
     endpoint: process.env.S3_ENDPOINT,
@@ -118,12 +125,12 @@ async function startServer() {
   });
   await exportStorage.ensureBucket(autoCreateBuckets);
 
-  const imageProcessor = new ImageProcessor(projectRepository, storage, userRepository, exportStorage, projectLiveHub);
-  const textProcessor = new TextProcessor(projectRepository, projectLiveHub);
-  const videoProcessor = new VideoProcessor(projectRepository, storage, userRepository, exportStorage, projectLiveHub);
-  const audioProcessor = new AudioProcessor(projectRepository, storage, userRepository, exportStorage, projectLiveHub);
-  const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor, videoProcessor, projectLiveHub);
-  const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, textProcessor, videoProcessor, audioProcessor, detachedPoller, projectLiveHub);
+  const imageProcessor = new ImageProcessor(projectRepository, storage, userRepository, exportStorage, projectEvents);
+  const textProcessor = new TextProcessor(projectRepository, projectEvents);
+  const videoProcessor = new VideoProcessor(projectRepository, storage, userRepository, exportStorage, projectEvents);
+  const audioProcessor = new AudioProcessor(projectRepository, storage, userRepository, exportStorage, projectEvents);
+  const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor, videoProcessor, projectEvents);
+  const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, textProcessor, videoProcessor, audioProcessor, detachedPoller, projectEvents);
   // Release the QueueManager concurrency slot when DetachedPoller finalizes a job.
   // Without this, async providers (e.g. KlingAI) would hold their slots forever.
   detachedPoller.setOnJobFinalize((providerId, jobId) => queueManager.releaseSlot(providerId, jobId));
@@ -230,13 +237,13 @@ async function startServer() {
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
   app.route('/', createLibraryRouter(repository, storage, userRepository, exportStorage, exportManager));
-  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager, projectImportManager, prisma, projectLiveHub));
+  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager, projectImportManager, prisma, projectEvents));
   app.route('/', createImageRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createVideoRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createAudioRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createProviderRouter(providerRepository));
   app.route('/', createGenerateRouter(providerRepository));
-  app.route('/', createTrashRouter(repository, storage, projectLiveHub));
+  app.route('/', createTrashRouter(repository, storage, projectEvents));
   app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));
   app.route('/', createCampaignsRouter(prisma, storage));
   app.route('/', createPostsRouter(prisma, postManager, providerRepository, storage, exportStorage, repository, userRepository));
@@ -244,6 +251,7 @@ async function startServer() {
   app.route('/', createSocialRouter(prisma));
   app.route('/', createReleaseRouter(prisma));
   app.route('/', createProductsRouter(prisma, deliveryManager));
+  app.route('/', createPushRouter(pushService));
   // Shared by the external MCP transport and the in-app assistant so both
   // expose exactly the same tools.
   const toolDeps = {
@@ -255,7 +263,7 @@ async function startServer() {
     exportStorage,
     exportManager,
     queueManager,
-    projectEvents: projectLiveHub,
+    projectEvents,
   };
   app.route('/', createMcpRouter(prisma, toolDeps));
 

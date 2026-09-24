@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap, Sun, Moon, Monitor, Share2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap, Sun, Moon, Monitor, Share2, Bell, Send } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, updatePassword } from '../api';
+import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, sendTestPushNotification, updatePassword, fetchPushSubscriptionStatus } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { SecuritySettings, StorageAnalysis, User } from '../types';
@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { isPasskeySupported, serializeAttestationCredential, toPublicKeyCreationOptions } from '../lib/passkey';
 import { toast } from 'sonner';
+import { disablePushNotifications, enablePushNotifications, getCurrentPushSubscription, getPushSupport } from '../lib/push-notifications';
 
 type AccountTab = 'overview' | 'storage' | 'security' | 'preferences';
 const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security', 'preferences'];
@@ -68,6 +69,129 @@ function SettingSwitch({ label, description, checked, onChange }: {
         <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform" />
       </span>
     </label>
+  );
+}
+
+function NotificationPreferences() {
+  const { t } = useTranslation();
+  const support = useMemo(() => getPushSupport(), []);
+  const [enabled, setEnabled] = useState(false);
+  const [loading, setLoading] = useState(support === 'supported');
+  const [busy, setBusy] = useState(false);
+  const [denied, setDenied] = useState(() => support === 'supported' && Notification.permission === 'denied');
+
+  useEffect(() => {
+    if (support !== 'supported') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const subscription = await getCurrentPushSubscription();
+        if (!subscription || Notification.permission !== 'granted') {
+          if (!cancelled) setEnabled(false);
+          return;
+        }
+        const { subscribed } = await fetchPushSubscriptionStatus(subscription.endpoint);
+        if (!cancelled) setEnabled(subscribed);
+      } catch {
+        if (!cancelled) setEnabled(false);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [support]);
+
+  const handleToggle = async (next: boolean) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (next) {
+        const result = await enablePushNotifications();
+        if (result === 'denied') {
+          setDenied(Notification.permission === 'denied');
+          toast.error(t('account.preferences.notifications.permissionDenied'));
+          return;
+        }
+        setDenied(false);
+        setEnabled(true);
+        toast.success(t('account.preferences.notifications.enabled'));
+      } else {
+        await disablePushNotifications();
+        setEnabled(false);
+        toast.success(t('account.preferences.notifications.disabled'));
+      }
+    } catch (error: any) {
+      toast.error(error?.message || t('account.preferences.notifications.error'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleTest = async () => {
+    setBusy(true);
+    try {
+      const { delivered } = await sendTestPushNotification();
+      if (delivered > 0) toast.success(t('account.preferences.notifications.testSent'));
+      else toast.error(t('account.preferences.notifications.testFailed'));
+    } catch (error: any) {
+      toast.error(error?.message || t('account.preferences.notifications.testFailed'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const notice = support === 'needs-install'
+    ? t('account.preferences.notifications.needsInstall')
+    : support === 'unsupported'
+      ? t('account.preferences.notifications.unsupported')
+      : denied
+        ? t('account.preferences.notifications.blocked')
+        : null;
+
+  return (
+    <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-card bg-emerald-500/10 text-emerald-400">
+          <Bell className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-neutral-900 dark:text-white">{t('account.preferences.notifications.title')}</h2>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('account.preferences.notifications.description')}</p>
+        </div>
+      </div>
+
+      <div className="mt-8 space-y-6">
+        {notice && (
+          <div className="flex items-start gap-3 rounded-card border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-300">
+            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <span>{notice}</span>
+          </div>
+        )}
+
+        {support === 'supported' && (
+          <div className={busy || loading ? 'pointer-events-none opacity-60' : undefined}>
+            <SettingSwitch
+              label={t('account.preferences.notifications.projectQueueDone')}
+              description={t('account.preferences.notifications.projectQueueDoneDescription')}
+              checked={enabled}
+              onChange={(next) => void handleToggle(next)}
+            />
+          </div>
+        )}
+
+        {support === 'supported' && enabled && (
+          <button
+            type="button"
+            onClick={() => void handleTest()}
+            disabled={busy}
+            className="inline-flex items-center gap-2 rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-2.5 text-sm font-bold text-neutral-700 dark:text-neutral-200 transition hover:border-neutral-300 dark:hover:border-neutral-700 disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {t('account.preferences.notifications.sendTest')}
+          </button>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -1124,6 +1248,8 @@ export function Account() {
                 />
               </div>
             </section>
+
+            <NotificationPreferences />
           </div>
         )}
 

@@ -115,7 +115,23 @@
       "glass": "유리 효과",
       "glassDescription": "반투명 패널과 대화상자 배경을 흐리게 합니다. 포인터를 움직이거나 목록이 새로고침될 때 화면이 깜박이거나 찢어지면 끄세요.",
       "motion": "호버 애니메이션",
-      "motionDescription": "포인터를 올리면 카드가 떠오르고 확대됩니다. 그리드 위에서 포인터를 움직일 때 화면이 깜박이거나 찢어지면 끄세요."
+      "motionDescription": "포인터를 올리면 카드가 떠오르고 확대됩니다. 그리드 위에서 포인터를 움직일 때 화면이 깜박이거나 찢어지면 끄세요.",
+      "notifications": {
+        "title": "알림",
+        "description": "Remix Studio가 열려 있지 않아도 작업이 끝나면 이 기기에서 브라우저 알림을 받습니다.",
+        "projectQueueDone": "프로젝트 대기열 완료",
+        "projectQueueDoneDescription": "프로젝트의 대기열에 있는 모든 작업이 끝나면 알려 줍니다.",
+        "sendTest": "테스트 알림 보내기",
+        "enabled": "이 기기에서 알림을 켰습니다.",
+        "disabled": "이 기기에서 알림을 껐습니다.",
+        "error": "알림 설정을 업데이트하지 못했습니다.",
+        "permissionDenied": "알림 권한이 허용되지 않았습니다.",
+        "blocked": "이 사이트의 알림이 차단되어 있습니다. 브라우저의 사이트 설정에서 허용한 뒤 다시 시도하세요.",
+        "unsupported": "이 브라우저는 푸시 알림을 지원하지 않습니다.",
+        "needsInstall": "iPhone과 iPad에서는 Remix Studio를 홈 화면에 추가(공유 → 홈 화면에 추가)한 뒤 그곳에서 열어야 알림을 켤 수 있습니다.",
+        "testSent": "테스트 알림을 보냈습니다.",
+        "testFailed": "테스트 알림을 받은 기기가 없습니다."
+      }
     },
     "confirm": {
       "signOutTitle": "로그아웃",

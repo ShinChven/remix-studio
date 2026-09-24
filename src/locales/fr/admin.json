@@ -115,7 +115,23 @@
       "glass": "Effets de verre",
       "glassDescription": "Floute l’arrière-plan des panneaux translucides et des fonds de dialogue. Désactivez si l’interface scintille ou se déchire au passage du pointeur ou lors du rafraîchissement des listes.",
       "motion": "Animations au survol",
-      "motionDescription": "Les cartes se soulèvent et s’agrandissent au survol. Désactivez si l’interface scintille ou se déchire quand le pointeur traverse une grille."
+      "motionDescription": "Les cartes se soulèvent et s’agrandissent au survol. Désactivez si l’interface scintille ou se déchire quand le pointeur traverse une grille.",
+      "notifications": {
+        "title": "Notifications",
+        "description": "Recevez une notification du navigateur sur cet appareil lorsqu'un travail se termine, même si Remix Studio n'est pas ouvert.",
+        "projectQueueDone": "File d'attente du projet terminée",
+        "projectQueueDoneDescription": "M'avertir lorsqu'un projet a terminé toutes ses tâches en file d'attente.",
+        "sendTest": "Envoyer une notification de test",
+        "enabled": "Notifications activées sur cet appareil.",
+        "disabled": "Notifications désactivées sur cet appareil.",
+        "error": "Impossible de mettre à jour les paramètres de notification.",
+        "permissionDenied": "L'autorisation de notification n'a pas été accordée.",
+        "blocked": "Les notifications sont bloquées pour ce site. Autorisez-les dans les paramètres du site de votre navigateur, puis réessayez.",
+        "unsupported": "Ce navigateur ne prend pas en charge les notifications push.",
+        "needsInstall": "Sur iPhone et iPad, ajoutez Remix Studio à l'écran d'accueil (Partager → Sur l'écran d'accueil) et ouvrez-le depuis celui-ci pour activer les notifications.",
+        "testSent": "Notification de test envoyée.",
+        "testFailed": "Aucun appareil n'a reçu la notification de test."
+      }
     },
     "confirm": {
       "signOutTitle": "Se déconnecter",

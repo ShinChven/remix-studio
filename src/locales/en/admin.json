@@ -115,7 +115,23 @@
       "glass": "Glass effects",
       "glassDescription": "Blurs the background behind translucent panels and dialog overlays. Turn it off if the interface flickers or tears while you move the pointer or when lists refresh.",
       "motion": "Hover animations",
-      "motionDescription": "Cards lift and zoom when the pointer passes over them. Turn it off if the interface flickers or tears as you move the pointer across a grid."
+      "motionDescription": "Cards lift and zoom when the pointer passes over them. Turn it off if the interface flickers or tears as you move the pointer across a grid.",
+      "notifications": {
+        "title": "Notifications",
+        "description": "Get a browser notification on this device when work finishes, even when Remix Studio isn't open.",
+        "projectQueueDone": "Project queue finished",
+        "projectQueueDoneDescription": "Notify me when a project has finished all of its queued jobs.",
+        "sendTest": "Send test notification",
+        "enabled": "Notifications enabled on this device.",
+        "disabled": "Notifications turned off on this device.",
+        "error": "Could not update notification settings.",
+        "permissionDenied": "Notification permission was not granted.",
+        "blocked": "Notifications are blocked for this site. Allow them in your browser's site settings, then try again.",
+        "unsupported": "This browser doesn't support push notifications.",
+        "needsInstall": "On iPhone and iPad, add Remix Studio to your Home Screen (Share → Add to Home Screen) and open it from there to enable notifications.",
+        "testSent": "Test notification sent.",
+        "testFailed": "No device received the test notification."
+      }
     },
     "confirm": {
       "signOutTitle": "Sign out",
