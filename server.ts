@@ -51,6 +51,11 @@ import { ProjectLiveHub } from './server/live/project-live-hub';
 import { ProjectCompletionNotifier } from './server/live/project-completion-notifier';
 import { PushService } from './server/services/push/push-service';
 import { createPushRouter } from './server/routes/push';
+import { MediaCatalog } from './server/media-share/catalog';
+import { MediaDeviceAuth } from './server/media-share/device-auth';
+import { createMediaRouter } from './server/media-share/media-router';
+import { createWebDavRouter } from './server/media-share/webdav-router';
+import { DlnaService, dlnaOptionsFromEnv } from './server/media-share/dlna/dlna-service';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
@@ -252,6 +257,15 @@ async function startServer() {
   app.route('/', createReleaseRouter(prisma));
   app.route('/', createProductsRouter(prisma, deliveryManager));
   app.route('/', createPushRouter(pushService));
+
+  // === Media sharing: TV mode, WebDAV and DLNA ===
+  const mediaCatalog = new MediaCatalog(prisma);
+  const mediaDeviceAuth = new MediaDeviceAuth(prisma);
+  const appVersion = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf-8')).version as string;
+  const dlnaService = new DlnaService(prisma, mediaCatalog, mediaDeviceAuth, storage, dlnaOptionsFromEnv(process.env, appVersion));
+  app.route('/', createMediaRouter(prisma, mediaCatalog, mediaDeviceAuth, storage, dlnaService));
+  app.route('/', createWebDavRouter(mediaCatalog, mediaDeviceAuth, storage));
+  app.route('/', dlnaService.router());
   // Shared by the external MCP transport and the in-app assistant so both
   // expose exactly the same tools.
   const toolDeps = {
@@ -296,7 +310,7 @@ async function startServer() {
 
     const server = http.createServer((req, res) => {
       const url = req.url || '';
-      if (url.startsWith('/api/') || url.startsWith('/mcp') || url.startsWith('/authorize') || url.startsWith('/register') || url.startsWith('/token') || url.startsWith('/.well-known/') || url.startsWith('/healthz') || url.startsWith('/readyz') || url.startsWith('/api/assistant')) {
+      if (url.startsWith('/api/') || url.startsWith('/dav') || url.startsWith('/dlna/') || url.startsWith('/mcp') || url.startsWith('/authorize') || url.startsWith('/register') || url.startsWith('/token') || url.startsWith('/.well-known/') || url.startsWith('/healthz') || url.startsWith('/readyz') || url.startsWith('/api/assistant')) {
         honoListener(req, res);
       } else {
         vite.middlewares(req, res);
@@ -311,6 +325,7 @@ async function startServer() {
     server.listen(port, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${port}`);
       startQueueRecovery();
+      void dlnaService.start();
     });
   } else {
     // Production: Hono serves everything
@@ -341,6 +356,7 @@ async function startServer() {
     const server = serve({ fetch: app.fetch, port }, () => {
       console.log(`Server running on http://localhost:${port}`);
       startQueueRecovery();
+      void dlnaService.start();
     });
     projectLiveHub.attach(server as http.Server);
   }
