@@ -4,8 +4,8 @@
     "intro": "Regardez les albums de vos projets sur un téléviseur ou ouvrez-les depuis n’importe quel gestionnaire de fichiers. Chaque appareil accède en lecture seule aux projets que vous choisissez.",
     "scope": {
       "label": "Accès",
-      "all": "Tous les projets actifs",
-      "allHint": "Y compris les projets créés plus tard.",
+      "all": "Tous les projets",
+      "allHint": "Y compris les projets créés plus tard. Les projets archivés n’apparaissent que dans l’onglet Archivés du mode TV.",
       "selected": "Projets choisis",
       "selectedCount_one": "{{count}} projet",
       "selectedCount_other": "{{count}} projets",

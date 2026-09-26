@@ -2,10 +2,14 @@
 
 export type MediaKind = 'image' | 'video' | 'audio';
 
+/** Which albums the home screen lists. */
+export type AlbumStatus = 'active' | 'archived' | 'all';
+
 export interface TvFolder {
   id: string;
   name: string;
   type: string;
+  archived: boolean;
   itemCount: number;
   latestAt: number;
   coverUrl: string | null;
@@ -113,11 +117,11 @@ export const api = {
 
   session: () => request<{ deviceId: string; deviceName: string }>('/api/tv/session'),
   logout: () => request<{ success: boolean }>('/api/tv/logout', { method: 'POST', body: '{}' }),
-  folders: () => request<{ folders: TvFolder[] }>('/api/tv/folders'),
+  folders: (status: AlbumStatus) => request<{ folders: TvFolder[] }>(`/api/tv/folders${query({ status })}`),
   folder: (id: string) => request<{ folder: TvFolder; tags: { tag: string; count: number }[] }>(`/api/tv/folders/${encodeURIComponent(id)}`),
 
-  items(folderId: string, opts: { offset: number; limit: number; kind?: MediaKind; tag?: string; order?: 'newest' | 'oldest' }) {
-    const q = query({ offset: opts.offset, limit: opts.limit, kind: opts.kind, tag: opts.tag, order: opts.order });
+  items(folderId: string, opts: { offset: number; limit: number; kind?: MediaKind; tag?: string; order?: 'newest' | 'oldest'; status?: AlbumStatus }) {
+    const q = query({ offset: opts.offset, limit: opts.limit, kind: opts.kind, tag: opts.tag, order: opts.order, status: folderId === 'recent' ? opts.status : undefined });
     return folderId === 'recent'
       ? request<ItemPage>(`/api/tv/recent${q}`)
       : request<ItemPage>(`/api/tv/folders/${encodeURIComponent(folderId)}/items${q}`);
@@ -127,20 +131,20 @@ export const api = {
 export interface TvSettings {
   intervalSeconds: number;
   order: 'newest' | 'oldest';
-  captions: boolean;
+  albumStatus: AlbumStatus;
 }
 
 const SETTINGS_KEY = 'remixStudioTvSettings';
 
 export function loadSettings(): TvSettings {
-  const defaults: TvSettings = { intervalSeconds: 8, order: 'newest', captions: true };
+  const defaults: TvSettings = { intervalSeconds: 8, order: 'newest', albumStatus: 'active' };
   try {
     const raw = storageGet(SETTINGS_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
     return {
       intervalSeconds: [3, 5, 8, 15, 30].indexOf(parsed.intervalSeconds) >= 0 ? parsed.intervalSeconds : defaults.intervalSeconds,
       order: parsed.order === 'oldest' ? 'oldest' : 'newest',
-      captions: parsed.captions !== false,
+      albumStatus: parsed.albumStatus === 'archived' || parsed.albumStatus === 'all' ? parsed.albumStatus : 'active',
     };
   } catch (e) {
     return defaults;

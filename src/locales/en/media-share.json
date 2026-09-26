@@ -4,8 +4,8 @@
     "intro": "Watch your project albums on a TV or open them from any file manager. Every device gets read-only access to the projects you choose.",
     "scope": {
       "label": "Access",
-      "all": "All active projects",
-      "allHint": "Includes projects you create later.",
+      "all": "All projects",
+      "allHint": "Includes projects you create later. Archived projects show in TV mode's Archived tab only.",
       "selected": "Selected projects",
       "selectedCount_one": "{{count}} project",
       "selectedCount_other": "{{count}} projects",
