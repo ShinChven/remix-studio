@@ -4,8 +4,8 @@
     "intro": "在电视上观看项目相册，或在任意文件管理器中打开。每个设备只能只读访问你选择的项目。",
     "scope": {
       "label": "访问范围",
-      "all": "所有进行中的项目",
-      "allHint": "包括以后新建的项目。",
+      "all": "所有项目",
+      "allHint": "包括以后新建的项目。已归档项目只出现在电视模式的「已归档」标签中。",
       "selected": "指定项目",
       "selectedCount_one": "{{count}} 个项目",
       "selectedCount_other": "{{count}} 个项目",

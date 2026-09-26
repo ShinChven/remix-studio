@@ -5,7 +5,7 @@ import { Prisma, type MediaDevice, type PrismaClient } from '@prisma/client';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import type { S3Storage } from '../storage/s3-storage';
 import { checkRateLimit } from '../utils/rate-limiter';
-import { MediaCatalog, MediaEntry, MediaFolder, scopeFromJson } from './catalog';
+import { FolderStatus, MediaCatalog, MediaEntry, MediaFolder, scopeFromJson } from './catalog';
 import { MediaDeviceAuth, ResolvedDevice, generateMediaToken, hashMediaToken, tokenFromAuthorization } from './device-auth';
 import type { MediaKind } from './media-types';
 import { clientAddress } from './net-utils';
@@ -317,6 +317,7 @@ export function createMediaRouter(
       id: folder.id,
       name: folder.name,
       type: folder.type,
+      archived: folder.archived,
       itemCount: folder.itemCount,
       latestAt: folder.latestAt.getTime(),
       coverUrl: folder.cover ? await sign(folder.cover.thumbnailKey || folder.cover.optimizedKey || folder.cover.key) : null,
@@ -369,9 +370,15 @@ export function createMediaRouter(
     return c.json({ success: true });
   });
 
+  /** active (default) | archived | all, as picked by the TV's album tabs. */
+  const statusOf = (c: Context): FolderStatus => {
+    const value = c.req.query('status');
+    return value === 'archived' || value === 'all' ? value : 'active';
+  };
+
   router.get('/api/tv/folders', deviceAuth, async (c) => {
     const device = c.get('device');
-    const folders = await catalog.listFolders(device.userId, device.scope);
+    const folders = await catalog.listFolders(device.userId, device.scope, { status: statusOf(c) });
     return c.json({ folders: await Promise.all(folders.map(tvFolder)) });
   });
 
@@ -393,7 +400,7 @@ export function createMediaRouter(
   router.get('/api/tv/recent', deviceAuth, async (c) => {
     const device = c.get('device');
     const options = listOptions(c);
-    const { items, total } = await catalog.listRecent(device.userId, device.scope, options);
+    const { items, total } = await catalog.listRecent(device.userId, device.scope, { ...options, status: statusOf(c) });
     return c.json({ items: await Promise.all(items.map(tvItem)), total, offset: options.offset });
   });
 

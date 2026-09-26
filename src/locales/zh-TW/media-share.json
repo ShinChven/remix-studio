@@ -4,8 +4,8 @@
     "intro": "在電視上觀看專案相簿，或在任何檔案管理器中開啟。每個裝置只能唯讀存取你選擇的專案。",
     "scope": {
       "label": "存取範圍",
-      "all": "所有進行中的專案",
-      "allHint": "包含之後新建的專案。",
+      "all": "所有專案",
+      "allHint": "包含之後新建的專案。已封存專案只會出現在電視模式的「已封存」分頁中。",
       "selected": "指定專案",
       "selectedCount_one": "{{count}} 個專案",
       "selectedCount_other": "{{count}} 個專案",

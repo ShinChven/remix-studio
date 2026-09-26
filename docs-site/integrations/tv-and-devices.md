@@ -1,6 +1,6 @@
 # TV, WebDAV & DLNA
 
-Your project albums can be watched on a TV or opened from a file manager, in three ways. All three are read-only, and each device only sees the projects you choose for it: every active project (including ones you create later), or a fixed list. Manage everything under **Account → TV & devices**.
+Your project albums can be watched on a TV or opened from a file manager, in three ways. All three are read-only, and each device only sees the projects you choose for it: all your projects (including ones you create later), or a fixed list. With all projects, WebDAV and DLNA list the active ones; TV mode has tabs for active, archived and all albums. Manage everything under **Account → TV & devices**.
 
 | | TV mode | WebDAV | DLNA |
 | :--- | :--- | :--- | :--- |
@@ -12,7 +12,7 @@ Your project albums can be watched on a TV or opened from a file manager, in thr
 
 ## TV mode
 
-A full-screen viewer made for remote controls: albums as a grid, filters for photos, videos and tags, slideshows with adjustable speed, and video playback.
+A full-screen viewer made for remote controls: albums as a grid with **Active**, **Archived** and **All** tabs, filters for photos, videos and tags, slideshows with adjustable speed, and video playback. A slideshow shows nothing but the pictures: captions, the position and the progress bar appear for a few seconds when you press a key or move the pointer, and OK keeps them up. While a slideshow runs, TV mode keeps the TV from starting its screensaver.
 
 1. On the TV, open `https://<your-server>/tv` in the web browser.
 2. The TV shows a QR code and an 8-character code. Scan the QR code with your phone, or open `https://<your-server>/link` and type the code.

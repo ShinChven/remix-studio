@@ -7,14 +7,14 @@ Read-only access to project albums from TVs and file managers. User docs:
 
 | Path | Role |
 | :--- | :--- |
-| `server/media-share/catalog.ts` | `MediaCatalog`: projects → folders, album items → files. Scope (`null` = every active project, or explicit ids), stable folder/file names, tag lists, update stamps. Every protocol goes through it. |
+| `server/media-share/catalog.ts` | `MediaCatalog`: projects → folders, album items → files. Scope (`null` = every project, or explicit ids; access ignores project status, listings filter it with `FolderStatus`, defaulting to active for a `null` scope), stable folder/file names, tag lists, update stamps. Every protocol goes through it. |
 | `server/media-share/device-auth.ts` | `MediaDevice` tokens (`rsm_…`, SHA-256 stored). A token opens only its own kind (`tv` / `webdav`); DLNA servers are addressed by id. |
 | `server/media-share/media-stream.ts` | Relays S3 objects with single byte ranges, ETag/304 and extra headers. Used by WebDAV and DLNA; TV mode uses presigned URLs like the web app. |
 | `server/media-share/media-router.ts` | `/api/media-devices` (manage), `/api/media-pairings/:code` (approve a TV), `/api/tv/*` (pairing + TV API). |
 | `server/media-share/webdav-router.ts` | `/dav/`: OPTIONS, PROPFIND, GET, HEAD. Basic auth, password = token. |
 | `server/media-share/dlna/` | `DlnaService` (its own HTTP listener on `DLNA_HTTP_PORT`, routes under `/dlna/:id/`: SOAP, eventing, media), `ssdp.ts` (discovery), `content-directory.ts` (object tree + DIDL-Lite), `xml.ts` (descriptions, SCPDs). |
 | `server/media-share/tv-app.ts` | Serves `/tv`; builds `src/tv` with esbuild on request in development, reads `dist/tv` in production. |
-| `src/tv/` | The TV page: vanilla TypeScript, no React/Tailwind. Built by `scripts/build-tv.mjs` as an IIFE for Chromium 53. |
+| `src/tv/` | The TV page: vanilla TypeScript, no React/Tailwind. Built by `scripts/build-tv.mjs` as an IIFE for Chromium 53. `keep-awake.ts` holds off the TV screensaver during slideshows (Wake Lock + a tiny looping muted video). |
 | `src/components/media-share/`, `src/pages/LinkTv.tsx` | Account → TV & devices tab and the `/link` approval page. |
 
 ## Rules

@@ -1,8 +1,9 @@
 import './polyfills';
 import './styles.css';
-import { api, getToken, setToken, loadSettings, saveSettings, UnauthorizedError, TvFolder, TvItem, MediaKind, TvSettings } from './api';
+import { api, getToken, setToken, loadSettings, saveSettings, UnauthorizedError, AlbumStatus, TvFolder, TvItem, MediaKind, TvSettings } from './api';
 import { Action, FocusManager, actionFor } from './nav';
 import { countLabel, t } from './i18n';
+import { keepAwake } from './keep-awake';
 
 /**
  * TV mode: browse project albums with a remote control. Screens are plain
@@ -17,6 +18,8 @@ import { countLabel, t } from './i18n';
 const PAGE_SIZE = 60;
 /** Presigned media links last 6 hours; reload lists well before that. */
 const LINK_MAX_AGE_MS = 4 * 3600 * 1000;
+/** How long the viewer's caption and controls stay up after the remote is used. */
+const UI_REVEAL_MS = 4000;
 
 const root = document.getElementById('app') as HTMLElement;
 const focus = new FocusManager();
@@ -258,27 +261,54 @@ function albumsScreen(): Screen {
   const scroll = h('div', { class: 'tv-scroll', 'data-scroll': '' });
   const settingsButton = h('div', { class: 'tv-button tv-icon-button', focusable: true, onOk: () => navigate('#/settings') }, `⚙ ${t('settings')}`);
   const el = h('div', { class: 'tv-screen' }, topBar(t('albums'), settingsButton), h('div', { class: 'tv-body' }, scroll));
+  const tabs = h('div', { class: 'tv-toolbar' });
+  const content = h('div');
+  append(scroll, [tabs, content]);
   let destroyed = false;
+  let loadId = 0;
 
-  const load = async () => {
-    scroll.innerHTML = '';
-    scroll.appendChild(h('div', { class: 'tv-message' }, '…'));
+  function renderTabs() {
+    tabs.innerHTML = '';
+    const options: [AlbumStatus, string][] = [['active', t('activeAlbums')], ['archived', t('archivedAlbums')], ['all', t('allAlbums')]];
+    for (const [status, label] of options) {
+      tabs.appendChild(h('div', {
+        class: `tv-chip${settings.albumStatus === status ? ' is-active' : ''}`,
+        focusable: true,
+        'data-status': status,
+        onOk: () => {
+          if (settings.albumStatus === status) return;
+          settings = { ...settings, albumStatus: status };
+          saveSettings(settings);
+          lastAlbumId = null;
+          renderTabs();
+          focus.focusFirst(`[data-status="${status}"]`);
+          void load(false);
+        },
+      }, label));
+    }
+  }
+
+  const load = async (focusGrid = true) => {
+    const mine = ++loadId;
+    content.innerHTML = '';
+    content.appendChild(h('div', { class: 'tv-message' }, '…'));
     let folders: TvFolder[];
     try {
-      folders = (await api.folders()).folders;
+      folders = (await api.folders(settings.albumStatus)).folders;
     } catch (e) {
-      if (handleUnauthorized(e) || destroyed) return;
-      scroll.innerHTML = '';
-      scroll.appendChild(h('div', { class: 'tv-button is-primary', focusable: true, onOk: load }, t('retry')));
-      scroll.appendChild(h('div', { class: 'tv-message' }, t('loadFailed')));
-      focus.focusFirst();
+      if (handleUnauthorized(e) || destroyed || mine !== loadId) return;
+      content.innerHTML = '';
+      content.appendChild(h('div', { class: 'tv-button is-primary', focusable: true, onOk: () => load() }, t('retry')));
+      content.appendChild(h('div', { class: 'tv-message' }, t('loadFailed')));
+      focus.focusFirst('.tv-button.is-primary');
       return;
     }
-    if (destroyed) return;
-    scroll.innerHTML = '';
+    // A tab switched again while this was loading owns the screen now.
+    if (destroyed || mine !== loadId) return;
+    content.innerHTML = '';
     if (folders.length === 0) {
-      scroll.appendChild(h('div', { class: 'tv-message' }, t('empty')));
-      focus.focusFirst();
+      content.appendChild(h('div', { class: 'tv-message' }, t('empty')));
+      if (focusGrid) focus.focusFirst('.tv-chip.is-active');
       return;
     }
     const grid = h('div', { class: 'tv-grid', 'data-grid': '' });
@@ -287,11 +317,11 @@ function albumsScreen(): Screen {
     for (const folder of folders) if (!recentCover) recentCover = folder.coverUrl;
     grid.appendChild(albumTile({ id: 'recent', name: t('recent'), itemCount: total, coverUrl: recentCover }, true));
     for (const folder of folders) grid.appendChild(albumTile(folder, false));
-    scroll.appendChild(grid);
-    focus.focusFirst(lastAlbumId ? `[data-album="${lastAlbumId}"]` : '.tv-album');
+    content.appendChild(grid);
+    if (focusGrid) focus.focusFirst(lastAlbumId ? `[data-album="${lastAlbumId}"]` : '.tv-album');
   };
 
-  function albumTile(folder: Pick<TvFolder, 'id' | 'name' | 'itemCount' | 'coverUrl'>, isRecent: boolean): HTMLElement {
+  function albumTile(folder: Pick<TvFolder, 'id' | 'name' | 'itemCount' | 'coverUrl'> & { archived?: boolean }, isRecent: boolean): HTMLElement {
     const open = () => {
       lastAlbumId = folder.id;
       navigate(`#/f/${encodeURIComponent(folder.id)}`);
@@ -302,9 +332,11 @@ function albumsScreen(): Screen {
         h('div', { class: 'tv-name' }, isRecent ? `★ ${folder.name}` : folder.name),
         h('div', { class: 'tv-meta' }, countLabel(folder.itemCount)),
       ),
+      folder.archived && settings.albumStatus === 'all' ? h('div', { class: 'tv-archived-badge' }, t('archivedBadge')) : null,
     );
   }
 
+  renderTabs();
   void load();
   return {
     el,
@@ -367,7 +399,7 @@ function albumScreen(folderId: string): Screen {
   async function fetchPage(mine: number): Promise<boolean> {
     footer.textContent = '…';
     try {
-      const page = await api.items(folderId, { offset: state.items.length, limit: PAGE_SIZE, kind: state.kind, tag: state.tag, order: settings.order });
+      const page = await api.items(folderId, { offset: state.items.length, limit: PAGE_SIZE, kind: state.kind, tag: state.tag, order: settings.order, status: settings.albumStatus });
       if (destroyed || mine !== generation) return false;
       if (!state.loadedAt) state.loadedAt = Date.now();
       state.total = page.total;
@@ -521,8 +553,12 @@ function viewerScreen(
   let front = 0;
   let playing = startPlaying;
   let pinnedInfo = false;
+  // The caption, progress bar and hints stay hidden while the viewer runs on
+  // its own, and appear for a few seconds after the viewer is used.
+  let uiUntil = 0;
   let slideTimer = 0;
   let captionTimer = 0;
+  let spinnerTimer = 0;
   let toastTimer = 0;
   let destroyed = false;
   let token = 0;
@@ -532,7 +568,7 @@ function viewerScreen(
   /** play() rejects when autoplay is blocked or the codec is missing; the UI copes either way. */
   function playVideo() {
     const attempt = video.play();
-    if (attempt && attempt.catch) attempt.catch(() => spinner.classList.remove('is-shown'));
+    if (attempt && attempt.catch) attempt.catch(() => setLoading(false));
   }
 
   function showToast(text: string) {
@@ -542,7 +578,24 @@ function viewerScreen(
     toastTimer = window.setTimeout(() => toast.classList.remove('is-shown'), 2500);
   }
 
-  function showCaption(auto: boolean) {
+  /** Loading only shows a spinner when it takes long enough to notice. */
+  function setLoading(loading: boolean) {
+    window.clearTimeout(spinnerTimer);
+    if (loading) spinnerTimer = window.setTimeout(() => spinner.classList.add('is-shown'), 1000);
+    else spinner.classList.remove('is-shown');
+  }
+
+  function uiVisible(): boolean {
+    return pinnedInfo || Date.now() < uiUntil;
+  }
+
+  /** Called on every remote or pointer action: reveals the UI for a while. */
+  function revealUi() {
+    uiUntil = Date.now() + UI_REVEAL_MS;
+    renderCaption();
+  }
+
+  function renderCaption() {
     const item = current();
     if (!item) return;
     // Untitled items get no caption line rather than a made-up one.
@@ -557,9 +610,14 @@ function viewerScreen(
       h('span', null, t('hintViewer')),
     ]);
     window.clearTimeout(captionTimer);
-    if (pinnedInfo || (auto && settings.captions) || !auto) {
-      caption.classList.add('is-shown');
-      if (!pinnedInfo) captionTimer = window.setTimeout(() => caption.classList.remove('is-shown'), 4000);
+    const visible = uiVisible();
+    caption.classList.toggle('is-shown', visible);
+    el.classList.toggle('is-ui', visible);
+    if (visible && !pinnedInfo) {
+      captionTimer = window.setTimeout(() => {
+        caption.classList.remove('is-shown');
+        el.classList.remove('is-ui');
+      }, uiUntil - Date.now());
     }
   }
 
@@ -612,7 +670,7 @@ function viewerScreen(
     if (!item) return;
     window.clearTimeout(slideTimer);
     stopProgress();
-    spinner.classList.add('is-shown');
+    setLoading(true);
 
     if (item.kind === 'image') {
       video.pause();
@@ -621,7 +679,7 @@ function viewerScreen(
       const back = layers[1 - front];
       back.onload = () => {
         if (my !== token) return;
-        spinner.classList.remove('is-shown');
+        setLoading(false);
         back.classList.add('is-shown');
         layers[front].classList.remove('is-shown');
         front = 1 - front;
@@ -629,7 +687,7 @@ function viewerScreen(
       };
       back.onerror = () => {
         if (my !== token) return;
-        spinner.classList.remove('is-shown');
+        setLoading(false);
         scheduleNext();
       };
       back.src = item.displayUrl || item.url || '';
@@ -640,10 +698,10 @@ function viewerScreen(
       video.poster = item.posterUrl || '';
       video.src = item.url || '';
       video.classList.add('is-shown');
-      video.onplaying = () => spinner.classList.remove('is-shown');
-      video.oncanplay = () => spinner.classList.remove('is-shown');
+      video.onplaying = () => setLoading(false);
+      video.oncanplay = () => setLoading(false);
       video.onerror = () => {
-        spinner.classList.remove('is-shown');
+        setLoading(false);
         showToast(t('videoError'));
         if (playing) window.setTimeout(() => void go(1, true), 1500);
       };
@@ -652,7 +710,8 @@ function viewerScreen(
       };
       playVideo();
     }
-    showCaption(true);
+    // Keeps an open caption in step with the slide; never opens one itself.
+    renderCaption();
   }
 
   async function go(step: number, wrap: boolean) {
@@ -674,8 +733,16 @@ function viewerScreen(
     await show();
   }
 
+  /** OK / up / down pin the details open, or put them away at once. */
+  function togglePinned() {
+    pinnedInfo = !pinnedInfo;
+    uiUntil = pinnedInfo ? Date.now() + UI_REVEAL_MS : 0;
+    renderCaption();
+  }
+
   function togglePlaying(value = !playing) {
     playing = value;
+    keepAwake(playing);
     showToast(playing ? `▶ ${t('playing')}` : `❚❚ ${t('paused')}`);
     const item = current();
     if (item && item.kind !== 'image') {
@@ -684,12 +751,18 @@ function viewerScreen(
     scheduleNext();
   }
 
+  keepAwake(playing);
+  // Opening a single item shows its caption; a slideshow starts clean.
+  if (!playing) uiUntil = Date.now() + UI_REVEAL_MS;
   void show();
-  if (playing) showToast(`▶ ${t('playing')}`);
+
+  // The Magic Remote pointer counts as using the viewer.
+  el.addEventListener('mousemove', () => revealUi());
 
   return {
     el,
     onAction(action) {
+      if (action !== 'ok' && action !== 'up' && action !== 'down' && action !== 'info') revealUi();
       const item = current();
       const isMedia = item && item.kind !== 'image';
       switch (action) {
@@ -707,16 +780,12 @@ function viewerScreen(
             else video.pause();
             return true;
           }
-          pinnedInfo = !pinnedInfo;
-          if (pinnedInfo) showCaption(false);
-          else caption.classList.remove('is-shown');
+          togglePinned();
           return true;
         case 'up':
         case 'down':
         case 'info':
-          pinnedInfo = !pinnedInfo;
-          if (pinnedInfo) showCaption(false);
-          else caption.classList.remove('is-shown');
+          togglePinned();
           return true;
         case 'play':
           if (isMedia && video.paused) playVideo();
@@ -738,8 +807,10 @@ function viewerScreen(
     },
     destroy() {
       destroyed = true;
+      keepAwake(false);
       window.clearTimeout(slideTimer);
       window.clearTimeout(captionTimer);
+      window.clearTimeout(spinnerTimer);
       window.clearTimeout(toastTimer);
       video.pause();
       video.removeAttribute('src');
@@ -796,7 +867,6 @@ function settingsScreen(): Screen {
       row(t('order'), settings.order === 'newest' ? t('newest') : t('oldest'), () => {
         update({ order: settings.order === 'newest' ? 'oldest' : 'newest' }, 1);
       }),
-      row(t('showInfo'), settings.captions ? t('on') : t('off'), () => update({ captions: !settings.captions }, 2)),
       row(t('unlink'), confirmUnlink ? t('unlinkConfirm') : '', unlink, ' is-danger'),
       row(t('device'), deviceName, undefined, ' is-static'),
     ]);
@@ -813,7 +883,7 @@ function settingsScreen(): Screen {
   async function unlink() {
     if (!confirmUnlink) {
       confirmUnlink = true;
-      render(3);
+      render(2);
       return;
     }
     try {

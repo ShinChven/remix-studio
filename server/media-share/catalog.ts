@@ -8,8 +8,20 @@ import { MediaKind, extensionOf, mediaKindForKey, mimeTypeForKey } from './media
  * and on the names things carry.
  */
 
-/** The projects a device may read; null means every active project. */
+/** The projects a device may read; null means every project the user has. */
 export type ProjectScope = string[] | null;
+
+/**
+ * Which projects a listing shows. Access is decided by the scope alone;
+ * this only filters what is listed. A device without an explicit project
+ * list shows active projects unless it asks for archived ones (TV mode's
+ * Archived tab); an explicit list shows exactly the projects on it.
+ */
+export type FolderStatus = 'active' | 'archived' | 'all';
+
+function defaultStatus(scope: ProjectScope): FolderStatus {
+  return scope ? 'all' : 'active';
+}
 
 export interface MediaFolder {
   id: string;
@@ -17,6 +29,7 @@ export interface MediaFolder {
   folderName: string;
   name: string;
   type: string;
+  archived: boolean;
   itemCount: number;
   /** Whether any media in the project carries a tag. */
   hasTags: boolean;
@@ -188,21 +201,29 @@ export class MediaCatalog {
     };
   }
 
-  private projectWhere(userId: string, scope: ProjectScope): Prisma.ProjectWhereInput {
-    return scope ? { userId, id: { in: scope } } : { userId, status: 'active' };
+  /** The projects a device may read, narrowed to one status when listing. */
+  private projectWhere(userId: string, scope: ProjectScope, status: FolderStatus = 'all'): Prisma.ProjectWhereInput {
+    const where: Prisma.ProjectWhereInput = scope ? { userId, id: { in: scope } } : { userId };
+    if (status !== 'all') where.status = status;
+    return where;
   }
 
-  /** Ids of the projects in scope that still exist. */
-  async projectIdsInScope(userId: string, scope: ProjectScope): Promise<string[]> {
-    const rows = await this.prisma.project.findMany({ where: this.projectWhere(userId, scope), select: { id: true } });
+  /** Ids of the listed projects in scope that still exist. */
+  async projectIdsInScope(userId: string, scope: ProjectScope, status: FolderStatus = defaultStatus(scope)): Promise<string[]> {
+    const rows = await this.prisma.project.findMany({ where: this.projectWhere(userId, scope, status), select: { id: true } });
     return rows.map((row) => row.id);
   }
 
   /** Projects that have at least one media item, most recently active first. */
-  async listFolders(userId: string, scope: ProjectScope, onlyProjectId?: string): Promise<MediaFolder[]> {
+  async listFolders(
+    userId: string,
+    scope: ProjectScope,
+    options: { onlyProjectId?: string; status?: FolderStatus } = {},
+  ): Promise<MediaFolder[]> {
+    const status = options.status ?? (options.onlyProjectId ? 'all' : defaultStatus(scope));
     const projects = await this.prisma.project.findMany({
-      where: { ...this.projectWhere(userId, scope), ...(onlyProjectId ? { id: onlyProjectId } : {}) },
-      select: { id: true, name: true, type: true, createdAt: true },
+      where: { ...this.projectWhere(userId, scope, status), ...(options.onlyProjectId ? { id: options.onlyProjectId } : {}) },
+      select: { id: true, name: true, type: true, status: true, createdAt: true },
     });
     if (projects.length === 0) return [];
     const ids = projects.map((project) => project.id);
@@ -247,6 +268,7 @@ export class MediaCatalog {
           id: project.id,
           name: project.name,
           type: project.type,
+          archived: project.status === 'archived',
           folderName: sanitizeName(project.name, 96) || 'Untitled',
           itemCount: count._count._all,
           hasTags: taggedIds.has(project.id),
@@ -273,7 +295,7 @@ export class MediaCatalog {
   /** One folder; its `folderName` is not de-duplicated against the others. */
   async getFolder(userId: string, scope: ProjectScope, projectId: string): Promise<MediaFolder | null> {
     if (scope && !scope.includes(projectId)) return null;
-    const folders = await this.listFolders(userId, scope, projectId);
+    const folders = await this.listFolders(userId, scope, { onlyProjectId: projectId });
     return folders[0] ?? null;
   }
 
@@ -345,8 +367,8 @@ export class MediaCatalog {
   }
 
   /** The newest media across every project in scope. */
-  async listRecent(userId: string, scope: ProjectScope, options: ListItemsOptions = {}) {
-    const ids = await this.projectIdsInScope(userId, scope);
+  async listRecent(userId: string, scope: ProjectScope, options: ListItemsOptions & { status?: FolderStatus } = {}) {
+    const ids = await this.projectIdsInScope(userId, scope, options.status);
     return this.listIn(userId, ids, options);
   }
 
