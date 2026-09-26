@@ -25,6 +25,7 @@ docker-test
 data/
 docs/
 scripts/
+!scripts/build-tv.mjs
 README.md
 CHANGELOG.md
 UPGRADING.md
