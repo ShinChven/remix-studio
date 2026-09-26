@@ -1,0 +1,95 @@
+{
+  "mediaShare": {
+    "tab": "TV & devices",
+    "intro": "Watch your project albums on a TV or open them from any file manager. Every device gets read-only access to the projects you choose.",
+    "scope": {
+      "label": "Access",
+      "all": "All active projects",
+      "allHint": "Includes projects you create later.",
+      "selected": "Selected projects",
+      "selectedCount_one": "{{count}} project",
+      "selectedCount_other": "{{count}} projects",
+      "search": "Search projects",
+      "loading": "Loading projects…",
+      "empty": "No projects found",
+      "pickOne": "Pick at least one project",
+      "archived": "Archived"
+    },
+    "common": {
+      "name": "Name",
+      "add": "Add",
+      "save": "Save",
+      "cancel": "Cancel",
+      "done": "Done",
+      "copy": "Copy",
+      "copied": "Copied",
+      "edit": "Edit",
+      "remove": "Remove",
+      "created": "Added {{date}}",
+      "lastUsed": "Last used {{date}}",
+      "neverUsed": "Not used yet",
+      "from": "from {{ip}}"
+    },
+    "tv": {
+      "title": "TV mode",
+      "desc": "A full-screen viewer built for remote controls: browse albums, filter by tags, and play slideshows and videos.",
+      "step1": "On the TV, open this address in the web browser:",
+      "step2": "The TV shows a code. Scan its QR code with your phone, or enter the code here:",
+      "linkButton": "Enter a TV code",
+      "openHere": "Preview",
+      "webos": "LG TV owners can also install TV mode as an app on the home screen: see the webOS folder in the repository.",
+      "empty": "No TVs linked yet."
+    },
+    "webdav": {
+      "title": "WebDAV network drive",
+      "desc": "Mount your albums as a read-only drive in Finder, Windows Explorer, Infuse, rclone or a file manager on your TV.",
+      "address": "Server address",
+      "username": "User name",
+      "usernameValue": "anything",
+      "password": "Password",
+      "passwordValue": "an access token",
+      "create": "New access token",
+      "namePlaceholder": "e.g. MacBook Finder",
+      "tokenCreated": "Copy this token now. It won't be shown again.",
+      "httpsNote": "Windows Explorer only sends passwords over HTTPS. Finder, Infuse and rclone also work over HTTP.",
+      "empty": "No access tokens yet."
+    },
+    "dlna": {
+      "title": "DLNA media server",
+      "desc": "Your TV's built-in photo and video app (LG \"Photo & Video\", Samsung \"Media\") finds this server on the local network. Nothing to install.",
+      "disabled": "DLNA is off on this server. Set DLNA_ENABLED=true and run the container with host networking (see docker-compose.dlna.yml).",
+      "notRunning": "DLNA is enabled but not running: {{error}}",
+      "running": "Announcing on {{addresses}}",
+      "create": "New DLNA server",
+      "defaultName": "Remix Studio",
+      "namePlaceholder": "Name shown on the TV",
+      "lanOnly": "DLNA has no passwords: anyone on your local network can browse a DLNA server. Limit its projects if that matters.",
+      "empty": "No DLNA servers yet."
+    },
+    "remove": {
+      "title": "Remove {{name}}?",
+      "message": "It loses access to your albums immediately."
+    },
+    "toasts": {
+      "added": "Added",
+      "saved": "Saved",
+      "removed": "Removed",
+      "copied": "Copied to clipboard"
+    },
+    "link": {
+      "title": "Link a TV",
+      "desc": "Enter the code shown on your TV.",
+      "code": "Code",
+      "continue": "Continue",
+      "request": "A TV wants to show your albums",
+      "deviceName": "TV name",
+      "approve": "Link TV",
+      "deny": "Decline",
+      "done": "Linked. Your TV will show your albums in a moment.",
+      "denied": "Declined. The TV was not linked.",
+      "manage": "Manage devices",
+      "again": "Link another TV",
+      "expiresIn": "Code expires in {{minutes}} min"
+    }
+  }
+}

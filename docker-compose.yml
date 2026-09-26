@@ -46,6 +46,10 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+      # DLNA needs host networking; see docker-compose.dlna.yml.
+      DLNA_ENABLED: ${DLNA_ENABLED:-false}
+      DLNA_INTERFACES: ${DLNA_INTERFACES:-}
+      DLNA_HTTP_PORT: ${DLNA_HTTP_PORT:-}
       NODE_ENV: production
       PORT: 3000
       BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-7}

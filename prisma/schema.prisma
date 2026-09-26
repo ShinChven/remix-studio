@@ -49,6 +49,7 @@ model User {
   products                Product[]
   storeUploadHistory      StoreUploadHistory[]
   pushSubscriptions       PushSubscription[]
+  mediaDevices            MediaDevice[]
   createdByUser           User?                    @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdUsers            User[]                   @relation("UserCreation")
   createdInviteCodes      InviteCode[]             @relation("InviteCodeCreator")
@@ -898,4 +899,44 @@ model SystemSetting {
   key       String   @id
   value     String   @db.Text
   updatedAt DateTime @updatedAt
+}
+
+// === Media sharing (TV mode, WebDAV, DLNA) ===
+// A device the user allowed to read their project albums. TV and WebDAV
+// devices authenticate with a token (only its hash is stored); DLNA servers
+// have no token because the protocol has no authentication — they are
+// reachable only from private networks and addressed by their id.
+model MediaDevice {
+  id          String    @id @default(uuid())
+  userId      String
+  name        String
+  kind        String // 'tv' | 'webdav' | 'dlna'
+  tokenHash   String?   @unique
+  tokenPrefix String?
+  // Project ids the device may read; null means every active project.
+  projectIds  Json?
+  lastUsedAt  DateTime?
+  lastSeenIp  String?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// A TV waiting to be linked: the TV holds the device code and shows the user
+// code, which a signed-in user approves from another device.
+model MediaPairing {
+  id             String   @id @default(uuid())
+  deviceCodeHash String   @unique
+  userCode       String   @unique
+  status         String   @default("pending") // 'pending' | 'approved' | 'denied'
+  userId         String?
+  deviceName     String?
+  projectIds     Json?
+  userAgent      String?  @db.Text
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([expiresAt])
 }

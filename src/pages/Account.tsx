@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap, Sun, Moon, Monitor, Share2, Bell, Send } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap, Sun, Moon, Monitor, Share2, Bell, Send, Tv } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, sendTestPushNotification, updatePassword, fetchPushSubscriptionStatus } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { MediaDevicesPanel } from '../components/media-share/MediaDevicesPanel';
 import { SecuritySettings, StorageAnalysis, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -12,8 +13,8 @@ import { isPasskeySupported, serializeAttestationCredential, toPublicKeyCreation
 import { toast } from 'sonner';
 import { disablePushNotifications, enablePushNotifications, getCurrentPushSubscription, getPushSupport } from '../lib/push-notifications';
 
-type AccountTab = 'overview' | 'storage' | 'security' | 'preferences';
-const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security', 'preferences'];
+type AccountTab = 'overview' | 'storage' | 'security' | 'preferences' | 'devices';
+const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security', 'preferences', 'devices'];
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -558,12 +559,13 @@ export function Account() {
         />
 
         <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-3">
-          <div className="grid gap-2 md:grid-cols-4">
+          <div className="grid gap-2 grid-cols-2 md:grid-cols-5">
             {[
               { id: 'overview' as const, label: t('account.tabs.overview'), icon: UserIcon },
               { id: 'storage' as const, label: t('account.tabs.storage'), icon: HardDrive },
               { id: 'security' as const, label: t('account.tabs.security'), icon: Shield },
               { id: 'preferences' as const, label: t('account.tabs.preferences'), icon: Globe },
+              { id: 'devices' as const, label: t('mediaShare.tab'), icon: Tv },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -585,6 +587,8 @@ export function Account() {
             })}
           </div>
         </div>
+
+        {activeTab === 'devices' && <MediaDevicesPanel />}
 
         {activeTab === 'overview' && (
           <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">

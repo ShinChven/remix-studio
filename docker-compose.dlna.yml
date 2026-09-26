@@ -1,0 +1,22 @@
+# Runs the app on the host network so TVs can discover its DLNA media server.
+# DLNA discovery (SSDP) is UDP multicast, which Docker's bridge network does
+# not forward, so the default setup can serve TV mode and WebDAV but not DLNA.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dlna.yml --profile app up -d
+#
+# On the host network the app reaches Postgres and MinIO through the ports
+# they publish on the host rather than by service name. Linux only: Docker
+# Desktop on macOS and Windows does not share the host's LAN interfaces.
+services:
+  app:
+    network_mode: host
+    ports: !reset []
+    environment:
+      DLNA_ENABLED: "true"
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:${POSTGRES_PORT:-5432}/remix_studio}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://127.0.0.1:${MINIO_API_PORT:-9000}}
+      PORT: ${APP_PORT:-3000}
+      # TVs connect to the DLNA server here; defaults to PORT + 1.
+      DLNA_HTTP_PORT: ${DLNA_HTTP_PORT:-}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/healthz').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]

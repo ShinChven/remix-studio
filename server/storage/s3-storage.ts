@@ -243,6 +243,44 @@ export class S3Storage implements IStorage {
     );
   }
 
+  /**
+   * Reads an object for serving over HTTP, honouring a single byte range.
+   * `head` fetches only the metadata. Throws the SDK error unchanged so
+   * callers can map NoSuchKey / InvalidRange to HTTP statuses.
+   */
+  async getObjectForServe(
+    key: string,
+    opts: { range?: string; head?: boolean } = {},
+  ): Promise<{
+    body?: ReadableStream;
+    contentLength?: number;
+    contentRange?: string;
+    contentType?: string;
+    etag?: string;
+    lastModified?: Date;
+  }> {
+    if (opts.head) {
+      const result = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+      return {
+        contentLength: result.ContentLength,
+        contentType: result.ContentType,
+        etag: result.ETag,
+        lastModified: result.LastModified,
+      };
+    }
+    const result = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key, ...(opts.range ? { Range: opts.range } : {}) })
+    );
+    return {
+      body: result.Body?.transformToWebStream() as ReadableStream | undefined,
+      contentLength: result.ContentLength,
+      contentRange: result.ContentRange,
+      contentType: result.ContentType,
+      etag: result.ETag,
+      lastModified: result.LastModified,
+    };
+  }
+
   async getReadStream(key: string): Promise<any> {
     const result = await this.client.send(
       new GetObjectCommand({ Bucket: this.bucket, Key: key })

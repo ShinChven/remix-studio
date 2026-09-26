@@ -1,0 +1,589 @@
+/*
+ * TV mode styles. Written for Chromium 53 (webOS 4) and newer: flexbox but
+ * no CSS grid or flex gap, no :focus-visible, no aspect-ratio. Sizes are in
+ * rem, and the root size follows the screen width so a 720p and a 4K TV
+ * show the same layout (1rem = 16px at 1920px wide).
+ */
+
+html {
+  font-size: 0.8333vw;
+  background: #09090b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  color: #f4f4f5;
+  background: #09090b;
+  font-family: 'Noto Sans', 'Noto Sans CJK SC', 'LG Smart UI', 'Roboto', 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app, .tv-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.tv-boot {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #52525b;
+  margin-top: -1.5rem;
+}
+
+.tv-screen {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+}
+
+.tv-screen.is-hidden {
+  visibility: hidden;
+}
+
+/* ---------- Top bar ---------- */
+
+.tv-bar {
+  -webkit-flex: none;
+  flex: none;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  height: 7.5rem;
+  padding: 0 5rem;
+}
+
+.tv-brand {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fafafa;
+  white-space: nowrap;
+}
+
+.tv-brand span {
+  color: #60a5fa;
+}
+
+.tv-crumb {
+  margin-left: 1.5rem;
+  font-size: 1.75rem;
+  color: #a1a1aa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-flex: 1;
+  flex: 1;
+}
+
+.tv-clock {
+  font-size: 1.75rem;
+  color: #a1a1aa;
+  margin-left: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Buttons and chips ---------- */
+
+.tv-button, .tv-chip {
+  display: inline-block;
+  border: 0.2rem solid transparent;
+  border-radius: 999px;
+  padding: 0.7rem 1.6rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #e4e4e7;
+  background: rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+  margin-right: 1rem;
+  -webkit-transition: background-color 0.12s, color 0.12s, -webkit-transform 0.12s;
+  transition: background-color 0.12s, color 0.12s, transform 0.12s;
+}
+
+.tv-chip.is-active {
+  color: #bfdbfe;
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.tv-button.is-focused, .tv-chip.is-focused {
+  color: #09090b;
+  background: #fafafa;
+  -webkit-transform: scale(1.06);
+  transform: scale(1.06);
+}
+
+.tv-button.is-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.tv-button.is-primary.is-focused {
+  background: #fafafa;
+  color: #09090b;
+}
+
+.tv-icon-button {
+  margin-left: 1.5rem;
+  margin-right: 0;
+}
+
+/* ---------- Scrolling body ---------- */
+
+.tv-body {
+  -webkit-flex: 1;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.tv-scroll {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.5rem 4rem 5rem;
+}
+
+.tv-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.tv-heading {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0.5rem 1rem 1.5rem;
+}
+
+.tv-toolbar {
+  padding: 0.5rem 1rem 1.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.tv-toolbar .tv-count {
+  display: inline-block;
+  font-size: 1.4rem;
+  color: #71717a;
+  margin-left: 0.5rem;
+}
+
+.tv-message {
+  font-size: 1.75rem;
+  color: #a1a1aa;
+  padding: 3rem 1rem;
+}
+
+/* ---------- Grids ---------- */
+
+.tv-grid {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}
+
+.tv-tile {
+  position: relative;
+  margin: 1rem;
+  border-radius: 1.2rem;
+  background: #18181b;
+  overflow: hidden;
+  -webkit-transition: -webkit-transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.tv-tile.is-focused {
+  -webkit-transform: scale(1.07);
+  transform: scale(1.07);
+  box-shadow: 0 0 0 0.35rem #fafafa, 0 1.5rem 3rem rgba(0, 0, 0, 0.6);
+  z-index: 2;
+}
+
+.tv-tile img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  -webkit-transition: opacity 0.25s;
+  transition: opacity 0.25s;
+}
+
+.tv-tile img.is-loaded {
+  opacity: 1;
+}
+
+/* Album tiles: 5 per row, 16:9 cover and a caption. */
+.tv-album {
+  width: 20.4rem;
+  height: 16rem;
+}
+
+.tv-album .tv-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 11.5rem;
+  background: #27272a;
+  overflow: hidden;
+}
+
+.tv-album .tv-cover-empty {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  margin-top: -1.5rem;
+  text-align: center;
+  font-size: 2.5rem;
+  color: #52525b;
+}
+
+.tv-album .tv-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4.5rem;
+  padding: 0.6rem 1.1rem;
+}
+
+.tv-album .tv-name {
+  font-size: 1.35rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tv-album .tv-meta {
+  font-size: 1.1rem;
+  color: #a1a1aa;
+  margin-top: 0.2rem;
+}
+
+.tv-album.is-recent .tv-cover {
+  background: #1e3a8a;
+}
+
+/* Media tiles: 6 per row, square thumbnails. */
+.tv-media {
+  width: 16.6rem;
+  height: 16.6rem;
+}
+
+.tv-badge {
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0.8rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 0.6rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.tv-media .tv-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  margin-top: -1.2rem;
+  text-align: center;
+  font-size: 2rem;
+  color: #3f3f46;
+}
+
+.tv-more {
+  width: 100%;
+  text-align: center;
+  font-size: 1.4rem;
+  color: #71717a;
+  padding: 2rem 0;
+}
+
+/* ---------- Pairing ---------- */
+
+.tv-pair {
+  -webkit-flex: 1;
+  flex: 1;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  padding: 0 8rem 6rem;
+}
+
+.tv-pair-text {
+  -webkit-flex: 1;
+  flex: 1;
+  max-width: 62rem;
+}
+
+.tv-pair h1 {
+  font-size: 3.5rem;
+  margin: 0 0 2.5rem;
+}
+
+.tv-pair p {
+  font-size: 1.75rem;
+  color: #a1a1aa;
+  margin: 0 0 1rem;
+  line-height: 1.4;
+}
+
+.tv-pair .tv-url {
+  font-size: 2.2rem;
+  color: #fafafa;
+  font-weight: 600;
+  margin: 0 0 2rem;
+  word-break: break-all;
+}
+
+.tv-code {
+  font-size: 6rem;
+  font-weight: 800;
+  letter-spacing: 0.4rem;
+  color: #fafafa;
+  margin: 1.5rem 0 2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-code span {
+  color: #3f3f46;
+  margin: 0 1rem;
+}
+
+.tv-qr {
+  -webkit-flex: none;
+  flex: none;
+  width: 26rem;
+  height: 26rem;
+  padding: 1.4rem;
+  margin-left: 6rem;
+  background: #fff;
+  border-radius: 1.5rem;
+}
+
+.tv-qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tv-status {
+  font-size: 1.5rem;
+  color: #71717a;
+}
+
+/* ---------- Settings ---------- */
+
+.tv-settings {
+  max-width: 80rem;
+  padding: 0 1rem;
+}
+
+.tv-row {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  padding: 1.6rem 2rem;
+  margin-bottom: 1rem;
+  border-radius: 1.2rem;
+  background: #18181b;
+  font-size: 1.6rem;
+  border: 0.2rem solid transparent;
+}
+
+.tv-row .tv-value {
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.tv-row.is-focused {
+  background: #fafafa;
+  color: #09090b;
+}
+
+.tv-row.is-focused .tv-value {
+  color: #1d4ed8;
+}
+
+.tv-row.is-danger .tv-value {
+  color: #fca5a5;
+}
+
+.tv-row.is-danger.is-focused {
+  background: #fee2e2;
+}
+
+.tv-row.is-danger.is-focused .tv-value {
+  color: #b91c1c;
+}
+
+.tv-row.is-static {
+  background: transparent;
+  color: #a1a1aa;
+}
+
+/* ---------- Viewer ---------- */
+
+.tv-viewer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.tv-viewer img, .tv-viewer video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+}
+
+.tv-viewer img {
+  opacity: 0;
+  -webkit-transition: opacity 0.6s;
+  transition: opacity 0.6s;
+}
+
+.tv-viewer img.is-shown {
+  opacity: 1;
+}
+
+.tv-viewer video {
+  display: none;
+}
+
+.tv-viewer video.is-shown {
+  display: block;
+}
+
+.tv-caption-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 6rem 5rem 3.5rem;
+  background: -webkit-linear-gradient(top, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.85));
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.85));
+  opacity: 0;
+  -webkit-transition: opacity 0.4s;
+  transition: opacity 0.4s;
+}
+
+.tv-caption-bar.is-shown {
+  opacity: 1;
+}
+
+.tv-caption-title {
+  font-size: 2rem;
+  font-weight: 600;
+  max-height: 8.4rem;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.tv-caption-meta {
+  margin-top: 0.8rem;
+  font-size: 1.3rem;
+  color: #a1a1aa;
+}
+
+.tv-caption-meta span {
+  margin-right: 1.6rem;
+}
+
+.tv-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 0.35rem;
+  width: 0;
+  background: #60a5fa;
+}
+
+.tv-toast {
+  position: absolute;
+  top: 3rem;
+  right: 4rem;
+  padding: 0.8rem 1.6rem;
+  border-radius: 999px;
+  background: rgba(24, 24, 27, 0.85);
+  font-size: 1.4rem;
+  opacity: 0;
+  -webkit-transition: opacity 0.3s;
+  transition: opacity 0.3s;
+}
+
+.tv-toast.is-shown {
+  opacity: 1;
+}
+
+.tv-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4rem;
+  height: 4rem;
+  margin: -2rem 0 0 -2rem;
+  border-radius: 50%;
+  border: 0.4rem solid rgba(255, 255, 255, 0.15);
+  border-top-color: #fafafa;
+  -webkit-animation: tv-spin 0.9s linear infinite;
+  animation: tv-spin 0.9s linear infinite;
+  display: none;
+}
+
+.tv-spinner.is-shown {
+  display: block;
+}
+
+@-webkit-keyframes tv-spin {
+  to { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes tv-spin {
+  to { transform: rotate(360deg); }
+}

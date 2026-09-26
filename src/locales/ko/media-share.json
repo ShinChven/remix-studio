@@ -1,0 +1,95 @@
+{
+  "mediaShare": {
+    "tab": "TV 및 기기",
+    "intro": "프로젝트 앨범을 TV에서 보거나 파일 관리자에서 열 수 있습니다. 각 기기는 선택한 프로젝트를 읽기 전용으로만 볼 수 있습니다.",
+    "scope": {
+      "label": "접근 범위",
+      "all": "진행 중인 모든 프로젝트",
+      "allHint": "나중에 만드는 프로젝트도 포함됩니다.",
+      "selected": "선택한 프로젝트",
+      "selectedCount_one": "프로젝트 {{count}}개",
+      "selectedCount_other": "프로젝트 {{count}}개",
+      "search": "프로젝트 검색",
+      "loading": "프로젝트를 불러오는 중…",
+      "empty": "프로젝트가 없습니다",
+      "pickOne": "프로젝트를 하나 이상 선택하세요",
+      "archived": "보관됨"
+    },
+    "common": {
+      "name": "이름",
+      "add": "추가",
+      "save": "저장",
+      "cancel": "취소",
+      "done": "완료",
+      "copy": "복사",
+      "copied": "복사됨",
+      "edit": "편집",
+      "remove": "제거",
+      "created": "{{date}}에 추가됨",
+      "lastUsed": "최근 사용 {{date}}",
+      "neverUsed": "아직 사용 안 함",
+      "from": "{{ip}}에서"
+    },
+    "tv": {
+      "title": "TV 모드",
+      "desc": "리모컨에 맞춘 전체 화면 뷰어: 앨범을 둘러보고, 태그로 거르고, 슬라이드쇼와 동영상을 재생합니다.",
+      "step1": "TV의 웹 브라우저에서 이 주소를 여세요:",
+      "step2": "TV에 코드가 표시됩니다. 휴대폰으로 TV의 QR 코드를 스캔하거나 여기에 코드를 입력하세요:",
+      "linkButton": "TV 코드 입력",
+      "openHere": "미리 보기",
+      "webos": "LG TV에서는 TV 모드를 홈 화면 앱으로 설치할 수도 있습니다. 저장소의 webos 폴더를 참고하세요.",
+      "empty": "연결된 TV가 아직 없습니다."
+    },
+    "webdav": {
+      "title": "WebDAV 네트워크 드라이브",
+      "desc": "Finder, Windows 탐색기, Infuse, rclone 또는 TV의 파일 관리자에서 앨범을 읽기 전용 드라이브로 마운트합니다.",
+      "address": "서버 주소",
+      "username": "사용자 이름",
+      "usernameValue": "아무 값",
+      "password": "비밀번호",
+      "passwordValue": "액세스 토큰",
+      "create": "새 액세스 토큰",
+      "namePlaceholder": "예: MacBook Finder",
+      "tokenCreated": "지금 이 토큰을 복사하세요. 다시 표시되지 않습니다.",
+      "httpsNote": "Windows 탐색기는 HTTPS로만 비밀번호를 보냅니다. Finder, Infuse, rclone은 HTTP에서도 작동합니다.",
+      "empty": "액세스 토큰이 아직 없습니다."
+    },
+    "dlna": {
+      "title": "DLNA 미디어 서버",
+      "desc": "TV에 내장된 사진·동영상 앱(LG '사진 및 동영상', 삼성 '미디어')이 로컬 네트워크에서 이 서버를 찾습니다. 설치할 것이 없습니다.",
+      "disabled": "이 서버에서 DLNA가 꺼져 있습니다. DLNA_ENABLED=true로 설정하고 호스트 네트워크로 컨테이너를 실행하세요(docker-compose.dlna.yml 참고).",
+      "notRunning": "DLNA가 켜져 있지만 실행되고 있지 않습니다: {{error}}",
+      "running": "{{addresses}}에서 알리는 중",
+      "create": "새 DLNA 서버",
+      "defaultName": "Remix Studio",
+      "namePlaceholder": "TV에 표시될 이름",
+      "lanOnly": "DLNA에는 비밀번호가 없습니다. 로컬 네트워크의 누구나 DLNA 서버를 볼 수 있으니 필요하면 프로젝트를 제한하세요.",
+      "empty": "DLNA 서버가 아직 없습니다."
+    },
+    "remove": {
+      "title": "{{name}}을(를) 제거할까요?",
+      "message": "앨범에 대한 접근 권한을 즉시 잃습니다."
+    },
+    "toasts": {
+      "added": "추가됨",
+      "saved": "저장됨",
+      "removed": "제거됨",
+      "copied": "클립보드에 복사됨"
+    },
+    "link": {
+      "title": "TV 연결",
+      "desc": "TV에 표시된 코드를 입력하세요.",
+      "code": "코드",
+      "continue": "계속",
+      "request": "TV가 앨범을 표시하려고 합니다",
+      "deviceName": "TV 이름",
+      "approve": "TV 연결",
+      "deny": "거절",
+      "done": "연결되었습니다. 곧 TV에 앨범이 표시됩니다.",
+      "denied": "거절했습니다. TV가 연결되지 않았습니다.",
+      "manage": "기기 관리",
+      "again": "다른 TV 연결",
+      "expiresIn": "코드가 {{minutes}}분 후 만료됩니다"
+    }
+  }
+}

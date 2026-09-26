@@ -1,0 +1,13 @@
+{
+  "id": "io.remixstudio.tv",
+  "version": "1.0.0",
+  "vendor": "Remix Studio",
+  "type": "web",
+  "main": "index.html",
+  "title": "Remix Studio",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "bgColor": "#09090b",
+  "resolution": "1920x1080",
+  "disableBackHistoryAPI": false
+}

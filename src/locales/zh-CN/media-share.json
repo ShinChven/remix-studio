@@ -1,0 +1,95 @@
+{
+  "mediaShare": {
+    "tab": "电视与设备",
+    "intro": "在电视上观看项目相册，或在任意文件管理器中打开。每个设备只能只读访问你选择的项目。",
+    "scope": {
+      "label": "访问范围",
+      "all": "所有进行中的项目",
+      "allHint": "包括以后新建的项目。",
+      "selected": "指定项目",
+      "selectedCount_one": "{{count}} 个项目",
+      "selectedCount_other": "{{count}} 个项目",
+      "search": "搜索项目",
+      "loading": "正在加载项目…",
+      "empty": "没有找到项目",
+      "pickOne": "请至少选择一个项目",
+      "archived": "已归档"
+    },
+    "common": {
+      "name": "名称",
+      "add": "添加",
+      "save": "保存",
+      "cancel": "取消",
+      "done": "完成",
+      "copy": "复制",
+      "copied": "已复制",
+      "edit": "编辑",
+      "remove": "移除",
+      "created": "添加于 {{date}}",
+      "lastUsed": "最近使用 {{date}}",
+      "neverUsed": "尚未使用",
+      "from": "来自 {{ip}}"
+    },
+    "tv": {
+      "title": "电视模式",
+      "desc": "专为遥控器设计的全屏浏览器：浏览相册、按标签筛选、播放幻灯片和视频。",
+      "step1": "在电视的网页浏览器中打开这个地址：",
+      "step2": "电视会显示一个代码。用手机扫描电视上的二维码，或在这里输入代码：",
+      "linkButton": "输入电视代码",
+      "openHere": "预览",
+      "webos": "LG 电视用户还可以把电视模式安装成主页上的应用：参见仓库中的 webos 文件夹。",
+      "empty": "还没有关联任何电视。"
+    },
+    "webdav": {
+      "title": "WebDAV 网络磁盘",
+      "desc": "在 Finder、Windows 资源管理器、Infuse、rclone 或电视上的文件管理器中，将相册挂载为只读网络磁盘。",
+      "address": "服务器地址",
+      "username": "用户名",
+      "usernameValue": "任意",
+      "password": "密码",
+      "passwordValue": "访问令牌",
+      "create": "新建访问令牌",
+      "namePlaceholder": "例如：MacBook Finder",
+      "tokenCreated": "请立即复制此令牌，之后将不再显示。",
+      "httpsNote": "Windows 资源管理器只会通过 HTTPS 发送密码。Finder、Infuse 和 rclone 在 HTTP 下也可使用。",
+      "empty": "还没有访问令牌。"
+    },
+    "dlna": {
+      "title": "DLNA 媒体服务器",
+      "desc": "电视自带的照片和视频应用（LG「照片和视频」、三星「媒体」）会在局域网中自动发现此服务器，无需安装任何应用。",
+      "disabled": "此服务器未开启 DLNA。请设置 DLNA_ENABLED=true，并使用主机网络运行容器（参见 docker-compose.dlna.yml）。",
+      "notRunning": "DLNA 已开启但未运行：{{error}}",
+      "running": "正在广播：{{addresses}}",
+      "create": "新建 DLNA 服务器",
+      "defaultName": "Remix Studio",
+      "namePlaceholder": "电视上显示的名称",
+      "lanOnly": "DLNA 没有密码：局域网内任何人都能浏览 DLNA 服务器。如有需要，请限制它能访问的项目。",
+      "empty": "还没有 DLNA 服务器。"
+    },
+    "remove": {
+      "title": "移除 {{name}}？",
+      "message": "它将立即失去对相册的访问权限。"
+    },
+    "toasts": {
+      "added": "已添加",
+      "saved": "已保存",
+      "removed": "已移除",
+      "copied": "已复制到剪贴板"
+    },
+    "link": {
+      "title": "关联电视",
+      "desc": "输入电视上显示的代码。",
+      "code": "代码",
+      "continue": "继续",
+      "request": "一台电视请求显示你的相册",
+      "deviceName": "电视名称",
+      "approve": "关联电视",
+      "deny": "拒绝",
+      "done": "已关联。电视很快就会显示你的相册。",
+      "denied": "已拒绝，电视未被关联。",
+      "manage": "管理设备",
+      "again": "关联另一台电视",
+      "expiresIn": "代码将在 {{minutes}} 分钟后过期"
+    }
+  }
+}

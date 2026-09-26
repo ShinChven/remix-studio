@@ -1,0 +1,95 @@
+{
+  "mediaShare": {
+    "tab": "TV et appareils",
+    "intro": "Regardez les albums de vos projets sur un téléviseur ou ouvrez-les depuis n’importe quel gestionnaire de fichiers. Chaque appareil accède en lecture seule aux projets que vous choisissez.",
+    "scope": {
+      "label": "Accès",
+      "all": "Tous les projets actifs",
+      "allHint": "Y compris les projets créés plus tard.",
+      "selected": "Projets choisis",
+      "selectedCount_one": "{{count}} projet",
+      "selectedCount_other": "{{count}} projets",
+      "search": "Rechercher des projets",
+      "loading": "Chargement des projets…",
+      "empty": "Aucun projet trouvé",
+      "pickOne": "Choisissez au moins un projet",
+      "archived": "Archivé"
+    },
+    "common": {
+      "name": "Nom",
+      "add": "Ajouter",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "done": "Terminé",
+      "copy": "Copier",
+      "copied": "Copié",
+      "edit": "Modifier",
+      "remove": "Supprimer",
+      "created": "Ajouté le {{date}}",
+      "lastUsed": "Dernière utilisation {{date}}",
+      "neverUsed": "Pas encore utilisé",
+      "from": "depuis {{ip}}"
+    },
+    "tv": {
+      "title": "Mode TV",
+      "desc": "Une visionneuse plein écran pensée pour la télécommande : parcourez les albums, filtrez par tag, lancez des diaporamas et des vidéos.",
+      "step1": "Sur le téléviseur, ouvrez cette adresse dans le navigateur :",
+      "step2": "Le téléviseur affiche un code. Scannez son QR code avec votre téléphone ou saisissez le code ici :",
+      "linkButton": "Saisir un code TV",
+      "openHere": "Aperçu",
+      "webos": "Sur les téléviseurs LG, vous pouvez aussi installer le mode TV comme application sur l’écran d’accueil : voir le dossier webos du dépôt.",
+      "empty": "Aucun téléviseur associé pour l’instant."
+    },
+    "webdav": {
+      "title": "Lecteur réseau WebDAV",
+      "desc": "Montez vos albums comme un lecteur en lecture seule dans le Finder, l’Explorateur Windows, Infuse, rclone ou un gestionnaire de fichiers sur votre téléviseur.",
+      "address": "Adresse du serveur",
+      "username": "Nom d’utilisateur",
+      "usernameValue": "au choix",
+      "password": "Mot de passe",
+      "passwordValue": "un jeton d’accès",
+      "create": "Nouveau jeton d’accès",
+      "namePlaceholder": "ex. Finder du MacBook",
+      "tokenCreated": "Copiez ce jeton maintenant. Il ne sera plus affiché.",
+      "httpsNote": "L’Explorateur Windows n’envoie les mots de passe qu’en HTTPS. Le Finder, Infuse et rclone fonctionnent aussi en HTTP.",
+      "empty": "Aucun jeton d’accès pour l’instant."
+    },
+    "dlna": {
+      "title": "Serveur multimédia DLNA",
+      "desc": "L’application photos et vidéos intégrée à votre téléviseur (LG « Photo et vidéo », Samsung « Média ») trouve ce serveur sur le réseau local. Rien à installer.",
+      "disabled": "Le DLNA est désactivé sur ce serveur. Définissez DLNA_ENABLED=true et lancez le conteneur en réseau hôte (voir docker-compose.dlna.yml).",
+      "notRunning": "Le DLNA est activé mais ne fonctionne pas : {{error}}",
+      "running": "Annonce sur {{addresses}}",
+      "create": "Nouveau serveur DLNA",
+      "defaultName": "Remix Studio",
+      "namePlaceholder": "Nom affiché sur le téléviseur",
+      "lanOnly": "Le DLNA n’a pas de mot de passe : tout appareil du réseau local peut parcourir un serveur DLNA. Limitez ses projets si nécessaire.",
+      "empty": "Aucun serveur DLNA pour l’instant."
+    },
+    "remove": {
+      "title": "Supprimer {{name}} ?",
+      "message": "Il perd immédiatement l’accès à vos albums."
+    },
+    "toasts": {
+      "added": "Ajouté",
+      "saved": "Enregistré",
+      "removed": "Supprimé",
+      "copied": "Copié dans le presse-papiers"
+    },
+    "link": {
+      "title": "Associer un téléviseur",
+      "desc": "Saisissez le code affiché sur votre téléviseur.",
+      "code": "Code",
+      "continue": "Continuer",
+      "request": "Un téléviseur souhaite afficher vos albums",
+      "deviceName": "Nom du téléviseur",
+      "approve": "Associer",
+      "deny": "Refuser",
+      "done": "Associé. Votre téléviseur affichera vos albums dans un instant.",
+      "denied": "Refusé. Le téléviseur n’a pas été associé.",
+      "manage": "Gérer les appareils",
+      "again": "Associer un autre téléviseur",
+      "expiresIn": "Le code expire dans {{minutes}} min"
+    }
+  }
+}

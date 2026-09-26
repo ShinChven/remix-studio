@@ -52,6 +52,7 @@ import { CampaignHistory } from './pages/CampaignHistory.tsx';
 import { ScheduledPosts } from './pages/ScheduledPosts.tsx';
 import ExtensionImport from './pages/ExtensionImport.tsx';
 import SharePage from './pages/SharePage.tsx';
+import { LinkTv } from './pages/LinkTv.tsx';
 
 /**
  * Redirect for a retired path, carrying the query string and hash across so
@@ -89,6 +90,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/link" element={<LinkTv />} />
             
             <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
               <Route index element={<Home />} />
