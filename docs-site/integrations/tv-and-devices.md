@@ -84,11 +84,11 @@ DLNA is off by default and needs:
 Then add a DLNA server under **Account → TV & devices → DLNA**. Its name is what the TV shows. You can run several, for example one per family member with different projects.
 
 ::: warning DLNA has no passwords
-Anyone on your local network can browse a DLNA server. Remix Studio only answers requests from private and directly connected addresses, but inside your network there is no further protection, so limit each server's projects if that matters.
+Anyone on your local network can browse a DLNA server. Remix Studio serves DLNA on its own port (`DLNA_HTTP_PORT`), which a reverse proxy should never publish, and answers only direct requests from private and directly connected addresses. Inside your network there is no further protection, so limit each server's projects if that matters.
 :::
 
 If the TV does not list the server:
 
 - Check that **Account → TV & devices** says *Announcing on* with an address on the TV's network. If there are several interfaces, pick the right one with `DLNA_INTERFACES`.
-- Make sure nothing blocks UDP port 1900 or the app's HTTP port on the host firewall.
+- Make sure the host firewall lets the local network reach UDP port 1900 and the DLNA port (`DLNA_HTTP_PORT`, by default the app's port + 1, e.g. 3001).
 - Some TVs rescan only when their media app opens: close and reopen it.

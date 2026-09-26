@@ -27,6 +27,14 @@ const KINDS: MediaKind[] = ['image', 'video', 'audio'];
 
 type Variables = { user: JwtPayload; device: ResolvedDevice };
 
+/**
+ * Codes are short enough to guess at scale, so looking one up, approving and
+ * declining share one budget per user.
+ */
+function pairingAttemptAllowed(userId: string): boolean {
+  return checkRateLimit({ bucket: 'media-pairing', keyParts: [userId], maxAttempts: 30, windowMs: 10 * 60 * 1000 });
+}
+
 function generateUserCode(): string {
   const bytes = crypto.randomBytes(8);
   let code = '';
@@ -178,10 +186,7 @@ export function createMediaRouter(
 
   /** A pending TV, looked up by the code it shows, for the approval screen. */
   router.get('/api/media-pairings/:code', authMiddleware, async (c) => {
-    // Codes are short enough to guess at scale; cap lookups per user.
-    if (!checkRateLimit({ bucket: 'media-pairing-lookup', keyParts: [c.get('user').userId], maxAttempts: 30, windowMs: 10 * 60 * 1000 })) {
-      return c.json({ error: 'Too many attempts, try again later' }, 429);
-    }
+    if (!pairingAttemptAllowed(c.get('user').userId)) return c.json({ error: 'Too many attempts, try again later' }, 429);
     const pairing = await prisma.mediaPairing.findUnique({ where: { userCode: normalizeUserCode(c.req.param('code')) } });
     if (!pairing || pairing.expiresAt < new Date() || pairing.status !== 'pending') {
       return c.json({ error: 'This code is invalid or has expired' }, 404);
@@ -195,6 +200,7 @@ export function createMediaRouter(
   });
 
   router.post('/api/media-pairings/:code/approve', authMiddleware, async (c) => {
+    if (!pairingAttemptAllowed(c.get('user').userId)) return c.json({ error: 'Too many attempts, try again later' }, 429);
     const user = c.get('user');
     const body = await c.req.json().catch(() => null);
     const scope = await parseScope(prisma, user.userId, body?.projectIds);
@@ -215,6 +221,7 @@ export function createMediaRouter(
   });
 
   router.post('/api/media-pairings/:code/deny', authMiddleware, async (c) => {
+    if (!pairingAttemptAllowed(c.get('user').userId)) return c.json({ error: 'Too many attempts, try again later' }, 429);
     await prisma.mediaPairing.updateMany({
       where: { userCode: normalizeUserCode(c.req.param('code')), status: 'pending' },
       data: { status: 'denied' },

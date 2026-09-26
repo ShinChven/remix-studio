@@ -60,6 +60,17 @@ const EXTENSIONS_BY_KIND: Record<MediaKind, string[]> = {
   audio: ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac', 'webm'],
 };
 
+const MEDIA_EXTENSIONS = Array.from(new Set(Object.values(EXTENSIONS_BY_KIND).flat()));
+/**
+ * The same filter for raw SQL. Rows are filtered by extension in the query,
+ * never after it, so LIMIT/OFFSET paging and totals always agree.
+ */
+const MEDIA_KEY_PATTERN = `\\.(${MEDIA_EXTENSIONS.join('|')})$`;
+const IMAGE_KEY_PATTERN = `\\.(${EXTENSIONS_BY_KIND.image.join('|')})$`;
+
+/** How long a folder listing is reused to resolve WebDAV paths. */
+const FOLDER_CACHE_TTL_MS = 10_000;
+
 const ITEM_SELECT = {
   id: true,
   projectId: true,
@@ -165,17 +176,16 @@ export class MediaCatalog {
     };
   }
 
-  /** Album rows that hold a stored file (text results carry none). */
+  /** Album rows holding a stored file some player can open (text results carry none). */
   private mediaWhere(kinds?: MediaKind[]): Prisma.AlbumItemWhereInput {
-    const where: Prisma.AlbumItemWhereInput = {
+    const exts = kinds && kinds.length > 0
+      ? Array.from(new Set(kinds.flatMap((kind) => EXTENSIONS_BY_KIND[kind])))
+      : MEDIA_EXTENSIONS;
+    return {
       imageUrl: { not: null },
       NOT: { imageUrl: { startsWith: 'data:' } },
+      OR: exts.map((ext) => ({ imageUrl: { endsWith: `.${ext}`, mode: 'insensitive' as const } })),
     };
-    if (kinds && kinds.length > 0 && kinds.length < 3) {
-      const exts = Array.from(new Set(kinds.flatMap((kind) => EXTENSIONS_BY_KIND[kind])));
-      where.OR = exts.map((ext) => ({ imageUrl: { endsWith: `.${ext}`, mode: 'insensitive' as const } }));
-    }
-    return where;
   }
 
   private projectWhere(userId: string, scope: ProjectScope): Prisma.ProjectWhereInput {
@@ -209,9 +219,8 @@ export class MediaCatalog {
         FROM "AlbumItem"
         WHERE "userId" = ${userId}
           AND "projectId" IN (${Prisma.join(ids)})
-          AND "imageUrl" IS NOT NULL
-          AND ("thumbnailUrl" IS NOT NULL OR "optimizedUrl" IS NOT NULL
-            OR "imageUrl" ~* '\\.(png|jpe?g|webp|gif)$')
+          AND "imageUrl" ~* ${MEDIA_KEY_PATTERN}
+          AND ("thumbnailUrl" IS NOT NULL OR "optimizedUrl" IS NOT NULL OR "imageUrl" ~* ${IMAGE_KEY_PATTERN})
         ORDER BY "projectId", "createdAt" DESC, "id" DESC
       `,
       this.prisma.$queryRaw<{ projectId: string }[]>`
@@ -219,7 +228,7 @@ export class MediaCatalog {
         FROM "AlbumItem"
         WHERE "userId" = ${userId}
           AND "projectId" IN (${Prisma.join(ids)})
-          AND "imageUrl" IS NOT NULL
+          AND "imageUrl" ~* ${MEDIA_KEY_PATTERN}
           AND jsonb_typeof("tags") = 'array'
           AND jsonb_array_length("tags") > 0
       `,
@@ -268,8 +277,24 @@ export class MediaCatalog {
     return folders[0] ?? null;
   }
 
+  private folderCache = new Map<string, { at: number; folders: Promise<MediaFolder[]> }>();
+
+  /**
+   * Resolves a WebDAV folder name. A client syncing a folder sends a request
+   * per file, so the listing that names folders is reused for a few seconds
+   * instead of being aggregated again for every file.
+   */
   async findFolderByName(userId: string, scope: ProjectScope, folderName: string): Promise<MediaFolder | null> {
-    const folders = await this.listFolders(userId, scope);
+    const cacheKey = `${userId}|${scope ? scope.join(',') : '*'}`;
+    const now = Date.now();
+    let cached = this.folderCache.get(cacheKey);
+    if (!cached || now - cached.at > FOLDER_CACHE_TTL_MS) {
+      if (this.folderCache.size > 200) this.folderCache.clear();
+      cached = { at: now, folders: this.listFolders(userId, scope) };
+      this.folderCache.set(cacheKey, cached);
+      cached.folders.catch(() => this.folderCache.delete(cacheKey));
+    }
+    const folders = await cached.folders;
     const lower = folderName.toLowerCase();
     return folders.find((folder) => folder.folderName.toLowerCase() === lower) ?? null;
   }
@@ -357,7 +382,7 @@ export class MediaCatalog {
         LATERAL jsonb_array_elements_text(
           CASE WHEN jsonb_typeof("tags") = 'array' THEN "tags" ELSE '[]'::jsonb END
         ) AS tag
-      WHERE "projectId" = ${projectId} AND "userId" = ${userId} AND "imageUrl" IS NOT NULL
+      WHERE "projectId" = ${projectId} AND "userId" = ${userId} AND "imageUrl" ~* ${MEDIA_KEY_PATTERN}
       GROUP BY tag
       ORDER BY count DESC, tag ASC
     `;

@@ -266,7 +266,6 @@ async function startServer() {
   const dlnaService = new DlnaService(prisma, mediaCatalog, mediaDeviceAuth, storage, dlnaOptionsFromEnv(process.env, appVersion));
   app.route('/', createMediaRouter(prisma, mediaCatalog, mediaDeviceAuth, storage, dlnaService));
   app.route('/', createWebDavRouter(mediaCatalog, mediaDeviceAuth, storage));
-  app.route('/', dlnaService.router());
   app.route('/', createTvAppRouter());
   // Shared by the external MCP transport and the in-app assistant so both
   // expose exactly the same tools.
@@ -312,7 +311,7 @@ async function startServer() {
 
     const server = http.createServer((req, res) => {
       const url = req.url || '';
-      if (url.startsWith('/api/') || url === '/dav' || url.startsWith('/dav/') || url.startsWith('/dlna/') || url === '/tv' || url.startsWith('/tv/') || url.startsWith('/tv?') || url.startsWith('/mcp') || url.startsWith('/authorize') || url.startsWith('/register') || url.startsWith('/token') || url.startsWith('/.well-known/') || url.startsWith('/healthz') || url.startsWith('/readyz') || url.startsWith('/api/assistant')) {
+      if (url.startsWith('/api/') || url === '/dav' || url.startsWith('/dav/') || url === '/tv' || url.startsWith('/tv/') || url.startsWith('/tv?') || url.startsWith('/mcp') || url.startsWith('/authorize') || url.startsWith('/register') || url.startsWith('/token') || url.startsWith('/.well-known/') || url.startsWith('/healthz') || url.startsWith('/readyz') || url.startsWith('/api/assistant')) {
         honoListener(req, res);
       } else {
         vite.middlewares(req, res);

@@ -123,7 +123,7 @@ TV mode and WebDAV need no configuration. The DLNA media server is off unless en
 | :--- | :--- | :--- |
 | `DLNA_ENABLED` | `false` | Announce DLNA servers on the local network (SSDP on UDP 1900). |
 | `DLNA_INTERFACES` | all LAN interfaces | Comma-separated interface names or IPv4 addresses to announce on, e.g. `eth0` or `192.168.1.20`. |
-| `DLNA_HTTP_PORT` | `PORT` | The port TVs connect to, when a proxy or port mapping publishes the app on a different one. |
+| `DLNA_HTTP_PORT` | `PORT` + 1 | Port of the DLNA listener TVs connect to. It is separate from `PORT` so a reverse proxy publishing the app never exposes DLNA; do not forward it. |
 
 ## Backups (Docker)
 

@@ -3,6 +3,7 @@ import fs from 'fs';
 import http from 'http';
 import path from 'path';
 import { Hono, type Context } from 'hono';
+import { serve, type ServerType } from '@hono/node-server';
 import type { PrismaClient } from '@prisma/client';
 import sharp from 'sharp';
 import type { S3Storage } from '../../storage/s3-storage';
@@ -21,10 +22,11 @@ import {
 /**
  * A UPnP/DLNA MediaServer per "DLNA server" the users created: TVs on the
  * LAN find them through SSDP and browse the albums in their own photo and
- * video apps. Everything is served from the main HTTP server under /dlna/.
+ * video apps.
  *
- * DLNA has no authentication, so these routes answer private-network
- * clients only, and nothing is advertised unless DLNA_ENABLED is set.
+ * DLNA has no authentication. So nothing runs unless DLNA_ENABLED is set,
+ * and the routes live on a listener of their own (DLNA_HTTP_PORT), apart
+ * from the main port a reverse proxy publishes, answering LAN peers only.
  */
 
 export const DLNA_ROOT = '/dlna';
@@ -35,7 +37,7 @@ const VARIANTS: MediaVariant[] = ['original', 'optimized', 'thumbnail'];
 
 export interface DlnaOptions {
   enabled: boolean;
-  /** The port the main HTTP server listens on, as reachable from the LAN. */
+  /** The port of the DLNA HTTP listener, which TVs connect to. */
   httpPort: number;
   /** Interface names or addresses to announce on; all LAN interfaces when empty. */
   interfaces: string[];
@@ -46,7 +48,7 @@ export function dlnaOptionsFromEnv(env: NodeJS.ProcessEnv, version: string): Dln
   const flag = (env.DLNA_ENABLED || '').trim().toLowerCase();
   return {
     enabled: ['1', 'true', 'yes', 'on'].includes(flag),
-    httpPort: Number(env.DLNA_HTTP_PORT || env.PORT || 3000),
+    httpPort: Number(env.DLNA_HTTP_PORT) || Number(env.PORT || 3000) + 1,
     interfaces: (env.DLNA_INTERFACES || '').split(',').map((part) => part.trim()).filter(Boolean),
     version,
   };
@@ -60,6 +62,7 @@ export class DlnaService {
   private refreshTimer: NodeJS.Timeout | null = null;
   private pendingRefresh: NodeJS.Timeout | null = null;
   private stamps = new Map<string, { value: number; at: number }>();
+  private httpServer: ServerType | null = null;
   private icons = new Map<string, Buffer>();
 
   constructor(
@@ -92,10 +95,19 @@ export class DlnaService {
       return;
     }
     try {
+      await this.listen();
+    } catch (error) {
+      this.startError = `Port ${this.options.httpPort} is not available: ${(error as Error).message}`;
+      console.error(`[DLNA] ${this.startError}`);
+      return;
+    }
+    try {
       await this.ssdp.start();
     } catch (error) {
       this.startError = `SSDP could not start: ${(error as Error).message}`;
       console.error(`[DLNA] ${this.startError}`);
+      this.httpServer?.close();
+      this.httpServer = null;
       return;
     }
     console.log(`[DLNA] Announcing on ${interfaces.map((iface) => `${iface.name} ${iface.address}`).join(', ')} (port ${this.options.httpPort})`);
@@ -114,6 +126,17 @@ export class DlnaService {
   async stop(): Promise<void> {
     if (this.refreshTimer) clearInterval(this.refreshTimer);
     await this.ssdp.stop();
+    this.httpServer?.close();
+    this.httpServer = null;
+  }
+
+  private listen(): Promise<void> {
+    const app = this.router();
+    return new Promise((resolve, reject) => {
+      const server = serve({ fetch: app.fetch, port: this.options.httpPort, hostname: '0.0.0.0' }, () => resolve());
+      server.once('error', reject);
+      this.httpServer = server;
+    });
   }
 
   /** Re-reads the DLNA servers to advertise; call after one is created or changed. */
@@ -167,6 +190,7 @@ export class DlnaService {
     return buffer;
   }
 
+  /** The DLNA routes; exported for tests, served by `listen`. */
   router() {
     const router = new Hono<{ Variables: Variables }>();
     const base = (c: Context) => `http://${c.req.header('host') || `127.0.0.1:${this.options.httpPort}`}${DLNA_ROOT}/${c.req.param('id')}`;
@@ -176,7 +200,12 @@ export class DlnaService {
     router.use(`${DLNA_ROOT}/:id/*`, async (c, next) => {
       if (!this.options.enabled) return c.text('DLNA is disabled', 404);
       const peer = socketAddress(c);
-      if (!isLocalPeer(peer, lanInterfaces(this.options.interfaces))) return c.text('DLNA is only available on the local network', 403);
+      // TVs connect directly. A proxied request, even from a private
+      // address, may have come from anywhere.
+      const proxied = ['x-forwarded-for', 'forwarded', 'x-real-ip', 'via'].some((name) => c.req.header(name));
+      if (proxied || !isLocalPeer(peer, lanInterfaces(this.options.interfaces))) {
+        return c.text('DLNA is only available on the local network', 403);
+      }
       const device = await this.auth.resolveDlnaServer(c.req.param('id') || '', peer);
       if (!device) return c.text('Not found', 404);
       c.set('dlnaDevice', device);

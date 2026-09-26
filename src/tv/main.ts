@@ -323,8 +323,16 @@ interface AlbumState {
   tag?: string;
   items: TvItem[];
   total: number;
-  loading: boolean;
   loadedAt: number;
+}
+
+/** What the viewer needs from the album it was opened over. */
+interface AlbumSource {
+  state: AlbumState;
+  /** Loads the next page; concurrent callers share one request. */
+  loadMore(): Promise<boolean>;
+  /** Reloads from scratch until at least `count` items are back. */
+  reload(count: number): Promise<void>;
 }
 
 function albumScreen(folderId: string): Screen {
@@ -338,31 +346,52 @@ function albumScreen(folderId: string): Screen {
   let destroyed = false;
   let tags: { tag: string; count: number }[] = [];
 
-  const state: AlbumState = { folderId, items: [], total: 0, loading: false, loadedAt: 0 };
+  const state: AlbumState = { folderId, items: [], total: 0, loadedAt: 0 };
+  // Bumped whenever the list is reset, so a page requested for an earlier
+  // filter is dropped instead of landing in the new list.
+  let generation = 0;
+  let inflight: { generation: number; promise: Promise<boolean> } | null = null;
 
-  async function loadMore(): Promise<boolean> {
-    if (state.loading || (state.loadedAt && state.items.length >= state.total)) return false;
-    state.loading = true;
+  function loadMore(): Promise<boolean> {
+    if (inflight && inflight.generation === generation) return inflight.promise;
+    if (state.loadedAt && state.items.length >= state.total) return Promise.resolve(false);
+    const mine = generation;
+    const promise = fetchPage(mine).then((loaded) => {
+      if (inflight && inflight.generation === mine) inflight = null;
+      return loaded;
+    });
+    inflight = { generation: mine, promise };
+    return promise;
+  }
+
+  async function fetchPage(mine: number): Promise<boolean> {
     footer.textContent = '…';
     try {
       const page = await api.items(folderId, { offset: state.items.length, limit: PAGE_SIZE, kind: state.kind, tag: state.tag, order: settings.order });
-      if (destroyed) return false;
+      if (destroyed || mine !== generation) return false;
       if (!state.loadedAt) state.loadedAt = Date.now();
       state.total = page.total;
       const start = state.items.length;
       state.items = state.items.concat(page.items);
       for (let i = 0; i < page.items.length; i++) grid.appendChild(mediaTile(page.items[i], start + i));
       updateCount();
+      footer.textContent = state.items.length < state.total ? '…' : '';
       return page.items.length > 0;
     } catch (e) {
-      if (handleUnauthorized(e)) return false;
+      if (handleUnauthorized(e) || destroyed || mine !== generation) return false;
       footer.textContent = t('loadFailed');
       return false;
-    } finally {
-      state.loading = false;
-      if (!destroyed) footer.textContent = state.items.length < state.total ? '…' : '';
     }
   }
+
+  async function reload(count: number) {
+    reset();
+    while (state.items.length < count && (await loadMore())) {
+      // keep paging until the requested position is loaded again
+    }
+  }
+
+  const source: AlbumSource = { state, loadMore, reload };
 
   const countEl = h('span', { class: 'tv-count' });
   function updateCount() {
@@ -391,7 +420,7 @@ function albumScreen(folderId: string): Screen {
   function openViewer(index: number, slideshow: boolean) {
     if (state.items.length === 0) return;
     pushViewerState();
-    openOverlay(viewerScreen(state, index, slideshow, loadMore, (lastIndex) => {
+    openOverlay(viewerScreen(source, index, slideshow, (lastIndex) => {
       // Back in the grid, focus follows what was last on screen.
       const tile = grid.children[lastIndex] as HTMLElement | undefined;
       if (tile) focus.focus(tile);
@@ -424,6 +453,7 @@ function albumScreen(folderId: string): Screen {
   }
 
   function reset() {
+    generation++;
     state.items = [];
     state.total = 0;
     state.loadedAt = 0;
@@ -471,12 +501,12 @@ function albumScreen(folderId: string): Screen {
 // ---------- Viewer ----------
 
 function viewerScreen(
-  state: AlbumState,
+  source: AlbumSource,
   startIndex: number,
   startPlaying: boolean,
-  loadMore: () => Promise<boolean>,
   onClose: (index: number) => void,
 ): Screen {
+  const { state } = source;
   const layers = [h('img', { alt: '' }) as HTMLImageElement, h('img', { alt: '' }) as HTMLImageElement];
   const video = h('video', { playsinline: '', preload: 'auto' }) as HTMLVideoElement;
   const title = h('div', { class: 'tv-caption-title' });
@@ -561,14 +591,9 @@ function viewerScreen(
 
   /** Keeps presigned links fresh on long slideshows by reloading the list. */
   async function refreshIfStale() {
-    if (Date.now() - state.loadedAt < LINK_MAX_AGE_MS) return;
-    const keep = state.items.length;
-    state.items = [];
-    state.loadedAt = 0;
-    state.total = 0;
-    while (state.items.length < Math.min(keep, index + 1) && (await loadMore())) {
-      // keep loading until the current position is covered again
-    }
+    if (!state.loadedAt || Date.now() - state.loadedAt < LINK_MAX_AGE_MS) return;
+    await source.reload(index + 1);
+    if (index >= state.items.length) index = Math.max(0, state.items.length - 1);
   }
 
   function preload(i: number) {
@@ -633,7 +658,8 @@ function viewerScreen(
   async function go(step: number, wrap: boolean) {
     let next = index + step;
     if (next >= state.items.length && state.items.length < state.total) {
-      await loadMore();
+      // Waits for a prefetch already under way rather than wrapping early.
+      await source.loadMore();
     }
     if (destroyed) return;
     if (next >= state.items.length) {

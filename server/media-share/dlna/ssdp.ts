@@ -1,6 +1,6 @@
 import dgram from 'dgram';
 import { CDS_TYPE, CMS_TYPE, DEVICE_TYPE, MRR_TYPE } from './xml';
-import { LanInterface, interfaceFor } from '../net-utils';
+import { LanInterface, interfaceFor, isLocalPeer } from '../net-utils';
 
 /**
  * SSDP (UPnP discovery) for any number of MediaServer root devices: answers
@@ -183,7 +183,11 @@ export class SsdpServer {
     const st = headers.st;
     if (!st || this.devices.size === 0) return;
 
-    const iface = interfaceFor(rinfo.address, this.interfaces());
+    // Answer the LAN only: a reply to a spoofed internet source would make
+    // this server an SSDP reflection amplifier.
+    const interfaces = this.interfaces();
+    if (!isLocalPeer(rinfo.address, interfaces)) return;
+    const iface = interfaceFor(rinfo.address, interfaces);
     if (!iface) return;
     const mx = Math.min(5, Math.max(1, parseInt(headers.mx || '1', 10) || 1));
 

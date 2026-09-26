@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import type { MediaDevice, PrismaClient } from '@prisma/client';
+import { hashToken } from '../auth/auth';
 import { ProjectScope, scopeFromJson } from './catalog';
 
 /**
@@ -17,9 +18,7 @@ export interface ResolvedDevice {
   scope: ProjectScope;
 }
 
-export function hashMediaToken(token: string): string {
-  return crypto.createHash('sha256').update(token).digest('hex');
-}
+export const hashMediaToken = hashToken;
 
 export function generateMediaToken(): { token: string; tokenHash: string; tokenPrefix: string } {
   const token = `${MEDIA_TOKEN_PREFIX}${crypto.randomBytes(24).toString('base64url')}`;
