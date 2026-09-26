@@ -4,6 +4,7 @@ import { MediaCatalog, MediaEntry, MediaFolder } from './catalog';
 import { MediaDeviceAuth, ResolvedDevice, tokenFromAuthorization } from './device-auth';
 import { serveStoredObject } from './media-stream';
 import { clientAddress } from './net-utils';
+import { xmlEscape } from './dlna/xml';
 
 /**
  * A read-only WebDAV share of the user's albums at /dav/:
@@ -22,9 +23,6 @@ const PAGE = 2000;
 // Metadata files desktop clients probe for on every folder.
 const PROBE_FILES = /^(\._.*|\.DS_Store|\.localized|\.hidden|\.metadata_never_index.*|\.Spotlight-V100|\.Trashes|desktop\.ini|Thumbs\.db|folder\.jpg|autorun\.inf|\.directory)$/i;
 
-function xmlEscape(value: string): string {
-  return value.replace(/[<>&'"]/g, (ch) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[ch]!));
-}
 
 function hrefFor(...segments: string[]): string {
   return `${DAV_ROOT}/${segments.map(encodeURIComponent).join('/')}`;

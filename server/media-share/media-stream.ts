@@ -25,6 +25,11 @@ function errorName(error: unknown): string {
   return e?.name || e?.Code || '';
 }
 
+function matchesEtag(ifNoneMatch: string | null | undefined, etag: string | undefined): boolean {
+  if (!ifNoneMatch || !etag) return false;
+  return ifNoneMatch.split(',').some((tag) => tag.trim() === etag || tag.trim() === '*');
+}
+
 function contentDisposition(name: string): string {
   const ascii = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
   return `inline; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
@@ -37,7 +42,12 @@ export async function serveStoredObject(storage: S3Storage, key: string, options
 
   let object: Awaited<ReturnType<S3Storage['getObjectForServe']>>;
   try {
-    object = await storage.getObjectForServe(key, { head, range });
+    // A client revalidating its cache only needs the ETag: skip the body.
+    const conditional = Boolean(options.ifNoneMatch) && !range;
+    object = await storage.getObjectForServe(key, { head: head || conditional, range });
+    if (conditional && !head && !matchesEtag(options.ifNoneMatch, object.etag)) {
+      object = await storage.getObjectForServe(key, {});
+    }
   } catch (error) {
     const name = errorName(error);
     const status = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
@@ -62,8 +72,7 @@ export async function serveStoredObject(storage: S3Storage, key: string, options
   if (object.lastModified) headers.set('Last-Modified', object.lastModified.toUTCString());
   if (options.downloadName) headers.set('Content-Disposition', contentDisposition(options.downloadName));
 
-  if (object.etag && options.ifNoneMatch && options.ifNoneMatch.split(',').some((tag) => tag.trim() === object.etag)) {
-    object.body?.cancel().catch(() => {});
+  if (matchesEtag(options.ifNoneMatch, object.etag)) {
     return new Response(null, { status: 304, headers });
   }
 

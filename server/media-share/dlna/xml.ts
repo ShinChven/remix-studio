@@ -8,8 +8,13 @@ export const CDS_TYPE = 'urn:schemas-upnp-org:service:ContentDirectory:1';
 export const CMS_TYPE = 'urn:schemas-upnp-org:service:ConnectionManager:1';
 export const MRR_TYPE = 'urn:microsoft.com:service:X_MS_MediaReceiverRegistrar:1';
 
+// Characters XML 1.0 cannot carry at all, escaped or not; prompts can contain them.
+const INVALID_XML_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+
 export function xmlEscape(value: string): string {
-  return value.replace(/[<>&'"]/g, (ch) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[ch]!));
+  return value
+    .replace(INVALID_XML_CHARS, '')
+    .replace(/[<>&'"]/g, (ch) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[ch]!));
 }
 
 export function xmlUnescape(value: string): string {

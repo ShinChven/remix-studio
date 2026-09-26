@@ -61,6 +61,12 @@ const AUTH_FLOW_PREFIXES = [
   '/api/auth/google/',            // OAuth login flow
 ];
 
+/** The login page, set to come back to the current page (e.g. a TV link opened from a QR code). */
+function loginUrlReturningHere(): string {
+  const here = window.location.pathname + window.location.search;
+  return here === '/' ? '/login' : `/login?next=${encodeURIComponent(here)}`;
+}
+
 async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
   const res = await fetch(url, { ...options, credentials: 'include' });
 
@@ -72,7 +78,7 @@ async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
     if (outcome === 'failed') {
       // Refresh failed — redirect to login (but not if already there, to avoid loops)
       if (!window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login';
+        window.location.href = loginUrlReturningHere();
       }
       return res;
     }
@@ -1439,7 +1445,7 @@ export async function uploadProjectBundle(
 
     const outcome = await attemptRefresh();
     if (outcome === 'failed') {
-      if (!window.location.pathname.startsWith('/login')) window.location.href = '/login';
+      if (!window.location.pathname.startsWith('/login')) window.location.href = loginUrlReturningHere();
       throw new Error('Session expired');
     }
     return sendBundleUpload(file, options);
@@ -2576,4 +2582,88 @@ export async function publishProduct(productId: string): Promise<{ deliveryTaskI
     headers: getHeaders(),
   });
   return handleResponse<{ deliveryTaskId: string }>(res, 'Failed to publish product');
+}
+
+// ─── Media sharing (TV mode, WebDAV, DLNA) ───────────────────────────────────
+
+export type MediaDeviceKind = 'tv' | 'webdav' | 'dlna';
+
+export interface MediaDeviceSummary {
+  id: string;
+  name: string;
+  kind: MediaDeviceKind;
+  tokenPrefix: string | null;
+  /** Projects the device may read; null means every active project. */
+  projectIds: string[] | null;
+  lastUsedAt: number | null;
+  lastSeenIp: string | null;
+  createdAt: number;
+}
+
+export interface DlnaStatus {
+  enabled: boolean;
+  running: boolean;
+  error?: string | null;
+  addresses: string[];
+}
+
+export async function fetchMediaDevices(): Promise<{ devices: MediaDeviceSummary[]; dlna: DlnaStatus }> {
+  const res = await apiFetch('/api/media-devices', { headers: getHeaders(false) });
+  return handleResponse(res, 'Failed to load devices');
+}
+
+export async function createMediaDevice(
+  kind: 'webdav' | 'dlna',
+  name: string,
+  projectIds: string[] | null,
+): Promise<{ device: MediaDeviceSummary; token?: string }> {
+  const res = await apiFetch('/api/media-devices', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ kind, name, projectIds }),
+  });
+  return handleResponse(res, 'Failed to add device');
+}
+
+export async function updateMediaDevice(
+  id: string,
+  patch: { name?: string; projectIds?: string[] | null },
+): Promise<{ device: MediaDeviceSummary }> {
+  const res = await apiFetch(`/api/media-devices/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(patch),
+  });
+  return handleResponse(res, 'Failed to update device');
+}
+
+export async function deleteMediaDevice(id: string): Promise<void> {
+  const res = await apiFetch(`/api/media-devices/${encodeURIComponent(id)}`, { method: 'DELETE', headers: getHeaders(false) });
+  await handleResponse(res, 'Failed to remove device');
+}
+
+export interface MediaPairingInfo {
+  userCode: string;
+  suggestedName: string;
+  userAgent: string | null;
+  expiresAt: number;
+}
+
+export async function fetchMediaPairing(code: string): Promise<MediaPairingInfo> {
+  const res = await apiFetch(`/api/media-pairings/${encodeURIComponent(code)}`, { headers: getHeaders(false) });
+  return handleResponse(res, 'This code is invalid or has expired');
+}
+
+export async function approveMediaPairing(code: string, name: string, projectIds: string[] | null): Promise<void> {
+  const res = await apiFetch(`/api/media-pairings/${encodeURIComponent(code)}/approve`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ name, projectIds }),
+  });
+  await handleResponse(res, 'Failed to link the TV');
+}
+
+export async function denyMediaPairing(code: string): Promise<void> {
+  const res = await apiFetch(`/api/media-pairings/${encodeURIComponent(code)}/deny`, { method: 'POST', headers: getHeaders() });
+  await handleResponse(res, 'Failed to decline');
 }

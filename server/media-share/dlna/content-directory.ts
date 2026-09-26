@@ -148,7 +148,7 @@ export class ContentDirectory {
   }
 
   private folderNode(folder: MediaFolder): ContainerNode {
-    const coverKey = folder.cover?.thumbnailKey || folder.cover?.optimizedKey;
+    const coverKey = folder.cover?.thumbnailKey || folder.cover?.optimizedKey || folder.cover?.key;
     return {
       id: `p:${folder.id}`,
       parentId: ROOT_ID,
@@ -156,7 +156,7 @@ export class ContentDirectory {
       childCount: folder.itemCount + (folder.hasTags ? 1 : 0),
       className: 'object.container.album.photoAlbum',
       albumArt: folder.cover && coverKey
-        ? this.mediaUrl(folder.cover.itemId, folder.cover.thumbnailKey ? 'thumbnail' : 'optimized', coverKey)
+        ? this.mediaUrl(folder.cover.itemId, folder.cover.thumbnailKey ? 'thumbnail' : folder.cover.optimizedKey ? 'optimized' : 'original', coverKey)
         : null,
     };
   }

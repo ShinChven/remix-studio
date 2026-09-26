@@ -1,0 +1,95 @@
+{
+  "mediaShare": {
+    "tab": "電視與裝置",
+    "intro": "在電視上觀看專案相簿，或在任何檔案管理器中開啟。每個裝置只能唯讀存取你選擇的專案。",
+    "scope": {
+      "label": "存取範圍",
+      "all": "所有進行中的專案",
+      "allHint": "包含之後新建的專案。",
+      "selected": "指定專案",
+      "selectedCount_one": "{{count}} 個專案",
+      "selectedCount_other": "{{count}} 個專案",
+      "search": "搜尋專案",
+      "loading": "正在載入專案…",
+      "empty": "找不到專案",
+      "pickOne": "請至少選擇一個專案",
+      "archived": "已封存"
+    },
+    "common": {
+      "name": "名稱",
+      "add": "新增",
+      "save": "儲存",
+      "cancel": "取消",
+      "done": "完成",
+      "copy": "複製",
+      "copied": "已複製",
+      "edit": "編輯",
+      "remove": "移除",
+      "created": "新增於 {{date}}",
+      "lastUsed": "最近使用 {{date}}",
+      "neverUsed": "尚未使用",
+      "from": "來自 {{ip}}"
+    },
+    "tv": {
+      "title": "電視模式",
+      "desc": "專為遙控器設計的全螢幕瀏覽器：瀏覽相簿、依標籤篩選、播放幻燈片與影片。",
+      "step1": "在電視的網頁瀏覽器中開啟這個網址：",
+      "step2": "電視會顯示一組代碼。用手機掃描電視上的 QR 碼，或在這裡輸入代碼：",
+      "linkButton": "輸入電視代碼",
+      "openHere": "預覽",
+      "webos": "LG 電視使用者也可以把電視模式安裝成主畫面上的應用程式：請參閱儲存庫中的 webos 資料夾。",
+      "empty": "還沒有連結任何電視。"
+    },
+    "webdav": {
+      "title": "WebDAV 網路磁碟",
+      "desc": "在 Finder、Windows 檔案總管、Infuse、rclone 或電視上的檔案管理器中，將相簿掛載為唯讀網路磁碟。",
+      "address": "伺服器位址",
+      "username": "使用者名稱",
+      "usernameValue": "任意",
+      "password": "密碼",
+      "passwordValue": "存取權杖",
+      "create": "新增存取權杖",
+      "namePlaceholder": "例如：MacBook Finder",
+      "tokenCreated": "請立即複製此權杖，之後將不會再顯示。",
+      "httpsNote": "Windows 檔案總管只會透過 HTTPS 傳送密碼。Finder、Infuse 與 rclone 在 HTTP 下也能使用。",
+      "empty": "還沒有存取權杖。"
+    },
+    "dlna": {
+      "title": "DLNA 媒體伺服器",
+      "desc": "電視內建的相片與影片應用程式（LG「相片和影片」、三星「媒體」）會在區域網路中自動找到此伺服器，不需安裝任何應用程式。",
+      "disabled": "此伺服器未啟用 DLNA。請設定 DLNA_ENABLED=true，並以主機網路執行容器（請參閱 docker-compose.dlna.yml）。",
+      "notRunning": "DLNA 已啟用但未執行：{{error}}",
+      "running": "正在廣播：{{addresses}}",
+      "create": "新增 DLNA 伺服器",
+      "defaultName": "Remix Studio",
+      "namePlaceholder": "電視上顯示的名稱",
+      "lanOnly": "DLNA 沒有密碼：區域網路內任何人都能瀏覽 DLNA 伺服器。如有需要，請限制它能存取的專案。",
+      "empty": "還沒有 DLNA 伺服器。"
+    },
+    "remove": {
+      "title": "移除 {{name}}？",
+      "message": "它將立即失去對相簿的存取權限。"
+    },
+    "toasts": {
+      "added": "已新增",
+      "saved": "已儲存",
+      "removed": "已移除",
+      "copied": "已複製到剪貼簿"
+    },
+    "link": {
+      "title": "連結電視",
+      "desc": "輸入電視上顯示的代碼。",
+      "code": "代碼",
+      "continue": "繼續",
+      "request": "一台電視請求顯示你的相簿",
+      "deviceName": "電視名稱",
+      "approve": "連結電視",
+      "deny": "拒絕",
+      "done": "已連結。電視很快就會顯示你的相簿。",
+      "denied": "已拒絕，電視未被連結。",
+      "manage": "管理裝置",
+      "again": "連結另一台電視",
+      "expiresIn": "代碼將在 {{minutes}} 分鐘後過期"
+    }
+  }
+}

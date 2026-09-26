@@ -55,6 +55,7 @@ import { MediaCatalog } from './server/media-share/catalog';
 import { MediaDeviceAuth } from './server/media-share/device-auth';
 import { createMediaRouter } from './server/media-share/media-router';
 import { createWebDavRouter } from './server/media-share/webdav-router';
+import { createTvAppRouter } from './server/media-share/tv-app';
 import { DlnaService, dlnaOptionsFromEnv } from './server/media-share/dlna/dlna-service';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -266,6 +267,7 @@ async function startServer() {
   app.route('/', createMediaRouter(prisma, mediaCatalog, mediaDeviceAuth, storage, dlnaService));
   app.route('/', createWebDavRouter(mediaCatalog, mediaDeviceAuth, storage));
   app.route('/', dlnaService.router());
+  app.route('/', createTvAppRouter());
   // Shared by the external MCP transport and the in-app assistant so both
   // expose exactly the same tools.
   const toolDeps = {
@@ -310,7 +312,7 @@ async function startServer() {
 
     const server = http.createServer((req, res) => {
       const url = req.url || '';
-      if (url.startsWith('/api/') || url.startsWith('/dav') || url.startsWith('/dlna/') || url.startsWith('/mcp') || url.startsWith('/authorize') || url.startsWith('/register') || url.startsWith('/token') || url.startsWith('/.well-known/') || url.startsWith('/healthz') || url.startsWith('/readyz') || url.startsWith('/api/assistant')) {
+      if (url.startsWith('/api/') || url === '/dav' || url.startsWith('/dav/') || url.startsWith('/dlna/') || url === '/tv' || url.startsWith('/tv/') || url.startsWith('/tv?') || url.startsWith('/mcp') || url.startsWith('/authorize') || url.startsWith('/register') || url.startsWith('/token') || url.startsWith('/.well-known/') || url.startsWith('/healthz') || url.startsWith('/readyz') || url.startsWith('/api/assistant')) {
         honoListener(req, res);
       } else {
         vite.middlewares(req, res);

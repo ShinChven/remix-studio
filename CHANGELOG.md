@@ -2,6 +2,16 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [Unreleased]
+
+### Added
+
+- **Watch Albums on a TV: TV Mode, WebDAV and DLNA**: Project albums could only be seen in the web app, so showing a batch of results on the living-room TV meant exporting a ZIP and carrying it over. Three ways now reach them from a TV or a file manager, all read-only and all managed under the new **Account → TV & devices** tab, where each device is limited to every active project (including ones created later) or a fixed list. **TV mode** at `/tv` is a full-screen viewer made for remote controls: albums as a grid, filters for photos, videos and album tags, a viewer with cross-faded slideshows at a chosen speed, video playback, and captions from the prompt. A TV links with a device code rather than a password: it shows an 8-character code and a QR code, the phone opens `/link`, signs in if needed, picks the projects and approves, and the TV receives its own token. The page is a separate, dependency-free bundle built by esbuild for the browser engine in LG webOS 4 (Chromium 53) — an IIFE lowered to that engine with the few runtime methods it lacks filled in, and CSS without grid or flex `gap` — with its own spatial navigation for the arrow keys, LG, Samsung and Android TV key codes, Magic Remote pointing, and a Back key that works whether or not the platform steps history itself. `scripts/package-webos.mjs` wraps it as an LG home-screen app. **WebDAV** at `/dav/` serves one folder per project and one file per album item, named by date, prompt and id (`20260925-143012_a-cat-on-the-moon_1a2b3c4d.png`), with byte ranges for seeking; Finder, Windows Explorer, Infuse, Kodi and rclone sign in with any user name and an access token as the password. **DLNA** makes Remix Studio a UPnP media server that TVs discover by themselves and browse in their own photo and video app: SSDP discovery and announcements on every LAN interface, a ContentDirectory with **Recent**, a folder per project and a **Tags** folder per tagged project, search by class for Samsung and Xbox, the Samsung feature list and Windows Media registrar, DLNA transfer headers, and the 2K JPEG rendition offered first so every TV shows photos quickly. DLNA has no authentication, so it is off unless `DLNA_ENABLED` is set, answers private and directly connected addresses only, and needs host networking — `docker-compose.dlna.yml` provides it. Tokens only open the protocol they were issued for, only their hash is stored, and removing a device revokes it at once. Translated into all six locales.
+
+### Fixed
+
+- **Sign-in keeps the page you were opening**: When a session had expired, the app sent you to a bare `/login` and dropped where you were going, so a link to a project or a TV code landed on the home page after signing in. It now returns to that page.
+
 ## [1.23.0] - 2026-09-12
 
 ### Added

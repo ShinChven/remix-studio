@@ -153,6 +153,10 @@ export default defineConfig({
               text: 'Mobile Share (PWA)',
               link: '/integrations/mobile-share',
             },
+            {
+              text: 'TV, WebDAV & DLNA',
+              link: '/integrations/tv-and-devices',
+            },
           ],
         },
         {

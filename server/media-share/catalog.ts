@@ -22,7 +22,7 @@ export interface MediaFolder {
   hasTags: boolean;
   latestAt: Date;
   createdAt: Date;
-  cover: { itemId: string; thumbnailKey: string | null; optimizedKey: string | null } | null;
+  cover: { itemId: string; thumbnailKey: string | null; optimizedKey: string | null; key: string } | null;
 }
 
 export interface MediaEntry {
@@ -204,13 +204,14 @@ export class MediaCatalog {
         _count: { _all: true },
         _max: { createdAt: true },
       }),
-      this.prisma.$queryRaw<{ projectId: string; id: string; thumbnailUrl: string | null; optimizedUrl: string | null }[]>`
-        SELECT DISTINCT ON ("projectId") "projectId", "id", "thumbnailUrl", "optimizedUrl"
+      this.prisma.$queryRaw<{ projectId: string; id: string; imageUrl: string; thumbnailUrl: string | null; optimizedUrl: string | null }[]>`
+        SELECT DISTINCT ON ("projectId") "projectId", "id", "imageUrl", "thumbnailUrl", "optimizedUrl"
         FROM "AlbumItem"
         WHERE "userId" = ${userId}
           AND "projectId" IN (${Prisma.join(ids)})
           AND "imageUrl" IS NOT NULL
-          AND ("thumbnailUrl" IS NOT NULL OR "optimizedUrl" IS NOT NULL)
+          AND ("thumbnailUrl" IS NOT NULL OR "optimizedUrl" IS NOT NULL
+            OR "imageUrl" ~* '\\.(png|jpe?g|webp|gif)$')
         ORDER BY "projectId", "createdAt" DESC, "id" DESC
       `,
       this.prisma.$queryRaw<{ projectId: string }[]>`
@@ -242,7 +243,7 @@ export class MediaCatalog {
           hasTags: taggedIds.has(project.id),
           latestAt: count._max.createdAt ?? project.createdAt,
           createdAt: project.createdAt,
-          cover: cover ? { itemId: cover.id, thumbnailKey: cover.thumbnailUrl, optimizedKey: cover.optimizedUrl } : null,
+          cover: cover ? { itemId: cover.id, thumbnailKey: cover.thumbnailUrl, optimizedKey: cover.optimizedUrl, key: cover.imageUrl } : null,
         } satisfies MediaFolder;
       })
       .filter((folder): folder is MediaFolder => folder !== null)

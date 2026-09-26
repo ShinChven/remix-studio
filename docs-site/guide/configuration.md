@@ -115,6 +115,15 @@ Google Drive reuses the Google OAuth application configured above; add `${APP_UR
 
 The OneDrive app needs the delegated scopes `offline_access`, `User.Read`, and `Files.ReadWrite`.
 
+## TV & Devices (DLNA)
+
+TV mode and WebDAV need no configuration. The DLNA media server is off unless enabled, and needs the app on the host network. See [TV, WebDAV & DLNA](/integrations/tv-and-devices).
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `DLNA_ENABLED` | `false` | Announce DLNA servers on the local network (SSDP on UDP 1900). |
+| `DLNA_INTERFACES` | all LAN interfaces | Comma-separated interface names or IPv4 addresses to announce on, e.g. `eth0` or `192.168.1.20`. |
+| `DLNA_HTTP_PORT` | `PORT` | The port TVs connect to, when a proxy or port mapping publishes the app on a different one. |
 
 ## Backups (Docker)
 

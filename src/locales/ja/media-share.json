@@ -1,0 +1,95 @@
+{
+  "mediaShare": {
+    "tab": "テレビとデバイス",
+    "intro": "プロジェクトのアルバムをテレビで見たり、ファイルマネージャーから開いたりできます。各デバイスは選んだプロジェクトを読み取り専用で参照します。",
+    "scope": {
+      "label": "アクセス範囲",
+      "all": "進行中のすべてのプロジェクト",
+      "allHint": "今後作成するプロジェクトも含みます。",
+      "selected": "選択したプロジェクト",
+      "selectedCount_one": "{{count}} 件のプロジェクト",
+      "selectedCount_other": "{{count}} 件のプロジェクト",
+      "search": "プロジェクトを検索",
+      "loading": "プロジェクトを読み込み中…",
+      "empty": "プロジェクトが見つかりません",
+      "pickOne": "プロジェクトを 1 つ以上選んでください",
+      "archived": "アーカイブ済み"
+    },
+    "common": {
+      "name": "名前",
+      "add": "追加",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "done": "完了",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "edit": "編集",
+      "remove": "削除",
+      "created": "{{date}} に追加",
+      "lastUsed": "最終使用 {{date}}",
+      "neverUsed": "未使用",
+      "from": "{{ip}} から"
+    },
+    "tv": {
+      "title": "テレビモード",
+      "desc": "リモコン操作向けの全画面ビューアー：アルバムの閲覧、タグでの絞り込み、スライドショーや動画の再生ができます。",
+      "step1": "テレビのウェブブラウザでこのアドレスを開きます：",
+      "step2": "テレビにコードが表示されます。テレビの QR コードをスマートフォンで読み取るか、ここにコードを入力します：",
+      "linkButton": "テレビのコードを入力",
+      "openHere": "プレビュー",
+      "webos": "LG テレビでは、テレビモードをホーム画面のアプリとしてインストールすることもできます。リポジトリの webos フォルダーを参照してください。",
+      "empty": "リンクされたテレビはまだありません。"
+    },
+    "webdav": {
+      "title": "WebDAV ネットワークドライブ",
+      "desc": "Finder、Windows エクスプローラー、Infuse、rclone、テレビのファイルマネージャーで、アルバムを読み取り専用ドライブとしてマウントします。",
+      "address": "サーバーアドレス",
+      "username": "ユーザー名",
+      "usernameValue": "任意",
+      "password": "パスワード",
+      "passwordValue": "アクセストークン",
+      "create": "新しいアクセストークン",
+      "namePlaceholder": "例：MacBook の Finder",
+      "tokenCreated": "このトークンを今すぐコピーしてください。再表示されません。",
+      "httpsNote": "Windows エクスプローラーは HTTPS 経由でのみパスワードを送信します。Finder、Infuse、rclone は HTTP でも使えます。",
+      "empty": "アクセストークンはまだありません。"
+    },
+    "dlna": {
+      "title": "DLNA メディアサーバー",
+      "desc": "テレビ内蔵の写真・動画アプリ（LG「フォト＆ビデオ」、Samsung「メディア」）がローカルネットワーク上でこのサーバーを見つけます。インストール不要です。",
+      "disabled": "このサーバーでは DLNA がオフです。DLNA_ENABLED=true を設定し、ホストネットワークでコンテナを実行してください（docker-compose.dlna.yml を参照）。",
+      "notRunning": "DLNA は有効ですが動作していません：{{error}}",
+      "running": "{{addresses}} でアナウンス中",
+      "create": "新しい DLNA サーバー",
+      "defaultName": "Remix Studio",
+      "namePlaceholder": "テレビに表示される名前",
+      "lanOnly": "DLNA にはパスワードがありません。ローカルネットワーク上の誰でも DLNA サーバーを閲覧できます。必要に応じてプロジェクトを限定してください。",
+      "empty": "DLNA サーバーはまだありません。"
+    },
+    "remove": {
+      "title": "{{name}} を削除しますか？",
+      "message": "アルバムへのアクセスはすぐに失われます。"
+    },
+    "toasts": {
+      "added": "追加しました",
+      "saved": "保存しました",
+      "removed": "削除しました",
+      "copied": "クリップボードにコピーしました"
+    },
+    "link": {
+      "title": "テレビをリンク",
+      "desc": "テレビに表示されたコードを入力してください。",
+      "code": "コード",
+      "continue": "続行",
+      "request": "テレビがアルバムの表示を求めています",
+      "deviceName": "テレビの名前",
+      "approve": "テレビをリンク",
+      "deny": "拒否",
+      "done": "リンクしました。まもなくテレビにアルバムが表示されます。",
+      "denied": "拒否しました。テレビはリンクされていません。",
+      "manage": "デバイスを管理",
+      "again": "別のテレビをリンク",
+      "expiresIn": "コードはあと {{minutes}} 分で期限切れになります"
+    }
+  }
+}
