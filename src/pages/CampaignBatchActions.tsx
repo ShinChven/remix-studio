@@ -591,7 +591,7 @@ export function CampaignBatchActions() {
 
       {previewMedia && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" onClick={() => setPreviewMedia(null)}>
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-card border border-neutral-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95" onClick={(event) => event.stopPropagation()}>
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-card border border-neutral-200/50 bg-white p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-neutral-950 dark:text-white">Post Media</h2>
               <button className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white" onClick={() => setPreviewMedia(null)}><X className="h-5 w-5" /></button>

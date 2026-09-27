@@ -366,7 +366,7 @@ export function WorkflowPanel({
           onClick={() => setIsProjectInfoOpen(false)}
         >
           <div
-            className="w-full max-w-md overflow-hidden rounded-card border border-neutral-200/60 dark:border-white/10 bg-white/95 dark:bg-neutral-900/95 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-200"
+            className="w-full max-w-md overflow-hidden rounded-card border border-neutral-200/60 dark:border-white/10 bg-white dark:bg-neutral-900 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-200"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 border-b border-neutral-200/60 dark:border-white/10 p-5">

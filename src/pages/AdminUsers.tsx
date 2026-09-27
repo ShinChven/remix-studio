@@ -427,7 +427,7 @@ export function AdminUsers() {
 
       {isCreateOpen && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 dark:bg-black/60 p-6 backdrop-blur-md">
-          <div className="w-full max-w-xl rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 shadow-2xl overflow-hidden backdrop-blur-3xl">
+          <div className="w-full max-w-xl rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 shadow-2xl overflow-hidden backdrop-blur-3xl">
             <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-6 py-5">
               <div>
                 <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('adminUsers.createModal.title')}</h3>
@@ -522,7 +522,7 @@ export function AdminUsers() {
       {activeUserId && (
         <div className="fixed inset-0 z-[85] bg-black/20 dark:bg-black/40 backdrop-blur-md">
           <div className="absolute inset-y-0 right-0 flex w-full justify-end">
-            <div className="h-full w-full max-w-2xl overflow-y-auto border-l border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 shadow-2xl backdrop-blur-3xl">
+            <div className="h-full w-full max-w-2xl overflow-y-auto border-l border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 shadow-2xl backdrop-blur-3xl">
               <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-6 py-5">
                 <div>
                   <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('adminUsers.detail.title')}</h3>

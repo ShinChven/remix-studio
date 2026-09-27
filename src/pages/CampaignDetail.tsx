@@ -1076,7 +1076,7 @@ export function CampaignDetail() {
 
       {composerOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md sm:p-6">
-          <div className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-card border border-neutral-200/50 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95">
+          <div className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900">
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
               <h2 className="mb-8 text-xl font-bold tracking-tight text-neutral-950 dark:text-white">Composer</h2>
 

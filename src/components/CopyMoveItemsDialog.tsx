@@ -84,7 +84,7 @@ export function CopyMoveItemsDialog({
       onClick={() => !submitting && onClose()}
     >
       <div
-        className="bg-white dark:bg-neutral-900/40 dark:backdrop-blur-3xl border border-neutral-200 dark:border-white/5 rounded-card shadow-2xl dark:shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain animate-in zoom-in-95 duration-300"
+        className="bg-white dark:bg-neutral-900 dark:backdrop-blur-3xl border border-neutral-200 dark:border-white/5 rounded-card shadow-2xl dark:shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5 sm:p-8">

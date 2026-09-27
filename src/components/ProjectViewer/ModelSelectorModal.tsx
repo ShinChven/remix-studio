@@ -48,7 +48,7 @@ export function ModelSelectorModal({
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-neutral-900/40 dark:backdrop-blur-3xl border border-neutral-200 dark:border-white/5 rounded-card md:rounded-[40px] shadow-2xl dark:shadow-[0_50px_100px_rgba(0,0,0,0.9)] max-w-4xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[85dvh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
+        className="bg-white dark:bg-neutral-900 dark:backdrop-blur-3xl border border-neutral-200 dark:border-white/5 rounded-card md:rounded-[40px] shadow-2xl dark:shadow-[0_50px_100px_rgba(0,0,0,0.9)] max-w-4xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[85dvh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

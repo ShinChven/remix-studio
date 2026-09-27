@@ -231,7 +231,7 @@ export function AdminInvites() {
           }}
         >
           <div
-            className="w-full max-w-lg rounded-card border border-neutral-200/60 dark:border-white/10 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-3xl p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-card border border-neutral-200/60 dark:border-white/10 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-6 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('adminInvites.createModal.title')}</h3>
