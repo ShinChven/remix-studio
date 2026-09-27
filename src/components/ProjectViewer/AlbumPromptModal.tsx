@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Copy, Type, X } from 'lucide-react';
 import { AlbumItem } from '../../types';
@@ -22,8 +23,8 @@ export function AlbumPromptModal({ item, onClose }: AlbumPromptModalProps) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 md:p-8">
+  return createPortal(
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-4 md:p-8">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={onClose} />
 
       <div className="relative w-full max-w-5xl h-[min(80vh,900px)] max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-card sm:rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
@@ -75,6 +76,7 @@ export function AlbumPromptModal({ item, onClose }: AlbumPromptModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
