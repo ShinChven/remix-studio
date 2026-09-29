@@ -237,7 +237,7 @@ export function Home() {
                   </div>
                 ))}
                 {projects.length === 0 && (
-                  <div className="flex-1 p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
+                  <div className="flex-1 p-8 border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
                     {t('dashboard.noProjects')}
                   </div>
                 )}
@@ -277,7 +277,7 @@ export function Home() {
                   </div>
                 ))}
                 {libraries.length === 0 && (
-                  <div className="flex-1 p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
+                  <div className="flex-1 p-8 border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
                     {t('dashboard.noLibraries')}
                   </div>
                 )}
@@ -346,7 +346,7 @@ export function Home() {
                   );
                 })}
                 {campaigns.length === 0 && (
-                  <div className="flex-1 p-8 border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
+                  <div className="flex-1 p-8 border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 border-dashed rounded-xl text-center text-neutral-500 dark:text-neutral-500 backdrop-blur-3xl shadow-sm">
                     {t('campaigns.noCampaigns', 'No campaigns yet.')}
                   </div>
                 )}

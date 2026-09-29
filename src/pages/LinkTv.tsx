@@ -111,7 +111,7 @@ export function LinkTv() {
           </div>
         </div>
 
-        <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/60 p-5 sm:p-6 shadow-sm space-y-5">
+        <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 p-5 sm:p-6 shadow-sm space-y-5">
           {outcome ? (
             <div className="space-y-5 text-center">
               {outcome === 'linked'

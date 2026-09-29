@@ -403,19 +403,19 @@ export function LibraryImportExport() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-3">
-            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
+            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-3 shadow-sm md:p-4">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.stats.library')}</div>
               <div className="mt-1 truncate text-sm font-bold text-neutral-900 dark:text-white md:mt-2">{library.name}</div>
             </div>
-            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
+            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-3 shadow-sm md:p-4">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.stats.currentItems')}</div>
               <div className="mt-1 text-xl font-black text-neutral-900 dark:text-white md:mt-2 md:text-2xl">{library.items.length}</div>
             </div>
-            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
+            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-3 shadow-sm md:p-4">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.stats.currentTags')}</div>
               <div className="mt-1 text-xl font-black text-neutral-900 dark:text-white md:mt-2 md:text-2xl">{libraryTagCount}</div>
             </div>
-            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
+            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-3 shadow-sm md:p-4">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.stats.readyToImport')}</div>
               <div className="mt-1 text-xl font-black text-blue-400 md:mt-2 md:text-2xl">{previewItems.length}</div>
             </div>
@@ -423,7 +423,7 @@ export function LibraryImportExport() {
         </div>
 
         <div className="grid min-h-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-          <section className="flex min-h-0 flex-col rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-5 shadow-sm md:p-6">
+          <section className="flex min-h-0 flex-col rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-5 shadow-sm md:p-6">
             <div className="flex flex-col gap-4 border-b border-neutral-200/70 dark:border-neutral-800/70 pb-5">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
@@ -442,7 +442,7 @@ export function LibraryImportExport() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="inline-flex rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-1 shadow-sm">
+                  <div className="inline-flex rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-1 shadow-sm">
                     <button
                       onClick={() => setImportFormat('text')}
                       className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
@@ -466,7 +466,7 @@ export function LibraryImportExport() {
                   </div>
                   <button
                     onClick={() => setImportText('')}
-                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-neutral-600 dark:text-neutral-400 transition-all hover:border-red-500/30 hover:text-red-300"
+                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-2.5 text-xs font-black uppercase tracking-[0.18em] text-neutral-600 dark:text-neutral-400 transition-all hover:border-red-500/30 hover:text-red-300"
                   >
                     <Trash2 className="h-4 w-4" />
                     {t('libraryImportExport.importSource.clear')}
@@ -490,7 +490,7 @@ export function LibraryImportExport() {
               </div>
 
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
-                <label className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
+                <label className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-3 shadow-sm md:p-4">
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">
                     <Tag className="h-3.5 w-3.5 text-blue-400" />
                     {t('libraryImportExport.importSource.sharedTags')}
@@ -505,11 +505,11 @@ export function LibraryImportExport() {
                 </label>
 
                 <div className="grid grid-cols-2 gap-3 lg:w-[240px]">
-                  <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
+                  <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-3 shadow-sm md:p-4">
                     <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.importSource.detectedTags')}</div>
                     <div className="mt-2 text-xl font-black text-neutral-900 dark:text-white">{previewTagCount}</div>
                   </div>
-                  <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-3 shadow-sm md:p-4">
+                  <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-3 shadow-sm md:p-4">
                     <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.importSource.skippedLines')}</div>
                     <div className={`mt-2 text-xl font-black ${parseIssues.length > 0 ? 'text-amber-300' : 'text-neutral-900 dark:text-white'}`}>
                       {parseIssues.length}
@@ -523,7 +523,7 @@ export function LibraryImportExport() {
               className={`relative mt-5 flex min-h-[320px] flex-1 flex-col rounded-card border-2 border-dashed p-4 transition-all md:p-5 ${
                 isDragOver
                   ? 'border-blue-500 bg-blue-500/8 shadow-[0_0_0_1px_rgba(59,130,246,0.25)]'
-                  : 'border-neutral-200/80 dark:border-neutral-800/80 bg-white/35 dark:bg-neutral-900/35 hover:border-neutral-300 dark:hover:border-neutral-700/90'
+                  : 'border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700/90'
               }`}
               onDragOver={(event) => {
                 event.preventDefault();
@@ -550,7 +550,7 @@ export function LibraryImportExport() {
             </div>
 
             <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)]">
-              <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 shadow-sm">
+              <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 shadow-sm">
                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-neutral-600 dark:text-neutral-400">
                   <AlertCircle className="h-3.5 w-3.5 text-blue-400" />
                   {t('libraryImportExport.formatGuide.title')}
@@ -572,7 +572,7 @@ export function LibraryImportExport() {
                 </div>
               </div>
 
-              <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 shadow-sm">
+              <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 shadow-sm">
                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-neutral-600 dark:text-neutral-400">
                   <Check className="h-3.5 w-3.5 text-emerald-400" />
                   {t('libraryImportExport.parseStatus.title')}
@@ -617,8 +617,8 @@ export function LibraryImportExport() {
             </button>
           </section>
 
-          <section className="flex min-h-0 flex-col gap-6 rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-5 shadow-sm md:p-6">
-            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 shadow-sm">
+          <section className="flex min-h-0 flex-col gap-6 rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-5 shadow-sm md:p-6">
+            <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 shadow-sm">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">{t('libraryImportExport.preview.label')}</div>
@@ -628,7 +628,7 @@ export function LibraryImportExport() {
                   </p>
                 </div>
 
-                <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl px-4 py-3 shadow-sm">
+                <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl px-4 py-3 shadow-sm">
                   <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('libraryImportExport.preview.items')}</div>
                   <div className="mt-1 text-2xl font-black text-neutral-900 dark:text-white">{previewItems.length}</div>
                 </div>
@@ -639,7 +639,7 @@ export function LibraryImportExport() {
                   previewItems.map((item, index) => (
                     <article
                       key={`${item.sourceLine}-${index}`}
-                      className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 shadow-sm"
+                      className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-4 shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -666,7 +666,7 @@ export function LibraryImportExport() {
                           {item.tags.map((tag) => (
                             <span
                               key={`${item.sourceLine}-${tag}`}
-                              className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-neutral-700 dark:text-neutral-300"
+                              className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-neutral-700 dark:text-neutral-300"
                             >
                               {tag}
                             </span>
@@ -676,7 +676,7 @@ export function LibraryImportExport() {
                     </article>
                   ))
                 ) : (
-                  <div className="flex min-h-[240px] flex-col items-center justify-center rounded-card border-2 border-dashed border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl px-6 text-center shadow-sm">
+                  <div className="flex min-h-[240px] flex-col items-center justify-center rounded-card border-2 border-dashed border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl px-6 text-center shadow-sm">
                     <FileText className="h-10 w-10 text-neutral-800" />
                     <div className="mt-4 text-[10px] font-black uppercase tracking-[0.22em] text-neutral-600">
                       {t('libraryImportExport.preview.emptyTitle')}
@@ -689,7 +689,7 @@ export function LibraryImportExport() {
               </div>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-5 shadow-sm">
+            <div className="flex min-h-0 flex-1 flex-col rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-5 shadow-sm">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">{t('libraryImportExport.output.label')}</div>
@@ -700,7 +700,7 @@ export function LibraryImportExport() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="inline-flex rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-1 shadow-sm">
+                  <div className="inline-flex rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-1 shadow-sm">
                     <button
                       onClick={() => setExportFormat('text')}
                       className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
@@ -724,7 +724,7 @@ export function LibraryImportExport() {
                   </div>
 
                   {exportFormat === 'text' && (
-                    <div className="inline-flex rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-1 shadow-sm">
+                    <div className="inline-flex rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-1 shadow-sm">
                       <button
                         onClick={() => setExportMode('tagged')}
                         className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${

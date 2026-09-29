@@ -16,7 +16,7 @@ const typeOptions: Array<{ type: ProjectType; icon: typeof ImageIcon }> = [
 function getTypeClasses(type: ProjectType, selected: boolean) {
   const color = type === 'text' ? 'blue' : type === 'video' ? 'purple' : type === 'audio' ? 'cyan' : 'green';
   if (!selected) {
-    return 'border-neutral-200/70 dark:border-white/10 bg-white/60 dark:bg-neutral-900/50 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-white dark:hover:bg-neutral-900';
+    return 'border-neutral-200/70 dark:border-white/10 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-white dark:hover:bg-neutral-900';
   }
   if (color === 'blue') return 'border-blue-500/60 bg-blue-500/10 text-blue-600 dark:text-blue-300 shadow-blue-500/10';
   if (color === 'purple') return 'border-purple-500/60 bg-purple-500/10 text-purple-600 dark:text-purple-300 shadow-purple-500/10';

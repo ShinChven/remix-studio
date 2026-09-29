@@ -276,7 +276,7 @@ export function AdminUsers() {
           )}
         />
 
-        <section className="rounded-xl border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+        <section className="rounded-xl border border-neutral-200/50 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
             <div className="relative min-w-0 flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -315,7 +315,7 @@ export function AdminUsers() {
           </div>
         )}
 
-        <section className="overflow-hidden rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
+        <section className="overflow-hidden rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 shadow-sm backdrop-blur-3xl">
           {loading ? (
             <div className="flex items-center justify-center py-24">
               <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
@@ -401,7 +401,7 @@ export function AdminUsers() {
           )}
         </section>
 
-        <div className="flex flex-col gap-3 rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 px-6 py-4 md:flex-row md:items-center md:justify-between shadow-sm backdrop-blur-3xl">
+        <div className="flex flex-col gap-3 rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 px-6 py-4 md:flex-row md:items-center md:justify-between shadow-sm backdrop-blur-3xl">
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
             {total > 0 ? t('adminUsers.showingUsers', { count: users.length, total }) : t('adminUsers.noUsersToShow')}
           </div>
@@ -544,7 +544,7 @@ export function AdminUsers() {
                 </div>
               ) : activeUser ? (
                 <div className="space-y-6 p-6">
-                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
+                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 p-6 shadow-sm backdrop-blur-md">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.account')}</p>
@@ -575,7 +575,7 @@ export function AdminUsers() {
                     <MiniCard label={t('adminUsers.detail.exports')} value={activeUser.exportCount} />
                   </section>
 
-                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
+                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 p-6 shadow-sm backdrop-blur-md">
                     <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.storageBreakdown')}</p>
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
                       <StorageRow label={t('adminUsers.detail.projects')} value={activeUser.storageBreakdown.projects} />
@@ -585,7 +585,7 @@ export function AdminUsers() {
                     </div>
                   </section>
 
-                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
+                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 p-6 shadow-sm backdrop-blur-md">
                     <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.adminControls')}</p>
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
                       <label className="space-y-2">
@@ -635,7 +635,7 @@ export function AdminUsers() {
                     </div>
                   </section>
 
-                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 p-6 shadow-sm backdrop-blur-md">
+                  <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 p-6 shadow-sm backdrop-blur-md">
                     <div className="flex items-center gap-2">
                       <KeyRound className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
                       <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('adminUsers.detail.passwordReset')}</p>
@@ -710,7 +710,7 @@ function Stat({ label, value, icon }: { label: string; value: string; icon: Reac
 
 function MiniCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 p-5 backdrop-blur-xl shadow-sm">
+    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 p-5 backdrop-blur-xl shadow-sm">
       <p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{label}</p>
       <p className="mt-3 text-3xl font-semibold text-neutral-900 dark:text-white">{value}</p>
     </div>

@@ -209,7 +209,7 @@ export function ProviderProfile() {
               {t('providerProfile.noModels')}
             </div>
           ) : (
-            <div className="rounded-card bg-white/50 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl overflow-hidden shadow-xl">
+            <div className="rounded-card bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl overflow-hidden shadow-xl">
                <table className="w-full text-left border-collapse table-fixed">
                  <thead className="sticky top-0 bg-neutral-100/80 dark:bg-neutral-900/80 backdrop-blur-md z-10">
                      <tr className="border-b border-neutral-200 dark:border-white/5">
@@ -256,7 +256,7 @@ export function ProviderProfile() {
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-card px-5 py-4 text-center shadow-sm backdrop-blur-md">
+    <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 rounded-card px-5 py-4 text-center shadow-sm backdrop-blur-md">
       <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-1">{label}</p>
       <p className="text-xl font-bold text-neutral-900 dark:text-white">{value}</p>
     </div>

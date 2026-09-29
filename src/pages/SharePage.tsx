@@ -314,7 +314,7 @@ export default function SharePage() {
           backLink={{ label: 'Cancel', onClick: handleCancel }}
         />
 
-        <div className="space-y-3 rounded-lg border border-neutral-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/55">
+        <div className="space-y-3 rounded-lg border border-neutral-200/70 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900">
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
               {hasImage ? <ImageIcon className="h-3.5 w-3.5" /> : <Type className="h-3.5 w-3.5" />}

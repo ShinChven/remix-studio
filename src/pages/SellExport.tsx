@@ -258,7 +258,7 @@ export function SellExport() {
           </div>
         ) : null}
 
-        <section className="rounded-xl border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+        <section className="rounded-xl border border-neutral-200/50 bg-white p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
           <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
             {t('sell.section.store')}
           </h3>
@@ -283,7 +283,7 @@ export function SellExport() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70 space-y-4">
+        <section className="rounded-xl border border-neutral-200/50 bg-white p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900 space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
             {t('sell.section.product')}
           </h3>
@@ -381,7 +381,7 @@ export function SellExport() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70 space-y-4">
+        <section className="rounded-xl border border-neutral-200/50 bg-white p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
               {t('sell.section.covers')} <span className="ml-1 text-neutral-400">({coverItems.length}/{MAX_COVERS})</span>

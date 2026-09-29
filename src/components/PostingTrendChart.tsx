@@ -311,7 +311,7 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
   return (
     <div
       className={cn(
-        'rounded-card border border-neutral-200/50 bg-white/70 p-4 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70 sm:p-6',
+        'rounded-card border border-neutral-200/50 bg-white p-4 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900 sm:p-6',
         className,
       )}
     >
@@ -502,7 +502,7 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
 
         {isEmpty && !hasError && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-medium text-neutral-500 dark:bg-neutral-900/80">
+            <span className="rounded-full bg-white px-3 py-1 text-[11px] font-medium text-neutral-500 dark:bg-neutral-900">
               {t('postingTrend.empty')}
             </span>
           </div>
@@ -510,7 +510,7 @@ export function PostingTrendChart({ from, to, className, height }: PostingTrendC
 
         {!isLoading && hasError && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-medium text-red-500 dark:bg-neutral-900/80">
+            <span className="rounded-full bg-white px-3 py-1 text-[11px] font-medium text-red-500 dark:bg-neutral-900">
               {t('postingTrend.error')}
             </span>
           </div>

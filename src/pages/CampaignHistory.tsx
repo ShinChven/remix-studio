@@ -366,7 +366,7 @@ export function CampaignHistory() {
         {view === 'chart' ? (
           <PostingTrendChart from={range.from} to={range.to} height={280} />
         ) : (
-        <div className="overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-sm dark:border-white/5 dark:bg-neutral-900/50">
+        <div className="overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-sm dark:border-white/5 dark:bg-neutral-900">
           {/* Header Row */}
           <div className="hidden lg:grid lg:grid-cols-[240px_1fr_1fr_160px_100px] items-center gap-4 px-6 py-3 bg-neutral-50 dark:bg-white/5 border-b border-neutral-200/50 dark:border-white/5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
             <span>Social Account</span>

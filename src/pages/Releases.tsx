@@ -203,7 +203,7 @@ export function Releases() {
   ) => {
     const Icon = icon;
     return (
-      <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+      <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
         <div className="border-b border-neutral-200/50 bg-neutral-100/60 p-6 dark:border-white/5 dark:bg-white/5">
           <div className="flex items-center gap-3">
             <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${tint} ${accent}`}>
@@ -238,7 +238,7 @@ export function Releases() {
             <Loader2 className="h-8 w-8 animate-spin text-neutral-950 dark:text-white" />
           </div>
         ) : connections.length === 0 ? (
-          <section className="flex flex-col items-center justify-center rounded-xl border border-neutral-200/50 bg-white/70 px-6 py-20 text-center shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+          <section className="flex flex-col items-center justify-center rounded-xl border border-neutral-200/50 bg-white px-6 py-20 text-center shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-card bg-neutral-100 text-neutral-700 dark:bg-white/10 dark:text-white">
               <Rocket className="h-8 w-8" />
             </div>
@@ -270,7 +270,7 @@ export function Releases() {
           </>
         )}
 
-        <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+        <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
           <div className="border-b border-neutral-200/50 bg-neutral-100/60 p-6 dark:border-white/5 dark:bg-white/5">
             <h2 className="text-lg font-semibold text-neutral-950 dark:text-white">
               {t('releases.availableTitle')}

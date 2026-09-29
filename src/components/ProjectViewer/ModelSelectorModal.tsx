@@ -118,7 +118,7 @@ export function ModelSelectorModal({
                         className={`group relative p-3 rounded-xl text-left transition-ui border active:scale-[0.98] overflow-hidden ${
                           isSelected
                             ? 'bg-blue-50 dark:bg-blue-600/10 border-blue-500 dark:border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.15)] ring-1 ring-blue-500'
-                            : 'bg-white dark:bg-neutral-900/70 border-neutral-200 dark:border-white/5 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900/80 shadow-sm dark:backdrop-blur-xl'
+                            : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-white/5 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900/80 shadow-sm dark:backdrop-blur-xl'
                         }`}
                       >
                         <div className="relative z-10 flex items-center justify-between gap-3">

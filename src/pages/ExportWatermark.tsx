@@ -179,7 +179,7 @@ export function ExportWatermark() {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <button
                 type="button"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200/50 bg-white/40 px-4 text-sm font-bold text-neutral-700 shadow-sm backdrop-blur-3xl transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-white/10"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200/50 bg-white px-4 text-sm font-bold text-neutral-700 shadow-sm backdrop-blur-3xl transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-white/10"
                 onClick={() => navigate(id ? `/project/${id}` : '/projects')}
                 disabled={isSubmitting}
               >
@@ -199,7 +199,7 @@ export function ExportWatermark() {
         />
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <label className="block rounded-card border border-neutral-200/60 bg-white/50 p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50">
+          <label className="block rounded-card border border-neutral-200/60 bg-white p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900">
             <span className="mb-2 block text-xs font-black uppercase tracking-widest text-neutral-500">Package name</span>
             <input
               type="text"
@@ -209,7 +209,7 @@ export function ExportWatermark() {
             />
           </label>
 
-          <div className="rounded-card border border-neutral-200/60 bg-white/50 p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50">
+          <div className="rounded-card border border-neutral-200/60 bg-white p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900">
             <span className="mb-2 block text-xs font-black uppercase tracking-widest text-neutral-500">Version</span>
             <div className="grid grid-cols-2 gap-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-1">
               {[
@@ -245,7 +245,7 @@ export function ExportWatermark() {
           statusText="Settings save when export starts."
         />
 
-        <section className="rounded-card border border-neutral-200/60 bg-white/50 p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50">
+        <section className="rounded-card border border-neutral-200/60 bg-white p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="flex items-center gap-2 text-lg font-bold text-neutral-950 dark:text-white">
               <Package className="h-5 w-5 text-indigo-600" />

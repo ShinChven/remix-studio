@@ -157,7 +157,7 @@ export function CampaignForm() {
 
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-1">
-            <section className="rounded-xl border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+            <section className="rounded-xl border border-neutral-200/50 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
               <div className="mb-5">
                 <h2 className="text-base font-semibold text-neutral-950 dark:text-white">Basic Information</h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">General details about your campaign.</p>
@@ -186,7 +186,7 @@ export function CampaignForm() {
               </div>
             </section>
 
-            <section className="rounded-xl border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+            <section className="rounded-xl border border-neutral-200/50 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Selection Summary</h2>
               <div className="mt-5 flex items-end gap-2">
                 <span className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">{selectedAccountIds.length}</span>
@@ -215,7 +215,7 @@ export function CampaignForm() {
             </section>
           </div>
 
-          <section className="flex min-h-[620px] flex-col rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70 lg:col-span-2">
+          <section className="flex min-h-[620px] flex-col rounded-xl border border-neutral-200/50 bg-white shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900 lg:col-span-2">
             <div className="border-b border-neutral-200/50 bg-neutral-100/60 p-5 dark:border-white/5 dark:bg-white/5">
               <div className="flex items-center justify-between gap-3">
                 <div>

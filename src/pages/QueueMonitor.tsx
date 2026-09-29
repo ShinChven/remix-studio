@@ -63,7 +63,7 @@ function Metric({
 
   if (layout === 'inline') {
     return (
-      <div className="flex min-h-10 min-w-0 items-center justify-between gap-4 rounded-lg border border-neutral-200/50 bg-white/50 px-3 py-2 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/40 sm:min-w-28">
+      <div className="flex min-h-10 min-w-0 items-center justify-between gap-4 rounded-lg border border-neutral-200/50 bg-white px-3 py-2 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900 sm:min-w-28">
         <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{label}</p>
         <p className={`text-base font-semibold tabular-nums ${toneClass}`}>{value}</p>
       </div>
@@ -71,7 +71,7 @@ function Metric({
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200/50 dark:border-white/5 bg-white/50 dark:bg-neutral-900/40 px-3 py-2 shadow-sm backdrop-blur-xl">
+    <div className="rounded-lg border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 px-3 py-2 shadow-sm backdrop-blur-xl">
       <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{label}</p>
       <p className={`mt-1 text-lg font-semibold tabular-nums ${toneClass}`}>{value}</p>
     </div>
@@ -193,7 +193,7 @@ function ProjectPanel({
   const { t } = useTranslation();
 
   return (
-    <article className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/60 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/50">
+    <article className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
       <div className="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -242,7 +242,7 @@ function ProviderPanel({
   const slotPercent = provider.concurrency > 0 ? Math.min(100, (provider.activeSlots / provider.concurrency) * 100) : 0;
 
   return (
-    <article className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/60 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/50">
+    <article className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
       <div className="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <div className="rounded-lg bg-neutral-100 p-2 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
@@ -398,7 +398,7 @@ export function QueueMonitor() {
             )}
             <button
               onClick={() => load(view)}
-              className="flex items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/60 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-neutral-700 shadow-sm backdrop-blur-xl transition-ui hover:bg-neutral-100 active:scale-95 disabled:opacity-40 dark:border-white/5 dark:bg-neutral-900/60 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              className="flex items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-widest text-neutral-700 shadow-sm backdrop-blur-xl transition-ui hover:bg-neutral-100 active:scale-95 disabled:opacity-40 dark:border-white/5 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
               disabled={isLoading}
             >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -521,7 +521,7 @@ function EmptyMonitorState({ icon, title }: { icon: ReactNode; title: string }) 
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-card border-2 border-dashed border-neutral-200 bg-white/40 py-20 text-center text-neutral-500 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40 dark:text-neutral-500">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-card border-2 border-dashed border-neutral-200 bg-white py-20 text-center text-neutral-500 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500">
       <div className="rounded-full border border-neutral-200 bg-white p-4 text-neutral-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
         {icon}
       </div>

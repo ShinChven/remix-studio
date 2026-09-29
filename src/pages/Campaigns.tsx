@@ -261,7 +261,7 @@ export function Campaigns() {
           description={t('description')}
           actions={(
             <button
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white/40 px-4 text-sm font-bold text-neutral-700 shadow-sm backdrop-blur-3xl transition hover:bg-white/60 hover:text-neutral-950 active:scale-95 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-neutral-800/60 dark:hover:text-white sm:w-auto"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-neutral-200/50 bg-white px-4 text-sm font-bold text-neutral-700 shadow-sm backdrop-blur-3xl transition hover:bg-white/60 hover:text-neutral-950 active:scale-95 dark:border-white/5 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800/60 dark:hover:text-white sm:w-auto"
               onClick={() => navigate('/campaigns/channels')}
             >
               <Share2 className="h-4 w-4" />
@@ -284,7 +284,7 @@ export function Campaigns() {
                   <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-neutral-500 dark:text-neutral-500" />
                   <input
                     placeholder={t('searchPlaceholder')}
-                    className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white/40 py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 shadow-sm outline-none backdrop-blur-3xl transition-ui placeholder:text-neutral-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 sm:w-64"
+                    className="h-10 w-full rounded-xl border border-neutral-200/50 bg-white py-2 pl-10 pr-4 text-sm font-medium text-neutral-900 shadow-sm outline-none backdrop-blur-3xl transition-ui placeholder:text-neutral-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900 dark:text-neutral-200 sm:w-64"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -331,7 +331,7 @@ export function Campaigns() {
                 ))}
               </div>
             ) : campaigns.length === 0 ? (
-              <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-card border-2 border-dashed border-neutral-200 bg-white/40 p-12 text-center text-neutral-500 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
+              <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-card border-2 border-dashed border-neutral-200 bg-white p-12 text-center text-neutral-500 shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900">
                 <Megaphone className="h-8 w-8 opacity-20" />
                 <h3 className="text-xl font-bold text-neutral-950 dark:text-white">{t('noCampaigns')}</h3>
                 {!queryParam && (
@@ -426,7 +426,7 @@ export function Campaigns() {
             )}
 
             {!isLoading && totalPages > 1 && (
-              <div className="flex flex-col items-center gap-3 rounded-card border border-neutral-200/50 bg-white/40 px-4 py-3 shadow-sm backdrop-blur-3xl dark:border-white/5 dark:bg-neutral-900/40 sm:flex-row sm:justify-between">
+              <div className="flex flex-col items-center gap-3 rounded-card border border-neutral-200/50 bg-white px-4 py-3 shadow-sm backdrop-blur-3xl dark:border-white/5 dark:bg-neutral-900 sm:flex-row sm:justify-between">
                 <span className="text-[11px] font-medium text-neutral-500">
                   {t('pagination.range', { start: (page - 1) * pageSize + 1, end: Math.min(page * pageSize, total), total })}
                 </span>
@@ -456,7 +456,7 @@ export function Campaigns() {
                 </h3>
               </div>
 
-              <div className="rounded-card border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+              <div className="rounded-card border border-neutral-200/50 bg-white p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
                 <div className="space-y-6">
                   {recentPostsLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
@@ -591,7 +591,7 @@ export function Campaigns() {
                 </h3>
               </div>
 
-              <div className="rounded-card border border-neutral-200/50 bg-white/70 p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+              <div className="rounded-card border border-neutral-200/50 bg-white p-6 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
                 <div className="space-y-6">
                   {scheduledPostsLoading ? (
                     Array.from({ length: 3 }).map((_, i) => (

@@ -150,7 +150,7 @@ function NotificationPreferences() {
         : null;
 
   return (
-    <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
+    <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-6">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-card bg-emerald-500/10 text-emerald-400">
           <Bell className="h-5 w-5" />
@@ -558,7 +558,7 @@ export function Account() {
           description={t('account.description')}
         />
 
-        <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-3">
+        <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-3">
           <div className="grid gap-2 grid-cols-2 md:grid-cols-5">
             {[
               { id: 'overview' as const, label: t('account.tabs.overview'), icon: UserIcon },
@@ -577,7 +577,7 @@ export function Account() {
                   className={`flex items-center justify-center gap-2 rounded-card border px-4 py-3 text-sm font-semibold transition-ui ${
                     isActive
                       ? 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300 shadow-sm scale-[1.02]'
-                      : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-neutral-200 hover:shadow-sm'
+                      : 'border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-neutral-200 hover:shadow-sm'
                   }`}
                 >
                   <Icon className={`h-4 w-4 transition-colors ${isActive ? 'text-blue-500 dark:text-blue-400' : 'text-neutral-400 group-hover:text-neutral-500 dark:text-neutral-500 dark:group-hover:text-neutral-400'}`} />
@@ -591,7 +591,7 @@ export function Account() {
         {activeTab === 'devices' && <MediaDevicesPanel />}
 
         {activeTab === 'overview' && (
-          <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
+          <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-6">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex items-start gap-5">
                 <div className="flex h-16 w-16 items-center justify-center rounded-card bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 text-neutral-700 dark:text-neutral-300 shadow-xl shadow-neutral-200/50 dark:shadow-black/50 border border-white/50 dark:border-white/5">
@@ -627,7 +627,7 @@ export function Account() {
 
             <div className="mt-6 grid gap-4 md:grid-cols-3">
               {overviewLoading && !overviewLoaded ? (
-                <div className="col-span-full flex min-h-[220px] items-center justify-center rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl">
+                <div className="col-span-full flex min-h-[220px] items-center justify-center rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl">
                   <Loader2 className="h-6 w-6 animate-spin text-neutral-500 dark:text-neutral-500" />
                 </div>
               ) : overviewLoadError ? (
@@ -651,7 +651,7 @@ export function Account() {
                 </div>
               ) : (
                 <>
-                  <Link to="/projects" className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 md:p-6 text-left transition-ui group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 hover:border-green-500/50 flex flex-col justify-between">
+                  <Link to="/projects" className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 md:p-6 text-left transition-ui group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 hover:border-green-500/50 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-3">
                         <div className="p-2.5 rounded-xl group-hover:scale-110 transition-transform shadow-lg bg-green-500/10 text-green-500 shadow-green-500/5">
@@ -667,7 +667,7 @@ export function Account() {
                     <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-green-500/20 to-transparent opacity-100 transition-opacity" />
                   </Link>
 
-                  <Link to="/libraries" className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 md:p-6 text-left transition-ui group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 hover:border-blue-500/50 flex flex-col justify-between">
+                  <Link to="/libraries" className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 md:p-6 text-left transition-ui group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 hover:border-blue-500/50 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-3">
                         <div className="p-2.5 rounded-xl group-hover:scale-110 transition-transform shadow-lg bg-blue-500/10 text-blue-500 shadow-blue-500/5">
@@ -683,7 +683,7 @@ export function Account() {
                     <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent opacity-100 transition-opacity" />
                   </Link>
 
-                  <Link to="/providers" className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 md:p-6 text-left transition-ui group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 hover:border-amber-500/50 flex flex-col justify-between">
+                  <Link to="/providers" className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 md:p-6 text-left transition-ui group relative overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 hover:border-amber-500/50 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-3">
                         <div className="p-2.5 rounded-xl group-hover:scale-110 transition-transform shadow-lg bg-amber-500/10 text-amber-500 shadow-amber-500/5">
@@ -707,7 +707,7 @@ export function Account() {
         {activeTab === 'storage' && (
           <div className="space-y-8">
             {storageLoading && !storageLoaded ? (
-              <section className="flex min-h-[320px] items-center justify-center rounded-card border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-6">
+              <section className="flex min-h-[320px] items-center justify-center rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6">
                 <Loader2 className="h-8 w-8 animate-spin text-neutral-500 dark:text-neutral-500" />
               </section>
             ) : storageLoadError || !storage ? (
@@ -730,7 +730,7 @@ export function Account() {
                 </div>
               </section>
             ) : (
-              <section className="rounded-card border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-6">
+              <section className="rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-card bg-cyan-500/10 text-cyan-300">
                     <HardDrive className="h-5 w-5" />
@@ -742,7 +742,7 @@ export function Account() {
                 </div>
 
                 <div className="mt-8 space-y-6">
-                  <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6 relative overflow-hidden group shadow-sm transition-ui hover:shadow-xl">
+                  <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-6 relative overflow-hidden group shadow-sm transition-ui hover:shadow-xl">
                     <div className="flex items-center justify-between gap-4 relative z-10">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-500">{t('account.storage.capacityOverview')}</p>
@@ -766,22 +766,22 @@ export function Account() {
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
 
-                    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 transition-ui hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 transition-ui hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
                       <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400">{t('account.storage.consumption')}</span>
                       <p className="mt-4 text-3xl font-black text-neutral-900 dark:text-white">{formatBytes(storage.totalSize)}</p>
                       <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-neutral-500/10 to-transparent group-hover:via-blue-500/20 transition-all" />
                     </div>
-                    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 transition-ui hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 transition-ui hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
                       <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400">{t('account.storage.planLimit')}</span>
                       <p className="mt-4 text-3xl font-black text-neutral-900 dark:text-white">{formatBytes(storage.limit)}</p>
                       <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-neutral-500/10 to-transparent group-hover:via-neutral-500/20 transition-all" />
                     </div>
-                    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 transition-ui hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 transition-ui hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
                       <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400">{t('account.storage.usage')}</span>
                       <p className="mt-4 text-3xl font-black text-neutral-900 dark:text-white">{usagePercent.toFixed(1)}%</p>
                       <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent ${usagePercent >= 90 ? 'group-hover:via-red-500/30' : 'group-hover:via-cyan-500/30'} to-transparent transition-all`} />
                     </div>
-                    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 transition-ui hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                    <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 transition-ui hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
                       <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400">{t('account.storage.tier')}</span>
                       <p className="mt-4 text-3xl font-black text-neutral-900 dark:text-white">{TIER_NAMES[storage.limit] || t('account.storage.tierCustom')}</p>
                       <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-neutral-500/10 to-transparent group-hover:via-amber-500/20 transition-all" />
@@ -793,7 +793,7 @@ export function Account() {
                       const visibleSubCategories = category.subCategories?.filter((subCategory) => subCategory.id !== 'drafts');
 
                       return (
-                      <div key={category.id} className="flex h-full min-h-[210px] flex-col rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 relative group overflow-hidden transition-ui hover:shadow-xl hover:-translate-y-1">
+                      <div key={category.id} className="flex h-full min-h-[210px] flex-col rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 relative group overflow-hidden transition-ui hover:shadow-xl hover:-translate-y-1">
                         <div className="flex items-center justify-between gap-4 mb-4">
                           <div className="flex items-center gap-3">
                             <div
@@ -832,7 +832,7 @@ export function Account() {
                         {t('account.storage.optimization')}
                       </h3>
                       <div className="mt-5 grid gap-4">
-                        <Link to="/projects" className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4 transition hover:border-amber-500/30">
+                        <Link to="/projects" className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-4 transition hover:border-amber-500/30">
                           <div className="flex items-center gap-3">
                             <Trash2 className="h-5 w-5 text-red-400" />
                             <p className="font-medium text-neutral-900 dark:text-white">{t('account.storage.recycleBin')}</p>
@@ -863,7 +863,7 @@ export function Account() {
         {activeTab === 'security' && (
           <div className="space-y-6">
             {securityLoading && !securityLoaded ? (
-              <section className="flex min-h-[320px] items-center justify-center rounded-card border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 p-6">
+              <section className="flex min-h-[320px] items-center justify-center rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6">
                 <Loader2 className="h-8 w-8 animate-spin text-neutral-500 dark:text-neutral-500" />
               </section>
             ) : securityError || !securitySettings ? (
@@ -887,7 +887,7 @@ export function Account() {
               </section>
             ) : (
               <>
-                <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
+                <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-6">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-card bg-emerald-500/10 text-emerald-300">
                       <Shield className="h-5 w-5" />
@@ -983,7 +983,7 @@ export function Account() {
                   )}
                 </section>
 
-                <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
+                <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-6">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-card bg-blue-500/10 text-blue-300">
@@ -999,7 +999,7 @@ export function Account() {
                     </span>
                   </div>
 
-                  <div className="mt-6 flex flex-col gap-4 rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-5 md:flex-row shadow-sm">
+                  <div className="mt-6 flex flex-col gap-4 rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 md:flex-row shadow-sm">
                     <input
                       type="text"
                       value={passkeyName}
@@ -1034,12 +1034,12 @@ export function Account() {
 
                   <div className="mt-6 space-y-3">
                     {securitySettings.passkeys.length === 0 ? (
-                      <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl px-4 py-5 text-sm text-neutral-600 dark:text-neutral-400">
+                      <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl px-4 py-5 text-sm text-neutral-600 dark:text-neutral-400">
                         {t('account.security.noPasskeys')}
                       </div>
                     ) : (
                       securitySettings.passkeys.map((passkey) => (
-                        <div key={passkey.id} className="flex flex-col gap-4 rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl px-5 py-4 md:flex-row md:items-center md:justify-between transition-ui hover:border-blue-500/30 group">
+                        <div key={passkey.id} className="flex flex-col gap-4 rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl px-5 py-4 md:flex-row md:items-center md:justify-between transition-ui hover:border-blue-500/30 group">
                           <div className="flex items-center gap-4">
                             <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform">
                               <Fingerprint className="h-5 w-5" />
@@ -1067,7 +1067,7 @@ export function Account() {
                   </div>
                 </section>
 
-                <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
+                <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-6">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-card bg-amber-500/10 text-amber-300">
@@ -1098,7 +1098,7 @@ export function Account() {
                   )}
 
                   {!securitySettings.twoFactorEnabled ? (
-                    <div className="mt-6 space-y-4 rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-4">
+                    <div className="mt-6 space-y-4 rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-4">
                       <p className="text-sm text-neutral-600 dark:text-neutral-400">
                         {t('account.security.twoFactorSetupDesc')}
                       </p>
@@ -1162,7 +1162,7 @@ export function Account() {
 
         {activeTab === 'preferences' && (
           <div className="space-y-6">
-            <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
+            <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-card bg-blue-500/10 text-blue-300">
                   <Globe className="h-5 w-5" />
@@ -1194,7 +1194,7 @@ export function Account() {
               </div>
             </section>
 
-            <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-6">
+            <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-card bg-indigo-500/10 text-indigo-300">
                   <Sun className="h-5 w-5 dark:hidden block" />
@@ -1224,7 +1224,7 @@ export function Account() {
                         className={`flex items-center gap-3 rounded-card border px-5 py-4 text-sm font-bold transition-all ${
                           isActive
                             ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 shadow-md scale-[1.02]'
-                            : 'border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900/50 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-neutral-200'
+                            : 'border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700 hover:text-neutral-900 dark:hover:text-neutral-200'
                         }`}
                       >
                         <div className={`p-2 rounded-lg transition-colors ${isActive ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' : 'bg-neutral-100 dark:bg-black/20 text-neutral-500'}`}>

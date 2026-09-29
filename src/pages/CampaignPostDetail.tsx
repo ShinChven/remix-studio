@@ -306,7 +306,7 @@ export function CampaignPostDetail() {
         )}
       />
 
-      <article className="mx-auto max-w-5xl overflow-hidden rounded-card border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+      <article className="mx-auto max-w-5xl overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
         <div className="space-y-6 p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-4">

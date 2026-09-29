@@ -132,7 +132,7 @@ export function ProjectImportPanel() {
         className={`rounded-card border p-4 md:p-5 shadow-sm backdrop-blur-xl transition-ui ${
           isDragging
             ? 'border-violet-500 bg-violet-500/10'
-            : 'border-neutral-200/50 bg-white/70 dark:border-white/5 dark:bg-neutral-900/70'
+            : 'border-neutral-200/50 bg-white dark:border-white/5 dark:bg-neutral-900'
         }`}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -189,7 +189,7 @@ export function ProjectImportPanel() {
         return (
           <div
             key={task.id}
-            className={`flex flex-col gap-3 rounded-card border bg-white/70 p-4 shadow-sm backdrop-blur-xl transition-ui dark:bg-neutral-900/70 sm:flex-row sm:items-center sm:justify-between ${
+            className={`flex flex-col gap-3 rounded-card border bg-white p-4 shadow-sm backdrop-blur-xl transition-ui dark:bg-neutral-900 sm:flex-row sm:items-center sm:justify-between ${
               task.status === 'failed'
                 ? 'border-red-500/30'
                 : 'border-neutral-200/50 dark:border-white/5'

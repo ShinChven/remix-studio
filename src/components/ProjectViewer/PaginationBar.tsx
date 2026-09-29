@@ -47,7 +47,7 @@ export function PaginationBar({
               const v = e.target.value;
               onPageSizeChange(v === 'all' ? 'all' : Number(v));
             }}
-            className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white/60 dark:bg-neutral-900/60 px-2 py-1.5 @xl/pane:py-1 text-[10px] font-black text-neutral-700 dark:text-neutral-200 focus:outline-none focus:border-blue-500"
+            className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1.5 @xl/pane:py-1 text-[10px] font-black text-neutral-700 dark:text-neutral-200 focus:outline-none focus:border-blue-500"
           >
             {PAGE_SIZE_OPTIONS.map((opt) => (
               <option key={String(opt)} value={String(opt)}>

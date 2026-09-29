@@ -92,7 +92,7 @@ export function WorkflowItem({
              item.type === 'audio' ? t('projectViewer.common.audio') :
              item.type}
             {item.type === 'text' && (
-              <span className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/70 px-1.5 py-0.5 text-[9px] font-black tracking-[0.14em] text-neutral-500 dark:text-neutral-500 shadow-sm">
+              <span className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-1.5 py-0.5 text-[9px] font-black tracking-[0.14em] text-neutral-500 dark:text-neutral-500 shadow-sm">
                 {t('projectViewer.workflow.characterCount', { count: item.value.length })}
               </span>
             )}
@@ -289,7 +289,7 @@ export function WorkflowItem({
                <button
                  type="button"
                  onClick={() => onLightbox([imageDisplayUrl(item.optimizedUrl || item.value)], 0)}
-                 className="absolute top-2 right-2 p-2 bg-white/90 dark:bg-neutral-900/90 rounded-md border border-neutral-200 dark:border-neutral-800 shadow-sm text-neutral-500 hover:text-blue-500 hover:border-blue-200 transition-colors lg:hidden"
+                 className="absolute top-2 right-2 p-2 bg-white dark:bg-neutral-900 rounded-md border border-neutral-200 dark:border-neutral-800 shadow-sm text-neutral-500 hover:text-blue-500 hover:border-blue-200 transition-colors lg:hidden"
                  aria-label={t('projectViewer.common.preview', { defaultValue: 'Preview' })}
                >
                  <Maximize2 className="w-3.5 h-3.5" />

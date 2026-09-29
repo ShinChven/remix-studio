@@ -192,7 +192,7 @@ export function ProjectOrphans() {
           
           {/* Legend / Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 p-4 rounded-card flex items-center gap-4 backdrop-blur-3xl shadow-sm">
+             <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 p-4 rounded-card flex items-center gap-4 backdrop-blur-3xl shadow-sm">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
                    <Layers className="w-5 h-5 text-blue-500" />
                 </div>
@@ -201,7 +201,7 @@ export function ProjectOrphans() {
                    <p className="text-lg font-bold text-neutral-900 dark:text-white">{orphans.length}</p>
                 </div>
              </div>
-             <div className="bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 p-4 rounded-card flex items-center gap-4 backdrop-blur-3xl shadow-sm">
+             <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 p-4 rounded-card flex items-center gap-4 backdrop-blur-3xl shadow-sm">
                 <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
                    <ImageIcon className="w-5 h-5 text-purple-500" />
                 </div>
@@ -243,7 +243,7 @@ export function ProjectOrphans() {
           )}
 
           {orphans.length === 0 ? (
-            <div className="py-24 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-card text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center gap-6 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl shadow-sm">
+            <div className="py-24 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-card text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center gap-6 bg-white dark:bg-neutral-900 backdrop-blur-3xl shadow-sm">
                <div className="w-20 h-20 rounded-full bg-white dark:bg-neutral-900 flex items-center justify-center">
                   <CheckSquare className="w-10 h-10 text-emerald-500/40" />
                </div>
@@ -264,7 +264,7 @@ export function ProjectOrphans() {
                    <div 
                     key={file.key} 
                     onClick={(e) => toggleSelection(file.key, e.shiftKey)}
-                    className={`group relative aspect-square w-full rounded-xl overflow-hidden border transition-ui cursor-pointer hover:scale-[1.02] ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl text-neutral-500 dark:text-neutral-500 hover:border-neutral-300 dark:hover:border-neutral-700'}`}
+                    className={`group relative aspect-square w-full rounded-xl overflow-hidden border transition-ui cursor-pointer hover:scale-[1.02] ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl text-neutral-500 dark:text-neutral-500 hover:border-neutral-300 dark:hover:border-neutral-700'}`}
                    >
                      {/* Overlay Actions */}
                      <div className="absolute inset-0 bg-black/60 opacity-100 transition-opacity z-10 flex flex-col justify-between p-1.5">

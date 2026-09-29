@@ -131,7 +131,7 @@ export function AdminInvites() {
           </div>
         )}
 
-        <section className="rounded-card border border-neutral-200 dark:border-white/5 bg-white dark:bg-neutral-900/40 backdrop-blur-3xl p-4 lg:p-6 shadow-sm">
+        <section className="rounded-card border border-neutral-200 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-4 lg:p-6 shadow-sm">
           {loading ? (
             <div className="flex min-h-48 items-center justify-center text-neutral-600 dark:text-neutral-400">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -193,7 +193,7 @@ export function AdminInvites() {
                           <button
                             type="button"
                             onClick={() => void copyText(inviteLink, t('adminInvites.linkCopied'))}
-                            className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 dark:border-white/5 bg-white dark:bg-neutral-900/70 backdrop-blur-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-200 transition hover:border-neutral-400 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+                            className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl px-3 py-2 text-xs text-neutral-900 dark:text-neutral-200 transition hover:border-neutral-400 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-700"
                           >
                             <LinkIcon className="h-3.5 w-3.5" />
                             {t('adminInvites.copyLink')}

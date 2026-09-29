@@ -90,7 +90,7 @@ export function PromptEditor() {
       <div className="w-full flex flex-col h-full gap-3 md:gap-6 animate-in fade-in duration-500">
 
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-card md:rounded-card p-3 md:p-4 md:pl-6 shadow-2xl backdrop-blur-3xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 rounded-card md:rounded-card p-3 md:p-4 md:pl-6 shadow-2xl backdrop-blur-3xl">
           <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
             <button
               onClick={() => navigate(`/library/${id}`)}
@@ -165,12 +165,12 @@ export function PromptEditor() {
         </div>
 
         {/* Editor Content */}
-        <div className="flex-1 min-h-0 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 rounded-card md:rounded-card overflow-hidden flex shadow-2xl flex-col backdrop-blur-3xl">
+        <div className="flex-1 min-h-0 bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 rounded-card md:rounded-card overflow-hidden flex shadow-2xl flex-col backdrop-blur-3xl">
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
 
             {viewMode === 'edit' && (
               <div className="flex-1 flex flex-col h-full">
-                <div className="px-6 py-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl">
+                <div className="px-6 py-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-white dark:bg-neutral-900 backdrop-blur-xl">
                   <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500 flex items-center gap-2">
                     <FileText className="w-3 h-3" />
                     {t('promptEditor.sourceContent')}
@@ -188,7 +188,7 @@ export function PromptEditor() {
 
             {viewMode === 'preview' && (
               <div className="flex-1 min-w-0 flex flex-col h-full bg-neutral-50/30 dark:bg-neutral-950/30">
-                 <div className="px-6 py-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl">
+                 <div className="px-6 py-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center bg-white dark:bg-neutral-900 backdrop-blur-xl">
                   <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2">
                     <Eye className="w-3 h-3" />
                     {t('promptEditor.dynamicPreview')}
@@ -210,7 +210,7 @@ export function PromptEditor() {
 
           </div>
 
-          <div className="bg-white/40 dark:bg-neutral-900/40 border-t border-neutral-200/50 dark:border-white/5 px-4 md:px-6 py-2 md:py-3 flex flex-wrap items-center justify-between gap-y-2 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-neutral-600 backdrop-blur-3xl shadow-sm">
+          <div className="bg-white dark:bg-neutral-900 border-t border-neutral-200/50 dark:border-white/5 px-4 md:px-6 py-2 md:py-3 flex flex-wrap items-center justify-between gap-y-2 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-neutral-600 backdrop-blur-3xl shadow-sm">
              <div className="flex items-center gap-4 md:gap-6">
                <span>{t('promptEditor.words', { count: content.trim() === '' ? 0 : content.trim().split(/\s+/).length })}</span>
                <span>{t('promptEditor.chars', { count: content.length })}</span>

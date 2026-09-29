@@ -370,7 +370,7 @@ export default function ExtensionImport() {
 
       <div className="grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
         {/* Preview Section */}
-        <div className="space-y-6 rounded-lg border border-neutral-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/55 md:p-6">
+        <div className="space-y-6 rounded-lg border border-neutral-200/70 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900 md:p-6">
           <section className="space-y-2">
             <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
               <Type className="h-3.5 w-3.5" />
@@ -405,7 +405,7 @@ export default function ExtensionImport() {
 
         {/* Destination Section */}
         <aside className="space-y-6">
-          <div className="rounded-lg border border-neutral-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/55">
+          <div className="rounded-lg border border-neutral-200/70 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900">
             <div className="mb-5 flex items-center gap-3">
               <div className="rounded-lg bg-neutral-100 p-2 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                 <Folder className="h-4 w-4" />
@@ -424,7 +424,7 @@ export default function ExtensionImport() {
                   className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-[11px] font-black uppercase tracking-wider transition-all ${
                     destinationType === 'library'
                       ? 'border-blue-500/60 bg-blue-500/10 text-blue-600 shadow-blue-500/10 dark:text-blue-300'
-                      : 'border-neutral-200/70 bg-white/60 text-neutral-600 hover:border-neutral-300 hover:bg-white dark:border-white/10 dark:bg-neutral-900/50 dark:text-neutral-400 dark:hover:border-white/20 dark:hover:bg-neutral-900'
+                      : 'border-neutral-200/70 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-white dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:border-white/20 dark:hover:bg-neutral-900'
                   }`}
                 >
                   <Layers className={`h-4 w-4 ${destinationType === 'library' ? 'text-blue-500 dark:text-blue-400' : 'text-neutral-500 dark:text-neutral-500'}`} />
@@ -436,7 +436,7 @@ export default function ExtensionImport() {
                   className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-[11px] font-black uppercase tracking-wider transition-all ${
                     destinationType === 'project'
                       ? 'border-blue-500/60 bg-blue-500/10 text-blue-600 shadow-blue-500/10 dark:text-blue-300'
-                      : 'border-neutral-200/70 bg-white/60 text-neutral-600 hover:border-neutral-300 hover:bg-white dark:border-white/10 dark:bg-neutral-900/50 dark:text-neutral-400 dark:hover:border-white/20 dark:hover:bg-neutral-900'
+                      : 'border-neutral-200/70 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-white dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:border-white/20 dark:hover:bg-neutral-900'
                   }`}
                 >
                   <Folder className={`h-4 w-4 ${destinationType === 'project' ? 'text-blue-500 dark:text-blue-400' : 'text-neutral-500 dark:text-neutral-500'}`} />

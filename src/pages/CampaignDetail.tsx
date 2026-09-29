@@ -658,7 +658,7 @@ export function CampaignDetail() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
               <input
                 placeholder="Search posts..."
-                className="h-10 w-full rounded-card border border-neutral-200/50 bg-white/40 pl-10 pr-3 text-sm font-medium text-neutral-950 shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900/40 dark:text-white sm:w-64"
+                className="h-10 w-full rounded-card border border-neutral-200/50 bg-white pl-10 pr-3 text-sm font-medium text-neutral-950 shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/5 dark:bg-neutral-900 dark:text-white sm:w-64"
                 value={searchQuery}
                 onChange={(event) => updateQuery({ q: event.target.value }, true)}
               />
@@ -666,17 +666,17 @@ export function CampaignDetail() {
             <select
               value={sortKey}
               onChange={(event) => updateQuery({ sort: event.target.value })}
-              className="h-10 rounded-card border border-neutral-200/50 bg-white/40 px-3 text-sm font-bold text-neutral-700 shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200"
+              className="h-10 rounded-card border border-neutral-200/50 bg-white px-3 text-sm font-bold text-neutral-700 shadow-sm outline-none backdrop-blur-3xl transition focus:border-indigo-500/50 dark:border-white/5 dark:bg-neutral-900 dark:text-neutral-200"
             >
               <option value="scheduled_asc">Scheduled (Soonest First)</option>
               <option value="scheduled_desc">Scheduled (Latest First)</option>
               <option value="created_desc">Created (Newest First)</option>
               <option value="created_asc">Created (Oldest First)</option>
             </select>
-            <button className="flex h-10 w-10 items-center justify-center rounded-card border border-neutral-200/50 bg-white/40 text-neutral-700 shadow-sm transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)} title="Settings">
+            <button className="flex h-10 w-10 items-center justify-center rounded-card border border-neutral-200/50 bg-white text-neutral-700 shadow-sm transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/edit/${campaign.id}`)} title="Settings">
               <Settings className="h-4 w-4" />
             </button>
-            <button className="flex h-10 w-10 items-center justify-center rounded-card border border-neutral-200/50 bg-white/40 text-neutral-700 shadow-sm transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900/40 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/${campaign.id}/batch`)} title="Batch Actions">
+            <button className="flex h-10 w-10 items-center justify-center rounded-card border border-neutral-200/50 bg-white text-neutral-700 shadow-sm transition hover:bg-white/60 dark:border-white/5 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/${campaign.id}/batch`)} title="Batch Actions">
               <Layers className="h-4 w-4" />
             </button>
             <button className="flex h-10 w-10 items-center justify-center rounded-card border border-indigo-700 bg-indigo-600 text-white shadow-lg shadow-indigo-600/10 transition hover:bg-indigo-700 active:scale-95" onClick={openNewPostModal} title="Add Post">
@@ -688,7 +688,7 @@ export function CampaignDetail() {
 
         <div className="grid gap-6 lg:grid-cols-4">
           <aside className="space-y-6 lg:col-span-1">
-            <section className="rounded-card border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+            <section className="rounded-card border border-neutral-200/50 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Campaign Progress</h2>
               <div className="mt-4 text-3xl font-bold text-indigo-600 dark:text-indigo-400">{progress}%</div>
               <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
@@ -735,7 +735,7 @@ export function CampaignDetail() {
               </button>
             </section>
 
-            <section className="overflow-hidden rounded-card border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+            <section className="overflow-hidden rounded-card border border-neutral-200/50 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Campaign Info</h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between text-sm">
@@ -793,14 +793,14 @@ export function CampaignDetail() {
           <main className="space-y-6 lg:col-span-3">
             <div className="space-y-8">
               {postsLoading && (
-                <div className="flex items-center justify-center rounded-card border border-neutral-200/50 bg-white/50 py-10 text-sm font-bold text-neutral-500 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/50 dark:text-neutral-400">
+                <div className="flex items-center justify-center rounded-card border border-neutral-200/50 bg-white py-10 text-sm font-bold text-neutral-500 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900 dark:text-neutral-400">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Loading posts...
                 </div>
               )}
 
               {!postsLoading && posts.map((post) => (
-                <article key={post.id} className="group overflow-hidden rounded-card border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl transition-ui duration-300 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-xl dark:border-white/5 dark:bg-neutral-900/70 dark:hover:bg-neutral-800/80">
+                <article key={post.id} className="group overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-sm backdrop-blur-xl transition-ui duration-300 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-xl dark:border-white/5 dark:bg-neutral-900 dark:hover:bg-neutral-800/80">
                   <div className="space-y-6 p-4 sm:p-6 lg:p-8">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex items-center gap-4">
@@ -977,13 +977,13 @@ export function CampaignDetail() {
               ))}
 
               {!postsLoading && posts.length === 0 && (
-                <div className="rounded-card border-2 border-dashed border-neutral-200 bg-white/40 py-12 text-center shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
+                <div className="rounded-card border-2 border-dashed border-neutral-200 bg-white py-12 text-center shadow-sm backdrop-blur-3xl dark:border-neutral-800 dark:bg-neutral-900">
                   <p className="text-neutral-500 dark:text-neutral-400">No posts found in this campaign.</p>
                   <button className="mt-2 text-sm font-bold text-neutral-950 underline dark:text-white" onClick={openNewPostModal}>Create your first post</button>
                 </div>
               )}
 
-              <div className="flex flex-col gap-3 rounded-card border border-neutral-200/50 bg-white/70 px-5 py-4 text-sm font-medium text-neutral-500 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 rounded-card border border-neutral-200/50 bg-white px-5 py-4 text-sm font-medium text-neutral-500 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap items-center gap-3">
                   <span>
                     Showing {matchingPosts === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, matchingPosts)} of {matchingPosts}

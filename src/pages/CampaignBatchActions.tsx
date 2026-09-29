@@ -362,7 +362,7 @@ export function CampaignBatchActions() {
           )}
         />
 
-        <section className="rounded-xl border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+        <section className="rounded-xl border border-neutral-200/50 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
             <div className="relative min-w-0 flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -495,7 +495,7 @@ export function CampaignBatchActions() {
           )}
         </section>
 
-        <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+        <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-left text-sm">
               <thead className="bg-neutral-100/70 text-xs uppercase tracking-wider text-neutral-500 dark:bg-white/5 dark:text-neutral-400">
